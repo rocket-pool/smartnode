@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -58,7 +59,7 @@ type nodeSendContext struct {
 	recipient common.Address
 }
 
-func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.TransactOpts) error {
+func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	ec := sp.GetEthClient()
@@ -68,7 +69,7 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 	// Requirements
 	err := sp.RequireNodeAddress()
 	if err != nil {
-		return err
+		return types.ResponseStatus_AddressNotPresent, err
 	}
 
 	// Get the contract (nil in the case of ETH)
@@ -78,19 +79,23 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 	} else if strings.HasPrefix(c.token, "0x") {
 		// Arbitrary token - make sure the contract address is legal
 		if !common.IsHexAddress(c.token) {
-			return fmt.Errorf("[%s] is not a valid token address", c.token)
+			return types.ResponseStatus_InvalidArguments, fmt.Errorf("[%s] is not a valid token address", c.token)
 		}
 		tokenAddress := common.HexToAddress(c.token)
 
 		// Make a binding for it
 		tokenContract, err := tokens.NewErc20Contract(rp, tokenAddress, ec, nil)
 		if err != nil {
-			return fmt.Errorf("error creating ERC20 contract binding: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating ERC20 contract binding: %w", err)
 		}
 		data.TokenSymbol = tokenContract.Details.Symbol
 		data.TokenName = tokenContract.Details.Name
 	} else {
-		var err error
+		// Load the contracts
+		status, err := sp.RequireRocketPoolContracts()
+		if err != nil {
+			return status, err
+		}
 		switch c.token {
 		case "rpl":
 			tokenContract, err = tokens.NewTokenRpl(rp)
@@ -99,10 +104,10 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 		case "reth":
 			tokenContract, err = tokens.NewTokenReth(rp)
 		default:
-			return fmt.Errorf("[%s] is not a valid token name", c.token)
+			return types.ResponseStatus_InvalidArguments, fmt.Errorf("[%s] is not a valid token name", c.token)
 		}
 		if err != nil {
-			return fmt.Errorf("error creating %s token binding: %w", c.token, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating %s token binding: %w", c.token, err)
 		}
 	}
 
@@ -113,14 +118,14 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 			return nil
 		}, nil)
 		if err != nil {
-			return fmt.Errorf("error getting token balance: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting token balance: %w", err)
 		}
 	} else {
 		// ETH balance
 		var err error
 		data.Balance, err = ec.BalanceAt(context.Background(), nodeAddress, nil)
 		if err != nil {
-			return fmt.Errorf("error getting ETH balance: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting ETH balance: %w", err)
 		}
 	}
 
@@ -144,10 +149,10 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 			txInfo = txMgr.CreateTransactionInfoRaw(c.recipient, nil, newOpts)
 		}
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Transfer: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Transfer: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -1,13 +1,13 @@
 package minipool
 
 import (
-	"errors"
 	"fmt"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/minipool"
@@ -48,24 +48,17 @@ type minipoolDelegateDetailsContext struct {
 	delegate *core.Contract
 }
 
-func (c *minipoolDelegateDetailsContext) Initialize() error {
+func (c *minipoolDelegateDetailsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
-	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-	)
-	if err != nil {
-		return err
-	}
-
 	// Bindings
+	var err error
 	c.delegate, err = c.rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 	if err != nil {
-		return fmt.Errorf("error getting minipool delegate binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool delegate binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolDelegateDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -85,7 +78,7 @@ func (c *minipoolDelegateDetailsContext) GetMinipoolDetails(mc *batch.MultiCalle
 	)
 }
 
-func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDelegateDetailsData) error {
+func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDelegateDetailsData) (types.ResponseStatus, error) {
 	// Get all of the unique delegate addresses used by this node
 	delegateAddresses := []common.Address{}
 	delegateAddressMap := map[common.Address]bool{}
@@ -112,7 +105,7 @@ func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address,
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting delegate versions: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting delegate versions: %w", err)
 	}
 	for i, address := range delegateAddresses {
 		delegateVersionMap[address] = versions[i]
@@ -139,5 +132,5 @@ func (c *minipoolDelegateDetailsContext) PrepareData(addresses []common.Address,
 
 	data.LatestDelegate = c.delegate.Address
 	data.Details = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }

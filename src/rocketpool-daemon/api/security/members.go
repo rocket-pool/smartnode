@@ -11,6 +11,7 @@ import (
 
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -50,21 +51,27 @@ type securityMembersContext struct {
 	scMgr *security.SecurityCouncilManager
 }
 
-func (c *securityMembersContext) Initialize() error {
+func (c *securityMembersContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
+	}
+
 	// Bindings
 	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, pdaoMgr.Settings)
 	if err != nil {
-		return fmt.Errorf("error creating security council manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *securityMembersContext) GetState(mc *batch.MultiCaller) {
@@ -73,16 +80,16 @@ func (c *securityMembersContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *securityMembersContext) PrepareData(data *api.SecurityMembersData, opts *bind.TransactOpts) error {
+func (c *securityMembersContext) PrepareData(data *api.SecurityMembersData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get all members
 	memberCount := c.scMgr.MemberCount.Formatted()
 	addresses, err := c.scMgr.GetMemberAddresses(memberCount, nil)
 	if err != nil {
-		return fmt.Errorf("error getting member addresses: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting member addresses: %w", err)
 	}
 	members, err := c.scMgr.CreateMembersFromAddresses(addresses, true, nil)
 	if err != nil {
-		return fmt.Errorf("error getting member details: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting member details: %w", err)
 	}
 
 	data.Members = make([]api.SecurityMemberDetails, memberCount)
@@ -97,5 +104,5 @@ func (c *securityMembersContext) PrepareData(data *api.SecurityMembersData, opts
 		}
 		data.Members[i] = member
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -60,7 +61,7 @@ type walletSearchAndRecoverContext struct {
 	savePassword             bool
 }
 
-func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRecoverData, opts *bind.TransactOpts) error {
+func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRecoverData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 	rs := sp.GetNetworkResources()
@@ -69,15 +70,15 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 	// Requirements
 	status, err := w.GetStatus()
 	if err != nil {
-		return fmt.Errorf("error getting wallet status: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting wallet status: %w", err)
 	}
 	if status.Wallet.IsOnDisk {
-		return fmt.Errorf("a wallet is already present")
+		return types.ResponseStatus_ResourceConflict, fmt.Errorf("a wallet is already present")
 	}
 	if !c.skipValidatorKeyRecovery {
-		err := sp.RequireEthClientSynced()
+		status, err := sp.RequireRocketPoolContracts()
 		if err != nil {
-			return err
+			return status, err
 		}
 	}
 
@@ -92,7 +93,7 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 			derivationPath := paths[j]
 			recoveredWallet, err := wallet.TestRecovery(derivationPath, i, c.mnemonic, rs.ChainID)
 			if err != nil {
-				return fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, i, err)
+				return types.ResponseStatus_Error, fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, i, err)
 			}
 
 			// Get recovered account
@@ -111,13 +112,13 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 	}
 
 	if !data.FoundWallet {
-		return fmt.Errorf("exhausted all derivation paths and indices from 0 to %d, wallet not found", findIterations)
+		return types.ResponseStatus_ResourceNotFound, fmt.Errorf("exhausted all derivation paths and indices from 0 to %d, wallet not found", findIterations)
 	}
 
 	// Recover the wallet
 	err = w.Recover(data.DerivationPath, data.Index, c.mnemonic, c.password, c.savePassword, false)
 	if err != nil {
-		return fmt.Errorf("error recovering wallet: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error recovering wallet: %w", err)
 	}
 	data.AccountAddress, _ = w.GetAddress()
 
@@ -125,8 +126,8 @@ func (c *walletSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRec
 	if !c.skipValidatorKeyRecovery {
 		data.ValidatorKeys, err = vMgr.RecoverMinipoolKeys(false)
 		if err != nil {
-			return fmt.Errorf("error recovering minipool keys: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error recovering minipool keys: %w", err)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

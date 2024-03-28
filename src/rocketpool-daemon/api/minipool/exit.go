@@ -58,22 +58,22 @@ type minipoolExitContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolExitContext) Initialize() error {
+func (c *minipoolExitContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.vMgr = sp.GetValidatorManager()
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
-		sp.RequireWalletReady(),
-	)
+	err := sp.RequireBeaconClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
-	return nil
+	err = sp.RequireWalletReady()
+	if err != nil {
+		return types.ResponseStatus_WalletNotReady, err
+	}
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolExitContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -87,18 +87,18 @@ func (c *minipoolExitContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minip
 	mp.Common().Pubkey.AddToQuery(mc)
 }
 
-func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.SuccessData) error {
+func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.SuccessData) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	// Get beacon head
 	head, err := c.bc.GetBeaconHead(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting beacon head: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting beacon head: %w", err)
 	}
 
 	// Get voluntary exit signature domain
 	signatureDomain, err := c.bc.GetDomainData(ctx, eth2types.DomainVoluntaryExit[:], head.Epoch, false)
 	if err != nil {
-		return fmt.Errorf("error getting beacon domain data: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting beacon domain data: %w", err)
 	}
 
 	for _, mp := range mps {
@@ -109,25 +109,25 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 		// Get validator private key
 		validatorKey, err := c.vMgr.LoadValidatorKey(validatorPubkey)
 		if err != nil {
-			return fmt.Errorf("error getting private key for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting private key for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}
 
 		// Get validator index
 		validatorIndex, err := c.bc.GetValidatorIndex(ctx, validatorPubkey)
 		if err != nil {
-			return fmt.Errorf("error getting index of minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting index of minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}
 
 		// Get signed voluntary exit message
 		signature, err := nmc_validator.GetSignedExitMessage(validatorKey, validatorIndex, head.Epoch, signatureDomain)
 		if err != nil {
-			return fmt.Errorf("error getting exit message signature for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting exit message signature for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}
 
 		// Broadcast voluntary exit message
 		if err := c.bc.ExitValidator(ctx, validatorIndex, head.Epoch, signature); err != nil {
-			return fmt.Errorf("error submitting exit message for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error submitting exit message for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

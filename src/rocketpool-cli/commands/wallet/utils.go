@@ -13,7 +13,6 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/wallet/bip39"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
@@ -110,7 +109,7 @@ func PromptMnemonic() string {
 		}
 
 		i := 0
-		for mv.Filled() == false {
+		for !mv.Filled() {
 			prompt := fmt.Sprintf("Enter %sWord Number %d%s of your mnemonic:", terminal.ColorBold, i+1, terminal.ColorReset)
 			word := utils.PromptPassword(prompt, "^[a-zA-Z]+$", "Please enter a single word only.")
 
@@ -148,7 +147,7 @@ func confirmMnemonic(mnemonic string) {
 }
 
 // Check for custom keys, prompt for their passwords, and store them in the custom keys file
-func promptForCustomKeyPasswords(rp *client.Client, cfg *config.SmartNodeConfig, testOnly bool) (string, error) {
+func promptForCustomKeyPasswords(cfg *config.SmartNodeConfig, testOnly bool) (string, error) {
 	// Check for the custom key directory
 	customKeyDir := cfg.GetCustomKeyPath()
 	info, err := os.Stat(customKeyDir)

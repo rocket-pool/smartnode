@@ -48,19 +48,25 @@ func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocket
 	if !response.Data.CanPropose {
 		fmt.Println("You cannot currently submit this proposal:")
 		if response.Data.UnknownSetting {
-			fmt.Sprintf("Unknown setting '%s' on contract '%s'.\n", setting, contract)
+			fmt.Printf("Unknown setting '%s' on contract '%s'.\n", setting, contract)
 		}
 		return nil
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to submit this proposal?",
 		"setting update",
 		"Proposing Protocol DAO setting update...",
 	)
+	if err != nil {
+		return err
+	}
+	if !validated {
+		return nil
+	}
 
 	// Log & return
-	fmt.Printf("Successfully proposed setting '%s.%s' to '%s'.\n", contract, setting, value)
+	fmt.Printf("Successfully proposed setting '%s.%s' to '%v'.\n", contract, setting, value)
 	return nil
 }

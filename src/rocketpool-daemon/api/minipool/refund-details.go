@@ -1,13 +1,13 @@
 package minipool
 
 import (
-	"errors"
 	"math/big"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -43,17 +43,8 @@ type minipoolRefundDetailsContext struct {
 	handler *MinipoolHandler
 }
 
-func (c *minipoolRefundDetailsContext) Initialize() error {
-	sp := c.handler.serviceProvider
-
-	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-	)
-	if err != nil {
-		return err
-	}
-	return nil
+func (c *minipoolRefundDetailsContext) Initialize() (types.ResponseStatus, error) {
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolRefundDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -71,7 +62,7 @@ func (c *minipoolRefundDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller,
 	)
 }
 
-func (c *minipoolRefundDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRefundDetailsData) error {
+func (c *minipoolRefundDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRefundDetailsData) (types.ResponseStatus, error) {
 	// Get the refund details
 	details := make([]api.MinipoolRefundDetails, len(addresses))
 	for i, mp := range mps {
@@ -85,5 +76,5 @@ func (c *minipoolRefundDetailsContext) PrepareData(addresses []common.Address, m
 	}
 
 	data.Details = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }

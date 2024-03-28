@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -54,7 +55,7 @@ type nodeGetSnapshotProposalsContext struct {
 	node       *node.Node
 }
 
-func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotProposalsData, opts *bind.TransactOpts) error {
+func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotProposalsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	rp := sp.GetRocketPool()
@@ -62,12 +63,13 @@ func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotP
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireSnapshot(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
+	}
+	err = sp.RequireSnapshot()
+	if err != nil {
+		return types.ResponseStatus_InvalidChainState, err
 	}
 
 	var delegate common.Address
@@ -76,9 +78,9 @@ func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotP
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting snapshot delegate: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting snapshot delegate: %w", err)
 	}
 
 	data.Proposals, err = voting.GetSnapshotProposals(cfg, nodeAddress, delegate, c.activeOnly)
-	return err
+	return types.ResponseStatus_Success, err
 }

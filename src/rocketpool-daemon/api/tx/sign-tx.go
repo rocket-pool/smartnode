@@ -2,7 +2,6 @@ package tx
 
 import (
 	"encoding/hex"
-	"errors"
 	"fmt"
 	_ "time/tzdata"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -57,15 +57,14 @@ type txSignTxContext struct {
 	body    api.SubmitTxBody
 }
 
-func (c *txSignTxContext) PrepareData(data *api.TxSignTxData, opts *bind.TransactOpts) error {
+func (c *txSignTxContext) PrepareData(data *api.TxSignTxData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 
-	err := errors.Join(
-		sp.RequireWalletReady(),
-	)
+	// Requirements
+	err := sp.RequireWalletReady()
 	if err != nil {
-		return err
+		return types.ResponseStatus_WalletNotReady, err
 	}
 
 	if c.body.Nonce != nil {
@@ -77,13 +76,13 @@ func (c *txSignTxContext) PrepareData(data *api.TxSignTxData, opts *bind.Transac
 
 	tx, err := rp.SignTransaction(c.body.Submission.TxInfo, opts)
 	if err != nil {
-		return fmt.Errorf("error signing transaction: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error signing transaction: %w", err)
 	}
 
 	bytes, err := tx.MarshalBinary()
 	if err != nil {
-		return fmt.Errorf("error marshalling transaction: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error marshalling transaction: %w", err)
 	}
 	data.SignedTx = hex.EncodeToString(bytes)
-	return nil
+	return types.ResponseStatus_Success, nil
 }

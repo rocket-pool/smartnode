@@ -1,8 +1,6 @@
 package minipool
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -11,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
@@ -18,7 +17,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -58,36 +57,29 @@ type minipoolBeginReduceBondDetailsContext struct {
 	oSettings        *oracle.OracleDaoSettings
 }
 
-func (c *minipoolBeginReduceBondDetailsContext) Initialize() error {
+func (c *minipoolBeginReduceBondDetailsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
-	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-	)
-	if err != nil {
-		return err
-	}
-
 	// Bindings
+	var err error
 	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node binding: %w", err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating oDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oDAO manager binding: %w", err)
 	}
 	c.oSettings = oMgr.Settings
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolBeginReduceBondDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -123,8 +115,7 @@ func (c *minipoolBeginReduceBondDetailsContext) GetMinipoolDetails(mc *batch.Mul
 	}
 }
 
-func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolBeginReduceBondDetailsData) error {
-	ctx := c.handler.serviceProvider.GetContext()
+func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolBeginReduceBondDetailsData) (types.ResponseStatus, error) {
 
 	// General vars
 	data.IsFeeDistributorInitialized = c.node.IsFeeDistributorInitialized.Get()
@@ -132,9 +123,10 @@ func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.A
 	data.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Formatted()
 
 	// Get the latest block header
-	header, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
+	ctx := c.handler.serviceProvider.GetContext()
+	header, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("error getting latest block header: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(header.Time), 0)
 
@@ -152,7 +144,7 @@ func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.A
 	// Get the statuses on Beacon
 	beaconStatuses, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
-		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}
 
 	// Do a complete viability check
@@ -175,7 +167,7 @@ func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.A
 	}
 
 	data.Details = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolBeginReduceBondDetailsContext) getMinipoolDetails(mp minipool.IMinipool, currentTime time.Time) api.MinipoolBeginReduceBondDetails {
@@ -191,7 +183,7 @@ func (c *minipoolBeginReduceBondDetailsContext) getMinipoolDetails(mp minipool.I
 		mpDetails.MinipoolVersionTooLow = true
 		return mpDetails
 	}
-	if mpCommon.Status.Formatted() != types.MinipoolStatus_Staking || mpCommon.IsFinalised.Get() {
+	if mpCommon.Status.Formatted() != rptypes.MinipoolStatus_Staking || mpCommon.IsFinalised.Get() {
 		mpDetails.InvalidElState = true
 		return mpDetails
 	}

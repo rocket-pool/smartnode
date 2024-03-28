@@ -71,7 +71,7 @@ func promoteMinipools(c *cli.Context) error {
 	}
 
 	// Run the TXs
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to promote %d minipools?", len(selectedMinipools)),
 		func(i int) string {
 			return fmt.Sprintf("promoting minipool %s", selectedMinipools[i].Address.Hex())
@@ -80,6 +80,9 @@ func promoteMinipools(c *cli.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

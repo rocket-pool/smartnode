@@ -47,10 +47,14 @@ type minipoolDissolveContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolDissolveContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+func (c *minipoolDissolveContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "dissolve")
 }
 
-func (c *minipoolDissolveContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return mp.Common().Dissolve(opts)
+func (c *minipoolDissolveContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {
+	txInfo, err := mp.Common().Dissolve(opts)
+	if err != nil {
+		return types.ResponseStatus_Error, nil, err
+	}
+	return types.ResponseStatus_Success, txInfo, nil
 }

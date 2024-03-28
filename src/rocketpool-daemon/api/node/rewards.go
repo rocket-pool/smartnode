@@ -14,9 +14,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -55,7 +56,7 @@ type nodeRewardsContext struct {
 	handler *NodeHandler
 }
 
-func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.TransactOpts) error {
+func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	rp := sp.GetRocketPool()
@@ -65,19 +66,19 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	rpl, err := tokens.NewTokenRpl(rp)
 	if err != nil {
-		return fmt.Errorf("error getting RPL token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting RPL token binding: %w", err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(rp)
 	if err != nil {
-		return fmt.Errorf("error getting pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting pDAO manager binding: %w", err)
 	}
 
 	// Details that aren't in the state
@@ -94,15 +95,15 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	// This thing is so complex it's easier to just get the state snapshot and go from there
 	stateMgr, err := state.NewNetworkStateManager(ctx, rp, cfg, ec, bc, nil)
 	if err != nil {
-		return fmt.Errorf("error creating network state manager: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating network state manager: %w", err)
 	}
 	mpMgr, err := minipool.NewMinipoolManager(rp)
 	if err != nil {
-		return fmt.Errorf("error creating minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool manager binding: %w", err)
 	}
 	state, totalEffectiveStake, err := stateMgr.GetHeadStateForNode(ctx, nodeAddress, true)
 	if err != nil {
-		return fmt.Errorf("error getting network state for node %s: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting network state for node %s: %w", nodeAddress.Hex(), err)
 	}
 
 	// Some basic details
@@ -130,15 +131,15 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	claimedODaoRplRewards := big.NewInt(0)
 	claimStatus, err := rprewards.GetClaimStatus(rp, nodeAddress, state.NetworkDetails.RewardIndex)
 	if err != nil {
-		return fmt.Errorf("error getting rewards claim status for node %s: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting rewards claim status for node %s: %w", nodeAddress.Hex(), err)
 	}
 	for _, claimed := range claimStatus.Claimed {
 		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, claimed, nil)
 		if err != nil {
-			return err
+			return types.ResponseStatus_Error, err
 		}
 		if !intervalInfo.TreeFileExists {
-			return fmt.Errorf("error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimed)
+			return types.ResponseStatus_ResourceConflict, fmt.Errorf("error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimed)
 		}
 		claimedRplRewards.Add(claimedRplRewards, &intervalInfo.CollateralRplAmount.Int)
 		claimedODaoRplRewards.Add(claimedODaoRplRewards, &intervalInfo.ODaoRplAmount.Int)
@@ -147,10 +148,10 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	for _, unclaimed := range claimStatus.Unclaimed {
 		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, unclaimed, nil)
 		if err != nil {
-			return err
+			return types.ResponseStatus_Error, err
 		}
 		if !intervalInfo.TreeFileExists {
-			return fmt.Errorf("error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimed)
+			return types.ResponseStatus_ResourceConflict, fmt.Errorf("error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimed)
 		}
 		if intervalInfo.NodeExists {
 			unclaimedRplRewards.Add(unclaimedRplRewards, &intervalInfo.CollateralRplAmount.Int)
@@ -189,7 +190,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	for _, mpd := range mps {
 		mp, err := mpMgr.NewMinipoolFromVersion(mpd.MinipoolAddress, mpd.Version)
 		if err != nil {
-			return fmt.Errorf("error creating binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating binding for minipool %s: %w", mpd.MinipoolAddress.Hex(), err)
 		}
 		validator := state.ValidatorDetails[mpd.Pubkey]
 		blockBalance := eth.GweiToWei(float64(validator.Balance))
@@ -210,7 +211,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 		}
 
 		// Use node deposit balance if initialized or prelaunch
-		if status == types.MinipoolStatus_Initialized || status == types.MinipoolStatus_Prelaunch {
+		if status == rptypes.MinipoolStatus_Initialized || status == rptypes.MinipoolStatus_Prelaunch {
 			totalDepositBalance += eth.WeiToEth(nodeDepositBalance)
 			totalNodeShare += eth.WeiToEth(nodeDepositBalance)
 			continue
@@ -236,7 +237,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error calculating node shares of beacon balances: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error calculating node shares of beacon balances: %w", err)
 	}
 
 	// Sum up the node shares
@@ -244,5 +245,5 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 		totalNodeShare += eth.WeiToEth(nodeShare)
 	}
 	data.BeaconRewards = totalNodeShare - totalDepositBalance
-	return nil
+	return types.ResponseStatus_Success, nil
 }

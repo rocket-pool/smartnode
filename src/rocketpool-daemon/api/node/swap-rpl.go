@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -59,32 +60,32 @@ type nodeSwapRplContext struct {
 	allowance  *big.Int
 }
 
-func (c *nodeSwapRplContext) Initialize() error {
+func (c *nodeSwapRplContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.fsrpl, err = tokens.NewTokenRplFixedSupply(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating legacy RPL binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating legacy RPL binding: %w", err)
 	}
 	c.rpl, err = tokens.NewTokenRpl(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating RPL binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating RPL binding: %w", err)
 	}
 	rplContract, err := c.rp.GetContract(rocketpool.ContractName_RocketTokenRPL)
 	if err != nil {
-		return fmt.Errorf("error creating RPL contract: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating RPL contract: %w", err)
 	}
 	c.rplAddress = rplContract.Address
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeSwapRplContext) GetState(mc *batch.MultiCaller) {
@@ -92,30 +93,28 @@ func (c *nodeSwapRplContext) GetState(mc *batch.MultiCaller) {
 	c.fsrpl.GetAllowance(mc, &c.allowance, c.nodeAddress, c.rplAddress)
 }
 
-func (c *nodeSwapRplContext) PrepareData(data *api.NodeSwapRplData, opts *bind.TransactOpts) error {
+func (c *nodeSwapRplContext) PrepareData(data *api.NodeSwapRplData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.InsufficientBalance = (c.amount.Cmp(c.balance) > 0)
 	data.Allowance = c.allowance
 	data.CanSwap = !(data.InsufficientBalance)
 
 	if data.CanSwap {
-		// Check allowance
-		if c.amount.Cmp(c.allowance) > 0 {
-			// Calculate max uint256 value
-			approvalAmount := big.NewInt(2)
-			approvalAmount = approvalAmount.Exp(approvalAmount, big.NewInt(256), nil)
-			approvalAmount = approvalAmount.Sub(approvalAmount, big.NewInt(1))
+		if c.allowance.Cmp(c.amount) < 0 {
+			// Do the approve TX if needed
+			approvalAmount := getMaxApproval()
 			txInfo, err := c.fsrpl.Approve(c.rplAddress, approvalAmount, opts)
 			if err != nil {
-				return fmt.Errorf("error getting TX info to approve increasing legacy RPL's allowance: %w", err)
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info to approve increasing legacy RPL's allowance: %w", err)
 			}
 			data.ApproveTxInfo = txInfo
+		} else {
+			// Just do the swap
+			txInfo, err := c.rpl.SwapFixedSupplyRplForRpl(c.amount, opts)
+			if err != nil {
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for SwapFixedSupplyRPLForRPL: %w", err)
+			}
+			data.SwapTxInfo = txInfo
 		}
-
-		txInfo, err := c.rpl.SwapFixedSupplyRplForRpl(c.amount, opts)
-		if err != nil {
-			return fmt.Errorf("error getting TX info for SwapFixedSupplyRPLForRPL: %w", err)
-		}
-		data.SwapTxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

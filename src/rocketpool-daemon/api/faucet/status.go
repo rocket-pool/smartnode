@@ -1,8 +1,6 @@
 package faucet
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -15,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -53,17 +52,23 @@ type faucetStatusContext struct {
 	allowance *big.Int
 }
 
-func (c *faucetStatusContext) Initialize() error {
+func (c *faucetStatusContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.f = sp.GetRplFaucet()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	return errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireRplFaucet(),
-	)
+	status, err := sp.RequireNodeRegistered()
+	if err != nil {
+		return status, err
+	}
+	err = sp.RequireRplFaucet()
+	if err != nil {
+		return types.ResponseStatus_InvalidChainState, err
+	}
+
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *faucetStatusContext) GetState(mc *batch.MultiCaller) {
@@ -76,11 +81,12 @@ func (c *faucetStatusContext) GetState(mc *batch.MultiCaller) {
 	c.f.GetAllowanceFor(mc, &c.allowance, c.nodeAddress)
 }
 
-func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData, opts *bind.TransactOpts) error {
+func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the current block
-	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
+	ctx := c.handler.serviceProvider.GetContext()
+	currentBlock, err := c.rp.Client.BlockNumber(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting current EL block: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting current EL block: %w", err)
 	}
 
 	// Populate the response
@@ -99,5 +105,5 @@ func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData, opts *bind
 
 	// Get reset block
 	data.ResetsInBlocks = (currentPeriodStartBlock + withdrawalPeriodBlocks) - currentBlock
-	return nil
+	return types.ResponseStatus_Success, nil
 }

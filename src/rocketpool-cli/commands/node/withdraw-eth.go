@@ -36,7 +36,7 @@ func nodeWithdrawEth(c *cli.Context) error {
 		// Parse amount
 		withdrawalAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid withdrawal amount '%s': %w", c.String(amountFlag), err)
+			return fmt.Errorf("invalid withdrawal amount '%s': %w", c.String(amountFlag), err)
 		}
 		amountWei = eth.EthToWei(withdrawalAmount)
 	} else {
@@ -56,7 +56,7 @@ func nodeWithdrawEth(c *cli.Context) error {
 			inputAmount := utils.Prompt("Please enter an amount of staked ETH to withdraw:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 			withdrawalAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
-				return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
+				return fmt.Errorf("invalid withdrawal amount '%s': %w", inputAmount, err)
 			}
 			amountWei = eth.EthToWei(withdrawalAmount)
 		}
@@ -80,13 +80,16 @@ func nodeWithdrawEth(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to withdraw %.6f ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6)),
 		"ETH withdrawal",
 		"Withdrawing ETH...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

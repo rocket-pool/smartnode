@@ -84,7 +84,7 @@ func reduceBondAmount(c *cli.Context) error {
 	}
 
 	// Run the TXs
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to reduce the bond for %d minipools from 16 ETH to 8 ETH?", len(selectedMinipools)),
 		func(i int) string {
 			return fmt.Sprintf("bond reduction for minipool %s", selectedMinipools[i].Address.Hex())
@@ -93,6 +93,9 @@ func reduceBondAmount(c *cli.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return
@@ -124,13 +127,16 @@ func forceFeeDistribution(c *cli.Context, rp *client.Client) error {
 
 	// Run the TX
 	txInfo := response.Data.TxInfo
-	err = tx.HandleTx(c, rp, txInfo,
+	validated, err := tx.HandleTx(c, rp, txInfo,
 		"Are you sure you want to distribute the ETH from your node's fee distributor?",
 		"node rewards distribution",
 		"Distributing rewards...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

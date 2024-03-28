@@ -11,13 +11,14 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -65,36 +66,33 @@ type minipoolCanChangeCredsContext struct {
 	mpv3            *minipool.MinipoolV3
 }
 
-func (c *minipoolCanChangeCredsContext) Initialize() error {
+func (c *minipoolCanChangeCredsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
-	)
+	err := sp.RequireBeaconClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	mpMgr, err := minipool.NewMinipoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool manager binding: %w", err)
 	}
 	mp, err := mpMgr.CreateMinipoolFromAddress(c.minipoolAddress, false, nil)
 	if err != nil {
-		return fmt.Errorf("error creating minipool binding from address: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool binding from address: %w", err)
 	}
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
-		return fmt.Errorf("minipool delegate is too old - it must be upgraded before you can change the withdrawal credentials to this minipool")
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("minipool delegate is too old - it must be upgraded before you can change the withdrawal credentials to this minipool")
 	}
 	c.mpv3 = mpv3
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolCanChangeCredsContext) GetState(mc *batch.MultiCaller) {
@@ -106,33 +104,33 @@ func (c *minipoolCanChangeCredsContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeWithdrawalCredentialsData, opts *bind.TransactOpts) error {
+func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeWithdrawalCredentialsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 
 	// Validate minipool owner
 	if c.mpv3.Common().NodeAddress.Get() != c.nodeAddress {
-		return fmt.Errorf("minipool %s does not belong to the node", c.minipoolAddress.Hex())
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("minipool %s does not belong to the node", c.minipoolAddress.Hex())
 	}
 
 	// Check minipool status
 	if !c.mpv3.IsVacant.Get() {
-		return fmt.Errorf("minipool %s is not vacant", c.minipoolAddress.Hex())
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("minipool %s is not vacant", c.minipoolAddress.Hex())
 	}
-	if c.mpv3.Common().Status.Formatted() != types.MinipoolStatus_Prelaunch {
-		return fmt.Errorf("minipool %s is not in prelaunch state", c.minipoolAddress.Hex())
+	if c.mpv3.Common().Status.Formatted() != rptypes.MinipoolStatus_Prelaunch {
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("minipool %s is not in prelaunch state", c.minipoolAddress.Hex())
 	}
 
 	// Check the validator's status and current creds
 	pubkey := c.mpv3.Common().Pubkey.Get()
 	beaconStatus, err := c.bc.GetValidatorStatus(ctx, pubkey, nil)
 	if err != nil {
-		return fmt.Errorf("error getting Beacon status for minipool %s (pubkey %s): %w", c.minipoolAddress.Hex(), pubkey.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting Beacon status for minipool %s (pubkey %s): %w", c.minipoolAddress.Hex(), pubkey.Hex(), err)
 	}
 	if beaconStatus.Status != beacon.ValidatorState_ActiveOngoing {
-		return fmt.Errorf("minipool %s (pubkey %s) was in state %v, but is required to be active_ongoing for migration", c.minipoolAddress.Hex(), pubkey.Hex(), beaconStatus.Status)
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("minipool %s (pubkey %s) was in state %v, but is required to be active_ongoing for migration", c.minipoolAddress.Hex(), pubkey.Hex(), beaconStatus.Status)
 	}
 	if beaconStatus.WithdrawalCredentials[0] != 0x00 {
-		return fmt.Errorf("minipool %s (pubkey %s) has already been migrated - its withdrawal credentials are %s", c.minipoolAddress.Hex(), pubkey.Hex(), beaconStatus.WithdrawalCredentials.Hex())
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("minipool %s (pubkey %s) has already been migrated - its withdrawal credentials are %s", c.minipoolAddress.Hex(), pubkey.Hex(), beaconStatus.WithdrawalCredentials.Hex())
 	}
 
 	// Get the index for this validator based on the mnemonic
@@ -142,7 +140,7 @@ func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeW
 	for index < validatorKeyRetrievalLimit {
 		key, err := nmc_validator.GetPrivateKey(c.mnemonic, validatorKeyPath)
 		if err != nil {
-			return fmt.Errorf("error deriving key for index %d: %w", index, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error deriving key for index %d: %w", index, err)
 		}
 		candidatePubkey := key.PublicKey().Marshal()
 		if bytes.Equal(pubkey[:], candidatePubkey) {
@@ -152,13 +150,13 @@ func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeW
 		index++
 	}
 	if validatorKey == nil {
-		return fmt.Errorf("couldn't find the validator key for this mnemonic after %d tries", validatorKeyRetrievalLimit)
+		return types.ResponseStatus_ResourceNotFound, fmt.Errorf("couldn't find the validator key for this mnemonic after %d tries", validatorKeyRetrievalLimit)
 	}
 
 	// Get the withdrawal creds from this index
 	withdrawalKey, err := nmc_validator.GetWithdrawalKey(c.mnemonic, validatorKeyPath)
 	if err != nil {
-		return fmt.Errorf("error getting withdrawal key for validator: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting withdrawal key for validator: %w", err)
 	}
 	withdrawalPubkey := withdrawalKey.PublicKey().Marshal()
 	withdrawalPubkeyHashBytes := util.SHA256(withdrawalPubkey) // Withdrawal creds use sha256, *not* Keccak
@@ -167,10 +165,10 @@ func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeW
 
 	// Make sure they match what's on Beacon
 	if beaconStatus.WithdrawalCredentials != withdrawalPubkeyHash {
-		return fmt.Errorf("withdrawal credentials mismatch for minipool %s (pubkey %s): should be %s but matching index %d provided %s", c.minipoolAddress.Hex(), pubkey.Hex(), beaconStatus.WithdrawalCredentials.Hex(), index, withdrawalPubkeyHash.Hex())
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("withdrawal credentials mismatch for minipool %s (pubkey %s): should be %s but matching index %d provided %s", c.minipoolAddress.Hex(), pubkey.Hex(), beaconStatus.WithdrawalCredentials.Hex(), index, withdrawalPubkeyHash.Hex())
 	}
 
 	// Update & return response
 	data.CanChange = true
-	return nil
+	return types.ResponseStatus_Success, nil
 }

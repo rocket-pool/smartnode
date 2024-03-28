@@ -48,16 +48,21 @@ type nodeSetSnapshotDelegateContext struct {
 	delegate common.Address
 }
 
-func (c *nodeSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) error {
+func (c *nodeSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 	snapshot := sp.GetSnapshotDelegation()
 	idHash := cfg.GetVotingSnapshotID()
 
-	var err error
+	// Requirements
+	err := sp.RequireSnapshot()
+	if err != nil {
+		return types.ResponseStatus_InvalidChainState, err
+	}
+
 	data.TxInfo, err = snapshot.SetDelegate(idHash, c.delegate, opts)
 	if err != nil {
-		return fmt.Errorf("error getting TX info for SetDelegate: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for SetDelegate: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

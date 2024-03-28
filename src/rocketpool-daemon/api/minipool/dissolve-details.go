@@ -1,16 +1,16 @@
 package minipool
 
 import (
-	"errors"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -43,13 +43,8 @@ type minipoolDissolveDetailsContext struct {
 	handler *MinipoolHandler
 }
 
-func (c *minipoolDissolveDetailsContext) Initialize() error {
-	sp := c.handler.serviceProvider
-
-	// Requirements
-	return errors.Join(
-		sp.RequireNodeRegistered(),
-	)
+func (c *minipoolDissolveDetailsContext) Initialize() (types.ResponseStatus, error) {
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolDissolveDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -67,19 +62,19 @@ func (c *minipoolDissolveDetailsContext) GetMinipoolDetails(mc *batch.MultiCalle
 	)
 }
 
-func (c *minipoolDissolveDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDissolveDetailsData) error {
+func (c *minipoolDissolveDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolDissolveDetailsData) (types.ResponseStatus, error) {
 	details := make([]api.MinipoolDissolveDetails, len(mps))
 	for i, mp := range mps {
 		mpCommonDetails := mp.Common()
 		status := mpCommonDetails.Status.Formatted()
 		mpDetails := api.MinipoolDissolveDetails{
 			Address:       mpCommonDetails.Address,
-			InvalidStatus: !(status == types.MinipoolStatus_Initialized || status == types.MinipoolStatus_Prelaunch),
+			InvalidStatus: !(status == rptypes.MinipoolStatus_Initialized || status == rptypes.MinipoolStatus_Prelaunch),
 		}
 		mpDetails.CanDissolve = !mpDetails.InvalidStatus
 		details[i] = mpDetails
 	}
 
 	data.Details = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }

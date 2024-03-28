@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -57,24 +58,24 @@ type nodeWithdrawEthContext struct {
 	node   *node.Node
 }
 
-func (c *nodeWithdrawEthContext) Initialize() error {
+func (c *nodeWithdrawEthContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.ec = sp.GetEthClient()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeWithdrawEthContext) GetState(mc *batch.MultiCaller) {
@@ -84,7 +85,7 @@ func (c *nodeWithdrawEthContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *nodeWithdrawEthContext) PrepareData(data *api.NodeWithdrawEthData, opts *bind.TransactOpts) error {
+func (c *nodeWithdrawEthContext) PrepareData(data *api.NodeWithdrawEthData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ethBalance := c.node.DonatedEthBalance.Get()
 	hasDifferentPrimaryWithdrawalAddress := c.nodeAddress != c.node.PrimaryWithdrawalAddress.Get()
 
@@ -97,9 +98,9 @@ func (c *nodeWithdrawEthContext) PrepareData(data *api.NodeWithdrawEthData, opts
 	if data.CanWithdraw {
 		txInfo, err := c.node.WithdrawDonatedEth(c.amount, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for WithdrawDonatedEth: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for WithdrawDonatedEth: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

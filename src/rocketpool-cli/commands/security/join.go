@@ -35,13 +35,16 @@ func join(c *cli.Context) error {
 	}
 
 	// Run the Join TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to join the Security Council?",
 		"joining Security Council",
 		"Joining the Security Council...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

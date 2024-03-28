@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -59,42 +60,42 @@ type networkStatsContext struct {
 	smoothingPool *core.Contract
 }
 
-func (c *networkStatsContext) Initialize() error {
+func (c *networkStatsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.depositPool, err = deposit.NewDepositPoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting deposit pool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting deposit pool manager binding: %w", err)
 	}
 	c.nodeMgr, err = node.NewNodeManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting node manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node manager binding: %w", err)
 	}
 	c.mpMgr, err = minipool.NewMinipoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool manager binding: %w", err)
 	}
 	c.reth, err = tokens.NewTokenReth(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting rETH token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting rETH token binding: %w", err)
 	}
 	c.smoothingPool, err = c.rp.GetContract(rocketpool.ContractName_RocketSmoothingPool)
 	if err != nil {
-		return fmt.Errorf("error getting rETH token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting rETH token binding: %w", err)
 	}
 	c.networkMgr, err = network.NewNetworkManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating network prices binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating network prices binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *networkStatsContext) GetState(mc *batch.MultiCaller) {
@@ -112,7 +113,7 @@ func (c *networkStatsContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind.TransactOpts) error {
+func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Handle the details
 	data.DepositPoolBalance = c.depositPool.Balance.Get()
 	data.MinipoolCapacity = c.mpMgr.TotalQueueCapacity.Get()
@@ -126,7 +127,7 @@ func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind
 	// Get the total effective RPL stake
 	effectiveRplStaked, err := c.nodeMgr.GetTotalEffectiveRplStake(c.nodeMgr.NodeCount.Formatted(), nil)
 	if err != nil {
-		return fmt.Errorf("error getting total effective RPL stake: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting total effective RPL stake: %w", err)
 	}
 	data.EffectiveRplStaked = effectiveRplStaked
 
@@ -134,7 +135,7 @@ func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind
 	data.FinalizedMinipoolCount = c.mpMgr.FinalisedMinipoolCount.Formatted()
 	minipoolCounts, err := c.mpMgr.GetMinipoolCountPerStatus(c.mpMgr.MinipoolCount.Formatted(), nil)
 	if err != nil {
-		return fmt.Errorf("error getting minipool counts per status: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool counts per status: %w", err)
 	}
 	data.InitializedMinipoolCount = minipoolCounts.Initialized.Uint64()
 	data.PrelaunchMinipoolCount = minipoolCounts.Prelaunch.Uint64()
@@ -145,7 +146,7 @@ func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind
 	// Get the number of nodes opted into the smoothing pool
 	spCount, err := c.nodeMgr.GetSmoothingPoolRegisteredNodeCount(c.nodeMgr.NodeCount.Formatted(), nil)
 	if err != nil {
-		return fmt.Errorf("error getting smoothing pool opt-in count: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting smoothing pool opt-in count: %w", err)
 	}
 	data.SmoothingPoolNodes = spCount
 
@@ -153,7 +154,7 @@ func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind
 	data.SmoothingPoolAddress = c.smoothingPool.Address
 	smoothingPoolBalance, err := c.rp.Client.BalanceAt(context.Background(), c.smoothingPool.Address, nil)
 	if err != nil {
-		return fmt.Errorf("error getting smoothing pool balance: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}
 	data.SmoothingPoolBalance = smoothingPoolBalance
 
@@ -172,5 +173,5 @@ func (c *networkStatsContext) PrepareData(data *api.NetworkStatsData, opts *bind
 	tvl.Add(tvl, rplWorth)
 	data.TotalValueLocked = tvl
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

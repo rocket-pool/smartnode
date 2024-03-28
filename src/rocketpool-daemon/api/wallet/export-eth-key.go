@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -41,27 +42,27 @@ type walletExportEthKeyContext struct {
 	handler *WalletHandler
 }
 
-func (c *walletExportEthKeyContext) PrepareData(data *api.WalletExportEthKeyData, opts *bind.TransactOpts) error {
+func (c *walletExportEthKeyContext) PrepareData(data *api.WalletExportEthKeyData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 
 	// Requirements
 	err := sp.RequireWalletReady()
 	if err != nil {
-		return err
+		return types.ResponseStatus_WalletNotReady, err
 	}
 
 	// Make a new password
 	password, err := utils.GenerateRandomPassword()
 	if err != nil {
-		return fmt.Errorf("error generating random password: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error generating random password: %w", err)
 	}
 
 	ethkey, err := w.GetEthKeystore(password)
 	if err != nil {
-		return fmt.Errorf("error getting eth-style keystore: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting eth-style keystore: %w", err)
 	}
 	data.EthKeyJson = ethkey
 	data.Password = password
-	return nil
+	return types.ResponseStatus_Success, nil
 }

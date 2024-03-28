@@ -77,7 +77,7 @@ func setUseLatestDelegates(c *cli.Context, setting bool) error {
 	}
 
 	// Run the TXs
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to change the auto-upgrade setting for %d minipools to %t?", len(selectedMinipools), setting),
 		func(i int) string {
 			return fmt.Sprintf("toggling auto-upgrades for minipool %s", selectedMinipools[i].Address.Hex())
@@ -86,6 +86,9 @@ func setUseLatestDelegates(c *cli.Context, setting bool) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

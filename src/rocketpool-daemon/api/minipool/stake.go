@@ -53,29 +53,30 @@ type minipoolStakeContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	vMgr := sp.GetValidatorManager()
 	rs := sp.GetNetworkResources()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireWalletReady(),
-	)
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
+	}
+	err = sp.RequireWalletReady()
+	if err != nil {
+		return types.ResponseStatus_WalletNotReady, err
 	}
 
 	// Create minipools
 	mpMgr, err := minipool.NewMinipoolManager(rp)
 	if err != nil {
-		return fmt.Errorf("error creating minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool manager binding: %w", err)
 	}
 	mps, err := mpMgr.CreateMinipoolsFromAddresses(c.minipoolAddresses, false, nil)
 	if err != nil {
-		return fmt.Errorf("error creating minipool bindings: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool bindings: %w", err)
 	}
 
 	// Get the relevant details
@@ -89,7 +90,7 @@ func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bi
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting minipool details: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool details: %w", err)
 	}
 
 	// Get the TXs
@@ -101,7 +102,7 @@ func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bi
 		withdrawalCredentials := mpCommon.WithdrawalCredentials.Get()
 		validatorKey, err := vMgr.LoadValidatorKey(pubkey)
 		if err != nil {
-			return fmt.Errorf("error getting validator %s (minipool %s) key: %w", pubkey.Hex(), mpCommon.Address.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting validator %s (minipool %s) key: %w", pubkey.Hex(), mpCommon.Address.Hex(), err)
 		}
 		depositType := mpCommon.DepositType.Formatted()
 
@@ -112,24 +113,24 @@ func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bi
 		case rptypes.Variable:
 			depositAmount = uint64(31e9) // 31 ETH in gwei
 		default:
-			return fmt.Errorf("error staking minipool %s: unknown deposit type %d", mpCommon.Address.Hex(), depositType)
+			return types.ResponseStatus_Error, fmt.Errorf("error staking minipool %s: unknown deposit type %d", mpCommon.Address.Hex(), depositType)
 		}
 
 		// Get validator deposit data
 		depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, config.Network(rs.EthNetworkName))
 		if err != nil {
-			return fmt.Errorf("error getting deposit data for validator %s: %w", pubkey.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting deposit data for validator %s: %w", pubkey.Hex(), err)
 		}
 		signature := beacon.ValidatorSignature(depositData.Signature)
 
 		depositDataRoot := common.BytesToHash(depositData.DepositDataRoot)
 		txInfo, err := mpCommon.Stake(signature, depositDataRoot, opts)
 		if err != nil {
-			return fmt.Errorf("error simulating stake transaction for minipool %s: %w", mpCommon.Address.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error simulating stake transaction for minipool %s: %w", mpCommon.Address.Hex(), err)
 		}
 		txInfos[i] = txInfo
 	}
 
 	data.TxInfos = txInfos
-	return nil
+	return types.ResponseStatus_Success, nil
 }

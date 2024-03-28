@@ -1,7 +1,6 @@
 package auction
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -11,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/auction"
@@ -59,27 +59,27 @@ type auctionBidContext struct {
 	pSettings *protocol.ProtocolDaoSettings
 }
 
-func (c *auctionBidContext) Initialize() error {
+func (c *auctionBidContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.lot, err = auction.NewAuctionLot(c.rp, c.lotIndex)
 	if err != nil {
-		return fmt.Errorf("error creating lot %d binding: %w", c.lotIndex, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating lot %d binding: %w", c.lotIndex, err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *auctionBidContext) GetState(mc *batch.MultiCaller) {
@@ -91,11 +91,12 @@ func (c *auctionBidContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *auctionBidContext) PrepareData(data *api.AuctionBidOnLotData, opts *bind.TransactOpts) error {
+func (c *auctionBidContext) PrepareData(data *api.AuctionBidOnLotData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the current block
-	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
+	ctx := c.handler.serviceProvider.GetContext()
+	currentBlock, err := c.rp.Client.BlockNumber(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting current EL block: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting current EL block: %w", err)
 	}
 
 	// Check for validity
@@ -109,9 +110,9 @@ func (c *auctionBidContext) PrepareData(data *api.AuctionBidOnLotData, opts *bin
 	if data.CanBid && opts != nil {
 		txInfo, err := c.lot.PlaceBid(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for PlaceBid: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for PlaceBid: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

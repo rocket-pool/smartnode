@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -46,26 +47,31 @@ type protocolDaoRewardsPercentagesContext struct {
 	pdaoMgr     *protocol.ProtocolDaoManager
 }
 
-func (c *protocolDaoRewardsPercentagesContext) Initialize() error {
+func (c *protocolDaoRewardsPercentagesContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
+	// Requirements
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
+	}
+
 	// Bindings
-	var err error
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoRewardsPercentagesContext) GetState(mc *batch.MultiCaller) {
 	c.pdaoMgr.GetRewardsPercentages(mc, &c.percentages)
 }
 
-func (c *protocolDaoRewardsPercentagesContext) PrepareData(data *api.ProtocolDaoRewardsPercentagesData, opts *bind.TransactOpts) error {
+func (c *protocolDaoRewardsPercentagesContext) PrepareData(data *api.ProtocolDaoRewardsPercentagesData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.OracleDao = c.percentages.OdaoPercentage
 	data.Node = c.percentages.NodePercentage
 	data.ProtocolDao = c.percentages.PdaoPercentage
-	return nil
+	return types.ResponseStatus_Success, nil
 }

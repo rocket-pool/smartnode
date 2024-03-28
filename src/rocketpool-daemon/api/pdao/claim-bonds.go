@@ -62,30 +62,30 @@ type protocolDaoClaimBondsContext struct {
 	proposals []*protocol.ProtocolDaoProposal
 }
 
-func (c *protocolDaoClaimBondsContext) Initialize() error {
+func (c *protocolDaoClaimBondsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.proposals = make([]*protocol.ProtocolDaoProposal, len(c.body.Claims))
 	for i, claim := range c.body.Claims {
 		c.proposals[i], err = protocol.NewProtocolDaoProposal(c.rp, claim.ProposalID)
 		if err != nil {
-			return fmt.Errorf("error creating proposal binding: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating proposal binding: %w", err)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoClaimBondsContext) GetState(mc *batch.MultiCaller) {
@@ -100,7 +100,7 @@ func (c *protocolDaoClaimBondsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *protocolDaoClaimBondsContext) PrepareData(dataBatch *types.DataBatch[api.ProtocolDaoClaimBondsData], opts *bind.TransactOpts) error {
+func (c *protocolDaoClaimBondsContext) PrepareData(dataBatch *types.DataBatch[api.ProtocolDaoClaimBondsData], opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	dataBatch.Batch = make([]api.ProtocolDaoClaimBondsData, len(c.body.Claims))
 	for i, claim := range c.body.Claims {
 		proposal := c.proposals[i]
@@ -123,17 +123,17 @@ func (c *protocolDaoClaimBondsContext) PrepareData(dataBatch *types.DataBatch[ap
 			if data.IsProposer {
 				txInfo, err := proposal.ClaimBondProposer(claim.Indices, opts)
 				if err != nil {
-					return fmt.Errorf("error getting TX info for ClaimBondProposer: %w", err)
+					return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for ClaimBondProposer: %w", err)
 				}
 				data.TxInfo = txInfo
 			} else {
 				txInfo, err := proposal.ClaimBondChallenger(claim.Indices, opts)
 				if err != nil {
-					return fmt.Errorf("error getting TX info for ClaimBondChallenger: %w", err)
+					return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for ClaimBondChallenger: %w", err)
 				}
 				data.TxInfo = txInfo
 			}
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

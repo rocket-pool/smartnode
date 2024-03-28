@@ -28,11 +28,17 @@ func initializeVoting(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to initialize voting so you can vote on Protocol DAO proposals?",
 		"initialize voting",
 		"Initializing voting...",
 	)
+	if err != nil {
+		return err
+	}
+	if !validated {
+		return nil
+	}
 
 	// Log & return
 	fmt.Printf("Successfully initialized voting. Your node can now vote on Protocol DAO proposals.")

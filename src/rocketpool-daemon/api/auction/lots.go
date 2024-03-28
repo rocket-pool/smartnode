@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/auction"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -49,30 +50,30 @@ type auctionLotContext struct {
 	auctionMgr *auction.AuctionManager
 }
 
-func (c *auctionLotContext) Initialize() error {
+func (c *auctionLotContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.auctionMgr, err = auction.NewAuctionManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating auction manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating auction manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *auctionLotContext) GetState(mc *batch.MultiCaller) {
 	c.auctionMgr.LotCount.AddToQuery(mc)
 }
 
-func (c *auctionLotContext) PrepareData(data *api.AuctionLotsData, opts *bind.TransactOpts) error {
+func (c *auctionLotContext) PrepareData(data *api.AuctionLotsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get lot details
 	lotCount := c.auctionMgr.LotCount.Formatted()
 	lots := make([]*auction.AuctionLot, lotCount)
@@ -90,7 +91,7 @@ func (c *auctionLotContext) PrepareData(data *api.AuctionLotsData, opts *bind.Tr
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting lot details: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting lot details: %w", err)
 	}
 
 	// Process details
@@ -122,5 +123,5 @@ func (c *auctionLotContext) PrepareData(data *api.AuctionLotsData, opts *bind.Tr
 		fullDetails.RplRecoveryAvailable = (fullDetails.IsCleared && hasRemainingRpl && !fullDetails.RplRecovered)
 	}
 	data.Lots = details
-	return nil
+	return types.ResponseStatus_Success, nil
 }

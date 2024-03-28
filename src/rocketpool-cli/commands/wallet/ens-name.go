@@ -25,13 +25,16 @@ func setEnsName(c *cli.Context, name string) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to confirm your node's ENS name?",
 		"setting ENS name",
 		"Setting ENS name...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	fmt.Printf("The ENS name associated with your node account is now '%s'.\n\n", name)

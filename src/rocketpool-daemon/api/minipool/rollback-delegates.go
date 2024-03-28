@@ -47,10 +47,14 @@ type minipoolRollbackDelegatesContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolRollbackDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+func (c *minipoolRollbackDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "rollback-delegate")
 }
 
-func (c *minipoolRollbackDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return mp.Common().DelegateRollback(opts)
+func (c *minipoolRollbackDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {
+	txInfo, err := mp.Common().DelegateRollback(opts)
+	if err != nil {
+		return types.ResponseStatus_Error, nil, err
+	}
+	return types.ResponseStatus_Success, txInfo, nil
 }

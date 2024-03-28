@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -47,23 +48,23 @@ type nodeInitializeFeeDistributorContext struct {
 	node *node.Node
 }
 
-func (c *nodeInitializeFeeDistributorContext) Initialize() error {
+func (c *nodeInitializeFeeDistributorContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeInitializeFeeDistributorContext) GetState(mc *batch.MultiCaller) {
@@ -73,7 +74,7 @@ func (c *nodeInitializeFeeDistributorContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *nodeInitializeFeeDistributorContext) PrepareData(data *api.NodeInitializeFeeDistributorData, opts *bind.TransactOpts) error {
+func (c *nodeInitializeFeeDistributorContext) PrepareData(data *api.NodeInitializeFeeDistributorData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.Distributor = c.node.DistributorAddress.Get()
 	data.IsInitialized = c.node.IsFeeDistributorInitialized.Get()
 	data.CanInitialize = !(data.IsInitialized)
@@ -82,9 +83,9 @@ func (c *nodeInitializeFeeDistributorContext) PrepareData(data *api.NodeInitiali
 	if data.CanInitialize {
 		txInfo, err := c.node.InitializeFeeDistributor(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for InitializeFeeDistributor: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for InitializeFeeDistributor: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -97,13 +97,16 @@ func cancelProposal(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to cancel proposal %d?", selectedProposal.ID),
 		"proposal cancellation",
 		"Canceling proposal...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

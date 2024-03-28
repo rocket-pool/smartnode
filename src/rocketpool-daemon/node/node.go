@@ -180,7 +180,7 @@ func (t *TaskLoop) Run() error {
 			}
 
 			// Load contracts
-			err = t.sp.LoadContractsIfStale()
+			err = t.sp.RefreshRocketPoolContracts()
 			if err != nil {
 				errorLog.Println(fmt.Sprintf("error loading contract bindings: %s", err.Error()))
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {

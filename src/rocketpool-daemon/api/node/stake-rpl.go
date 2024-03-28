@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -60,32 +61,32 @@ type nodeStakeRplContext struct {
 	allowance *big.Int
 }
 
-func (c *nodeStakeRplContext) Initialize() error {
+func (c *nodeStakeRplContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
 	}
 	c.rpl, err = tokens.NewTokenRpl(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating RPL binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating RPL binding: %w", err)
 	}
 	rns, err := c.rp.GetContract(rocketpool.ContractName_RocketNodeStaking)
 	if err != nil {
-		return fmt.Errorf("error creating RocketNodeStaking binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating RocketNodeStaking binding: %w", err)
 	}
 	c.nsAddress = rns.Address
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeStakeRplContext) GetState(mc *batch.MultiCaller) {
@@ -93,27 +94,28 @@ func (c *nodeStakeRplContext) GetState(mc *batch.MultiCaller) {
 	c.rpl.GetAllowance(mc, &c.allowance, c.nodeAddress, c.nsAddress)
 }
 
-func (c *nodeStakeRplContext) PrepareData(data *api.NodeStakeRplData, opts *bind.TransactOpts) error {
+func (c *nodeStakeRplContext) PrepareData(data *api.NodeStakeRplData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.InsufficientBalance = (c.amount.Cmp(c.balance) > 0)
 	data.Allowance = c.allowance
 	data.CanStake = !(data.InsufficientBalance)
 
 	if data.CanStake {
-		// Check allowance
-		if c.amount.Cmp(c.allowance) > 0 {
-			approvalAmount := big.NewInt(0).Sub(c.amount, c.allowance)
+		if c.allowance.Cmp(c.amount) < 0 {
+			// Do the approve TX if needed
+			approvalAmount := getMaxApproval()
 			txInfo, err := c.rpl.Approve(c.nsAddress, approvalAmount, opts)
 			if err != nil {
-				return fmt.Errorf("error getting TX info to approve increasing RPL's allowance: %w", err)
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info to approve increasing RPL's allowance: %w", err)
 			}
 			data.ApproveTxInfo = txInfo
+		} else {
+			// Just do the stake
+			txInfo, err := c.node.StakeRpl(c.amount, opts)
+			if err != nil {
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for StakeRpl: %w", err)
+			}
+			data.StakeTxInfo = txInfo
 		}
-
-		txInfo, err := c.node.StakeRpl(c.amount, opts)
-		if err != nil {
-			return fmt.Errorf("error getting TX info for StakeRpl: %w", err)
-		}
-		data.StakeTxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

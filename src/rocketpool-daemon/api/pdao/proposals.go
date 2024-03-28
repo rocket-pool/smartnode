@@ -9,11 +9,12 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -55,22 +56,27 @@ type protocolDaoProposalsContext struct {
 	pdaoMgr *protocol.ProtocolDaoManager
 }
 
-func (c *protocolDaoProposalsContext) Initialize() error {
+func (c *protocolDaoProposalsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
+	}
+
 	// Bindings
-	var err error
 	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node binding: %w", err)
 	}
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoProposalsContext) GetState(mc *batch.MultiCaller) {
@@ -80,11 +86,11 @@ func (c *protocolDaoProposalsContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *protocolDaoProposalsContext) PrepareData(data *api.ProtocolDaoProposalsData, opts *bind.TransactOpts) error {
+func (c *protocolDaoProposalsContext) PrepareData(data *api.ProtocolDaoProposalsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the proposals
 	props, err := c.pdaoMgr.GetProposals(c.pdaoMgr.ProposalCount.Formatted(), true, nil)
 	if err != nil {
-		return fmt.Errorf("error getting Protocol DAO proposals: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting Protocol DAO proposals: %w", err)
 	}
 
 	// Convert them to API proposals
@@ -123,14 +129,14 @@ func (c *protocolDaoProposalsContext) PrepareData(data *api.ProtocolDaoProposals
 	}
 
 	// Get the node's vote directions
-	nodeVoteDirs := make([]func() types.VoteDirection, len(props))
+	nodeVoteDirs := make([]func() rptypes.VoteDirection, len(props))
 	if c.node.Exists.Get() {
 		err = c.rp.BatchQuery(len(props), nodeVoteBatchSize, func(mc *batch.MultiCaller, i int) error {
 			nodeVoteDirs[i] = props[i].GetAddressVoteDirection(mc, c.nodeAddress)
 			return nil
 		}, nil)
 		if err != nil {
-			return fmt.Errorf("error getting node %s votes: %w", c.nodeAddress.Hex(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting node %s votes: %w", c.nodeAddress.Hex(), err)
 		}
 	}
 	for i := range returnProps {
@@ -139,5 +145,5 @@ func (c *protocolDaoProposalsContext) PrepareData(data *api.ProtocolDaoProposals
 
 	// Return
 	data.Proposals = returnProps
-	return nil
+	return types.ResponseStatus_Success, nil
 }

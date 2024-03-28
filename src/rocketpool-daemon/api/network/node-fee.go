@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -49,27 +50,27 @@ type networkFeeContext struct {
 	networkMgr *network.NetworkManager
 }
 
-func (c *networkFeeContext) Initialize() error {
+func (c *networkFeeContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	c.networkMgr, err = network.NewNetworkManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating network manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating network manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *networkFeeContext) GetState(mc *batch.MultiCaller) {
@@ -81,10 +82,10 @@ func (c *networkFeeContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *networkFeeContext) PrepareData(data *api.NetworkNodeFeeData, opts *bind.TransactOpts) error {
+func (c *networkFeeContext) PrepareData(data *api.NetworkNodeFeeData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.NodeFee = c.networkMgr.NodeFee.Raw()
 	data.MinNodeFee = c.pSettings.Network.MinimumNodeFee.Raw()
 	data.TargetNodeFee = c.pSettings.Network.TargetNodeFee.Raw()
 	data.MaxNodeFee = c.pSettings.Network.MaximumNodeFee.Raw()
-	return nil
+	return types.ResponseStatus_Success, nil
 }

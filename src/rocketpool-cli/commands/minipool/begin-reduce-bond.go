@@ -136,7 +136,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 	}
 
 	// Run the TXs
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to begin bond reduction for %d minipools from 16 ETH to 8 ETH?", len(selectedMinipools)),
 		func(i int) string {
 			return fmt.Sprintf("begin-bond-reduce for minipool %s", selectedMinipools[i].Address.Hex())
@@ -145,6 +145,9 @@ func beginReduceBondAmount(c *cli.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

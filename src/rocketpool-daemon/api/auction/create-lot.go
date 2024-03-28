@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -52,31 +53,31 @@ type auctionCreateContext struct {
 	networkMgr *network.NetworkManager
 }
 
-func (c *auctionCreateContext) Initialize() error {
+func (c *auctionCreateContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.auctionMgr, err = auction.NewAuctionManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating auction manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating auction manager binding: %w", err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	c.networkMgr, err = network.NewNetworkManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating network prices binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating network prices binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *auctionCreateContext) GetState(mc *batch.MultiCaller) {
@@ -88,7 +89,7 @@ func (c *auctionCreateContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *auctionCreateContext) PrepareData(data *api.AuctionCreateLotData, opts *bind.TransactOpts) error {
+func (c *auctionCreateContext) PrepareData(data *api.AuctionCreateLotData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Check the balance requirement
 	lotMinimumRplAmount := big.NewInt(0).Mul(c.pSettings.Auction.LotMinimumEthValue.Get(), eth.EthToWei(1))
 	lotMinimumRplAmount.Quo(lotMinimumRplAmount, c.networkMgr.RplPrice.Raw())
@@ -103,9 +104,9 @@ func (c *auctionCreateContext) PrepareData(data *api.AuctionCreateLotData, opts 
 	if data.CanCreate && opts != nil {
 		txInfo, err := c.auctionMgr.CreateLot(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for CreateLot: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for CreateLot: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

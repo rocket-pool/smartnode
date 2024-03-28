@@ -74,7 +74,7 @@ func recoverWallet(c *cli.Context) error {
 
 	// Check for custom keys
 	if !skipValidatorKeyRecovery {
-		customKeyPasswordFile, err := promptForCustomKeyPasswords(rp, cfg, false)
+		customKeyPasswordFile, err := promptForCustomKeyPasswords(cfg, false)
 		if err != nil {
 			return err
 		}
@@ -133,7 +133,7 @@ func recoverWallet(c *cli.Context) error {
 		derivationPathString := c.String(derivationPathFlag.Name)
 		var derivationPath *string
 		if derivationPathString != "" {
-			fmt.Printf("Using a custom derivation path (%s).\n", derivationPath)
+			fmt.Printf("Using a custom derivation path (%s).\n", derivationPathString)
 			derivationPath = &derivationPathString
 		}
 

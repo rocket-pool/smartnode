@@ -132,13 +132,16 @@ func bidOnLot(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Index),
 		fmt.Sprintf("bid on lot %d", selectedLot.Index),
 		fmt.Sprintf("Bidding on lot %d...", selectedLot.Index),
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

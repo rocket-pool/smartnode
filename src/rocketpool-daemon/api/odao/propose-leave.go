@@ -1,7 +1,6 @@
 package odao
 
 import (
-	"context"
 	"fmt"
 	"net/url"
 	"time"
@@ -15,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -53,28 +53,28 @@ type oracleDaoProposeLeaveContext struct {
 	odaoMgr    *oracle.OracleDaoManager
 }
 
-func (c *oracleDaoProposeLeaveContext) Initialize() error {
+func (c *oracleDaoProposeLeaveContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnOracleDao()
+	status, err := sp.RequireOnOracleDao()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
 	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
 	c.oSettings = c.odaoMgr.Settings
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *oracleDaoProposeLeaveContext) GetState(mc *batch.MultiCaller) {
@@ -88,11 +88,12 @@ func (c *oracleDaoProposeLeaveContext) GetState(mc *batch.MultiCaller) {
 	c.oSettings.Proposal.CooldownTime.AddToQuery(mc)
 }
 
-func (c *oracleDaoProposeLeaveContext) PrepareData(data *api.OracleDaoProposeLeaveData, opts *bind.TransactOpts) error {
+func (c *oracleDaoProposeLeaveContext) PrepareData(data *api.OracleDaoProposeLeaveData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the timestamp of the latest block
-	latestHeader, err := c.rp.Client.HeaderByNumber(context.Background(), nil)
+	ctx := c.handler.serviceProvider.GetContext()
+	latestHeader, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
-		return fmt.Errorf("error getting latest block header: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block header: %w", err)
 	}
 	currentTime := time.Unix(int64(latestHeader.Time), 0)
 	cooldownTime := c.oSettings.Proposal.CooldownTime.Formatted()
@@ -107,9 +108,9 @@ func (c *oracleDaoProposeLeaveContext) PrepareData(data *api.OracleDaoProposeLea
 		message := fmt.Sprintf("%s (%s) leaves", c.odaoMember.ID.Get(), c.odaoMember.Url.Get())
 		txInfo, err := c.odaoMgr.ProposeMemberLeave(message, c.nodeAddress, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for ProposeMemberLeave: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for ProposeMemberLeave: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

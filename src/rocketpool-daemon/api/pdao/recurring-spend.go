@@ -12,6 +12,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
@@ -72,7 +73,7 @@ type protocolDaoProposeRecurringSpendContext struct {
 	pdaoMgr         *protocol.ProtocolDaoManager
 }
 
-func (c *protocolDaoProposeRecurringSpendContext) Initialize() error {
+func (c *protocolDaoProposeRecurringSpendContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
@@ -80,21 +81,21 @@ func (c *protocolDaoProposeRecurringSpendContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node binding: %w", err)
 	}
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoProposeRecurringSpendContext) GetState(mc *batch.MultiCaller) {
@@ -105,7 +106,7 @@ func (c *protocolDaoProposeRecurringSpendContext) GetState(mc *batch.MultiCaller
 	)
 }
 
-func (c *protocolDaoProposeRecurringSpendContext) PrepareData(data *api.ProtocolDaoGeneralProposeData, opts *bind.TransactOpts) error {
+func (c *protocolDaoProposeRecurringSpendContext) PrepareData(data *api.ProtocolDaoGeneralProposeData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
@@ -118,15 +119,15 @@ func (c *protocolDaoProposeRecurringSpendContext) PrepareData(data *api.Protocol
 	if data.CanPropose && opts != nil {
 		blockNumber, pollard, err := createPollard(ctx, c.rp, c.cfg, c.bc)
 		if err != nil {
-			return fmt.Errorf("error creating pollard for proposal creation: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}
 
 		message := fmt.Sprintf("recurring payment to %s", c.contractName)
 		txInfo, err := c.pdaoMgr.ProposeRecurringTreasurySpend(message, c.contractName, c.recipient, c.amountPerPeriod, c.periodLength, c.startTime, c.numberOfPeriods, blockNumber, pollard, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for ProposeRecurringTreasurySpend: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for ProposeRecurringTreasurySpend: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

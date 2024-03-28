@@ -38,13 +38,16 @@ func processQueue(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Do you want to process the queue?",
 		"processing queue",
 		"Processing queue...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

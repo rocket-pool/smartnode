@@ -31,13 +31,16 @@ func initializeFeeDistributor(c *cli.Context) error {
 	fmt.Printf("Your node's fee distributor contract will be created at address %s.\n\n", response.Data.Distributor.Hex())
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to initialize your fee distributor contract?",
 		"initializing fee distributor",
 		"Initializing fee distributor contract...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

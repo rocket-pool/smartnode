@@ -16,6 +16,7 @@ import (
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -62,36 +63,36 @@ type oracleDaoVoteContext struct {
 	hasVoted   bool
 }
 
-func (c *oracleDaoVoteContext) Initialize() error {
+func (c *oracleDaoVoteContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireOnOracleDao()
+	status, err := sp.RequireOnOracleDao()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating oracle DAO member binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oracle DAO member binding: %w", err)
 	}
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating proposal manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal manager binding: %w", err)
 	}
 	prop, err := c.dpm.CreateProposalFromID(c.id, nil)
 	if err != nil {
-		return fmt.Errorf("error creating proposal binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal binding: %w", err)
 	}
 	var success bool
 	c.prop, success = proposals.GetProposalAsOracle(prop)
 	if !success {
-		return fmt.Errorf("proposal %d is not an Oracle DAO proposal", c.id)
+		return types.ResponseStatus_InvalidChainState, fmt.Errorf("proposal %d is not an Oracle DAO proposal", c.id)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *oracleDaoVoteContext) GetState(mc *batch.MultiCaller) {
@@ -104,7 +105,7 @@ func (c *oracleDaoVoteContext) GetState(mc *batch.MultiCaller) {
 	c.prop.GetMemberHasVoted(mc, &c.hasVoted, c.nodeAddress)
 }
 
-func (c *oracleDaoVoteContext) PrepareData(data *api.OracleDaoVoteOnProposalData, opts *bind.TransactOpts) error {
+func (c *oracleDaoVoteContext) PrepareData(data *api.OracleDaoVoteOnProposalData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.DoesNotExist = (c.prop.ID > c.dpm.ProposalCount.Formatted())
 	data.InvalidState = (c.prop.State.Formatted() != rptypes.ProposalState_Active)
 	data.AlreadyVoted = c.hasVoted
@@ -115,9 +116,9 @@ func (c *oracleDaoVoteContext) PrepareData(data *api.OracleDaoVoteOnProposalData
 	if data.CanVote && opts != nil {
 		txInfo, err := c.prop.VoteOn(c.support, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for VoteOn: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for VoteOn: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

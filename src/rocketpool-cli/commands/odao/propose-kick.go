@@ -48,7 +48,7 @@ func proposeKick(c *cli.Context) error {
 			}
 		}
 		if !selectedMember.Exists {
-			return fmt.Errorf("The oracle DAO member %s does not exist.", selectedAddress.Hex())
+			return fmt.Errorf("the oracle DAO member %s does not exist", selectedAddress.Hex())
 		}
 	} else {
 		// Prompt for member selection
@@ -69,7 +69,7 @@ func proposeKick(c *cli.Context) error {
 		// Parse amount
 		fineAmount, err := strconv.ParseFloat(c.String(kickFineFlag.Name), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid fine amount '%s': %w", c.String(kickFineFlag.Name), err)
+			return fmt.Errorf("invalid fine amount '%s': %w", c.String(kickFineFlag.Name), err)
 		}
 		fineAmountWei = eth.EthToWei(fineAmount)
 	} else {
@@ -77,7 +77,7 @@ func proposeKick(c *cli.Context) error {
 		inputAmount := utils.Prompt(fmt.Sprintf("Please enter an RPL fine amount to propose (max %.6f RPL):", math.RoundDown(eth.WeiToEth(selectedMember.RplBondAmount), 6)), "^\\d+(\\.\\d+)?$", "Invalid amount")
 		fineAmount, err := strconv.ParseFloat(inputAmount, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid fine amount '%s': %w", inputAmount, err)
+			return fmt.Errorf("invalid fine amount '%s': %w", inputAmount, err)
 		}
 		fineAmountWei = eth.EthToWei(fineAmount)
 	}
@@ -101,13 +101,16 @@ func proposeKick(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to submit this proposal?",
 		"proposing kicking Oracle DAO member",
 		"Proposing kick of %s from the oracle DAO...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

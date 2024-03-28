@@ -57,7 +57,7 @@ func voteOnProposal(c *cli.Context) error {
 			}
 		}
 		if !found {
-			return fmt.Errorf("Proposal %d can not be voted on.", selectedId)
+			return fmt.Errorf("proposal %d can not be voted on", selectedId)
 		}
 	} else {
 		// Prompt for proposal selection
@@ -151,11 +151,17 @@ func voteOnProposal(c *cli.Context) error {
 	fmt.Printf("You currently have %s voting power.\n\n", response.Data.VotingPower.String())
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to %s '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID),
 		"voting on proposal",
 		"Submitting vote...",
 	)
+	if err != nil {
+		return err
+	}
+	if !validated {
+		return nil
+	}
 
 	// Log & return
 	fmt.Printf("Successfully %s '%s' for proposal %d.\n", actionPast, voteDirectionLabel, selectedProposal.ID)

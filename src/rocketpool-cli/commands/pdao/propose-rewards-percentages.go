@@ -96,13 +96,16 @@ func proposeRewardsPercentages(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to propose new rewards allocations?",
 		"new rewards allocation proposal",
 		"Proposing new allocations...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

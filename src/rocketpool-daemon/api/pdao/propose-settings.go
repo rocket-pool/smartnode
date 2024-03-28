@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
@@ -65,7 +66,7 @@ type protocolDaoProposeSettingContext struct {
 	pdaoMgr            *protocol.ProtocolDaoManager
 }
 
-func (c *protocolDaoProposeSettingContext) Initialize() error {
+func (c *protocolDaoProposeSettingContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
@@ -73,21 +74,21 @@ func (c *protocolDaoProposeSettingContext) Initialize() error {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node binding: %w", err)
 	}
 	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoProposeSettingContext) GetState(mc *batch.MultiCaller) {
@@ -98,7 +99,7 @@ func (c *protocolDaoProposeSettingContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *protocolDaoProposeSettingContext) PrepareData(data *api.ProtocolDaoProposeSettingData, opts *bind.TransactOpts) error {
+func (c *protocolDaoProposeSettingContext) PrepareData(data *api.ProtocolDaoProposeSettingData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
 	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()
@@ -117,10 +118,10 @@ func (c *protocolDaoProposeSettingContext) PrepareData(data *api.ProtocolDaoProp
 	if data.CanPropose && opts != nil {
 		validSetting, txInfo, parseErr, createErr := c.createProposalTx(category, opts)
 		if parseErr != nil {
-			return parseErr
+			return types.ResponseStatus_InvalidArguments, parseErr
 		}
 		if createErr != nil {
-			return fmt.Errorf("error getting TX info for ProposeSet: %w", createErr)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for ProposeSet: %w", createErr)
 		}
 		if !validSetting {
 			data.UnknownSetting = true
@@ -129,7 +130,7 @@ func (c *protocolDaoProposeSettingContext) PrepareData(data *api.ProtocolDaoProp
 			data.TxInfo = txInfo
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.SettingsCategory, opts *bind.TransactOpts) (bool, *eth.TransactionInfo, error, error) {

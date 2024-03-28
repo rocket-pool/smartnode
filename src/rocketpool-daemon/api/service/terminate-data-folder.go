@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -49,19 +50,19 @@ type serviceTerminateDataFolderContext struct {
 
 // Deletes the contents of the data folder including the wallet file, password file, and all validator keys.
 // Don't use this unless you have a very good reason to do it (such as switching from a Testnet to Mainnet).
-func (c *serviceTerminateDataFolderContext) PrepareData(data *api.ServiceTerminateDataFolderData, opts *bind.TransactOpts) error {
+func (c *serviceTerminateDataFolderContext) PrepareData(data *api.ServiceTerminateDataFolderData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Check if it exists
 	_, err := os.Stat(dataFolder)
 	if os.IsNotExist(err) {
 		data.FolderExisted = false
-		return nil
+		return types.ResponseStatus_Success, nil
 	}
 	data.FolderExisted = true
 
 	// Traverse it
 	files, err := os.ReadDir(dataFolder)
 	if err != nil {
-		return fmt.Errorf("error enumerating files: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error enumerating files: %w", err)
 	}
 
 	// Delete the children
@@ -75,7 +76,7 @@ func (c *serviceTerminateDataFolderContext) PrepareData(data *api.ServiceTermina
 				err = os.Remove(fullPath)
 			}
 			if err != nil {
-				return fmt.Errorf("error removing [%s]: %w", file.Name(), err)
+				return types.ResponseStatus_Error, fmt.Errorf("error removing [%s]: %w", file.Name(), err)
 			}
 		}
 	}
@@ -84,7 +85,7 @@ func (c *serviceTerminateDataFolderContext) PrepareData(data *api.ServiceTermina
 	validatorsDir := filepath.Join(dataFolder, config.ValidatorsFolderName)
 	files, err = os.ReadDir(validatorsDir)
 	if err != nil {
-		return fmt.Errorf("error enumerating validator files: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error enumerating validator files: %w", err)
 	}
 
 	// Delete the children
@@ -96,9 +97,9 @@ func (c *serviceTerminateDataFolderContext) PrepareData(data *api.ServiceTermina
 			err = os.Remove(fullPath)
 		}
 		if err != nil {
-			return fmt.Errorf("error removing [%s]: %w", file.Name(), err)
+			return types.ResponseStatus_Error, fmt.Errorf("error removing [%s]: %w", file.Name(), err)
 		}
 	}
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

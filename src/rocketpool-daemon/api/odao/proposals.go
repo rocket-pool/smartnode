@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -55,37 +56,37 @@ type oracleDaoProposalsContext struct {
 	dpm     *proposals.DaoProposalManager
 }
 
-func (c *oracleDaoProposalsContext) Initialize() error {
+func (c *oracleDaoProposalsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, c.hasAddress = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.odaoMgr, err = oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *oracleDaoProposalsContext) GetState(mc *batch.MultiCaller) {
 	c.dpm.ProposalCount.AddToQuery(mc)
 }
 
-func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData, opts *bind.TransactOpts) error {
+func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	odaoProps, _, err := c.dpm.GetProposals(c.dpm.ProposalCount.Formatted(), true, nil)
 	if err != nil {
-		return fmt.Errorf("error getting proposals: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting proposals: %w", err)
 	}
 
 	// Get the basic details
@@ -121,8 +122,8 @@ func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData
 			return nil
 		}, nil)
 		if err != nil {
-			return fmt.Errorf("error getting node vote status on proposals: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting node vote status on proposals: %w", err)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

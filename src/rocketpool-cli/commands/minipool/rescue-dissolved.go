@@ -200,13 +200,16 @@ func rescueDissolved(c *cli.Context) error {
 
 	// Rescue minipool
 	txInfo := response.Data.TxInfos[0]
-	err = tx.HandleTx(c, rp, txInfo,
+	validated, err := tx.HandleTx(c, rp, txInfo,
 		fmt.Sprintf("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()),
 		fmt.Sprintf("rescue of minipool %s", selectedMinipool.Address.Hex()),
 		fmt.Sprintf("Depositing ETH to rescue minipool %s...\n", selectedMinipool.Address.Hex()),
 	)
 	if err != nil {
 		return fmt.Errorf("could not rescue minipool %s: %s\n", selectedMinipool.Address.Hex(), err.Error())
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

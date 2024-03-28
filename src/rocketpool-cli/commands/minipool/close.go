@@ -169,7 +169,7 @@ func closeMinipools(c *cli.Context) error {
 	}
 
 	// Run the TXs
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to close %d minipools?", len(selectedMinipools)),
 		func(i int) string {
 			return fmt.Sprintf("closing minipool %s", selectedMinipools[i].Address.Hex())
@@ -178,6 +178,9 @@ func closeMinipools(c *cli.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

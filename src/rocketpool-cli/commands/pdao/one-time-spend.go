@@ -81,13 +81,16 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to propose this one-time spend of the Protocol DAO treasury?",
 		"one-time-spend proposal",
 		"Proposing one-time spend...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -56,39 +57,39 @@ type nodeSetPrimaryWithdrawalAddressContext struct {
 	node    *node.Node
 }
 
-func (c *nodeSetPrimaryWithdrawalAddressContext) Initialize() error {
+func (c *nodeSetPrimaryWithdrawalAddressContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeSetPrimaryWithdrawalAddressContext) GetState(mc *batch.MultiCaller) {
 	c.node.PrimaryWithdrawalAddress.AddToQuery(mc)
 }
 
-func (c *nodeSetPrimaryWithdrawalAddressContext) PrepareData(data *api.NodeSetPrimaryWithdrawalAddressData, opts *bind.TransactOpts) error {
+func (c *nodeSetPrimaryWithdrawalAddressContext) PrepareData(data *api.NodeSetPrimaryWithdrawalAddressData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.AddressAlreadySet = (c.node.PrimaryWithdrawalAddress.Get() != c.nodeAddress)
 	data.CanSet = !(data.AddressAlreadySet)
 
 	if data.CanSet {
 		txInfo, err := c.node.SetPrimaryWithdrawalAddress(c.address, c.confirm, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for SetPrimaryWithdrawalAddress: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for SetPrimaryWithdrawalAddress: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

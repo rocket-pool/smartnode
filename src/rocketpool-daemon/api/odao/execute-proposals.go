@@ -62,35 +62,35 @@ type oracleDaoExecuteProposalsContext struct {
 	proposals []*proposals.OracleDaoProposal
 }
 
-func (c *oracleDaoExecuteProposalsContext) Initialize() error {
+func (c *oracleDaoExecuteProposalsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating proposal manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal manager binding: %w", err)
 	}
 	c.proposals = make([]*proposals.OracleDaoProposal, len(c.ids))
 	for i, id := range c.ids {
 		prop, err := c.dpm.CreateProposalFromID(id, nil)
 		if err != nil {
-			return fmt.Errorf("error creating proposal binding: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating proposal binding: %w", err)
 		}
 		var success bool
 		c.proposals[i], success = proposals.GetProposalAsOracle(prop)
 		if !success {
-			return fmt.Errorf("proposal %d is not an Oracle DAO proposal", id)
+			return types.ResponseStatus_InvalidChainState, fmt.Errorf("proposal %d is not an Oracle DAO proposal", id)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *oracleDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
@@ -102,7 +102,7 @@ func (c *oracleDaoExecuteProposalsContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch[api.OracleDaoExecuteProposalData], opts *bind.TransactOpts) error {
+func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *types.DataBatch[api.OracleDaoExecuteProposalData], opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	dataBatch.Batch = make([]api.OracleDaoExecuteProposalData, len(c.ids))
 	for i, prop := range c.proposals {
 
@@ -117,10 +117,10 @@ func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *types.DataBatc
 		if data.CanExecute && opts != nil {
 			txInfo, err := prop.Execute(opts)
 			if err != nil {
-				return fmt.Errorf("error getting TX info for Execute: %w", err)
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Execute: %w", err)
 			}
 			data.TxInfo = txInfo
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

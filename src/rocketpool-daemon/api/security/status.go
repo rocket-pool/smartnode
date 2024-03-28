@@ -17,6 +17,7 @@ import (
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -60,29 +61,35 @@ type securityStatusContext struct {
 	scMember *security.SecurityCouncilMember
 }
 
-func (c *securityStatusContext) Initialize() error {
+func (c *securityStatusContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
+	}
+
 	// Bindings
 	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, pdaoMgr.Settings)
 	if err != nil {
-		return fmt.Errorf("error creating security council manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council manager binding: %w", err)
 	}
 	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating security council member binding for %s: %w", c.nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council member binding for %s: %w", c.nodeAddress.Hex(), err)
 	}
 	c.dpm, err = proposals.NewDaoProposalManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating DAO proposal manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating DAO proposal manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *securityStatusContext) GetState(mc *batch.MultiCaller) {
@@ -96,7 +103,7 @@ func (c *securityStatusContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *securityStatusContext) PrepareData(data *api.SecurityStatusData, opts *bind.TransactOpts) error {
+func (c *securityStatusContext) PrepareData(data *api.SecurityStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get member stats
 	data.IsMember = c.scMember.Exists.Get()
 	if data.IsMember {
@@ -112,14 +119,14 @@ func (c *securityStatusContext) PrepareData(data *api.SecurityStatusData, opts *
 	propCount := c.dpm.ProposalCount.Formatted()
 	_, props, err := c.dpm.GetProposals(propCount, false, nil)
 	if err != nil {
-		return fmt.Errorf("error getting proposals: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting proposals: %w", err)
 	}
 	err = c.rp.BatchQuery(int(propCount), propStateBatchSize, func(mc *batch.MultiCaller, i int) error {
 		props[i].State.AddToQuery(mc)
 		return nil
 	}, nil)
 	if err != nil {
-		return fmt.Errorf("error getting proposal states: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting proposal states: %w", err)
 	}
 
 	data.ProposalCounts.Total = int(propCount)
@@ -141,5 +148,5 @@ func (c *securityStatusContext) PrepareData(data *api.SecurityStatusData, opts *
 			data.ProposalCounts.Succeeded++
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

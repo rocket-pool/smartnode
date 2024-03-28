@@ -33,7 +33,7 @@ func nodeSwapRpl(c *cli.Context) error {
 		// Parse amount
 		swapAmount, err := strconv.ParseFloat(c.String("amount"), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid swap amount '%s': %w", c.String("amount"), err)
+			return fmt.Errorf("invalid swap amount '%s': %w", c.String("amount"), err)
 		}
 		amountWei = eth.EthToWei(swapAmount)
 	} else {
@@ -52,7 +52,7 @@ func nodeSwapRpl(c *cli.Context) error {
 			inputAmount := utils.Prompt("Please enter an amount of old RPL to swap:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 			swapAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
-				return fmt.Errorf("Invalid swap amount '%s': %w", inputAmount, err)
+				return fmt.Errorf("invalid swap amount '%s': %w", inputAmount, err)
 			}
 			amountWei = eth.EthToWei(swapAmount)
 		}

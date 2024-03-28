@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -53,27 +54,32 @@ type securityJoinContext struct {
 	pSettings *protocol.ProtocolDaoSettings
 }
 
-func (c *securityJoinContext) Initialize() error {
+func (c *securityJoinContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
+	// Requirements
+	status, err := sp.RequireNodeRegistered()
+	if err != nil {
+		return status, err
+	}
+
 	// Bindings
-	var err error
 	c.scMember, err = security.NewSecurityCouncilMember(c.rp, c.nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating security council member binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council member binding: %w", err)
 	}
 	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating protocol DAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
 	c.pSettings = pdaoMgr.Settings
 	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, c.pSettings)
 	if err != nil {
-		return fmt.Errorf("error creating security council manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating security council manager binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *securityJoinContext) GetState(mc *batch.MultiCaller) {
@@ -84,7 +90,7 @@ func (c *securityJoinContext) GetState(mc *batch.MultiCaller) {
 	)
 }
 
-func (c *securityJoinContext) PrepareData(data *api.SecurityJoinData, opts *bind.TransactOpts) error {
+func (c *securityJoinContext) PrepareData(data *api.SecurityJoinData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	invitedTime := c.scMember.InvitedTime.Formatted()
 	actionTime := c.pSettings.Security.ProposalActionTime.Formatted()
 	data.ProposalExpired = time.Until(invitedTime.Add(actionTime)) < 0
@@ -95,9 +101,9 @@ func (c *securityJoinContext) PrepareData(data *api.SecurityJoinData, opts *bind
 	if data.CanJoin && opts != nil {
 		txInfo, err := c.scMgr.Join(opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Join: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Join: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

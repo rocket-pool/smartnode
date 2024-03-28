@@ -40,7 +40,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		// Parse amount
 		withdrawalAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid withdrawal amount '%s': %w", c.String(amountFlag), err)
+			return fmt.Errorf("invalid withdrawal amount '%s': %w", c.String(amountFlag), err)
 		}
 		amountWei = eth.EthToWei(withdrawalAmount)
 	} else {
@@ -58,7 +58,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 				inputAmount := utils.Prompt("Please enter an amount of staked RPL to withdraw:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 				withdrawalAmount, err := strconv.ParseFloat(inputAmount, 64)
 				if err != nil {
-					return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
+					return fmt.Errorf("invalid withdrawal amount '%s': %w", inputAmount, err)
 				}
 				amountWei = eth.EthToWei(withdrawalAmount)
 
@@ -101,13 +101,16 @@ func nodeWithdrawRpl(c *cli.Context) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6)),
 		"RPL withdrawal",
 		"Withdrawing RPL...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

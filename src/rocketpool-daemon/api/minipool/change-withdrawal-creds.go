@@ -62,38 +62,35 @@ type minipoolChangeCredsContext struct {
 	mp              minipool.IMinipool
 }
 
-func (c *minipoolChangeCredsContext) Initialize() error {
+func (c *minipoolChangeCredsContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
-	)
+	err := sp.RequireBeaconClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	mpMgr, err := minipool.NewMinipoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool manager binding: %w", err)
 	}
 	c.mp, err = mpMgr.CreateMinipoolFromAddress(c.minipoolAddress, false, nil)
 	if err != nil {
-		return fmt.Errorf("error creating minipool binding from address: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool binding from address: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolChangeCredsContext) GetState(mc *batch.MultiCaller) {
 	c.mp.Common().Pubkey.AddToQuery(mc)
 }
 
-func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	// Get minipool validator pubkey
 	pubkey := c.mp.Common().Pubkey.Get()
@@ -105,7 +102,7 @@ func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *
 	for index < validatorKeyRetrievalLimit {
 		key, err := nmc_validator.GetPrivateKey(c.mnemonic, validatorKeyPath)
 		if err != nil {
-			return fmt.Errorf("error deriving key for index %d: %w", index, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error deriving key for index %d: %w", index, err)
 		}
 		candidatePubkey := key.PublicKey().Marshal()
 		if bytes.Equal(pubkey[:], candidatePubkey) {
@@ -115,43 +112,43 @@ func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *
 		index++
 	}
 	if validatorKey == nil {
-		return fmt.Errorf("couldn't find the validator key for this mnemonic after %d tries", validatorKeyRetrievalLimit)
+		return types.ResponseStatus_ResourceNotFound, fmt.Errorf("couldn't find the validator key for this mnemonic after %d tries", validatorKeyRetrievalLimit)
 	}
 
 	// Get the withdrawal creds from this index
 	withdrawalKey, err := nmc_validator.GetWithdrawalKey(c.mnemonic, validatorKeyPath)
 	if err != nil {
-		return fmt.Errorf("error getting withdrawal key for validator: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting withdrawal key for validator: %w", err)
 	}
 
 	// Get beacon head
 	head, err := c.bc.GetBeaconHead(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting Beacon head: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting Beacon head: %w", err)
 	}
 
 	// Get the BlsToExecutionChange signature domain
 	signatureDomain, err := c.bc.GetDomainData(ctx, eth2types.DomainBlsToExecutionChange[:], head.Epoch, true)
 	if err != nil {
-		return fmt.Errorf("error getting signature domain: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting signature domain: %w", err)
 	}
 
 	// Get validator index
 	validatorIndex, err := c.bc.GetValidatorIndex(ctx, pubkey)
 	if err != nil {
-		return fmt.Errorf("error getting validator index: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting validator index: %w", err)
 	}
 
 	// Get signed withdrawal creds change message
 	signature, err := nmc_validator.GetSignedWithdrawalCredsChangeMessage(withdrawalKey, validatorIndex, c.minipoolAddress, signatureDomain)
 	if err != nil {
-		return fmt.Errorf("error getting signed withdrawal credentials change message: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting signed withdrawal credentials change message: %w", err)
 	}
 
 	// Broadcast withdrawal creds change message
 	withdrawalPubkey := beacon.ValidatorPubkey(withdrawalKey.PublicKey().Marshal())
 	if err := c.bc.ChangeWithdrawalCredentials(ctx, validatorIndex, withdrawalPubkey, c.minipoolAddress, signature); err != nil {
-		return fmt.Errorf("error submitting withdrawal credentials change message: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error submitting withdrawal credentials change message: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

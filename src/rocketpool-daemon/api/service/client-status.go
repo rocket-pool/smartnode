@@ -6,6 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -38,7 +39,7 @@ type serviceClientStatusContext struct {
 	handler *ServiceHandler
 }
 
-func (c *serviceClientStatusContext) PrepareData(data *api.ServiceClientStatusData, opts *bind.TransactOpts) error {
+func (c *serviceClientStatusContext) PrepareData(data *api.ServiceClientStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	ec := sp.GetEthClient()
 	bc := sp.GetBeaconClient()
@@ -52,5 +53,5 @@ func (c *serviceClientStatusContext) PrepareData(data *api.ServiceClientStatusDa
 	bcMgrStatus := bc.CheckStatus(ctx)
 	data.BcManagerStatus = *bcMgrStatus
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

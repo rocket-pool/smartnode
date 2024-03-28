@@ -43,13 +43,16 @@ func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want %s to represent your node in Rocket Pool governance proposals?", addressString),
 		"setting delegate",
 		"Setting delegate...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

@@ -34,7 +34,6 @@ func NewNodeHandler(serviceProvider *services.ServiceProvider) *NodeHandler {
 		&nodeInitializeFeeDistributorContextFactory{h},
 		&nodeRegisterContextFactory{h},
 		&nodeResolveEnsContextFactory{h},
-		&nodeSendMessageContextFactory{h},
 		&nodeSendContextFactory{h},
 		&nodeSetPrimaryWithdrawalAddressContextFactory{h},
 		&nodeSetRplLockingAllowedContextFactory{h},

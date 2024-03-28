@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/node-manager-core/wallet"
@@ -57,13 +58,13 @@ type walletInitializeContext struct {
 	saveWallet     bool
 }
 
-func (c *walletInitializeContext) PrepareData(data *api.WalletInitializeData, opts *bind.TransactOpts) error {
+func (c *walletInitializeContext) PrepareData(data *api.WalletInitializeData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 
 	// Parse the derivation path
 	path, err := nodewallet.GetDerivationPath(wallet.DerivationPath(c.derivationPath))
 	if err != nil {
-		return err
+		return types.ResponseStatus_InvalidArguments, err
 	}
 
 	var w *nodewallet.Wallet
@@ -72,12 +73,12 @@ func (c *walletInitializeContext) PrepareData(data *api.WalletInitializeData, op
 		// Make a dummy wallet for the sake of creating a mnemonic and derived address
 		mnemonic, err = nodewallet.GenerateNewMnemonic()
 		if err != nil {
-			return fmt.Errorf("error generating new mnemonic: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error generating new mnemonic: %w", err)
 		}
 
 		w, err = nodewallet.TestRecovery(path, uint(c.index), mnemonic, 0)
 		if err != nil {
-			return fmt.Errorf("error generating wallet from new mnemonic: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error generating wallet from new mnemonic: %w", err)
 		}
 	} else {
 		// Initialize the daemon wallet
@@ -86,20 +87,20 @@ func (c *walletInitializeContext) PrepareData(data *api.WalletInitializeData, op
 		// Requirements
 		status, err := w.GetStatus()
 		if err != nil {
-			return fmt.Errorf("error getting wallet status: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting wallet status: %w", err)
 		}
 		if status.Wallet.IsOnDisk {
-			return fmt.Errorf("a wallet is already present")
+			return types.ResponseStatus_ResourceConflict, fmt.Errorf("a wallet is already present")
 		}
 
 		// Create the new wallet
 		mnemonic, err = w.CreateNewLocalWallet(path, uint(c.index), c.password, c.savePassword)
 		if err != nil {
-			return fmt.Errorf("error initializing new wallet: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error initializing new wallet: %w", err)
 		}
 	}
 
 	data.Mnemonic = mnemonic
 	data.AccountAddress, _ = w.GetAddress()
-	return nil
+	return types.ResponseStatus_Success, nil
 }

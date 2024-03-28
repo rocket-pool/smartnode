@@ -1,7 +1,6 @@
 package auction
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"math/big"
@@ -60,14 +59,14 @@ type auctionRecoverContext struct {
 	lots    []*auction.AuctionLot
 }
 
-func (c *auctionRecoverContext) Initialize() error {
+func (c *auctionRecoverContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
@@ -75,10 +74,10 @@ func (c *auctionRecoverContext) Initialize() error {
 	for i, index := range c.indices {
 		c.lots[i], err = auction.NewAuctionLot(c.rp, index)
 		if err != nil {
-			return fmt.Errorf("error creating lot %d binding: %w", index, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error creating lot %d binding: %w", index, err)
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *auctionRecoverContext) GetState(mc *batch.MultiCaller) {
@@ -92,11 +91,12 @@ func (c *auctionRecoverContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *auctionRecoverContext) PrepareData(dataBatch *types.DataBatch[api.AuctionRecoverRplFromLotData], opts *bind.TransactOpts) error {
+func (c *auctionRecoverContext) PrepareData(dataBatch *types.DataBatch[api.AuctionRecoverRplFromLotData], opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the current block
-	currentBlock, err := c.rp.Client.BlockNumber(context.Background())
+	ctx := c.handler.serviceProvider.GetContext()
+	currentBlock, err := c.rp.Client.BlockNumber(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting current EL block: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting current EL block: %w", err)
 	}
 
 	dataBatch.Batch = make([]api.AuctionRecoverRplFromLotData, len(c.indices))
@@ -113,10 +113,10 @@ func (c *auctionRecoverContext) PrepareData(dataBatch *types.DataBatch[api.Aucti
 		if data.CanRecover && opts != nil {
 			txInfo, err := lot.RecoverUnclaimedRpl(opts)
 			if err != nil {
-				return fmt.Errorf("error getting TX info for RecoverUnclaimedRpl: %w", err)
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for RecoverUnclaimedRpl: %w", err)
 			}
 			data.TxInfo = txInfo
 		}
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

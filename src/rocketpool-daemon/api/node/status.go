@@ -19,10 +19,11 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	ens "github.com/wealdtech/go-ens/v3"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/models"
@@ -85,7 +86,7 @@ type nodeStatusContext struct {
 	delegate     common.Address
 }
 
-func (c *nodeStatusContext) Initialize() error {
+func (c *nodeStatusContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.cfg = sp.GetConfig()
 	c.rp = sp.GetRocketPool()
@@ -97,49 +98,53 @@ func (c *nodeStatusContext) Initialize() error {
 	// Requirements
 	err := sp.RequireNodeAddress()
 	if err != nil {
-		return err
+		return types.ResponseStatus_AddressNotPresent, err
+	}
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
 	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
 	c.networkMgr, err = network.NewNetworkManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting network manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting network manager binding: %w", err)
 	}
 	c.mpMgr, err = minipool.NewMinipoolManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting minipool manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool manager binding: %w", err)
 	}
 	c.odaoMember, err = oracle.NewOracleDaoMember(c.rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating oracle DAO member %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oracle DAO member %s binding: %w", nodeAddress.Hex(), err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating oDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oDAO manager binding: %w", err)
 	}
 	c.oSettings = oMgr.Settings
 	c.rpl, err = tokens.NewTokenRpl(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating RPL token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating RPL token binding: %w", err)
 	}
 	c.fsrpl, err = tokens.NewTokenRplFixedSupply(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating legacy RPL token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating legacy RPL token binding: %w", err)
 	}
 	c.reth, err = tokens.NewTokenReth(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating rETH token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating rETH token binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
@@ -189,16 +194,16 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.TransactOpts) error {
+func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	// Beacon info
 	beaconConfig, err := c.bc.GetEth2Config(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting Beacon config: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting Beacon config: %w", err)
 	}
 	beaconHead, err := c.bc.GetBeaconHead(ctx)
 	if err != nil {
-		return fmt.Errorf("error getting Beacon head: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting Beacon head: %w", err)
 	}
 	genesisTime := time.Unix(int64(beaconConfig.GenesisTime), 0)
 
@@ -233,19 +238,19 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	// Minipool info
 	mps, err := c.getMinipoolInfo(data)
 	if err != nil {
-		return err
+		return types.ResponseStatus_Error, err
 	}
 
 	// Withdrawal address and balance info
 	err = c.getBalanceInfo(data)
 	if err != nil {
-		return err
+		return types.ResponseStatus_Error, err
 	}
 
 	// Collateral
 	collateral, err := collateral.CheckCollateralWithMinipoolCache(c.rp, c.node.Address, mps, nil)
 	if err != nil {
-		return fmt.Errorf("error getting node collateral balance: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node collateral balance: %w", err)
 	}
 	data.EthMatched = collateral.EthMatched
 	data.EthMatchedLimit = collateral.EthMatchedLimit
@@ -269,7 +274,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	// Fee recipient and smoothing pool
 	sp, err := c.rp.GetContract(rocketpool.ContractName_RocketSmoothingPool)
 	if err != nil {
-		return fmt.Errorf("error getting smoothing pool contract: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
 	data.FeeRecipientInfo.SmoothingPoolAddress = sp.Address
 	data.FeeRecipientInfo.FeeDistributorAddress = c.node.DistributorAddress.Get()
@@ -294,7 +299,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	// True effective stakes and collateral ratios
 	err = c.calculateTrueStakesAndBonds(data, mps, beaconHead.Epoch)
 	if err != nil {
-		return err
+		return types.ResponseStatus_Error, err
 	}
 
 	// Get alerts from Alertmanager
@@ -317,7 +322,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 		}
 	}
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 // Get a formatting string containing the ENS name for an address (if it exists)
@@ -382,15 +387,15 @@ func (c *nodeStatusContext) getMinipoolInfo(data *api.NodeStatusData) ([]minipoo
 			data.MinipoolCounts.Finalised++
 		} else {
 			switch mpCommon.Status.Formatted() {
-			case types.MinipoolStatus_Initialized:
+			case rptypes.MinipoolStatus_Initialized:
 				data.MinipoolCounts.Initialized++
-			case types.MinipoolStatus_Prelaunch:
+			case rptypes.MinipoolStatus_Prelaunch:
 				data.MinipoolCounts.Prelaunch++
-			case types.MinipoolStatus_Staking:
+			case rptypes.MinipoolStatus_Staking:
 				data.MinipoolCounts.Staking++
-			case types.MinipoolStatus_Withdrawable:
+			case rptypes.MinipoolStatus_Withdrawable:
 				data.MinipoolCounts.Withdrawable++
-			case types.MinipoolStatus_Dissolved:
+			case rptypes.MinipoolStatus_Dissolved:
 				data.MinipoolCounts.Dissolved++
 			}
 			if mpCommon.NodeRefundBalance.Get().Cmp(common.Big0) > 0 {

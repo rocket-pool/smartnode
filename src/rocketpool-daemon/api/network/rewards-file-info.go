@@ -10,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -54,30 +55,30 @@ type networkRewardsFileContext struct {
 	rewardsPool *rewards.RewardsPool
 }
 
-func (c *networkRewardsFileContext) Initialize() error {
+func (c *networkRewardsFileContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	status, err := sp.RequireRocketPoolContracts()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	c.rewardsPool, err = rewards.NewRewardsPool(c.rp)
 	if err != nil {
-		return fmt.Errorf("error getting rewards pool binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting rewards pool binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *networkRewardsFileContext) GetState(mc *batch.MultiCaller) {
 	c.rewardsPool.RewardIndex.AddToQuery(mc)
 }
 
-func (c *networkRewardsFileContext) PrepareData(data *api.NetworkRewardsFileData, opts *bind.TransactOpts) error {
+func (c *networkRewardsFileContext) PrepareData(data *api.NetworkRewardsFileData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.CurrentIndex = c.rewardsPool.RewardIndex.Formatted()
 
 	// Get the path of the file to save
@@ -88,5 +89,5 @@ func (c *networkRewardsFileContext) PrepareData(data *api.NetworkRewardsFileData
 	} else {
 		data.TreeFileExists = true
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -48,13 +48,13 @@ type txWaitContext struct {
 	hash    common.Hash
 }
 
-func (c *txWaitContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *txWaitContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 
 	err := rp.WaitForTransactionByHash(c.hash)
 	if err != nil {
-		return fmt.Errorf("error waiting for tx %s: %w", c.hash.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error waiting for tx %s: %w", c.hash.Hex(), err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

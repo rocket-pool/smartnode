@@ -82,7 +82,7 @@ func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) erro
 			inputAmount := utils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddressString), "^\\d+(\\.\\d+)?$", "Invalid amount")
 			testAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
-				return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
+				return fmt.Errorf("invalid test amount '%s': %w", inputAmount, err)
 			}
 			amountWei := eth.EthToWei(testAmount)
 			sendResponse, err := rp.Api.Node.Send(amountWei, "eth", withdrawalAddress)
@@ -94,13 +94,13 @@ func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) erro
 			if !sendResponse.Data.CanSend {
 				fmt.Println("Cannot send test transaction:")
 				if sendResponse.Data.InsufficientBalance {
-					fmt.Println("You do not have %.6f ETH in your node wallet.", testAmount)
+					fmt.Printf("You do not have %.6f ETH in your node wallet.\n", testAmount)
 				}
 				return nil
 			}
 
 			// Run the TX
-			err = tx.HandleTx(c, rp, sendResponse.Data.TxInfo,
+			validated, err := tx.HandleTx(c, rp, sendResponse.Data.TxInfo,
 				fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString),
 				fmt.Sprintf("sending ETH to %s", withdrawalAddressString),
 				fmt.Sprintf("Sending ETH to %s...\n", withdrawalAddressString),
@@ -108,8 +108,12 @@ func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) erro
 			if err != nil {
 				return err
 			}
+			if validated {
+				fmt.Printf("Successfully sent the test transaction.\nPlease verify that your RPL withdrawal address received it before confirming it below.")
+				fmt.Println()
+			}
 
-			fmt.Printf("Successfully sent the test transaction.\nPlease verify that your RPL withdrawal address received it before confirming it below.\n\n")
+			fmt.Println()
 		}
 	}
 
@@ -119,11 +123,17 @@ func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) erro
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString),
 		"setting RPL withdrawal address",
 		"Setting RPL withdrawal address...",
 	)
+	if err != nil {
+		return err
+	}
+	if !validated {
+		return nil
+	}
 
 	// Log & return
 	if !c.Bool(setRplWithdrawalAddressForceFlag) {

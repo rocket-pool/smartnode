@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -57,7 +58,7 @@ type nodeBurnContext struct {
 	reth      *tokens.TokenReth
 }
 
-func (c *nodeBurnContext) Initialize() error {
+func (c *nodeBurnContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
@@ -65,15 +66,19 @@ func (c *nodeBurnContext) Initialize() error {
 	// Requirements
 	err := sp.RequireNodeAddress()
 	if err != nil {
-		return err
+		return types.ResponseStatus_AddressNotPresent, err
+	}
+	status, err := sp.RequireRocketPoolContracts()
+	if err != nil {
+		return status, err
 	}
 
 	// Bindings
 	c.reth, err = tokens.NewTokenReth(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating reth binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating reth binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *nodeBurnContext) GetState(mc *batch.MultiCaller) {
@@ -83,7 +88,7 @@ func (c *nodeBurnContext) GetState(mc *batch.MultiCaller) {
 	c.reth.BalanceOf(mc, &c.balance, c.nodeAddress)
 }
 
-func (c *nodeBurnContext) PrepareData(data *api.NodeBurnData, opts *bind.TransactOpts) error {
+func (c *nodeBurnContext) PrepareData(data *api.NodeBurnData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Check for validity
 	data.InsufficientBalance = (c.amountWei.Cmp(c.balance) > 0)
 	data.InsufficientCollateral = (c.amountWei.Cmp(c.reth.TotalCollateral.Get()) > 0)
@@ -93,9 +98,9 @@ func (c *nodeBurnContext) PrepareData(data *api.NodeBurnData, opts *bind.Transac
 	if data.CanBurn && opts != nil {
 		txInfo, err := c.reth.Burn(c.amountWei, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Burn: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Burn: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

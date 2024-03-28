@@ -75,7 +75,7 @@ func claimBonds(c *cli.Context) error {
 	}
 
 	// Run the TXs
-	err = tx.HandleTxBatch(c, rp, txs,
+	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to claim bonds and rewards from %d proposals?", len(selectedClaims)),
 		func(i int) string {
 			return fmt.Sprintf("claim of proposal %d", selectedClaims[i].ProposalID)
@@ -84,6 +84,9 @@ func claimBonds(c *cli.Context) error {
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return
@@ -101,7 +104,7 @@ func getClaimIndicesForBond(bond *api.BondClaimResult) []uint64 {
 	}
 
 	indices := make([]uint64, 0, len(indexMap))
-	for index, _ := range indexMap {
+	for index := range indexMap {
 		indices = append(indices, index)
 	}
 

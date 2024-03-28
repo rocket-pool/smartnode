@@ -67,7 +67,7 @@ func getRewards(c *cli.Context) error {
 		fmt.Println()
 
 		// Reload rewards now that the files are in place
-		rewardsInfoResponse, err = rp.Api.Node.GetRewardsInfo()
+		_, err = rp.Api.Node.GetRewardsInfo()
 		if err != nil {
 			return fmt.Errorf("error getting rewards info: %w", err)
 		}

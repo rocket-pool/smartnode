@@ -39,9 +39,13 @@ type walletRestoreAddressContext struct {
 	handler *WalletHandler
 }
 
-func (c *walletRestoreAddressContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *walletRestoreAddressContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 
-	return w.RestoreAddressToWallet()
+	err := w.RestoreAddressToWallet()
+	if err != nil {
+		return types.ResponseStatus_Error, err
+	}
+	return types.ResponseStatus_Success, nil
 }

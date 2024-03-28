@@ -47,7 +47,7 @@ func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocket
 	if !response.Data.CanPropose {
 		fmt.Println("Cannot propose setting update:")
 		if response.Data.UnknownSetting {
-			fmt.Println("Unknown setting '%s' on contract '%s'.\n", setting, contract)
+			fmt.Printf("Unknown setting '%s' on contract '%s'.\n", setting, contract)
 		}
 		if response.Data.ProposalCooldownActive {
 			fmt.Println("The node must wait for the proposal cooldown period to pass before making another proposal.")
@@ -56,13 +56,19 @@ func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocket
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to submit this proposal?",
 		"setting update",
 		"Proposing Oracle DAO setting update...",
 	)
+	if err != nil {
+		return err
+	}
+	if !validated {
+		return nil
+	}
 
 	// Log & return
-	fmt.Printf("Successfully proposed setting '%s.%s' to '%s'.\n", contract, setting, value)
+	fmt.Printf("Successfully proposed setting '%s.%s' to '%v'.\n", contract, setting, value)
 	return nil
 }

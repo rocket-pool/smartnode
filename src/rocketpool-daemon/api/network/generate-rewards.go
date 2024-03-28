@@ -47,7 +47,7 @@ type networkGenerateRewardsContext struct {
 	index uint64
 }
 
-func (c *networkGenerateRewardsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *networkGenerateRewardsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
 
@@ -58,7 +58,7 @@ func (c *networkGenerateRewardsContext) PrepareData(data *types.SuccessData, opt
 		requestFile.Close()
 	}
 	if err != nil {
-		return fmt.Errorf("error creating request marker: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating request marker: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

@@ -1,19 +1,18 @@
 package minipool
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/gorilla/mux"
 	"golang.org/x/sync/errgroup"
 
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	rpbeacon "github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
@@ -69,48 +68,45 @@ type minipoolStatusContext struct {
 	fsrplBalances []*big.Int
 }
 
-func (c *minipoolStatusContext) Initialize() error {
+func (c *minipoolStatusContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	err := errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireBeaconClientSynced(),
-	)
+	err := sp.RequireBeaconClientSynced()
 	if err != nil {
-		return err
+		return types.ResponseStatus_ClientsNotSynced, err
 	}
 
 	// Bindings
 	c.delegate, err = c.rp.GetContract(rocketpool.ContractName_RocketMinipoolDelegate)
 	if err != nil {
-		return fmt.Errorf("error getting minipool delegate binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool delegate binding: %w", err)
 	}
 	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating pDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
 	}
 	c.pSettings = pMgr.Settings
 	oMgr, err := oracle.NewOracleDaoManager(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating oDAO manager binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating oDAO manager binding: %w", err)
 	}
 	c.oSettings = oMgr.Settings
 	c.reth, err = tokens.NewTokenReth(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating rETH token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating rETH token binding: %w", err)
 	}
 	c.rpl, err = tokens.NewTokenRpl(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating RPL token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating RPL token binding: %w", err)
 	}
 	c.fsrpl, err = tokens.NewTokenRplFixedSupply(c.rp)
 	if err != nil {
-		return fmt.Errorf("error creating legacy RPL token binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating legacy RPL token binding: %w", err)
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *minipoolStatusContext) GetState(node *node.Node, mc *batch.MultiCaller) {
@@ -138,12 +134,12 @@ func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp min
 	c.fsrpl.BalanceOf(mc, &c.fsrplBalances[index], address)
 }
 
-func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStatusData) error {
+func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStatusData) (types.ResponseStatus, error) {
 	ctx := c.handler.serviceProvider.GetContext()
 	// Data
 	var wg1 errgroup.Group
 	var eth2Config beacon.Eth2Config
-	var currentHeader *types.Header
+	var currentHeader *ethtypes.Header
 	var balances []*big.Int
 
 	// Get the current ETH balances of each minipool
@@ -169,7 +165,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	// Get current block header
 	wg1.Go(func() error {
 		var err error
-		currentHeader, err = c.rp.Client.HeaderByNumber(context.Background(), nil)
+		currentHeader, err = c.rp.Client.HeaderByNumber(ctx, nil)
 		if err != nil {
 			return fmt.Errorf("error getting latest block header: %w", err)
 		}
@@ -178,7 +174,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 
 	// Wait for data
 	if err := wg1.Wait(); err != nil {
-		return err
+		return types.ResponseStatus_Error, err
 	}
 
 	// Calculate the current epoch from the header and Beacon config
@@ -203,7 +199,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	}
 	beaconStatuses, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
-		return fmt.Errorf("error getting validator statuses on Beacon: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting validator statuses on Beacon: %w", err)
 	}
 
 	// Assign the details
@@ -320,5 +316,5 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	}, nil)
 
 	data.LatestDelegate = c.delegate.Address
-	return nil
+	return types.ResponseStatus_Success, nil
 }

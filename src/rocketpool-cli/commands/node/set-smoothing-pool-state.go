@@ -45,19 +45,21 @@ func setSmoothingPoolState(c *cli.Context, optIn bool) error {
 	var identifierMsg string
 	var submitMsg string
 	if optIn {
-		fmt.Println("You are about to opt into the Smoothing Pool.\nYour fee recipient will be changed to the Smoothing Pool contract.\nAll priority fees and MEV you earn via proposals will be shared equally with other members of the Smoothing Pool.\n\nIf you desire, you can opt back out after one full rewards interval has passed.\n")
+		fmt.Println("You are about to opt into the Smoothing Pool.\nYour fee recipient will be changed to the Smoothing Pool contract.\nAll priority fees and MEV you earn via proposals will be shared equally with other members of the Smoothing Pool.\n\nIf you desire, you can opt back out after one full rewards interval has passed.")
+		fmt.Println()
 		confirmMsg = "Are you sure you want to join the Smoothing Pool?"
 		identifierMsg = "joining Smoothing Pool"
 		submitMsg = "Joining the Smoothing Pool..."
 	} else {
-		fmt.Println("You are about to opt out of the Smoothing Pool.\nYour fee recipient will be changed back to your node's distributor contract once the next Epoch has been finalized.\nAll priority fees and MEV you earn via proposals will go directly to your distributor and will not be shared by the Smoothing Pool members.\n\nIf you desire, you can opt back in after one full rewards interval has passed.\n")
+		fmt.Println("You are about to opt out of the Smoothing Pool.\nYour fee recipient will be changed back to your node's distributor contract once the next Epoch has been finalized.\nAll priority fees and MEV you earn via proposals will go directly to your distributor and will not be shared by the Smoothing Pool members.\n\nIf you desire, you can opt back in after one full rewards interval has passed.")
+		fmt.Println()
 		confirmMsg = "Are you sure you want to leave the Smoothing Pool?"
 		identifierMsg = "leaving Smoothing Pool"
 		submitMsg = "Leaving the Smoothing Pool..."
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		confirmMsg,
 		identifierMsg,
 		submitMsg,
@@ -68,6 +70,9 @@ func setSmoothingPoolState(c *cli.Context, optIn bool) error {
 			return fmt.Errorf("%w\nYour fee recipient will be automatically reset to your node's distributor in a few minutes, and your validator client will restart.", err)
 		}
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

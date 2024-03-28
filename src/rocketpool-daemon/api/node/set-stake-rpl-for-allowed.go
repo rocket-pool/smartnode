@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -51,28 +52,28 @@ type nodeSetStakeRplForAllowedContext struct {
 	allowed bool
 }
 
-func (c *nodeSetStakeRplForAllowedContext) PrepareData(data *api.NodeSetStakeRplForAllowedData, opts *bind.TransactOpts) error {
+func (c *nodeSetStakeRplForAllowedContext) PrepareData(data *api.NodeSetStakeRplForAllowedData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered()
 	if err != nil {
-		return err
+		return status, err
 	}
 
 	// Bindings
 	node, err := node.NewNode(rp, nodeAddress)
 	if err != nil {
-		return fmt.Errorf("error creating node binding: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node binding: %w", err)
 	}
 
 	data.CanSet = true
 	data.TxInfo, err = node.SetStakeRplForAllowed(c.caller, c.allowed, opts)
 	if err != nil {
-		return fmt.Errorf("error getting TX info for SetStakeRplForAllowed: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for SetStakeRplForAllowed: %w", err)
 	}
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

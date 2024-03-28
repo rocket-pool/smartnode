@@ -47,10 +47,14 @@ type minipoolUpgradeDelegatesContext struct {
 	minipoolAddresses []common.Address
 }
 
-func (c *minipoolUpgradeDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) error {
+func (c *minipoolUpgradeDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "upgrade-delegate")
 }
 
-func (c *minipoolUpgradeDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return mp.Common().DelegateUpgrade(opts)
+func (c *minipoolUpgradeDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {
+	txInfo, err := mp.Common().DelegateUpgrade(opts)
+	if err != nil {
+		return types.ResponseStatus_Error, nil, err
+	}
+	return types.ResponseStatus_Success, txInfo, nil
 }

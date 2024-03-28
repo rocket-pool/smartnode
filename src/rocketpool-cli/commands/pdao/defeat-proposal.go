@@ -41,13 +41,16 @@ func defeatProposal(c *cli.Context, proposalID uint64, challengedIndex uint64) e
 	}
 
 	// Run the TX
-	err = tx.HandleTx(c, rp, response.Data.TxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		fmt.Sprintf("Are you sure you want to defeat proposal %d?", proposalID),
 		"defeating proposal",
 		"Defeating proposal...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return

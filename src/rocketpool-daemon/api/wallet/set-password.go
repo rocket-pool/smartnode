@@ -47,9 +47,13 @@ type walletSetPasswordContext struct {
 	save     bool
 }
 
-func (c *walletSetPasswordContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) error {
+func (c *walletSetPasswordContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	w := sp.GetWallet()
 
-	return w.SetPassword(c.password, c.save)
+	err := w.SetPassword(c.password, c.save)
+	if err != nil {
+		return types.ResponseStatus_Error, err
+	}
+	return types.ResponseStatus_Success, err
 }

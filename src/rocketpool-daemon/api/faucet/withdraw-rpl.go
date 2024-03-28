@@ -1,8 +1,6 @@
 package faucet
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -12,6 +10,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
@@ -52,17 +51,23 @@ type faucetWithdrawContext struct {
 	allowance *big.Int
 }
 
-func (c *faucetWithdrawContext) Initialize() error {
+func (c *faucetWithdrawContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.f = sp.GetRplFaucet()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	return errors.Join(
-		sp.RequireNodeRegistered(),
-		sp.RequireRplFaucet(),
-	)
+	status, err := sp.RequireNodeRegistered()
+	if err != nil {
+		return status, err
+	}
+	err = sp.RequireRplFaucet()
+	if err != nil {
+		return types.ResponseStatus_InvalidChainState, err
+	}
+
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *faucetWithdrawContext) GetState(mc *batch.MultiCaller) {
@@ -73,11 +78,12 @@ func (c *faucetWithdrawContext) GetState(mc *batch.MultiCaller) {
 	c.f.GetAllowanceFor(mc, &c.allowance, c.nodeAddress)
 }
 
-func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData, opts *bind.TransactOpts) error {
+func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get node account balance
-	nodeAccountBalance, err := c.rp.Client.BalanceAt(context.Background(), c.nodeAddress, nil)
+	ctx := c.handler.serviceProvider.GetContext()
+	nodeAccountBalance, err := c.rp.Client.BalanceAt(ctx, c.nodeAddress, nil)
 	if err != nil {
-		return fmt.Errorf("error getting node account balance: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node account balance: %w", err)
 	}
 
 	// Populate the response
@@ -102,9 +108,9 @@ func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData, opt
 
 		txInfo, err := c.f.Withdraw(amount, opts)
 		if err != nil {
-			return fmt.Errorf("error getting TX info for Withdraw: %w", err)
+			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Withdraw: %w", err)
 		}
 		data.TxInfo = txInfo
 	}
-	return nil
+	return types.ResponseStatus_Success, nil
 }

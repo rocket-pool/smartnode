@@ -11,6 +11,7 @@ import (
 	ens "github.com/wealdtech/go-ens/v3"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -50,9 +51,15 @@ type nodeResolveEnsContext struct {
 	name    string
 }
 
-func (c *nodeResolveEnsContext) PrepareData(data *api.NodeResolveEnsData, opts *bind.TransactOpts) error {
+func (c *nodeResolveEnsContext) PrepareData(data *api.NodeResolveEnsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
+
+	// Requirements
+	err := sp.RequireEthClientSynced()
+	if err != nil {
+		return types.ResponseStatus_ClientsNotSynced, err
+	}
 
 	emptyAddress := common.Address{}
 	if c.address != emptyAddress {
@@ -68,13 +75,13 @@ func (c *nodeResolveEnsContext) PrepareData(data *api.NodeResolveEnsData, opts *
 		data.EnsName = c.name
 		address, err := ens.Resolve(rp.Client, c.name)
 		if err != nil {
-			return fmt.Errorf("error resolving ENS address for [%s]: %w", c.name, err)
+			return types.ResponseStatus_Error, fmt.Errorf("error resolving ENS address for [%s]: %w", c.name, err)
 		}
 		data.Address = address
 		data.FormattedName = fmt.Sprintf("%s (%s)", c.name, data.Address.Hex())
 	} else {
-		return fmt.Errorf("either address or name must not be empty")
+		return types.ResponseStatus_InvalidArguments, fmt.Errorf("either address or name must not be empty")
 	}
 
-	return nil
+	return types.ResponseStatus_Success, nil
 }

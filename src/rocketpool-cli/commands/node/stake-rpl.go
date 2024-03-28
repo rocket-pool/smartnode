@@ -68,7 +68,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	case "all":
 		amountWei = rplBalance
 	case "":
-		amountWei, err = promptForRplAmount(rp, priceResponse.Data, rplBalance)
+		amountWei, err = promptForRplAmount(priceResponse.Data, rplBalance)
 		if err != nil {
 			return err
 		}
@@ -76,7 +76,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		// Parse amount
 		stakeAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("Invalid stake amount '%s': %w", c.String(amountFlag), err)
+			return fmt.Errorf("invalid stake amount '%s': %w", c.String(amountFlag), err)
 		}
 		amountWei = eth.EthToWei(stakeAmount)
 	}
@@ -97,7 +97,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 
 	// Handle boosting the allowance
-	if stakeResponse.Data.Allowance.Cmp(amountWei) < 0 {
+	if stakeResponse.Data.ApproveTxInfo != nil {
 		fmt.Println("Before staking RPL, you must first give the staking contract approval to interact with your RPL.")
 		fmt.Println("This only needs to be done once for your node.")
 
@@ -106,8 +106,8 @@ func nodeStakeRpl(c *cli.Context) error {
 			utils.PrintMultiTransactionNonceWarning()
 		}
 
-		// Run the approve TX
-		err = tx.HandleTx(c, rp, stakeResponse.Data.ApproveTxInfo,
+		// Run the Approve TX
+		validated, err := tx.HandleTx(c, rp, stakeResponse.Data.ApproveTxInfo,
 			"Do you want to let the staking contract interact with your RPL?",
 			"approving RPL for staking",
 			"Approving RPL for staking...",
@@ -115,18 +115,28 @@ func nodeStakeRpl(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
+		if validated {
+			fmt.Println("Successfully approved staking access to RPL.")
+		}
 
-		fmt.Println("Successfully approved staking access to RPL.")
+		// Build the stake TX once approval is done
+		stakeResponse, err = rp.Api.Node.StakeRpl(amountWei)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Run the stake TX
-	err = tx.HandleTx(c, rp, stakeResponse.Data.StakeTxInfo,
+	validated, err := tx.HandleTx(c, rp, stakeResponse.Data.StakeTxInfo,
 		fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach over 150%% collateral!", math.RoundDown(eth.WeiToEth(amountWei), 6)),
 		"staking RPL",
 		"Staking RPL...",
 	)
 	if err != nil {
 		return err
+	}
+	if !validated {
+		return nil
 	}
 
 	// Log & return
@@ -135,7 +145,7 @@ func nodeStakeRpl(c *cli.Context) error {
 }
 
 // Prompt the user for the amount of RPL to stake
-func promptForRplAmount(rp *client.Client, priceResponse *api.NetworkRplPriceData, rplBalance *big.Int) (*big.Int, error) {
+func promptForRplAmount(priceResponse *api.NetworkRplPriceData, rplBalance *big.Int) (*big.Int, error) {
 	// Get min/max per minipool RPL stake amounts
 	minAmount8 := priceResponse.MinPer8EthMinipoolRplStake
 	minAmount16 := priceResponse.MinPer16EthMinipoolRplStake
@@ -163,7 +173,7 @@ func promptForRplAmount(rp *client.Client, priceResponse *api.NetworkRplPriceDat
 		inputAmount := utils.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
 		if err != nil {
-			return nil, fmt.Errorf("Invalid stake amount '%s': %w", inputAmount, err)
+			return nil, fmt.Errorf("invalid stake amount '%s': %w", inputAmount, err)
 		}
 		amountWei = eth.EthToWei(stakeAmount)
 	}
