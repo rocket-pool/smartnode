@@ -97,7 +97,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 
 	// Handle boosting the allowance
-	if stakeResponse.Data.Allowance.Cmp(amountWei) < 0 {
+	if stakeResponse.Data.ApproveTxInfo != nil {
 		fmt.Println("Before staking RPL, you must first give the staking contract approval to interact with your RPL.")
 		fmt.Println("This only needs to be done once for your node.")
 
@@ -106,7 +106,7 @@ func nodeStakeRpl(c *cli.Context) error {
 			utils.PrintMultiTransactionNonceWarning()
 		}
 
-		// Run the approve TX
+		// Run the Approve TX
 		validated, err := tx.HandleTx(c, rp, stakeResponse.Data.ApproveTxInfo,
 			"Do you want to let the staking contract interact with your RPL?",
 			"approving RPL for staking",
@@ -119,6 +119,11 @@ func nodeStakeRpl(c *cli.Context) error {
 			fmt.Println("Successfully approved staking access to RPL.")
 		}
 
+		// Build the stake TX once approval is done
+		stakeResponse, err = rp.Api.Node.StakeRpl(amountWei)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Run the stake TX

@@ -54,10 +54,10 @@ func join(c *cli.Context) error {
 	if !response.Data.CanJoin {
 		fmt.Println("Cannot join the oracle DAO:")
 		if response.Data.ProposalExpired {
-			fmt.Println("The proposal for you to join the oracle DAO does not exist or has expired.")
+			fmt.Println("The proposal for you to join the Oracle DAO does not exist or has expired.")
 		}
 		if response.Data.AlreadyMember {
-			fmt.Println("The node is already a member of the oracle DAO.")
+			fmt.Println("The node is already a member of the Oracle DAO.")
 		}
 		if response.Data.InsufficientRplBalance {
 			fmt.Println("The node does not have enough RPL to pay the RPL bond.")
@@ -65,24 +65,33 @@ func join(c *cli.Context) error {
 		return nil
 	}
 
-	// Run the Approve TX
-	validated, err := tx.HandleTx(c, rp, response.Data.ApproveTxInfo,
-		"Do you want to let the Oracle DAO manager interact with your RPL? This is required to post your bond in order to join it.",
-		"approving RPL for bond",
-		"Approving RPL for joining the Oracle DAO...",
-	)
-	if err != nil {
-		return err
-	}
-	if validated {
-		fmt.Println("Successfully approved bond access to RPL.")
+	// Check if approval is required first
+	if response.Data.ApproveTxInfo != nil {
+		// Run the Approve TX
+		validated, err := tx.HandleTx(c, rp, response.Data.ApproveTxInfo,
+			"Do you want to let the Oracle DAO manager interact with your RPL? This is required to post your bond in order to join it.",
+			"approving RPL for bond",
+			"Approving RPL for joining the Oracle DAO...",
+		)
+		if err != nil {
+			return err
+		}
+		if validated {
+			fmt.Println("Successfully approved bond access to RPL.")
+		}
+
+		// Build the Join TX once approval is done
+		response, err = rp.Api.ODao.Join()
+		if err != nil {
+			return err
+		}
 	}
 
 	// Run the Join TX
-	validated, err = tx.HandleTx(c, rp, response.Data.JoinTxInfo,
+	validated, err := tx.HandleTx(c, rp, response.Data.JoinTxInfo,
 		"Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.",
 		"joining Oracle DAO",
-		"Joining the ODAO...",
+		"Joining the Oracle DAO...",
 	)
 	if err != nil {
 		return err
@@ -92,6 +101,6 @@ func join(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Println("Successfully joined the oracle DAO.")
+	fmt.Println("Successfully joined the Oracle DAO.")
 	return nil
 }

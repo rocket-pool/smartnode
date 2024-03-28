@@ -100,21 +100,22 @@ func (c *nodeStakeRplContext) PrepareData(data *api.NodeStakeRplData, opts *bind
 	data.CanStake = !(data.InsufficientBalance)
 
 	if data.CanStake {
-		// Check allowance
-		if c.amount.Cmp(c.allowance) > 0 {
-			approvalAmount := big.NewInt(0).Sub(c.amount, c.allowance)
+		if c.allowance.Cmp(c.amount) < 0 {
+			// Do the approve TX if needed
+			approvalAmount := getMaxApproval()
 			txInfo, err := c.rpl.Approve(c.nsAddress, approvalAmount, opts)
 			if err != nil {
 				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info to approve increasing RPL's allowance: %w", err)
 			}
 			data.ApproveTxInfo = txInfo
+		} else {
+			// Just do the stake
+			txInfo, err := c.node.StakeRpl(c.amount, opts)
+			if err != nil {
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for StakeRpl: %w", err)
+			}
+			data.StakeTxInfo = txInfo
 		}
-
-		txInfo, err := c.node.StakeRpl(c.amount, opts)
-		if err != nil {
-			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for StakeRpl: %w", err)
-		}
-		data.StakeTxInfo = txInfo
 	}
 	return types.ResponseStatus_Success, nil
 }

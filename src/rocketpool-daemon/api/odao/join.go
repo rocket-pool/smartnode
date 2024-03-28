@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/rocketpool-go/core"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -49,12 +50,14 @@ type oracleDaoJoinContext struct {
 	handler     *OracleDaoHandler
 	rp          *rocketpool.RocketPool
 	nodeAddress common.Address
+	dnta        *core.Contract
 
-	odaoMember *oracle.OracleDaoMember
-	odaoMgr    *oracle.OracleDaoManager
-	oSettings  *oracle.OracleDaoSettings
-	rpl        *tokens.TokenRpl
-	rplBalance *big.Int
+	odaoMember   *oracle.OracleDaoMember
+	odaoMgr      *oracle.OracleDaoManager
+	oSettings    *oracle.OracleDaoSettings
+	rpl          *tokens.TokenRpl
+	rplBalance   *big.Int
+	rplAllowance *big.Int
 }
 
 func (c *oracleDaoJoinContext) Initialize() (types.ResponseStatus, error) {
@@ -82,6 +85,10 @@ func (c *oracleDaoJoinContext) Initialize() (types.ResponseStatus, error) {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating Oracle DAO manager binding: %w", err)
 	}
 	c.oSettings = c.odaoMgr.Settings
+	c.dnta, err = c.rp.GetContract(rocketpool.ContractName_RocketDAONodeTrustedActions)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("error getting RPL token contract: %w", err)
+	}
 	return types.ResponseStatus_Success, nil
 }
 
@@ -92,6 +99,7 @@ func (c *oracleDaoJoinContext) GetState(mc *batch.MultiCaller) {
 		c.odaoMember.Exists,
 		c.oSettings.Member.RplBond,
 	)
+	c.rpl.GetAllowance(mc, &c.rplAllowance, c.nodeAddress, c.dnta.Address)
 	c.rpl.BalanceOf(mc, &c.rplBalance, c.nodeAddress)
 }
 
@@ -113,23 +121,23 @@ func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bi
 	data.CanJoin = !(data.ProposalExpired || data.AlreadyMember || data.InsufficientRplBalance)
 
 	// Get the tx
-	if data.CanJoin && opts != nil {
-		dnta, err := c.rp.GetContract(rocketpool.ContractName_RocketDAONodeTrustedActions)
-		if err != nil {
-			return types.ResponseStatus_Error, fmt.Errorf("error getting RPL token contract: %w", err)
+	if data.CanJoin {
+		if c.rplAllowance.Cmp(rplBond) < 0 {
+			// Do the approve TX if needed
+			diff := big.NewInt(0).Sub(rplBond, c.rplAllowance)
+			approveTxInfo, err := c.rpl.Approve(c.dnta.Address, diff, opts)
+			if err != nil {
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for RPL approval: %w", err)
+			}
+			data.ApproveTxInfo = approveTxInfo
+		} else {
+			// Just do the join
+			joinTxInfo, err := c.odaoMgr.Join(opts)
+			if err != nil {
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Join: %w", err)
+			}
+			data.JoinTxInfo = joinTxInfo
 		}
-
-		approveTxInfo, err := c.rpl.Approve(dnta.Address, rplBond, opts)
-		if err != nil {
-			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for RPL approval: %w", err)
-		}
-		data.ApproveTxInfo = approveTxInfo
-
-		joinTxInfo, err := c.odaoMgr.Join(opts)
-		if err != nil {
-			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for Join: %w", err)
-		}
-		data.JoinTxInfo = joinTxInfo
 	}
 	return types.ResponseStatus_Success, nil
 }

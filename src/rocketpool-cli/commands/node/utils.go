@@ -414,7 +414,7 @@ func SwapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
 	}
 
 	// Handle boosting the allowance
-	if response.Data.Allowance.Cmp(amountWei) < 0 {
+	if response.Data.ApproveTxInfo != nil {
 		fmt.Println("Before swapping legacy RPL for new RPL, you must first give the new RPL contract approval to interact with your legacy RPL.")
 		fmt.Println("This only needs to be done once for your node.")
 
@@ -436,6 +436,11 @@ func SwapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
 			fmt.Println("Successfully approved access to legacy RPL.")
 		}
 
+		// Get the TX once approval is done
+		response, err = rp.Api.Node.SwapRpl(amountWei)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Run the swap TX

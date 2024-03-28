@@ -99,24 +99,22 @@ func (c *nodeSwapRplContext) PrepareData(data *api.NodeSwapRplData, opts *bind.T
 	data.CanSwap = !(data.InsufficientBalance)
 
 	if data.CanSwap {
-		// Check allowance
-		if c.amount.Cmp(c.allowance) > 0 {
-			// Calculate max uint256 value
-			approvalAmount := big.NewInt(2)
-			approvalAmount = approvalAmount.Exp(approvalAmount, big.NewInt(256), nil)
-			approvalAmount = approvalAmount.Sub(approvalAmount, big.NewInt(1))
+		if c.allowance.Cmp(c.amount) < 0 {
+			// Do the approve TX if needed
+			approvalAmount := getMaxApproval()
 			txInfo, err := c.fsrpl.Approve(c.rplAddress, approvalAmount, opts)
 			if err != nil {
 				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info to approve increasing legacy RPL's allowance: %w", err)
 			}
 			data.ApproveTxInfo = txInfo
+		} else {
+			// Just do the swap
+			txInfo, err := c.rpl.SwapFixedSupplyRplForRpl(c.amount, opts)
+			if err != nil {
+				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for SwapFixedSupplyRPLForRPL: %w", err)
+			}
+			data.SwapTxInfo = txInfo
 		}
-
-		txInfo, err := c.rpl.SwapFixedSupplyRplForRpl(c.amount, opts)
-		if err != nil {
-			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for SwapFixedSupplyRPLForRPL: %w", err)
-		}
-		data.SwapTxInfo = txInfo
 	}
 	return types.ResponseStatus_Success, nil
 }
