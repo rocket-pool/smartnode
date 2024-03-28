@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
 	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/utils/input"
@@ -117,7 +116,7 @@ func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bi
 		}
 
 		// Get validator deposit data
-		depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, config.Network(rs.EthNetworkName))
+		depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, rs.EthNetworkName)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error getting deposit data for validator %s: %w", pubkey.Hex(), err)
 		}

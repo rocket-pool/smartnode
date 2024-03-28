@@ -1,7 +1,6 @@
 package node
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"math/big"
@@ -10,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
-	"github.com/prysmaticlabs/prysm/v4/beacon-chain/core/signing"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
@@ -20,12 +18,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	prdeposit "github.com/prysmaticlabs/prysm/v4/contracts/deposit"
-	ethpb "github.com/prysmaticlabs/prysm/v4/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
-	nmc_config "github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/node/validator"
 	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
@@ -34,7 +29,6 @@ import (
 	snValidator "github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
 // ===============
@@ -149,12 +143,6 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	data.DepositBalance = c.depositPool.Balance.Get()
 	data.ScrubPeriod = c.oSettings.Minipool.ScrubPeriod.Formatted()
 
-	// Get Beacon config
-	eth2Config, err := c.bc.GetEth2Config(ctx)
-	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error getting Beacon config: %w", err)
-	}
-
 	// Adjust the salt
 	if c.salt.Cmp(big.NewInt(0)) == 0 {
 		nonce, err := c.rp.Client.NonceAt(ctx, c.node.Address, nil)
@@ -165,6 +153,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	}
 
 	// Check node balance
+	var err error
 	data.NodeBalance, err = c.rp.Client.BalanceAt(ctx, c.node.Address, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting node's ETH balance: %w", err)
@@ -260,8 +249,9 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	}
 
 	// Get validator deposit data and associated parameters
+	// NOTE: validation is done in the NMC now
 	depositAmount := uint64(1e9) // 1 ETH in gwei
-	depositData, err := validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, nmc_config.Network(rs.EthNetworkName))
+	depositData, err := validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, rs.EthNetworkName)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting deposit data: %w", err)
 	}
@@ -283,30 +273,6 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 			"***************\n", minipoolAddress.Hex(), pubkey.Hex(), status.Index)
 	}
 
-	// Do a final sanity check
-	err = validateDepositInfo(eth2Config, uint64(depositAmount), pubkey, withdrawalCredentials, signature)
-	if err != nil {
-		return types.ResponseStatus_ResourceConflict, fmt.Errorf("FATAL: Your deposit failed the validation safety check: %w\n"+
-			"For your safety, this deposit will not be submitted and your ETH will not be staked.\n"+
-			"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS and include the following information:\n"+
-			"\tDomain Type: 0x%s\n"+
-			"\tGenesis Fork Version: 0x%s\n"+
-			"\tGenesis Validator Root: 0x%s\n"+
-			"\tDeposit Amount: %d gwei\n"+
-			"\tValidator Pubkey: %s\n"+
-			"\tWithdrawal Credentials: %s\n"+
-			"\tSignature: %s\n",
-			err,
-			hex.EncodeToString(eth2types.DomainDeposit[:]),
-			hex.EncodeToString(eth2Config.GenesisForkVersion),
-			hex.EncodeToString(eth2types.ZeroGenesisValidatorsRoot),
-			depositAmount,
-			pubkey.Hex(),
-			withdrawalCredentials.Hex(),
-			signature.Hex(),
-		)
-	}
-
 	// Get tx info
 	var txInfo *eth.TransactionInfo
 	var funcName string
@@ -324,25 +290,4 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	data.TxInfo = txInfo
 
 	return types.ResponseStatus_Success, nil
-}
-
-func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey beacon.ValidatorPubkey, withdrawalCredentials common.Hash, signature beacon.ValidatorSignature) error {
-
-	// Get the deposit domain based on the eth2 config
-	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
-	if err != nil {
-		return err
-	}
-
-	// Create the deposit struct
-	depositData := new(ethpb.Deposit_Data)
-	depositData.Amount = depositAmount
-	depositData.PublicKey = pubkey[:]
-	depositData.WithdrawalCredentials = withdrawalCredentials.Bytes()
-	depositData.Signature = signature[:]
-
-	// Validate the signature
-	err = prdeposit.VerifyDepositSignature(depositData, depositDomain)
-	return err
-
 }
