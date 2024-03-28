@@ -383,6 +383,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			return nil
 		} else {
 			progress = syncStatus.Progress
+			if !syncStatus.Syncing {
+				progress = 1.0
+			}
 		}
 		// note this metric is emitted asynchronously, while others in this file tend to be emitted at the end of the outer function (mostly due to dependencies between metrics). See https://github.com/rocket-pool/smartnode/issues/186
 		channel <- prometheus.MustNewConstMetric(
