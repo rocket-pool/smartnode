@@ -314,7 +314,11 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 
 		return nil
 	}, nil)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node share of minipools: %w", err)
+	}
 
+	data.Minipools = details
 	data.LatestDelegate = c.delegate.Address
 	return types.ResponseStatus_Success, nil
 }
