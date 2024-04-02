@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	tekuTagTest         string = "consensys/teku:24.3.0"
-	tekuTagProd         string = "consensys/teku:24.3.0"
+	tekuTagTest         string = "consensys/teku:24.3.1"
+	tekuTagProd         string = "consensys/teku:24.3.1"
 	defaultTekuMaxPeers uint16 = 100
 )
 
@@ -23,6 +23,9 @@ type TekuConfig struct {
 
 	// The max number of P2P peers to connect to
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
+
+	// The use slashing protection flag
+	UseSlashingProtection config.Parameter `yaml:"useSlashingProtection,omitempty"`
 
 	// The archive mode flag
 	ArchiveMode config.Parameter `yaml:"archiveMode,omitempty"`
@@ -92,6 +95,17 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			OverwriteOnUpgrade: true,
 		},
 
+		UseSlashingProtection: config.Parameter{
+			ID:                 "useSlashingProtection",
+			Name:               "Use Validator Slashing Protection",
+			Description:        "When enabled, Teku will use the Validator Slashing Protection feature. See https://docs.teku.consensys.io/how-to/prevent-slashing/detect-slashing for details.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: true},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		AdditionalBnFlags: config.Parameter{
 			ID:                 "additionalBnFlags",
 			Name:               "Additional Beacon Node Flags",
@@ -122,6 +136,7 @@ func (cfg *TekuConfig) GetParameters() []*config.Parameter {
 		&cfg.JvmHeapSize,
 		&cfg.MaxPeers,
 		&cfg.ArchiveMode,
+		&cfg.UseSlashingProtection,
 		&cfg.ContainerTag,
 		&cfg.AdditionalBnFlags,
 		&cfg.AdditionalVcFlags,
