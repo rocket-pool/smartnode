@@ -62,122 +62,74 @@ func main() {
 	}
 
 	// Register primary daemon
-	app.Commands = append(app.Commands, &cli.Command{
-		Name:    "node",
-		Aliases: []string{"n"},
-		Usage:   "Run primary Rocket Pool node activity daemon and API server",
-		Action: func(c *cli.Context) error {
-			// Get the config file
-			userDir := c.String(userDirFlag.Name)
-			cfgPath := filepath.Join(userDir, config.ConfigFilename)
-			_, err := os.Stat(cfgPath)
-			if errors.Is(err, fs.ErrNotExist) {
-				fmt.Printf("Configuration file not found at [%s].", cfgPath)
-				os.Exit(1)
-			}
+	app.Action = func(c *cli.Context) error {
+		// Get the config file
+		userDir := c.String(userDirFlag.Name)
+		cfgPath := filepath.Join(userDir, config.ConfigFilename)
+		_, err := os.Stat(cfgPath)
+		if errors.Is(err, fs.ErrNotExist) {
+			fmt.Printf("Configuration file not found at [%s].", cfgPath)
+			os.Exit(1)
+		}
 
-			// Wait group to handle graceful stopping
-			stopWg := new(sync.WaitGroup)
+		// Wait group to handle graceful stopping
+		stopWg := new(sync.WaitGroup)
 
-			// Create the service provider
-			sp, err := services.NewServiceProvider(userDir)
-			if err != nil {
-				return fmt.Errorf("error creating service provider: %w", err)
-			}
+		// Create the service provider
+		sp, err := services.NewServiceProvider(userDir)
+		if err != nil {
+			return fmt.Errorf("error creating service provider: %w", err)
+		}
 
-			// Create the data dir
-			dataDir := sp.GetConfig().UserDataPath.Value
-			err = os.MkdirAll(dataDir, 0700)
-			if err != nil {
-				return fmt.Errorf("error creating user data directory [%s]: %w", dataDir, err)
-			}
+		// Create the data dir
+		dataDir := sp.GetConfig().UserDataPath.Value
+		err = os.MkdirAll(dataDir, 0700)
+		if err != nil {
+			return fmt.Errorf("error creating user data directory [%s]: %w", dataDir, err)
+		}
 
-			// Create the server manager
-			serverMgr, err := api.NewServerManager(sp, cfgPath, stopWg)
-			if err != nil {
-				return fmt.Errorf("error creating server manager: %w", err)
-			}
+		// Create the server manager
+		serverMgr, err := api.NewServerManager(sp, cfgPath, stopWg)
+		if err != nil {
+			return fmt.Errorf("error creating server manager: %w", err)
+		}
 
-			// Start the task loop
-			taskLoop := node.NewTaskLoop(sp, stopWg)
-			err = taskLoop.Run()
-			if err != nil {
-				return fmt.Errorf("error starting task loop: %w", err)
-			}
+		// Start the task loop
+		nodeLoop := node.NewTaskLoop(sp, stopWg)
+		err = nodeLoop.Run()
+		if err != nil {
+			return fmt.Errorf("error starting node task loop: %w", err)
+		}
 
-			// Handle process closures
-			termListener := make(chan os.Signal, 1)
-			signal.Notify(termListener, os.Interrupt, syscall.SIGTERM)
-			go func() {
-				<-termListener
-				fmt.Println("Shutting down node...")
-				sp.CancelContextOnShutdown()
-				serverMgr.Stop()
-				taskLoop.Stop()
-			}()
+		// Start the task loop
+		watchtowerLoop := watchtower.NewTaskLoop(sp, stopWg)
+		err = watchtowerLoop.Run()
+		if err != nil {
+			return fmt.Errorf("error starting watchtower task loop: %w", err)
+		}
 
-			// Run the daemon until closed
-			fmt.Println("Node online.")
-			stopWg.Wait()
-			fmt.Println("Node stopped.")
-			return nil
-		},
-	})
+		// Handle process closures
+		termListener := make(chan os.Signal, 1)
+		signal.Notify(termListener, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-termListener
+			fmt.Println("Shutting down node and watchtower...")
+			sp.CancelContextOnShutdown()
+			serverMgr.Stop()
+			nodeLoop.Stop()
+			watchtowerLoop.Stop()
+		}()
 
-	// Register watchtower daemon
-	app.Commands = append(app.Commands, &cli.Command{
-		Name:    "watchtower",
-		Aliases: []string{"w"},
-		Usage:   "Run Rocket Pool watchtower activity daemon for Oracle DAO duties",
-		Action: func(c *cli.Context) error {
-			// Get the config file
-			userDir := c.String(userDirFlag.Name)
-			cfgPath := filepath.Join(userDir, config.ConfigFilename)
-			_, err := os.Stat(cfgPath)
-			if errors.Is(err, fs.ErrNotExist) {
-				fmt.Printf("Configuration file not found at [%s].", cfgPath)
-				os.Exit(1)
-			}
-
-			// Wait group to handle graceful stopping
-			stopWg := new(sync.WaitGroup)
-
-			// Create the service provider
-			sp, err := services.NewServiceProvider(userDir)
-			if err != nil {
-				return fmt.Errorf("error creating service provider: %w", err)
-			}
-
-			// Create the data dir
-			dataDir := sp.GetConfig().UserDataPath.Value
-			err = os.MkdirAll(dataDir, 0700)
-			if err != nil {
-				return fmt.Errorf("error creating user data directory [%s]: %w", dataDir, err)
-			}
-
-			// Start the task loop
-			taskLoop := watchtower.NewTaskLoop(sp, stopWg)
-			err = taskLoop.Run()
-			if err != nil {
-				return fmt.Errorf("error starting task loop: %w", err)
-			}
-
-			// Handle process closures
-			termListener := make(chan os.Signal, 1)
-			signal.Notify(termListener, os.Interrupt, syscall.SIGTERM)
-			go func() {
-				<-termListener
-				fmt.Println("Shutting down watchtower...")
-				sp.CancelContextOnShutdown()
-			}()
-
-			// Run the daemon until closed
-			fmt.Println("Watchtower online.")
-			stopWg.Wait()
-			fmt.Println("Watchtower stopped.")
-			return nil
-		},
-	})
+		// Run the daemon until closed
+		fmt.Println("Node online.")
+		fmt.Printf("API calls are being logged to: %s\n", sp.GetApiLogger().GetFilePath())
+		fmt.Printf("Node tasks are being logged to:     %s\n", sp.GetTasksLogger().GetFilePath())
+		fmt.Printf("Watchtower tasks are being logged to:     %s\n", sp.GetWatchtowerLogger().GetFilePath())
+		stopWg.Wait()
+		sp.Close()
+		fmt.Println("Node stopped.")
+		return nil
+	}
 
 	// Run application
 	if err := app.Run(os.Args); err != nil {

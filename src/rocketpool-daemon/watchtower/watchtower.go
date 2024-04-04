@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"math/rand"
+	"net/http"
 	"sync"
 	"time"
 
@@ -23,16 +24,18 @@ import (
 
 // Config
 const (
-	minTasksInterval time.Duration = time.Minute * 4
-	maxTasksInterval time.Duration = time.Minute * 6
-	taskCooldown     time.Duration = time.Second * 5
+	minTasksInterval       time.Duration = time.Minute * 4
+	maxTasksInterval       time.Duration = time.Minute * 6
+	taskCooldown           time.Duration = time.Second * 5
+	metricsShutdownTimeout time.Duration = time.Second * 5
 )
 
 type TaskLoop struct {
-	logger *log.Logger
-	ctx    context.Context
-	sp     *services.ServiceProvider
-	wg     *sync.WaitGroup
+	logger        *log.Logger
+	ctx           context.Context
+	sp            *services.ServiceProvider
+	wg            *sync.WaitGroup
+	metricsServer *http.Server
 }
 
 func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
@@ -111,12 +114,11 @@ func (t *TaskLoop) Run() error {
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
 
-	// Wait group to handle the various threads
-	wg := new(sync.WaitGroup)
-	wg.Add(2)
-
 	// Run task loop
+	t.wg.Add(1)
 	go func() {
+		defer t.wg.Done()
+
 		for {
 			// Randomize the next interval
 			randomSeconds := rand.Intn(int(secondsDelta))
@@ -305,17 +307,18 @@ func (t *TaskLoop) Run() error {
 	}()
 
 	// Run metrics loop
-	go func() {
-		err := runMetricsServer(t.sp, t.logger, scrubCollector, bondReductionCollector, soloMigrationCollector)
-		if err != nil {
-			t.logger.Error(err.Error())
-		}
-		wg.Done()
-	}()
+	t.metricsServer = runMetricsServer(t.sp, t.logger, scrubCollector, bondReductionCollector, soloMigrationCollector, t.wg)
 
-	// Wait for both threads to stop
-	wg.Wait()
 	return nil
+}
+
+func (t *TaskLoop) Stop() {
+	if t.metricsServer != nil {
+		// Shut down the metrics server
+		ctx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)
+		defer cancel()
+		t.metricsServer.Shutdown(ctx)
+	}
 }
 
 // Update the latest network state at each cycle

@@ -336,7 +336,7 @@ func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.Rocke
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
 	}
-	logger.Info(fmt.Sprintf("%d/%d - Retrieved Protocol DAO proposals", currentStep, steps), time.Since(start))
+	logger.Info(fmt.Sprintf("%d/%d - Retrieved Protocol DAO proposals", currentStep, steps), slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 	currentStep++
 
 	return state, totalEffectiveStake, nil

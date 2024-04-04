@@ -86,6 +86,7 @@ func (t *TaskLoop) Run() error {
 	reduceBonds := NewReduceBonds(t.sp, t.logger)
 	defendPdaoProps := NewDefendPdaoProps(t.ctx, t.sp, t.logger)
 	var verifyPdaoProps *VerifyPdaoProps
+
 	// Make sure the user opted into this duty
 	verifyEnabled := cfg.VerifyProposals.Value
 	if verifyEnabled {

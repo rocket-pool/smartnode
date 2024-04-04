@@ -1,11 +1,13 @@
 package watchtower
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -15,7 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
-func runMetricsServer(sp *services.ServiceProvider, logger *log.Logger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector) error {
+func runMetricsServer(sp *services.ServiceProvider, logger *log.Logger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector, wg *sync.WaitGroup) *http.Server {
 	// Get services
 	cfg := sp.GetConfig()
 
@@ -51,10 +53,22 @@ func runMetricsServer(sp *services.ServiceProvider, logger *log.Logger, scrubCol
             </html>`,
 		))
 	})
-	err := http.ListenAndServe(fmt.Sprintf("%s:%d", metricsAddress, metricsPort), nil)
-	if err != nil {
-		return fmt.Errorf("error running HTTP server: %w", err)
+
+	// Run the server
+	server := &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", metricsAddress, metricsPort),
+		Handler: nil,
 	}
 
-	return nil
+	go func() {
+		defer wg.Done()
+
+		wg.Add(1)
+		err := server.ListenAndServe()
+		if !errors.Is(err, http.ErrServerClosed) {
+			logger.Error("Error running metrics HTTP server", log.Err(err))
+		}
+	}()
+
+	return server
 }
