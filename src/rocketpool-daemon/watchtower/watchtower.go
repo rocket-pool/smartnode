@@ -28,10 +28,6 @@ const (
 	taskCooldown     time.Duration = time.Second * 5
 )
 
-const (
-	MaxConcurrentEth1Requests = 200
-)
-
 type TaskLoop struct {
 	logger *log.Logger
 	ctx    context.Context

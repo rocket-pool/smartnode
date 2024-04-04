@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"time"
 
@@ -25,6 +26,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 const (
@@ -34,7 +36,7 @@ const (
 // Reduce bonds task
 type ReduceBonds struct {
 	sp             *services.ServiceProvider
-	log            **log.Logger
+	logger         *slog.Logger
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
@@ -47,17 +49,17 @@ type ReduceBonds struct {
 // Create reduce bonds task
 func NewReduceBonds(sp *services.ServiceProvider, logger *log.Logger) *ReduceBonds {
 	cfg := sp.GetConfig()
-	log := &logger
+	log := logger.With(slog.String(keys.RoutineKey, "Reduce Bonds"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	gasThreshold := cfg.AutoTxGasThreshold.Value
 
 	if gasThreshold == 0 {
-		log.Println("Automatic tx gas threshold is 0, disabling auto-reduce.")
+		log.Info("Automatic tx gas threshold is 0, disabling auto-reduce.")
 	}
 
 	return &ReduceBonds{
 		sp:             sp,
-		log:            log,
+		logger:         log,
 		cfg:            cfg,
 		w:              sp.GetWallet(),
 		rp:             sp.GetRocketPool(),
@@ -75,7 +77,7 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.log.Println("Checking for minipool bonds to reduce...")
+	t.logger.Info("Startig check for minipool bonds to reduce.")
 
 	// Get the latest state
 	opts := &bind.CallOpts{
@@ -110,7 +112,7 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.log.Printlnf("%d minipool(s) are ready for bond reduction...", len(minipools))
+	t.logger.Info("Minipools are ready for bond reduction.", slog.Int(keys.CountKey, len(minipools)))
 
 	// Workaround for the fee distribution issue
 	success, err := t.forceFeeDistribution(state)
@@ -126,7 +128,7 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	for i, mpd := range minipools {
 		txSubmissions[i], err = t.createReduceBondTx(mpd)
 		if err != nil {
-			t.log.Println(fmt.Errorf("error preparing submission to reduce bond for minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
+			t.logger.Error("Error preparing submission to reduce bond for minipool.", slog.String(keys.MinipoolKey, mpd.MinipoolAddress.Hex()), log.Err(err))
 			return err
 		}
 	}
@@ -182,16 +184,16 @@ func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, err
 
 	balance := eth.WeiToEth(balanceRaw)
 	if balance == 0 {
-		t.log.Println("Your fee distributor does not have any ETH and does not need to be distributed.")
+		t.logger.Info("Your fee distributor does not have any ETH and does not need to be distributed.")
 		return true, nil
 	}
-	t.log.Println("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.")
+	t.logger.Info("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.")
 
 	// Print info
 	rEthShare := balance - nodeShare
-	t.log.Printlnf("Your fee distributor's balance of %.6f ETH will be distributed as follows:\n", balance)
-	t.log.Printlnf("\tYour withdrawal address will receive %.6f ETH.", nodeShare)
-	t.log.Printlnf("\trETH pool stakers will receive %.6f ETH.\n", rEthShare)
+	t.logger.Info(fmt.Sprintf("Your fee distributor's balance of %.6f ETH will be distributed as follows:\n", balance))
+	t.logger.Info(fmt.Sprintf("Your withdrawal address will receive %.6f ETH.", nodeShare))
+	t.logger.Info(fmt.Sprintf("rETH pool stakers will receive %.6f ETH.\n", rEthShare))
 
 	opts, err := t.w.GetTransactor()
 	if err != nil {
@@ -210,14 +212,14 @@ func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, err
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return false, err
 		}
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasThreshold, t.log, maxFee, txInfo.SimulationResult.SafeGasLimit) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasThreshold, t.logger, maxFee, txInfo.SimulationResult.SafeGasLimit) {
 		return false, nil
 	}
 
@@ -226,7 +228,7 @@ func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, err
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return false, err
 	}
@@ -283,7 +285,7 @@ func (t *ReduceBonds) getReduceableMinipools(nodeAddress common.Address, windowS
 				mpBindings = append(mpBindings, mpv3)
 			} else {
 				remainingTime := windowStart - timeSinceReductionStart
-				t.log.Printlnf("Minipool %s has %s left until it can have its bond reduced.", mpd.MinipoolAddress.Hex(), remainingTime)
+				t.logger.Info(fmt.Sprintf("Minipool %s has %s left until it can have its bond reduced.", mpd.MinipoolAddress.Hex(), remainingTime))
 			}
 		}
 	}
@@ -295,7 +297,7 @@ func (t *ReduceBonds) getReduceableMinipools(nodeAddress common.Address, windowS
 // Get submission info for reducing a minipool's bond
 func (t *ReduceBonds) createReduceBondTx(mpd *rpstate.NativeMinipoolDetails) (*eth.TransactionSubmission, error) {
 	// Log
-	t.log.Printlnf("Preparing to reduce bond for minipool %s...", mpd.MinipoolAddress.Hex())
+	t.logger.Info("Preparing to reduce bond...", slog.String(keys.MinipoolKey, mpd.MinipoolAddress.Hex()))
 
 	// Get transactor
 	opts, err := t.w.GetTransactor()
@@ -340,7 +342,7 @@ func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, mini
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return err
 		}
@@ -349,11 +351,11 @@ func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, mini
 	opts.GasTipCap = t.maxPriorityFee
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.log, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.logger, maxFee) {
 		for _, mp := range minipools {
 			timeSinceReductionStart := latestBlockTime.Sub(mp.ReduceBondTime.Formatted())
 			remainingTime := windowDuration - timeSinceReductionStart
-			t.log.Printlnf("Time until bond reduction times out for minipool %s: %s", mp.Address.Hex(), remainingTime)
+			t.logger.Info(fmt.Sprintf("Time until bond reduction times out for minipool %s: %s", mp.Address.Hex(), remainingTime))
 		}
 		return nil
 	}
@@ -367,12 +369,12 @@ func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, mini
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.log, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.logger, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Println("Successfully reduced bond of all minipools.")
+	t.logger.Info("Successfully reduced bond of all minipools.")
 	return nil
 }

@@ -51,7 +51,7 @@ func PrintAndCheckGasInfo(simResult eth.SimulationResult, checkThreshold bool, g
 }
 
 // Print the gas price and cost of a TX batch
-func PrintAndCheckGasInfoForBatch(submissions []*eth.TransactionSubmission, checkThreshold bool, gasThresholdGwei float64, logger *log.Logger, maxFeeWei *big.Int) bool {
+func PrintAndCheckGasInfoForBatch(submissions []*eth.TransactionSubmission, checkThreshold bool, gasThresholdGwei float64, logger *slog.Logger, maxFeeWei *big.Int) bool {
 	// Check the gas threshold if requested
 	if checkThreshold {
 		gasThresholdWei := math.RoundUp(gasThresholdGwei*eth.WeiPerGwei, 0)

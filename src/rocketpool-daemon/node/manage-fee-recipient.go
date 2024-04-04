@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 	"time"
 
@@ -17,6 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -27,30 +29,30 @@ const (
 
 // Manage fee recipient task
 type ManageFeeRecipient struct {
-	ctx context.Context
-	sp  *services.ServiceProvider
-	cfg *config.SmartNodeConfig
-	log **log.Logger
-	bc  beacon.IBeaconClient
-	d   *client.Client
+	ctx    context.Context
+	sp     *services.ServiceProvider
+	cfg    *config.SmartNodeConfig
+	logger *slog.Logger
+	bc     beacon.IBeaconClient
+	d      *client.Client
 }
 
 // Create manage fee recipient task
 func NewManageFeeRecipient(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *ManageFeeRecipient {
 	return &ManageFeeRecipient{
-		ctx: ctx,
-		sp:  sp,
-		log: &logger,
-		cfg: sp.GetConfig(),
-		bc:  sp.GetBeaconClient(),
-		d:   sp.GetDocker(),
+		ctx:    ctx,
+		sp:     sp,
+		logger: logger.With(slog.String(keys.RoutineKey, "Fee Recipient Check")),
+		cfg:    sp.GetConfig(),
+		bc:     sp.GetBeaconClient(),
+		d:      sp.GetDocker(),
 	}
 }
 
 // Manage fee recipient
 func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 	// Log
-	t.log.Println("Checking for correct fee recipient...")
+	t.logger.Info("Starting check for correct fee recipient.")
 
 	// Get the fee recipient info for the node
 	nodeAddress, _ := t.sp.GetWallet().GetAddress()
@@ -74,9 +76,9 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 	}
 
 	if !fileExists {
-		t.log.Println("Fee recipient files don't all exist, regenerating...")
+		t.logger.Info("Fee recipient files don't all exist, regenerating...")
 	} else if !correctAddress {
-		t.log.Printlnf("WARNING: Fee recipient files did not contain the correct fee recipient of %s, regenerating...", correctFeeRecipient.Hex())
+		t.logger.Warn("WARNING: Fee recipient files did not contain the correct fee recipient, regenerating...", slog.String(keys.ExpectedKey, correctFeeRecipient.Hex()))
 	} else {
 		// Files are all correct, return.
 		return nil
@@ -86,11 +88,10 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 	err = t.updateFeeRecipientFile(correctFeeRecipient)
 	alerting.AlertFeeRecipientChanged(t.cfg, correctFeeRecipient, err == nil)
 	if err != nil {
-		t.log.Println("***ERROR***")
-		t.log.Printlnf("Error updating fee recipient files: %s", err.Error())
-		t.log.Println("Shutting down the validator client for safety to prevent you from being penalized...")
+		t.logger.Error("***ERROR*** Error updating fee recipient files", log.Err(err))
+		t.logger.Warn("Shutting down the validator client for safety to prevent you from being penalized...")
 
-		err = validator.StopValidator(t.cfg, t.bc, t.log, t.d, false)
+		err = validator.StopValidator(t.ctx, t.cfg, t.bc, t.d, false)
 		if err != nil {
 			return fmt.Errorf("error stopping validator client: %w", err)
 		}
@@ -98,14 +99,14 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 	}
 
 	// Restart the VC
-	t.log.Println("Fee recipient files updated successfully! Restarting validator client...")
-	err = validator.StopValidator(t.cfg, t.bc, t.log, t.d, true)
+	t.logger.Info("Fee recipient files updated successfully! Restarting validator client...")
+	err = validator.StopValidator(t.ctx, t.cfg, t.bc, t.d, true)
 	if err != nil {
 		return fmt.Errorf("error restarting validator client: %w", err)
 	}
 
 	// Log & return
-	t.log.Println("Successfully restarted, you are now validating safely.")
+	t.logger.Info("Successfully restarted, you are now validating safely.")
 	return nil
 }
 

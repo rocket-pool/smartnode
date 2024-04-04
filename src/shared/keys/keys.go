@@ -68,4 +68,8 @@ const (
 	StatusKey                 string = "status"
 	TimeSincePrelaunchKey     string = "timeSincePrelaunch"
 	SafetyPeriodKey           string = "safetyPeriod"
+	IndexKey                  string = "index"
+	ChallengerKey             string = "challenger"
+	BalanceKey                string = "balance"
+	ExpectedKey               string = "expected"
 )

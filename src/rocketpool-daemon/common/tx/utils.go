@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/rocket-pool/smartnode/shared/keys"
@@ -46,7 +45,7 @@ func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, rp *rocketpool.Rock
 }
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *log.Logger, submissions []*eth.TransactionSubmission, callbacks []func(err error), opts *bind.TransactOpts) error {
+func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *slog.Logger, submissions []*eth.TransactionSubmission, callbacks []func(err error), opts *bind.TransactOpts) error {
 	txs, err := rp.BatchExecuteTransactions(submissions, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transactions: %w", err)
