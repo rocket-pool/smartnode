@@ -80,7 +80,11 @@ func CalculateLifetimeTrustedNodeRewards(rp *rocketpool.RocketPool, claimerAddre
 	// Construct a filter query for relevant logs
 	addressFilter := []common.Address{*rocketRewardsPool.Address}
 	// RPLTokensClaimed(address clamingContract, address clainingAddress, uint256 amount, uint256 time)
-	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RPLTokensClaimed"].ID}, {rocketClaimTrustedNode.Address.Hash()}, {claimerAddress.Hash()}}
+	topicFilter := [][]common.Hash{
+		{rocketRewardsPool.ABI.Events["RPLTokensClaimed"].ID},
+		{common.BytesToHash(rocketClaimTrustedNode.Address.Bytes())},
+		{common.BytesToHash(claimerAddress.Bytes())},
+	}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, intervalSize, startBlock, nil, nil)
