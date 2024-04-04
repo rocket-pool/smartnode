@@ -32,7 +32,7 @@ func (f *oracleDaoMembersContextFactory) Create(args url.Values) (*oracleDaoMemb
 
 func (f *oracleDaoMembersContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoMembersContext, api.OracleDaoMembersData](
-		router, "members", f, f.handler.serviceProvider.ServiceProvider,
+		router, "members", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -54,7 +54,7 @@ func (c *oracleDaoMembersContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

@@ -33,7 +33,7 @@ func (f *networkTimezoneContextFactory) Create(args url.Values) (*networkTimezon
 
 func (f *networkTimezoneContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkTimezoneContext, api.NetworkTimezonesData](
-		router, "timezone-map", f, f.handler.serviceProvider.ServiceProvider,
+		router, "timezone-map", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -53,7 +53,7 @@ func (c *networkTimezoneContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

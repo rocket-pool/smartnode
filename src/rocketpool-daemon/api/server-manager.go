@@ -23,6 +23,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/config"
 )
 
+const (
+	cliOrigin string = "cli"
+	webOrigin string = "net"
+)
+
 // ServerManager manages all of the daemon sockets and servers run by the main Smart Node daemon
 type ServerManager struct {
 	// The server for the CLI to interact with
@@ -40,7 +45,7 @@ func NewServerManager(sp *services.ServiceProvider, cfgPath string, stopWg *sync
 
 	// Start the CLI server
 	cliSocketPath := filepath.Join(sp.GetUserDir(), config.SmartNodeCliSocketFilename)
-	cliServer, err := createServer(sp, cliSocketPath)
+	cliServer, err := createServer(cliOrigin, sp, cliSocketPath)
 	if err != nil {
 		return nil, fmt.Errorf("error creating CLI server: %w", err)
 	}
@@ -66,23 +71,27 @@ func (m *ServerManager) Stop() {
 }
 
 // Creates a new Smart Node API server
-func createServer(sp *services.ServiceProvider, socketPath string) (*server.ApiServer, error) {
+func createServer(origin string, sp *services.ServiceProvider, socketPath string) (*server.ApiServer, error) {
+	apiLogger := sp.GetApiLogger()
+	subLogger := apiLogger.CreateSubLogger(origin)
+	ctx := subLogger.CreateContextWithLogger(sp.GetBaseContext())
+
 	handlers := []server.IHandler{
-		auction.NewAuctionHandler(sp),
-		faucet.NewFaucetHandler(sp),
-		minipool.NewMinipoolHandler(sp),
-		network.NewNetworkHandler(sp),
-		node.NewNodeHandler(sp),
-		odao.NewOracleDaoHandler(sp),
-		pdao.NewProtocolDaoHandler(sp),
-		queue.NewQueueHandler(sp),
-		security.NewSecurityCouncilHandler(sp),
-		service.NewServiceHandler(sp),
-		tx.NewTxHandler(sp),
-		wallet.NewWalletHandler(sp),
+		auction.NewAuctionHandler(subLogger, ctx, sp),
+		faucet.NewFaucetHandler(subLogger, ctx, sp),
+		minipool.NewMinipoolHandler(subLogger, ctx, sp),
+		network.NewNetworkHandler(subLogger, ctx, sp),
+		node.NewNodeHandler(subLogger, ctx, sp),
+		odao.NewOracleDaoHandler(subLogger, ctx, sp),
+		pdao.NewProtocolDaoHandler(subLogger, ctx, sp),
+		queue.NewQueueHandler(subLogger, ctx, sp),
+		security.NewSecurityCouncilHandler(subLogger, ctx, sp),
+		service.NewServiceHandler(subLogger, ctx, sp),
+		tx.NewTxHandler(subLogger, ctx, sp),
+		wallet.NewWalletHandler(subLogger, ctx, sp),
 	}
 
-	server, err := server.NewApiServer(socketPath, handlers, config.SmartNodeDaemonBaseRoute, config.SmartNodeApiVersion)
+	server, err := server.NewApiServer(subLogger.Logger, socketPath, handlers, config.SmartNodeDaemonBaseRoute, config.SmartNodeApiVersion)
 	if err != nil {
 		return nil, err
 	}

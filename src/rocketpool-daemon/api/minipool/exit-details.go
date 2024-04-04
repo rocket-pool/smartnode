@@ -31,7 +31,7 @@ func (f *minipoolExitDetailsContextFactory) Create(args url.Values) (*minipoolEx
 
 func (f *minipoolExitDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolExitDetailsContext, api.MinipoolExitDetailsData](
-		router, "exit/details", f, f.handler.serviceProvider,
+		router, "exit/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 

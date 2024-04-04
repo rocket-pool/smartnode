@@ -34,7 +34,7 @@ func (f *minipoolDelegateDetailsContextFactory) Create(args url.Values) (*minipo
 
 func (f *minipoolDelegateDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolDelegateDetailsContext, api.MinipoolDelegateDetailsData](
-		router, "delegate/details", f, f.handler.serviceProvider,
+		router, "delegate/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 

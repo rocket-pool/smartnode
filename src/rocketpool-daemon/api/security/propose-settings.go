@@ -39,7 +39,7 @@ func (f *securityProposeSettingContextFactory) Create(args url.Values) (*securit
 
 func (f *securityProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*securityProposeSettingContext, api.SecurityProposeSettingData](
-		router, "setting/propose", f, f.handler.serviceProvider.ServiceProvider,
+		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -60,7 +60,7 @@ func (c *securityProposeSettingContext) PrepareData(data *api.SecurityProposeSet
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireOnSecurityCouncil()
+	status, err := sp.RequireOnSecurityCouncil(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

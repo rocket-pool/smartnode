@@ -44,7 +44,7 @@ func (f *protocolDaoGetClaimableBondsContextFactory) Create(args url.Values) (*p
 
 func (f *protocolDaoGetClaimableBondsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoGetClaimableBondsContext, api.ProtocolDaoGetClaimableBondsData](
-		router, "get-claimable-bonds", f, f.handler.serviceProvider.ServiceProvider,
+		router, "get-claimable-bonds", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -70,7 +70,7 @@ func (c *protocolDaoGetClaimableBondsContext) Initialize() (types.ResponseStatus
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -90,7 +90,7 @@ func (c *protocolDaoGetClaimableBondsContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoGetClaimableBondsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	// Get the proposals
 	props, err := c.pdaoMgr.GetProposals(c.pdaoMgr.ProposalCount.Formatted(), true, nil)
 	if err != nil {

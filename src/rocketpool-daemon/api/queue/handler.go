@@ -1,19 +1,26 @@
 package queue
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 )
 
 type QueueHandler struct {
+	logger          *log.Logger
+	ctx             context.Context
 	serviceProvider *services.ServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewQueueHandler(serviceProvider *services.ServiceProvider) *QueueHandler {
+func NewQueueHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *QueueHandler {
 	h := &QueueHandler{
+		logger:          logger,
+		ctx:             ctx,
 		serviceProvider: serviceProvider,
 	}
 	h.factories = []server.IContextFactory{

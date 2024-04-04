@@ -34,7 +34,7 @@ func (f *minipoolRefundContextFactory) Create(args url.Values) (*minipoolRefundC
 
 func (f *minipoolRefundContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolRefundContext, types.BatchTxInfoData](
-		router, "refund", f, f.handler.serviceProvider.ServiceProvider,
+		router, "refund", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -48,7 +48,7 @@ type minipoolRefundContext struct {
 }
 
 func (c *minipoolRefundContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "refund")
+	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "refund")
 }
 
 func (c *minipoolRefundContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {

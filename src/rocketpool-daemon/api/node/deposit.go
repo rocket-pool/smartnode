@@ -53,7 +53,7 @@ func (f *nodeDepositContextFactory) Create(args url.Values) (*nodeDepositContext
 
 func (f *nodeDepositContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeDepositContext, api.NodeDepositData](
-		router, "deposit", f, f.handler.serviceProvider.ServiceProvider,
+		router, "deposit", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -89,7 +89,7 @@ func (c *nodeDepositContext) Initialize() (types.ResponseStatus, error) {
 	nodeAddress, _ := c.w.GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -134,7 +134,7 @@ func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	rs := c.cfg.GetNetworkResources()
 
 	// Initial population

@@ -34,7 +34,7 @@ func (f *faucetWithdrawContextFactory) Create(args url.Values) (*faucetWithdrawC
 
 func (f *faucetWithdrawContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*faucetWithdrawContext, api.FaucetWithdrawRplData](
-		router, "withdraw-rpl", f, f.handler.serviceProvider.ServiceProvider,
+		router, "withdraw-rpl", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -58,7 +58,7 @@ func (c *faucetWithdrawContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -80,7 +80,7 @@ func (c *faucetWithdrawContext) GetState(mc *batch.MultiCaller) {
 
 func (c *faucetWithdrawContext) PrepareData(data *api.FaucetWithdrawRplData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get node account balance
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	nodeAccountBalance, err := c.rp.Client.BalanceAt(ctx, c.nodeAddress, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting node account balance: %w", err)

@@ -40,7 +40,7 @@ func (f *nodeBurnContextFactory) Create(args url.Values) (*nodeBurnContext, erro
 
 func (f *nodeBurnContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeBurnContext, api.NodeBurnData](
-		router, "burn", f, f.handler.serviceProvider.ServiceProvider,
+		router, "burn", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -68,7 +68,7 @@ func (c *nodeBurnContext) Initialize() (types.ResponseStatus, error) {
 	if err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

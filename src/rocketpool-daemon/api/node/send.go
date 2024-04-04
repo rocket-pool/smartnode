@@ -43,7 +43,7 @@ func (f *nodeSendContextFactory) Create(args url.Values) (*nodeSendContext, erro
 
 func (f *nodeSendContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeSendContext, api.NodeSendData](
-		router, "send", f, f.handler.serviceProvider.ServiceProvider,
+		router, "send", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -92,7 +92,7 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 		data.TokenName = tokenContract.Details.Name
 	} else {
 		// Load the contracts
-		status, err := sp.RequireRocketPoolContracts()
+		status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 		if err != nil {
 			return status, err
 		}

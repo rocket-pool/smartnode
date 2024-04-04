@@ -33,7 +33,7 @@ func (f *protocolDaoSettingsContextFactory) Create(args url.Values) (*protocolDa
 
 func (f *protocolDaoSettingsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoSettingsContext, api.ProtocolDaoSettingsData](
-		router, "settings", f, f.handler.serviceProvider.ServiceProvider,
+		router, "settings", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -54,7 +54,7 @@ func (c *protocolDaoSettingsContext) Initialize() (types.ResponseStatus, error) 
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

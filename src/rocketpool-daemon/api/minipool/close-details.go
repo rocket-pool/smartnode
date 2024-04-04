@@ -35,7 +35,7 @@ func (f *minipoolCloseDetailsContextFactory) Create(args url.Values) (*minipoolC
 
 func (f *minipoolCloseDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolCloseDetailsContext, api.MinipoolCloseDetailsData](
-		router, "close/details", f, f.handler.serviceProvider,
+		router, "close/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 
@@ -82,7 +82,7 @@ func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, 
 }
 
 func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	// Get the current ETH balances of each minipool
 	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {

@@ -43,7 +43,7 @@ func (f *minipoolChangeCredsContextFactory) Create(args url.Values) (*minipoolCh
 
 func (f *minipoolChangeCredsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*minipoolChangeCredsContext, types.SuccessData](
-		router, "change-withdrawal-creds", f, f.handler.serviceProvider.ServiceProvider,
+		router, "change-withdrawal-creds", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -69,7 +69,7 @@ func (c *minipoolChangeCredsContext) Initialize() (types.ResponseStatus, error) 
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireBeaconClientSynced()
+	err := sp.RequireBeaconClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
@@ -91,7 +91,7 @@ func (c *minipoolChangeCredsContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *minipoolChangeCredsContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	// Get minipool validator pubkey
 	pubkey := c.mp.Common().Pubkey.Get()
 

@@ -43,7 +43,7 @@ func (f *nodeClaimAndStakeContextFactory) Create(args url.Values) (*nodeClaimAnd
 
 func (f *nodeClaimAndStakeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeClaimAndStakeContext, types.TxInfoData](
-		router, "claim-and-stake", f, f.handler.serviceProvider.ServiceProvider,
+		router, "claim-and-stake", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -65,7 +65,7 @@ func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bin
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

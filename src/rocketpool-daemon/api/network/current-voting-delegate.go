@@ -33,7 +33,7 @@ func (f *networkCurrentVotingDelegateContextFactory) Create(args url.Values) (*n
 
 func (f *networkCurrentVotingDelegateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkCurrentVotingDelegateContext, api.NetworkCurrentVotingDelegateData](
-		router, "voting-delegate", f, f.handler.serviceProvider.ServiceProvider,
+		router, "voting-delegate", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -54,7 +54,7 @@ func (c *networkCurrentVotingDelegateContext) Initialize() (types.ResponseStatus
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

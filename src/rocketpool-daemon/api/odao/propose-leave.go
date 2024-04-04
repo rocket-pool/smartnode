@@ -35,7 +35,7 @@ func (f *oracleDaoProposeLeaveContextFactory) Create(args url.Values) (*oracleDa
 
 func (f *oracleDaoProposeLeaveContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoProposeLeaveContext, api.OracleDaoProposeLeaveData](
-		router, "propose-leave", f, f.handler.serviceProvider.ServiceProvider,
+		router, "propose-leave", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -59,7 +59,7 @@ func (c *oracleDaoProposeLeaveContext) Initialize() (types.ResponseStatus, error
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireOnOracleDao()
+	status, err := sp.RequireOnOracleDao(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -90,7 +90,7 @@ func (c *oracleDaoProposeLeaveContext) GetState(mc *batch.MultiCaller) {
 
 func (c *oracleDaoProposeLeaveContext) PrepareData(data *api.OracleDaoProposeLeaveData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the timestamp of the latest block
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	latestHeader, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block header: %w", err)

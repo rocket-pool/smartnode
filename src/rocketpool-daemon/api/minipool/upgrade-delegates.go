@@ -34,7 +34,7 @@ func (f *minipoolUpgradeDelegatesContextFactory) Create(args url.Values) (*minip
 
 func (f *minipoolUpgradeDelegatesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolUpgradeDelegatesContext, types.BatchTxInfoData](
-		router, "delegate/upgrade", f, f.handler.serviceProvider.ServiceProvider,
+		router, "delegate/upgrade", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -48,7 +48,7 @@ type minipoolUpgradeDelegatesContext struct {
 }
 
 func (c *minipoolUpgradeDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "upgrade-delegate")
+	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "upgrade-delegate")
 }
 
 func (c *minipoolUpgradeDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {

@@ -27,7 +27,7 @@ func (f *serviceClientStatusContextFactory) Create(args url.Values) (*serviceCli
 
 func (f *serviceClientStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*serviceClientStatusContext, api.ServiceClientStatusData](
-		router, "client-status", f, f.handler.serviceProvider.ServiceProvider,
+		router, "client-status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -43,7 +43,7 @@ func (c *serviceClientStatusContext) PrepareData(data *api.ServiceClientStatusDa
 	sp := c.handler.serviceProvider
 	ec := sp.GetEthClient()
 	bc := sp.GetBeaconClient()
-	ctx := sp.GetContext()
+	ctx := c.handler.ctx
 
 	// Get the EC manager status
 	ecMgrStatus := ec.CheckStatus(ctx)

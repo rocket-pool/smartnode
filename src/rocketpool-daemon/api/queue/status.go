@@ -34,7 +34,7 @@ func (f *queueStatusContextFactory) Create(args url.Values) (*queueStatusContext
 
 func (f *queueStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*queueStatusContext, api.QueueStatusData](
-		router, "status", f, f.handler.serviceProvider.ServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -55,7 +55,7 @@ func (c *queueStatusContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

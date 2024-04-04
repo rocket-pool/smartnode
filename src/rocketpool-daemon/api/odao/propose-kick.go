@@ -43,7 +43,7 @@ func (f *oracleDaoProposeKickContextFactory) Create(args url.Values) (*oracleDao
 
 func (f *oracleDaoProposeKickContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoProposeKickContext, api.OracleDaoProposeKickData](
-		router, "propose-kick", f, f.handler.serviceProvider.ServiceProvider,
+		router, "propose-kick", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -70,7 +70,7 @@ func (c *oracleDaoProposeKickContext) Initialize() (types.ResponseStatus, error)
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireOnOracleDao()
+	status, err := sp.RequireOnOracleDao(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -105,7 +105,7 @@ func (c *oracleDaoProposeKickContext) GetState(mc *batch.MultiCaller) {
 
 func (c *oracleDaoProposeKickContext) PrepareData(data *api.OracleDaoProposeKickData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the timestamp of the latest block
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	latestHeader, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block header: %w", err)

@@ -55,7 +55,7 @@ func (f *nodeStatusContextFactory) Create(args url.Values) (*nodeStatusContext, 
 
 func (f *nodeStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeStatusContext, api.NodeStatusData](
-		router, "status", f, f.handler.serviceProvider.ServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -100,7 +100,7 @@ func (c *nodeStatusContext) Initialize() (types.ResponseStatus, error) {
 	if err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -195,7 +195,7 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	// Beacon info
 	beaconConfig, err := c.bc.GetEth2Config(ctx)
 	if err != nil {
@@ -602,7 +602,7 @@ func (c *nodeStatusContext) getTrueBorrowAndBondAmounts(mps []minipool.IMinipool
 		}
 	}
 
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	statuses, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
 		return nil, nil, nil, nil, fmt.Errorf("error loading validator statuses: %w", err)

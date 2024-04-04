@@ -28,7 +28,7 @@ func (f *nodeBalanceContextFactory) Create(args url.Values) (*nodeBalanceContext
 
 func (f *nodeBalanceContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeBalanceContext, api.NodeBalanceData](
-		router, "balance", f, f.handler.serviceProvider.ServiceProvider,
+		router, "balance", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -43,7 +43,7 @@ type nodeBalanceContext struct {
 func (c *nodeBalanceContext) PrepareData(data *api.NodeBalanceData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	ec := sp.GetEthClient()
-	ctx := sp.GetContext()
+	ctx := c.handler.ctx
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
@@ -51,7 +51,7 @@ func (c *nodeBalanceContext) PrepareData(data *api.NodeBalanceData, opts *bind.T
 	if err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	err = sp.RequireEthClientSynced()
+	err = sp.RequireEthClientSynced(ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}

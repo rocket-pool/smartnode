@@ -33,7 +33,7 @@ func (f *networkDownloadRewardsContextFactory) Create(args url.Values) (*network
 
 func (f *networkDownloadRewardsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkDownloadRewardsContext, types.SuccessData](
-		router, "download-rewards-file", f, f.handler.serviceProvider.ServiceProvider,
+		router, "download-rewards-file", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -54,7 +54,7 @@ func (c *networkDownloadRewardsContext) PrepareData(data *types.SuccessData, opt
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

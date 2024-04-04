@@ -41,7 +41,7 @@ func (f *auctionBidContextFactory) Create(args url.Values) (*auctionBidContext, 
 
 func (f *auctionBidContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionBidContext, api.AuctionBidOnLotData](
-		router, "lots/bid", f, f.handler.serviceProvider.ServiceProvider,
+		router, "lots/bid", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -64,7 +64,7 @@ func (c *auctionBidContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -93,7 +93,7 @@ func (c *auctionBidContext) GetState(mc *batch.MultiCaller) {
 
 func (c *auctionBidContext) PrepareData(data *api.AuctionBidOnLotData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the current block
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	currentBlock, err := c.rp.Client.BlockNumber(ctx)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting current EL block: %w", err)

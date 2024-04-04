@@ -44,7 +44,7 @@ func (f *protocolDaoClaimBondsContextFactory) Create(body api.ProtocolDaoClaimBo
 
 func (f *protocolDaoClaimBondsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStagePost[*protocolDaoClaimBondsContext, api.ProtocolDaoClaimBondsBody, types.DataBatch[api.ProtocolDaoClaimBondsData]](
-		router, "claim-bonds", f, f.handler.serviceProvider.ServiceProvider,
+		router, "claim-bonds", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -68,7 +68,7 @@ func (c *protocolDaoClaimBondsContext) Initialize() (types.ResponseStatus, error
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

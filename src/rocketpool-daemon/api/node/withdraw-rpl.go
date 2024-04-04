@@ -42,7 +42,7 @@ func (f *nodeWithdrawRplContextFactory) Create(args url.Values) (*nodeWithdrawRp
 
 func (f *nodeWithdrawRplContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeWithdrawRplContext, api.NodeWithdrawRplData](
-		router, "withdraw-rpl", f, f.handler.serviceProvider.ServiceProvider,
+		router, "withdraw-rpl", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -69,7 +69,7 @@ func (c *nodeWithdrawRplContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -101,7 +101,7 @@ func (c *nodeWithdrawRplContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *nodeWithdrawRplContext) PrepareData(data *api.NodeWithdrawRplData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	header, err := c.ec.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block header: %w", err)

@@ -42,7 +42,7 @@ func (f *securityStatusContextFactory) Create(args url.Values) (*securityStatusC
 
 func (f *securityStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityStatusContext, api.SecurityStatusData](
-		router, "status", f, f.handler.serviceProvider.ServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -67,7 +67,7 @@ func (c *securityStatusContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

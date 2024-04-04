@@ -44,7 +44,7 @@ func (f *nodeRewardsContextFactory) Create(args url.Values) (*nodeRewardsContext
 
 func (f *nodeRewardsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeRewardsContext, api.NodeRewardsData](
-		router, "rewards", f, f.handler.serviceProvider.ServiceProvider,
+		router, "rewards", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -62,11 +62,11 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	rp := sp.GetRocketPool()
 	ec := sp.GetEthClient()
 	bc := sp.GetBeaconClient()
-	ctx := sp.GetContext()
+	ctx := c.handler.ctx
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

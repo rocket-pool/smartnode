@@ -42,7 +42,7 @@ func (f *securityVoteOnProposalContextFactory) Create(args url.Values) (*securit
 
 func (f *securityVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityVoteOnProposalContext, api.SecurityVoteOnProposalData](
-		router, "proposal/vote", f, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -69,7 +69,7 @@ func (c *securityVoteOnProposalContext) Initialize() (types.ResponseStatus, erro
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireOnSecurityCouncil()
+	status, err := sp.RequireOnSecurityCouncil(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

@@ -44,7 +44,7 @@ func (f *oracleDaoExecuteProposalsContextFactory) Create(args url.Values) (*orac
 
 func (f *oracleDaoExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalsContext, types.DataBatch[api.OracleDaoExecuteProposalData]](
-		router, "proposal/execute", f, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/execute", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -68,7 +68,7 @@ func (c *oracleDaoExecuteProposalsContext) Initialize() (types.ResponseStatus, e
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

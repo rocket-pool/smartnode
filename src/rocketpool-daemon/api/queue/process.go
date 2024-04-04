@@ -34,7 +34,7 @@ func (f *queueProcessContextFactory) Create(args url.Values) (*queueProcessConte
 
 func (f *queueProcessContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*queueProcessContext, api.QueueProcessData](
-		router, "process", f, f.handler.serviceProvider.ServiceProvider,
+		router, "process", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -61,7 +61,7 @@ func (c *queueProcessContext) Initialize() (types.ResponseStatus, error) {
 	if err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

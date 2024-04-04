@@ -28,7 +28,7 @@ func (f *serviceRestartVcContextFactory) Create(args url.Values) (*serviceRestar
 
 func (f *serviceRestartVcContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*serviceRestartVcContext, types.SuccessData](
-		router, "restart-vc", f, f.handler.serviceProvider.ServiceProvider,
+		router, "restart-vc", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -46,7 +46,7 @@ func (c *serviceRestartVcContext) PrepareData(data *types.SuccessData, opts *bin
 	bc := sp.GetBeaconClient()
 	d := sp.GetDocker()
 
-	err := validator.StopValidator(cfg, bc, nil, d, true)
+	err := validator.StopValidator(c.handler.ctx, cfg, bc, d, true)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error restarting validator client: %w", err)
 	}

@@ -42,7 +42,7 @@ func (f *minipoolVanityContextFactory) Create(args url.Values) (*minipoolVanityC
 
 func (f *minipoolVanityContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolVanityContext, api.MinipoolVanityArtifactsData](
-		router, "vanity-artifacts", f, f.handler.serviceProvider.ServiceProvider,
+		router, "vanity-artifacts", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

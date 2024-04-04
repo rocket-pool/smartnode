@@ -44,7 +44,7 @@ func (f *protocolDaoProposeSettingContextFactory) Create(args url.Values) (*prot
 
 func (f *protocolDaoProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeSettingContext, api.ProtocolDaoProposeSettingData](
-		router, "setting/propose", f, f.handler.serviceProvider.ServiceProvider,
+		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -74,7 +74,7 @@ func (c *protocolDaoProposeSettingContext) Initialize() (types.ResponseStatus, e
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -134,7 +134,7 @@ func (c *protocolDaoProposeSettingContext) PrepareData(data *api.ProtocolDaoProp
 }
 
 func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.SettingsCategory, opts *bind.TransactOpts) (bool, *eth.TransactionInfo, error, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	valueName := "value"
 
 	// Try the bool settings

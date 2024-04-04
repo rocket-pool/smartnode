@@ -38,7 +38,7 @@ func (f *nodeSetRplLockingAllowedContextFactory) Create(args url.Values) (*nodeS
 
 func (f *nodeSetRplLockingAllowedContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetRplLockingAllowedContext, api.NodeSetRplLockingAllowedData](
-		router, "set-rpl-locking-allowed", f, f.handler.serviceProvider.ServiceProvider,
+		router, "set-rpl-locking-allowed", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -61,7 +61,7 @@ func (c *nodeSetRplLockingAllowedContext) Initialize() (types.ResponseStatus, er
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

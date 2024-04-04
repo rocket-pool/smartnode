@@ -40,7 +40,7 @@ func (f *networkStatsContextFactory) Create(args url.Values) (*networkStatsConte
 
 func (f *networkStatsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkStatsContext, api.NetworkStatsData](
-		router, "stats", f, f.handler.serviceProvider.ServiceProvider,
+		router, "stats", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -65,7 +65,7 @@ func (c *networkStatsContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

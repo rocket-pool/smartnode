@@ -39,7 +39,7 @@ func (f *nodeRegisterContextFactory) Create(args url.Values) (*nodeRegisterConte
 
 func (f *nodeRegisterContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeRegisterContext, api.NodeRegisterData](
-		router, "register", f, f.handler.serviceProvider.ServiceProvider,
+		router, "register", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -62,7 +62,7 @@ func (c *nodeRegisterContext) Initialize() (types.ResponseStatus, error) {
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

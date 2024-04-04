@@ -35,7 +35,7 @@ func (f *faucetStatusContextFactory) Create(args url.Values) (*faucetStatusConte
 
 func (f *faucetStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*faucetStatusContext, api.FaucetStatusData](
-		router, "status", f, f.handler.serviceProvider.ServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -59,7 +59,7 @@ func (c *faucetStatusContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -83,7 +83,7 @@ func (c *faucetStatusContext) GetState(mc *batch.MultiCaller) {
 
 func (c *faucetStatusContext) PrepareData(data *api.FaucetStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the current block
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	currentBlock, err := c.rp.Client.BlockNumber(ctx)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting current EL block: %w", err)

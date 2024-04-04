@@ -35,7 +35,7 @@ func (f *minipoolRescueDissolvedDetailsContextFactory) Create(args url.Values) (
 
 func (f *minipoolRescueDissolvedDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolRescueDissolvedDetailsContext, api.MinipoolRescueDissolvedDetailsData](
-		router, "rescue-dissolved/details", f, f.handler.serviceProvider,
+		router, "rescue-dissolved/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 
@@ -53,7 +53,7 @@ func (c *minipoolRescueDissolvedDetailsContext) Initialize() (types.ResponseStat
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	err := sp.RequireBeaconClientSynced()
+	err := sp.RequireBeaconClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
@@ -77,7 +77,7 @@ func (c *minipoolRescueDissolvedDetailsContext) GetMinipoolDetails(mc *batch.Mul
 }
 
 func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolRescueDissolvedDetailsData) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	// Get the rescue details
 	pubkeys := []beacon.ValidatorPubkey{}
 	detailsMap := map[beacon.ValidatorPubkey]int{}

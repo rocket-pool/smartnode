@@ -35,7 +35,7 @@ func (f *networkPriceContextFactory) Create(args url.Values) (*networkPriceConte
 
 func (f *networkPriceContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkPriceContext, api.NetworkRplPriceData](
-		router, "rpl-price", f, f.handler.serviceProvider.ServiceProvider,
+		router, "rpl-price", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -56,7 +56,7 @@ func (c *networkPriceContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

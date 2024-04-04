@@ -1,7 +1,9 @@
 package minipool
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -12,6 +14,7 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
@@ -53,40 +56,37 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 	router *mux.Router,
 	functionName string,
 	factory IMinipoolCallContextFactory[ContextType, DataType],
+	ctx context.Context,
+	logger *log.Logger,
 	serviceProvider *services.ServiceProvider,
 ) {
 	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
 		// Log
 		args := r.URL.Query()
-		log := serviceProvider.GetApiLogger()
-		isDebug := serviceProvider.IsDebugMode()
-		if isDebug {
-			log.Printlnf("[%s] => %s", r.Method, r.URL.String())
-		} else {
-			log.Printlnf("[%s] => %s", r.Method, r.URL.Path)
-		}
+		logger.Info("New request", slog.String(log.MethodKey, r.Method), slog.String(log.PathKey, r.URL.Path))
+		logger.Debug("Request params:", slog.String(log.QueryKey, r.URL.RawQuery))
 
 		// Check the method
 		if r.Method != http.MethodGet {
-			server.HandleInvalidMethod(log, w)
+			server.HandleInvalidMethod(logger.Logger, w)
 			return
 		}
 
 		// Create the handler and deal with any input validation errors
-		context, err := factory.Create(args)
+		mpContext, err := factory.Create(args)
 		if err != nil {
-			server.HandleInputError(log, w, err)
+			server.HandleInputError(logger.Logger, w, err)
 			return
 		}
 
 		// Run the context's processing routine
-		status, response, err := runMinipoolRoute[DataType](context, serviceProvider)
-		server.HandleResponse(log, w, status, response, err, isDebug)
+		status, response, err := runMinipoolRoute[DataType](ctx, mpContext, serviceProvider)
+		server.HandleResponse(logger.Logger, w, status, response, err)
 	})
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
-func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider) (types.ResponseStatus, *types.ApiResponse[DataType], error) {
+func runMinipoolRoute[DataType any](ctx context.Context, mpContext IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider) (types.ResponseStatus, *types.ApiResponse[DataType], error) {
 	// Get the services
 	w := serviceProvider.GetWallet()
 	q := serviceProvider.GetQueryManager()
@@ -94,13 +94,13 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	nodeAddress, _ := w.GetAddress()
 
 	// Common requirements
-	status, err := serviceProvider.RequireNodeRegistered()
+	status, err := serviceProvider.RequireNodeRegistered(ctx)
 	if err != nil {
 		return status, nil, err
 	}
 
 	// Get the latest block for consistency
-	latestBlock, err := rp.Client.BlockNumber(serviceProvider.GetContext())
+	latestBlock, err := rp.Client.BlockNumber(ctx)
 	if err != nil {
 		return types.ResponseStatus_Error, nil, fmt.Errorf("error getting latest block number: %w", err)
 	}
@@ -115,7 +115,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	}
 
 	// Supplemental function-specific bindings
-	status, err = ctx.Initialize()
+	status, err = mpContext.Initialize()
 	if err != nil {
 		return status, nil, err
 	}
@@ -123,7 +123,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	// Get contract state
 	err = q.Query(func(mc *batch.MultiCaller) error {
 		node.MinipoolCount.AddToQuery(mc)
-		ctx.GetState(node, mc)
+		mpContext.GetState(node, mc)
 		return nil
 	}, opts)
 	if err != nil {
@@ -137,7 +137,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	}
 
 	// Supplemental function-specific check to see if minipool processing should continue
-	if !ctx.CheckState(node, data) {
+	if !mpContext.CheckState(node, data) {
 		return types.ResponseStatus_Success, response, nil
 	}
 
@@ -159,7 +159,7 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 
 	// Get the relevant details
 	err = rp.BatchQuery(len(addresses), minipoolBatchSize, func(mc *batch.MultiCaller, i int) error {
-		ctx.GetMinipoolDetails(mc, mps[i], i) // Supplemental function-specific minipool details
+		mpContext.GetMinipoolDetails(mc, mps[i], i) // Supplemental function-specific minipool details
 		return nil
 	}, opts)
 	if err != nil {
@@ -167,6 +167,6 @@ func runMinipoolRoute[DataType any](ctx IMinipoolCallContext[DataType], serviceP
 	}
 
 	// Supplemental function-specific response construction
-	status, err = ctx.PrepareData(addresses, mps, data)
+	status, err = mpContext.PrepareData(addresses, mps, data)
 	return status, response, err
 }

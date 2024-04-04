@@ -44,7 +44,7 @@ func (f *minipoolRescueDissolvedContextFactory) Create(args url.Values) (*minipo
 
 func (f *minipoolRescueDissolvedContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolRescueDissolvedContext, types.BatchTxInfoData](
-		router, "rescue-dissolved", f, f.handler.serviceProvider.ServiceProvider,
+		router, "rescue-dissolved", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -79,11 +79,11 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData
 	c.rs = sp.GetNetworkResources()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
-	err = sp.RequireBeaconClientSynced()
+	err = sp.RequireBeaconClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}

@@ -34,7 +34,7 @@ func (f *networkFeeContextFactory) Create(args url.Values) (*networkFeeContext, 
 
 func (f *networkFeeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkFeeContext, api.NetworkNodeFeeData](
-		router, "node-fee", f, f.handler.serviceProvider.ServiceProvider,
+		router, "node-fee", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -55,7 +55,7 @@ func (c *networkFeeContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

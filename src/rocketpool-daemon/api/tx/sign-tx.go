@@ -44,7 +44,7 @@ func (f *txSignTxContextFactory) Create(body api.SubmitTxBody) (*txSignTxContext
 
 func (f *txSignTxContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessPost[*txSignTxContext, api.SubmitTxBody, api.TxSignTxData](
-		router, "sign-tx", f, f.handler.serviceProvider.ServiceProvider,
+		router, "sign-tx", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
