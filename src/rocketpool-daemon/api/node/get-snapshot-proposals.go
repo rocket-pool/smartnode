@@ -39,7 +39,7 @@ func (f *nodeGetSnapshotProposalsContextFactory) Create(args url.Values) (*nodeG
 
 func (f *nodeGetSnapshotProposalsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeGetSnapshotProposalsContext, api.NodeGetSnapshotProposalsData](
-		router, "get-snapshot-proposals", f, f.handler.serviceProvider.ServiceProvider,
+		router, "get-snapshot-proposals", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -63,7 +63,7 @@ func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotP
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

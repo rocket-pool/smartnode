@@ -46,7 +46,7 @@ func (f *minipoolCanChangeCredsContextFactory) Create(args url.Values) (*minipoo
 
 func (f *minipoolCanChangeCredsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*minipoolCanChangeCredsContext, api.MinipoolCanChangeWithdrawalCredentialsData](
-		router, "change-withdrawal-creds/verify", f, f.handler.serviceProvider.ServiceProvider,
+		router, "change-withdrawal-creds/verify", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -73,7 +73,7 @@ func (c *minipoolCanChangeCredsContext) Initialize() (types.ResponseStatus, erro
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireBeaconClientSynced()
+	err := sp.RequireBeaconClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
@@ -105,7 +105,7 @@ func (c *minipoolCanChangeCredsContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *minipoolCanChangeCredsContext) PrepareData(data *api.MinipoolCanChangeWithdrawalCredentialsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 
 	// Validate minipool owner
 	if c.mpv3.Common().NodeAddress.Get() != c.nodeAddress {

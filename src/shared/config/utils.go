@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/rocket-pool/node-manager-core/config"
+	"github.com/rocket-pool/node-manager-core/log"
 )
 
 func (cfg *SmartNodeConfig) GetNetworkResources() *config.NetworkResources {
@@ -88,4 +89,20 @@ func addAndCheckForDuplicate(portMap map[uint16]bool, param config.Parameter[uin
 		portMap[port] = true
 	}
 	return portMap, errors
+}
+
+func (cfg *SmartNodeConfig) GetApiLogFilePath() string {
+	return filepath.Join(cfg.RocketPoolDirectory, LogDir, ApiLogName)
+}
+
+func (cfg *SmartNodeConfig) GetTasksLogFilePath() string {
+	return filepath.Join(cfg.RocketPoolDirectory, LogDir, TasksLogName)
+}
+
+func (cfg *SmartNodeConfig) GetWatchtowerLogFilePath() string {
+	return filepath.Join(cfg.RocketPoolDirectory, LogDir, WatchtowerLogName)
+}
+
+func (cfg *SmartNodeConfig) GetLoggerOptions() log.LoggerOptions {
+	return cfg.Logging.GetOptions()
 }

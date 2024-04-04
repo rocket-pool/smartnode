@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/services"
 	nmcutils "github.com/rocket-pool/node-manager-core/utils"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
@@ -21,6 +22,13 @@ import (
 
 // Settings
 const (
+	// Log keys
+	PrimarySyncProgressKey  string = "primarySyncProgress"
+	FallbackSyncProgressKey string = "fallbackSyncProgress"
+	SyncProgressKey         string = "syncProgress"
+	PrimaryErrorKey         string = "primaryError"
+	FallbackErrorKey        string = "fallbackError"
+
 	EthClientSyncTimeout    int64 = 8 // 8 seconds
 	BeaconClientSyncTimeout int64 = 8 // 8 seconds
 
@@ -42,8 +50,8 @@ var (
 // === Requirements ===
 // ====================
 
-func (sp *ServiceProvider) RequireRocketPoolContracts() (types.ResponseStatus, error) {
-	err := sp.RequireEthClientSynced()
+func (sp *ServiceProvider) RequireRocketPoolContracts(ctx context.Context) (types.ResponseStatus, error) {
+	err := sp.RequireEthClientSynced(ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
@@ -54,8 +62,8 @@ func (sp *ServiceProvider) RequireRocketPoolContracts() (types.ResponseStatus, e
 	return types.ResponseStatus_Success, nil
 }
 
-func (sp *ServiceProvider) RequireEthClientSynced() error {
-	ethClientSynced, err := sp.waitEthClientSynced(false, EthClientSyncTimeout)
+func (sp *ServiceProvider) RequireEthClientSynced(ctx context.Context) error {
+	ethClientSynced, err := sp.waitEthClientSynced(ctx, false, EthClientSyncTimeout)
 	if err != nil {
 		return err
 	}
@@ -65,8 +73,8 @@ func (sp *ServiceProvider) RequireEthClientSynced() error {
 	return nil
 }
 
-func (sp *ServiceProvider) RequireBeaconClientSynced() error {
-	beaconClientSynced, err := sp.waitBeaconClientSynced(false, BeaconClientSyncTimeout)
+func (sp *ServiceProvider) RequireBeaconClientSynced(ctx context.Context) error {
+	beaconClientSynced, err := sp.waitBeaconClientSynced(ctx, false, BeaconClientSyncTimeout)
 	if err != nil {
 		return err
 	}
@@ -77,14 +85,14 @@ func (sp *ServiceProvider) RequireBeaconClientSynced() error {
 }
 
 // Wait for the Executon client to sync; timeout of 0 indicates no timeout
-func (sp *ServiceProvider) WaitEthClientSynced(verbose bool) error {
-	_, err := sp.waitEthClientSynced(verbose, 0)
+func (sp *ServiceProvider) WaitEthClientSynced(ctx context.Context, verbose bool) error {
+	_, err := sp.waitEthClientSynced(ctx, verbose, 0)
 	return err
 }
 
 // Wait for the Beacon client to sync; timeout of 0 indicates no timeout
-func (sp *ServiceProvider) WaitBeaconClientSynced(verbose bool) error {
-	_, err := sp.waitBeaconClientSynced(verbose, 0)
+func (sp *ServiceProvider) WaitBeaconClientSynced(ctx context.Context, verbose bool) error {
+	_, err := sp.waitBeaconClientSynced(ctx, verbose, 0)
 	return err
 }
 
@@ -107,11 +115,11 @@ func (sp *ServiceProvider) RequireWalletReady() error {
 	return utils.CheckIfWalletReady(status)
 }
 
-func (sp *ServiceProvider) RequireNodeRegistered() (types.ResponseStatus, error) {
+func (sp *ServiceProvider) RequireNodeRegistered(ctx context.Context) (types.ResponseStatus, error) {
 	if err := sp.RequireNodeAddress(); err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	if status, err := sp.RequireRocketPoolContracts(); err != nil {
+	if status, err := sp.RequireRocketPoolContracts(ctx); err != nil {
 		return status, err
 	}
 	nodeRegistered, err := sp.getNodeRegistered()
@@ -140,11 +148,11 @@ func (sp *ServiceProvider) RequireSnapshot() error {
 	return nil
 }
 
-func (sp *ServiceProvider) RequireOnOracleDao() (types.ResponseStatus, error) {
+func (sp *ServiceProvider) RequireOnOracleDao(ctx context.Context) (types.ResponseStatus, error) {
 	if err := sp.RequireNodeAddress(); err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	if status, err := sp.RequireRocketPoolContracts(); err != nil {
+	if status, err := sp.RequireRocketPoolContracts(ctx); err != nil {
 		return status, err
 	}
 	nodeTrusted, err := sp.isMemberOfOracleDao()
@@ -157,11 +165,11 @@ func (sp *ServiceProvider) RequireOnOracleDao() (types.ResponseStatus, error) {
 	return types.ResponseStatus_Success, nil
 }
 
-func (sp *ServiceProvider) RequireOnSecurityCouncil() (types.ResponseStatus, error) {
+func (sp *ServiceProvider) RequireOnSecurityCouncil(ctx context.Context) (types.ResponseStatus, error) {
 	if err := sp.RequireNodeAddress(); err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	if status, err := sp.RequireRocketPoolContracts(); err != nil {
+	if status, err := sp.RequireRocketPoolContracts(ctx); err != nil {
 		return status, err
 	}
 	nodeTrusted, err := sp.isMemberOfSecurityCouncil()
@@ -178,7 +186,13 @@ func (sp *ServiceProvider) RequireOnSecurityCouncil() (types.ResponseStatus, err
 // === Service Synchronization ===
 // ===============================
 
-func (sp *ServiceProvider) WaitWalletReady(verbose bool) error {
+func (sp *ServiceProvider) WaitWalletReady(ctx context.Context, verbose bool) error {
+	// Get the logger
+	logger, exists := log.FromContext(ctx)
+	if !exists {
+		panic("context didn't have a logger!")
+	}
+
 	for {
 		status, err := sp.GetWallet().GetStatus()
 		if err != nil {
@@ -205,25 +219,32 @@ func (sp *ServiceProvider) WaitWalletReady(verbose bool) error {
 		}
 
 		if verbose {
-			log.Printf("%s, retrying in %s...\n", message, checkNodeWalletInterval.String())
+			logger.Info(fmt.Sprintf("%s, retrying in %s...\n", message, checkNodeWalletInterval.String()))
 		}
-		if nmcutils.SleepWithCancel(sp.GetContext(), checkNodeWalletInterval) {
+		if nmcutils.SleepWithCancel(ctx, checkNodeWalletInterval) {
 			return nil
 		}
 	}
 }
 
 // Wait until the node has been registered with the Rocket Pool network
-func (sp *ServiceProvider) WaitNodeRegistered(verbose bool) error {
-	if err := sp.WaitWalletReady(verbose); err != nil {
+func (sp *ServiceProvider) WaitNodeRegistered(ctx context.Context, verbose bool) error {
+	// Get the logger
+	logger, exists := log.FromContext(ctx)
+	if !exists {
+		panic("context didn't have a logger!")
+	}
+
+	if err := sp.WaitWalletReady(ctx, verbose); err != nil {
 		return err
 	}
-	if err := sp.WaitEthClientSynced(verbose); err != nil {
+	if err := sp.WaitEthClientSynced(ctx, verbose); err != nil {
 		return err
 	}
 	if err := sp.RefreshRocketPoolContracts(); err != nil {
 		return fmt.Errorf("error loading contract bindings: %w", err)
 	}
+
 	contractRefreshTime := time.Now()
 	for {
 		nodeRegistered, err := sp.getNodeRegistered()
@@ -234,9 +255,9 @@ func (sp *ServiceProvider) WaitNodeRegistered(verbose bool) error {
 			return nil
 		}
 		if verbose {
-			log.Printf("The node is not registered with Rocket Pool, retrying in %s...\n", checkNodeRegisteredInterval.String())
+			logger.Info(fmt.Sprintf("The node is not registered with Rocket Pool, retrying in %s...\n", checkNodeRegisteredInterval.String()))
 		}
-		if nmcutils.SleepWithCancel(sp.GetContext(), checkNodeRegisteredInterval) {
+		if nmcutils.SleepWithCancel(ctx, checkNodeRegisteredInterval) {
 			return nil
 		}
 
@@ -321,20 +342,26 @@ func (sp *ServiceProvider) isMemberOfSecurityCouncil() (bool, error) {
 
 // Check if the primary and fallback Execution clients are synced
 // TODO: Move this into ec-manager and stop exposing the primary and fallback directly...
-func (sp *ServiceProvider) checkExecutionClientStatus() (bool, eth.IExecutionClient, error) {
+func (sp *ServiceProvider) checkExecutionClientStatus(ctx context.Context) (bool, eth.IExecutionClient, error) {
 	// Check the EC status
 	ecMgr := sp.GetEthClient()
-	mgrStatus := ecMgr.CheckStatus(sp.GetContext())
+	mgrStatus := ecMgr.CheckStatus(ctx)
 	if ecMgr.IsPrimaryReady() {
 		return true, nil, nil
+	}
+
+	// Get the logger
+	logger, exists := log.FromContext(ctx)
+	if !exists {
+		panic("context didn't have a logger!")
 	}
 
 	// If the primary isn't synced but there's a fallback and it is, return true
 	if ecMgr.IsFallbackReady() {
 		if mgrStatus.PrimaryClientStatus.Error != "" {
-			log.Printf("Primary execution client is unavailable (%s), using fallback execution client...\n", mgrStatus.PrimaryClientStatus.Error)
+			logger.Warn("Primary execution client is unavailable using fallback execution client...", slog.String(log.ErrorKey, mgrStatus.PrimaryClientStatus.Error))
 		} else {
-			log.Printf("Primary execution client is still syncing (%.2f%%), using fallback execution client...\n", mgrStatus.PrimaryClientStatus.SyncProgress*100)
+			logger.Warn("Primary execution client is still syncing, using fallback execution client...", slog.Float64(PrimarySyncProgressKey, mgrStatus.PrimaryClientStatus.SyncProgress*100))
 		}
 		return true, nil, nil
 	}
@@ -343,14 +370,14 @@ func (sp *ServiceProvider) checkExecutionClientStatus() (bool, eth.IExecutionCli
 
 	// Is the primary working and syncing? If so, wait for it
 	if mgrStatus.PrimaryClientStatus.IsWorking && mgrStatus.PrimaryClientStatus.Error == "" {
-		log.Printf("Fallback execution client is not configured or unavailable, waiting for primary execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryClientStatus.SyncProgress*100)
-		return false, ecMgr.GetPrimaryExecutionClient(), nil
+		logger.Error("Fallback execution client is not configured or unavailable, waiting for primary execution client to finish syncing", slog.Float64(PrimarySyncProgressKey, mgrStatus.PrimaryClientStatus.SyncProgress*100))
+		return false, ecMgr.GetPrimaryClient(), nil
 	}
 
 	// Is the fallback working and syncing? If so, wait for it
 	if mgrStatus.FallbackEnabled && mgrStatus.FallbackClientStatus.IsWorking && mgrStatus.FallbackClientStatus.Error == "" {
-		log.Printf("Primary execution client is unavailable (%s), waiting for the fallback execution client to finish syncing (%.2f%%)\n", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.SyncProgress*100)
-		return false, ecMgr.GetFallbackExecutionClient(), nil
+		logger.Error("Primary execution client is unavailable, waiting for the fallback execution client to finish syncing", slog.String(PrimaryErrorKey, mgrStatus.PrimaryClientStatus.Error), slog.Float64(FallbackSyncProgressKey, mgrStatus.FallbackClientStatus.SyncProgress*100))
+		return false, ecMgr.GetFallbackClient(), nil
 	}
 
 	// If neither client is working, report the errors
@@ -362,20 +389,26 @@ func (sp *ServiceProvider) checkExecutionClientStatus() (bool, eth.IExecutionCli
 }
 
 // Check if the primary and fallback Beacon clients are synced
-func (sp *ServiceProvider) checkBeaconClientStatus() (bool, error) {
+func (sp *ServiceProvider) checkBeaconClientStatus(ctx context.Context) (bool, error) {
 	// Check the BC status
 	bcMgr := sp.GetBeaconClient()
-	mgrStatus := bcMgr.CheckStatus(sp.GetContext())
+	mgrStatus := bcMgr.CheckStatus(ctx)
 	if bcMgr.IsPrimaryReady() {
 		return true, nil
+	}
+
+	// Get the logger
+	logger, exists := log.FromContext(ctx)
+	if !exists {
+		panic("context didn't have a logger!")
 	}
 
 	// If the primary isn't synced but there's a fallback and it is, return true
 	if bcMgr.IsFallbackReady() {
 		if mgrStatus.PrimaryClientStatus.Error != "" {
-			log.Printf("Primary Beacon Node is unavailable (%s), using fallback Beacon Node...\n", mgrStatus.PrimaryClientStatus.Error)
+			logger.Warn("Primary Beacon Node is unavailable, using fallback Beacon Node...", slog.String(PrimaryErrorKey, mgrStatus.PrimaryClientStatus.Error))
 		} else {
-			log.Printf("Primary Beacon Node is still syncing (%.2f%%), using fallback Beacon Node...\n", mgrStatus.PrimaryClientStatus.SyncProgress*100)
+			logger.Warn("Primary Beacon Node is still syncing, using fallback Beacon Node...", slog.Float64(PrimarySyncProgressKey, mgrStatus.PrimaryClientStatus.SyncProgress*100))
 		}
 		return true, nil
 	}
@@ -384,13 +417,13 @@ func (sp *ServiceProvider) checkBeaconClientStatus() (bool, error) {
 
 	// Is the primary working and syncing? If so, wait for it
 	if mgrStatus.PrimaryClientStatus.IsWorking && mgrStatus.PrimaryClientStatus.Error == "" {
-		log.Printf("Fallback Beacon Node is not configured or unavailable, waiting for primary Beacon Node to finish syncing (%.2f%%)\n", mgrStatus.PrimaryClientStatus.SyncProgress*100)
+		logger.Error("Fallback Beacon Node is not configured or unavailable, waiting for primary Beacon Node to finish syncing...", slog.Float64(PrimarySyncProgressKey, mgrStatus.PrimaryClientStatus.SyncProgress*100))
 		return false, nil
 	}
 
 	// Is the fallback working and syncing? If so, wait for it
 	if mgrStatus.FallbackEnabled && mgrStatus.FallbackClientStatus.IsWorking && mgrStatus.FallbackClientStatus.Error == "" {
-		log.Printf("Primary Beacon Node is unavailable (%s), waiting for the fallback Beacon Node to finish syncing (%.2f%%)\n", mgrStatus.PrimaryClientStatus.Error, mgrStatus.FallbackClientStatus.SyncProgress*100)
+		logger.Error("Primary Beacon Node is unavailable, waiting for the fallback Beacon Node to finish syncing...", slog.String(PrimaryErrorKey, mgrStatus.PrimaryClientStatus.Error), slog.Float64(FallbackSyncProgressKey, mgrStatus.FallbackClientStatus.SyncProgress*100))
 		return false, nil
 	}
 
@@ -403,12 +436,12 @@ func (sp *ServiceProvider) checkBeaconClientStatus() (bool, error) {
 }
 
 // Wait for the primary or fallback Execution client to be synced
-func (sp *ServiceProvider) waitEthClientSynced(verbose bool, timeout int64) (bool, error) {
+func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool, timeout int64) (bool, error) {
 	// Prevent multiple waiting goroutines from requesting sync progress
 	ethClientSyncLock.Lock()
 	defer ethClientSyncLock.Unlock()
 
-	synced, clientToCheck, err := sp.checkExecutionClientStatus()
+	synced, clientToCheck, err := sp.checkExecutionClientStatus(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -422,6 +455,12 @@ func (sp *ServiceProvider) waitEthClientSynced(verbose bool, timeout int64) (boo
 	// Get EC status refresh time
 	ecRefreshTime := startTime
 
+	// Get the logger
+	logger, exists := log.FromContext(ctx)
+	if !exists {
+		panic("context didn't have a logger!")
+	}
+
 	// Wait for sync
 	for {
 		// Check timeout
@@ -431,9 +470,9 @@ func (sp *ServiceProvider) waitEthClientSynced(verbose bool, timeout int64) (boo
 
 		// Check if the EC status needs to be refreshed
 		if time.Since(ecRefreshTime) > ethClientStatusRefreshInterval {
-			log.Println("Refreshing primary / fallback execution client status...")
+			logger.Info("Refreshing primary / fallback execution client status...")
 			ecRefreshTime = time.Now()
-			synced, clientToCheck, err = sp.checkExecutionClientStatus()
+			synced, clientToCheck, err = sp.checkExecutionClientStatus(ctx)
 			if err != nil {
 				return false, err
 			}
@@ -454,9 +493,9 @@ func (sp *ServiceProvider) waitEthClientSynced(verbose bool, timeout int64) (boo
 			if verbose {
 				p := float64(progress.CurrentBlock-progress.StartingBlock) / float64(progress.HighestBlock-progress.StartingBlock)
 				if p > 1 {
-					log.Println("Execution client syncing...")
+					logger.Info("Execution client syncing...")
 				} else {
-					log.Printf("Execution client syncing: %.2f%%\n", p*100)
+					logger.Info("Execution client syncing...", slog.Float64(SyncProgressKey, p*100))
 				}
 			}
 		} else {
@@ -474,19 +513,19 @@ func (sp *ServiceProvider) waitEthClientSynced(verbose bool, timeout int64) (boo
 		}
 
 		// Pause before next poll
-		if nmcutils.SleepWithCancel(sp.GetContext(), ethClientSyncPollInterval) {
+		if nmcutils.SleepWithCancel(ctx, ethClientSyncPollInterval) {
 			return false, nil
 		}
 	}
 }
 
 // Wait for the primary or fallback Beacon client to be synced
-func (sp *ServiceProvider) waitBeaconClientSynced(verbose bool, timeout int64) (bool, error) {
+func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose bool, timeout int64) (bool, error) {
 	// Prevent multiple waiting goroutines from requesting sync progress
 	beaconClientSyncLock.Lock()
 	defer beaconClientSyncLock.Unlock()
 
-	synced, err := sp.checkBeaconClientStatus()
+	synced, err := sp.checkBeaconClientStatus(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -500,9 +539,14 @@ func (sp *ServiceProvider) waitBeaconClientSynced(verbose bool, timeout int64) (
 	// Get BC status refresh time
 	bcRefreshTime := startTime
 
+	// Get the logger
+	logger, exists := log.FromContext(ctx)
+	if !exists {
+		panic("context didn't have a logger!")
+	}
+
 	// Wait for sync
 	for {
-		ctx := sp.GetContext()
 		// Check timeout
 		if (timeout > 0) && (time.Since(startTime).Seconds() > float64(timeout)) {
 			return false, nil
@@ -510,9 +554,9 @@ func (sp *ServiceProvider) waitBeaconClientSynced(verbose bool, timeout int64) (
 
 		// Check if the BC status needs to be refreshed
 		if time.Since(bcRefreshTime) > ethClientStatusRefreshInterval {
-			log.Println("Refreshing primary / fallback Beacon Node status...")
+			logger.Info("Refreshing primary / fallback Beacon Node status...")
 			bcRefreshTime = time.Now()
-			synced, err = sp.checkBeaconClientStatus()
+			synced, err = sp.checkBeaconClientStatus(ctx)
 			if err != nil {
 				return false, err
 			}
@@ -531,7 +575,7 @@ func (sp *ServiceProvider) waitBeaconClientSynced(verbose bool, timeout int64) (
 		// Check sync status
 		if syncStatus.Syncing {
 			if verbose {
-				log.Println("Beacon Node syncing: %.2f%%\n", syncStatus.Progress*100)
+				logger.Info("Beacon Node syncing...", slog.Float64(SyncProgressKey, syncStatus.Progress*100))
 			}
 		} else {
 			alerting.AlertBeaconClientSyncComplete(sp.GetConfig())

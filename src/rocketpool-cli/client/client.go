@@ -2,9 +2,12 @@ package client
 
 import (
 	"fmt"
+	"log/slog"
 	"path/filepath"
 
 	docker "github.com/docker/docker/client"
+	"github.com/fatih/color"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/client"
 	rocketpool "github.com/rocket-pool/smartnode/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/context"
@@ -23,14 +26,14 @@ const (
 	SettingsFile       string = "user-settings.yml"
 	BackupSettingsFile string = "user-settings-backup.yml"
 
-	defaultFeeRecipientFile       string = "fr-default.tmpl"
-	defaultNativeFeeRecipientFile string = "fr-default-env.tmpl"
+	terminalLogColor color.Attribute = color.FgHiYellow
 )
 
 // Rocket Pool client
 type Client struct {
 	Api      *client.ApiClient
 	Context  *context.SmartNodeContext
+	Logger   *slog.Logger
 	docker   *docker.Client
 	cfg      *config.SmartNodeConfig
 	isNewCfg bool
@@ -43,9 +46,12 @@ func NewClientFromCtx(c *cli.Context) *Client {
 	snCtx := context.GetSmartNodeContext(c)
 	socketPath := filepath.Join(snCtx.ConfigPath, config.SmartNodeCliSocketFilename)
 
+	// Make the client
+	logger := log.NewTerminalLogger(snCtx.DebugEnabled, terminalLogColor)
 	client := &Client{
-		Api:     rocketpool.NewApiClient(config.SmartNodeApiClientRoute, socketPath, snCtx.DebugEnabled),
+		Api:     rocketpool.NewApiClient(config.SmartNodeApiClientRoute, socketPath, logger.Logger),
 		Context: snCtx,
+		Logger:  logger.Logger,
 	}
 	return client
 }

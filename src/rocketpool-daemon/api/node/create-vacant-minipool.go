@@ -49,7 +49,7 @@ func (f *nodeCreateVacantMinipoolContextFactory) Create(args url.Values) (*nodeC
 
 func (f *nodeCreateVacantMinipoolContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeCreateVacantMinipoolContext, api.NodeCreateVacantMinipoolData](
-		router, "create-vacant-minipool", f, f.handler.serviceProvider.ServiceProvider,
+		router, "create-vacant-minipool", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -81,7 +81,7 @@ func (c *nodeCreateVacantMinipoolContext) Initialize() (types.ResponseStatus, er
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -118,7 +118,7 @@ func (c *nodeCreateVacantMinipoolContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacantMinipoolData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	// Initial population
 	data.DepositDisabled = !c.pSettings.Node.AreVacantMinipoolsEnabled.Get()
 	data.ScrubPeriod = c.oSettings.Minipool.PromotionScrubPeriod.Formatted()

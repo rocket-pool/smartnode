@@ -37,7 +37,7 @@ func (f *securityLeaveContextFactory) Create(args url.Values) (*securityLeaveCon
 
 func (f *securityLeaveContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityLeaveContext, api.SecurityLeaveData](
-		router, "leave", f, f.handler.serviceProvider.ServiceProvider,
+		router, "leave", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -62,7 +62,7 @@ func (c *securityLeaveContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

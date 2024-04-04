@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"time"
 
@@ -10,12 +11,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -33,9 +34,6 @@ var _13_6137_Eth = big.NewInt(0).Mul(big.NewInt(136137), big.NewInt(1e14))
 var _13_Eth = big.NewInt(0).Mul(big.NewInt(13), oneEth)
 
 type NetworkState struct {
-	// Network version
-	IsHoustonDeployed bool
-
 	// Block / slot for this state
 	ElBlockNumber    uint64
 	BeaconSlotNumber uint64
@@ -63,11 +61,11 @@ type NetworkState struct {
 	ProtocolDaoProposalDetails []*protocol.ProtocolDaoProposal
 
 	// Internal fields
-	log *log.ColorLogger
+	logger *slog.Logger
 }
 
 // Creates a snapshot of the entire Rocket Pool network state, on both the Execution and Consensus layers
-func CreateNetworkState(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, context context.Context) (*NetworkState, error) {
+func CreateNetworkState(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger, slotNumber uint64, beaconConfig beacon.Eth2Config, context context.Context) (*NetworkState, error) {
 	// Get the relevant network contracts
 	resources := cfg.GetNetworkResources()
 	multicallerAddress := resources.MulticallAddress
@@ -88,11 +86,6 @@ func CreateNetworkState(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, 
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
-	isHoustonDeployed, err := IsHoustonDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Houston is deployed: %w", err)
-	}
-
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -101,37 +94,36 @@ func CreateNetworkState(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, 
 		BeaconSlotNumber:         slotNumber,
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
-		log:                      log,
-		IsHoustonDeployed:        isHoustonDeployed,
+		logger:                   logger,
 	}
 
-	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
+	logger.Info("Getting network state...", slog.Uint64(keys.BlockKey, elBlockNumber), slog.Uint64(keys.SlotKey, slotNumber))
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isHoustonDeployed, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, true, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isHoustonDeployed)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, true)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	state.logLine("1/6 - Retrieved network details (%s so far)", time.Since(start))
+	logger.Info("1/6 - Retrieved network details", slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	// Node details
 	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all node details: %w", err)
 	}
-	state.logLine("2/6 - Retrieved node details (%s so far)", time.Since(start))
+	logger.Info("2/6 - Retrieved node details", slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	// Minipool details
 	state.MinipoolDetails, err = rpstate.GetAllNativeMinipoolDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
-	state.logLine("3/6 - Retrieved minipool details (%s so far)", time.Since(start))
+	logger.Info("3/6 - Retrieved minipool details", slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	// Create the node lookup
 	for i, details := range state.NodeDetails {
@@ -166,7 +158,7 @@ func CreateNetworkState(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, 
 	if err != nil {
 		return nil, fmt.Errorf("error getting Oracle DAO details: %w", err)
 	}
-	state.logLine("4/6 - Retrieved Oracle DAO details (%s so far)", time.Since(start))
+	logger.Info("4/6 - Retrieved Oracle DAO details", slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	// Get the validator stats from Beacon
 	statusMap, err := bc.GetValidatorStatuses(context, pubkeys, &beacon.ValidatorStatusOptions{
@@ -176,7 +168,7 @@ func CreateNetworkState(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, 
 		return nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("5/6 - Retrieved validator details (total time: %s)", time.Since(start))
+	logger.Info("5/6 - Retrieved validator details", slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	// Get the complete node and user shares
 	mpds := make([]*rpstate.NativeMinipoolDetails, len(state.MinipoolDetails))
@@ -195,15 +187,15 @@ func CreateNetworkState(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, 
 		return nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("6/6 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
+	logger.Info("6/6 - Calculated complete node and user balance shares", slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	return state, nil
 }
 
 // Creates a snapshot of the Rocket Pool network, but only for a single node
 // Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
-func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool, context context.Context) (*NetworkState, *big.Int, error) {
-	steps := 5
+func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool, context context.Context) (*NetworkState, *big.Int, error) {
+	steps := 6
 	if calculateTotalEffectiveStake {
 		steps++
 	}
@@ -228,14 +220,6 @@ func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.Rocke
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
-	isHoustonDeployed, err := IsHoustonDeployed(rp, &bind.CallOpts{BlockNumber: big.NewInt(0).SetUint64(elBlockNumber)})
-	if err != nil {
-		return nil, nil, fmt.Errorf("error checking if Houston is deployed: %w", err)
-	}
-	if isHoustonDeployed {
-		steps++
-	}
-
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -244,23 +228,22 @@ func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.Rocke
 		BeaconSlotNumber:         slotNumber,
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             beaconConfig,
-		log:                      log,
-		IsHoustonDeployed:        isHoustonDeployed,
+		logger:                   logger,
 	}
 
-	state.logLine("Getting network state for EL block %d, Beacon slot %d", elBlockNumber, slotNumber)
+	logger.Info("Getting network state...", slog.Uint64(keys.BlockKey, elBlockNumber), slog.Uint64(keys.SlotKey, slotNumber))
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, isHoustonDeployed, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, true, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, isHoustonDeployed)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, true)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	state.logLine("1/%d - Retrieved network details (%s so far)", steps, time.Since(start))
+	logger.Info(fmt.Sprintf("1/%d - Retrieved network details", steps), slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	// Node details
 	nodeDetails, err := rpstate.GetNativeNodeDetails(rp, contracts, nodeAddress)
@@ -268,14 +251,14 @@ func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.Rocke
 		return nil, nil, fmt.Errorf("error getting node details: %w", err)
 	}
 	state.NodeDetails = []rpstate.NativeNodeDetails{nodeDetails}
-	state.logLine("2/%d - Retrieved node details (%s so far)", steps, time.Since(start))
+	logger.Info(fmt.Sprintf("2/%d - Retrieved node details", steps), slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	// Minipool details
 	state.MinipoolDetails, err = rpstate.GetNodeNativeMinipoolDetails(rp, contracts, nodeAddress)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
-	state.logLine("3/%d - Retrieved minipool details (%s so far)", steps, time.Since(start))
+	logger.Info(fmt.Sprintf("3/%d - Retrieved minipool details", steps), slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	// Create the node lookup
 	for i, details := range state.NodeDetails {
@@ -313,7 +296,7 @@ func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.Rocke
 		if err != nil {
 			return nil, nil, fmt.Errorf("error calculating total effective RPL stake for the network: %w", err)
 		}
-		state.logLine("%d/%d - Calculated total effective stake (total time: %s)", currentStep, steps, time.Since(start))
+		logger.Info(fmt.Sprintf("%d/%d - Calculated total effective stake", currentStep, steps), slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 		currentStep++
 	}
 
@@ -325,7 +308,7 @@ func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.Rocke
 		return nil, nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("%d/%d - Retrieved validator details (total time: %s)", currentStep, steps, time.Since(start))
+	logger.Info(fmt.Sprintf("%d/%d - Retrieved validator details", currentStep, steps), slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 	currentStep++
 
 	// Get the complete node and user shares
@@ -345,18 +328,16 @@ func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, rp *rocketpool.Rocke
 		return nil, nil, err
 	}
 	state.ValidatorDetails = statusMap
-	state.logLine("%d/%d - Calculated complete node and user balance shares (total time: %s)", currentStep, steps, time.Since(start))
+	logger.Info(fmt.Sprintf("%d/%d - Calculated complete node and user balance shares", currentStep, steps), slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 	currentStep++
 
-	if isHoustonDeployed {
-		// Get the protocol DAO proposals
-		state.ProtocolDaoProposalDetails, err = rpstate.GetAllProtocolDaoProposalDetails(rp, contracts)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
-		}
-		state.logLine("%d/%d - Retrieved Protocol DAO proposals (total time: %s)", currentStep, steps, time.Since(start))
-		currentStep++
+	// Get the protocol DAO proposals
+	state.ProtocolDaoProposalDetails, err = rpstate.GetAllProtocolDaoProposalDetails(rp, contracts)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
 	}
+	logger.Info(fmt.Sprintf("%d/%d - Retrieved Protocol DAO proposals", currentStep, steps), time.Since(start))
+	currentStep++
 
 	return state, totalEffectiveStake, nil
 }
@@ -602,13 +583,6 @@ func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool, a
 
 	return effectiveStakes, totalEffectiveStake, nil
 
-}
-
-// Logs a line if the logger is specified
-func (s *NetworkState) logLine(format string, v ...interface{}) {
-	if s.log != nil {
-		s.log.Printlnf(format, v...)
-	}
 }
 
 // Returns the index of the Most Significant Bit of n, or UINT_MAX if the input is 0

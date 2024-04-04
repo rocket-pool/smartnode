@@ -34,7 +34,7 @@ func (f *auctionLotContextFactory) Create(args url.Values) (*auctionLotContext, 
 
 func (f *auctionLotContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionLotContext, api.AuctionLotsData](
-		router, "lots", f, f.handler.serviceProvider.ServiceProvider,
+		router, "lots", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -56,7 +56,7 @@ func (c *auctionLotContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

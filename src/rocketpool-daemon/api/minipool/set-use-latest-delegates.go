@@ -35,7 +35,7 @@ func (f *minipoolSetUseLatestDelegatesContextFactory) Create(args url.Values) (*
 
 func (f *minipoolSetUseLatestDelegatesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolSetUseLatestDelegatesContext, types.BatchTxInfoData](
-		router, "delegate/set-use-latest", f, f.handler.serviceProvider.ServiceProvider,
+		router, "delegate/set-use-latest", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -50,7 +50,7 @@ type minipoolSetUseLatestDelegatesContext struct {
 }
 
 func (c *minipoolSetUseLatestDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "set-use-latest-delegate")
+	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "set-use-latest-delegate")
 }
 
 func (c *minipoolSetUseLatestDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {

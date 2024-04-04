@@ -49,7 +49,7 @@ func (f *txBatchSignTxsContextFactory) Create(body api.BatchSubmitTxsBody) (*txB
 
 func (f *txBatchSignTxsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessPost[*txBatchSignTxsContext, api.BatchSubmitTxsBody, api.TxBatchSignTxData](
-		router, "batch-sign-txs", f, f.handler.serviceProvider.ServiceProvider,
+		router, "batch-sign-txs", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

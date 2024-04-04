@@ -33,7 +33,7 @@ func (f *walletSetPasswordContextFactory) Create(args url.Values) (*walletSetPas
 
 func (f *walletSetPasswordContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletSetPasswordContext, types.SuccessData](
-		router, "set-password", f, f.handler.serviceProvider.ServiceProvider,
+		router, "set-password", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 

@@ -76,12 +76,6 @@ func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 	blockNumberFloat := float64(state.ElBlockNumber)
 	pricesBlockFloat := float64(state.NetworkDetails.PricesBlock)
 	effectiveRplStakeBlockFloat := pricesBlockFloat
-	var latestReportableBlockFloat float64
-	if !state.IsHoustonDeployed {
-		latestReportableBlockFloat = float64(state.NetworkDetails.LatestReportablePricesBlock)
-		channel <- prometheus.MustNewConstMetric(
-			collector.latestReportableBlock, prometheus.GaugeValue, latestReportableBlockFloat)
-	}
 	channel <- prometheus.MustNewConstMetric(
 		collector.currentEth1Block, prometheus.GaugeValue, blockNumberFloat)
 	channel <- prometheus.MustNewConstMetric(

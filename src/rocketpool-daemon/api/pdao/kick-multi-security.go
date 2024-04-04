@@ -47,7 +47,7 @@ func (f *protocolDaoProposeKickMultiFromSecurityCouncilContextFactory) Create(ar
 
 func (f *protocolDaoProposeKickMultiFromSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeKickMultiFromSecurityCouncilContext, api.ProtocolDaoProposeKickMultiFromSecurityCouncilData](
-		router, "security/kick-multi", f, f.handler.serviceProvider.ServiceProvider,
+		router, "security/kick-multi", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -75,7 +75,7 @@ func (c *protocolDaoProposeKickMultiFromSecurityCouncilContext) Initialize() (ty
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -111,7 +111,7 @@ func (c *protocolDaoProposeKickMultiFromSecurityCouncilContext) GetState(mc *bat
 }
 
 func (c *protocolDaoProposeKickMultiFromSecurityCouncilContext) PrepareData(data *api.ProtocolDaoProposeKickMultiFromSecurityCouncilData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
 	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()

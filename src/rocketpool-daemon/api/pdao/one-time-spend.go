@@ -44,7 +44,7 @@ func (f *protocolDaoProposeOneTimeSpendContextFactory) Create(args url.Values) (
 
 func (f *protocolDaoProposeOneTimeSpendContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeOneTimeSpendContext, api.ProtocolDaoGeneralProposeData](
-		router, "one-time-spend", f, f.handler.serviceProvider.ServiceProvider,
+		router, "one-time-spend", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -74,7 +74,7 @@ func (c *protocolDaoProposeOneTimeSpendContext) Initialize() (types.ResponseStat
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -100,7 +100,7 @@ func (c *protocolDaoProposeOneTimeSpendContext) GetState(mc *batch.MultiCaller) 
 }
 
 func (c *protocolDaoProposeOneTimeSpendContext) PrepareData(data *api.ProtocolDaoGeneralProposeData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
 	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()

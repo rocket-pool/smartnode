@@ -1,18 +1,25 @@
 package service
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 )
 
 type ServiceHandler struct {
+	logger          *log.Logger
+	ctx             context.Context
 	serviceProvider *services.ServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewServiceHandler(serviceProvider *services.ServiceProvider) *ServiceHandler {
+func NewServiceHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *ServiceHandler {
 	h := &ServiceHandler{
+		logger:          logger,
+		ctx:             ctx,
 		serviceProvider: serviceProvider,
 	}
 	h.factories = []server.IContextFactory{

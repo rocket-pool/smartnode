@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"strings"
@@ -11,19 +12,20 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
-func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, stateLocker *collectors.StateLocker, wg *sync.WaitGroup) *http.Server {
+func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, stateLocker *collectors.StateLocker, wg *sync.WaitGroup) *http.Server {
 	// Get services
 	cfg := sp.GetConfig()
 
 	// Return if metrics are disabled
 	if !cfg.Metrics.EnableMetrics.Value {
 		if strings.ToLower(os.Getenv("ENABLE_METRICS")) == "true" {
-			logger.Printlnf("ENABLE_METRICS override set to true, will start Metrics exporter anyway!")
+			logger.Info("ENABLE_METRICS override set to true, will start Metrics exporter anyway!")
 		} else {
 			return nil
 		}
@@ -58,7 +60,7 @@ func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger 
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	metricsAddress := os.Getenv("NODE_METRICS_ADDRESS")
 	metricsPort := cfg.Metrics.DaemonMetricsPort.Value
-	logger.Printlnf("Starting metrics exporter on %s:%d.", metricsAddress, metricsPort)
+	logger.Info("Starting metrics exporter.", slog.String(keys.UrlKey, fmt.Sprintf("%s:%d", metricsAddress, metricsPort)))
 	metricsPath := "/metrics"
 	http.Handle(metricsPath, handler)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +85,7 @@ func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger 
 		wg.Add(1)
 		err := server.ListenAndServe()
 		if !errors.Is(err, http.ErrServerClosed) {
-			logger.Printlnf("error running metrics HTTP server: %s", err.Error())
+			logger.Error("Error running metrics HTTP server", log.Err(err))
 		}
 	}()
 

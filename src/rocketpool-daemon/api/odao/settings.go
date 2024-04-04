@@ -34,7 +34,7 @@ func (f *oracleDaoSettingsContextFactory) Create(args url.Values) (*oracleDaoSet
 
 func (f *oracleDaoSettingsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoSettingsContext, api.OracleDaoSettingsData](
-		router, "settings", f, f.handler.serviceProvider.ServiceProvider,
+		router, "settings", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -56,7 +56,7 @@ func (c *oracleDaoSettingsContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}

@@ -40,7 +40,7 @@ func (f *nodeSetRplWithdrawalAddressContextFactory) Create(args url.Values) (*no
 
 func (f *nodeSetRplWithdrawalAddressContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetRplWithdrawalAddressContext, api.NodeSetRplWithdrawalAddressData](
-		router, "rpl-withdrawal-address/set", f, f.handler.serviceProvider.ServiceProvider,
+		router, "rpl-withdrawal-address/set", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -64,7 +64,7 @@ func (c *nodeSetRplWithdrawalAddressContext) Initialize() (types.ResponseStatus,
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

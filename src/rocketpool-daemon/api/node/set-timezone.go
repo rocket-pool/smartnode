@@ -35,7 +35,7 @@ func (f *nodeSetTimezoneContextFactory) Create(args url.Values) (*nodeSetTimezon
 
 func (f *nodeSetTimezoneContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeSetTimezoneContext, types.TxInfoData](
-		router, "set-timezone", f, f.handler.serviceProvider.ServiceProvider,
+		router, "set-timezone", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -55,7 +55,7 @@ func (c *nodeSetTimezoneContext) PrepareData(data *types.TxInfoData, opts *bind.
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

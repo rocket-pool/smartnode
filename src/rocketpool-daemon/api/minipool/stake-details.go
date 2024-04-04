@@ -35,7 +35,7 @@ func (f *minipoolStakeDetailsContextFactory) Create(args url.Values) (*minipoolS
 
 func (f *minipoolStakeDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolStakeDetailsContext, api.MinipoolStakeDetailsData](
-		router, "stake/details", f, f.handler.serviceProvider,
+		router, "stake/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 
@@ -86,7 +86,7 @@ func (c *minipoolStakeDetailsContext) PrepareData(addresses []common.Address, mp
 	scrubPeriod := c.oSettings.Minipool.ScrubPeriod.Formatted()
 
 	// Get the time of the latest block
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	latestEth1Block, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting the latest block header: %w", err)

@@ -39,7 +39,7 @@ func (f *securityProposalsContextFactory) Create(args url.Values) (*securityProp
 
 func (f *securityProposalsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityProposalsContext, api.SecurityProposalsData](
-		router, "proposals", f, f.handler.serviceProvider.ServiceProvider,
+		router, "proposals", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -63,7 +63,7 @@ func (c *securityProposalsContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, c.hasAddress = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

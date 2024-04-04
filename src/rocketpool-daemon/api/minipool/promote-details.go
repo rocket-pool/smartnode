@@ -34,7 +34,7 @@ func (f *minipoolPromoteDetailsContextFactory) Create(args url.Values) (*minipoo
 
 func (f *minipoolPromoteDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolPromoteDetailsContext, api.MinipoolPromoteDetailsData](
-		router, "promote/details", f, f.handler.serviceProvider,
+		router, "promote/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 
@@ -86,7 +86,7 @@ func (c *minipoolPromoteDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller
 
 func (c *minipoolPromoteDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolPromoteDetailsData) (types.ResponseStatus, error) {
 	// Get the time of the latest block
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	latestEth1Block, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting the latest block time: %w", err)

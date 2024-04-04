@@ -1,19 +1,26 @@
 package pdao
 
 import (
+	"context"
+
 	"github.com/gorilla/mux"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 )
 
 type ProtocolDaoHandler struct {
+	logger          *log.Logger
+	ctx             context.Context
 	serviceProvider *services.ServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewProtocolDaoHandler(serviceProvider *services.ServiceProvider) *ProtocolDaoHandler {
+func NewProtocolDaoHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *ProtocolDaoHandler {
 	h := &ProtocolDaoHandler{
+		logger:          logger,
+		ctx:             ctx,
 		serviceProvider: serviceProvider,
 	}
 	h.factories = []server.IContextFactory{

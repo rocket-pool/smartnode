@@ -16,8 +16,8 @@ type RollingRecordManager_MergedDuties struct {
 	ExpectedBalancesBlock        uint64
 	ExpectedRewardsIntervalBlock uint64
 
-	log            *log.ColorLogger
-	errLog         *log.ColorLogger
+	log            **log.Logger
+	errLog         **log.Logger
 	logPrefix      string
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
@@ -41,7 +41,7 @@ type RollingRecordManager_MergedDuties struct {
 }
 
 // Creates a new manager for rolling records.
-func NewRollingRecordManager_MergedDuties(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, bc beacon.IBeaconClient, mgr *state.NetworkStateManager, w *wallet.Wallet, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager_MergedDuties, error) {
+func NewRollingRecordManager_MergedDuties(log **log.Logger, errLog **log.Logger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, bc beacon.IBeaconClient, mgr *state.NetworkStateManager, w *wallet.Wallet, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager_MergedDuties, error) {
 	// Get the Beacon genesis time
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 

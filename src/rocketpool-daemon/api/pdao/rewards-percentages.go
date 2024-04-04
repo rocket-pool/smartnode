@@ -31,7 +31,7 @@ func (f *protocolDaoRewardsPercentagesContextFactory) Create(args url.Values) (*
 
 func (f *protocolDaoRewardsPercentagesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoRewardsPercentagesContext, api.ProtocolDaoRewardsPercentagesData](
-		router, "rewards-percentages", f, f.handler.serviceProvider.ServiceProvider,
+		router, "rewards-percentages", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -52,7 +52,7 @@ func (c *protocolDaoRewardsPercentagesContext) Initialize() (types.ResponseStatu
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

@@ -33,7 +33,7 @@ func (f *nodeInitializeFeeDistributorContextFactory) Create(args url.Values) (*n
 
 func (f *nodeInitializeFeeDistributorContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeInitializeFeeDistributorContext, api.NodeInitializeFeeDistributorData](
-		router, "initialize-fee-distributor", f, f.handler.serviceProvider.ServiceProvider,
+		router, "initialize-fee-distributor", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -54,7 +54,7 @@ func (c *nodeInitializeFeeDistributorContext) Initialize() (types.ResponseStatus
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

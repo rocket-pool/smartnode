@@ -47,7 +47,7 @@ func (f *protocolDaoProposeRecurringSpendUpdateContextFactory) Create(args url.V
 
 func (f *protocolDaoProposeRecurringSpendUpdateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeRecurringSpendUpdateContext, api.ProtocolDaoProposeRecurringSpendUpdateData](
-		router, "recurring-spend-update", f, f.handler.serviceProvider.ServiceProvider,
+		router, "recurring-spend-update", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -80,7 +80,7 @@ func (c *protocolDaoProposeRecurringSpendUpdateContext) Initialize() (types.Resp
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -107,7 +107,7 @@ func (c *protocolDaoProposeRecurringSpendUpdateContext) GetState(mc *batch.Multi
 }
 
 func (c *protocolDaoProposeRecurringSpendUpdateContext) PrepareData(data *api.ProtocolDaoProposeRecurringSpendUpdateData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	data.DoesNotExist = !c.contractExists
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()

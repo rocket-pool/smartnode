@@ -44,7 +44,7 @@ func (f *minipoolRescueDissolvedContextFactory) Create(args url.Values) (*minipo
 
 func (f *minipoolRescueDissolvedContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolRescueDissolvedContext, types.BatchTxInfoData](
-		router, "rescue-dissolved", f, f.handler.serviceProvider.ServiceProvider,
+		router, "rescue-dissolved", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -79,11 +79,11 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData
 	c.rs = sp.GetNetworkResources()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
-	err = sp.RequireBeaconClientSynced()
+	err = sp.RequireBeaconClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
@@ -140,7 +140,7 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 
 	// Get validator deposit data
 	amountGwei := big.NewInt(0).Div(amount, big.NewInt(1e9)).Uint64()
-	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, c.rs.GenesisForkVersion, amountGwei, config.Network(c.rs.EthNetworkName))
+	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, c.rs.GenesisForkVersion, amountGwei, c.rs.EthNetworkName)
 	if err != nil {
 		return nil, err
 	}

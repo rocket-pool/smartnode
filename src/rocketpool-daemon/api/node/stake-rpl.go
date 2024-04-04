@@ -40,7 +40,7 @@ func (f *nodeStakeRplContextFactory) Create(args url.Values) (*nodeStakeRplConte
 
 func (f *nodeStakeRplContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeStakeRplContext, api.NodeStakeRplData](
-		router, "stake-rpl", f, f.handler.serviceProvider.ServiceProvider,
+		router, "stake-rpl", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -67,7 +67,7 @@ func (c *nodeStakeRplContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

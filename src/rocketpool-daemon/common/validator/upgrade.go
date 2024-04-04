@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"os"
 
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
 	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/node-manager-core/wallet"
 )
 
@@ -24,7 +24,7 @@ type legacyWallet struct {
 	NextAccount    uint                   `json:"next_account"`
 }
 
-func CheckAndUpgradeWallet(walletDataPath string, nextAccountPath string, log *log.ColorLogger) error {
+func CheckAndUpgradeWallet(walletDataPath string, nextAccountPath string, logger *slog.Logger) error {
 	// Check if there is a wallet file
 	_, err := os.Stat(walletDataPath)
 	if errors.Is(err, fs.ErrNotExist) {
@@ -48,7 +48,8 @@ func CheckAndUpgradeWallet(walletDataPath string, nextAccountPath string, log *l
 	}
 
 	// Convert to the new form
-	log.Printlnf("Legacy wallet detected, upgrading...")
+	logger.Info("Legacy wallet detected, upgrading...")
+	logger.Debug("Legacy wallet info", slog.Uint64("next", uint64(legacyWallet.NextAccount)), slog.String("path", legacyWallet.DerivationPath), slog.Uint64("index", uint64(legacyWallet.WalletIndex)))
 	newWallet := wallet.WalletData{
 		Type: wallet.WalletType_Local,
 		LocalData: wallet.LocalWalletData{
@@ -81,6 +82,6 @@ func CheckAndUpgradeWallet(walletDataPath string, nextAccountPath string, log *l
 	}
 
 	// Done
-	log.Printlnf("Wallet upgrade complete.")
+	logger.Info("Wallet upgrade complete.")
 	return nil
 }

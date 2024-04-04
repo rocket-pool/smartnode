@@ -34,7 +34,7 @@ func (f *minipoolRollbackDelegatesContextFactory) Create(args url.Values) (*mini
 
 func (f *minipoolRollbackDelegatesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolRollbackDelegatesContext, types.BatchTxInfoData](
-		router, "delegate/rollback", f, f.handler.serviceProvider.ServiceProvider,
+		router, "delegate/rollback", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -48,7 +48,7 @@ type minipoolRollbackDelegatesContext struct {
 }
 
 func (c *minipoolRollbackDelegatesContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "rollback-delegate")
+	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "rollback-delegate")
 }
 
 func (c *minipoolRollbackDelegatesContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {

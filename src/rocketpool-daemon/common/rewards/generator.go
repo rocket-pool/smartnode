@@ -3,12 +3,12 @@ package rewards
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
@@ -49,8 +49,7 @@ const (
 
 type TreeGenerator struct {
 	rewardsIntervalInfos map[uint64]rewardsIntervalInfo
-	logger               *log.ColorLogger
-	logPrefix            string
+	logger               *slog.Logger
 	rp                   *rocketpool.RocketPool
 	cfg                  *config.SmartNodeConfig
 	bc                   beacon.IBeaconClient
@@ -70,10 +69,9 @@ type treeGeneratorImpl interface {
 	getRulesetVersion() uint64
 }
 
-func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
+func NewTreeGenerator(logger *slog.Logger, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
 	t := &TreeGenerator{
 		logger:           logger,
-		logPrefix:        logPrefix,
 		rp:               rp,
 		cfg:              cfg,
 		bc:               bc,
@@ -88,25 +86,9 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	// v8
 	var v8_generator treeGeneratorImpl
 	if rollingRecord == nil {
-		v8_generator = newTreeGeneratorImpl_v8(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
+		v8_generator = newTreeGeneratorImpl_v8(t.logger, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
 	} else {
-		v8_generator = newTreeGeneratorImpl_v8_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
-	}
-
-	// v7
-	var v7_generator treeGeneratorImpl
-	if rollingRecord == nil {
-		v7_generator = newTreeGeneratorImpl_v7(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
-	} else {
-		v7_generator = newTreeGeneratorImpl_v7_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
-	}
-
-	// v6
-	var v6_generator treeGeneratorImpl
-	if rollingRecord == nil {
-		v6_generator = newTreeGeneratorImpl_v6(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
-	} else {
-		v6_generator = newTreeGeneratorImpl_v6_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+		v8_generator = newTreeGeneratorImpl_v8_rolling(t.logger, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
 	}
 
 	// Create the interval wrappers
@@ -122,43 +104,43 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 			mainnetStartInterval:  MainnetV7Interval,
 			devnetStartInterval:   DevnetV7Interval,
 			holeskyStartInterval:  HoleskyV7Interval,
-			generator:             v7_generator,
+			generator:             nil,
 		}, {
 			rewardsRulesetVersion: 6,
 			mainnetStartInterval:  MainnetV6Interval,
 			devnetStartInterval:   DevnetV6Interval,
 			holeskyStartInterval:  HoleskyV6Interval,
-			generator:             v6_generator,
+			generator:             nil,
 		}, {
 			rewardsRulesetVersion: 5,
 			mainnetStartInterval:  MainnetV5Interval,
 			devnetStartInterval:   DevnetV5Interval,
 			holeskyStartInterval:  HoleskyV5Interval,
-			generator:             newTreeGeneratorImpl_v5(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state),
+			generator:             nil,
 		}, {
 			rewardsRulesetVersion: 4,
 			mainnetStartInterval:  MainnetV4Interval,
 			devnetStartInterval:   DevnetV4Interval,
 			holeskyStartInterval:  HoleskyV4Interval,
-			generator:             newTreeGeneratorImpl_v4(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
+			generator:             nil,
 		}, {
 			rewardsRulesetVersion: 3,
 			mainnetStartInterval:  MainnetV3Interval,
 			devnetStartInterval:   DevnetV3Interval,
 			holeskyStartInterval:  HoleskyV3Interval,
-			generator:             newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
+			generator:             nil,
 		}, {
 			rewardsRulesetVersion: 2,
 			mainnetStartInterval:  MainnetV2Interval,
 			devnetStartInterval:   DevnetV2Interval,
 			holeskyStartInterval:  HoleskyV2Interval,
-			generator:             newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
+			generator:             nil,
 		}, {
 			rewardsRulesetVersion: 1,
 			mainnetStartInterval:  0,
 			devnetStartInterval:   0,
 			holeskyStartInterval:  0,
-			generator:             newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
+			generator:             nil,
 		},
 	}
 
@@ -234,6 +216,9 @@ func (t *TreeGenerator) GenerateTreeWithRuleset(context context.Context, ruleset
 		return nil, fmt.Errorf("ruleset v%d does not exist", ruleset)
 	}
 
+	if info.generator == nil {
+		return nil, fmt.Errorf("ruleset v%d is obsolete and no longer supported by this Smart Node", ruleset)
+	}
 	return info.generator.generateTree(context, t.rp, t.cfg, t.bc)
 }
 
@@ -243,5 +228,8 @@ func (t *TreeGenerator) ApproximateStakerShareOfSmoothingPoolWithRuleset(context
 		return nil, fmt.Errorf("ruleset v%d does not exist", ruleset)
 	}
 
+	if info.generator == nil {
+		return nil, fmt.Errorf("ruleset v%d is obsolete and no longer supported by this Smart Node", ruleset)
+	}
 	return info.generator.approximateStakerShareOfSmoothingPool(context, t.rp, t.cfg, t.bc)
 }

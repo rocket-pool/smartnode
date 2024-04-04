@@ -43,7 +43,7 @@ func (f *auctionRecoverContextFactory) Create(args url.Values) (*auctionRecoverC
 
 func (f *auctionRecoverContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionRecoverContext, types.DataBatch[api.AuctionRecoverRplFromLotData]](
-		router, "lots/recover", f, f.handler.serviceProvider.ServiceProvider,
+		router, "lots/recover", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -64,7 +64,7 @@ func (c *auctionRecoverContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -93,7 +93,7 @@ func (c *auctionRecoverContext) GetState(mc *batch.MultiCaller) {
 
 func (c *auctionRecoverContext) PrepareData(dataBatch *types.DataBatch[api.AuctionRecoverRplFromLotData], opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the current block
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	currentBlock, err := c.rp.Client.BlockNumber(ctx)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting current EL block: %w", err)

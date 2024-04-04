@@ -30,7 +30,7 @@ func (f *securityProposeLeaveContextFactory) Create(args url.Values) (*securityP
 
 func (f *securityProposeLeaveContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*securityProposeLeaveContext, types.TxInfoData](
-		router, "propose-leave", f, f.handler.serviceProvider.ServiceProvider,
+		router, "propose-leave", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -47,7 +47,7 @@ func (c *securityProposeLeaveContext) PrepareData(data *types.TxInfoData, opts *
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireOnSecurityCouncil()
+	status, err := sp.RequireOnSecurityCouncil(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

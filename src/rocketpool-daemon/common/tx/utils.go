@@ -2,15 +2,16 @@ package tx
 
 import (
 	"fmt"
+	"log/slog"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -18,7 +19,7 @@ import (
 const TimeoutSafetyFactor time.Duration = 2
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *log.ColorLogger, txInfo *eth.TransactionInfo, opts *bind.TransactOpts) error {
+func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *slog.Logger, txInfo *eth.TransactionInfo, opts *bind.TransactOpts) error {
 	tx, err := rp.ExecuteTransaction(txInfo, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transaction: %w", err)
@@ -27,14 +28,14 @@ func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, rp *rocketpool.Rock
 	resources := cfg.GetRocketPoolResources()
 	txWatchUrl := resources.TxWatchUrl
 	hashString := tx.Hash().String()
-	logger.Printlnf("Transaction has been submitted with hash %s.", hashString)
+	logger.Info("Transaction has been submitted.", slog.String(keys.HashKey, hashString))
 	if txWatchUrl != "" {
-		logger.Printlnf("You may follow its progress by visiting:")
-		logger.Printlnf("%s/%s\n", txWatchUrl, hashString)
+		logger.Info("You may follow its progress by visiting:")
+		logger.Info(fmt.Sprintf("%s/%s\n", txWatchUrl, hashString))
 	}
 
 	// Wait for the TX to be included in a block
-	logger.Println("Waiting for the transaction to be validated...")
+	logger.Info("Waiting for the transaction to be validated...")
 	err = rp.WaitForTransaction(tx)
 	if err != nil {
 		return fmt.Errorf("error waiting for transaction: %w", err)
@@ -44,7 +45,7 @@ func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, rp *rocketpool.Rock
 }
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *log.ColorLogger, submissions []*eth.TransactionSubmission, callbacks []func(err error), opts *bind.TransactOpts) error {
+func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *slog.Logger, submissions []*eth.TransactionSubmission, callbacks []func(err error), opts *bind.TransactOpts) error {
 	txs, err := rp.BatchExecuteTransactions(submissions, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transactions: %w", err)
@@ -61,21 +62,21 @@ func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool
 	resources := cfg.GetRocketPoolResources()
 	txWatchUrl := resources.TxWatchUrl
 	if txWatchUrl != "" {
-		logger.Println("Transactions have been submitted. You may follow them progress by visiting:")
+		logger.Info("Transactions have been submitted. You may follow them progress by visiting:")
 		for _, tx := range txs {
 			hashString := tx.Hash().String()
-			logger.Printlnf("%s/%s\n", txWatchUrl, hashString)
+			logger.Info(fmt.Sprintf("%s/%s\n", txWatchUrl, hashString))
 		}
 	} else {
-		logger.Println("Transactions have been submitted with the following hashes:")
+		logger.Info("Transactions have been submitted with the following hashes:")
 		for _, tx := range txs {
-			logger.Println(tx.Hash().String())
+			logger.Info(tx.Hash().String())
 		}
 
 	}
 
 	// Wait for the TX to be included in a block
-	logger.Println("Waiting for the transactions to be validated...")
+	logger.Info("Waiting for the transactions to be validated...")
 	var wg errgroup.Group
 	var waitLock sync.Mutex
 	completeCount := 0
@@ -89,7 +90,7 @@ func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool
 			} else {
 				waitLock.Lock()
 				completeCount++
-				logger.Println("TX %s complete (%d/%d)", tx.Hash().String(), completeCount, len(txs))
+				logger.Info(fmt.Sprintf("TX %s complete (%d/%d)", tx.Hash().String(), completeCount, len(txs)))
 				waitLock.Unlock()
 			}
 
@@ -106,7 +107,7 @@ func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool
 		return err
 	}
 
-	logger.Println("Transaction batch complete.")
+	logger.Info("Transaction batch complete.")
 	return nil
 }
 

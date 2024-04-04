@@ -37,7 +37,7 @@ func (f *nodeResolveEnsContextFactory) Create(args url.Values) (*nodeResolveEnsC
 
 func (f *nodeResolveEnsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeResolveEnsContext, api.NodeResolveEnsData](
-		router, "resolve-ens", f, f.handler.serviceProvider.ServiceProvider,
+		router, "resolve-ens", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -56,7 +56,7 @@ func (c *nodeResolveEnsContext) PrepareData(data *api.NodeResolveEnsData, opts *
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	err := sp.RequireEthClientSynced()
+	err := sp.RequireEthClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}

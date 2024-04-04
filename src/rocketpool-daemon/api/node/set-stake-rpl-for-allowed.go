@@ -37,7 +37,7 @@ func (f *nodeSetStakeRplForAllowedContextFactory) Create(args url.Values) (*node
 
 func (f *nodeSetStakeRplForAllowedContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeSetStakeRplForAllowedContext, api.NodeSetStakeRplForAllowedData](
-		router, "set-stake-rpl-for-allowed", f, f.handler.serviceProvider.ServiceProvider,
+		router, "set-stake-rpl-for-allowed", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -58,7 +58,7 @@ func (c *nodeSetStakeRplForAllowedContext) PrepareData(data *api.NodeSetStakeRpl
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

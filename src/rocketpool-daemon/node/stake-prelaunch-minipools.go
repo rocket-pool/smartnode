@@ -3,14 +3,14 @@ package node
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
-	nmc_config "github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -26,12 +26,13 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Stake prelaunch minipools task
 type StakePrelaunchMinipools struct {
 	sp             *services.ServiceProvider
-	log            *log.ColorLogger
+	logger         *slog.Logger
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	vMgr           *validator.ValidatorManager
@@ -45,13 +46,13 @@ type StakePrelaunchMinipools struct {
 }
 
 // Create stake prelaunch minipools task
-func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *StakePrelaunchMinipools {
+func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger *log.Logger) *StakePrelaunchMinipools {
 	cfg := sp.GetConfig()
-	log := &logger
+	log := logger.With(slog.String(keys.RoutineKey, "Prelaunch Stake"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &StakePrelaunchMinipools{
 		sp:             sp,
-		log:            log,
+		logger:         log,
 		cfg:            sp.GetConfig(),
 		w:              sp.GetWallet(),
 		vMgr:           sp.GetValidatorManager(),
@@ -67,7 +68,7 @@ func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger log.ColorLo
 // Stake prelaunch minipools
 func (t *StakePrelaunchMinipools) Run(state *state.NetworkState) error {
 	// Log
-	t.log.Println("Checking for minipools to launch...")
+	t.logger.Info("Starting check for minipools to launch.")
 
 	// Get prelaunch minipools
 	nodeAddress, _ := t.w.GetAddress()
@@ -80,7 +81,7 @@ func (t *StakePrelaunchMinipools) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.log.Printlnf("%d minipool(s) are ready for staking...", len(minipools))
+	t.logger.Info("Minipools are ready for staking.", slog.Int(keys.CountKey, len(minipools)))
 	t.mpMgr, err = minipool.NewMinipoolManager(t.rp)
 	if err != nil {
 		return fmt.Errorf("error creating minipool manager: %w", err)
@@ -91,7 +92,7 @@ func (t *StakePrelaunchMinipools) Run(state *state.NetworkState) error {
 	for i, mpd := range minipools {
 		txSubmissions[i], err = t.createStakeMinipoolTx(mpd, state)
 		if err != nil {
-			t.log.Println(fmt.Errorf("error preparing submission to stake minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
+			t.logger.Error("Error preparing submission to stake minipool", slog.String(keys.MinipoolKey, mpd.MinipoolAddress.Hex()), log.Err(err))
 			return err
 		}
 	}
@@ -144,7 +145,7 @@ func (t *StakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 			if remainingTime < 0 {
 				prelaunchMinipools = append(prelaunchMinipools, mpd)
 			} else {
-				t.log.Printlnf("Minipool %s has %s left until it can be staked.", mpd.MinipoolAddress.Hex(), remainingTime)
+				t.logger.Info(fmt.Sprintf("Minipool %s has %s left until it can be staked.", mpd.MinipoolAddress.Hex(), remainingTime))
 			}
 		}
 	}
@@ -156,7 +157,7 @@ func (t *StakePrelaunchMinipools) getPrelaunchMinipools(nodeAddress common.Addre
 // Get submission info for staking a minipool
 func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState) (*eth.TransactionSubmission, error) {
 	// Log
-	t.log.Printlnf("Preparing to stake minipool %s...", mpd.MinipoolAddress.Hex())
+	t.logger.Info("Preparing to stake minipool...", slog.String(keys.MinipoolKey, mpd.MinipoolAddress.Hex()))
 
 	// Get the updated minipool interface
 	mp, err := t.mpMgr.NewMinipoolFromVersion(mpd.MinipoolAddress, mpd.Version)
@@ -189,7 +190,7 @@ func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinip
 
 	// Get validator deposit data
 	rs := t.cfg.GetNetworkResources()
-	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, nmc_config.Network(rs.EthNetworkName))
+	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, rs.EthNetworkName)
 	if err != nil {
 		return nil, err
 	}
@@ -229,7 +230,7 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return false, err
 		}
@@ -240,17 +241,17 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 	// Print the gas info
 	forceSubmissions := []*eth.TransactionSubmission{}
 	forceMinipools := []*rpstate.NativeMinipoolDetails{}
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.log, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.logger, maxFee) {
 		// Check for the timeout buffers
 		for i, mpd := range minipools {
 			prelaunchTime := time.Unix(mpd.StatusTime.Int64(), 0)
 			isDue, timeUntilDue := tx.IsTransactionDue(prelaunchTime, minipoolLaunchTimeout)
 			if !isDue {
-				t.log.Printlnf("Time until staking minipool %s will be forced for safety: %s", mpd.MinipoolAddress.Hex(), timeUntilDue)
+				t.logger.Info(fmt.Sprintf("Time until staking minipool %s will be forced for safety: %s", mpd.MinipoolAddress.Hex(), timeUntilDue))
 				alerting.AlertMinipoolStaked(t.cfg, mpd.MinipoolAddress, false)
 				continue
 			}
-			t.log.Printlnf("NOTICE: Minipool %s has exceeded half of the timeout period, so it will be force-staked at the current gas price.", mpd.MinipoolAddress.Hex())
+			t.logger.Warn("NOTICE: Minipool has exceeded half of the timeout period, so it will be force-staked at the current gas price.", slog.String(keys.MinipoolKey, mpd.MinipoolAddress.Hex()))
 			forceSubmissions = append(forceSubmissions, submissions[i])
 			forceMinipools = append(forceMinipools, mpd)
 		}
@@ -271,12 +272,12 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.log, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.logger, submissions, callbacks, opts)
 	if err != nil {
 		return false, err
 	}
 
 	// Log
-	t.log.Println("Successfully staked all minipools.")
+	t.logger.Info("Successfully staked all minipools.")
 	return true, nil
 }

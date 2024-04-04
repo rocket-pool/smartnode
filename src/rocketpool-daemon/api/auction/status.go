@@ -37,7 +37,7 @@ func (f *auctionStatusContextFactory) Create(args url.Values) (*auctionStatusCon
 
 func (f *auctionStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionStatusContext, api.AuctionStatusData](
-		router, "status", f, f.handler.serviceProvider.ServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -69,7 +69,7 @@ func (c *auctionStatusContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

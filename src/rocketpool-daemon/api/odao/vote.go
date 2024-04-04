@@ -42,7 +42,7 @@ func (f *oracleDaoVoteContextFactory) Create(args url.Values) (*oracleDaoVoteCon
 
 func (f *oracleDaoVoteContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoVoteContext, api.OracleDaoVoteOnProposalData](
-		router, "proposal/vote", f, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -69,7 +69,7 @@ func (c *oracleDaoVoteContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireOnOracleDao()
+	status, err := sp.RequireOnOracleDao(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

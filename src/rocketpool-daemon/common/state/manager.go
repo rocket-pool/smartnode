@@ -3,6 +3,7 @@ package state
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"time"
 
@@ -10,9 +11,9 @@ import (
 	"github.com/rocket-pool/node-manager-core/beacon"
 	nmc_config "github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 type NetworkStateManager struct {
@@ -20,7 +21,7 @@ type NetworkStateManager struct {
 	rp           *rocketpool.RocketPool
 	ec           eth.IExecutionClient
 	bc           beacon.IBeaconClient
-	log          *log.ColorLogger
+	logger       *slog.Logger
 	Config       *config.SmartNodeConfig
 	Network      nmc_config.Network
 	ChainID      uint
@@ -28,7 +29,7 @@ type NetworkStateManager struct {
 }
 
 // Create a new manager for the network state
-func NewNetworkStateManager(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, ec eth.IExecutionClient, bc beacon.IBeaconClient, log *log.ColorLogger) (*NetworkStateManager, error) {
+func NewNetworkStateManager(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger) (*NetworkStateManager, error) {
 	// Make a resource list
 	resources := cfg.GetNetworkResources()
 
@@ -38,7 +39,7 @@ func NewNetworkStateManager(context context.Context, rp *rocketpool.RocketPool, 
 		rp:      rp,
 		ec:      ec,
 		bc:      bc,
-		log:     log,
+		logger:  logger,
 		Network: cfg.Network.Value,
 		ChainID: resources.ChainID,
 	}
@@ -123,7 +124,7 @@ func (m *NetworkStateManager) GetLatestProposedBeaconBlock(context context.Conte
 
 		// If the block was missing, try the previous one
 		if !exists {
-			m.logLine("Slot %d was missing, trying the previous one...", targetSlot)
+			m.logger.Info("Slot was missing, trying the previous one...", slog.Uint64(keys.SlotKey, targetSlot))
 			targetSlot--
 		} else {
 			return block, nil
@@ -133,7 +134,7 @@ func (m *NetworkStateManager) GetLatestProposedBeaconBlock(context context.Conte
 
 // Get the state of the network at the provided Beacon slot
 func (m *NetworkStateManager) getState(context context.Context, slotNumber uint64) (*NetworkState, error) {
-	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig, context)
+	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.logger, slotNumber, m.BeaconConfig, context)
 	if err != nil {
 		return nil, err
 	}
@@ -142,16 +143,9 @@ func (m *NetworkStateManager) getState(context context.Context, slotNumber uint6
 
 // Get the state of the network for a specific node only at the provided Beacon slot
 func (m *NetworkStateManager) getStateForNode(context context.Context, nodeAddress common.Address, slotNumber uint64, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
-	state, totalEffectiveStake, err := CreateNetworkStateForNode(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig, nodeAddress, calculateTotalEffectiveStake, context)
+	state, totalEffectiveStake, err := CreateNetworkStateForNode(m.cfg, m.rp, m.ec, m.bc, m.logger, slotNumber, m.BeaconConfig, nodeAddress, calculateTotalEffectiveStake, context)
 	if err != nil {
 		return nil, nil, err
 	}
 	return state, totalEffectiveStake, nil
-}
-
-// Logs a line if the logger is specified
-func (m *NetworkStateManager) logLine(format string, v ...interface{}) {
-	if m.log != nil {
-		m.log.Printlnf(format, v)
-	}
 }

@@ -30,6 +30,7 @@ const (
 	VerifyProposalsID               string = "verifyProposals"
 
 	// Subconfig IDs
+	LoggingID           string = "logging"
 	FallbackID          string = "fallback"
 	LocalExecutionID    string = "localExecution"
 	ExternalExecutionID string = "externalExecution"

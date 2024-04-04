@@ -29,7 +29,7 @@ func (f *walletRebuildContextFactory) Create(args url.Values) (*walletRebuildCon
 
 func (f *walletRebuildContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletRebuildContext, api.WalletRebuildData](
-		router, "rebuild", f, f.handler.serviceProvider.ServiceProvider,
+		router, "rebuild", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -50,7 +50,7 @@ func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bi
 	if err != nil {
 		return types.ResponseStatus_WalletNotReady, err
 	}
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

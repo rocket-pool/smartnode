@@ -34,7 +34,7 @@ func (f *minipoolDissolveContextFactory) Create(args url.Values) (*minipoolDisso
 
 func (f *minipoolDissolveContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolDissolveContext, types.BatchTxInfoData](
-		router, "dissolve", f, f.handler.serviceProvider.ServiceProvider,
+		router, "dissolve", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -48,7 +48,7 @@ type minipoolDissolveContext struct {
 }
 
 func (c *minipoolDissolveContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "dissolve")
+	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "dissolve")
 }
 
 func (c *minipoolDissolveContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {

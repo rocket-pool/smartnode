@@ -10,11 +10,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/fatih/color"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/utils"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
@@ -29,37 +28,20 @@ const (
 	taskCooldown     time.Duration = time.Second * 5
 )
 
-const (
-	MaxConcurrentEth1Requests = 200
-
-	RespondChallengesColor         = color.FgWhite
-	ClaimRplRewardsColor           = color.FgGreen
-	SubmitRplPriceColor            = color.FgYellow
-	SubmitNetworkBalancesColor     = color.FgYellow
-	DissolveTimedOutMinipoolsColor = color.FgMagenta
-	SubmitScrubMinipoolsColor      = color.FgHiGreen
-	ErrorColor                     = color.FgRed
-	MetricsColor                   = color.FgHiYellow
-	SubmitRewardsTreeColor         = color.FgHiCyan
-	WarningColor                   = color.FgYellow
-	ProcessPenaltiesColor          = color.FgHiMagenta
-	CancelBondsColor               = color.FgGreen
-	CheckSoloMigrationsColor       = color.FgCyan
-	FinalizeProposalsColor         = color.FgMagenta
-	UpdateColor                    = color.FgHiWhite
-)
-
 type TaskLoop struct {
-	ctx context.Context
-	sp  *services.ServiceProvider
-	wg  *sync.WaitGroup
+	logger *log.Logger
+	ctx    context.Context
+	sp     *services.ServiceProvider
+	wg     *sync.WaitGroup
 }
 
 func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
+	logger := sp.GetWatchtowerLogger()
 	return &TaskLoop{
-		sp:  sp,
-		ctx: sp.GetContext(),
-		wg:  wg,
+		sp:     sp,
+		logger: logger,
+		ctx:    logger.CreateContextWithLogger(sp.GetBaseContext()),
+		wg:     wg,
 	}
 }
 
@@ -71,7 +53,7 @@ func (t *TaskLoop) Run() error {
 	bc := t.sp.GetBeaconClient()
 
 	// Wait until node is registered
-	if err := t.sp.WaitNodeRegistered(true); err != nil {
+	if err := t.sp.WaitNodeRegistered(t.ctx, true); err != nil {
 		return err
 	}
 
@@ -95,28 +77,24 @@ func (t *TaskLoop) Run() error {
 	bondReductionCollector := collectors.NewBondReductionCollector()
 	soloMigrationCollector := collectors.NewSoloMigrationCollector()
 
-	// Initialize error logger
-	errorLog := log.NewColorLogger(ErrorColor)
-	updateLog := log.NewColorLogger(UpdateColor)
-
 	// Create the state manager
-	m, err := state.NewNetworkStateManager(t.ctx, rp, cfg, rp.Client, bc, &updateLog)
+	m, err := state.NewNetworkStateManager(t.ctx, rp, cfg, rp.Client, bc, t.logger.Logger)
 	if err != nil {
 		return err
 	}
 
 	// Initialize tasks
-	respondChallenges := NewRespondChallenges(t.sp, log.NewColorLogger(RespondChallengesColor), m)
-	submitRplPrice := NewSubmitRplPrice(t.ctx, t.sp, log.NewColorLogger(SubmitRplPriceColor), errorLog)
-	submitNetworkBalances := NewSubmitNetworkBalances(t.ctx, t.sp, log.NewColorLogger(SubmitNetworkBalancesColor), errorLog)
-	dissolveTimedOutMinipools := NewDissolveTimedOutMinipools(t.sp, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
-	submitScrubMinipools := NewSubmitScrubMinipools(t.sp, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
+	respondChallenges := NewRespondChallenges(t.sp, t.logger, m)
+	submitRplPrice := NewSubmitRplPrice(t.ctx, t.sp, t.logger)
+	submitNetworkBalances := NewSubmitNetworkBalances(t.ctx, t.sp, t.logger)
+	dissolveTimedOutMinipools := NewDissolveTimedOutMinipools(t.sp, t.logger)
+	submitScrubMinipools := NewSubmitScrubMinipools(t.sp, t.logger, scrubCollector)
 	var submitRewardsTree_Stateless *SubmitRewardsTree_Stateless
 	var submitRewardsTree_Rolling *SubmitRewardsTree_Rolling
 	if !useRollingRecords {
-		submitRewardsTree_Stateless = NewSubmitRewardsTree_Stateless(t.ctx, t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		submitRewardsTree_Stateless = NewSubmitRewardsTree_Stateless(t.ctx, t.sp, t.logger, m)
 	} else {
-		submitRewardsTree_Rolling, err = NewSubmitRewardsTree_Rolling(t.ctx, t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+		submitRewardsTree_Rolling, err = NewSubmitRewardsTree_Rolling(t.ctx, t.sp, t.logger, m)
 		if err != nil {
 			return fmt.Errorf("error during rolling rewards tree check: %w", err)
 		}
@@ -125,10 +103,10 @@ func (t *TaskLoop) Run() error {
 	if err != nil {
 		return fmt.Errorf("error during penalties check: %w", err)
 	}*/
-	generateRewardsTree := NewGenerateRewardsTree(t.ctx, t.sp, log.NewColorLogger(SubmitRewardsTreeColor), errorLog)
-	cancelBondReductions := NewCancelBondReductions(t.sp, log.NewColorLogger(CancelBondsColor), errorLog, bondReductionCollector)
-	checkSoloMigrations := NewCheckSoloMigrations(t.sp, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, soloMigrationCollector)
-	finalizePdaoProposals := NewFinalizePdaoProposals(t.sp, log.NewColorLogger(FinalizeProposalsColor))
+	generateRewardsTree := NewGenerateRewardsTree(t.ctx, t.sp, t.logger)
+	cancelBondReductions := NewCancelBondReductions(t.ctx, t.sp, t.logger, bondReductionCollector)
+	checkSoloMigrations := NewCheckSoloMigrations(t.ctx, t.sp, t.logger, soloMigrationCollector)
+	finalizePdaoProposals := NewFinalizePdaoProposals(t.sp, t.logger)
 
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
@@ -145,9 +123,9 @@ func (t *TaskLoop) Run() error {
 			interval := time.Duration(randomSeconds)*time.Second + minTasksInterval
 
 			// Check the EC status
-			err := t.sp.WaitEthClientSynced(false) // Force refresh the primary / fallback EC status
+			err := t.sp.WaitEthClientSynced(t.ctx, false) // Force refresh the primary / fallback EC status
 			if err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
@@ -155,9 +133,9 @@ func (t *TaskLoop) Run() error {
 			}
 
 			// Check the BC status
-			err = t.sp.WaitBeaconClientSynced(false) // Force refresh the primary / fallback BC status
+			err = t.sp.WaitBeaconClientSynced(t.ctx, false) // Force refresh the primary / fallback BC status
 			if err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
@@ -167,7 +145,7 @@ func (t *TaskLoop) Run() error {
 			// Load contracts
 			err = t.sp.RefreshRocketPoolContracts()
 			if err != nil {
-				errorLog.Println(fmt.Sprintf("error loading contract bindings: %s", err.Error()))
+				t.logger.Error("error loading contract bindings", log.Err(err))
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
@@ -178,7 +156,7 @@ func (t *TaskLoop) Run() error {
 			//latestBlock, err := m.GetLatestFinalizedBeaconBlock()
 			latestBlock, err := m.GetLatestBeaconBlock(t.ctx)
 			if err != nil {
-				errorLog.Println(fmt.Errorf("error getting latest Beacon block: %w", err))
+				t.logger.Error("error getting latest Beacon block", log.Err(err))
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
@@ -193,7 +171,7 @@ func (t *TaskLoop) Run() error {
 			// Check if on the Oracle DAO
 			isOnOdao, err := isOnOracleDAO(rp, nodeAddress, latestBlock)
 			if err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
@@ -202,7 +180,7 @@ func (t *TaskLoop) Run() error {
 
 			// Run the manual rewards tree generation
 			if err := generateRewardsTree.Run(); err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 			}
 			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
@@ -211,16 +189,16 @@ func (t *TaskLoop) Run() error {
 			if isOnOdao {
 				// Run the challenge check
 				if err := respondChallenges.Run(); err != nil {
-					errorLog.Println(err)
+					t.logger.Error(err.Error())
 				}
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
 
 				// Update the network state
-				state, err := updateNetworkState(t.ctx, m, &updateLog, latestBlock)
+				state, err := updateNetworkState(t.ctx, m, t.logger, latestBlock)
 				if err != nil {
-					errorLog.Println(err)
+					t.logger.Error(err.Error())
 					if utils.SleepWithCancel(t.ctx, taskCooldown) {
 						break
 					}
@@ -229,7 +207,7 @@ func (t *TaskLoop) Run() error {
 
 				// Run the network balance submission check
 				if err := submitNetworkBalances.Run(state); err != nil {
-					errorLog.Println(err)
+					t.logger.Error(err.Error())
 				}
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
@@ -238,7 +216,7 @@ func (t *TaskLoop) Run() error {
 				if !useRollingRecords {
 					// Run the rewards tree submission check
 					if err := submitRewardsTree_Stateless.Run(isOnOdao, state, latestBlock.Header.Slot); err != nil {
-						errorLog.Println(err)
+						t.logger.Error(err.Error())
 					}
 					if utils.SleepWithCancel(t.ctx, taskCooldown) {
 						break
@@ -246,7 +224,7 @@ func (t *TaskLoop) Run() error {
 				} else {
 					// Run the network balance and rewards tree submission check
 					if err := submitRewardsTree_Rolling.Run(state); err != nil {
-						errorLog.Println(err)
+						t.logger.Error(err.Error())
 					}
 					if utils.SleepWithCancel(t.ctx, taskCooldown) {
 						break
@@ -255,7 +233,7 @@ func (t *TaskLoop) Run() error {
 
 				// Run the price submission check
 				if err := submitRplPrice.Run(state); err != nil {
-					errorLog.Println(err)
+					t.logger.Error(err.Error())
 				}
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
@@ -263,7 +241,7 @@ func (t *TaskLoop) Run() error {
 
 				// Run the minipool dissolve check
 				if err := dissolveTimedOutMinipools.Run(state); err != nil {
-					errorLog.Println(err)
+					t.logger.Error(err.Error())
 				}
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
@@ -271,7 +249,7 @@ func (t *TaskLoop) Run() error {
 
 				// Run the finalize proposals check
 				if err := finalizePdaoProposals.Run(state); err != nil {
-					errorLog.Println(err)
+					t.logger.Error(err.Error())
 				}
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
@@ -279,7 +257,7 @@ func (t *TaskLoop) Run() error {
 
 				// Run the minipool scrub check
 				if err := submitScrubMinipools.Run(state); err != nil {
-					errorLog.Println(err)
+					t.logger.Error(err.Error())
 				}
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
@@ -287,7 +265,7 @@ func (t *TaskLoop) Run() error {
 
 				// Run the bond cancel check
 				if err := cancelBondReductions.Run(state); err != nil {
-					errorLog.Println(err)
+					t.logger.Error(err.Error())
 				}
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
@@ -295,7 +273,7 @@ func (t *TaskLoop) Run() error {
 
 				// Run the solo migration check
 				if err := checkSoloMigrations.Run(state); err != nil {
-					errorLog.Println(err)
+					t.logger.Error(err.Error())
 				}
 				/*time.Sleep(taskCooldown)
 
@@ -310,12 +288,12 @@ func (t *TaskLoop) Run() error {
 				if !useRollingRecords {
 					// Run the rewards tree submission check
 					if err := submitRewardsTree_Stateless.Run(isOnOdao, nil, latestBlock.Header.Slot); err != nil {
-						errorLog.Println(err)
+						t.logger.Error(err.Error())
 					}
 				} else {
 					// Run the network balance and rewards tree submission check
 					if err := submitRewardsTree_Rolling.Run(nil); err != nil {
-						errorLog.Println(err)
+						t.logger.Error(err.Error())
 					}
 				}
 			}
@@ -328,9 +306,9 @@ func (t *TaskLoop) Run() error {
 
 	// Run metrics loop
 	go func() {
-		err := runMetricsServer(t.sp, log.NewColorLogger(MetricsColor), scrubCollector, bondReductionCollector, soloMigrationCollector)
+		err := runMetricsServer(t.sp, t.logger, scrubCollector, bondReductionCollector, soloMigrationCollector)
 		if err != nil {
-			errorLog.Println(err)
+			t.logger.Error(err.Error())
 		}
 		wg.Done()
 	}()
@@ -341,8 +319,8 @@ func (t *TaskLoop) Run() error {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, log *log.ColorLogger, block beacon.BeaconBlock) (*state.NetworkState, error) {
-	log.Print("Getting latest network state... ")
+func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, logger *log.Logger, block beacon.BeaconBlock) (*state.NetworkState, error) {
+	logger.Info("Getting latest network state... ")
 	// Get the state of the network
 	state, err := m.GetStateForSlot(ctx, block.Header.Slot)
 	if err != nil {

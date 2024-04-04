@@ -29,7 +29,7 @@ func (f *networkDepositInfoContextFactory) Create(args url.Values) (*networkDepo
 
 func (f *networkDepositInfoContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkDepositInfoContext, api.NetworkDepositContractInfoData](
-		router, "deposit-contract-info", f, f.handler.serviceProvider.ServiceProvider,
+		router, "deposit-contract-info", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -46,10 +46,10 @@ func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContract
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
 	bc := sp.GetBeaconClient()
-	ctx := sp.GetContext()
+	ctx := c.handler.ctx
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

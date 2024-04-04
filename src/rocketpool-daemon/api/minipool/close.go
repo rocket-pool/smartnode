@@ -39,7 +39,7 @@ func (f *minipoolCloseContextFactory) Create(args url.Values) (*minipoolCloseCon
 
 func (f *minipoolCloseContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolCloseContext, types.BatchTxInfoData](
-		router, "close", f, f.handler.serviceProvider,
+		router, "close", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 
@@ -73,7 +73,7 @@ func (c *minipoolCloseContext) GetMinipoolDetails(mc *batch.MultiCaller, mp mini
 }
 
 func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.BatchTxInfoData) (types.ResponseStatus, error) {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
+	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
 }
 
 func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {

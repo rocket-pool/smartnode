@@ -41,7 +41,7 @@ func (f *securityCancelProposalContextFactory) Create(args url.Values) (*securit
 
 func (f *securityCancelProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityCancelProposalContext, api.SecurityCancelProposalData](
-		router, "proposal/cancel", f, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/cancel", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -66,7 +66,7 @@ func (c *securityCancelProposalContext) Initialize() (types.ResponseStatus, erro
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

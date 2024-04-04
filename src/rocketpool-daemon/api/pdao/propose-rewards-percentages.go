@@ -44,7 +44,7 @@ func (f *protocolDaoProposeRewardsPercentagesContextFactory) Create(args url.Val
 
 func (f *protocolDaoProposeRewardsPercentagesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeRewardsPercentagesContext, api.ProtocolDaoGeneralProposeData](
-		router, "rewards-percentages/propose", f, f.handler.serviceProvider.ServiceProvider,
+		router, "rewards-percentages/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -74,7 +74,7 @@ func (c *protocolDaoProposeRewardsPercentagesContext) Initialize() (types.Respon
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -100,7 +100,7 @@ func (c *protocolDaoProposeRewardsPercentagesContext) GetState(mc *batch.MultiCa
 }
 
 func (c *protocolDaoProposeRewardsPercentagesContext) PrepareData(data *api.ProtocolDaoGeneralProposeData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	// Validate sum of percentages == 100%
 	one := eth.EthToWei(1)
 	sum := big.NewInt(0).Set(c.nodePercent)

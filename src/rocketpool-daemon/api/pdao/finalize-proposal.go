@@ -40,7 +40,7 @@ func (f *protocolDaoFinalizeProposalContextFactory) Create(args url.Values) (*pr
 
 func (f *protocolDaoFinalizeProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoFinalizeProposalContext, api.ProtocolDaoFinalizeProposalData](
-		router, "proposal/finalize", f, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/finalize", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -64,7 +64,7 @@ func (c *protocolDaoFinalizeProposalContext) Initialize() (types.ResponseStatus,
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

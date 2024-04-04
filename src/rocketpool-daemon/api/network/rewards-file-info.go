@@ -38,7 +38,7 @@ func (f *networkRewardsFileContextFactory) Create(args url.Values) (*networkRewa
 
 func (f *networkRewardsFileContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkRewardsFileContext, api.NetworkRewardsFileData](
-		router, "rewards-file-info", f, f.handler.serviceProvider.ServiceProvider,
+		router, "rewards-file-info", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -61,7 +61,7 @@ func (c *networkRewardsFileContext) Initialize() (types.ResponseStatus, error) {
 	c.cfg = sp.GetConfig()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

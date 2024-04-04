@@ -40,7 +40,7 @@ func (f *nodeWithdrawEthContextFactory) Create(args url.Values) (*nodeWithdrawEt
 
 func (f *nodeWithdrawEthContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeWithdrawEthContext, api.NodeWithdrawEthData](
-		router, "withdraw-eth", f, f.handler.serviceProvider.ServiceProvider,
+		router, "withdraw-eth", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -65,7 +65,7 @@ func (c *nodeWithdrawEthContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

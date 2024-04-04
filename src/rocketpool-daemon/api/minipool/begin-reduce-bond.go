@@ -37,7 +37,7 @@ func (f *minipoolBeginReduceBondContextFactory) Create(args url.Values) (*minipo
 
 func (f *minipoolBeginReduceBondContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolBeginReduceBondContext, types.BatchTxInfoData](
-		router, "begin-reduce-bond", f, f.handler.serviceProvider.ServiceProvider,
+		router, "begin-reduce-bond", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -52,7 +52,7 @@ type minipoolBeginReduceBondContext struct {
 }
 
 func (c *minipoolBeginReduceBondContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "begin-bond-reduce")
+	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "begin-bond-reduce")
 }
 
 func (c *minipoolBeginReduceBondContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {

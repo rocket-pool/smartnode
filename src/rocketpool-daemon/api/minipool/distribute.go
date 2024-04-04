@@ -35,7 +35,7 @@ func (f *minipoolDistributeContextFactory) Create(args url.Values) (*minipoolDis
 
 func (f *minipoolDistributeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolDistributeContext, types.BatchTxInfoData](
-		router, "distribute", f, f.handler.serviceProvider.ServiceProvider,
+		router, "distribute", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -49,7 +49,7 @@ type minipoolDistributeContext struct {
 }
 
 func (c *minipoolDistributeContext) PrepareData(data *types.BatchTxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	return prepareMinipoolBatchTxData(c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "distribute-balance")
+	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "distribute-balance")
 }
 
 func (c *minipoolDistributeContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {

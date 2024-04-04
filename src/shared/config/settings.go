@@ -64,4 +64,10 @@ const (
 	// Utility Containers
 	PruneProvisionerTag string = "rocketpool/eth1-prune-provision:v0.0.1"
 	EcMigratorTag       string = "rocketpool/ec-migrator:v1.0.0"
+
+	// Logging
+	LogDir            string = "logs"
+	ApiLogName        string = "api.log"
+	TasksLogName      string = "tasks.log"
+	WatchtowerLogName string = "watchtower.log"
 )

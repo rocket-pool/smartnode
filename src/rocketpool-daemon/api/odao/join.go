@@ -38,7 +38,7 @@ func (f *oracleDaoJoinContextFactory) Create(args url.Values) (*oracleDaoJoinCon
 
 func (f *oracleDaoJoinContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoJoinContext, api.OracleDaoJoinData](
-		router, "join", f, f.handler.serviceProvider.ServiceProvider,
+		router, "join", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -66,7 +66,7 @@ func (c *oracleDaoJoinContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -105,7 +105,7 @@ func (c *oracleDaoJoinContext) GetState(mc *batch.MultiCaller) {
 
 func (c *oracleDaoJoinContext) PrepareData(data *api.OracleDaoJoinData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	// Get the timestamp of the latest block
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	latestHeader, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block header: %w", err)

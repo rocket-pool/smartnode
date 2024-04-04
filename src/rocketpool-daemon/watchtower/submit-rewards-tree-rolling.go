@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"math"
 	"math/big"
 	"os"
@@ -17,9 +18,9 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	nmc_utils "github.com/rocket-pool/node-manager-core/utils"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/tokens"
@@ -31,6 +32,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
@@ -38,8 +40,7 @@ import (
 type SubmitRewardsTree_Rolling struct {
 	ctx         context.Context
 	sp          *services.ServiceProvider
-	log         log.ColorLogger
-	errLog      log.ColorLogger
+	logger      *slog.Logger
 	cfg         *config.SmartNodeConfig
 	w           *wallet.Wallet
 	ec          eth.IExecutionClient
@@ -49,14 +50,13 @@ type SubmitRewardsTree_Rolling struct {
 	genesisTime time.Time
 	recordMgr   *rprewards.RollingRecordManager
 	stateMgr    *state.NetworkStateManager
-	logPrefix   string
 
 	lock      *sync.Mutex
 	isRunning bool
 }
 
 // Create submit rewards tree with rolling record support
-func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, stateMgr *state.NetworkStateManager) (*SubmitRewardsTree_Rolling, error) {
+func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, stateMgr *state.NetworkStateManager) (*SubmitRewardsTree_Rolling, error) {
 	// Get services
 	cfg := sp.GetConfig()
 	rp := sp.GetRocketPool()
@@ -106,12 +106,10 @@ func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvi
 
 	// Create the task
 	lock := &sync.Mutex{}
-	logPrefix := "[Rolling Record]"
 	task := &SubmitRewardsTree_Rolling{
 		ctx:         ctx,
 		sp:          sp,
-		log:         logger,
-		errLog:      errorLogger,
+		logger:      logger.With(),
 		cfg:         cfg,
 		w:           sp.GetWallet(),
 		ec:          sp.GetEthClient(),
@@ -119,13 +117,12 @@ func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvi
 		bc:          bc,
 		stateMgr:    stateMgr,
 		genesisTime: genesisTime,
-		logPrefix:   logPrefix,
 		lock:        lock,
 		isRunning:   false,
 	}
 
 	// Make a new rolling manager
-	recordMgr, err := rprewards.NewRollingRecordManager(&task.log, &task.errLog, cfg, rp, bc, stateMgr, startSlot, beaconCfg, currentIndex)
+	recordMgr, err := rprewards.NewRollingRecordManager(task.logger, cfg, rp, bc, stateMgr, startSlot, beaconCfg, currentIndex)
 	if err != nil {
 		return nil, fmt.Errorf("error creating rolling record manager: %w", err)
 	}
@@ -150,7 +147,7 @@ func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvi
 func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 	t.lock.Lock()
 	if t.isRunning {
-		t.log.Println("Record update is already running in the background.")
+		t.logger.Info("Record update is already running in the background.")
 		t.lock.Unlock()
 		return nil
 	}
@@ -160,7 +157,7 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 		t.lock.Lock()
 		t.isRunning = true
 		t.lock.Unlock()
-		t.log.Printlnf("%s Running record update in a separate thread.", t.logPrefix)
+		t.logger.Info("Running record update in a separate thread.")
 
 		// Update contract bindings
 		nodeAddress, _ := t.w.GetAddress()
@@ -238,17 +235,17 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 			if existingRewardsFile != nil {
 				if valid && !mustRegenerate {
 					// We already have a valid file and submission
-					t.log.Printlnf("%s Rewards tree has already been submitted for interval %d and is still valid but consensus hasn't been reached yet; nothing to do.", t.logPrefix, headState.NetworkDetails.RewardIndex)
+					t.logger.Info("Rewards tree has already been submitted and is still valid but consensus hasn't been reached yet; nothing to do.", slog.Uint64(keys.IntervalKey, headState.NetworkDetails.RewardIndex))
 					t.lock.Lock()
 					t.isRunning = false
 					t.lock.Unlock()
 					return
 				} else if !valid && !mustRegenerate {
 					// We already have a valid file but need to submit again
-					t.log.Printlnf("%s Rewards tree has already been created for interval %d but hasn't been submitted yet, attempting resubmission.", t.logPrefix, headState.NetworkDetails.RewardIndex)
+					t.logger.Info("Rewards tree has already been created but hasn't been submitted yet, attempting resubmission.", slog.Uint64(keys.IntervalKey, headState.NetworkDetails.RewardIndex))
 				} else if !valid && mustRegenerate {
 					// We have a file but it's not valid (probably because too many intervals have passed)
-					t.log.Printlnf("%s Rewards submission for interval %d is due and current file is no longer valid (likely too many intervals have passed since its creation), regenerating it.", t.logPrefix, headState.NetworkDetails.RewardIndex)
+					t.logger.Info("Rewards submission is due and current file is no longer valid (likely too many intervals have passed since its creation), regenerating it.", slog.Uint64(keys.IntervalKey, headState.NetworkDetails.RewardIndex))
 				}
 			}
 
@@ -262,14 +259,14 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 
 			// Get an appropriate client that has access to the target state - this is required if the state gets pruned by the local EC and the
 			// archive EC is required
-			client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, big.NewInt(0).SetUint64(elBlockNumber))
+			client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.logger, big.NewInt(0).SetUint64(elBlockNumber))
 			if err != nil {
 				t.handleError(fmt.Errorf("error getting best API client during rewards submission: %w", err))
 				return
 			}
 
 			// Generate the rewards state
-			stateMgr, err := state.NewNetworkStateManager(t.ctx, client, t.cfg, client.Client, t.bc, &t.log)
+			stateMgr, err := state.NewNetworkStateManager(t.ctx, client, t.cfg, client.Client, t.bc, t.logger)
 			if err != nil {
 				t.handleError(fmt.Errorf("error creating state manager for rewards slot: %w", err))
 				return
@@ -281,14 +278,14 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 			}
 
 			// Process the rewards interval
-			t.log.Printlnf("%s Running rewards interval submission.", t.logPrefix)
+			t.logger.Info("Running rewards interval submission.")
 			err = t.runRewardsIntervalReport(client, state, isInOdao, intervalsPassed, startTime, endTime, mustRegenerate, existingRewardsFile)
 			if err != nil {
 				t.handleError(fmt.Errorf("error running rewards interval report: %w", err))
 				return
 			}
 		} else {
-			t.log.Printlnf("%s Rewards submission for interval %d is due... waiting for epoch %d to be finalized (currently on epoch %d)", t.logPrefix, headState.NetworkDetails.RewardIndex, requiredRewardsEpoch, latestFinalizedEpoch)
+			t.logger.Info("Rewards submission is due... waiting for target epoch to be finalized.", slog.Uint64(keys.IntervalKey, headState.NetworkDetails.RewardIndex), slog.Uint64(keys.TargetEpochKey, requiredRewardsEpoch), slog.Uint64(keys.FinalizedEpochKey, latestFinalizedEpoch))
 		}
 
 		t.lock.Lock()
@@ -297,20 +294,6 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 	}()
 
 	return nil
-}
-
-// Print a message from the tree generation goroutine
-func (t *SubmitRewardsTree_Rolling) printMessage(message string) {
-	t.log.Printlnf("%s %s", t.logPrefix, message)
-}
-
-// Print an error and unlock the mutex
-func (t *SubmitRewardsTree_Rolling) handleError(err error) {
-	t.errLog.Printlnf("%s %s", t.logPrefix, err.Error())
-	t.errLog.Println("*** Rolling Record processing failed. ***")
-	t.lock.Lock()
-	t.isRunning = false
-	t.lock.Unlock()
 }
 
 // Check if a rewards interval submission is required and if so, the slot number for the update
@@ -333,7 +316,7 @@ func (t *SubmitRewardsTree_Rolling) isRewardsIntervalSubmissionRequired(state *s
 			return false, 0, 0, time.Time{}, time.Time{}, fmt.Errorf("start time is zero, but error getting RPL token inflation interval start time: %w", err)
 		}
 		startTime = rpl.InflationIntervalStartTime.Formatted()
-		t.log.Printlnf("NOTE: rewards pool interval start time is 0, using the inflation interval start time according to the RPL token (%s)", startTime.String())
+		t.logger.Info("NOTE: rewards pool interval start time is 0, using the inflation interval start time according to the RPL token.", slog.Time(keys.StartKey, startTime))
 	}
 
 	// Calculate the end time, which is the number of intervals that have gone by since the current one's start
@@ -369,7 +352,7 @@ func (t *SubmitRewardsTree_Rolling) getTrueRewardsIntervalSubmissionSlot(targetS
 
 		// If the block was missing, try the previous one
 		if !exists {
-			t.log.Printlnf("%s Slot %d was missing, trying the previous one...", t.logPrefix, targetSlot)
+			t.logger.Info("Slot was missing, trying the previous one...", slog.Uint64(keys.SlotKey, targetSlot))
 			targetSlot--
 		} else {
 			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
@@ -388,14 +371,14 @@ func (t *SubmitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint6
 		return nil, false, true
 	}
 	if err != nil {
-		t.log.Printlnf("%s WARNING: failed to check if [%s] exists: %s; regenerating file...\n", t.logPrefix, rewardsTreePath, err.Error())
+		t.logger.Warn("Failed to check if rewards file exists; regenerating file...\n", slog.String(keys.FileKey, rewardsTreePath), log.Err(err))
 		return nil, false, true
 	}
 
 	// The file already exists, attempt to read it
 	localRewardsFile, err := rprewards.ReadLocalRewardsFile(rewardsTreePath)
 	if err != nil {
-		t.log.Printlnf("%s WARNING: failed to read %s: %s; regenerating file...\n", t.logPrefix, rewardsTreePath, err.Error())
+		t.logger.Warn("Failed to read rewards file; regenerating file...\n", slog.String(keys.FileKey, rewardsTreePath), log.Err(err))
 		return nil, false, true
 	}
 
@@ -406,7 +389,7 @@ func (t *SubmitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint6
 		// Save the compressed file and get the CID for it
 		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
-			t.log.Printlnf("%s WARNING: failed to get CID for %s: %s; regenerating file...\n", t.logPrefix, rewardsTreePath, err.Error())
+			t.logger.Warn("Failed to get CID for rewards file; regenerating file...\n", slog.String(keys.FileKey, rewardsTreePath), log.Err(err))
 			return nil, false, true
 		}
 
@@ -431,22 +414,22 @@ func (t *SubmitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint6
 			return nil
 		}, nil)
 		if err != nil {
-			t.log.Printlnf("%s WARNING: could not check if node has previously submitted file %s: %s; regenerating file...\n", t.logPrefix, rewardsTreePath, err.Error())
+			t.logger.Warn("Could not check if node has previously submitted rewards file; regenerating file...\n", slog.String(keys.FileKey, rewardsTreePath), log.Err(err))
 			return nil, false, true
 		}
 		if !hasSubmitted {
 			if header.IntervalsPassed != intervalsPassed {
-				t.log.Printlnf("%s Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...", t.logPrefix, header.Index, header.IntervalsPassed, intervalsPassed)
+				t.logger.Info("Existing file has too few rounds, regenerating file...", slog.Uint64(keys.IntervalKey, header.Index), slog.Uint64(keys.FileRoundsKey, header.IntervalsPassed), slog.Uint64(keys.ActualRoundsKey, intervalsPassed))
 				return localRewardsFile, false, true
 			}
-			t.log.Printlnf("%s Existing file for interval %d has not been submitted yet.", t.logPrefix, header.Index)
+			t.logger.Info("Existing file has not been submitted yet.", slog.Uint64(keys.IntervalKey, header.Index))
 			return localRewardsFile, false, false
 		}
 	}
 
 	// Check if the file's valid (same number of intervals passed as the current time)
 	if header.IntervalsPassed != intervalsPassed {
-		t.log.Printlnf("%s Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...", t.logPrefix, header.Index, header.IntervalsPassed, intervalsPassed)
+		t.logger.Info("Existing file has too few rounds, regenerating file...", slog.Uint64(keys.IntervalKey, header.Index), slog.Uint64(keys.FileRoundsKey, header.IntervalsPassed), slog.Uint64(keys.ActualRoundsKey, intervalsPassed))
 		return localRewardsFile, false, true
 	}
 
@@ -486,18 +469,18 @@ func (t *SubmitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 	// Check if we can reuse an existing file for this interval
 	if !mustRegenerate {
 		if !isInOdao {
-			t.log.Printlnf("%s Node is not in the Oracle DAO, skipping submission for interval %d.", t.logPrefix, currentIndex)
+			t.logger.Info("Node is not in the Oracle DAO, skipping submission..", slog.Uint64(keys.IntervalKey, currentIndex))
 			return nil
 		}
 
-		t.log.Printlnf("%s Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", t.logPrefix, currentIndex, rewardsTreePath)
+		t.logger.Info("Merkle rewards tree already exists, attempting to resubmit...", slog.Uint64(keys.IntervalKey, currentIndex), slog.String(keys.FileKey, rewardsTreePath))
 
 		// Save the compressed file and get the CID for it
 		cid, err := existingRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
-		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
+		t.logger.Info("Calculated rewards tree CID", slog.String(keys.CidKey, cid.String()))
 
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, existingRewardsFile.Impl().GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
@@ -505,7 +488,7 @@ func (t *SubmitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
 
-		t.log.Printlnf("%s Successfully submitted rewards snapshot for interval %d.", t.logPrefix, currentIndex)
+		t.logger.Info("Successfully submitted rewards snapshot.", slog.Uint64(keys.IntervalKey, currentIndex))
 		return nil
 	}
 
@@ -522,12 +505,12 @@ func (t *SubmitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
 	// Log
 	if intervalsPassed > 1 {
-		t.log.Printlnf("WARNING: %d intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", intervalsPassed)
+		t.logger.Warn("Multiple intervals have passed since the last rewards checkpoint was submitted! Rolling them into one...", slog.Uint64(keys.RoundsKey, intervalsPassed))
 	}
-	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.logPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
+	t.logger.Info("Rewards checkpoint has passed, starting Merkle tree generation in the background.", slog.Uint64(keys.IntervalKey, currentIndex), slog.Uint64(keys.SlotKey, snapshotBeaconBlock), slog.Uint64(keys.BlockKey, elBlockIndex), slog.Time(keys.StartKey, startTime), slog.Time(keys.EndKey, endTime))
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(&t.log, t.logPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, t.recordMgr.Record)
+	treegen, err := rprewards.NewTreeGenerator(t.logger, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, t.recordMgr.Record)
 	if err != nil {
 		return fmt.Errorf("error creating Merkle tree generator: %w", err)
 	}
@@ -536,7 +519,7 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
 	for address, network := range rewardsFile.GetHeader().InvalidNetworkNodes {
-		t.printMessage(fmt.Sprintf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network))
+		t.logger.Warn("Node has invalid network assigned! Using 0 (mainnet) instead.", slog.String(keys.NodeKey, address.Hex()), slog.Uint64(keys.NetworkKey, network))
 	}
 
 	// Serialize the minipool performance file
@@ -554,10 +537,10 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		if err != nil {
 			return fmt.Errorf("error getting the CID for file %s: %w", compressedMinipoolPerformancePath, err)
 		}
-		t.printMessage(fmt.Sprintf("Calculated minipool performance CID: %s", minipoolPerformanceCid))
+		t.logger.Info("Calculated minipool performance CID", slog.String(keys.CidKey, minipoolPerformanceCid.String()))
 		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
 	} else {
-		t.printMessage("Saved minipool performance file.")
+		t.logger.Info("Saved minipool performance file.")
 		rewardsFile.SetMinipoolPerformanceFileCID("---")
 	}
 
@@ -566,7 +549,7 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		rewardsFile,
 		rewardsTreePath,
 	)
-	t.printMessage("Generation complete! Saving tree...")
+	t.logger.Info("Generation complete! Saving tree...")
 
 	// Write the rewards tree to disk
 	err = localRewardsFile.Write()
@@ -579,16 +562,16 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		if err != nil {
 			return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
 		}
-		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
+		t.logger.Info("Calculated rewards tree CID", slog.String(keys.CidKey, cid.String()))
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
 
-		t.printMessage(fmt.Sprintf("Successfully submitted rewards snapshot for interval %d.", currentIndex))
+		t.logger.Info("Successfully submitted rewards snapshot.", slog.Uint64(keys.IntervalKey, currentIndex))
 	} else {
-		t.printMessage(fmt.Sprintf("Successfully generated rewards snapshot for interval %d.", currentIndex))
+		t.logger.Info("Successfully generated rewards snapshot.", slog.Uint64(keys.IntervalKey, currentIndex))
 	}
 
 	return nil
@@ -652,7 +635,7 @@ func (t *SubmitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 				EstimatedGasLimit: utils.RewardsSubmissionForcedGas,
 				SafeGasLimit:      utils.RewardsSubmissionForcedGas,
 			}
-			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
+			t.logger.Info("Rewards period consensus has already been reached but submitting anyway for the health check.")
 		} else {
 			return fmt.Errorf("error getting TX for submitting the rewards tree: %w", err)
 		}
@@ -663,7 +646,7 @@ func (t *SubmitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -672,11 +655,19 @@ func (t *SubmitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Return
 	return nil
+}
+
+// Print an error and unlock the mutex
+func (t *SubmitRewardsTree_Rolling) handleError(err error) {
+	t.logger.Error("*** Rolling Record processing failed. ***", log.Err(err))
+	t.lock.Lock()
+	t.isRunning = false
+	t.lock.Unlock()
 }

@@ -45,7 +45,7 @@ func (f *protocolDaoOverrideVoteOnProposalContextFactory) Create(args url.Values
 
 func (f *protocolDaoOverrideVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoOverrideVoteOnProposalContext, api.ProtocolDaoVoteOnProposalData](
-		router, "proposal/override-vote", f, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/override-vote", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -76,7 +76,7 @@ func (c *protocolDaoOverrideVoteOnProposalContext) Initialize() (types.ResponseS
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

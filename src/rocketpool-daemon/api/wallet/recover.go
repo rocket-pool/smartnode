@@ -41,7 +41,7 @@ func (f *walletRecoverContextFactory) Create(args url.Values) (*walletRecoverCon
 
 func (f *walletRecoverContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletRecoverContext, api.WalletRecoverData](
-		router, "recover", f, f.handler.serviceProvider.ServiceProvider,
+		router, "recover", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -73,7 +73,7 @@ func (c *walletRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bi
 		return types.ResponseStatus_ResourceConflict, fmt.Errorf("a wallet is already present")
 	}
 	if !c.skipValidatorKeyRecovery {
-		status, err := sp.RequireRocketPoolContracts()
+		status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 		if err != nil {
 			return status, err
 		}

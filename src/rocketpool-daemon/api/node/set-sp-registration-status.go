@@ -39,7 +39,7 @@ func (f *nodeSetSmoothingPoolRegistrationStatusContextFactory) Create(args url.V
 
 func (f *nodeSetSmoothingPoolRegistrationStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetSmoothingPoolRegistrationStatusContext, api.NodeSetSmoothingPoolRegistrationStatusData](
-		router, "set-smoothing-pool-registration-state", f, f.handler.serviceProvider.ServiceProvider,
+		router, "set-smoothing-pool-registration-state", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -65,7 +65,7 @@ func (c *nodeSetSmoothingPoolRegistrationStatusContext) Initialize() (types.Resp
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -95,7 +95,7 @@ func (c *nodeSetSmoothingPoolRegistrationStatusContext) PrepareData(data *api.No
 	data.NodeRegistered = c.node.SmoothingPoolRegistrationState.Get()
 
 	// Get the time the user can next change their opt-in status
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	latestBlockHeader, err := c.ec.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block: %w", err)

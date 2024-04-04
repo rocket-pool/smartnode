@@ -46,7 +46,7 @@ func (f *protocolDaoVoteOnProposalContextFactory) Create(args url.Values) (*prot
 
 func (f *protocolDaoVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoVoteOnProposalContext, api.ProtocolDaoVoteOnProposalData](
-		router, "proposal/vote", f, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -75,11 +75,11 @@ func (c *protocolDaoVoteOnProposalContext) Initialize() (types.ResponseStatus, e
 	c.cfg = sp.GetConfig()
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
-	ctx := sp.GetContext()
+	ctx := c.handler.ctx
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

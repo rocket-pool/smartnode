@@ -31,7 +31,7 @@ func (f *minipoolRefundDetailsContextFactory) Create(args url.Values) (*minipool
 
 func (f *minipoolRefundDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolRefundDetailsContext, api.MinipoolRefundDetailsData](
-		router, "refund/details", f, f.handler.serviceProvider,
+		router, "refund/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 

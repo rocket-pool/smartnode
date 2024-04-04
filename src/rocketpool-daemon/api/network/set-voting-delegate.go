@@ -35,7 +35,7 @@ func (f *networkSetVotingDelegateContextFactory) Create(args url.Values) (*nodeS
 
 func (f *networkSetVotingDelegateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeSetSnapshotDelegateContext, types.TxInfoData](
-		router, "voting-delegate/set", f, f.handler.serviceProvider.ServiceProvider,
+		router, "voting-delegate/set", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -55,7 +55,7 @@ func (c *nodeSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opt
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, nil
 	}

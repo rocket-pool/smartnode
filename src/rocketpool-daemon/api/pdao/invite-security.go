@@ -44,7 +44,7 @@ func (f *protocolDaoProposeInviteToSecurityCouncilContextFactory) Create(args ur
 
 func (f *protocolDaoProposeInviteToSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeInviteToSecurityCouncilContext, api.ProtocolDaoProposeInviteToSecurityCouncilData](
-		router, "security/invite", f, f.handler.serviceProvider.ServiceProvider,
+		router, "security/invite", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -74,7 +74,7 @@ func (c *protocolDaoProposeInviteToSecurityCouncilContext) Initialize() (types.R
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
@@ -105,7 +105,7 @@ func (c *protocolDaoProposeInviteToSecurityCouncilContext) GetState(mc *batch.Mu
 }
 
 func (c *protocolDaoProposeInviteToSecurityCouncilContext) PrepareData(data *api.ProtocolDaoProposeInviteToSecurityCouncilData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	data.MemberAlreadyExists = c.member.Exists.Get()
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()

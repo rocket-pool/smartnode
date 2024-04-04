@@ -2,6 +2,7 @@ package proposals
 
 import (
 	"fmt"
+	"log/slog"
 	"math/big"
 	"path/filepath"
 	"regexp"
@@ -10,13 +11,14 @@ import (
 	"github.com/blang/semver/v4"
 	batchquery "github.com/rocket-pool/batch-query"
 	nmc_config "github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 const (
@@ -49,10 +51,9 @@ func (t VotingInfoSnapshot) GetFilename() string {
 
 // Struct for voting info snapshots
 type VotingInfoSnapshotManager struct {
-	log       *log.ColorLogger
-	logPrefix string
-	cfg       *config.SmartNodeConfig
-	rp        *rocketpool.RocketPool
+	logger *slog.Logger
+	cfg    *config.SmartNodeConfig
+	rp     *rocketpool.RocketPool
 
 	filenameRegex           *regexp.Regexp
 	latestCompatibleVersion *semver.Version
@@ -60,9 +61,9 @@ type VotingInfoSnapshotManager struct {
 }
 
 // Create a new VotingInfoSnapshotManager instance
-func NewVotingInfoSnapshotManager(log *log.ColorLogger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool) (*VotingInfoSnapshotManager, error) {
+func NewVotingInfoSnapshotManager(logger *slog.Logger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool) (*VotingInfoSnapshotManager, error) {
 	// Create the snapshot filename regex
-	logPrefix := "[Voting Info Snapshot]"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Voting Info Snapshot"))
 	filenameRegex := regexp.MustCompile(votingInfoSnapshotFilenamePattern)
 
 	// Create the latest compatible snapshot version
@@ -72,8 +73,7 @@ func NewVotingInfoSnapshotManager(log *log.ColorLogger, cfg *config.SmartNodeCon
 	}
 
 	manager := &VotingInfoSnapshotManager{
-		log:                     log,
-		logPrefix:               logPrefix,
+		logger:                  sublogger,
 		cfg:                     cfg,
 		rp:                      rp,
 		filenameRegex:           filenameRegex,
@@ -150,15 +150,15 @@ func (m *VotingInfoSnapshotManager) SaveToFile(snapshot *VotingInfoSnapshot) err
 func (m *VotingInfoSnapshotManager) LoadFromDisk(blockNumber uint32) (*VotingInfoSnapshot, error) {
 	tree, filename, err := LoadFromFile(m.checksumManager, blockNumber)
 	if err != nil {
-		m.logMessage("%s WARNING: error loading network tree for block %d from disk: %s... it must be regenerated", m.logPrefix, blockNumber, err.Error())
+		m.logger.Warn("Loading voting info from disk failed, it must be regenerated.", slog.Uint64(keys.BlockKey, uint64(blockNumber)), log.Err(err))
 		return nil, nil
 	}
 	if tree == nil {
-		m.logMessage("%s Couldn't load network tree for block %d from disk, so it must be regenerated.", m.logPrefix, blockNumber)
+		m.logger.Warn("Voting info must be regenerated.", slog.Uint64(keys.BlockKey, uint64(blockNumber)))
 		return nil, nil
 	}
 
-	m.logMessage("%s Loaded file [%s].", m.logPrefix, filename)
+	m.logger.Info("Loaded voting info from disk.", slog.Uint64(keys.BlockKey, uint64(blockNumber)), slog.String(keys.FileKey, filename))
 	return tree, nil
 }
 
@@ -192,18 +192,18 @@ func (m *VotingInfoSnapshotManager) ShouldLoadEntry(filename string, context uin
 func (m *VotingInfoSnapshotManager) IsDataValid(data *VotingInfoSnapshot, filename string, context uint32) (bool, error) {
 	// Check if it has the proper network
 	if data.Network != m.cfg.Network.Value {
-		m.logMessage("%s File [%s] is for network %s instead of %s so it cannot be used.", m.logPrefix, filename, data.Network, string(m.cfg.Network.Value))
+		m.logger.Warn("Voting info on disk is for the wrong network so it cannot be used.", slog.String(keys.FileKey, filename), slog.String(keys.CurrentNetworkKey, string(m.cfg.Network.Value)), slog.String(keys.FileNetworkKey, string(data.Network)))
 		return false, nil
 	}
 
 	// Check if it's using a compatible version
 	snapshotVersion, err := semver.New(data.SmartnodeVersion)
 	if err != nil {
-		m.logMessage("%s Failed to parse the version info for file [%s] so it cannot be used.", m.logPrefix, filename)
+		m.logger.Error("Parsing voting info version failed so it cannot be used.", slog.String(keys.FileKey, filename), log.Err(err))
 		return false, nil
 	}
 	if snapshotVersion.LT(*m.latestCompatibleVersion) {
-		m.logMessage("%s File [%s] was made with Smartnode v%s which is not compatible (lowest compatible = v%s) so it cannot be used.", m.logPrefix, filename, data.SmartnodeVersion, latestCompatibleVersionString)
+		m.logger.Warn("Voting info was made with an incompatible Smart Node so it cannot be used.", slog.String(keys.FileKey, filename), slog.String(keys.FileVersionKey, data.SmartnodeVersion), slog.String(keys.HighestCompatibleKey, latestCompatibleVersionString))
 		return false, nil
 	}
 
@@ -227,11 +227,4 @@ func (m *VotingInfoSnapshotManager) getBlockNumberFromFilename(filename string) 
 	}
 
 	return uint32(blockNumber), nil
-}
-
-// Log a message to the logger
-func (m *VotingInfoSnapshotManager) logMessage(message string, args ...any) {
-	if m.log != nil {
-		m.log.Printlnf(message, args...)
-	}
 }

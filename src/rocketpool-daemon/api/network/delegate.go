@@ -29,7 +29,7 @@ func (f *networkDelegateContextFactory) Create(args url.Values) (*networkDelegat
 
 func (f *networkDelegateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkDelegateContext, api.NetworkLatestDelegateData](
-		router, "latest-delegate", f, f.handler.serviceProvider.ServiceProvider,
+		router, "latest-delegate", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -46,7 +46,7 @@ func (c *networkDelegateContext) PrepareData(data *api.NetworkLatestDelegateData
 	rp := sp.GetRocketPool()
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts()
+	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

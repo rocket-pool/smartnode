@@ -2,48 +2,50 @@ package watchtower
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Finalize PDAO proposals task
 type FinalizePdaoProposals struct {
-	sp  *services.ServiceProvider
-	log log.ColorLogger
-	cfg *config.SmartNodeConfig
-	w   *wallet.Wallet
-	ec  eth.IExecutionClient
-	rp  *rocketpool.RocketPool
+	sp     *services.ServiceProvider
+	logger *slog.Logger
+	cfg    *config.SmartNodeConfig
+	w      *wallet.Wallet
+	ec     eth.IExecutionClient
+	rp     *rocketpool.RocketPool
 }
 
 // Create finalize PDAO proposals task task
-func NewFinalizePdaoProposals(sp *services.ServiceProvider, logger log.ColorLogger) *FinalizePdaoProposals {
+func NewFinalizePdaoProposals(sp *services.ServiceProvider, logger *log.Logger) *FinalizePdaoProposals {
 	return &FinalizePdaoProposals{
-		sp:  sp,
-		cfg: sp.GetConfig(),
-		w:   sp.GetWallet(),
-		ec:  sp.GetEthClient(),
-		rp:  sp.GetRocketPool(),
-		log: logger,
+		sp:     sp,
+		cfg:    sp.GetConfig(),
+		w:      sp.GetWallet(),
+		ec:     sp.GetEthClient(),
+		rp:     sp.GetRocketPool(),
+		logger: logger.With(slog.String(keys.RoutineKey, "Finalize PDAO Proposals")),
 	}
 }
 
 // Dissolve timed out minipools
 func (t *FinalizePdaoProposals) Run(state *state.NetworkState) error {
 	// Log
-	t.log.Println("Checking for vetoable proposals to finalize...")
+	t.logger.Info("Checking for vetoable proposals to finalize...")
 
 	// Get timed out minipools
 	propIDs := t.getFinalizableProposals(state)
@@ -52,12 +54,12 @@ func (t *FinalizePdaoProposals) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.log.Printlnf("%d proposal(s) have been vetoed and will be finalized...", len(propIDs))
+	t.logger.Info("Detected finalizable proposals.", slog.Int(keys.CountKey, len(propIDs)))
 
 	// Finalize proposals
 	for _, propID := range propIDs {
 		if err := t.finalizeProposal(propID); err != nil {
-			t.log.Println(fmt.Errorf("error finalizing proposal %d: %w", propID, err))
+			t.logger.Error("Error finalizing proposal", slog.Uint64(keys.ProposalKey, propID), log.Err(err))
 		}
 	}
 
@@ -79,7 +81,8 @@ func (t *FinalizePdaoProposals) getFinalizableProposals(state *state.NetworkStat
 // Dissolve a minipool
 func (t *FinalizePdaoProposals) finalizeProposal(propID uint64) error {
 	// Log
-	t.log.Printlnf("Finalizing proposal %d...", propID)
+	propLogger := t.logger.With(slog.Uint64(keys.ProposalKey, propID))
+	propLogger.Info("Finalizing proposal...")
 
 	// Get transactor
 	opts, err := t.w.GetTransactor()
@@ -104,7 +107,7 @@ func (t *FinalizePdaoProposals) finalizeProposal(propID uint64) error {
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, propLogger, maxFee, 0) {
 		return nil
 	}
 
@@ -114,12 +117,12 @@ func (t *FinalizePdaoProposals) finalizeProposal(propID uint64) error {
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, propLogger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 	// Log
-	t.log.Printlnf("Successfully finalized proposal %d.", propID)
+	propLogger.Info("Successfully finalized proposal.")
 
 	// Return
 	return nil

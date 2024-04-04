@@ -37,7 +37,7 @@ func (f *minipoolReduceBondDetailsContextFactory) Create(args url.Values) (*mini
 
 func (f *minipoolReduceBondDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolReduceBondDetailsContext, api.MinipoolReduceBondDetailsData](
-		router, "reduce-bond/details", f, f.handler.serviceProvider,
+		router, "reduce-bond/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 
@@ -62,7 +62,7 @@ func (c *minipoolReduceBondDetailsContext) Initialize() (types.ResponseStatus, e
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	err := sp.RequireBeaconClientSynced()
+	err := sp.RequireBeaconClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
@@ -124,7 +124,7 @@ func (c *minipoolReduceBondDetailsContext) PrepareData(addresses []common.Addres
 	data.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Formatted()
 
 	// Get the latest block header
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	header, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block header: %w", err)

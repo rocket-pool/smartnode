@@ -44,7 +44,7 @@ func (f *minipoolStatusContextFactory) Create(args url.Values) (*minipoolStatusC
 
 func (f *minipoolStatusContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolStatusContext, api.MinipoolStatusData](
-		router, "status", f, f.handler.serviceProvider,
+		router, "status", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 
@@ -74,7 +74,7 @@ func (c *minipoolStatusContext) Initialize() (types.ResponseStatus, error) {
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	err := sp.RequireBeaconClientSynced()
+	err := sp.RequireBeaconClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
@@ -135,7 +135,7 @@ func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp min
 }
 
 func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStatusData) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	// Data
 	var wg1 errgroup.Group
 	var eth2Config beacon.Eth2Config
@@ -314,7 +314,11 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 
 		return nil
 	}, nil)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("error getting node share of minipools: %w", err)
+	}
 
+	data.Minipools = details
 	data.LatestDelegate = c.delegate.Address
 	return types.ResponseStatus_Success, nil
 }

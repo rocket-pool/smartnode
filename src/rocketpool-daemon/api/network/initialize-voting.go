@@ -34,7 +34,7 @@ func (f *networkInitializeVotingContextFactory) Create(args url.Values) (*networ
 
 func (f *networkInitializeVotingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkInitializeVotingContext, api.NetworkInitializeVotingData](
-		router, "initialize-voting", f, f.handler.serviceProvider.ServiceProvider,
+		router, "initialize-voting", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -55,7 +55,7 @@ func (c *networkInitializeVotingContext) Initialize() (types.ResponseStatus, err
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

@@ -3,6 +3,7 @@ package node
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"net/http"
 	"os"
@@ -12,10 +13,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/fatih/color"
 
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/utils"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -31,24 +31,8 @@ const (
 	metricsShutdownTimeout      time.Duration = time.Second * 5
 )
 
-const (
-	MaxConcurrentEth1Requests = 200
-
-	StakePrelaunchMinipoolsColor = color.FgBlue
-	DownloadRewardsTreesColor    = color.FgGreen
-	MetricsColor                 = color.FgHiYellow
-	ManageFeeRecipientColor      = color.FgHiCyan
-	PromoteMinipoolsColor        = color.FgMagenta
-	ReduceBondAmountColor        = color.FgHiBlue
-	DefendPdaoPropsColor         = color.FgYellow
-	VerifyPdaoPropsColor         = color.FgYellow
-	DistributeMinipoolsColor     = color.FgHiGreen
-	ErrorColor                   = color.FgRed
-	WarningColor                 = color.FgYellow
-	UpdateColor                  = color.FgHiWhite
-)
-
 type TaskLoop struct {
+	logger        *log.Logger
 	ctx           context.Context
 	sp            *services.ServiceProvider
 	wg            *sync.WaitGroup
@@ -56,10 +40,12 @@ type TaskLoop struct {
 }
 
 func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
+	logger := sp.GetTasksLogger()
 	return &TaskLoop{
-		sp:  sp,
-		ctx: sp.GetContext(),
-		wg:  wg,
+		sp:     sp,
+		logger: logger,
+		ctx:    logger.CreateContextWithLogger(sp.GetBaseContext()),
+		wg:     wg,
 	}
 }
 
@@ -84,30 +70,26 @@ func (t *TaskLoop) Run() error {
 		return err
 	}
 
-	// Initialize loggers
-	errorLog := log.NewColorLogger(ErrorColor)
-	updateLog := log.NewColorLogger(UpdateColor)
-
 	// Create the state manager
-	m, err := state.NewNetworkStateManager(t.ctx, rp, cfg, ec, bc, &updateLog)
+	m, err := state.NewNetworkStateManager(t.ctx, rp, cfg, ec, bc, t.logger.Logger)
 	if err != nil {
 		return err
 	}
 	stateLocker := collectors.NewStateLocker()
 
 	// Initialize tasks
-	manageFeeRecipient := NewManageFeeRecipient(t.ctx, t.sp, log.NewColorLogger(ManageFeeRecipientColor))
-	distributeMinipools := NewDistributeMinipools(t.sp, log.NewColorLogger(DistributeMinipoolsColor))
-	stakePrelaunchMinipools := NewStakePrelaunchMinipools(t.sp, log.NewColorLogger(StakePrelaunchMinipoolsColor))
-	promoteMinipools := NewPromoteMinipools(t.sp, log.NewColorLogger(PromoteMinipoolsColor))
-	downloadRewardsTrees := NewDownloadRewardsTrees(t.sp, log.NewColorLogger(DownloadRewardsTreesColor))
-	reduceBonds := NewReduceBonds(t.sp, log.NewColorLogger(ReduceBondAmountColor))
-	defendPdaoProps := NewDefendPdaoProps(t.ctx, t.sp, log.NewColorLogger(DefendPdaoPropsColor))
+	manageFeeRecipient := NewManageFeeRecipient(t.ctx, t.sp, t.logger)
+	distributeMinipools := NewDistributeMinipools(t.sp, t.logger)
+	stakePrelaunchMinipools := NewStakePrelaunchMinipools(t.sp, t.logger)
+	promoteMinipools := NewPromoteMinipools(t.sp, t.logger)
+	downloadRewardsTrees := NewDownloadRewardsTrees(t.sp, t.logger)
+	reduceBonds := NewReduceBonds(t.sp, t.logger)
+	defendPdaoProps := NewDefendPdaoProps(t.ctx, t.sp, t.logger)
 	var verifyPdaoProps *VerifyPdaoProps
 	// Make sure the user opted into this duty
 	verifyEnabled := cfg.VerifyProposals.Value
 	if verifyEnabled {
-		verifyPdaoProps = NewVerifyPdaoProps(t.ctx, t.sp, log.NewColorLogger(VerifyPdaoPropsColor))
+		verifyPdaoProps = NewVerifyPdaoProps(t.ctx, t.sp, t.logger)
 		if err != nil {
 			return err
 		}
@@ -118,16 +100,15 @@ func (t *TaskLoop) Run() error {
 
 	// Run task loop
 	t.wg.Add(1)
-	isHoustonDeployedMasterFlag := false
 	go func() {
 		defer t.wg.Done()
 
 		// Wait until node is registered
-		err := t.sp.WaitNodeRegistered(true)
+		err := t.sp.WaitNodeRegistered(t.ctx, true)
 		if err != nil {
 			errMsg := err.Error()
 			if !strings.Contains(errMsg, "context canceled") {
-				errorLog.Printlnf("error waiting for node registration: %s", errMsg)
+				t.logger.Error("Error waiting for node registration", slog.String(log.ErrorKey, errMsg))
 			}
 			return
 		}
@@ -137,14 +118,14 @@ func (t *TaskLoop) Run() error {
 		wasBeaconClientSynced := true
 		for {
 			// Check the EC status
-			err := t.sp.WaitEthClientSynced(false) // Force refresh the primary / fallback EC status
+			err := t.sp.WaitEthClientSynced(t.ctx, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				errMsg := err.Error()
 				if strings.Contains(errMsg, "context canceled") {
 					break
 				}
 				wasExecutionClientSynced = false
-				errorLog.Printlnf("Execution Client not synced: %s. Waiting for sync...", err.Error())
+				t.logger.Error("Execution Client not synced. Waiting for sync...", slog.String(log.ErrorKey, errMsg))
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
@@ -152,13 +133,13 @@ func (t *TaskLoop) Run() error {
 			}
 
 			if !wasExecutionClientSynced {
-				updateLog.Println("Execution Client is now synced.")
+				t.logger.Info("Execution Client is now synced.")
 				wasExecutionClientSynced = true
 				alerting.AlertExecutionClientSyncComplete(cfg)
 			}
 
 			// Check the BC status
-			err = t.sp.WaitBeaconClientSynced(false) // Force refresh the primary / fallback BC status
+			err = t.sp.WaitBeaconClientSynced(t.ctx, false) // Force refresh the primary / fallback BC status
 			if err != nil {
 				errMsg := err.Error()
 				if strings.Contains(errMsg, "context canceled") {
@@ -166,7 +147,7 @@ func (t *TaskLoop) Run() error {
 				}
 				// NOTE: if not synced, it returns an error - so there isn't necessarily an underlying issue
 				wasBeaconClientSynced = false
-				errorLog.Printlnf("Beacon Node not synced: %s. Waiting for sync...", err.Error())
+				t.logger.Error("Beacon Node not synced. Waiting for sync...", slog.String(log.ErrorKey, errMsg))
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
@@ -174,7 +155,7 @@ func (t *TaskLoop) Run() error {
 			}
 
 			if !wasBeaconClientSynced {
-				updateLog.Println("Beacon Node is now synced.")
+				t.logger.Info("Beacon Node is now synced.")
 				wasBeaconClientSynced = true
 				alerting.AlertBeaconClientSyncComplete(cfg)
 			}
@@ -182,7 +163,7 @@ func (t *TaskLoop) Run() error {
 			// Load contracts
 			err = t.sp.RefreshRocketPoolContracts()
 			if err != nil {
-				errorLog.Println(fmt.Sprintf("error loading contract bindings: %s", err.Error()))
+				t.logger.Error("Error loading contract bindings", log.Err(err))
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
@@ -199,9 +180,9 @@ func (t *TaskLoop) Run() error {
 			if !hasNodeAddress {
 				continue
 			}
-			state, totalEffectiveStake, err := updateNetworkState(t.ctx, m, &updateLog, nodeAddress, updateTotalEffectiveStake)
+			state, totalEffectiveStake, err := updateNetworkState(t.ctx, m, t.logger, nodeAddress, updateTotalEffectiveStake)
 			if err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
 				}
@@ -209,15 +190,9 @@ func (t *TaskLoop) Run() error {
 			}
 			stateLocker.UpdateState(state, totalEffectiveStake)
 
-			// Check for Houston
-			if !isHoustonDeployedMasterFlag && state.IsHoustonDeployed {
-				printHoustonMessage(&updateLog)
-				isHoustonDeployedMasterFlag = true
-			}
-
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.Run(state); err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 			}
 			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
@@ -225,35 +200,33 @@ func (t *TaskLoop) Run() error {
 
 			// Run the rewards download check
 			if err := downloadRewardsTrees.Run(state); err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 			}
 			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
 			}
 
-			if state.IsHoustonDeployed {
-				// Run the pDAO proposal defender
-				if err := defendPdaoProps.Run(state); err != nil {
-					errorLog.Println(err)
+			// Run the pDAO proposal defender
+			if err := defendPdaoProps.Run(state); err != nil {
+				t.logger.Error(err.Error())
+			}
+			if utils.SleepWithCancel(t.ctx, taskCooldown) {
+				break
+			}
+
+			// Run the pDAO proposal verifier
+			if verifyPdaoProps != nil {
+				if err := verifyPdaoProps.Run(state); err != nil {
+					t.logger.Error(err.Error())
 				}
 				if utils.SleepWithCancel(t.ctx, taskCooldown) {
 					break
-				}
-
-				// Run the pDAO proposal verifier
-				if verifyPdaoProps != nil {
-					if err := verifyPdaoProps.Run(state); err != nil {
-						errorLog.Println(err)
-					}
-					if utils.SleepWithCancel(t.ctx, taskCooldown) {
-						break
-					}
 				}
 			}
 
 			// Run the minipool stake check
 			if err := stakePrelaunchMinipools.Run(state); err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 			}
 			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
@@ -261,7 +234,7 @@ func (t *TaskLoop) Run() error {
 
 			// Run the balance distribution check
 			if err := distributeMinipools.Run(state); err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 			}
 			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
@@ -269,7 +242,7 @@ func (t *TaskLoop) Run() error {
 
 			// Run the reduce bond check
 			if err := reduceBonds.Run(state); err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 			}
 			if utils.SleepWithCancel(t.ctx, taskCooldown) {
 				break
@@ -277,7 +250,7 @@ func (t *TaskLoop) Run() error {
 
 			// Run the minipool promotion check
 			if err := promoteMinipools.Run(state); err != nil {
-				errorLog.Println(err)
+				t.logger.Error(err.Error())
 			}
 
 			if utils.SleepWithCancel(t.ctx, tasksInterval) {
@@ -287,7 +260,7 @@ func (t *TaskLoop) Run() error {
 	}()
 
 	// Run metrics loop
-	t.metricsServer = runMetricsServer(t.ctx, t.sp, log.NewColorLogger(MetricsColor), stateLocker, t.wg)
+	t.metricsServer = runMetricsServer(t.ctx, t.sp, t.logger, stateLocker, t.wg)
 
 	return nil
 }
@@ -335,34 +308,11 @@ func (t *TaskLoop) Stop() {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*state.NetworkState, *big.Int, error) {
+func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, log *log.Logger, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*state.NetworkState, *big.Int, error) {
 	// Get the state of the network
 	state, totalEffectiveStake, err := m.GetHeadStateForNode(ctx, nodeAddress, calculateTotalEffectiveStake)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error updating network state: %w", err)
 	}
 	return state, totalEffectiveStake, nil
-}
-
-// Check if Houston has been deployed yet
-func printHoustonMessage(log *log.ColorLogger) {
-	log.Println(`
-*       .
-*      / \
-*     |.'.|
-*     |'.'|
-*   ,'|   |'.
-*  |,-'-|-'-.|
-*   __|_| |         _        _      _____           _
-*  | ___ \|        | |      | |    | ___ \         | |
-*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
-*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
-*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
-*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
-* +---------------------------------------------------+
-* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
-* +---------------------------------------------------+
-*
-* =============== Houston has launched! ===============
-`)
 }

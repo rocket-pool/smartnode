@@ -3,6 +3,7 @@ package watchtower
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"strings"
 	"sync"
@@ -21,8 +22,8 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/eth1"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
@@ -31,6 +32,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 const (
@@ -41,8 +43,7 @@ const (
 type SubmitNetworkBalances struct {
 	ctx       context.Context
 	sp        *services.ServiceProvider
-	log       *log.ColorLogger
-	errLog    *log.ColorLogger
+	logger    *slog.Logger
 	cfg       *config.SmartNodeConfig
 	w         *wallet.Wallet
 	ec        eth.IExecutionClient
@@ -71,13 +72,12 @@ type minipoolBalanceDetails struct {
 }
 
 // Create submit network balances task
-func NewSubmitNetworkBalances(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger) *SubmitNetworkBalances {
+func NewSubmitNetworkBalances(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *SubmitNetworkBalances {
 	lock := &sync.Mutex{}
 	return &SubmitNetworkBalances{
 		ctx:       ctx,
 		sp:        sp,
-		log:       &logger,
-		errLog:    &errorLogger,
+		logger:    logger.With(slog.String(keys.RoutineKey, "Balance Report")),
 		cfg:       sp.GetConfig(),
 		w:         sp.GetWallet(),
 		ec:        sp.GetEthClient(),
@@ -155,7 +155,7 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.log.Println("Checking for network balance checkpoint...")
+	t.logger.Info("Starting network balance check.")
 
 	// Get the Beacon block corresponding to this time
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
@@ -183,14 +183,14 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	}
 	finalizedEpoch := beaconHead.FinalizedEpoch
 	if requiredEpoch > finalizedEpoch {
-		t.log.Printlnf("Balances must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, requiredEpoch, finalizedEpoch)
+		t.logger.Info("Balance report is due, waiting for target epoch to finalize.", slog.Uint64(keys.BlockKey, blockNumber), slog.Uint64(keys.TargetEpochKey, requiredEpoch), slog.Uint64(keys.FinalizedEpochKey, finalizedEpoch))
 		return nil
 	}
 
 	// Check if the process is already running
 	t.lock.Lock()
 	if t.isRunning {
-		t.log.Println("Balance report is already running in the background.")
+		t.logger.Info("Balance report is already running in the background.")
 		t.lock.Unlock()
 		return nil
 	}
@@ -202,34 +202,33 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 		t.lock.Unlock()
 
 		nodeAddress, _ := t.w.GetAddress()
-		logPrefix := "[Balance Report]"
-		t.log.Printlnf("%s Starting balance report in a separate thread.", logPrefix)
+		t.logger.Info("Starting balance report in a separate thread.")
 
 		// Log
-		t.log.Printlnf("Calculating network balances for block %d...", targetBlockHeader.Number)
+		t.logger.Info("Calculating network balances...", slog.Uint64(keys.BlockKey, blockNumber))
 
 		// Get network balances at block
 		balances, err := t.getNetworkBalances(targetBlockHeader, targetBlockHeader.Number, slotNumber, time.Unix(int64(targetBlockHeader.Time), 0))
 		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			t.handleError(err)
 			return
 		}
 
 		// Log
-		t.log.Printlnf("Deposit pool balance: %s wei", balances.DepositPool.String())
-		t.log.Printlnf("Node credit balance: %s wei", balances.NodeCreditBalance.String())
-		t.log.Printlnf("Total minipool user balance: %s wei", balances.MinipoolsTotal.String())
-		t.log.Printlnf("Staking minipool user balance: %s wei", balances.MinipoolsStaking.String())
-		t.log.Printlnf("Fee distributor user balance: %s wei", balances.DistributorShareTotal.String())
-		t.log.Printlnf("Smoothing pool user balance: %s wei", balances.SmoothingPoolShare.String())
-		t.log.Printlnf("rETH contract balance: %s wei", balances.RETHContract.String())
-		t.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
+		t.logger.Info(fmt.Sprintf("Deposit pool balance: %s wei", balances.DepositPool.String()))
+		t.logger.Info(fmt.Sprintf("Node credit balance: %s wei", balances.NodeCreditBalance.String()))
+		t.logger.Info(fmt.Sprintf("Total minipool user balance: %s wei", balances.MinipoolsTotal.String()))
+		t.logger.Info(fmt.Sprintf("Staking minipool user balance: %s wei", balances.MinipoolsStaking.String()))
+		t.logger.Info(fmt.Sprintf("Fee distributor user balance: %s wei", balances.DistributorShareTotal.String()))
+		t.logger.Info(fmt.Sprintf("Smoothing pool user balance: %s wei", balances.SmoothingPoolShare.String()))
+		t.logger.Info(fmt.Sprintf("rETH contract balance: %s wei", balances.RETHContract.String()))
+		t.logger.Info(fmt.Sprintf("rETH token supply: %s wei", balances.RETHSupply.String()))
 
 		// Check if we have reported these specific values before
 		balances.SlotTimestamp = uint64(nextSubmissionTime.Unix())
 		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAddress, blockNumber, balances)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			t.handleError(err)
 			return
 		}
 		if hasSubmittedSpecific {
@@ -242,27 +241,27 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 		// We haven't submitted these values, check if we've submitted any for this block so we can log it
 		hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAddress, blockNumber)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			t.handleError(err)
 			return
 		}
 		if hasSubmitted {
-			t.log.Printlnf("Have previously submitted out-of-date balances for block %d, trying again...", blockNumber)
+			t.logger.Info("Have previously submitted out-of-date balances, trying again...", slog.Uint64(keys.BlockKey, blockNumber))
 		}
 
 		// Log
-		t.log.Println("Submitting balances...")
+		t.logger.Info("Submitting balances...")
 
 		// Set the reference timestamp
 		balances.SlotTimestamp = uint64(nextSubmissionTime.Unix())
 
 		// Submit balances
 		if err := t.submitBalances(balances, true); err != nil {
-			t.handleError(fmt.Errorf("%s could not submit network balances: %w", logPrefix, err))
+			t.handleError(fmt.Errorf("Error submitting network balances: %w", err))
 			return
 		}
 
 		// Log and return
-		t.log.Printlnf("%s Balance report complete.", logPrefix)
+		t.logger.Info("Balance report complete.")
 		t.lock.Lock()
 		t.isRunning = false
 		t.lock.Unlock()
@@ -271,14 +270,6 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	// Return
 	return nil
 
-}
-
-func (t *SubmitNetworkBalances) handleError(err error) {
-	t.errLog.Println(err)
-	t.errLog.Println("*** Balance report failed. ***")
-	t.lock.Lock()
-	t.isRunning = false
-	t.lock.Unlock()
 }
 
 // Check whether balances for a block has already been submitted by the node
@@ -327,21 +318,16 @@ func (t *SubmitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 	return result, err
 }
 
-// Prints a message to the log
-func (t *SubmitNetworkBalances) printMessage(message string) {
-	t.log.Println(message)
-}
-
 // Get the network balances at a specific block
 func (t *SubmitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
 	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, elBlock)
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.logger, elBlock)
 	if err != nil {
 		return networkBalances{}, err
 	}
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(t.ctx, client, t.cfg, client.Client, t.bc, t.log)
+	mgr, err := state.NewNetworkStateManager(t.ctx, client, t.cfg, client.Client, t.bc, t.logger)
 	if err != nil {
 		return networkBalances{}, fmt.Errorf("error creating network state manager for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
 	}
@@ -398,7 +384,7 @@ func (t *SubmitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 		// Approximate the staker's share of the smoothing pool balance
 		// NOTE: this will use the "vanilla" variant of treegen, without rolling records, to retain parity with other Oracle DAO nodes that aren't using rolling records
-		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", client, t.cfg, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed), state, nil)
+		treegen, err := rprewards.NewTreeGenerator(t.logger, client, t.cfg, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed), state, nil)
 		if err != nil {
 			return fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
 		}
@@ -526,11 +512,10 @@ func (t *SubmitNetworkBalances) submitBalances(balances networkBalances, isHoust
 	totalEth.Add(totalEth, balances.SmoothingPoolShare)
 
 	ratio := eth.WeiToEth(totalEth) / eth.WeiToEth(balances.RETHSupply)
-	t.log.Printlnf("Total ETH = %s\n", totalEth)
-	t.log.Printlnf("Calculated ratio = %.6f\n", ratio)
+	t.logger.Info("Calculated total ETH", slog.String(keys.AmountKey, totalEth.String()), slog.Float64(keys.RatioKey, ratio))
 
 	// Log
-	t.log.Printlnf("Submitting network balances for block %d...", balances.Block)
+	t.logger.Info("Submitting network balances...", slog.Uint64(keys.BlockKey, balances.Block))
 
 	// Get transactor
 	opts, err := t.w.GetTransactor()
@@ -553,7 +538,7 @@ func (t *SubmitNetworkBalances) submitBalances(balances networkBalances, isHoust
 				EstimatedGasLimit: utils.BalanceSubmissionForcedGas,
 				SafeGasLimit:      utils.BalanceSubmissionForcedGas,
 			}
-			t.log.Println("Network balance consensus has already been reached but submitting anyway for the health check.")
+			t.logger.Info("Network balance consensus has already been reached but submitting anyway for the health check.")
 		} else {
 			return fmt.Errorf("error getting TX for submitting network balances: %w", err)
 		}
@@ -564,7 +549,7 @@ func (t *SubmitNetworkBalances) submitBalances(balances networkBalances, isHoust
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -574,15 +559,21 @@ func (t *SubmitNetworkBalances) submitBalances(balances networkBalances, isHoust
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return fmt.Errorf("error waiting for transaction: %w", err)
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted network balances for block %d.", balances.Block)
+	t.logger.Info("Successfully submitted network balances.", slog.Uint64(keys.BlockKey, balances.Block))
 
 	// Return
 	return nil
+}
 
+func (t *SubmitNetworkBalances) handleError(err error) {
+	t.logger.Error("*** Balance report failed. ***", log.Err(err))
+	t.lock.Lock()
+	t.isRunning = false
+	t.lock.Unlock()
 }

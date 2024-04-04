@@ -41,7 +41,7 @@ func (f *minipoolExitContextFactory) Create(args url.Values) (*minipoolExitConte
 
 func (f *minipoolExitContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolExitContext, types.SuccessData](
-		router, "exit", f, f.handler.serviceProvider,
+		router, "exit", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 
@@ -65,7 +65,7 @@ func (c *minipoolExitContext) Initialize() (types.ResponseStatus, error) {
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	err := sp.RequireBeaconClientSynced()
+	err := sp.RequireBeaconClientSynced(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
@@ -88,7 +88,7 @@ func (c *minipoolExitContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minip
 }
 
 func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.SuccessData) (types.ResponseStatus, error) {
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	// Get beacon head
 	head, err := c.bc.GetBeaconHead(ctx)
 	if err != nil {

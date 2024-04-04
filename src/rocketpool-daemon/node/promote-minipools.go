@@ -3,12 +3,13 @@ package node
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -21,12 +22,13 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Promote minipools task
 type PromoteMinipools struct {
 	sp             *services.ServiceProvider
-	log            *log.ColorLogger
+	logger         *slog.Logger
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
@@ -37,13 +39,13 @@ type PromoteMinipools struct {
 }
 
 // Create promote minipools task
-func NewPromoteMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *PromoteMinipools {
+func NewPromoteMinipools(sp *services.ServiceProvider, logger *log.Logger) *PromoteMinipools {
 	cfg := sp.GetConfig()
-	log := &logger
+	log := logger.With(slog.String(keys.RoutineKey, "Promote Minipools"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &PromoteMinipools{
 		sp:             sp,
-		log:            log,
+		logger:         log,
 		cfg:            cfg,
 		w:              sp.GetWallet(),
 		rp:             sp.GetRocketPool(),
@@ -56,7 +58,7 @@ func NewPromoteMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *
 // Stake prelaunch minipools
 func (t *PromoteMinipools) Run(state *state.NetworkState) error {
 	// Log
-	t.log.Println("Checking for minipools to promote...")
+	t.logger.Info("Starting check for minipools to promote...")
 
 	// Get prelaunch minipools
 	nodeAddress, _ := t.w.GetAddress()
@@ -69,7 +71,7 @@ func (t *PromoteMinipools) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.log.Printlnf("%d minipool(s) are ready for promotion...", len(minipools))
+	t.logger.Info("Minipool are ready for promotion.", slog.Int(keys.CountKey, len(minipools)))
 	t.mpMgr, err = minipool.NewMinipoolManager(t.rp)
 	if err != nil {
 		return fmt.Errorf("error creating minipool manager: %w", err)
@@ -80,7 +82,7 @@ func (t *PromoteMinipools) Run(state *state.NetworkState) error {
 	for i, mpd := range minipools {
 		txSubmissions[i], err = t.createPromoteMinipoolTx(mpd)
 		if err != nil {
-			t.log.Println(fmt.Errorf("error preparing submission to promote minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
+			t.logger.Error("Error preparing submission to promote minipool.", slog.String(keys.MinipoolKey, mpd.MinipoolAddress.Hex()), log.Err(err))
 			return err
 		}
 	}
@@ -120,7 +122,7 @@ func (t *PromoteMinipools) getVacantMinipools(nodeAddress common.Address, state 
 			if remainingTime < 0 {
 				vacantMinipools = append(vacantMinipools, mpd)
 			} else {
-				t.log.Printlnf("Minipool %s has %s left until it can be promoted.", mpd.MinipoolAddress.Hex(), remainingTime)
+				t.logger.Info(fmt.Sprintf("Minipool %s has %s left until it can be promoted.", mpd.MinipoolAddress.Hex(), remainingTime))
 			}
 		}
 	}
@@ -132,7 +134,7 @@ func (t *PromoteMinipools) getVacantMinipools(nodeAddress common.Address, state 
 // Get submission info for promoting a minipool
 func (t *PromoteMinipools) createPromoteMinipoolTx(mpd *rpstate.NativeMinipoolDetails) (*eth.TransactionSubmission, error) {
 	// Log
-	t.log.Printlnf("Preparing to promote minipool %s...", mpd.MinipoolAddress.Hex())
+	t.logger.Info("Preparing to promote minipool...", slog.String(keys.MinipoolKey, mpd.MinipoolAddress.Hex()))
 
 	// Get the updated minipool interface
 	mp, err := t.mpMgr.NewMinipoolFromVersion(mpd.MinipoolAddress, mpd.Version)
@@ -177,7 +179,7 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.log)
+		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return err
 		}
@@ -187,16 +189,16 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 
 	// Print the gas info
 	forceSubmissions := []*eth.TransactionSubmission{}
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.log, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.logger, maxFee) {
 		// Check for the timeout buffers
 		for i, mpd := range minipools {
 			creationTime := time.Unix(mpd.StatusTime.Int64(), 0)
 			isDue, timeUntilDue := tx.IsTransactionDue(creationTime, minipoolLaunchTimeout)
 			if !isDue {
-				t.log.Printlnf("Time until promoting minipool %s will be forced for safety: %s", mpd.MinipoolAddress.Hex(), timeUntilDue)
+				t.logger.Info(fmt.Sprintf("Time until promoting minipool %s will be forced for safety: %s", mpd.MinipoolAddress.Hex(), timeUntilDue))
 				continue
 			}
-			t.log.Printlnf("NOTICE: Minipool %s has exceeded half of the timeout period, so it will be force-promoted at the current gas price.", mpd.MinipoolAddress.Hex())
+			t.logger.Info("NOTICE: Minipool has exceeded half of the timeout period, so it will be force-promoted at the current gas price.", slog.String(keys.MinipoolKey, mpd.MinipoolAddress.Hex()))
 			forceSubmissions = append(forceSubmissions, submissions[i])
 		}
 
@@ -215,12 +217,12 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.log, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.logger, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Println("Successfully promoted all minipools.")
+	t.logger.Info("Successfully promoted all minipools.")
 	return nil
 }

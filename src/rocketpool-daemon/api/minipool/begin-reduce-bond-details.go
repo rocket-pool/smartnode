@@ -38,7 +38,7 @@ func (f *minipoolBeginReduceBondDetailsContextFactory) Create(args url.Values) (
 
 func (f *minipoolBeginReduceBondDetailsContextFactory) RegisterRoute(router *mux.Router) {
 	RegisterMinipoolRoute[*minipoolBeginReduceBondDetailsContext, api.MinipoolBeginReduceBondDetailsData](
-		router, "begin-reduce-bond/details", f, f.handler.serviceProvider,
+		router, "begin-reduce-bond/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
 
@@ -123,7 +123,7 @@ func (c *minipoolBeginReduceBondDetailsContext) PrepareData(addresses []common.A
 	data.BondReductionWindowLength = c.oSettings.Minipool.BondReductionWindowLength.Formatted()
 
 	// Get the latest block header
-	ctx := c.handler.serviceProvider.GetContext()
+	ctx := c.handler.ctx
 	header, err := c.rp.Client.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block header: %w", err)

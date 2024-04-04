@@ -39,7 +39,7 @@ func (f *nodeGetRewardsInfoContextFactory) Create(args url.Values) (*nodeGetRewa
 
 func (f *nodeGetRewardsInfoContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeGetRewardsInfoContext, api.NodeGetRewardsInfoData](
-		router, "get-rewards-info", f, f.handler.serviceProvider.ServiceProvider,
+		router, "get-rewards-info", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -65,7 +65,7 @@ func (c *nodeGetRewardsInfoContext) Initialize() (types.ResponseStatus, error) {
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}

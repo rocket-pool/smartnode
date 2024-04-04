@@ -2,27 +2,36 @@ package gas
 
 import (
 	"fmt"
+	"log/slog"
 	"math/big"
 
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/gas"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/utils/math"
 )
 
+const (
+	CurrentMaxFeeKey   string = "currentMaxFee"
+	ThresholdMaxFeeKey string = "thresholdMaxFee"
+	MinCostKey         string = "minCost"
+	MaxCostKey         string = "maxCost"
+	TotalMinCostKey    string = "totalMinCost"
+	TotalMaxCostKey    string = "totalMaxCost"
+)
+
 // Print the gas price and cost of a TX
-func PrintAndCheckGasInfo(simResult eth.SimulationResult, checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int, gasLimit uint64) bool {
+func PrintAndCheckGasInfo(simResult eth.SimulationResult, checkThreshold bool, gasThresholdGwei float64, logger *slog.Logger, maxFeeWei *big.Int, gasLimit uint64) bool {
 	// Check the gas threshold if requested
 	if checkThreshold {
 		gasThresholdWei := math.RoundUp(gasThresholdGwei*eth.WeiPerGwei, 0)
 		gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdWei))
 		if maxFeeWei.Cmp(gasThreshold) != -1 {
-			logger.Printlnf("Current network gas price is %.2f Gwei, which is not lower than the set threshold of %.2f Gwei. "+
-				"Aborting the transaction.", eth.WeiToGwei(maxFeeWei), gasThresholdGwei)
+			logger.Warn("Current network gas price is too high, aborting the transaction.", slog.Float64(CurrentMaxFeeKey, eth.WeiToGwei(maxFeeWei)), slog.Float64(ThresholdMaxFeeKey, gasThresholdGwei))
 			return false
 		}
 	} else {
-		logger.Println("This transaction does not check the gas threshold limit, continuing...")
+		logger.Info("This transaction does not check the gas threshold limit, continuing...")
 	}
 
 	// Print the total TX cost
@@ -37,27 +46,22 @@ func PrintAndCheckGasInfo(simResult eth.SimulationResult, checkThreshold bool, g
 	}
 	totalGasWei := new(big.Int).Mul(maxFeeWei, gas)
 	totalSafeGasWei := new(big.Int).Mul(maxFeeWei, safeGas)
-	logger.Printlnf("This transaction will use a max fee of %.6f Gwei, for a total of up to %.6f - %.6f ETH.",
-		eth.WeiToGwei(maxFeeWei),
-		math.RoundDown(eth.WeiToEth(totalGasWei), 6),
-		math.RoundDown(eth.WeiToEth(totalSafeGasWei), 6))
-
+	logger.Info("Current network gas is low enough to proceed", slog.Float64(CurrentMaxFeeKey, eth.WeiToGwei(maxFeeWei)), slog.Float64(MinCostKey, eth.WeiToEth(totalGasWei)), slog.Float64(MaxCostKey, eth.WeiToEth(totalSafeGasWei)))
 	return true
 }
 
 // Print the gas price and cost of a TX batch
-func PrintAndCheckGasInfoForBatch(submissions []*eth.TransactionSubmission, checkThreshold bool, gasThresholdGwei float64, logger *log.ColorLogger, maxFeeWei *big.Int) bool {
+func PrintAndCheckGasInfoForBatch(submissions []*eth.TransactionSubmission, checkThreshold bool, gasThresholdGwei float64, logger *slog.Logger, maxFeeWei *big.Int) bool {
 	// Check the gas threshold if requested
 	if checkThreshold {
 		gasThresholdWei := math.RoundUp(gasThresholdGwei*eth.WeiPerGwei, 0)
 		gasThreshold := new(big.Int).SetUint64(uint64(gasThresholdWei))
 		if maxFeeWei.Cmp(gasThreshold) != -1 {
-			logger.Printlnf("Current network gas price is %.2f Gwei, which is not lower than the set threshold of %.2f Gwei. "+
-				"Aborting the transaction.", eth.WeiToGwei(maxFeeWei), gasThresholdGwei)
+			logger.Warn("Current network gas price is too high, aborting the transaction.", slog.Float64(CurrentMaxFeeKey, eth.WeiToGwei(maxFeeWei)), slog.Float64(ThresholdMaxFeeKey, gasThresholdGwei))
 			return false
 		}
 	} else {
-		logger.Println("This transaction does not check the gas threshold limit, continuing...")
+		logger.Info("This transaction does not check the gas threshold limit, continuing...")
 	}
 
 	// Print the total TX cost
@@ -71,22 +75,19 @@ func PrintAndCheckGasInfoForBatch(submissions []*eth.TransactionSubmission, chec
 		totalEstGasWei.Add(totalEstGasWei, lowGas)
 		totalAssignedGasWei.Add(totalAssignedGasWei, highGas)
 	}
-	logger.Printlnf("These transactions combined will use a max fee of %.6f Gwei, for a total of up to %.6f - %.6f ETH.",
-		eth.WeiToGwei(maxFeeWei),
-		math.RoundDown(eth.WeiToEth(totalEstGasWei), 6),
-		math.RoundDown(eth.WeiToEth(totalAssignedGasWei), 6))
 
+	logger.Info("Current network gas is low enough to proceed", slog.Float64(CurrentMaxFeeKey, eth.WeiToGwei(maxFeeWei)), slog.Float64(TotalMinCostKey, eth.WeiToEth(totalEstGasWei)), slog.Float64(TotalMaxCostKey, eth.WeiToEth(totalAssignedGasWei)))
 	return true
 }
 
 // Get the suggested max fee for service operations
-func GetMaxFeeWeiForDaemon(logger *log.ColorLogger) (*big.Int, error) {
+func GetMaxFeeWeiForDaemon(logger *slog.Logger) (*big.Int, error) {
 	etherchainData, err := gas.GetEtherchainGasPrices()
 	if err == nil {
 		return etherchainData.RapidWei, nil
 	}
 
-	logger.Println("WARNING: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan\n", err.Error())
+	logger.Warn("Couldn't get gas estimates from Etherchain, falling back to Etherscan\n", log.Err(err))
 	etherscanData, err := gas.GetEtherscanGasPrices()
 	if err == nil {
 		return eth.GweiToWei(etherscanData.FastGwei), nil

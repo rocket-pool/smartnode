@@ -2,6 +2,7 @@ package proposals
 
 import (
 	"fmt"
+	"log/slog"
 	"math/big"
 	"path/filepath"
 	"regexp"
@@ -9,9 +10,10 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 const (
@@ -40,9 +42,8 @@ func (t NetworkVotingTree) GetFilename() string {
 
 // Struct for network voting trees
 type NetworkTreeManager struct {
-	log       *log.ColorLogger
-	logPrefix string
-	cfg       *config.SmartNodeConfig
+	logger *slog.Logger
+	cfg    *config.SmartNodeConfig
 
 	filenameRegex           *regexp.Regexp
 	latestCompatibleVersion *semver.Version
@@ -50,9 +51,9 @@ type NetworkTreeManager struct {
 }
 
 // Create a new NetworkTreeManager instance
-func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.SmartNodeConfig) (*NetworkTreeManager, error) {
+func NewNetworkTreeManager(logger *slog.Logger, cfg *config.SmartNodeConfig) (*NetworkTreeManager, error) {
 	// Create the snapshot filename regex
-	logPrefix := "[Network Tree]"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Network Tree"))
 	filenameRegex := regexp.MustCompile(networkVotingTreeFilenamePattern)
 
 	// Create the latest compatible snapshot version
@@ -62,8 +63,7 @@ func NewNetworkTreeManager(log *log.ColorLogger, cfg *config.SmartNodeConfig) (*
 	}
 
 	manager := &NetworkTreeManager{
-		log:                     log,
-		logPrefix:               logPrefix,
+		logger:                  sublogger,
 		cfg:                     cfg,
 		filenameRegex:           filenameRegex,
 		latestCompatibleVersion: latestCompatibleVersion,
@@ -128,15 +128,15 @@ func (m *NetworkTreeManager) SaveToFile(tree *NetworkVotingTree) error {
 func (m *NetworkTreeManager) LoadFromDisk(blockNumber uint32) (*NetworkVotingTree, error) {
 	tree, filename, err := LoadFromFile(m.checksumManager, blockNumber)
 	if err != nil {
-		m.logMessage("%s WARNING: error loading network tree for block %d from disk: %s... it must be regenerated", m.logPrefix, blockNumber, err.Error())
+		m.logger.Warn("Loading network tree from disk failed, it must be regenerated.", slog.Uint64(keys.BlockKey, uint64(blockNumber)), log.Err(err))
 		return nil, nil
 	}
 	if tree == nil {
-		m.logMessage("%s Couldn't load network tree for block %d from disk, so it must be regenerated.", m.logPrefix, blockNumber)
+		m.logger.Warn("Network tree must be regenerated.", slog.Uint64(keys.BlockKey, uint64(blockNumber)))
 		return nil, nil
 	}
 
-	m.logMessage("%s Loaded file [%s].", m.logPrefix, filename)
+	m.logger.Info("Loaded network tree from disk.", slog.Uint64(keys.BlockKey, uint64(blockNumber)), slog.String(keys.FileKey, filename))
 	return tree, nil
 }
 
@@ -170,18 +170,18 @@ func (m *NetworkTreeManager) ShouldLoadEntry(filename string, context uint32) (b
 func (m *NetworkTreeManager) IsDataValid(data *NetworkVotingTree, filename string, context uint32) (bool, error) {
 	// Check if it has the proper network
 	if data.Network != m.cfg.Network.Value {
-		m.logMessage("%s File [%s] is for network %s instead of %s so it cannot be used.", m.logPrefix, filename, data.Network, string(m.cfg.Network.Value))
+		m.logger.Warn("Network tree on disk is for the wrong network so it cannot be used.", slog.String(keys.FileKey, filename), slog.String(keys.CurrentNetworkKey, string(m.cfg.Network.Value)), slog.String(keys.FileNetworkKey, string(data.Network)))
 		return false, nil
 	}
 
 	// Check if it's using a compatible version
 	snapshotVersion, err := semver.New(data.SmartnodeVersion)
 	if err != nil {
-		m.logMessage("%s Failed to parse the version info for file [%s] so it cannot be used.", m.logPrefix, filename)
+		m.logger.Error("Parsing network tree version failed so it cannot be used.", slog.String(keys.FileKey, filename), log.Err(err))
 		return false, nil
 	}
 	if snapshotVersion.LT(*m.latestCompatibleVersion) {
-		m.logMessage("%s File [%s] was made with Smartnode v%s which is not compatible (lowest compatible = v%s) so it cannot be used.", m.logPrefix, filename, data.SmartnodeVersion, latestCompatibleVersionString)
+		m.logger.Warn("Network tree was made with an incompatible Smart Node so it cannot be used.", slog.String(keys.FileKey, filename), slog.String(keys.FileVersionKey, data.SmartnodeVersion), slog.String(keys.HighestCompatibleKey, latestCompatibleVersionString))
 		return false, nil
 	}
 
@@ -205,11 +205,4 @@ func (m *NetworkTreeManager) getBlockNumberFromFilename(filename string) (uint32
 	}
 
 	return uint32(blockNumber), nil
-}
-
-// Log a message to the logger
-func (m *NetworkTreeManager) logMessage(message string, args ...any) {
-	if m.log != nil {
-		m.log.Printlnf(message, args...)
-	}
 }

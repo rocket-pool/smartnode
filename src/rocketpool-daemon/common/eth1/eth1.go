@@ -2,6 +2,7 @@ package eth1
 
 import (
 	"fmt"
+	"log/slog"
 	"math/big"
 	"strings"
 
@@ -9,12 +10,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Determines if the primary EC can be used for historical queries, or if the Archive EC is required
-func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.SmartNodeConfig, printMessage func(string), blockNumber *big.Int) (*rocketpool.RocketPool, error) {
+func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.SmartNodeConfig, logger *slog.Logger, blockNumber *big.Int) (*rocketpool.RocketPool, error) {
 	client := primary
 	resources := cfg.GetRocketPoolResources()
 
@@ -29,7 +32,7 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.SmartNodeConfi
 	}, opts)
 	if err != nil {
 		errMessage := err.Error()
-		printMessage(fmt.Sprintf("Error getting state for block %d: %s", blockNumber.Uint64(), errMessage))
+		logger.Error("Error getting rETH address", slog.Uint64(keys.BlockKey, blockNumber.Uint64()), slog.String(log.ErrorKey, errMessage))
 		if strings.Contains(errMessage, "missing trie node") || // Geth
 			strings.Contains(errMessage, "No state available for block") || // Nethermind
 			strings.Contains(errMessage, "Internal error") { // Besu
@@ -37,7 +40,7 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.SmartNodeConfi
 			// The state was missing so fall back to the archive node
 			archiveEcUrl := cfg.ArchiveEcUrl.Value
 			if archiveEcUrl != "" {
-				printMessage(fmt.Sprintf("Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", blockNumber.Uint64(), archiveEcUrl))
+				logger.Info("Primary EC cannot retrieve state for historical block, using archive EC", slog.Uint64(keys.BlockKey, blockNumber.Uint64()), slog.String(keys.ArchiveEcKey, archiveEcUrl))
 				ec, err := ethclient.Dial(archiveEcUrl)
 				if err != nil {
 					return nil, fmt.Errorf("error connecting to archive EC: %w", err)

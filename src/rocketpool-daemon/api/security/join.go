@@ -36,7 +36,7 @@ func (f *securityJoinContextFactory) Create(args url.Values) (*securityJoinConte
 
 func (f *securityJoinContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityJoinContext, api.SecurityJoinData](
-		router, "join", f, f.handler.serviceProvider.ServiceProvider,
+		router, "join", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -60,7 +60,7 @@ func (c *securityJoinContext) Initialize() (types.ResponseStatus, error) {
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered()
+	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
