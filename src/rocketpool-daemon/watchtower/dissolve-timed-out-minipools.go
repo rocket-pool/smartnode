@@ -2,10 +2,11 @@ package watchtower
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -17,6 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Settings
@@ -24,31 +26,31 @@ const MinipoolStatusBatchSize = 20
 
 // Dissolve timed out minipools task
 type DissolveTimedOutMinipools struct {
-	sp    *services.ServiceProvider
-	log   log.ColorLogger
-	cfg   *config.SmartNodeConfig
-	w     *wallet.Wallet
-	rp    *rocketpool.RocketPool
-	ec    eth.IExecutionClient
-	mpMgr *minipool.MinipoolManager
+	sp     *services.ServiceProvider
+	logger *slog.Logger
+	cfg    *config.SmartNodeConfig
+	w      *wallet.Wallet
+	rp     *rocketpool.RocketPool
+	ec     eth.IExecutionClient
+	mpMgr  *minipool.MinipoolManager
 }
 
 // Create dissolve timed out minipools task
-func NewDissolveTimedOutMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *DissolveTimedOutMinipools {
+func NewDissolveTimedOutMinipools(sp *services.ServiceProvider, logger *log.Logger) *DissolveTimedOutMinipools {
 	return &DissolveTimedOutMinipools{
-		sp:  sp,
-		cfg: sp.GetConfig(),
-		w:   sp.GetWallet(),
-		rp:  sp.GetRocketPool(),
-		ec:  sp.GetEthClient(),
-		log: logger,
+		sp:     sp,
+		cfg:    sp.GetConfig(),
+		w:      sp.GetWallet(),
+		rp:     sp.GetRocketPool(),
+		ec:     sp.GetEthClient(),
+		logger: logger.With(slog.String(keys.RoutineKey, "Dissolve Minipools")),
 	}
 }
 
 // Dissolve timed out minipools
 func (t *DissolveTimedOutMinipools) Run(state *state.NetworkState) error {
 	// Log
-	t.log.Println("Checking for timed out minipools to dissolve...")
+	t.logger.Info("Checking for timed out minipools to dissolve...")
 
 	// Update contract bindings
 	var err error
@@ -67,12 +69,12 @@ func (t *DissolveTimedOutMinipools) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.log.Printlnf("%d minipool(s) have timed out and will be dissolved...", len(minipools))
+	t.logger.Info("Detected dissolvable minipools.", slog.Int(keys.CountKey, len(minipools)))
 
 	// Dissolve minipools
 	for _, mp := range minipools {
 		if err := t.dissolveMinipool(mp); err != nil {
-			t.log.Println(fmt.Errorf("error dissolving minipool %s: %w", mp.Common().Address.Hex(), err))
+			t.logger.Error("Error dissolving minipool", slog.String(keys.MinipoolKey, mp.Common().Address.Hex()), log.Err(err))
 		}
 	}
 
@@ -107,9 +109,10 @@ func (t *DissolveTimedOutMinipools) getTimedOutMinipools(state *state.NetworkSta
 
 // Dissolve a minipool
 func (t *DissolveTimedOutMinipools) dissolveMinipool(mp minipool.IMinipool) error {
-	address := mp.Common().Address
 	// Log
-	t.log.Printlnf("Dissolving minipool %s...", address.Hex())
+	address := mp.Common().Address
+	mpLogger := t.logger.With(slog.String(keys.MinipoolKey, address.Hex()))
+	mpLogger.Info("Dissolving minipool...")
 
 	// Get transactor
 	opts, err := t.w.GetTransactor()
@@ -128,7 +131,7 @@ func (t *DissolveTimedOutMinipools) dissolveMinipool(mp minipool.IMinipool) erro
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, mpLogger, maxFee, 0) {
 		return nil
 	}
 
@@ -138,13 +141,13 @@ func (t *DissolveTimedOutMinipools) dissolveMinipool(mp minipool.IMinipool) erro
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, mpLogger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully dissolved minipool %s.", address.Hex())
+	mpLogger.Info("Successfully dissolved minipool.")
 
 	// Return
 	return nil

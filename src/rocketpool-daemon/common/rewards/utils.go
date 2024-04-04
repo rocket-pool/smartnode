@@ -21,6 +21,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
@@ -545,4 +546,8 @@ func checkVersion(versionHeader *sharedtypes.VersionHeader) error {
 	}
 
 	return nil
+}
+
+func getRewardsString(amount *big.Int) string {
+	return fmt.Sprintf("%s (%.3f)", amount.String(), eth.WeiToEth(amount))
 }

@@ -6,10 +6,9 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/fatih/color"
 	"github.com/hashicorp/go-version"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/services"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
@@ -28,6 +27,7 @@ type ServiceProvider struct {
 	validatorManager   *validator.ValidatorManager
 	rplFaucet          *contracts.RplFaucet
 	snapshotDelegation *contracts.SnapshotDelegation
+	watchtowerLog      *log.Logger
 
 	// Internal use
 	loadedContractVersion *version.Version
@@ -47,17 +47,23 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		return nil, fmt.Errorf("smart node config settings file [%s] not found", cfgPath)
 	}
 
-	// Attempt a wallet upgrade before anything
-	upgradeLog := log.NewColorLogger(color.FgHiWhite)
-	err = validator.CheckAndUpgradeWallet(cfg.GetWalletFilePath(), cfg.GetNextAccountFilePath(), &upgradeLog)
-	if err != nil {
-		return nil, fmt.Errorf("error checking for legacy wallet upgrade: %w", err)
-	}
-
 	// Make the core provider
-	sp, err := services.NewServiceProvider(cfg, config.ClientTimeout, cfg.DebugMode.Value)
+	sp, err := services.NewServiceProvider(cfg, config.ClientTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating core service provider: %w", err)
+	}
+
+	// Make the watchtower log
+	loggerOpts := cfg.GetLoggerOptions()
+	watchtowerLogger, err := log.NewLogger(cfg.GetWatchtowerLogFilePath(), loggerOpts)
+	if err != nil {
+		return nil, fmt.Errorf("error creating watchtower logger: %w", err)
+	}
+
+	// Attempt a wallet upgrade before anything
+	err = validator.CheckAndUpgradeWallet(cfg.GetWalletFilePath(), cfg.GetNextAccountFilePath(), sp.GetTasksLogger().Logger)
+	if err != nil {
+		return nil, fmt.Errorf("error checking for legacy wallet upgrade: %w", err)
 	}
 
 	// Rocket Pool
@@ -109,6 +115,7 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		validatorManager:      vMgr,
 		rplFaucet:             rplFaucet,
 		snapshotDelegation:    snapshotDelegation,
+		watchtowerLog:         watchtowerLogger,
 		loadedContractVersion: defaultVersion,
 		refreshLock:           &sync.Mutex{},
 	}
@@ -141,6 +148,10 @@ func (p *ServiceProvider) GetRplFaucet() *contracts.RplFaucet {
 
 func (p *ServiceProvider) GetSnapshotDelegation() *contracts.SnapshotDelegation {
 	return p.snapshotDelegation
+}
+
+func (p *ServiceProvider) GetWatchtowerLogger() *log.Logger {
+	return p.watchtowerLog
 }
 
 // =============

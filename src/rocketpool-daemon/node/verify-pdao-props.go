@@ -11,8 +11,8 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -39,7 +39,7 @@ type defeat struct {
 type VerifyPdaoProps struct {
 	ctx                 context.Context
 	sp                  *services.ServiceProvider
-	log                 *log.ColorLogger
+	log                 **log.Logger
 	cfg                 *config.SmartNodeConfig
 	w                   *wallet.Wallet
 	rp                  *rocketpool.RocketPool
@@ -58,7 +58,7 @@ type VerifyPdaoProps struct {
 	intervalSize *big.Int
 }
 
-func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger) *VerifyPdaoProps {
+func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *VerifyPdaoProps {
 	cfg := sp.GetConfig()
 	log := &logger
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)

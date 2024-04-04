@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -34,7 +34,7 @@ const (
 // Reduce bonds task
 type ReduceBonds struct {
 	sp             *services.ServiceProvider
-	log            *log.ColorLogger
+	log            **log.Logger
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
@@ -45,7 +45,7 @@ type ReduceBonds struct {
 }
 
 // Create reduce bonds task
-func NewReduceBonds(sp *services.ServiceProvider, logger log.ColorLogger) *ReduceBonds {
+func NewReduceBonds(sp *services.ServiceProvider, logger *log.Logger) *ReduceBonds {
 	cfg := sp.GetConfig()
 	log := &logger
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)

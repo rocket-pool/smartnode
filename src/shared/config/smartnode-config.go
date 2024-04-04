@@ -50,6 +50,9 @@ type SmartNodeConfig struct {
 	RecordsPath                   config.Parameter[string]
 	VerifyProposals               config.Parameter[bool]
 
+	// Logging
+	Logging *config.LoggerConfig
+
 	// Execution client settings
 	LocalExecutionClient    *config.LocalExecutionConfig
 	ExternalExecutionClient *config.ExternalExecutionConfig
@@ -431,6 +434,7 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 	}
 
 	// Create the subconfigs
+	cfg.Logging = config.NewLoggerConfig()
 	cfg.LocalExecutionClient = NewLocalExecutionConfig()
 	cfg.ExternalExecutionClient = config.NewExternalExecutionConfig()
 	cfg.LocalBeaconClient = NewLocalBeaconConfig()
@@ -484,6 +488,7 @@ func (cfg *SmartNodeConfig) GetParameters() []config.IParameter {
 // Get the subconfigurations for this config
 func (cfg *SmartNodeConfig) GetSubconfigs() map[string]config.IConfigSection {
 	return map[string]config.IConfigSection{
+		ids.LoggingID:           cfg.Logging,
 		ids.LocalExecutionID:    cfg.LocalExecutionClient,
 		ids.ExternalExecutionID: cfg.ExternalExecutionClient,
 		ids.LocalBeaconID:       cfg.LocalBeaconClient,

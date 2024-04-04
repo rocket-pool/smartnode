@@ -11,7 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -30,13 +30,13 @@ type ManageFeeRecipient struct {
 	ctx context.Context
 	sp  *services.ServiceProvider
 	cfg *config.SmartNodeConfig
-	log *log.ColorLogger
+	log **log.Logger
 	bc  beacon.IBeaconClient
 	d   *client.Client
 }
 
 // Create manage fee recipient task
-func NewManageFeeRecipient(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger) *ManageFeeRecipient {
+func NewManageFeeRecipient(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *ManageFeeRecipient {
 	return &ManageFeeRecipient{
 		ctx: ctx,
 		sp:  sp,

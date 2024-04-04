@@ -2,38 +2,40 @@ package watchtower
 
 import (
 	"fmt"
+	"log/slog"
 
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Respond to challenges task
 type RespondChallenges struct {
-	sp  *services.ServiceProvider
-	cfg *config.SmartNodeConfig
-	w   *wallet.Wallet
-	rp  *rocketpool.RocketPool
-	log log.ColorLogger
+	sp     *services.ServiceProvider
+	cfg    *config.SmartNodeConfig
+	w      *wallet.Wallet
+	rp     *rocketpool.RocketPool
+	logger *slog.Logger
 }
 
 // Create respond to challenges task
-func NewRespondChallenges(sp *services.ServiceProvider, logger log.ColorLogger, m *state.NetworkStateManager) *RespondChallenges {
+func NewRespondChallenges(sp *services.ServiceProvider, logger *log.Logger, m *state.NetworkStateManager) *RespondChallenges {
 	return &RespondChallenges{
-		sp:  sp,
-		cfg: sp.GetConfig(),
-		w:   sp.GetWallet(),
-		rp:  sp.GetRocketPool(),
-		log: logger,
+		sp:     sp,
+		cfg:    sp.GetConfig(),
+		w:      sp.GetWallet(),
+		rp:     sp.GetRocketPool(),
+		logger: logger.With(slog.String(keys.RoutineKey, "Respond to Challenges")),
 	}
 }
 
@@ -42,7 +44,7 @@ func (t *RespondChallenges) Run() error {
 	nodeAddress, _ := t.w.GetAddress()
 
 	// Log
-	t.log.Println("Checking for challenges to respond to...")
+	t.logger.Info("Started challenge response check.")
 	member, err := oracle.NewOracleDaoMember(t.rp, nodeAddress)
 	if err != nil {
 		return fmt.Errorf("error creating Oracle DAO member binding: %w", err)
@@ -58,7 +60,7 @@ func (t *RespondChallenges) Run() error {
 	}
 
 	// Log
-	t.log.Printlnf("Node %s has an active challenge against it, responding...", nodeAddress.Hex())
+	t.logger.Warn("Node has an active challenge against it, responding...")
 
 	// Get transactor
 	opts, err := t.w.GetTransactor()
@@ -83,7 +85,7 @@ func (t *RespondChallenges) Run() error {
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -93,12 +95,12 @@ func (t *RespondChallenges) Run() error {
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log & return
-	t.log.Printlnf("Successfully responded to challenge against node %s.", nodeAddress.Hex())
+	t.logger.Info("Successfully responded to challenge.")
 	return nil
 }

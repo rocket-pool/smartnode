@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"os"
 	"os/exec"
 	"time"
@@ -11,8 +12,9 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 const (
@@ -20,18 +22,24 @@ const (
 )
 
 // Stop or restart the validator client
-func StopValidator(cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, log *log.ColorLogger, d *client.Client, restart bool) error {
+func StopValidator(ctx context.Context, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, d *client.Client, restart bool) error {
+	// Get the loggerger
+	logger, exists := log.FromContext(ctx)
+	if !exists {
+		panic("context didn't have a loggerger!")
+	}
+
 	// Restart validator container
 	if !cfg.IsNativeMode {
 		// Get validator container name & client type label
 		containerName := cfg.GetDockerArtifactName(config.ValidatorClientSuffix)
 
-		// Log
-		if log != nil {
+		// logger
+		if logger != nil {
 			if restart {
-				log.Printlnf("Restarting validator client (%s)...", containerName)
+				logger.Info("Restarting validator client...", slog.String(keys.ContainerKey, containerName))
 			} else {
-				log.Printlnf("Stopping validator client (%s)...", containerName)
+				logger.Info("Stopping validator client...", slog.String(keys.ContainerKey, containerName))
 			}
 		}
 
@@ -72,13 +80,13 @@ func StopValidator(cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, log *lo
 		var command string
 		if restart {
 			command = os.ExpandEnv(cfg.ValidatorClient.NativeValidatorRestartCommand.Value)
-			if log != nil {
-				log.Printlnf("Restarting validator client process with command '%s'...", command)
+			if logger != nil {
+				logger.Info("Restarting validator client process...", slog.String(keys.CommandKey, command))
 			}
 		} else {
 			command = os.ExpandEnv(cfg.ValidatorClient.NativeValidatorStopCommand.Value)
-			if log != nil {
-				log.Printlnf("Stopping validator client process with command '%s'...", command)
+			if logger != nil {
+				logger.Info("Stopping validator client process...", slog.String(keys.CommandKey, command))
 			}
 		}
 
@@ -96,12 +104,12 @@ func StopValidator(cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, log *lo
 		}
 	}
 
-	// Log & return
-	if log != nil {
+	// logger & return
+	if logger != nil {
 		if restart {
-			log.Println("Successfully restarted validator client.")
+			logger.Info("Successfully restarted validator client.")
 		} else {
-			log.Println("Successfully stopped validator client.")
+			logger.Info("Successfully stopped validator client.")
 		}
 	}
 	return nil

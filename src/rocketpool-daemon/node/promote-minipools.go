@@ -8,7 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -26,7 +26,7 @@ import (
 // Promote minipools task
 type PromoteMinipools struct {
 	sp             *services.ServiceProvider
-	log            *log.ColorLogger
+	log            **log.Logger
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
@@ -37,7 +37,7 @@ type PromoteMinipools struct {
 }
 
 // Create promote minipools task
-func NewPromoteMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *PromoteMinipools {
+func NewPromoteMinipools(sp *services.ServiceProvider, logger *log.Logger) *PromoteMinipools {
 	cfg := sp.GetConfig()
 	log := &logger
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)

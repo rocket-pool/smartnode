@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"sync"
 	"time"
@@ -18,8 +19,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/eth1"
@@ -29,6 +30,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Settings
@@ -43,8 +45,7 @@ const (
 type SubmitRplPrice struct {
 	ctx       context.Context
 	sp        *services.ServiceProvider
-	log       log.ColorLogger
-	errLog    log.ColorLogger
+	logger    *slog.Logger
 	cfg       *config.SmartNodeConfig
 	ec        eth.IExecutionClient
 	w         *wallet.Wallet
@@ -55,13 +56,12 @@ type SubmitRplPrice struct {
 }
 
 // Create submit RPL price task
-func NewSubmitRplPrice(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger) *SubmitRplPrice {
+func NewSubmitRplPrice(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *SubmitRplPrice {
 	lock := &sync.Mutex{}
 	return &SubmitRplPrice{
 		ctx:    ctx,
 		sp:     sp,
-		log:    logger,
-		errLog: errorLogger,
+		logger: logger.With(slog.String(keys.RoutineKey, "Price Report")),
 		cfg:    sp.GetConfig(),
 		ec:     sp.GetEthClient(),
 		w:      sp.GetWallet(),
@@ -82,7 +82,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 	err := t.updateL2Prices(state)
 	if err != nil {
 		// Error is not fatal for this task so print and continue
-		t.log.Printlnf("Error updating L2 prices: %s", err.Error())
+		t.logger.Error("Error updating L2 prices: %s", err.Error())
 	}
 
 	// Make a new RP binding just for this portion
@@ -145,7 +145,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.log.Println("Checking for RPL price checkpoint...")
+	t.logger.Info("Starting RPL price report check.")
 
 	// Get the Beacon block corresponding to this time
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
@@ -173,14 +173,14 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 	}
 	finalizedEpoch := beaconHead.FinalizedEpoch
 	if requiredEpoch > finalizedEpoch {
-		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", blockNumber, requiredEpoch, finalizedEpoch)
+		t.logger.Info("Prices must be reported, waiting until target Epoch is finalized.", slog.Uint64(keys.BlockKey, blockNumber), slog.Uint64(keys.TargetEpochKey, requiredEpoch), slog.Uint64(keys.FinalizedEpochKey, finalizedEpoch))
 		return nil
 	}
 
 	// Check if the process is already running
 	t.lock.Lock()
 	if t.isRunning {
-		t.log.Println("Prices report is already running in the background.")
+		t.logger.Info("Prices report is already running in the background.")
 		t.lock.Unlock()
 		return nil
 	}
@@ -192,26 +192,22 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 		t.lock.Unlock()
 
 		nodeAddress, _ := t.w.GetAddress()
-		logPrefix := "[Price Report]"
-		t.log.Printlnf("%s Starting price report in a separate thread.", logPrefix)
-
-		// Log
-		t.log.Printlnf("Getting RPL price for block %d...", blockNumber)
+		t.logger.Info("Starting price report in a separate thread.")
 
 		// Get RPL price at block
 		rplPrice, err := t.getRplTwap(blockNumber)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			t.handleError(err)
 			return
 		}
 
 		// Log
-		t.log.Printlnf("RPL price: %.6f ETH", math.RoundDown(eth.WeiToEth(rplPrice), 6))
+		t.logger.Info("Retrieved RPL price. %.6f ETH", slog.Uint64(keys.BlockKey, blockNumber), slog.Float64(keys.PriceKey, math.RoundDown(eth.WeiToEth(rplPrice), 6)))
 
 		// Check if we have reported these specific values before
 		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAddress, blockNumber, uint64(nextSubmissionTime.Unix()), rplPrice, true)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			t.handleError(err)
 			return
 		}
 		if hasSubmittedSpecific {
@@ -224,24 +220,24 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 		// We haven't submitted these values, check if we've submitted any for this block so we can log it
 		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAddress, blockNumber, uint64(nextSubmissionTime.Unix()), true)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			t.handleError(err)
 			return
 		}
 		if hasSubmitted {
-			t.log.Printlnf("Have previously submitted out-of-date prices for block %d, trying again...", blockNumber)
+			t.logger.Info("Have previously submitted out-of-date prices, trying again...", slog.Uint64(keys.BlockKey, blockNumber))
 		}
 
 		// Log
-		t.log.Println("Submitting RPL price...")
+		t.logger.Info("Submitting RPL price...")
 
 		// Submit RPL price
 		if err := t.submitRplPrice(blockNumber, uint64(nextSubmissionTime.Unix()), rplPrice, true); err != nil {
-			t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
+			t.handleError(fmt.Errorf("error submitting RPL price: %w", err))
 			return
 		}
 
 		// Log and return
-		t.log.Printlnf("%s Price report complete.", logPrefix)
+		t.logger.Info("Price report complete.")
 		t.lock.Lock()
 		t.isRunning = false
 		t.lock.Unlock()
@@ -249,14 +245,6 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 
 	// Return
 	return nil
-}
-
-func (t *SubmitRplPrice) handleError(err error) {
-	t.errLog.Println(err)
-	t.errLog.Println("*** Price report failed. ***")
-	t.lock.Lock()
-	t.isRunning = false
-	t.lock.Unlock()
 }
 
 // Check whether prices for a block has already been submitted by the node
@@ -304,7 +292,7 @@ func (t *SubmitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 	}
 
 	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.printMessage, opts.BlockNumber)
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.logger, opts.BlockNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -348,15 +336,10 @@ func (t *SubmitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 	return rplPrice, nil
 }
 
-func (t *SubmitRplPrice) printMessage(message string) {
-	t.log.Println(message)
-}
-
 // Submit RPL price and total effective RPL stake
 func (t *SubmitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64, rplPrice *big.Int, isHoustonDeployed bool) error {
-
 	// Log
-	t.log.Printlnf("Submitting RPL price for block %d...", blockNumber)
+	t.logger.Info("Submitting RPL price...", slog.Uint64(keys.BlockKey, blockNumber))
 
 	// Get transactor
 	opts, err := t.w.GetTransactor()
@@ -381,7 +364,7 @@ func (t *SubmitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -391,13 +374,13 @@ func (t *SubmitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted RPL price for block %d.", blockNumber)
+	t.logger.Info("Successfully submitted RPL price.", slog.Uint64(keys.BlockKey, blockNumber))
 
 	// Return
 	return nil
@@ -573,7 +556,7 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 
 // Submit a price update to Optimism
 func (t *SubmitRplPrice) updateOptimism(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, optimismMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
-	t.log.Println("Submitting rate to Optimism...")
+	t.logger.Info("Submitting rate to Optimism...")
 	txInfo, err := optimismMessenger.SubmitRate(opts)
 	if err != nil {
 		return fmt.Errorf("error getting tx for Optimism price update: %w", err)
@@ -584,7 +567,7 @@ func (t *SubmitRplPrice) updateOptimism(cfg *config.SmartNodeConfig, rp *rocketp
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -594,19 +577,19 @@ func (t *SubmitRplPrice) updateOptimism(cfg *config.SmartNodeConfig, rp *rocketp
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted Optimism price for block %d.", blockNumber)
+	t.logger.Info("Successfully submitted Optimism price.", slog.Uint64(keys.BlockKey, blockNumber))
 	return nil
 }
 
 // Submit a price update to Polygon
 func (t *SubmitRplPrice) updatePolygon(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, polygonmMessenger *contracts.PolygonMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
-	t.log.Println("Submitting rate to Polygon...")
+	t.logger.Info("Submitting rate to Polygon...")
 	txInfo, err := polygonmMessenger.SubmitRate(opts)
 	if err != nil {
 		return fmt.Errorf("error getting tx for Polygon price update: %w", err)
@@ -617,7 +600,7 @@ func (t *SubmitRplPrice) updatePolygon(cfg *config.SmartNodeConfig, rp *rocketpo
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -627,22 +610,22 @@ func (t *SubmitRplPrice) updatePolygon(cfg *config.SmartNodeConfig, rp *rocketpo
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted Polygon price for block %d.", blockNumber)
+	t.logger.Info("Successfully submitted Polygon price.", slog.Uint64(keys.BlockKey, blockNumber))
 	return nil
 }
 
 // Submit a price update to Arbitrum
 func (t *SubmitRplPrice) updateArbitrum(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, arbitrumMessenger *contracts.ArbitrumMessenger, version string, blockNumber uint64, opts *bind.TransactOpts) error {
-	t.log.Println("Submitting rate to Arbitrum...")
+	t.logger.Info("Submitting rate to Arbitrum...")
 
 	// Get the current network recommended max fee
-	suggestedMaxFee, err := gas.GetMaxFeeWeiForDaemon(&t.log)
+	suggestedMaxFee, err := gas.GetMaxFeeWeiForDaemon(t.logger)
 	if err != nil {
 		return fmt.Errorf("error getting recommended base fee from the network for Arbitrum price submission: %w", err)
 	}
@@ -677,7 +660,7 @@ func (t *SubmitRplPrice) updateArbitrum(cfg *config.SmartNodeConfig, rp *rocketp
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -687,19 +670,19 @@ func (t *SubmitRplPrice) updateArbitrum(cfg *config.SmartNodeConfig, rp *rocketp
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted Arbitrum %s price for block %d.", version, blockNumber)
+	t.logger.Info(fmt.Sprintf("Successfully submitted Arbitrum %s price.", version), slog.Uint64(keys.BlockKey, blockNumber))
 	return nil
 }
 
 // Submit a price update to zkSync Era
 func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, zkSyncEraMessenger *contracts.ZkSyncEraMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
-	t.log.Println("Submitting rate to zkSync Era...")
+	t.logger.Info("Submitting rate to zkSync Era...")
 	// Constants for zkSync Era
 	l1GasPerPubdataByte := big.NewInt(17)
 	fairL2GasPrice := eth.GweiToWei(0.5)
@@ -729,7 +712,7 @@ func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.SmartNodeConfig, rp *rocket
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -739,19 +722,19 @@ func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.SmartNodeConfig, rp *rocket
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted zkSync Era price for block %d.", blockNumber)
+	t.logger.Info("Successfully submitted zkSync Era price.", slog.Uint64(keys.BlockKey, blockNumber))
 	return nil
 }
 
 // Submit a price update to Base
 func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, baseMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
-	t.log.Println("Submitting rate to Base...")
+	t.logger.Info("Submitting rate to Base...")
 	txInfo, err := baseMessenger.SubmitRate(opts)
 	if err != nil {
 		return fmt.Errorf("error getting tx for Base price update: %w", err)
@@ -762,7 +745,7 @@ func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, rp *rocketpool.
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -772,19 +755,19 @@ func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, rp *rocketpool.
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted Base price for block %d.", blockNumber)
+	t.logger.Info("Successfully submitted Base price.", slog.Uint64(keys.BlockKey, blockNumber))
 	return nil
 }
 
 // Submit a price update to Scroll
 func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, scrollMessenger *contracts.ScrollMessenger, scrollEstimator *contracts.ScrollFeeEstimator, blockNumber uint64, opts *bind.TransactOpts) error {
-	t.log.Println("Submitting rate to Scroll...")
+	t.logger.Info("Submitting rate to Scroll...")
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
 
 	// Set a fixed gas limit a bit above the estimated 85,283
@@ -811,7 +794,7 @@ func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpoo
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return nil
 	}
 
@@ -821,12 +804,19 @@ func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpoo
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
 
 	// Log
-	t.log.Printlnf("Successfully submitted Scroll price for block %d.", blockNumber)
+	t.logger.Info("Successfully submitted Scroll price.", slog.Uint64(keys.BlockKey, blockNumber))
 	return nil
+}
+
+func (t *SubmitRplPrice) handleError(err error) {
+	t.logger.Error("*** Price report failed. ***", log.Err(err))
+	t.lock.Lock()
+	t.isRunning = false
+	t.lock.Unlock()
 }

@@ -4,11 +4,11 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
 
-func getAutoTxInfo(cfg *config.SmartNodeConfig, logger *log.ColorLogger) (*big.Int, *big.Int) {
+func getAutoTxInfo(cfg *config.SmartNodeConfig, logger **log.Logger) (*big.Int, *big.Int) {
 	// Get the user-requested max fee
 	maxFeeGwei := cfg.AutoTxMaxFee.Value
 	var maxFee *big.Int

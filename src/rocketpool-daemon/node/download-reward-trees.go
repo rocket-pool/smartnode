@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
@@ -15,13 +15,13 @@ import (
 // Manage download rewards trees task
 type DownloadRewardsTrees struct {
 	sp  *services.ServiceProvider
-	log *log.ColorLogger
+	log **log.Logger
 	cfg *config.SmartNodeConfig
 	rp  *rocketpool.RocketPool
 }
 
 // Create manage fee recipient task
-func NewDownloadRewardsTrees(sp *services.ServiceProvider, logger log.ColorLogger) *DownloadRewardsTrees {
+func NewDownloadRewardsTrees(sp *services.ServiceProvider, logger *log.Logger) *DownloadRewardsTrees {
 	return &DownloadRewardsTrees{
 		sp:  sp,
 		log: &logger,

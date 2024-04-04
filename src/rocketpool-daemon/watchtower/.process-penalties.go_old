@@ -29,7 +29,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 )
 
 // Number of slots to go back in time and scan for penalties if state is empty (400k is approx. 8 weeks)
@@ -38,8 +38,8 @@ const NewPenaltyScanBuffer = 400000
 // Process withdrawals task
 type processPenalties struct {
 	c              *cli.Context
-	log            log.ColorLogger
-	errLog         log.ColorLogger
+	log            *log.Logger
+	errLog         *log.Logger
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
@@ -60,7 +60,7 @@ type penaltyState struct {
 }
 
 // Create process penalties task
-func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*processPenalties, error) {
+func newProcessPenalties(c *cli.Context, logger *log.Logger, errorLogger *log.Logger, m *state.NetworkStateManager) (*processPenalties, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {

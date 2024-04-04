@@ -3,6 +3,7 @@ package watchtower
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -17,13 +18,14 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
@@ -31,8 +33,7 @@ import (
 type GenerateRewardsTree struct {
 	ctx       context.Context
 	sp        *services.ServiceProvider
-	log       log.ColorLogger
-	errLog    log.ColorLogger
+	logger    *slog.Logger
 	cfg       *config.SmartNodeConfig
 	rp        *rocketpool.RocketPool
 	ec        eth.IExecutionClient
@@ -42,13 +43,12 @@ type GenerateRewardsTree struct {
 }
 
 // Create generate rewards Merkle Tree task
-func NewGenerateRewardsTree(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger) *GenerateRewardsTree {
+func NewGenerateRewardsTree(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *GenerateRewardsTree {
 	lock := &sync.Mutex{}
 	return &GenerateRewardsTree{
 		ctx:       ctx,
 		sp:        sp,
-		log:       logger,
-		errLog:    errorLogger,
+		logger:    logger.With(slog.String(keys.RoutineKey, "Generate Rewards Tree")),
 		cfg:       sp.GetConfig(),
 		rp:        sp.GetRocketPool(),
 		ec:        sp.GetEthClient(),
@@ -60,12 +60,12 @@ func NewGenerateRewardsTree(ctx context.Context, sp *services.ServiceProvider, l
 
 // Check for generation requests
 func (t *GenerateRewardsTree) Run() error {
-	t.log.Println("Checking for manual rewards tree generation requests...")
+	t.logger.Info("Starting manual rewards tree generation request check.")
 
 	// Check if rewards generation is already running
 	t.lock.Lock()
 	if t.isRunning {
-		t.log.Println("Tree generation is already running.")
+		t.logger.Info("Tree generation is already running.")
 		t.lock.Unlock()
 		return nil
 	}
@@ -75,7 +75,7 @@ func (t *GenerateRewardsTree) Run() error {
 	requestDir := t.cfg.GetWatchtowerFolder()
 	files, err := os.ReadDir(requestDir)
 	if os.IsNotExist(err) {
-		t.log.Println("Watchtower storage directory doesn't exist, creating...")
+		t.logger.Info("Watchtower storage directory doesn't exist, creating...")
 		err = os.Mkdir(requestDir, 0755)
 		if err != nil {
 			return fmt.Errorf("error creating watchtower storage directory: %w", err)
@@ -117,21 +117,21 @@ func (t *GenerateRewardsTree) Run() error {
 
 func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	// Begin generation of the tree
-	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
-	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
+	logger := t.logger.With(slog.Uint64(keys.IntervalKey, index))
+	logger.Info("Starting generation of Merkle rewards tree.")
 
 	// Find the event for this interval
 	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, t.cfg, index, nil)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
+		t.handleError(fmt.Errorf("Error getting event: %w", err), logger)
 		return
 	}
-	t.log.Printlnf("%s Found snapshot event: Beacon block %s, execution block %s", generationPrefix, rewardsEvent.ConsensusBlock.String(), rewardsEvent.ExecutionBlock.String())
+	logger.Info("Found snapshot event", slog.Uint64(keys.SlotKey, rewardsEvent.ConsensusBlock.Uint64()), slog.Uint64(keys.BlockKey, rewardsEvent.ExecutionBlock.Uint64()))
 
 	// Get the EL block
 	elBlockHeader, err := t.ec.HeaderByNumber(context.Background(), rewardsEvent.ExecutionBlock)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error getting execution block: %w", generationPrefix, err))
+		t.handleError(fmt.Errorf("Error getting execution block: %w", err), logger)
 		return
 	}
 
@@ -150,15 +150,15 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	}, opts)
 	if err == nil {
 		// Create the state manager with using the primary or fallback (not necessarily archive) EC
-		stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, t.rp.Client, t.bc, &t.log)
+		stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, t.rp.Client, t.bc, logger)
 		if err != nil {
-			t.handleError(fmt.Errorf("error creating new NetworkStateManager with Archive EC: %w", err))
+			t.handleError(fmt.Errorf("error creating new NetworkStateManager with Archive EC: %w", err), logger)
 			return
 		}
 	} else {
 		// Check if an Archive EC is provided, and if using it would potentially resolve the error
 		errMessage := err.Error()
-		t.log.Printlnf("%s Error getting state for block %d: %s", generationPrefix, elBlockHeader.Number.Uint64(), errMessage)
+		logger.Warn("Error getting network state", slog.Uint64(keys.BlockKey, elBlockHeader.Number.Uint64()), slog.String(log.ErrorKey, errMessage))
 		if strings.Contains(errMessage, "missing trie node") || // Geth
 			strings.Contains(errMessage, "No state available for block") || // Nethermind
 			strings.Contains(errMessage, "Internal error") { // Besu
@@ -167,15 +167,15 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 			// The state was missing so fall back to the archive node
 			archiveEcUrl := t.cfg.ArchiveEcUrl.Value
 			if archiveEcUrl != "" {
-				t.log.Printlnf("%s Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", generationPrefix, elBlockHeader.Number.Uint64(), archiveEcUrl)
+				logger.Warn("Primary EC cannot retrieve state for historical block, using archive EC", slog.Uint64(keys.BlockKey, elBlockHeader.Number.Uint64()), slog.String(keys.ArchiveEcKey, archiveEcUrl))
 				ec, err := ethclient.Dial(archiveEcUrl)
 				if err != nil {
-					t.handleError(fmt.Errorf("error connecting to archive EC: %w", err))
+					t.handleError(fmt.Errorf("error connecting to archive EC: %w", err), logger)
 					return
 				}
 				client, err = rocketpool.NewRocketPool(ec, rs.StorageAddress, rs.MulticallAddress, rs.BalanceBatcherAddress)
 				if err != nil {
-					t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", generationPrefix, err))
+					t.handleError(fmt.Errorf("error creating Rocket Pool client connected to archive EC: %w", err), logger)
 					return
 				}
 
@@ -185,18 +185,18 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 					return nil
 				}, opts)
 				if err != nil {
-					t.handleError(fmt.Errorf("%s error verifying rETH address with Archive EC: %w", generationPrefix, err))
+					t.handleError(fmt.Errorf("error verifying rETH address with Archive EC: %w", err), logger)
 					return
 				}
 				// Create the state manager with the archive EC
-				stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, ec, t.bc, &t.log)
+				stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, ec, t.bc, logger)
 				if err != nil {
-					t.handleError(fmt.Errorf("%s error creating new NetworkStateManager with ARchive EC: %w", generationPrefix, err))
+					t.handleError(fmt.Errorf("error creating new NetworkStateManager with Archive EC: %w", err), logger)
 					return
 				}
 			} else {
 				// No archive node specified
-				t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified", elBlockHeader.Number.Uint64()))
+				t.handleError(fmt.Errorf("Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified", elBlockHeader.Number.Uint64()), logger)
 				return
 			}
 
@@ -205,52 +205,52 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 
 	// Sanity check the rETH address to make sure the client is working right
 	if address != rs.RethAddress {
-		t.handleError(fmt.Errorf("***ERROR*** Your Primary EC provided %s as the rETH address, but it should have been %s", address.Hex(), rs.RethAddress.Hex()))
+		t.handleError(fmt.Errorf("your Primary EC provided %s as the rETH address, but it should have been %s", address.Hex(), rs.RethAddress.Hex()), logger)
 		return
 	}
 
 	// Get the state for the target slot
 	state, err := stateManager.GetStateForSlot(t.ctx, rewardsEvent.ConsensusBlock.Uint64())
 	if err != nil {
-		t.handleError(fmt.Errorf("%s error getting state for beacon slot %d: %w", generationPrefix, rewardsEvent.ConsensusBlock.Uint64(), err))
+		t.handleError(fmt.Errorf("error getting state for beacon slot %d: %w", rewardsEvent.ConsensusBlock.Uint64(), err), logger)
 		return
 	}
 
 	// Generate the tree
-	t.generateRewardsTreeImpl(client, index, generationPrefix, rewardsEvent, elBlockHeader, state)
+	t.generateRewardsTreeImpl(logger, client, index, rewardsEvent, elBlockHeader, state)
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *GenerateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
+func (t *GenerateRewardsTree) generateRewardsTreeImpl(logger *slog.Logger, rp *rocketpool.RocketPool, index uint64, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
 	// Generate the rewards file
 	start := time.Now()
-	treegen, err := rprewards.NewTreeGenerator(&t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state, nil)
+	treegen, err := rprewards.NewTreeGenerator(t.logger, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state, nil)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error creating Merkle tree generator: %w", generationPrefix, err))
+		t.handleError(fmt.Errorf("Error creating Merkle tree generator: %w", err), logger)
 		return
 	}
 	rewardsFile, err := treegen.GenerateTree(t.ctx)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
+		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", err), logger)
 		return
 	}
 	header := rewardsFile.GetHeader()
 	for address, network := range header.InvalidNetworkNodes {
-		t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
+		logger.Warn("Node has invalid network assigned! Using 0 (mainnet) instead.", slog.String(keys.NodeKey, address.Hex()), slog.Uint64(keys.NetworkKey, network))
 	}
-	t.log.Printlnf("%s Finished in %s", generationPrefix, time.Since(start).String())
+	logger.Info("Finished generation.", slog.Duration(keys.TotalElapsedKey, time.Since(start)))
 
 	// Validate the Merkle root
 	root := common.BytesToHash(header.MerkleTree.Root())
 	if root != rewardsEvent.MerkleRoot {
-		t.log.Printlnf("%s WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", generationPrefix, root.Hex(), rewardsEvent.MerkleRoot.Hex())
+		logger.Warn("Your Merkle tree's root differed from the canonical Merkle tree's root. This file will not be usable for claiming rewards.", slog.String(keys.GeneratedRootKey, root.Hex()), slog.String(keys.CanonicalRootKey, rewardsEvent.MerkleRoot.Hex()))
 	} else {
-		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, header.MerkleRoot)
+		logger.Info("Your Merkle tree's root matches the canonical root! You will be able to use this file for claiming rewards.")
 	}
 
 	// Create the JSON files
 	rewardsFile.SetMinipoolPerformanceFileCID("---")
-	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
+	logger.Info("Saving JSON files...")
 	localMinipoolPerformanceFile := rprewards.NewLocalFile[sharedtypes.IMinipoolPerformanceFile](
 		rewardsFile.GetMinipoolPerformanceFile(),
 		t.cfg.GetMinipoolPerformancePath(index),
@@ -263,24 +263,23 @@ func (t *GenerateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 	// Write the files
 	err = localMinipoolPerformanceFile.Write()
 	if err != nil {
-		t.handleError(fmt.Errorf("%s error saving minipool performance file: %w", generationPrefix, err))
+		t.handleError(fmt.Errorf("error saving minipool performance file: %w", err), logger)
 		return
 	}
 	err = localRewardsFile.Write()
 	if err != nil {
-		t.handleError(fmt.Errorf("%s error saving rewards file: %w", generationPrefix, err))
+		t.handleError(fmt.Errorf("error saving rewards file: %w", err), logger)
 		return
 	}
 
-	t.log.Printlnf("%s Merkle tree generation complete!", generationPrefix)
+	t.logger.Info("Merkle tree generation complete!")
 	t.lock.Lock()
 	t.isRunning = false
 	t.lock.Unlock()
 }
 
-func (t *GenerateRewardsTree) handleError(err error) {
-	t.errLog.Println(err)
-	t.errLog.Println("*** Rewards tree generation failed. ***")
+func (t *GenerateRewardsTree) handleError(err error, logger *slog.Logger) {
+	logger.Error("*** Rewards tree generation failed. ***", log.Err(err))
 	t.lock.Lock()
 	t.isRunning = false
 	t.lock.Unlock()

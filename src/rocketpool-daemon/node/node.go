@@ -14,8 +14,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
 
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/utils"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
@@ -335,7 +335,7 @@ func (t *TaskLoop) Stop() {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*state.NetworkState, *big.Int, error) {
+func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, log **log.Logger, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*state.NetworkState, *big.Int, error) {
 	// Get the state of the network
 	state, totalEffectiveStake, err := m.GetHeadStateForNode(ctx, nodeAddress, calculateTotalEffectiveStake)
 	if err != nil {
@@ -345,7 +345,7 @@ func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, log *
 }
 
 // Check if Houston has been deployed yet
-func printHoustonMessage(log *log.ColorLogger) {
+func printHoustonMessage(log **log.Logger) {
 	log.Println(`
 *       .
 *      / \

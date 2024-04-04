@@ -1,7 +1,9 @@
 package watchtower
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"sync"
 	"time"
@@ -11,8 +13,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -22,6 +24,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 const (
@@ -32,50 +35,47 @@ const (
 )
 
 type CheckSoloMigrations struct {
-	sp               *services.ServiceProvider
-	log              log.ColorLogger
-	errLog           log.ColorLogger
-	cfg              *config.SmartNodeConfig
-	w                *wallet.Wallet
-	rp               *rocketpool.RocketPool
-	ec               eth.IExecutionClient
-	bc               beacon.IBeaconClient
-	mpMgr            *minipool.MinipoolManager
-	coll             *collectors.SoloMigrationCollector
-	lock             *sync.Mutex
-	isRunning        bool
-	generationPrefix string
+	ctx       context.Context
+	sp        *services.ServiceProvider
+	logger    *slog.Logger
+	cfg       *config.SmartNodeConfig
+	w         *wallet.Wallet
+	rp        *rocketpool.RocketPool
+	ec        eth.IExecutionClient
+	bc        beacon.IBeaconClient
+	mpMgr     *minipool.MinipoolManager
+	coll      *collectors.SoloMigrationCollector
+	lock      *sync.Mutex
+	isRunning bool
 }
 
 // Create check solo migrations task
-func NewCheckSoloMigrations(sp *services.ServiceProvider, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.SoloMigrationCollector) *CheckSoloMigrations {
+func NewCheckSoloMigrations(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, coll *collectors.SoloMigrationCollector) *CheckSoloMigrations {
 	lock := &sync.Mutex{}
 	return &CheckSoloMigrations{
-		sp:               sp,
-		log:              logger,
-		errLog:           errorLogger,
-		cfg:              sp.GetConfig(),
-		w:                sp.GetWallet(),
-		rp:               sp.GetRocketPool(),
-		ec:               sp.GetEthClient(),
-		bc:               sp.GetBeaconClient(),
-		coll:             coll,
-		lock:             lock,
-		isRunning:        false,
-		generationPrefix: "[Solo Migration]",
+		ctx:       ctx,
+		sp:        sp,
+		logger:    logger.With(slog.String(keys.RoutineKey, "Solo Migration")),
+		cfg:       sp.GetConfig(),
+		w:         sp.GetWallet(),
+		rp:        sp.GetRocketPool(),
+		ec:        sp.GetEthClient(),
+		bc:        sp.GetBeaconClient(),
+		coll:      coll,
+		lock:      lock,
+		isRunning: false,
 	}
-
 }
 
 // Start the solo migration checking thread
 func (t *CheckSoloMigrations) Run(state *state.NetworkState) error {
 	// Log
-	t.log.Println("Checking for solo migrations...")
+	t.logger.Info("Starting solo migration check.")
 
 	// Check if the check is already running
 	t.lock.Lock()
 	if t.isRunning {
-		t.log.Println("Solo migration check is already running in the background.")
+		t.logger.Info("Solo migration check is already running in the background.")
 		t.lock.Unlock()
 		return nil
 	}
@@ -86,11 +86,11 @@ func (t *CheckSoloMigrations) Run(state *state.NetworkState) error {
 		t.lock.Lock()
 		t.isRunning = true
 		t.lock.Unlock()
-		t.printMessage("Starting solo migration check in a separate thread.")
+		t.logger.Info("Starting solo migration check in a separate thread.")
 
 		err := t.checkSoloMigrations(state)
 		if err != nil {
-			t.handleError(fmt.Errorf("%s %w", t.generationPrefix, err))
+			t.handleError(err)
 			return
 		}
 
@@ -112,7 +112,7 @@ func (t *CheckSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 		return fmt.Errorf("error creating minipool manager: %w", err)
 	}
 
-	t.printMessage(fmt.Sprintf("Checking for Beacon slot %d (EL block %d)", state.BeaconSlotNumber, state.ElBlockNumber))
+	t.logger.Info(fmt.Sprintf("Checking solo migrations...", slog.Uint64(keys.SlotKey, state.BeaconSlotNumber), slog.Uint64(keys.BlockKey, state.ElBlockNumber)))
 	oneGwei := eth.GweiToWei(1)
 	scrubThreshold := time.Duration(state.NetworkDetails.PromotionScrubPeriod.Seconds()*soloMigrationCheckThreshold) * time.Second
 
@@ -230,39 +230,38 @@ func (t *CheckSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 // Scrub a vacant minipool
 func (t *CheckSoloMigrations) scrubVacantMinipool(state *state.NetworkState, address common.Address, reason string) {
 	// Log
-	t.printMessage("=== SCRUBBING SOLO MIGRATION ===")
-	t.printMessage(fmt.Sprintf("Minipool: %s", address.Hex()))
-	t.printMessage(fmt.Sprintf("Reason:   %s", reason))
-	t.printMessage("================================")
+	mpLogger := t.logger.With(slog.String(keys.MinipoolKey, address.Hex()))
+	mpLogger.Warn("=== SCRUBBING SOLO MIGRATION ===", slog.String(keys.ReasonKey, reason))
 
 	// Make the binding
 	mpd := state.MinipoolDetailsByAddress[address]
 	mp, err := t.mpMgr.NewMinipoolFromVersion(address, mpd.Version)
 	if err != nil {
-		t.printMessage(fmt.Sprintf("error creating binding for minipool %s: %s", address.Hex(), err.Error()))
+		mpLogger.Error("Error creating minipool binding", log.Err(err))
 		return
 	}
+
 	// Get transactor
 	opts, err := t.w.GetTransactor()
 	if err != nil {
-		t.printMessage(fmt.Sprintf("error getting node account transactor: %s", err.Error()))
+		mpLogger.Error("Error getting node account transactor", log.Err(err))
 		return
 	}
 
 	// Get the tx info
 	txInfo, err := mp.Common().VoteScrub(opts)
 	if err != nil {
-		t.printMessage(fmt.Sprintf("error getting scrub tx for minipool: %s", err.Error()))
+		mpLogger.Error("Error getting Scrub TX for minipool", log.Err(err))
 		return
 	}
 	if txInfo.SimulationResult.SimulationError != "" {
-		t.printMessage(fmt.Sprintf("simulating scrub TX failed: %s", txInfo.SimulationResult.SimulationError))
+		mpLogger.Error("Simulating Scrub TX failed", slog.String(log.ErrorKey, txInfo.SimulationResult.SimulationError))
 		return
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, &t.log, maxFee, 0) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, false, 0, t.logger, maxFee, 0) {
 		return
 	}
 
@@ -272,25 +271,19 @@ func (t *CheckSoloMigrations) scrubVacantMinipool(state *state.NetworkState, add
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, &t.log, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, mpLogger, txInfo, opts)
 	if err != nil {
-		t.printMessage(fmt.Sprintf("error waiting for scrub transaction: %s", err.Error()))
+		mpLogger.Error("Error waiting for scrub transaction", log.Err(err))
 		return
 	}
 
 	// Log
-	t.log.Printlnf("Successfully voted to scrub minipool %s.", address.Hex())
+	mpLogger.Info("Successfully voted to scrub minipool.")
 }
 
 func (t *CheckSoloMigrations) handleError(err error) {
-	t.errLog.Println(err)
-	t.errLog.Println("*** Solo migration check failed. ***")
+	t.logger.Error("*** Solo migration check failed. ***", log.Err(err))
 	t.lock.Lock()
 	t.isRunning = false
 	t.lock.Unlock()
-}
-
-// Print a message from the tree generation goroutine
-func (t *CheckSoloMigrations) printMessage(message string) {
-	t.log.Printlnf("%s %s", t.generationPrefix, message)
 }

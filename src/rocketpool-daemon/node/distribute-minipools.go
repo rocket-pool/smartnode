@@ -7,7 +7,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -26,7 +26,7 @@ import (
 // Distribute minipools task
 type DistributeMinipools struct {
 	sp                  *services.ServiceProvider
-	log                 *log.ColorLogger
+	log                 **log.Logger
 	cfg                 *config.SmartNodeConfig
 	w                   *wallet.Wallet
 	rp                  *rocketpool.RocketPool
@@ -41,7 +41,7 @@ type DistributeMinipools struct {
 }
 
 // Create distribute minipools task
-func NewDistributeMinipools(sp *services.ServiceProvider, logger log.ColorLogger) *DistributeMinipools {
+func NewDistributeMinipools(sp *services.ServiceProvider, logger *log.Logger) *DistributeMinipools {
 	cfg := sp.GetConfig()
 	log := &logger
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)

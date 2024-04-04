@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -31,7 +31,7 @@ type defendableProposal struct {
 type DefendPdaoProps struct {
 	ctx              context.Context
 	sp               *services.ServiceProvider
-	log              *log.ColorLogger
+	log              **log.Logger
 	cfg              *config.SmartNodeConfig
 	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
@@ -50,7 +50,7 @@ type DefendPdaoProps struct {
 	intervalSize *big.Int
 }
 
-func NewDefendPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger log.ColorLogger) *DefendPdaoProps {
+func NewDefendPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *DefendPdaoProps {
 	cfg := sp.GetConfig()
 	log := &logger
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"sort"
 	"time"
@@ -14,11 +15,11 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 	merkletree "github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
@@ -29,8 +30,7 @@ type treeGeneratorImpl_v8_rolling struct {
 	networkState         *state.NetworkState
 	rewardsFile          *RewardsFile_v3
 	elSnapshotHeader     *types.Header
-	log                  *log.ColorLogger
-	logPrefix            string
+	logger               *slog.Logger
 	rp                   *rocketpool.RocketPool
 	cfg                  *config.SmartNodeConfig
 	bc                   beacon.IBeaconClient
@@ -50,7 +50,7 @@ type treeGeneratorImpl_v8_rolling struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v8_rolling(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v8_rolling {
+func newTreeGeneratorImpl_v8_rolling(logger *slog.Logger, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v8_rolling {
 	return &treeGeneratorImpl_v8_rolling{
 		rewardsFile: &RewardsFile_v3{
 			RewardsFileHeader: &sharedtypes.RewardsFileHeader{
@@ -85,8 +85,7 @@ func newTreeGeneratorImpl_v8_rolling(log *log.ColorLogger, logPrefix string, ind
 		},
 		validatorIndexMap: map[string]*MinipoolInfo{},
 		elSnapshotHeader:  elSnapshotHeader,
-		log:               log,
-		logPrefix:         logPrefix,
+		logger:            logger,
 		networkState:      state,
 		rollingRecord:     rollingRecord,
 	}
@@ -98,8 +97,7 @@ func (r *treeGeneratorImpl_v8_rolling) getRulesetVersion() uint64 {
 }
 
 func (r *treeGeneratorImpl_v8_rolling) generateTree(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (sharedtypes.IRewardsFile, error) {
-
-	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
+	r.logger.Info("Started rewards tree generation.", slog.Uint64(keys.RulesetKey, r.rewardsFile.RulesetVersion))
 
 	// Provision some struct params
 	r.rp = rp
@@ -124,7 +122,7 @@ func (r *treeGeneratorImpl_v8_rolling) generateTree(context context.Context, rp 
 		BlockNumber: r.elSnapshotHeader.Number,
 	}
 
-	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
+	r.logger.Info("Retrieved node count", slog.Int(keys.NodeCountKey, len(r.networkState.NodeDetails)))
 
 	// Get the max of node count and minipool count - this will be used for an error epsilon due to division truncation
 	nodeCount := len(r.networkState.NodeDetails)
@@ -164,13 +162,12 @@ func (r *treeGeneratorImpl_v8_rolling) generateTree(context context.Context, rp 
 	}
 
 	return r.rewardsFile, nil
-
 }
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
 func (r *treeGeneratorImpl_v8_rolling) approximateStakerShareOfSmoothingPool(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (*big.Int, error) {
-	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
+	r.logger.Info("Approximating rewards tree.", slog.Uint64(keys.RulesetKey, r.rewardsFile.RulesetVersion))
 
 	r.rp = rp
 	r.cfg = cfg
@@ -194,7 +191,7 @@ func (r *treeGeneratorImpl_v8_rolling) approximateStakerShareOfSmoothingPool(con
 		BlockNumber: r.elSnapshotHeader.Number,
 	}
 
-	r.log.Printlnf("%s Creating tree for %d nodes", r.logPrefix, len(r.networkState.NodeDetails))
+	r.logger.Info("Retrieved node count", slog.Int(keys.NodeCountKey, len(r.networkState.NodeDetails)))
 
 	// Get the max of node count and minipool count - this will be used for an error epsilon due to division truncation
 	nodeCount := len(r.networkState.NodeDetails)
@@ -216,7 +213,6 @@ func (r *treeGeneratorImpl_v8_rolling) approximateStakerShareOfSmoothingPool(con
 
 // Generates a merkle tree from the provided rewards map
 func (r *treeGeneratorImpl_v8_rolling) generateMerkleTree() error {
-
 	// Generate the leaf data for each node
 	totalData := make([][]byte, 0, len(r.rewardsFile.NodeRewards))
 	for address, rewardsForNode := range r.rewardsFile.NodeRewards {
@@ -282,12 +278,10 @@ func (r *treeGeneratorImpl_v8_rolling) generateMerkleTree() error {
 	r.rewardsFile.MerkleTree = tree
 	r.rewardsFile.MerkleRoot = common.BytesToHash(tree.Root()).Hex()
 	return nil
-
 }
 
 // Calculates the per-network distribution amounts and the total reward amounts
 func (r *treeGeneratorImpl_v8_rolling) updateNetworksAndTotals() {
-
 	// Get the highest network index with valid rewards
 	highestNetworkIndex := uint64(0)
 	for network := range r.rewardsFile.NetworkRewards {
@@ -308,7 +302,6 @@ func (r *treeGeneratorImpl_v8_rolling) updateNetworksAndTotals() {
 			r.rewardsFile.NetworkRewards[network] = rewardsForNetwork
 		}
 	}
-
 }
 
 func (r *treeGeneratorImpl_v8_rolling) calculateNodeRplRewards(
@@ -318,7 +311,6 @@ func (r *treeGeneratorImpl_v8_rolling) calculateNodeRplRewards(
 	nodeWeight *big.Int,
 	totalNodeWeight *big.Int,
 ) *big.Int {
-
 	if nodeEffectiveStake.Sign() <= 0 || nodeWeight.Sign() <= 0 {
 		return big.NewInt(0)
 	}
@@ -363,7 +355,7 @@ func (r *treeGeneratorImpl_v8_rolling) calculateNodeRplRewards(
 // Calculates the RPL rewards for the given interval
 func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
-	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
+	r.logger.Info("Calculated Pending RPL rewards", slog.String(keys.AmountKey, getRewardsString(pendingRewards)))
 	if pendingRewards.Cmp(common.Big0) == 0 {
 		return fmt.Errorf("there are no pending RPL rewards, so this interval cannot be used for rewards submission")
 	}
@@ -373,14 +365,14 @@ func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 	pDaoRewards := sharedtypes.NewQuotedBigInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
 	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
-	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
+	r.logger.Info("Calculated expected Protocol DAO rewards", slog.String(keys.AmountKey, getRewardsString(&pDaoRewards.Int)))
 
 	// Get node operator rewards
 	nodeOpPercent := r.networkState.NetworkDetails.NodeOperatorRewardsPercent
 	totalNodeRewards := big.NewInt(0)
 	totalNodeRewards.Mul(pendingRewards, nodeOpPercent)
 	totalNodeRewards.Div(totalNodeRewards, eth.EthToWei(1))
-	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
+	r.logger.Info("Calculated approx. total collateral RPL rewards", slog.String(keys.AmountKey, getRewardsString(totalNodeRewards)))
 
 	// Calculate the effective stake of each node, scaling by their participation in this interval
 	trueNodeEffectiveStakes, totalNodeEffectiveStake, err := r.networkState.CalculateTrueEffectiveStakes(true, true)
@@ -401,7 +393,7 @@ func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 		quotedTotalNodeWeight.Set(totalNodeWeight)
 		r.rewardsFile.TotalRewards.TotalNodeWeight = quotedTotalNodeWeight
 
-		r.log.Printlnf("%s Calculating individual collateral rewards...", r.logPrefix)
+		r.logger.Info("Calculating individual collateral rewards...")
 		for i, nodeDetails := range r.networkState.NodeDetails {
 			// Get how much RPL goes to this node
 			nodeRplRewards := r.calculateNodeRplRewards(
@@ -462,12 +454,12 @@ func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 			return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
 		}
 		r.rewardsFile.TotalRewards.TotalCollateralRpl.Int = *totalCalculatedNodeRewards
-		r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
+		r.logger.Info("Calculated node op rewards", slog.String(keys.AmountKey, getRewardsString(totalCalculatedNodeRewards)), slog.String(keys.DeltaKey, delta.String()+" wei"))
 		pDaoRewards.Sub(pendingRewards, totalCalculatedNodeRewards)
 	} else {
 		// In this situation, none of the nodes in the network had eligible rewards so send it all to the pDAO
 		pDaoRewards.Add(&pDaoRewards.Int, totalNodeRewards)
-		r.log.Printlnf("%s None of the nodes were eligible for collateral rewards, sending everything to the pDAO; now at %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
+		r.logger.Info("None of the nodes were eligible for collateral rewards, sending everything to the pDAO.", slog.String(keys.AmountKey, getRewardsString(&pDaoRewards.Int)))
 	}
 
 	// Handle Oracle DAO rewards
@@ -475,7 +467,7 @@ func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 	totalODaoRewards := big.NewInt(0)
 	totalODaoRewards.Mul(pendingRewards, oDaoPercent)
 	totalODaoRewards.Div(totalODaoRewards, eth.EthToWei(1))
-	r.log.Printlnf("%s Total Oracle DAO RPL rewards: %s (%.3f)", r.logPrefix, totalODaoRewards.String(), eth.WeiToEth(totalODaoRewards))
+	r.logger.Info("Calculated total Oracle DAO RPL rewards", slog.String(keys.AmountKey, getRewardsString(totalODaoRewards)))
 
 	oDaoDetails := r.networkState.OracleDaoMemberDetails
 
@@ -557,23 +549,21 @@ func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 		return fmt.Errorf("error calculating ODao RPL: total was %s, but expected %s; error was too large", totalCalculatedOdaoRewards.String(), totalODaoRewards.String())
 	}
 	r.rewardsFile.TotalRewards.TotalOracleDaoRpl.Int = *totalCalculatedOdaoRewards
-	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
+	r.logger.Info("Calculated Oracle DAO rewards", slog.String(keys.AmountKey, getRewardsString(totalCalculatedOdaoRewards)), slog.String(keys.DeltaKey, delta.String()+" wei"))
 
 	// Get actual protocol DAO rewards
 	pDaoRewards.Sub(&pDaoRewards.Int, totalCalculatedOdaoRewards)
 	r.rewardsFile.TotalRewards.ProtocolDaoRpl = pDaoRewards
-	r.log.Printlnf("%s Actual Protocol DAO rewards:   %s to account for truncation", r.logPrefix, pDaoRewards.String())
+	r.logger.Info("Calculated true Protocol DAO rewards to account for truncation", slog.String(keys.AmountKey, getRewardsString(&pDaoRewards.Int)))
 
 	return nil
-
 }
 
 // Calculates the ETH rewards for the given interval
 func (r *treeGeneratorImpl_v8_rolling) calculateEthRewards(context context.Context, checkBeaconPerformance bool) error {
-
 	// Get the Smoothing Pool contract's balance
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
-	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
+	r.logger.Info("Retrieved Smoothing Pool balance", slog.String(keys.AmountKey, getRewardsString(r.smoothingPoolBalance)))
 
 	// Ignore the ETH calculation if there are no rewards
 	if r.smoothingPoolBalance.Cmp(common.Big0) == 0 {
@@ -673,12 +663,10 @@ func (r *treeGeneratorImpl_v8_rolling) calculateEthRewards(context context.Conte
 	r.rewardsFile.TotalRewards.NodeOperatorSmoothingPoolEth.Int = *nodeOpEth
 	r.rewardsFile.TotalRewards.TotalSmoothingPoolEth.Int = *r.smoothingPoolBalance
 	return nil
-
 }
 
 // Calculate the distribution of Smoothing Pool ETH to each node
 func (r *treeGeneratorImpl_v8_rolling) calculateNodeRewards() (*big.Int, *big.Int, error) {
-
 	// Get the list of cheaters
 	cheaters := r.getCheaters()
 
@@ -687,7 +675,7 @@ func (r *treeGeneratorImpl_v8_rolling) calculateNodeRewards() (*big.Int, *big.In
 
 	// If there weren't any successful attestations, everything goes to the pool stakers
 	if totalScore.Cmp(common.Big0) == 0 || attestationCount == 0 {
-		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", totalScore.String(), attestationCount)
+		r.logger.Warn("Sending the whole smoothing pool balance to the pool stakers.", slog.String(keys.TotalScoreKey, totalScore.String()), slog.Uint64(keys.SuccessfulAttestationsKey, attestationCount))
 		return r.smoothingPoolBalance, big.NewInt(0), nil
 	}
 
@@ -737,13 +725,12 @@ func (r *treeGeneratorImpl_v8_rolling) calculateNodeRewards() (*big.Int, *big.In
 	// Calculate the staking pool share and the node op share
 	poolStakerShare := big.NewInt(0).Sub(r.smoothingPoolBalance, totalNodeOpShare)
 
-	r.log.Printlnf("%s Pool staker ETH:    %s (%.3f)", r.logPrefix, poolStakerShare.String(), eth.WeiToEth(poolStakerShare))
-	r.log.Printlnf("%s Node Op ETH:        %s (%.3f)", r.logPrefix, totalNodeOpShare.String(), eth.WeiToEth(totalNodeOpShare))
-	r.log.Printlnf("%s Calculated NO ETH:  %s (error = %s wei)", r.logPrefix, totalEthForMinipools.String(), delta.String())
-	r.log.Printlnf("%s Adjusting pool staker ETH to %s to account for truncation", r.logPrefix, truePoolStakerAmount.String())
+	r.logger.Info("Approximated Pool Staker ETH", slog.String(keys.AmountKey, getRewardsString(poolStakerShare)))
+	r.logger.Info("Approximated Node Op ETH", slog.String(keys.AmountKey, getRewardsString(totalNodeOpShare)))
+	r.logger.Info("Calculated Node Op ETH:  %s (error = %s wei)", slog.String(keys.AmountKey, totalEthForMinipools.String()), slog.String(keys.DeltaKey, delta.String()+" wei"))
+	r.logger.Info("Adjusted Pool Staker ETH to account for truncation", slog.String(keys.AmountKey, truePoolStakerAmount.String()))
 
 	return truePoolStakerAmount, totalEthForMinipools, nil
-
 }
 
 // Validates that the provided network is legal

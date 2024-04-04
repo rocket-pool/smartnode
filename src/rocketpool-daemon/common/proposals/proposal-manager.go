@@ -3,16 +3,17 @@ package proposals
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/node-manager-core/utils/log"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 type ProposalManager struct {
@@ -21,46 +22,44 @@ type ProposalManager struct {
 	nodeTreeMgr    *NodeTreeManager
 	stateMgr       *state.NetworkStateManager
 
-	log       *log.ColorLogger
-	logPrefix string
-	cfg       *config.SmartNodeConfig
-	rp        *rocketpool.RocketPool
-	bc        beacon.IBeaconClient
+	logger *slog.Logger
+	cfg    *config.SmartNodeConfig
+	rp     *rocketpool.RocketPool
+	bc     beacon.IBeaconClient
 }
 
-func NewProposalManager(context context.Context, log *log.ColorLogger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, bc beacon.IBeaconClient) (*ProposalManager, error) {
-	viSnapshotMgr, err := NewVotingInfoSnapshotManager(log, cfg, rp)
+func NewProposalManager(context context.Context, logger *slog.Logger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, bc beacon.IBeaconClient) (*ProposalManager, error) {
+	viSnapshotMgr, err := NewVotingInfoSnapshotManager(logger, cfg, rp)
 	if err != nil {
 		return nil, fmt.Errorf("error creating voting info manager: %w", err)
 	}
 
-	networkMgr, err := NewNetworkTreeManager(log, cfg)
+	networkMgr, err := NewNetworkTreeManager(logger, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network tree manager: %w", err)
 	}
 
-	nodeMgr, err := NewNodeTreeManager(log, cfg)
+	nodeMgr, err := NewNodeTreeManager(logger, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error creating node tree manager: %w", err)
 	}
 
-	stateMgr, err := state.NewNetworkStateManager(context, rp, cfg, rp.Client, bc, log)
+	stateMgr, err := state.NewNetworkStateManager(context, rp, cfg, rp.Client, bc, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network state manager: %w", err)
 	}
 
-	logPrefix := "[PDAO Proposals]"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "PDAO Proposals"))
 	return &ProposalManager{
 		viSnapshotMgr:  viSnapshotMgr,
 		networkTreeMgr: networkMgr,
 		nodeTreeMgr:    nodeMgr,
 		stateMgr:       stateMgr,
 
-		log:       log,
-		logPrefix: logPrefix,
-		cfg:       cfg,
-		rp:        rp,
-		bc:        bc,
+		logger: sublogger,
+		cfg:    cfg,
+		rp:     rp,
+		bc:     bc,
 	}, nil
 }
 
@@ -102,15 +101,14 @@ func (m *ProposalManager) GetPollardForProposal(blockNumber uint32) ([]*types.Vo
 }
 
 func (m *ProposalManager) GetVotingInfoSnapshot(blockNumber uint32) (*VotingInfoSnapshot, error) {
-	snapshot, err := m.viSnapshotMgr.LoadFromDisk(blockNumber)
-	if err != nil {
-		m.logMessage("Loading voting info snapshot for block %d failed: %s; regenerating snapshot.", blockNumber, err.Error())
-	} else if snapshot != nil {
+	snapshot, _ := m.viSnapshotMgr.LoadFromDisk(blockNumber)
+	if snapshot != nil {
 		return snapshot, nil
 	}
 
 	// Generate the snapshot
-	m.logMessage("Voting info snapshot for block %d didn't exist, creating one.", blockNumber)
+	m.logger.Info("Creating voting info snapshot...", slog.Uint64(keys.BlockKey, uint64(blockNumber)))
+	var err error
 	snapshot, err = m.viSnapshotMgr.CreateVotingInfoSnapshot(blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("error creating voting info snapshot for block %d: %w", blockNumber, err)
@@ -124,16 +122,15 @@ func (m *ProposalManager) GetVotingInfoSnapshot(blockNumber uint32) (*VotingInfo
 
 func (m *ProposalManager) GetNetworkTree(blockNumber uint32, snapshot *VotingInfoSnapshot) (*NetworkVotingTree, error) {
 	// Try to load the network tree from disk
-	tree, err := m.networkTreeMgr.LoadFromDisk(blockNumber)
-	if err != nil {
-		m.logMessage("Loading network tree for block %d failed: %s; regenerating tree.", blockNumber, err.Error())
-	} else if tree != nil {
+	tree, _ := m.networkTreeMgr.LoadFromDisk(blockNumber)
+	if tree != nil {
 		return tree, nil
 	}
 
 	// Try to load the voting info snapshot from disk or create it
-	m.logMessage("Network tree for block %d didn't exist, creating one.", blockNumber)
+	m.logger.Info("Creating network tree..", slog.Uint64(keys.BlockKey, uint64(blockNumber)))
 	if snapshot == nil {
+		var err error
 		snapshot, err = m.GetVotingInfoSnapshot(blockNumber)
 		if err != nil {
 			return nil, err
@@ -158,14 +155,12 @@ func (m *ProposalManager) GetNetworkTree(blockNumber uint32, snapshot *VotingInf
 func (m *ProposalManager) GetNodeTree(blockNumber uint32, nodeIndex uint64, snapshot *VotingInfoSnapshot) (*NodeVotingTree, error) {
 	// Try to load the node tree from disk
 	tree, err := m.nodeTreeMgr.LoadFromDisk(blockNumber, nodeIndex)
-	if err != nil {
-		m.logMessage("Loading node tree for block %d, node index %d failed: %s; regenerating tree.", blockNumber, nodeIndex, err.Error())
-	} else if tree != nil {
+	if tree != nil {
 		return tree, nil
 	}
 
 	// Try to load the voting info snapshot from disk or create it
-	m.logMessage("Node tree for block %d, node index %d didn't exist, creating one.", blockNumber, nodeIndex)
+	m.logger.Info("Creating node tree...", slog.Uint64(keys.BlockKey, uint64(blockNumber)), slog.Uint64(keys.NodeIndexKey, nodeIndex))
 	if snapshot == nil {
 		snapshot, err = m.GetVotingInfoSnapshot(blockNumber)
 		if err != nil {
@@ -308,13 +303,6 @@ func (m *ProposalManager) CheckForChallengeableArtifacts(event protocol.RootSubm
 		proof[i] = *proofPtrs[i]
 	}
 	return challengedIndex, *challengedNode, proof, nil
-}
-
-// Log a message to the logger
-func (m *ProposalManager) logMessage(message string, args ...any) {
-	if m.log != nil {
-		m.log.Printlnf(fmt.Sprintf("%s %s", m.logPrefix, message), args...)
-	}
 }
 
 func (m *ProposalManager) getDepthPerRound() (uint64, error) {
