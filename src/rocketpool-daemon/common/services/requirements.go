@@ -186,6 +186,35 @@ func (sp *ServiceProvider) RequireOnSecurityCouncil(ctx context.Context) (types.
 // === Service Synchronization ===
 // ===============================
 
+func (sp *ServiceProvider) WaitNodeAddress(ctx context.Context, verbose bool) error {
+	// Get the logger
+	logger, exists := log.FromContext(ctx)
+	if !exists {
+		panic("context didn't have a logger!")
+	}
+
+	for {
+		status, err := sp.GetWallet().GetStatus()
+		if err != nil {
+			return err
+		}
+		var message string
+
+		if !status.Address.HasAddress {
+			message = "The node currently does not have an address set"
+		} else {
+			return nil
+		}
+
+		if verbose {
+			logger.Info(fmt.Sprintf("%s, retrying in %s...\n", message, checkNodeWalletInterval.String()))
+		}
+		if nmcutils.SleepWithCancel(ctx, checkNodeWalletInterval) {
+			return nil
+		}
+	}
+}
+
 func (sp *ServiceProvider) WaitWalletReady(ctx context.Context, verbose bool) error {
 	// Get the logger
 	logger, exists := log.FromContext(ctx)
@@ -233,16 +262,6 @@ func (sp *ServiceProvider) WaitNodeRegistered(ctx context.Context, verbose bool)
 	logger, exists := log.FromContext(ctx)
 	if !exists {
 		panic("context didn't have a logger!")
-	}
-
-	if err := sp.WaitWalletReady(ctx, verbose); err != nil {
-		return err
-	}
-	if err := sp.WaitEthClientSynced(ctx, verbose); err != nil {
-		return err
-	}
-	if err := sp.RefreshRocketPoolContracts(); err != nil {
-		return fmt.Errorf("error loading contract bindings: %w", err)
 	}
 
 	contractRefreshTime := time.Now()

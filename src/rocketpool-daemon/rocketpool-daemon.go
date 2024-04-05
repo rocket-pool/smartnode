@@ -15,7 +15,6 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/api"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
@@ -101,13 +100,6 @@ func main() {
 			return fmt.Errorf("error starting node task loop: %w", err)
 		}
 
-		// Start the task loop
-		watchtowerLoop := watchtower.NewTaskLoop(sp, stopWg)
-		err = watchtowerLoop.Run()
-		if err != nil {
-			return fmt.Errorf("error starting watchtower task loop: %w", err)
-		}
-
 		// Handle process closures
 		termListener := make(chan os.Signal, 1)
 		signal.Notify(termListener, os.Interrupt, syscall.SIGTERM)
@@ -117,14 +109,13 @@ func main() {
 			sp.CancelContextOnShutdown()
 			serverMgr.Stop()
 			nodeLoop.Stop()
-			watchtowerLoop.Stop()
 		}()
 
 		// Run the daemon until closed
 		fmt.Println("Node online.")
 		fmt.Printf("API calls are being logged to: %s\n", sp.GetApiLogger().GetFilePath())
-		fmt.Printf("Node tasks are being logged to:     %s\n", sp.GetTasksLogger().GetFilePath())
-		fmt.Printf("Watchtower tasks are being logged to:     %s\n", sp.GetWatchtowerLogger().GetFilePath())
+		fmt.Printf("Node tasks are being logged to: %s\n", sp.GetTasksLogger().GetFilePath())
+		fmt.Printf("Watchtower tasks are being logged to: %s\n", sp.GetWatchtowerLogger().GetFilePath())
 		stopWg.Wait()
 		sp.Close()
 		fmt.Println("Node stopped.")

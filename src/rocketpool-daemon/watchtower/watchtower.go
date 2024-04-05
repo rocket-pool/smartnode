@@ -3,23 +3,17 @@ package watchtower
 import (
 	"context"
 	"fmt"
-	"math/big"
-	"math/rand"
 	"net/http"
-	"sync"
 	"time"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/utils"
-	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
+	"github.com/rocket-pool/smartnode/shared/config"
 )
 
 // Config
@@ -30,321 +24,231 @@ const (
 	metricsShutdownTimeout time.Duration = time.Second * 5
 )
 
-type TaskLoop struct {
+type TaskManager struct {
+	// Services
 	logger        *log.Logger
 	ctx           context.Context
 	sp            *services.ServiceProvider
-	wg            *sync.WaitGroup
+	cfg           *config.SmartNodeConfig
+	rp            *rocketpool.RocketPool
+	bc            beacon.IBeaconClient
 	metricsServer *http.Server
+
+	// Tasks
+	generateRewardsTree         *GenerateRewardsTree
+	respondChallenges           *RespondChallenges
+	submitRplPrice              *SubmitRplPrice
+	submitNetworkBalances       *SubmitNetworkBalances
+	dissolveTimedOutMinipools   *DissolveTimedOutMinipools
+	submitScrubMinipools        *SubmitScrubMinipools
+	submitRewardsTree_Stateless *SubmitRewardsTree_Stateless
+	submitRewardsTree_Rolling   *SubmitRewardsTree_Rolling
+	cancelBondReductions        *CancelBondReductions
+	checkSoloMigrations         *CheckSoloMigrations
+	finalizePdaoProposals       *FinalizePdaoProposals
+
+	// Internal
+	useRollingRecords bool
+	initialized       bool
 }
 
-func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
+func NewTaskManager(sp *services.ServiceProvider, stateMgr *state.NetworkStateManager) *TaskManager {
 	logger := sp.GetWatchtowerLogger()
-	return &TaskLoop{
-		sp:     sp,
-		logger: logger,
-		ctx:    logger.CreateContextWithLogger(sp.GetBaseContext()),
-		wg:     wg,
-	}
-}
-
-// Run daemon
-func (t *TaskLoop) Run() error {
-	// Get services
-	cfg := t.sp.GetConfig()
-	rp := t.sp.GetRocketPool()
-	bc := t.sp.GetBeaconClient()
-
-	// Wait until node is registered
-	if err := t.sp.WaitNodeRegistered(t.ctx, true); err != nil {
-		return err
-	}
+	ctx := logger.CreateContextWithLogger(sp.GetBaseContext())
+	cfg := sp.GetConfig()
+	rp := sp.GetRocketPool()
+	bc := sp.GetBeaconClient()
 
 	// Print the current mode
 	if cfg.IsNativeMode {
-		fmt.Println("Starting watchtower daemon in Native Mode.")
+		logger.Info("Starting watchtower daemon in Native Mode.")
 	} else {
-		fmt.Println("Starting watchtower daemon in Docker Mode.")
+		logger.Info("Starting watchtower daemon in Docker Mode.")
 	}
 
 	// Check if rolling records are enabled
 	useRollingRecords := cfg.UseRollingRecords.Value
 	if useRollingRecords {
-		fmt.Println("Rolling records are enabled.")
+		logger.Info("Rolling records are enabled.")
 	} else {
-		fmt.Println("Rolling records are disabled.")
+		logger.Info("Rolling records are disabled.")
 	}
 
-	// Initialize the metrics reporters
+	// Initialize metrics
 	scrubCollector := collectors.NewScrubCollector()
 	bondReductionCollector := collectors.NewBondReductionCollector()
 	soloMigrationCollector := collectors.NewSoloMigrationCollector()
-
-	// Create the state manager
-	m, err := state.NewNetworkStateManager(t.ctx, rp, cfg, rp.Client, bc, t.logger.Logger)
-	if err != nil {
-		return err
-	}
+	metricsServer := runMetricsServer(sp, logger, scrubCollector, bondReductionCollector, soloMigrationCollector)
 
 	// Initialize tasks
-	respondChallenges := NewRespondChallenges(t.sp, t.logger, m)
-	submitRplPrice := NewSubmitRplPrice(t.ctx, t.sp, t.logger)
-	submitNetworkBalances := NewSubmitNetworkBalances(t.ctx, t.sp, t.logger)
-	dissolveTimedOutMinipools := NewDissolveTimedOutMinipools(t.sp, t.logger)
-	submitScrubMinipools := NewSubmitScrubMinipools(t.sp, t.logger, scrubCollector)
+	generateRewardsTree := NewGenerateRewardsTree(ctx, sp, logger)
+	respondChallenges := NewRespondChallenges(sp, logger, stateMgr)
+	submitRplPrice := NewSubmitRplPrice(ctx, sp, logger)
+	submitNetworkBalances := NewSubmitNetworkBalances(ctx, sp, logger)
+	dissolveTimedOutMinipools := NewDissolveTimedOutMinipools(sp, logger)
+	submitScrubMinipools := NewSubmitScrubMinipools(sp, logger, scrubCollector)
 	var submitRewardsTree_Stateless *SubmitRewardsTree_Stateless
 	var submitRewardsTree_Rolling *SubmitRewardsTree_Rolling
-	if !useRollingRecords {
-		submitRewardsTree_Stateless = NewSubmitRewardsTree_Stateless(t.ctx, t.sp, t.logger, m)
-	} else {
-		submitRewardsTree_Rolling, err = NewSubmitRewardsTree_Rolling(t.ctx, t.sp, t.logger, m)
-		if err != nil {
-			return fmt.Errorf("error during rolling rewards tree check: %w", err)
-		}
-	}
 	/*processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
 	if err != nil {
 		return fmt.Errorf("error during penalties check: %w", err)
 	}*/
-	generateRewardsTree := NewGenerateRewardsTree(t.ctx, t.sp, t.logger)
-	cancelBondReductions := NewCancelBondReductions(t.ctx, t.sp, t.logger, bondReductionCollector)
-	checkSoloMigrations := NewCheckSoloMigrations(t.ctx, t.sp, t.logger, soloMigrationCollector)
-	finalizePdaoProposals := NewFinalizePdaoProposals(t.sp, t.logger)
+	cancelBondReductions := NewCancelBondReductions(ctx, sp, logger, bondReductionCollector)
+	checkSoloMigrations := NewCheckSoloMigrations(ctx, sp, logger, soloMigrationCollector)
+	finalizePdaoProposals := NewFinalizePdaoProposals(sp, logger)
 
-	intervalDelta := maxTasksInterval - minTasksInterval
-	secondsDelta := intervalDelta.Seconds()
+	return &TaskManager{
+		sp:                          sp,
+		logger:                      logger,
+		ctx:                         ctx,
+		cfg:                         cfg,
+		rp:                          rp,
+		bc:                          bc,
+		metricsServer:               metricsServer,
+		generateRewardsTree:         generateRewardsTree,
+		respondChallenges:           respondChallenges,
+		submitRplPrice:              submitRplPrice,
+		submitNetworkBalances:       submitNetworkBalances,
+		dissolveTimedOutMinipools:   dissolveTimedOutMinipools,
+		submitScrubMinipools:        submitScrubMinipools,
+		submitRewardsTree_Stateless: submitRewardsTree_Stateless,
+		submitRewardsTree_Rolling:   submitRewardsTree_Rolling,
+		cancelBondReductions:        cancelBondReductions,
+		checkSoloMigrations:         checkSoloMigrations,
+		finalizePdaoProposals:       finalizePdaoProposals,
+		useRollingRecords:           useRollingRecords,
+	}
+}
 
-	// Run task loop
-	t.wg.Add(1)
-	go func() {
-		defer t.wg.Done()
+func (t *TaskManager) Initialize(stateMgr *state.NetworkStateManager) error {
+	if t.initialized {
+		return nil
+	}
 
-		for {
-			// Randomize the next interval
-			randomSeconds := rand.Intn(int(secondsDelta))
-			interval := time.Duration(randomSeconds)*time.Second + minTasksInterval
+	var err error
+	if !t.useRollingRecords {
+		t.submitRewardsTree_Stateless = NewSubmitRewardsTree_Stateless(t.ctx, t.sp, t.logger, stateMgr)
+	} else {
+		t.submitRewardsTree_Rolling, err = NewSubmitRewardsTree_Rolling(t.ctx, t.sp, t.logger, stateMgr)
+		if err != nil {
+			return fmt.Errorf("error creating rolling rewards tree builder: %w", err)
+		}
+	}
 
-			// Check the EC status
-			err := t.sp.WaitEthClientSynced(t.ctx, false) // Force refresh the primary / fallback EC status
-			if err != nil {
+	t.initialized = true
+	return nil
+}
+
+// Run the task loop
+func (t *TaskManager) Run(isOnOdao bool, state *state.NetworkState) error {
+	// Run the manual rewards tree generation
+	if err := t.generateRewardsTree.Run(); err != nil {
+		t.logger.Error(err.Error())
+	}
+	if utils.SleepWithCancel(t.ctx, taskCooldown) {
+		return nil
+	}
+
+	if isOnOdao {
+		// Run the challenge check
+		if err := t.respondChallenges.Run(); err != nil {
+			t.logger.Error(err.Error())
+		}
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return nil
+		}
+
+		// Run the network balance submission check
+		if err := t.submitNetworkBalances.Run(state); err != nil {
+			t.logger.Error(err.Error())
+		}
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return nil
+		}
+
+		if !t.useRollingRecords {
+			// Run the rewards tree submission check
+			if err := t.submitRewardsTree_Stateless.Run(isOnOdao, state, state.BeaconSlotNumber); err != nil {
 				t.logger.Error(err.Error())
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-				continue
 			}
-
-			// Check the BC status
-			err = t.sp.WaitBeaconClientSynced(t.ctx, false) // Force refresh the primary / fallback BC status
-			if err != nil {
+		} else {
+			// Run the network balance and rewards tree submission check
+			if err := t.submitRewardsTree_Rolling.Run(state); err != nil {
 				t.logger.Error(err.Error())
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-				continue
-			}
-
-			// Load contracts
-			err = t.sp.RefreshRocketPoolContracts()
-			if err != nil {
-				t.logger.Error("error loading contract bindings", log.Err(err))
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-				continue
-			}
-
-			// Get the Beacon block
-			//latestBlock, err := m.GetLatestFinalizedBeaconBlock()
-			latestBlock, err := m.GetLatestBeaconBlock(t.ctx)
-			if err != nil {
-				t.logger.Error("error getting latest Beacon block", log.Err(err))
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-				continue
-			}
-
-			nodeAddress, hasNodeAddress := t.sp.GetWallet().GetAddress()
-			if !hasNodeAddress {
-				continue
-			}
-
-			// Check if on the Oracle DAO
-			isOnOdao, err := isOnOracleDAO(rp, nodeAddress, latestBlock)
-			if err != nil {
-				t.logger.Error(err.Error())
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-				continue
-			}
-
-			// Run the manual rewards tree generation
-			if err := generateRewardsTree.Run(); err != nil {
-				t.logger.Error(err.Error())
-			}
-			if utils.SleepWithCancel(t.ctx, taskCooldown) {
-				break
-			}
-
-			if isOnOdao {
-				// Run the challenge check
-				if err := respondChallenges.Run(); err != nil {
-					t.logger.Error(err.Error())
-				}
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-
-				// Update the network state
-				state, err := updateNetworkState(t.ctx, m, t.logger, latestBlock)
-				if err != nil {
-					t.logger.Error(err.Error())
-					if utils.SleepWithCancel(t.ctx, taskCooldown) {
-						break
-					}
-					continue
-				}
-
-				// Run the network balance submission check
-				if err := submitNetworkBalances.Run(state); err != nil {
-					t.logger.Error(err.Error())
-				}
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-
-				if !useRollingRecords {
-					// Run the rewards tree submission check
-					if err := submitRewardsTree_Stateless.Run(isOnOdao, state, latestBlock.Header.Slot); err != nil {
-						t.logger.Error(err.Error())
-					}
-					if utils.SleepWithCancel(t.ctx, taskCooldown) {
-						break
-					}
-				} else {
-					// Run the network balance and rewards tree submission check
-					if err := submitRewardsTree_Rolling.Run(state); err != nil {
-						t.logger.Error(err.Error())
-					}
-					if utils.SleepWithCancel(t.ctx, taskCooldown) {
-						break
-					}
-				}
-
-				// Run the price submission check
-				if err := submitRplPrice.Run(state); err != nil {
-					t.logger.Error(err.Error())
-				}
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-
-				// Run the minipool dissolve check
-				if err := dissolveTimedOutMinipools.Run(state); err != nil {
-					t.logger.Error(err.Error())
-				}
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-
-				// Run the finalize proposals check
-				if err := finalizePdaoProposals.Run(state); err != nil {
-					t.logger.Error(err.Error())
-				}
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-
-				// Run the minipool scrub check
-				if err := submitScrubMinipools.Run(state); err != nil {
-					t.logger.Error(err.Error())
-				}
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-
-				// Run the bond cancel check
-				if err := cancelBondReductions.Run(state); err != nil {
-					t.logger.Error(err.Error())
-				}
-				if utils.SleepWithCancel(t.ctx, taskCooldown) {
-					break
-				}
-
-				// Run the solo migration check
-				if err := checkSoloMigrations.Run(state); err != nil {
-					t.logger.Error(err.Error())
-				}
-				/*time.Sleep(taskCooldown)
-
-				// Run the fee recipient penalty check
-				if err := processPenalties.run(); err != nil {
-					errorLog.Println(err)
-				}*/
-				// DISABLED until MEV-Boost can support it
-			} else {
-				/*
-				 */
-				if !useRollingRecords {
-					// Run the rewards tree submission check
-					if err := submitRewardsTree_Stateless.Run(isOnOdao, nil, latestBlock.Header.Slot); err != nil {
-						t.logger.Error(err.Error())
-					}
-				} else {
-					// Run the network balance and rewards tree submission check
-					if err := submitRewardsTree_Rolling.Run(nil); err != nil {
-						t.logger.Error(err.Error())
-					}
-				}
-			}
-
-			if utils.SleepWithCancel(t.ctx, interval) {
-				break
 			}
 		}
-	}()
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return nil
+		}
 
-	// Run metrics loop
-	t.metricsServer = runMetricsServer(t.sp, t.logger, scrubCollector, bondReductionCollector, soloMigrationCollector, t.wg)
+		// Run the price submission check
+		if err := t.submitRplPrice.Run(state); err != nil {
+			t.logger.Error(err.Error())
+		}
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return nil
+		}
+
+		// Run the minipool dissolve check
+		if err := t.dissolveTimedOutMinipools.Run(state); err != nil {
+			t.logger.Error(err.Error())
+		}
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return nil
+		}
+
+		// Run the finalize proposals check
+		if err := t.finalizePdaoProposals.Run(state); err != nil {
+			t.logger.Error(err.Error())
+		}
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return nil
+		}
+
+		// Run the minipool scrub check
+		if err := t.submitScrubMinipools.Run(state); err != nil {
+			t.logger.Error(err.Error())
+		}
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return nil
+		}
+
+		// Run the bond cancel check
+		if err := t.cancelBondReductions.Run(state); err != nil {
+			t.logger.Error(err.Error())
+		}
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return nil
+		}
+
+		// Run the solo migration check
+		if err := t.checkSoloMigrations.Run(state); err != nil {
+			t.logger.Error(err.Error())
+		}
+	} else {
+		/*
+		 */
+		if !t.useRollingRecords {
+			// Run the rewards tree submission check
+			if err := t.submitRewardsTree_Stateless.Run(isOnOdao, nil, state.BeaconSlotNumber); err != nil {
+				t.logger.Error(err.Error())
+			}
+		} else {
+			// Run the network balance and rewards tree submission check
+			if err := t.submitRewardsTree_Rolling.Run(nil); err != nil {
+				t.logger.Error(err.Error())
+			}
+		}
+	}
 
 	return nil
 }
 
-func (t *TaskLoop) Stop() {
+func (t *TaskManager) Stop() {
 	if t.metricsServer != nil {
 		// Shut down the metrics server
 		ctx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)
 		defer cancel()
 		t.metricsServer.Shutdown(ctx)
 	}
-}
-
-// Update the latest network state at each cycle
-func updateNetworkState(ctx context.Context, m *state.NetworkStateManager, logger *log.Logger, block beacon.BeaconBlock) (*state.NetworkState, error) {
-	logger.Info("Getting latest network state... ")
-	// Get the state of the network
-	state, err := m.GetStateForSlot(ctx, block.Header.Slot)
-	if err != nil {
-		return nil, fmt.Errorf("error getting network state: %w", err)
-	}
-	return state, nil
-}
-
-// Check if this node is on the Oracle DAO
-func isOnOracleDAO(rp *rocketpool.RocketPool, nodeAddress common.Address, block beacon.BeaconBlock) (bool, error) {
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(block.ExecutionBlockNumber),
-	}
-
-	member, err := oracle.NewOracleDaoMember(rp, nodeAddress)
-	if err != nil {
-		return false, fmt.Errorf("error creating oDAO member binding: %w", err)
-	}
-	err = rp.Query(nil, opts, member.Exists)
-	if err != nil {
-		return false, fmt.Errorf("error checking if node is in the Oracle DAO for Beacon block %d, EL block %d: %w", block.Header.Slot, block.ExecutionBlockNumber, err)
-	}
-	return member.Exists.Get(), nil
 }

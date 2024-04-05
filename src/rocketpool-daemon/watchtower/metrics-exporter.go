@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -17,7 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
-func runMetricsServer(sp *services.ServiceProvider, logger *log.Logger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector, wg *sync.WaitGroup) *http.Server {
+func runMetricsServer(sp *services.ServiceProvider, logger *log.Logger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector) *http.Server {
 	// Get services
 	cfg := sp.GetConfig()
 
@@ -61,9 +60,6 @@ func runMetricsServer(sp *services.ServiceProvider, logger *log.Logger, scrubCol
 	}
 
 	go func() {
-		defer wg.Done()
-
-		wg.Add(1)
 		err := server.ListenAndServe()
 		if !errors.Is(err, http.ErrServerClosed) {
 			logger.Error("Error running metrics HTTP server", log.Err(err))

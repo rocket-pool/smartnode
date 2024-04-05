@@ -78,6 +78,11 @@ func (m *NetworkStateManager) GetStateForSlot(context context.Context, slotNumbe
 	return m.getState(context, slotNumber)
 }
 
+// Get the state of the network for a single node at the provided Beacon slot, along with the total effective RPL stake for the network
+func (m *NetworkStateManager) GetNodeStateForSlot(context context.Context, nodeAddress common.Address, slotNumber uint64, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
+	return m.getStateForNode(context, nodeAddress, slotNumber, calculateTotalEffectiveStake)
+}
+
 // Gets the latest valid block
 func (m *NetworkStateManager) GetLatestBeaconBlock(context context.Context) (beacon.BeaconBlock, error) {
 	targetSlot, err := m.GetHeadSlot()
