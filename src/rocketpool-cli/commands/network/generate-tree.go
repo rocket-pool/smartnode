@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/shared/config"
 	"github.com/urfave/cli/v2"
 )
 
@@ -74,13 +75,13 @@ func generateRewardsTree(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("Your request to generate the rewards tree for interval %d has been applied, and your `watchtower` container will begin the process during its next duty check (typically 5 minutes).\nYou can follow its progress with %s`rocketpool service logs watchtower`%s.\n\n", index, terminal.ColorGreen, terminal.ColorReset)
+	fmt.Printf("Your request to generate the rewards tree for interval %d has been applied, and your `node` container will begin the process during its next duty check (typically 5 minutes).\nYou can follow its progress with %s`rocketpool service logs node`%s.\n\n", index, terminal.ColorGreen, terminal.ColorReset)
 
-	if c.Bool("yes") || utils.Confirm("Would you like to restart the watchtower container now, so it starts generating the file immediately?") {
-		container := fmt.Sprintf("%s_watchtower", cfg.ProjectName.Value)
+	if c.Bool("yes") || utils.Confirm("Would you like to restart the node container now, so it starts generating the file immediately?") {
+		container := cfg.GetDockerArtifactName(config.NodeSuffix)
 		err := rp.RestartContainer(container)
 		if err != nil {
-			return fmt.Errorf("error restarting watchtower: %w", err)
+			return fmt.Errorf("error restarting node: %w", err)
 		}
 
 		fmt.Println("Done!")

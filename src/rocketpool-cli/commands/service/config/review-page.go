@@ -49,8 +49,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *snCfg.SmartNodeConfig, newConfig 
 		// Add changed containers if this is an update
 		if md.isUpdate {
 			totalAffectedContainers[config.ContainerID_Daemon] = true
-			totalAffectedContainers[snCfg.ContainerID_Watchtower] = true
-			builder.WriteString(fmt.Sprintf("Updated to Smartnode v%s (will affect several containers)\n\n", shared.RocketPoolVersion))
+			builder.WriteString(fmt.Sprintf("Updated to Smart Node v%s (will affect several containers)\n\n", shared.RocketPoolVersion))
 		}
 
 		// Get the map of changed settings by section name

@@ -48,10 +48,6 @@ func (c *SmartNodeConfig) MevBoostContainerName() string {
 	return string(config.ContainerID_MevBoost)
 }
 
-func (c *SmartNodeConfig) WatchtowerContainerName() string {
-	return string(ContainerID_Watchtower)
-}
-
 func (c *SmartNodeConfig) AlertmanagerContainerName() string {
 	return string(ContainerID_Alertmanager)
 }

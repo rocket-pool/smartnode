@@ -316,7 +316,6 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	newMetricsConfig[nmc_ids.MetricsDaemonPortID] = legacyRootConfig["nodeMetricsPort"]
 	newMetricsConfig[nmc_ids.MetricsExporterPortID] = legacyRootConfig["exporterMetricsPort"]
 	newMetricsConfig[ids.MetricsEnableOdaoID] = legacyRootConfig["enableODaoMetrics"]
-	newMetricsConfig[ids.MetricsWatchtowerPortID] = legacyRootConfig["watchtowerMetricsPort"]
 	newSmartnodeConfig[ids.MetricsID] = newMetricsConfig
 
 	// Grafana

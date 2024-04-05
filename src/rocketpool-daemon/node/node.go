@@ -156,7 +156,7 @@ func (t *TaskLoop) Run() error {
 	}()
 
 	// Run metrics loop
-	t.metricsServer = runMetricsServer(t.ctx, t.sp, t.logger, t.stateLocker, t.wg)
+	t.metricsServer = runMetricsServer(t.ctx, t.sp, t.logger, t.stateLocker, t.wg, t.watchtowerTaskMgr)
 
 	return nil
 }
@@ -168,9 +168,6 @@ func (t *TaskLoop) Stop() {
 		ctx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)
 		defer cancel()
 		t.metricsServer.Shutdown(ctx)
-
-		// Shut down the watchtower
-		t.watchtowerTaskMgr.Stop()
 	}
 }
 

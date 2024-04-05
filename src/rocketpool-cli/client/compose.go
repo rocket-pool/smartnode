@@ -136,7 +136,6 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir strin
 	// These containers always run
 	toDeploy := []nmc_config.ContainerID{
 		nmc_config.ContainerID_Daemon,
-		config.ContainerID_Watchtower,
 		nmc_config.ContainerID_ValidatorClient,
 	}
 

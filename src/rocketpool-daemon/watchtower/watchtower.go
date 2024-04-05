@@ -3,7 +3,6 @@ package watchtower
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"time"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
@@ -26,13 +25,12 @@ const (
 
 type TaskManager struct {
 	// Services
-	logger        *log.Logger
-	ctx           context.Context
-	sp            *services.ServiceProvider
-	cfg           *config.SmartNodeConfig
-	rp            *rocketpool.RocketPool
-	bc            beacon.IBeaconClient
-	metricsServer *http.Server
+	logger *log.Logger
+	ctx    context.Context
+	sp     *services.ServiceProvider
+	cfg    *config.SmartNodeConfig
+	rp     *rocketpool.RocketPool
+	bc     beacon.IBeaconClient
 
 	// Tasks
 	generateRewardsTree         *GenerateRewardsTree
@@ -46,6 +44,11 @@ type TaskManager struct {
 	cancelBondReductions        *CancelBondReductions
 	checkSoloMigrations         *CheckSoloMigrations
 	finalizePdaoProposals       *FinalizePdaoProposals
+
+	// Collectors
+	ScrubCollector         *collectors.ScrubCollector
+	BondReductionCollector *collectors.BondReductionCollector
+	SoloMigrationCollector *collectors.SoloMigrationCollector
 
 	// Internal
 	useRollingRecords bool
@@ -78,7 +81,6 @@ func NewTaskManager(sp *services.ServiceProvider, stateMgr *state.NetworkStateMa
 	scrubCollector := collectors.NewScrubCollector()
 	bondReductionCollector := collectors.NewBondReductionCollector()
 	soloMigrationCollector := collectors.NewSoloMigrationCollector()
-	metricsServer := runMetricsServer(sp, logger, scrubCollector, bondReductionCollector, soloMigrationCollector)
 
 	// Initialize tasks
 	generateRewardsTree := NewGenerateRewardsTree(ctx, sp, logger)
@@ -104,7 +106,6 @@ func NewTaskManager(sp *services.ServiceProvider, stateMgr *state.NetworkStateMa
 		cfg:                         cfg,
 		rp:                          rp,
 		bc:                          bc,
-		metricsServer:               metricsServer,
 		generateRewardsTree:         generateRewardsTree,
 		respondChallenges:           respondChallenges,
 		submitRplPrice:              submitRplPrice,
@@ -117,6 +118,9 @@ func NewTaskManager(sp *services.ServiceProvider, stateMgr *state.NetworkStateMa
 		checkSoloMigrations:         checkSoloMigrations,
 		finalizePdaoProposals:       finalizePdaoProposals,
 		useRollingRecords:           useRollingRecords,
+		ScrubCollector:              scrubCollector,
+		BondReductionCollector:      bondReductionCollector,
+		SoloMigrationCollector:      soloMigrationCollector,
 	}
 }
 
@@ -242,13 +246,4 @@ func (t *TaskManager) Run(isOnOdao bool, state *state.NetworkState) error {
 	}
 
 	return nil
-}
-
-func (t *TaskManager) Stop() {
-	if t.metricsServer != nil {
-		// Shut down the metrics server
-		ctx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)
-		defer cancel()
-		t.metricsServer.Shutdown(ctx)
-	}
 }
