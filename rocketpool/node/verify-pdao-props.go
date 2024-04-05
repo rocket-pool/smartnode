@@ -145,9 +145,6 @@ func (t *verifyPdaoProps) run(state *state.NetworkState) error {
 	if err != nil {
 		return fmt.Errorf("error checking for challenges or defeats: %w", err)
 	}
-	if len(challenges) == 0 {
-		return nil
-	}
 
 	// Submit challenges
 	for _, challenge := range challenges {
