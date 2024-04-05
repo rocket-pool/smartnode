@@ -1,6 +1,7 @@
 package client
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -96,19 +97,34 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir string) ([]string, error) {
 	// Prep the override folder
 	overrideFolder := filepath.Join(smartNodeDir, overrideDir)
-	copyStockFiles(overrideSourceDir, overrideFolder, "override")
+	err := copyStockFiles(overrideSourceDir, overrideFolder, "override")
+	if err != nil {
+		return nil, fmt.Errorf("error copying override files: %w", err)
+	}
 
 	// Prep the addons folder
 	addonsFolder := filepath.Join(smartNodeDir, config.AddonsFolderName)
-	copyStockFiles(addonsSourceDir, addonsFolder, "addons")
+	err = copyStockFiles(addonsSourceDir, addonsFolder, "addons")
+	if err != nil {
+		return nil, fmt.Errorf("error copying addons files: %w", err)
+	}
 
 	// Prep the native scripts folder
 	nativeScriptsFolder := filepath.Join(smartNodeDir, config.NativeScriptsFolderName)
-	copyStockFiles(nativeScriptsSourceDir, nativeScriptsFolder, "native scripts")
+	err = copyStockFiles(nativeScriptsSourceDir, nativeScriptsFolder, "native scripts")
+	if err != nil {
+		return nil, fmt.Errorf("error copying native scripts files: %w", err)
+	}
+
+	// Remove the obsolete Docker Compose version from the overrides
+	err = removeComposeVersion(overrideFolder)
+	if err != nil {
+		return nil, fmt.Errorf("error removing obsolete Docker Compose version from overrides: %w", err)
+	}
 
 	// Clear out the runtime folder and remake it
 	runtimeFolder := filepath.Join(smartNodeDir, runtimeDir)
-	err := os.RemoveAll(runtimeFolder)
+	err = os.RemoveAll(runtimeFolder)
 	if err != nil {
 		return []string{}, fmt.Errorf("error deleting runtime folder [%s]: %w", runtimeFolder, err)
 	}
@@ -199,12 +215,12 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir strin
 func copyStockFiles(sourceDir string, targetDir string, filetype string) error {
 	err := os.MkdirAll(targetDir, 0755)
 	if err != nil {
-		return fmt.Errorf("error creating %s folder: %w", filetype, err)
+		return fmt.Errorf("error creating %s folder [%s]: %w", filetype, targetDir, err)
 	}
 
 	files, err := os.ReadDir(sourceDir)
 	if err != nil {
-		return fmt.Errorf("error enumerating %s source folder: %w", filetype, err)
+		return fmt.Errorf("error enumerating %s source folder [%s]: %w", filetype, sourceDir, err)
 	}
 
 	// Copy any override files that don't exist in the local user directory
@@ -214,7 +230,10 @@ func copyStockFiles(sourceDir string, targetDir string, filetype string) error {
 		if file.IsDir() {
 			// Recurse
 			srcPath := filepath.Join(sourceDir, file.Name())
-			copyStockFiles(srcPath, targetPath, filetype)
+			err = copyStockFiles(srcPath, targetPath, filetype)
+			if err != nil {
+				return err
+			}
 		}
 
 		_, err := os.Stat(targetPath)
@@ -234,6 +253,52 @@ func copyStockFiles(sourceDir string, targetDir string, filetype string) error {
 		err = os.WriteFile(targetPath, contents, 0644)
 		if err != nil {
 			return fmt.Errorf("error writing local %s file [%s]: %w", filetype, targetPath, err)
+		}
+	}
+	return nil
+}
+
+// Remove the obsolete Docker Compose version from each compose file in the target directory
+func removeComposeVersion(targetDir string) error {
+	files, err := os.ReadDir(targetDir)
+	if err != nil {
+		return fmt.Errorf("error enumerating folder [%s]: %w", targetDir, err)
+	}
+
+	// Copy any override files that don't exist in the local user directory
+	for _, file := range files {
+		filename := file.Name()
+		targetPath := filepath.Join(targetDir, filename)
+		if file.IsDir() {
+			// Recurse
+			subdir := filepath.Join(targetDir, file.Name())
+			err = removeComposeVersion(subdir)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Ignore it if it's not a YAML file
+		if filepath.Ext(filename) != ".yml" {
+			continue
+		}
+
+		// Read the source
+		contents, err := os.ReadFile(targetPath)
+		if err != nil {
+			return fmt.Errorf("error reading file [%s]: %w", targetPath, err)
+		}
+
+		// Remove the version field, accounting for both Windows and Unix line endings
+		newContents := bytes.ReplaceAll(contents, []byte("\r\nversion: \"3.7\""), []byte("\r\n"))
+		newContents = bytes.ReplaceAll(newContents, []byte("\nversion: \"3.7\""), []byte("\n"))
+
+		// Write the updated contents if they differ
+		if len(newContents) != len(contents) {
+			err = os.WriteFile(targetPath, newContents, 0644)
+			if err != nil {
+				return fmt.Errorf("error updating file [%s]: %w", targetPath, err)
+			}
 		}
 	}
 	return nil
