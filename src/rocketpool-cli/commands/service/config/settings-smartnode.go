@@ -13,7 +13,6 @@ type SmartnodeConfigPage struct {
 
 // Creates a new page for the Smartnode settings
 func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
-
 	configPage := &SmartnodeConfigPage{
 		home: home,
 	}
@@ -28,7 +27,6 @@ func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 	)
 
 	return configPage
-
 }
 
 // Get the underlying page

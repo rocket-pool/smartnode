@@ -36,7 +36,7 @@ func createModeStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardS
 		case config.ClientMode_Local:
 			wiz.localEcModal.show()
 		case config.ClientMode_External:
-			wiz.externalEcSettingsModal.show()
+			wiz.externalEcSelectModal.show()
 		default:
 			panic(fmt.Sprintf("Unknown client mode %s", modes[buttonIndex].Value))
 		}
