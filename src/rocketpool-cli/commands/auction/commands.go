@@ -16,10 +16,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Usage:   "Manage Rocket Pool RPL auctions",
 		Subcommands: []*cli.Command{
 			{
-				Name:      "status",
-				Aliases:   []string{"s"},
-				Usage:     "Get RPL auction status",
-				UsageText: "rocketpool auction status",
+				Name:    "status",
+				Aliases: []string{"s"},
+				Usage:   "Get RPL auction status",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -32,10 +31,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "lots",
-				Aliases:   []string{"l"},
-				Usage:     "Get RPL lots for auction",
-				UsageText: "rocketpool auction lots",
+				Name:    "lots",
+				Aliases: []string{"l"},
+				Usage:   "Get RPL lots for auction",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -48,10 +46,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "create-lot",
-				Aliases:   []string{"t"},
-				Usage:     "Create a new lot",
-				UsageText: "rocketpool auction create-lot",
+				Name:    "create-lot",
+				Aliases: []string{"t"},
+				Usage:   "Create a new lot",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -64,10 +61,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "bid-lot",
-				Aliases:   []string{"b"},
-				Usage:     "Bid on a lot",
-				UsageText: "rocketpool auction bid-lot [options]",
+				Name:    "bid-lot",
+				Aliases: []string{"b"},
+				Usage:   "Bid on a lot",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    bidLotFlag,
@@ -105,10 +101,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "claim-lot",
-				Aliases:   []string{"c"},
-				Usage:     "Claim RPL from one or more lots",
-				UsageText: "rocketpool auction claim-lot [options]",
+				Name:    "claim-lot",
+				Aliases: []string{"c"},
+				Usage:   "Claim RPL from one or more lots",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    claimLotsFlag,
@@ -128,10 +123,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "recover-lot",
-				Aliases:   []string{"r"},
-				Usage:     "Recover unclaimed RPL from a lot (returning it to the auction contract)",
-				UsageText: "rocketpool auction recover-lot [options]",
+				Name:    "recover-lot",
+				Aliases: []string{"r"},
+				Usage:   "Recover unclaimed RPL from a lot (returning it to the auction contract)",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    recoverLotsFlag,

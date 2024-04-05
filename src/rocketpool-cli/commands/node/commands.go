@@ -17,10 +17,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Subcommands: []*cli.Command{
 
 			{
-				Name:      "status",
-				Aliases:   []string{"s"},
-				Usage:     "Get the node's status",
-				UsageText: "rocketpool node status",
+				Name:    "status",
+				Aliases: []string{"s"},
+				Usage:   "Get the node's status",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -33,10 +32,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "register",
-				Aliases:   []string{"r"},
-				Usage:     "Register the node with Rocket Pool",
-				UsageText: "rocketpool node register [options]",
+				Name:    "register",
+				Aliases: []string{"r"},
+				Usage:   "Register the node with Rocket Pool",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    registerTimezoneFlag,
@@ -63,10 +61,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "rewards",
-				Aliases:   []string{"e"},
-				Usage:     "Get the time and your expected RPL rewards of the next checkpoint",
-				UsageText: "rocketpool node rewards",
+				Name:    "rewards",
+				Aliases: []string{"e"},
+				Usage:   "Get the time and your expected RPL rewards of the next checkpoint",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -82,7 +79,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "set-primary-withdrawal-address",
 				Aliases:   []string{"w"},
 				Usage:     "Set the node's primary withdrawal address, which will receive all ETH rewards (and RPL if the RPL withdrawal address is not set)",
-				UsageText: "rocketpool node set-primary-withdrawal-address [options] address",
+				ArgsUsage: "address",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 					&cli.BoolFlag{
@@ -103,10 +100,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "confirm-primary-withdrawal-address",
-				Aliases:   []string{"f"},
-				Usage:     "Confirm the node's pending primary withdrawal address if it has been set back to the node's address itself",
-				UsageText: "rocketpool node confirm-primary-withdrawal-address [options]",
+				Name:    "confirm-primary-withdrawal-address",
+				Aliases: []string{"f"},
+				Usage:   "Confirm the node's pending primary withdrawal address if it has been set back to the node's address itself",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -125,7 +121,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "set-rpl-withdrawal-address",
 				Aliases:   []string{"srwa"},
 				Usage:     "Set the node's RPL withdrawal address, which will receive all RPL rewards and staked RPL withdrawals",
-				UsageText: "rocketpool node set-rpl-withdrawal-address [options] address",
+				ArgsUsage: "address",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 					&cli.BoolFlag{
@@ -146,10 +142,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "confirm-rpl-withdrawal-address",
-				Aliases:   []string{"crwa"},
-				Usage:     "Confirm the node's pending RPL withdrawal address if it has been set back to the node's address itself",
-				UsageText: "rocketpool node confirm-rpl-withdrawal-address [options]",
+				Name:    "confirm-rpl-withdrawal-address",
+				Aliases: []string{"crwa"},
+				Usage:   "Confirm the node's pending RPL withdrawal address if it has been set back to the node's address itself",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -165,10 +160,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "allow-rpl-locking",
-				Aliases:   []string{"arl"},
-				Usage:     "Allow the node to lock RPL when creating governance proposals/challenges",
-				UsageText: "rocketpool node allow-rpl-locking [options]",
+				Name:    "allow-rpl-locking",
+				Aliases: []string{"arl"},
+				Usage:   "Allow the node to lock RPL when creating governance proposals/challenges",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -184,10 +178,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "deny-rpl-locking",
-				Aliases:   []string{"drl"},
-				Usage:     "Do not allow the node to lock RPL when creating governance proposals/challenges",
-				UsageText: "rocketpool node deny-rpl-locking [options]",
+				Name:    "deny-rpl-locking",
+				Aliases: []string{"drl"},
+				Usage:   "Do not allow the node to lock RPL when creating governance proposals/challenges",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -202,10 +195,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "set-timezone",
-				Aliases:   []string{"t"},
-				Usage:     "Set the node's timezone location",
-				UsageText: "rocketpool node set-timezone [options]",
+				Name:    "set-timezone",
+				Aliases: []string{"t"},
+				Usage:   "Set the node's timezone location",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    timezoneFlag,
@@ -232,10 +224,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "swap-rpl",
-				Aliases:   []string{"p"},
-				Usage:     "Swap old RPL for new RPL",
-				UsageText: "rocketpool node swap-rpl [options]",
+				Name:    "swap-rpl",
+				Aliases: []string{"p"},
+				Usage:   "Swap old RPL for new RPL",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    amountFlag,
@@ -262,10 +253,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "stake-rpl",
-				Aliases:   []string{"k"},
-				Usage:     "Stake RPL against the node",
-				UsageText: "rocketpool node stake-rpl [options]",
+				Name:    "stake-rpl",
+				Aliases: []string{"k"},
+				Usage:   "Stake RPL against the node",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    amountFlag,
@@ -306,7 +296,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "add-address-to-stake-rpl-whitelist",
 				Aliases:   []string{"asw"},
 				Usage:     "Adds an address to your node's RPL staking whitelist, so it can stake RPL on behalf of your node.",
-				UsageText: "rocketpool node add-address-to-stake-rpl-whitelist address",
+				ArgsUsage: "address",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 1); err != nil {
@@ -324,7 +314,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "remove-address-from-stake-rpl-whitelist",
 				Aliases:   []string{"rsw"},
 				Usage:     "Removes an address from your node's RPL staking whitelist, so it can no longer stake RPL on behalf of your node.",
-				UsageText: "rocketpool node remove-address-from-stake-rpl-whitelist address",
+				ArgsUsage: "address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -341,10 +331,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "claim-rewards",
-				Aliases:   []string{"c"},
-				Usage:     "Claim available RPL and ETH rewards for any checkpoint you haven't claimed yet",
-				UsageText: "rocketpool node claim-rpl [options]",
+				Name:    "claim-rewards",
+				Aliases: []string{"c"},
+				Usage:   "Claim available RPL and ETH rewards for any checkpoint you haven't claimed yet",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    claimRestakeFlag,
@@ -365,10 +354,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "withdraw-rpl",
-				Aliases:   []string{"wr"},
-				Usage:     "Withdraw RPL staked against the node",
-				UsageText: "rocketpool node withdraw-rpl [options]",
+				Name:    "withdraw-rpl",
+				Aliases: []string{"wr"},
+				Usage:   "Withdraw RPL staked against the node",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    amountFlag,
@@ -395,10 +383,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "withdraw-eth",
-				Aliases:   []string{"we"},
-				Usage:     "Withdraw ETH staked on behalf of the node",
-				UsageText: "rocketpool node withdraw-eth [options]",
+				Name:    "withdraw-eth",
+				Aliases: []string{"we"},
+				Usage:   "Withdraw ETH staked on behalf of the node",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    amountFlag,
@@ -426,10 +413,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "deposit",
-				Aliases:   []string{"d"},
-				Usage:     "Make a deposit and create a minipool",
-				UsageText: "rocketpool node deposit [options]",
+				Name:    "deposit",
+				Aliases: []string{"d"},
+				Usage:   "Make a deposit and create a minipool",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    amountFlag,
@@ -477,10 +463,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "create-vacant-minipool",
-				Aliases:   []string{"cvm"},
-				Usage:     "Create an empty minipool, which can be used to migrate an existing solo staking validator as part of the 0x00 to 0x01 withdrawal credentials upgrade",
-				UsageText: "rocketpool node create-vacant-minipool pubkey [options]",
+				Name:    "create-vacant-minipool",
+				Aliases: []string{"cvm"},
+				Usage:   "Create an empty minipool, which can be used to migrate an existing solo staking validator as part of the 0x00 to 0x01 withdrawal credentials upgrade",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    amountFlag,
@@ -544,7 +529,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "send",
 				Aliases:   []string{"n"},
 				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).",
-				UsageText: "rocketpool node send [options] amount token to",
+				ArgsUsage: "amount token to",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -571,7 +556,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "set-voting-delegate",
 				Aliases:   []string{"sv"},
 				Usage:     "Set the address you want to use when voting on Rocket Pool Snapshot governance proposals, or the address you want to delegate your voting power to.",
-				UsageText: "rocketpool node set-voting-delegate address",
+				ArgsUsage: "address",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -587,10 +572,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "clear-voting-delegate",
-				Aliases:   []string{"cv"},
-				Usage:     "Remove the address you've set for voting on Rocket Pool governance proposals.",
-				UsageText: "rocketpool node clear-voting-delegate",
+				Name:    "clear-voting-delegate",
+				Aliases: []string{"cv"},
+				Usage:   "Remove the address you've set for voting on Rocket Pool governance proposals.",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -606,10 +590,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "initialize-fee-distributor",
-				Aliases:   []string{"z"},
-				Usage:     "Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge",
-				UsageText: "rocketpool node initialize-fee-distributor",
+				Name:    "initialize-fee-distributor",
+				Aliases: []string{"z"},
+				Usage:   "Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -625,10 +608,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "distribute-fees",
-				Aliases:   []string{"b"},
-				Usage:     "Distribute the priority fee and MEV rewards from your fee distributor to your withdrawal address and the rETH contract (based on your node's average commission)",
-				UsageText: "rocketpool node distribute-fees",
+				Name:    "distribute-fees",
+				Aliases: []string{"b"},
+				Usage:   "Distribute the priority fee and MEV rewards from your fee distributor to your withdrawal address and the rETH contract (based on your node's average commission)",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -644,10 +626,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "join-smoothing-pool",
-				Aliases:   []string{"js"},
-				Usage:     "Opt your node into the Smoothing Pool",
-				UsageText: "rocketpool node join-smoothing-pool",
+				Name:    "join-smoothing-pool",
+				Aliases: []string{"js"},
+				Usage:   "Opt your node into the Smoothing Pool",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -663,10 +644,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "leave-smoothing-pool",
-				Aliases:   []string{"ls"},
-				Usage:     "Leave the Smoothing Pool",
-				UsageText: "rocketpool node leave-smoothing-pool",
+				Name:    "leave-smoothing-pool",
+				Aliases: []string{"ls"},
+				Usage:   "Leave the Smoothing Pool",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
