@@ -40,6 +40,10 @@ services:
       - ENABLE_MEV_BOOST={{.MevBoost.Enable}}
       - VALIDATORS_DIR={{.GetValidatorsFolderPath}}
       - GWW_GRAFFITI_FILE={{.GetGwwGraffitiFilePath}}
+      {{- /* Client-specific values */}}
+      {{- if eq .LocalBeaconClient.BeaconNode.String "teku"}}
+      - TEKU_SHUT_DOWN_WHEN_SLASHED={{.ValidatorClient.Teku.UseSlashingProtection}}
+      {{- end}}
     entrypoint: sh
     command: "/usr/share/rocketpool/scripts/{{.GetVcStartScript}}"
     cap_drop:
