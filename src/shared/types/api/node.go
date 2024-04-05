@@ -69,8 +69,11 @@ type NodeStatusData struct {
 	PendingMaximumRplStake            *big.Int       `json:"pendingMaximumRplStake"`
 	PendingBorrowedCollateralRatio    float64        `json:"pendingBorrowedCollateralRatio"`
 	PendingBondedCollateralRatio      float64        `json:"pendingBondedCollateralRatio"`
-	VotingDelegate                    common.Address `json:"votingDelegate"`
-	VotingDelegateFormatted           string         `json:"votingDelegateFormatted"`
+	SnapshotVotingDelegate            common.Address `json:"votingDelegate"`
+	SnapshotVotingDelegateFormatted   string         `json:"votingDelegateFormatted"`
+	IsVotingInitialized               bool           `json:"isVotingInitialized"`
+	OnchainVotingDelegate             common.Address `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted    string         `json:"onchainVotingDelegateFormatted"`
 	MinipoolLimit                     uint64         `json:"minipoolLimit"`
 	EthMatched                        *big.Int       `json:"ethMatched"`
 	EthMatchedLimit                   *big.Int       `json:"ethMatchedLimit"`

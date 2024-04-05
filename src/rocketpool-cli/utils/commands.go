@@ -188,7 +188,7 @@ func createSettingCommandStub[ValueType SettingType, SettingNameType any](
 	return &cli.Command{
 		Name:      name,
 		Aliases:   []string{alias},
-		Usage:     fmt.Sprintf("Propose updating the %s setting; %s", settingName, usage),
+		Usage:     fmt.Sprintf("Propose updating the %v setting; %s", settingName, usage),
 		ArgsUsage: "value",
 		Flags:     flags,
 		Action: func(c *cli.Context) error {

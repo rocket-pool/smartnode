@@ -96,7 +96,6 @@ func getStatus(c *cli.Context) error {
 
 	// Registered node details
 	if status.Data.Registered {
-
 		// Node status
 		fmt.Printf("The node is registered with Rocket Pool with a timezone location of %s.\n", status.Data.TimezoneLocation)
 		if status.Data.Trusted {
@@ -145,13 +144,13 @@ func getStatus(c *cli.Context) error {
 			fmt.Println()
 		}
 
-		// Voting status
+		// Snapshot voting status
 		fmt.Printf("%s=== DAO Voting ===%s\n", terminal.ColorGreen, terminal.ColorReset)
 		blankAddress := common.Address{}
-		if status.Data.VotingDelegate == blankAddress {
-			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool governance proposals.")
+		if status.Data.SnapshotVotingDelegate == blankAddress {
+			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool Snapshot governance proposals.")
 		} else {
-			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool governance proposals.\n", terminal.ColorBlue, status.Data.VotingDelegateFormatted, terminal.ColorReset)
+			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", terminal.ColorBlue, status.Data.SnapshotVotingDelegateFormatted, terminal.ColorReset)
 		}
 
 		if status.Data.SnapshotResponse.Error != "" {
@@ -165,12 +164,27 @@ func getStatus(c *cli.Context) error {
 				}
 			}
 			if len(status.Data.SnapshotResponse.ActiveSnapshotProposals) == 0 {
-				fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
+				fmt.Print("Rocket Pool has no Snapshot governance proposals being voted on.\n")
 			} else {
-				fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.Data.SnapshotResponse.ActiveSnapshotProposals), voteCount)
+				fmt.Printf("Rocket Pool has %d Snapshot governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.Data.SnapshotResponse.ActiveSnapshotProposals), voteCount)
 			}
 			fmt.Println("")
 		}
+
+		// Onchain voting status
+		fmt.Printf("%s=== Onchain Voting ===%s\n", terminal.ColorGreen, terminal.ColorReset)
+		if status.Data.IsVotingInitialized {
+			fmt.Println("The node has been initialized for onchain voting.")
+		} else {
+			fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
+		}
+
+		if status.Data.OnchainVotingDelegate == status.Data.AccountAddress {
+			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals.")
+		} else {
+			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", terminal.ColorBlue, status.Data.OnchainVotingDelegateFormatted, terminal.ColorReset)
+		}
+		fmt.Println("")
 
 		// Primary withdrawal address & balances
 		fmt.Printf("%s=== Primary Withdrawal Address ===%s\n", terminal.ColorGreen, terminal.ColorReset)

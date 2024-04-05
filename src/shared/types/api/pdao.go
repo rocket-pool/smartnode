@@ -74,13 +74,13 @@ type ProtocolDaoExecuteProposalData struct {
 
 type ProtocolDaoSettingsData struct {
 	Auction struct {
-		IsCreateLotEnabled    bool     `json:"isCreateLotEnabled"`
-		IsBidOnLotEnabled     bool     `json:"isBidOnLotEnabled"`
-		LotMinimumEthValue    *big.Int `json:"lotMinimumEthValue"`
-		LotMaximumEthValue    *big.Int `json:"lotMaximumEthValue"`
-		LotDuration           uint64   `json:"lotDuration"`
-		LotStartingPriceRatio *big.Int `json:"lotStartingPriceRatio"`
-		LotReservePriceRatio  *big.Int `json:"lotReservePriceRatio"`
+		IsCreateLotEnabled    bool          `json:"isCreateLotEnabled"`
+		IsBidOnLotEnabled     bool          `json:"isBidOnLotEnabled"`
+		LotMinimumEthValue    *big.Int      `json:"lotMinimumEthValue"`
+		LotMaximumEthValue    *big.Int      `json:"lotMaximumEthValue"`
+		LotDuration           time.Duration `json:"lotDuration"`
+		LotStartingPriceRatio *big.Int      `json:"lotStartingPriceRatio"`
+		LotReservePriceRatio  *big.Int      `json:"lotReservePriceRatio"`
 	} `json:"auction"`
 
 	Deposit struct {

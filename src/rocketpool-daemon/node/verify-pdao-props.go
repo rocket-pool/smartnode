@@ -110,13 +110,9 @@ func (t *VerifyPdaoProps) Run(state *state.NetworkState) error {
 	if err != nil {
 		return fmt.Errorf("error checking for challenges or defeats: %w", err)
 	}
-	if len(challenges) == 0 {
-		return nil
-	}
-
-	submissions := []*eth.TransactionSubmission{}
 
 	// Create challenges
+	submissions := []*eth.TransactionSubmission{}
 	for _, challenge := range challenges {
 		submission, err := t.createSubmitChallengeTx(challenge)
 		if err != nil {
