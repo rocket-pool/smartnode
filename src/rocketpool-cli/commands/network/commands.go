@@ -79,15 +79,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases: []string{"g"},
 				Usage:   "Generate and save the rewards tree file for the provided interval.\nNote that this is an asynchronous process, so it will return before the file is generated.\nYou will need to use `rocketpool service logs api` to follow its progress.",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    generateTreeEcFlag,
-						Aliases: []string{"e"},
-						Usage:   "The URL of a separate execution client you want to use for generation (ignore this flag to use your primary exeuction client). Use this if your primary client is not an archive node, and you need to provide a separate archive node URL.",
-					},
-					&cli.Uint64Flag{
-						Name:  generateTreeIndexFlag,
-						Usage: "The index of the rewards interval you want to generate the tree for",
-					},
+					generateTreeEcFlag,
+					generateTreeIndexFlag,
 					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
@@ -113,35 +106,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return getActiveDAOProposals(c)
-				},
-			},
-
-			{
-				Name:    "initialize-voting",
-				Aliases: []string{"iv"},
-				Usage:   "Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)",
-				Action: func(c *cli.Context) error {
-					// Run
-					return initializeVoting(c)
-				},
-			},
-
-			{
-				Name:      "set-voting-delegate",
-				Aliases:   []string{"svd"},
-				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",
-				ArgsUsage: "address",
-				Flags: []cli.Flag{
-					cliutils.YesFlag,
-				},
-				Action: func(c *cli.Context) error {
-					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					delegate := c.Args().Get(0)
-					// Run
-					return setVotingDelegate(c, delegate)
 				},
 			},
 		},

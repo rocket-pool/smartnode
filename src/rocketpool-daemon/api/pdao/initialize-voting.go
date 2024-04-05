@@ -1,4 +1,4 @@
-package network
+package pdao
 
 import (
 	"fmt"
@@ -21,19 +21,19 @@ import (
 // === Factory ===
 // ===============
 
-type networkInitializeVotingContextFactory struct {
-	handler *NetworkHandler
+type protocolDaoInitializeVotingContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-func (f *networkInitializeVotingContextFactory) Create(args url.Values) (*networkInitializeVotingContext, error) {
-	c := &networkInitializeVotingContext{
+func (f *protocolDaoInitializeVotingContextFactory) Create(args url.Values) (*protocolDaoInitializeVotingContext, error) {
+	c := &protocolDaoInitializeVotingContext{
 		handler: f.handler,
 	}
 	return c, nil
 }
 
-func (f *networkInitializeVotingContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*networkInitializeVotingContext, api.NetworkInitializeVotingData](
+func (f *protocolDaoInitializeVotingContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoInitializeVotingContext, api.ProtocolDaoInitializeVotingData](
 		router, "initialize-voting", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
@@ -42,14 +42,14 @@ func (f *networkInitializeVotingContextFactory) RegisterRoute(router *mux.Router
 // === Context ===
 // ===============
 
-type networkInitializeVotingContext struct {
-	handler *NetworkHandler
+type protocolDaoInitializeVotingContext struct {
+	handler *ProtocolDaoHandler
 	rp      *rocketpool.RocketPool
 
 	node *node.Node
 }
 
-func (c *networkInitializeVotingContext) Initialize() (types.ResponseStatus, error) {
+func (c *protocolDaoInitializeVotingContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
@@ -68,13 +68,13 @@ func (c *networkInitializeVotingContext) Initialize() (types.ResponseStatus, err
 	return types.ResponseStatus_Success, nil
 }
 
-func (c *networkInitializeVotingContext) GetState(mc *batch.MultiCaller) {
+func (c *protocolDaoInitializeVotingContext) GetState(mc *batch.MultiCaller) {
 	eth.AddQueryablesToMulticall(mc,
 		c.node.IsVotingInitialized,
 	)
 }
 
-func (c *networkInitializeVotingContext) PrepareData(data *api.NetworkInitializeVotingData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+func (c *protocolDaoInitializeVotingContext) PrepareData(data *api.ProtocolDaoInitializeVotingData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.VotingInitialized = c.node.IsVotingInitialized.Get()
 	data.CanInitialize = !(data.VotingInitialized)
 

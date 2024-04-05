@@ -194,3 +194,21 @@ func (r *PDaoRequester) ProposeSetting(contractName rocketpool.ContractName, set
 	}
 	return client.SendGetRequest[api.ProtocolDaoProposeSettingData](r, "setting/propose", "ProposeSetting", args)
 }
+
+// Initialize voting so the node can vote on Protocol DAO proposals
+func (r *PDaoRequester) InitializeVoting() (*types.ApiResponse[api.ProtocolDaoInitializeVotingData], error) {
+	return client.SendGetRequest[api.ProtocolDaoInitializeVotingData](r, "initialize-voting", "InitializeVoting", nil)
+}
+
+// Set the delegate for voting on Protocol DAO proposals
+func (r *PDaoRequester) SetVotingDelegate(delegate common.Address) (*types.ApiResponse[types.TxInfoData], error) {
+	args := map[string]string{
+		"delegate": delegate.Hex(),
+	}
+	return client.SendGetRequest[types.TxInfoData](r, "voting-delegate/set", "SetVotingDelegate", args)
+}
+
+// Get the address that's assigned as the delegate for voting on Protocol DAO proposals
+func (r *PDaoRequester) GetCurrentVotingDelegate() (*types.ApiResponse[api.ProtocolDaoCurrentVotingDelegateData], error) {
+	return client.SendGetRequest[api.ProtocolDaoCurrentVotingDelegateData](r, "voting-delegate", "GetCurrentVotingDelegate", nil)
+}

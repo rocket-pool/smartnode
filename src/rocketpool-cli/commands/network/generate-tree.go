@@ -11,9 +11,18 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-const (
-	generateTreeEcFlag    string = "execution-client-url"
-	generateTreeIndexFlag string = "index"
+var (
+	generateTreeEcFlag *cli.StringFlag = &cli.StringFlag{
+		Name:    "execution-client-url",
+		Aliases: []string{"e"},
+		Usage:   "The URL of a separate execution client you want to use for generation (ignore this flag to use your primary exeuction client). Use this if your primary client is not an archive node, and you need to provide a separate archive node URL.",
+	}
+
+	generateTreeIndexFlag *cli.Uint64Flag = &cli.Uint64Flag{
+		Name:    "index",
+		Aliases: []string{"i"},
+		Usage:   "The index of the rewards interval you want to generate the tree for",
+	}
 )
 
 func generateRewardsTree(c *cli.Context) error {

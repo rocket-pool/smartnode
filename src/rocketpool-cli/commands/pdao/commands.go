@@ -483,6 +483,35 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 				},
 			},
+
+			{
+				Name:    "initialize-voting",
+				Aliases: []string{"iv"},
+				Usage:   "Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)",
+				Action: func(c *cli.Context) error {
+					// Run
+					return initializeVoting(c)
+				},
+			},
+
+			{
+				Name:      "set-voting-delegate",
+				Aliases:   []string{"svd"},
+				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",
+				ArgsUsage: "address",
+				Flags: []cli.Flag{
+					cliutils.YesFlag,
+				},
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := utils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					delegate := c.Args().Get(0)
+					// Run
+					return setVotingDelegate(c, delegate)
+				},
+			},
 		},
 	})
 }

@@ -1,4 +1,4 @@
-package network
+package pdao
 
 import (
 	"fmt"
@@ -16,7 +16,7 @@ func initializeVoting(c *cli.Context) error {
 	}
 
 	// Get the TX
-	response, err := rp.Api.Network.InitializeVoting()
+	response, err := rp.Api.PDao.InitializeVoting()
 	if err != nil {
 		return err
 	}

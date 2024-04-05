@@ -279,3 +279,14 @@ type ProtocolDaoProposeRecurringSpendUpdateData struct {
 	ProposalBond    *big.Int             `json:"proposalBond"`
 	TxInfo          *eth.TransactionInfo `json:"txInfo"`
 }
+
+type ProtocolDaoInitializeVotingData struct {
+	CanInitialize     bool                 `json:"canInitialize"`
+	VotingInitialized bool                 `json:"votingInitialized"`
+	TxInfo            *eth.TransactionInfo `json:"txInfo"`
+}
+
+type ProtocolDaoCurrentVotingDelegateData struct {
+	AccountAddress common.Address `json:"accountAddress"`
+	VotingDelegate common.Address `json:"votingDelegate"`
+}

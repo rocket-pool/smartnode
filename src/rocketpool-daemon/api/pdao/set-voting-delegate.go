@@ -1,4 +1,4 @@
-package network
+package pdao
 
 import (
 	"errors"
@@ -19,12 +19,12 @@ import (
 // === Factory ===
 // ===============
 
-type networkSetVotingDelegateContextFactory struct {
-	handler *NetworkHandler
+type protocolDaoSetVotingDelegateContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-func (f *networkSetVotingDelegateContextFactory) Create(args url.Values) (*nodeSetSnapshotDelegateContext, error) {
-	c := &nodeSetSnapshotDelegateContext{
+func (f *protocolDaoSetVotingDelegateContextFactory) Create(args url.Values) (*protocolDaoSetSnapshotDelegateContext, error) {
+	c := &protocolDaoSetSnapshotDelegateContext{
 		handler: f.handler,
 	}
 	inputErrs := []error{
@@ -33,8 +33,8 @@ func (f *networkSetVotingDelegateContextFactory) Create(args url.Values) (*nodeS
 	return c, errors.Join(inputErrs...)
 }
 
-func (f *networkSetVotingDelegateContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*nodeSetSnapshotDelegateContext, types.TxInfoData](
+func (f *protocolDaoSetVotingDelegateContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessGet[*protocolDaoSetSnapshotDelegateContext, types.TxInfoData](
 		router, "voting-delegate/set", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
@@ -43,13 +43,13 @@ func (f *networkSetVotingDelegateContextFactory) RegisterRoute(router *mux.Route
 // === Context ===
 // ===============
 
-type nodeSetSnapshotDelegateContext struct {
-	handler *NetworkHandler
+type protocolDaoSetSnapshotDelegateContext struct {
+	handler *ProtocolDaoHandler
 
 	delegate common.Address
 }
 
-func (c *nodeSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+func (c *protocolDaoSetSnapshotDelegateContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
