@@ -66,8 +66,6 @@ The following commands are available via the Smartnode client:
   Note that this is an asynchronous process, so it will return before the file is generated.
   You will need to use `rocketpool service logs api` to follow its progress.
   - `rocketpool network dao-proposals, d` - Get the currently active DAO proposals
-  - `rocketpool network initialize-voting, iv` - Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)
-  - `rocketpool network set-voting-delegate, svd` - Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.
 - **node**, n - Manage the node
   - `rocketpool node status, s` - Get the node's status
   - `rocketpool node sync, y` - Get the sync progress of the eth1 and eth2 clients
@@ -114,6 +112,8 @@ The following commands are available via the Smartnode client:
   - `rocketpool pdao claim-bonds, cb` - Unlock any bonded RPL you have for a proposal or set of challenges, and claim any bond rewards for defending or defeating the proposal
   - `rocketpool pdao propose, p` - Make a Protocol DAO proposal
   - `rocketpool pdao proposals, o` - Manage Protocol DAO proposals
+  - `rocketpool pdao initialize-voting, iv` - Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)
+  - `rocketpool pdao set-voting-delegate, svd` - Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.
 - **queue**, q - Manage the Rocket Pool deposit queue
   - `rocketpool queue status, s` - Get the deposit pool and minipool queue status
   - `rocketpool queue process, p` - Process the deposit pool

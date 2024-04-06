@@ -922,6 +922,103 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "can-initialize-voting",
+				Aliases:   []string{"civ"},
+				Usage:     "Checks if voting can be initialized.",
+				UsageText: "rocketpool api network can-initialize-voting",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNodeInitializeVoting(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "initialize-voting",
+				Aliases:   []string{"iv"},
+				Usage:     "Initialize voting.",
+				UsageText: "rocketpool api pdao initialize-voting",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeInitializedVoting(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "estimate-set-voting-delegate-gas",
+				Usage:     "Estimate the gas required to set an on-chain voting delegate",
+				UsageText: "rocketpool api network estimate-set-voting-delegate-gas address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegate, err := cliutils.ValidateAddress("delegate", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(estimateSetVotingDelegateGas(c, delegate))
+					return nil
+
+				},
+			},
+			{
+				Name:      "set-voting-delegate",
+				Usage:     "Set an on-chain voting delegate for the node",
+				UsageText: "rocketpool api network set-voting-delegate address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegate, err := cliutils.ValidateAddress("delegate", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setVotingDelegate(c, delegate))
+					return nil
+
+				},
+			},
+			{
+				Name:      "get-current-voting-delegate",
+				Usage:     "Get the current on-chain voting delegate for the node",
+				UsageText: "rocketpool api network get-current-voting-delegate",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getCurrentVotingDelegate(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }
