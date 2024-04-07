@@ -302,12 +302,18 @@ func (c *Client) PrintServiceStatus(composeFiles []string) error {
 func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNames ...string) error {
 	sanitizedStrings := make([]string, len(serviceNames))
 	for i, serviceName := range serviceNames {
-		sanitizedStrings[i] = fmt.Sprintf("%s", shellescape.Quote(serviceName))
+		sanitizedStrings[i] = shellescape.Quote(serviceName)
 	}
 	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
 	if err != nil {
 		return err
 	}
+	return c.printOutput(cmd)
+}
+
+// Print the daemon logs
+func (c *Client) PrintDaemonLogs(composeFiles []string, tail string, logPaths ...string) error {
+	cmd := fmt.Sprintf("tail -f %s %s", tail, strings.Join(logPaths, " "))
 	return c.printOutput(cmd)
 }
 

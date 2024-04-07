@@ -277,6 +277,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "daemon-logs",
+				Aliases:   []string{"dl"},
+				Usage:     "View one or more of the logs from the daemon",
+				ArgsUsage: "[api | tasks | watchtower]",
+				Flags: []cli.Flag{
+					tailFlag,
+				},
+				Action: func(c *cli.Context) error {
+					// Run command
+					return daemonLogs(c, c.Args().Slice()...)
+				},
+			},
+
+			{
 				Name:    "stats",
 				Aliases: []string{"a"},
 				Usage:   "View the Rocket Pool service stats",
