@@ -145,6 +145,8 @@ ______           _        _    ______           _
 		if cfg.Smartnode.GetRplFaucetAddress() != "" {
 			faucet.RegisterCommands(app, "faucet", []string{"f"})
 		}
+
+		service.RegisterCommands(app, "service", []string{"s"}, cfg)
 	}
 
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
@@ -152,7 +154,6 @@ ______           _        _    ______           _
 	node.RegisterCommands(app, "node", []string{"n"})
 	odao.RegisterCommands(app, "odao", []string{"o"})
 	queue.RegisterCommands(app, "queue", []string{"q"})
-	service.RegisterCommands(app, "service", []string{"s"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
 	app.Before = func(c *cli.Context) error {
