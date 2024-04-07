@@ -55,7 +55,13 @@ type TaskManager struct {
 	initialized       bool
 }
 
-func NewTaskManager(sp *services.ServiceProvider, stateMgr *state.NetworkStateManager) *TaskManager {
+func NewTaskManager(
+	sp *services.ServiceProvider,
+	stateMgr *state.NetworkStateManager,
+	scrubCollector *collectors.ScrubCollector,
+	bondReductionCollector *collectors.BondReductionCollector,
+	soloMigrationCollector *collectors.SoloMigrationCollector,
+) *TaskManager {
 	logger := sp.GetWatchtowerLogger()
 	ctx := logger.CreateContextWithLogger(sp.GetBaseContext())
 	cfg := sp.GetConfig()
@@ -76,11 +82,6 @@ func NewTaskManager(sp *services.ServiceProvider, stateMgr *state.NetworkStateMa
 	} else {
 		logger.Info("Rolling records are disabled.")
 	}
-
-	// Initialize metrics
-	scrubCollector := collectors.NewScrubCollector()
-	bondReductionCollector := collectors.NewBondReductionCollector()
-	soloMigrationCollector := collectors.NewSoloMigrationCollector()
 
 	// Initialize tasks
 	generateRewardsTree := NewGenerateRewardsTree(ctx, sp, logger)

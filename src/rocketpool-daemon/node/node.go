@@ -28,6 +28,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower"
+	wc "github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/config"
 )
 
@@ -73,6 +74,11 @@ type TaskLoop struct {
 	defendPdaoProps         *DefendPdaoProps
 	verifyPdaoProps         *VerifyPdaoProps
 
+	// Watchtower metrics
+	scrubCollector         *wc.ScrubCollector
+	bondReductionCollector *wc.BondReductionCollector
+	soloMigrationCollector *wc.SoloMigrationCollector
+
 	// Internal
 	wasExecutionClientSynced    bool
 	wasBeaconClientSynced       bool
@@ -101,6 +107,9 @@ func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
 		downloadRewardsTrees:        NewDownloadRewardsTrees(sp, logger),
 		reduceBonds:                 NewReduceBonds(sp, logger),
 		defendPdaoProps:             NewDefendPdaoProps(ctx, sp, logger),
+		scrubCollector:              wc.NewScrubCollector(),
+		bondReductionCollector:      wc.NewBondReductionCollector(),
+		soloMigrationCollector:      wc.NewSoloMigrationCollector(),
 
 		// We assume clients are synced on startup so that we don't send unnecessary alerts
 		wasExecutionClientSynced: true,
@@ -156,7 +165,7 @@ func (t *TaskLoop) Run() error {
 	}()
 
 	// Run metrics loop
-	t.metricsServer = runMetricsServer(t.ctx, t.sp, t.logger, t.stateLocker, t.wg, t.watchtowerTaskMgr)
+	t.metricsServer = runMetricsServer(t.ctx, t.sp, t.logger, t.stateLocker, t.wg, t.scrubCollector, t.bondReductionCollector, t.soloMigrationCollector)
 
 	return nil
 }
@@ -240,7 +249,7 @@ func (t *TaskLoop) waitUntilReady() waitUntilReadyResult {
 
 	// Create the watchtower task manager
 	if t.watchtowerTaskMgr == nil {
-		t.watchtowerTaskMgr = watchtower.NewTaskManager(t.sp, t.stateMgr)
+		t.watchtowerTaskMgr = watchtower.NewTaskManager(t.sp, t.stateMgr, t.scrubCollector, t.bondReductionCollector, t.soloMigrationCollector)
 		err = t.watchtowerTaskMgr.Initialize(t.stateMgr)
 		if err != nil {
 			t.logger.Error("Error creating watchtower task manager", log.Err(err))

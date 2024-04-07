@@ -131,6 +131,9 @@ func (t *VerifyPdaoProps) Run(state *state.NetworkState) error {
 	}
 
 	// Submit transactions
+	if len(submissions) == 0 {
+		return nil
+	}
 	err = t.submitTxs(submissions)
 	if err != nil {
 		return fmt.Errorf("error submitting transactions: %w", err)

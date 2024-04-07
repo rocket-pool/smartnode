@@ -15,11 +15,12 @@ import (
 	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower"
+	wc "github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
-func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, stateLocker *collectors.StateLocker, wg *sync.WaitGroup, watchtower *watchtower.TaskManager) *http.Server {
+func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, stateLocker *collectors.StateLocker, wg *sync.WaitGroup,
+	scrubCollector *wc.ScrubCollector, bondReductionCollector *wc.BondReductionCollector, soloMigrationCollector *wc.SoloMigrationCollector) *http.Server {
 	// Get services
 	cfg := sp.GetConfig()
 
@@ -58,9 +59,9 @@ func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger 
 	registry.MustRegister(snapshotCollector)
 
 	// Watchtower collectors
-	registry.MustRegister(watchtower.ScrubCollector)
-	registry.MustRegister(watchtower.BondReductionCollector)
-	registry.MustRegister(watchtower.SoloMigrationCollector)
+	registry.MustRegister(scrubCollector)
+	registry.MustRegister(bondReductionCollector)
+	registry.MustRegister(soloMigrationCollector)
 
 	// Start the HTTP server
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
