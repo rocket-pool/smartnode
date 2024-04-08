@@ -162,8 +162,6 @@ func installUpdateTracker(c *cli.Context) error {
 	}
 
 	// Print success message & return
-	colorReset := "\033[0m"
-	colorYellow := "\033[33m"
 	fmt.Println("")
 	fmt.Println("The Rocket Pool update tracker service was successfully installed!")
 	fmt.Println("")
@@ -991,9 +989,12 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	if selectedEc == cfgtypes.ExecutionClient_Geth || selectedEc == cfgtypes.ExecutionClient_Besu {
+		if selectedEc == cfgtypes.ExecutionClient_Geth {
+			fmt.Printf("%sGeth has a new feature that renders pruning obsolete. Consider enabling PBSS in the Execution Client settings in `rocketpool service config` and resyncing with `rocketpool service resync-eth1` instead of pruning.%s", colorYellow, colorReset)
+		}
 		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if cfg.UseFallbackClients.Value == false {
-			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until Geth is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until pruning is done.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 		} else {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}
