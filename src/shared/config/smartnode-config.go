@@ -516,8 +516,9 @@ func (cfg *SmartNodeConfig) Serialize() map[string]any {
 
 // Deserializes a settings file into this config
 func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
+	var err error
 	// Upgrade the config to the latest version
-	err := migration.UpdateConfig(masterMap)
+	masterMap, err = migration.UpdateConfig(masterMap)
 	if err != nil {
 		return fmt.Errorf("error upgrading configuration to v%s: %w", shared.RocketPoolVersion, err)
 	}
