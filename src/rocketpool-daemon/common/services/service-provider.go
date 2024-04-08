@@ -154,6 +154,11 @@ func (p *ServiceProvider) GetWatchtowerLogger() *log.Logger {
 	return p.watchtowerLog
 }
 
+func (p *ServiceProvider) Close() {
+	p.watchtowerLog.Close()
+	p.ServiceProvider.Close()
+}
+
 // =============
 // === Utils ===
 // =============

@@ -15,10 +15,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Usage:   "Manage Rocket Pool network parameters",
 		Subcommands: []*cli.Command{
 			{
-				Name:      "stats",
-				Aliases:   []string{"s"},
-				Usage:     "Get stats about the Rocket Pool network and its tokens",
-				UsageText: "rocketpool network stats",
+				Name:    "stats",
+				Aliases: []string{"s"},
+				Usage:   "Get stats about the Rocket Pool network and its tokens",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -31,10 +30,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "timezone-map",
-				Aliases:   []string{"t"},
-				Usage:     "Shows a table of the timezones that node operators belong to",
-				UsageText: "rocketpool network timezone-map",
+				Name:    "timezone-map",
+				Aliases: []string{"t"},
+				Usage:   "Shows a table of the timezones that node operators belong to",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -47,10 +45,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "node-fee",
-				Aliases:   []string{"f"},
-				Usage:     "Get the current network node commission rate",
-				UsageText: "rocketpool network node-fee",
+				Name:    "node-fee",
+				Aliases: []string{"f"},
+				Usage:   "Get the current network node commission rate",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -63,10 +60,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "rpl-price",
-				Aliases:   []string{"p"},
-				Usage:     "Get the current network RPL price in ETH",
-				UsageText: "rocketpool network rpl-price",
+				Name:    "rpl-price",
+				Aliases: []string{"p"},
+				Usage:   "Get the current network RPL price in ETH",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -79,20 +75,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "generate-rewards-tree",
-				Aliases:   []string{"g"},
-				Usage:     "Generate and save the rewards tree file for the provided interval.\nNote that this is an asynchronous process, so it will return before the file is generated.\nYou will need to use `rocketpool service logs api` to follow its progress.",
-				UsageText: "rocketpool network generate-rewards-tree",
+				Name:    "generate-rewards-tree",
+				Aliases: []string{"g"},
+				Usage:   "Generate and save the rewards tree file for the provided interval.\nNote that this is an asynchronous process, so it will return before the file is generated.\nYou will need to use `rocketpool service logs api` to follow its progress.",
 				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    generateTreeEcFlag,
-						Aliases: []string{"e"},
-						Usage:   "The URL of a separate execution client you want to use for generation (ignore this flag to use your primary exeuction client). Use this if your primary client is not an archive node, and you need to provide a separate archive node URL.",
-					},
-					&cli.Uint64Flag{
-						Name:  generateTreeIndexFlag,
-						Usage: "The index of the rewards interval you want to generate the tree for",
-					},
+					generateTreeEcFlag,
+					generateTreeIndexFlag,
 					cliutils.YesFlag,
 				},
 				Action: func(c *cli.Context) error {
@@ -107,10 +95,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "dao-proposals",
-				Aliases:   []string{"d"},
-				Usage:     "Get the currently active DAO proposals",
-				UsageText: "rocketpool network dao-proposals",
+				Name:    "dao-proposals",
+				Aliases: []string{"d"},
+				Usage:   "Get the currently active DAO proposals",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -119,36 +106,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return getActiveDAOProposals(c)
-				},
-			},
-
-			{
-				Name:      "initialize-voting",
-				Aliases:   []string{"iv"},
-				Usage:     "Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)",
-				UsageText: "rocketpool network initialize-voting",
-				Action: func(c *cli.Context) error {
-					// Run
-					return initializeVoting(c)
-				},
-			},
-
-			{
-				Name:      "set-voting-delegate",
-				Aliases:   []string{"svd"},
-				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",
-				UsageText: "rocketpool network set-voting-delegate address",
-				Flags: []cli.Flag{
-					cliutils.YesFlag,
-				},
-				Action: func(c *cli.Context) error {
-					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					delegate := c.Args().Get(0)
-					// Run
-					return setVotingDelegate(c, delegate)
 				},
 			},
 		},

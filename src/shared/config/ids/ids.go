@@ -43,8 +43,7 @@ const (
 	AddonsID            string = "addons"
 
 	// Metrics
-	MetricsWatchtowerPortID string = "watchtowerMetricsPort"
-	MetricsEnableOdaoID     string = "enableODaoMetrics"
+	MetricsEnableOdaoID string = "enableODaoMetrics"
 
 	// MEV-Boost
 	MevBoostEnableID               string = "enableMevBoost"

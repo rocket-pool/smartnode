@@ -173,6 +173,8 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 		c.node.DonatedEthBalance,
 		c.node.IsRplLockingAllowed,
 		c.node.RplLocked,
+		c.node.IsVotingInitialized,
+		c.node.CurrentVotingDelegate,
 
 		// Other
 		c.odaoMember.Exists,
@@ -234,6 +236,9 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	data.IsFeeDistributorInitialized = c.node.IsFeeDistributorInitialized.Get()
 	data.IsRplLockingAllowed = c.node.IsRplLockingAllowed.Get()
 	data.RplLocked = c.node.RplLocked.Get()
+	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
+	data.OnchainVotingDelegate = c.node.CurrentVotingDelegate.Get()
+	data.OnchainVotingDelegateFormatted = c.getFormattedAddress(data.OnchainVotingDelegate)
 
 	// Minipool info
 	mps, err := c.getMinipoolInfo(data)
@@ -259,9 +264,9 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	// Snapshot
 	if c.snapshot != nil {
 		emptyAddress := common.Address{}
-		data.VotingDelegate = c.delegate
-		if data.VotingDelegate != emptyAddress {
-			data.VotingDelegateFormatted = c.getFormattedAddress(data.VotingDelegate)
+		data.SnapshotVotingDelegate = c.delegate
+		if data.SnapshotVotingDelegate != emptyAddress {
+			data.SnapshotVotingDelegateFormatted = c.getFormattedAddress(data.SnapshotVotingDelegate)
 		}
 		props, err := voting.GetSnapshotProposals(c.cfg, c.node.Address, c.delegate, true)
 		if err != nil {

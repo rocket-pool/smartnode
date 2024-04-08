@@ -233,10 +233,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 
 					{
-						Name:      "cancel",
-						Aliases:   []string{"c"},
-						Usage:     "Cancel a proposal made by the node",
-						UsageText: "rocketpool odao proposals cancel [options]",
+						Name:    "cancel",
+						Aliases: []string{"c"},
+						Usage:   "Cancel a proposal made by the node",
 						Flags: []cli.Flag{
 							cliutils.InstantiateFlag(proposalFlag, "The ID of the proposal to cancel"),
 						},
@@ -299,10 +298,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "join",
-				Aliases:   []string{"j"},
-				Usage:     "Join the oracle DAO (requires an executed invite proposal)",
-				UsageText: "rocketpool odao join [options]",
+				Name:    "join",
+				Aliases: []string{"j"},
+				Usage:   "Join the oracle DAO (requires an executed invite proposal)",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 					joinSwapFlag,
@@ -319,10 +317,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "leave",
-				Aliases:   []string{"l"},
-				Usage:     "Leave the oracle DAO (requires an executed leave proposal)",
-				UsageText: "rocketpool odao leave [options]",
+				Name:    "leave",
+				Aliases: []string{"l"},
+				Usage:   "Leave the oracle DAO (requires an executed leave proposal)",
 				Flags: []cli.Flag{
 					leaveRefundAddressFlag,
 					cliutils.YesFlag,

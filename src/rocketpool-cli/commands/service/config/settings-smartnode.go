@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/gdamore/tcell/v2"
 	"github.com/rocket-pool/smartnode/shared/config/ids"
 )
 
@@ -14,7 +13,6 @@ type SmartnodeConfigPage struct {
 
 // Creates a new page for the Smartnode settings
 func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
-
 	configPage := &SmartnodeConfigPage{
 		home: home,
 	}
@@ -29,7 +27,6 @@ func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 	)
 
 	return configPage
-
 }
 
 // Get the underlying page
@@ -45,25 +42,7 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	layout := newStandardLayout()
 	configPage.layout = layout
 	layout.createForm(&masterConfig.Network, "Smart Node and TX Fee Settings")
-
-	// Return to the home page after pressing Escape
-	layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		if event.Key() == tcell.KeyEsc {
-			// Close all dropdowns and break if one was open
-			for _, param := range configPage.layout.parameters {
-				dropDown, ok := param.item.(*DropDown)
-				if ok && dropDown.open {
-					dropDown.CloseList(configPage.home.md.app)
-					return nil
-				}
-			}
-
-			// Return to the home page
-			configPage.home.md.setPage(configPage.home.homePage)
-			return nil
-		}
-		return event
-	})
+	layout.setupEscapeReturnHomeHandler(configPage.home.md, configPage.home.homePage)
 
 	// Set up the form items
 	formItems := createParameterizedFormItems(masterConfig.GetParameters(), layout.descriptionBox)

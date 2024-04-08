@@ -37,12 +37,6 @@ scrape_configs:
     static_configs:
       - targets: ['{{.DaemonContainerName}}:{{or .Metrics.DaemonMetricsPort.Value "9102"}}']
 
-  - job_name: 'watchtower'
-    scrape_interval: 5m
-    scrape_timeout: 5m
-    static_configs:
-      - targets: ['{{.WatchtowerContainerName}}:{{or .Metrics.WatchtowerMetricsPort.Value "9104"}}']
-
   - job_name: 'custom_jobs' # Mandatory field, but will be ignored.
     file_sd_configs:
       - files:

@@ -178,15 +178,15 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Print credit balance info
-	fmt.Printf("You currently have %.2f ETH in your credit balance plus.\n", eth.WeiToEth(response.Data.CreditBalance))
+	fmt.Printf("You currently have %.2f ETH in your credit balance plus ETH staked on your behalf.\n", eth.WeiToEth(response.Data.CreditBalance))
 	if response.Data.CreditBalance.Cmp(big.NewInt(0)) > 0 {
 		if response.Data.CanUseCredit {
 			// Get how much credit to use
 			remainingAmount := big.NewInt(0).Sub(amountWei, response.Data.CreditBalance)
 			if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("This deposit will use all %.6f ETH from your credit balance and %.6f ETH from your node.\n\n", eth.WeiToEth(response.Data.CreditBalance), eth.WeiToEth(remainingAmount))
+				fmt.Printf("This deposit will use all %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node.\n\n", eth.WeiToEth(response.Data.CreditBalance), eth.WeiToEth(remainingAmount))
 			} else {
-				fmt.Printf("This deposit will use %.6f ETH from your credit balance and will not require any ETH from your node.\n\n", amount)
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node.\n\n", amount)
 			}
 		} else {
 			fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new minipool; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue creating this minipool now, you will have to pay for the full bond amount.\n\n", terminal.ColorYellow, eth.WeiToEth(response.Data.DepositBalance), terminal.ColorReset)

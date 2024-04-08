@@ -1,4 +1,4 @@
-package network
+package pdao
 
 import (
 	"fmt"
@@ -38,7 +38,7 @@ func setVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	}
 
 	// Get the TX
-	response, err := rp.Api.Network.SetVotingDelegate(address)
+	response, err := rp.Api.PDao.SetVotingDelegate(address)
 	if err != nil {
 		return err
 	}

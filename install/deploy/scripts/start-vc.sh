@@ -229,6 +229,10 @@ if [ "$CLIENT" = "teku" ]; then
         --validators-proposer-default-fee-recipient=$(cat $VALIDATORS_DIR/$FEE_RECIPIENT_FILE) \
         $VC_ADDITIONAL_FLAGS"
 
+    if [ "$TEKU_SHUT_DOWN_WHEN_SLASHED" = "true" ]; then
+        CMD="$CMD --shut-down-when-validator-slashed-enabled=true"
+    fi
+
     if [ "$DOPPELGANGER_DETECTION" = "true" ]; then
         CMD="$CMD --doppelganger-detection-enabled"
     fi

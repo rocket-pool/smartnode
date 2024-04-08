@@ -3,7 +3,6 @@ package client
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/api/client"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -86,22 +85,4 @@ func (r *NetworkRequester) Stats() (*types.ApiResponse[api.NetworkStatsData], er
 // Get the timezone map
 func (r *NetworkRequester) TimezoneMap() (*types.ApiResponse[api.NetworkTimezonesData], error) {
 	return client.SendGetRequest[api.NetworkTimezonesData](r, "timezone-map", "TimezoneMap", nil)
-}
-
-// Initialize voting so the node can vote on Protocol DAO proposals
-func (r *NetworkRequester) InitializeVoting() (*types.ApiResponse[api.NetworkInitializeVotingData], error) {
-	return client.SendGetRequest[api.NetworkInitializeVotingData](r, "initialize-voting", "InitializeVoting", nil)
-}
-
-// Set the delegate for voting on Protocol DAO proposals
-func (r *NetworkRequester) SetVotingDelegate(delegate common.Address) (*types.ApiResponse[types.TxInfoData], error) {
-	args := map[string]string{
-		"delegate": delegate.Hex(),
-	}
-	return client.SendGetRequest[types.TxInfoData](r, "voting-delegate/set", "SetVotingDelegate", args)
-}
-
-// Get the address that's assigned as the delegate for voting on Protocol DAO proposals
-func (r *NetworkRequester) GetCurrentVotingDelegate() (*types.ApiResponse[api.NetworkCurrentVotingDelegateData], error) {
-	return client.SendGetRequest[api.NetworkCurrentVotingDelegateData](r, "voting-delegate", "GetCurrentVotingDelegate", nil)
 }

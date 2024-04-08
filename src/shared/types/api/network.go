@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/node-manager-core/eth"
 	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
 )
 
@@ -59,17 +58,6 @@ type NetworkDaoProposalsData struct {
 	AccountAddress          common.Address                  `json:"accountAddress"`
 	VotingDelegate          common.Address                  `json:"votingDelegate"`
 	ActiveSnapshotProposals []*sharedtypes.SnapshotProposal `json:"activeSnapshotProposals"`
-}
-
-type NetworkInitializeVotingData struct {
-	CanInitialize     bool                 `json:"canInitialize"`
-	VotingInitialized bool                 `json:"votingInitialized"`
-	TxInfo            *eth.TransactionInfo `json:"txInfo"`
-}
-
-type NetworkCurrentVotingDelegateData struct {
-	AccountAddress common.Address `json:"accountAddress"`
-	VotingDelegate common.Address `json:"votingDelegate"`
 }
 
 type NetworkLatestDelegateData struct {

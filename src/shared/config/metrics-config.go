@@ -7,8 +7,7 @@ import (
 
 type MetricsConfig struct {
 	*config.MetricsConfig
-	EnableOdaoMetrics     config.Parameter[bool]
-	WatchtowerMetricsPort config.Parameter[uint16]
+	EnableOdaoMetrics config.Parameter[bool]
 }
 
 // Generates a new metrics config
@@ -34,20 +33,6 @@ func NewMetricsConfig() *MetricsConfig {
 				config.Network_All: false,
 			},
 		},
-
-		WatchtowerMetricsPort: config.Parameter[uint16]{
-			ParameterCommon: &config.ParameterCommon{
-				ID:                 ids.MetricsWatchtowerPortID,
-				Name:               "Daemon Metrics Port",
-				Description:        "The port the Watchtower container should expose its metrics on.",
-				AffectsContainers:  []config.ContainerID{ContainerID_Watchtower, config.ContainerID_Prometheus},
-				CanBeBlank:         false,
-				OverwriteOnUpgrade: false,
-			},
-			Default: map[config.Network]uint16{
-				config.Network_All: 9104,
-			},
-		},
 	}
 }
 
@@ -61,7 +46,6 @@ func (cfg *MetricsConfig) GetParameters() []config.IParameter {
 	params := cfg.MetricsConfig.GetParameters()
 	params = append(params,
 		&cfg.EnableOdaoMetrics,
-		&cfg.WatchtowerMetricsPort,
 	)
 	return params
 }

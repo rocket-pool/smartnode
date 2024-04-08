@@ -7,7 +7,6 @@ type MevRelayID string
 type MevSelectionMode string
 
 const (
-	ContainerID_Watchtower       config.ContainerID = "watchtower"
 	ContainerID_Alertmanager     config.ContainerID = "alertmanager"
 	ContainerID_EcMigrator       config.ContainerID = "ec_migrator"
 	ContainerID_PruneProvisioner config.ContainerID = "prune_provisioner"

@@ -207,10 +207,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "stop",
-				Aliases:   []string{"pause", "p"},
-				Usage:     "Stop (shut down) the Rocket Pool service without deleting any of it",
-				UsageText: "rocketpool service pause [options]",
+				Name:    "stop",
+				Aliases: []string{"pause", "p"},
+				Usage:   "Stop (shut down) the Rocket Pool service without deleting any of it",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 				},
@@ -227,10 +226,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "reset-docker",
-				Aliases:   []string{"rd"},
-				Usage:     "Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts the Smart Node.",
-				UsageText: "rocketpool service reset [options]",
+				Name:    "reset-docker",
+				Aliases: []string{"rd"},
+				Usage:   "Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts the Smart Node.",
 				Flags: []cli.Flag{
 					cliutils.YesFlag,
 					dockerRemoveAllFlag,
@@ -247,10 +245,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "prune-docker",
-				Aliases:   []string{"pd"},
-				Usage:     "Cleanup unused Docker resources, including stopped containers, unused images, networks and volumes. Does not restart smartnode, so the running containers and the images and networks they reference will not be pruned.",
-				UsageText: "rocketpool service prune",
+				Name:    "prune-docker",
+				Aliases: []string{"pd"},
+				Usage:   "Cleanup unused Docker resources, including stopped containers, unused images, networks and volumes. Does not restart smartnode, so the running containers and the images and networks they reference will not be pruned.",
 				Flags: []cli.Flag{
 					dockerRemoveAllFlag,
 				},
@@ -276,6 +273,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 					// Run command
 					return serviceLogs(c, c.Args().Slice()...)
+				},
+			},
+
+			{
+				Name:      "daemon-logs",
+				Aliases:   []string{"dl"},
+				Usage:     "View one or more of the logs from the daemon",
+				ArgsUsage: "[api | tasks | watchtower]",
+				Flags: []cli.Flag{
+					tailFlag,
+				},
+				Action: func(c *cli.Context) error {
+					// Run command
+					return daemonLogs(c, c.Args().Slice()...)
 				},
 			},
 

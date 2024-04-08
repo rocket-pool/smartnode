@@ -23,7 +23,7 @@ func getActiveDAOProposals(c *cli.Context) error {
 	// Get the config
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("Error loading configuration: %w", err)
+		return fmt.Errorf("error loading configuration: %w", err)
 	}
 
 	// Print what network we're on
@@ -38,7 +38,7 @@ func getActiveDAOProposals(c *cli.Context) error {
 		return err
 	}
 
-	currentVotingDelegate, err := rp.Api.Network.GetCurrentVotingDelegate()
+	currentVotingDelegate, err := rp.Api.PDao.GetCurrentVotingDelegate()
 	if err != nil {
 		return err
 	}

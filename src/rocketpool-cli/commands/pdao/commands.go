@@ -1,6 +1,8 @@
 package pdao
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli/v2"
 
 	input "github.com/rocket-pool/node-manager-core/utils/input"
@@ -20,7 +22,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		cliutils.CreateBoolSetter("is-bid-on-lot-enabled", "ibole", auctionContract, protocol.SettingName_Auction_IsBidOnLotEnabled, proposeSetting),
 		cliutils.CreateEthSetter("lot-minimum-eth-value", "lminev", auctionContract, protocol.SettingName_Auction_LotMinimumEthValue, proposeSetting),
 		cliutils.CreateEthSetter("lot-maximum-eth-value", "lmaxev", auctionContract, protocol.SettingName_Auction_LotMaximumEthValue, proposeSetting),
-		cliutils.CreateBlockCountSetter("lot-duration", "ld", auctionContract, protocol.SettingName_Auction_LotDuration, proposeSetting),
+		cliutils.CreateDurationSetter("lot-duration", "ld", auctionContract, protocol.SettingName_Auction_LotDuration, proposeSetting),
 		cliutils.CreatePercentSetter("lot-starting-price-ratio", "lspr", auctionContract, protocol.SettingName_Auction_LotStartingPriceRatio, proposeSetting),
 		cliutils.CreatePercentSetter("lot-reserve-price-ratio", "lrpr", auctionContract, protocol.SettingName_Auction_LotReservePriceRatio, proposeSetting),
 	}
@@ -35,8 +37,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		cliutils.CreateEthSetter("maximum-deposit-pool-size", "mdps", depositContract, protocol.SettingName_Deposit_MaximumDepositPoolSize, proposeSetting),
 		cliutils.CreateUintSetter("maximum-assignments-per-deposit", "mapd", depositContract, protocol.SettingName_Deposit_MaximumAssignmentsPerDeposit, proposeSetting),
 		cliutils.CreateUintSetter("maximum-socialised-assignments-per-deposit", "msapd", depositContract, protocol.SettingName_Deposit_MaximumSocialisedAssignmentsPerDeposit, proposeSetting),
-		cliutils.CreatePercentSetter("deposit-fee", "df", depositContract, protocol.SettingName_Deposit_DepositFee, proposeSetting),
 	}
+	df := cliutils.CreateUnboundedPercentSetter("deposit-fee", "df", depositContract, protocol.SettingName_Deposit_DepositFee, proposeSetting)
+	df.Usage = fmt.Sprintf("Propose updating the %s setting; specify a percentage between 0 and 0.01 (e.g., '0.001' for 0.10%%)", string(protocol.SettingName_Deposit_DepositFee))
+	depositSettingsCmd.Subcommands = append(depositSettingsCmd.Subcommands, df)
 
 	// Create the minipool settings commands
 	minipoolContract := rocketpool.ContractName_RocketDAOProtocolSettingsMinipool
@@ -481,6 +485,35 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							return finalizeProposal(c, proposalId)
 						},
 					},
+				},
+			},
+
+			{
+				Name:    "initialize-voting",
+				Aliases: []string{"iv"},
+				Usage:   "Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)",
+				Action: func(c *cli.Context) error {
+					// Run
+					return initializeVoting(c)
+				},
+			},
+
+			{
+				Name:      "set-voting-delegate",
+				Aliases:   []string{"svd"},
+				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",
+				ArgsUsage: "address",
+				Flags: []cli.Flag{
+					cliutils.YesFlag,
+				},
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := utils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					delegate := c.Args().Get(0)
+					// Run
+					return setVotingDelegate(c, delegate)
 				},
 			},
 		},

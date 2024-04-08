@@ -74,13 +74,13 @@ type ProtocolDaoExecuteProposalData struct {
 
 type ProtocolDaoSettingsData struct {
 	Auction struct {
-		IsCreateLotEnabled    bool     `json:"isCreateLotEnabled"`
-		IsBidOnLotEnabled     bool     `json:"isBidOnLotEnabled"`
-		LotMinimumEthValue    *big.Int `json:"lotMinimumEthValue"`
-		LotMaximumEthValue    *big.Int `json:"lotMaximumEthValue"`
-		LotDuration           uint64   `json:"lotDuration"`
-		LotStartingPriceRatio *big.Int `json:"lotStartingPriceRatio"`
-		LotReservePriceRatio  *big.Int `json:"lotReservePriceRatio"`
+		IsCreateLotEnabled    bool          `json:"isCreateLotEnabled"`
+		IsBidOnLotEnabled     bool          `json:"isBidOnLotEnabled"`
+		LotMinimumEthValue    *big.Int      `json:"lotMinimumEthValue"`
+		LotMaximumEthValue    *big.Int      `json:"lotMaximumEthValue"`
+		LotDuration           time.Duration `json:"lotDuration"`
+		LotStartingPriceRatio *big.Int      `json:"lotStartingPriceRatio"`
+		LotReservePriceRatio  *big.Int      `json:"lotReservePriceRatio"`
 	} `json:"auction"`
 
 	Deposit struct {
@@ -278,4 +278,15 @@ type ProtocolDaoProposeRecurringSpendUpdateData struct {
 	LockedRpl       *big.Int             `json:"lockedRpl"`
 	ProposalBond    *big.Int             `json:"proposalBond"`
 	TxInfo          *eth.TransactionInfo `json:"txInfo"`
+}
+
+type ProtocolDaoInitializeVotingData struct {
+	CanInitialize     bool                 `json:"canInitialize"`
+	VotingInitialized bool                 `json:"votingInitialized"`
+	TxInfo            *eth.TransactionInfo `json:"txInfo"`
+}
+
+type ProtocolDaoCurrentVotingDelegateData struct {
+	AccountAddress common.Address `json:"accountAddress"`
+	VotingDelegate common.Address `json:"votingDelegate"`
 }

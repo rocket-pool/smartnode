@@ -1,4 +1,4 @@
-package network
+package pdao
 
 import (
 	"fmt"
@@ -20,19 +20,19 @@ import (
 // === Factory ===
 // ===============
 
-type networkCurrentVotingDelegateContextFactory struct {
-	handler *NetworkHandler
+type protocolDaoCurrentVotingDelegateContextFactory struct {
+	handler *ProtocolDaoHandler
 }
 
-func (f *networkCurrentVotingDelegateContextFactory) Create(args url.Values) (*networkCurrentVotingDelegateContext, error) {
-	c := &networkCurrentVotingDelegateContext{
+func (f *protocolDaoCurrentVotingDelegateContextFactory) Create(args url.Values) (*protocolDaoCurrentVotingDelegateContext, error) {
+	c := &protocolDaoCurrentVotingDelegateContext{
 		handler: f.handler,
 	}
 	return c, nil
 }
 
-func (f *networkCurrentVotingDelegateContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*networkCurrentVotingDelegateContext, api.NetworkCurrentVotingDelegateData](
+func (f *protocolDaoCurrentVotingDelegateContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterSingleStageRoute[*protocolDaoCurrentVotingDelegateContext, api.ProtocolDaoCurrentVotingDelegateData](
 		router, "voting-delegate", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
@@ -41,14 +41,14 @@ func (f *networkCurrentVotingDelegateContextFactory) RegisterRoute(router *mux.R
 // === Context ===
 // ===============
 
-type networkCurrentVotingDelegateContext struct {
-	handler *NetworkHandler
+type protocolDaoCurrentVotingDelegateContext struct {
+	handler *ProtocolDaoHandler
 	rp      *rocketpool.RocketPool
 
 	node *node.Node
 }
 
-func (c *networkCurrentVotingDelegateContext) Initialize() (types.ResponseStatus, error) {
+func (c *protocolDaoCurrentVotingDelegateContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
@@ -67,13 +67,13 @@ func (c *networkCurrentVotingDelegateContext) Initialize() (types.ResponseStatus
 	return types.ResponseStatus_Success, nil
 }
 
-func (c *networkCurrentVotingDelegateContext) GetState(mc *batch.MultiCaller) {
+func (c *protocolDaoCurrentVotingDelegateContext) GetState(mc *batch.MultiCaller) {
 	eth.AddQueryablesToMulticall(mc,
 		c.node.CurrentVotingDelegate,
 	)
 }
 
-func (c *networkCurrentVotingDelegateContext) PrepareData(data *api.NetworkCurrentVotingDelegateData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+func (c *protocolDaoCurrentVotingDelegateContext) PrepareData(data *api.ProtocolDaoCurrentVotingDelegateData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.AccountAddress = c.node.Address
 	data.VotingDelegate = c.node.CurrentVotingDelegate.Get()
 	return types.ResponseStatus_Success, nil

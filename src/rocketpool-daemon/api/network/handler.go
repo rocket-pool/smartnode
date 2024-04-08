@@ -34,9 +34,6 @@ func NewNetworkHandler(logger *log.Logger, ctx context.Context, serviceProvider 
 		&networkPriceContextFactory{h},
 		&networkStatsContextFactory{h},
 		&networkTimezoneContextFactory{h},
-		&networkInitializeVotingContextFactory{h},
-		&networkSetVotingDelegateContextFactory{h},
-		&networkCurrentVotingDelegateContextFactory{h},
 	}
 	return h
 }

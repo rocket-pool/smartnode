@@ -13,10 +13,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Usage:   "Access the legacy RPL faucet",
 		Subcommands: []*cli.Command{
 			{
-				Name:      "status",
-				Aliases:   []string{"s"},
-				Usage:     "Get the faucet's status",
-				UsageText: "rocketpool faucet status",
+				Name:    "status",
+				Aliases: []string{"s"},
+				Usage:   "Get the faucet's status",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {
@@ -29,10 +28,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "withdraw-rpl",
-				Aliases:   []string{"w"},
-				Usage:     "Withdraw legacy RPL from the faucet",
-				UsageText: "rocketpool faucet withdraw-rpl",
+				Name:    "withdraw-rpl",
+				Aliases: []string{"w"},
+				Usage:   "Withdraw legacy RPL from the faucet",
 				Action: func(c *cli.Context) error {
 					// Validate args
 					if err := utils.ValidateArgCount(c, 0); err != nil {

@@ -93,7 +93,6 @@ func processConfigAfterQuit(md *mainDisplay) {
 
 		if md.isUpdate {
 			totalAffectedContainers[config.ContainerID_Daemon] = true
-			totalAffectedContainers[snCfg.ContainerID_Watchtower] = true
 		}
 
 		var containersToRestart []config.ContainerID

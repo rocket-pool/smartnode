@@ -37,6 +37,7 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	legacyFallbackPrysmConfig, err := getLegacyConfigSection(err, oldConfig, "fallbackPrysm")
 	legacyGrafanaConfig, err := getLegacyConfigSection(err, oldConfig, "grafana")
 	legacyPrometheusConfig, err := getLegacyConfigSection(err, oldConfig, "prometheus")
+	legacyAlertmanagerConfig, err := getLegacyConfigSection(err, oldConfig, "alertmanager")
 	legacyExporterConfig, err := getLegacyConfigSection(err, oldConfig, "exporter")
 	legacybBitflyNodeMetricsConfig, err := getLegacyConfigSection(err, oldConfig, "bitflyNodeMetrics")
 	legacyNativeConfig, err := getLegacyConfigSection(err, oldConfig, "native")
@@ -316,7 +317,6 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	newMetricsConfig[nmc_ids.MetricsDaemonPortID] = legacyRootConfig["nodeMetricsPort"]
 	newMetricsConfig[nmc_ids.MetricsExporterPortID] = legacyRootConfig["exporterMetricsPort"]
 	newMetricsConfig[ids.MetricsEnableOdaoID] = legacyRootConfig["enableODaoMetrics"]
-	newMetricsConfig[ids.MetricsWatchtowerPortID] = legacyRootConfig["watchtowerMetricsPort"]
 	newSmartnodeConfig[ids.MetricsID] = newMetricsConfig
 
 	// Grafana
@@ -332,6 +332,34 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	newPrometheusConfig[nmc_ids.ContainerTagID] = legacyPrometheusConfig["containerTag"]
 	newPrometheusConfig[nmc_ids.AdditionalFlagsID] = legacyPrometheusConfig["additionalFlags"]
 	newMetricsConfig[nmc_ids.MetricsPrometheusID] = newPrometheusConfig
+
+	// Alertmanager
+	newAlertmanagerConfig := map[string]any{}
+	newAlertmanagerConfig[ids.AlertmanagerEnableAlertingID] = legacyAlertmanagerConfig["enableAlerting"]
+	newAlertmanagerConfig[nmc_ids.PortID] = legacyAlertmanagerConfig["port"]
+	newAlertmanagerConfig[ids.AlertmanagerNativeModeHostID] = legacyAlertmanagerConfig["nativeModeHost"]
+	newAlertmanagerConfig[ids.AlertmanagerNativeModePortID] = legacyAlertmanagerConfig["nativeModePort"]
+	newAlertmanagerConfig[nmc_ids.OpenPortID] = legacyAlertmanagerConfig["openPort"]
+	newAlertmanagerConfig[nmc_ids.ContainerTagID] = legacyAlertmanagerConfig["containerTag"]
+	newAlertmanagerConfig[ids.AlertmanagerDiscordWebhookUrlID] = legacyAlertmanagerConfig["discordWebhookURL"]
+	newAlertmanagerConfig[ids.AlertmanagerClientSyncStatusBeaconID] = legacyAlertmanagerConfig["alertEnabled_ClientSyncStatusBeacon"]
+	newAlertmanagerConfig[ids.AlertmanagerClientSyncStatusExecutionID] = legacyAlertmanagerConfig["alertEnabled_ClientSyncStatusExecution"]
+	newAlertmanagerConfig[ids.AlertmanagerUpcomingSyncCommitteeID] = legacyAlertmanagerConfig["alertEnabled_UpcomingSyncCommittee"]
+	newAlertmanagerConfig[ids.AlertmanagerActiveSyncCommitteeID] = legacyAlertmanagerConfig["alertEnabled_ActiveSyncCommittee"]
+	newAlertmanagerConfig[ids.AlertmanagerUpcomingProposalID] = legacyAlertmanagerConfig["alertEnabled_UpcomingProposal"]
+	newAlertmanagerConfig[ids.AlertmanagerRecentProposalID] = legacyAlertmanagerConfig["alertEnabled_RecentProposal"]
+	newAlertmanagerConfig[ids.AlertmanagerLowDiskSpaceWarningID] = legacyAlertmanagerConfig["alertEnabled_LowDiskSpaceWarning"]
+	newAlertmanagerConfig[ids.AlertmanagerLowDiskSpaceCriticalID] = legacyAlertmanagerConfig["alertEnabled_LowDiskSpaceCritical"]
+	newAlertmanagerConfig[ids.AlertmanagerOSUpdatesAvailableID] = legacyAlertmanagerConfig["alertEnabled_OSUpdatesAvailable"]
+	newAlertmanagerConfig[ids.AlertmanagerRPUpdatesAvailableID] = legacyAlertmanagerConfig["alertEnabled_RPUpdatesAvailable"]
+	newAlertmanagerConfig[ids.AlertmanagerFeeRecipientChangedID] = legacyAlertmanagerConfig["alertEnabled_FeeRecipientChanged"]
+	newAlertmanagerConfig[ids.AlertmanagerMinipoolBondReducedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolBondReduced"]
+	newAlertmanagerConfig[ids.AlertmanagerMinipoolBalanceDistributedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolBalanceDistributed"]
+	newAlertmanagerConfig[ids.AlertmanagerMinipoolPromotedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolPromoted"]
+	newAlertmanagerConfig[ids.AlertmanagerMinipoolStakedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolStaked"]
+	newAlertmanagerConfig[ids.AlertmanagerExecutionClientSyncCompleteID] = legacyAlertmanagerConfig["alertEnabled_ExecutionClientSyncComplete"]
+	newAlertmanagerConfig[ids.AlertmanagerBeaconClientSyncCompleteID] = legacyAlertmanagerConfig["alertEnabled_BeaconClientSyncComplete"]
+	newSmartnodeConfig[ids.AlertmanagerID] = newAlertmanagerConfig
 
 	// Exporter
 	newExporterConfig := map[string]any{}
