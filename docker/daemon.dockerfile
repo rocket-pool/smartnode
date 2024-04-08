@@ -1,7 +1,8 @@
 # The daemon image
 FROM debian:bookworm-slim
+ARG BINARIES_PATH
 ARG TARGETOS TARGETARCH
-COPY ./build/rocketpool-daemon-${TARGETOS}-${TARGETARCH} /usr/bin/rocketpool-daemon
+COPY ${BINARIES_PATH}/rocketpool-daemon-${TARGETOS}-${TARGETARCH} /usr/bin/rocketpool-daemon
 RUN apt update && \
     apt install ca-certificates -y && \
 	# Cleanup
