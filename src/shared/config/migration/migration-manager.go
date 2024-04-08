@@ -20,18 +20,18 @@ type ConfigUpgrader struct {
 	UpgradeFunc func(serializedConfig map[string]any) (map[string]any, error)
 }
 
-func UpdateConfig(serializedConfig map[string]any) error {
+func UpdateConfig(serializedConfig map[string]any) (map[string]any, error) {
 
 	// Get the config's version
 	configVersion, err := getVersionFromConfig(serializedConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create versions
 	v1, err := parseVersion(v1LegacyVersionMax)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Create the collection of upgraders
@@ -52,7 +52,7 @@ func UpdateConfig(serializedConfig map[string]any) error {
 
 	// If there are no upgrades to apply, return
 	if targetIndex == -1 {
-		return nil
+		return serializedConfig, nil
 	}
 
 	// If there are upgrades, start at the first applicable index and apply them all in series
@@ -60,11 +60,11 @@ func UpdateConfig(serializedConfig map[string]any) error {
 		upgrader := upgraders[i]
 		serializedConfig, err = upgrader.UpgradeFunc(serializedConfig)
 		if err != nil {
-			return fmt.Errorf("error applying upgrade for config version %s: %w", upgrader.Version.String(), err)
+			return nil, fmt.Errorf("error applying upgrade for config version %s: %w", upgrader.Version.String(), err)
 		}
 	}
 
-	return nil
+	return serializedConfig, nil
 
 }
 
@@ -94,12 +94,12 @@ func getVersionFromConfig(serializedConfig map[string]any) (*version.Version, er
 		if !ok {
 			return nil, fmt.Errorf("detected a Smart Node v1 config; it has an entry named [%s.%s] but it is not a string, it's a %s", legacyRootConfigName, legacyVersionKey, reflect.TypeOf(configVersionEntry))
 		}
-	}
-
-	var ok bool
-	configVersionString, ok = configVersionEntry.(string)
-	if !ok {
-		return nil, fmt.Errorf("config has an entry named [%s] but it is not a string, it's a %s", ids.VersionID, reflect.TypeOf(configVersionEntry))
+	} else {
+		var ok bool
+		configVersionString, ok = configVersionEntry.(string)
+		if !ok {
+			return nil, fmt.Errorf("config has an entry named [%s] but it is not a string, it's a %s", ids.VersionID, reflect.TypeOf(configVersionEntry))
+		}
 	}
 
 	configVersion, err := version.NewVersion(strings.TrimPrefix(configVersionString, "v"))
