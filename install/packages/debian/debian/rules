@@ -5,7 +5,7 @@
 
 # We're targeting just the CLI for this package
 export BUILD_DIR := _build
-export DH_GOLANG_BUILDPKG := github.com/rocket-pool/smartnode/rocketpool-cli
+export DH_GOLANG_BUILDPKG := github.com/rocket-pool/smartnode/v2/rocketpool-cli
 
 # Set up the golang variables because dh-golang defaults to them being unset, which breaks things
 export GO111MODULE := on
@@ -21,7 +21,7 @@ export GOPROXY := https://goproxy.io,direct
 override_dh_auto_build:
 #	Build the CLI with a vanilla build instead of installing it
 	mkdir -p ${BUILD_DIR}
-	cd ${BUILD_DIR} && CGO_ENABLED=0 GOOS=linux GOARCH=${DEB_TARGET_ARCH} go build -trimpath -v -o rocketpool github.com/rocket-pool/smartnode/rocketpool-cli
+	cd ${BUILD_DIR} && CGO_ENABLED=0 GOOS=linux GOARCH=${DEB_TARGET_ARCH} go build -trimpath -v -o rocketpool github.com/rocket-pool/smartnode/v2/rocketpool-cli
 #	For whatever reason, go install will install into bin/$GOOS_$GOARCH if we're cross compiling so we have to emulate that here
 	if [ "${DEB_BUILD_ARCH}" = "${DEB_TARGET_ARCH}" ]; then \
 		mkdir -p ${BUILD_DIR}/bin && \

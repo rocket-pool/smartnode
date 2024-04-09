@@ -1,22 +1,7 @@
 .DS_Store
-vendor
-node_modules
-/scripts/config.js
-/rocketpool/rocketpool
-/rocketpool-cli/rocketpool-cli-darwin-amd64
-/rocketpool-cli/rocketpool-cli-linux-amd64
-/rocketpool-cli/rocketpool-cli-windows-amd64.exe
-/rocketpool-cli/rocketpool-cli-darwin-arm64
-/rocketpool-cli/rocketpool-cli-linux-arm64
-Dockerfile
-/rocketpool-cli/rocketpool-cli
 .idea
 /.vscode
 .vscode-ctags
-/rocketpool/rocketpool-daemon-darwin-amd64
-/rocketpool/rocketpool-daemon-linux-amd64
-/rocketpool/rocketpool-daemon-darwin-arm64
-/rocketpool/rocketpool-daemon-linux-arm64
 *.swp
 
 # Packaging
@@ -28,10 +13,7 @@ build/
 install/packages/debian/rocketpool
 install/packages/debian/debian/rocketpool*
 install/packages/debian/_build/
-bin
-pkg
-.vscode-ctags
 
 # Binaries
-src/rocketpool-cli/rocketpool-cli
-src/rocketpool-daemon/rocketpool-daemon
+/rocketpool-cli/rocketpool-cli
+/rocketpool-daemon/rocketpool-daemon
