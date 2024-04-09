@@ -1,6 +1,6 @@
 # This image is used to build the Rocket Pool Smartnode and related artifacts
 
-FROM golang:1.19.5-buster
+FROM golang:1.21.8-bookworm
 
 # Install build tools
 RUN dpkg --add-architecture arm64
