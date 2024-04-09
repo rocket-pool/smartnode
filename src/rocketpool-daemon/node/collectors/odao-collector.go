@@ -61,17 +61,17 @@ func NewOdaoCollector(logger *log.Logger, sp *services.ServiceProvider, stateLoc
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *OdaoCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.currentEth1Block
-	channel <- collector.pricesBlock
-	channel <- collector.effectiveRplStakeBlock
-	channel <- collector.latestReportableBlock
+func (c *OdaoCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.currentEth1Block
+	channel <- c.pricesBlock
+	channel <- c.effectiveRplStakeBlock
+	channel <- c.latestReportableBlock
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
@@ -80,9 +80,9 @@ func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 	pricesBlockFloat := float64(state.NetworkDetails.PricesBlock)
 	effectiveRplStakeBlockFloat := pricesBlockFloat
 	channel <- prometheus.MustNewConstMetric(
-		collector.currentEth1Block, prometheus.GaugeValue, blockNumberFloat)
+		c.currentEth1Block, prometheus.GaugeValue, blockNumberFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.pricesBlock, prometheus.GaugeValue, pricesBlockFloat)
+		c.pricesBlock, prometheus.GaugeValue, pricesBlockFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.effectiveRplStakeBlock, prometheus.GaugeValue, effectiveRplStakeBlockFloat)
+		c.effectiveRplStakeBlock, prometheus.GaugeValue, effectiveRplStakeBlockFloat)
 }

@@ -69,18 +69,18 @@ func NewSupplyCollector(logger *log.Logger, sp *services.ServiceProvider, stateL
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.nodeCount
-	channel <- collector.nodeFee
-	channel <- collector.minipoolCount
-	channel <- collector.totalMinipools
-	channel <- collector.activeMinipools
+func (c *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.nodeCount
+	channel <- c.nodeFee
+	channel <- c.minipoolCount
+	channel <- c.totalMinipools
+	channel <- c.activeMinipools
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
@@ -116,25 +116,25 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.nodeCount, prometheus.GaugeValue, nodeCount)
+		c.nodeCount, prometheus.GaugeValue, nodeCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.nodeFee, prometheus.GaugeValue, nodeFee)
+		c.nodeFee, prometheus.GaugeValue, nodeFee)
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, initializedCount, "initialized")
+		c.minipoolCount, prometheus.GaugeValue, initializedCount, "initialized")
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, prelaunchCount, "prelaunch")
+		c.minipoolCount, prometheus.GaugeValue, prelaunchCount, "prelaunch")
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, stakingCount, "staking")
+		c.minipoolCount, prometheus.GaugeValue, stakingCount, "staking")
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, dissolvedCount, "dissolved")
+		c.minipoolCount, prometheus.GaugeValue, dissolvedCount, "dissolved")
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, finalizedCount, "finalized")
+		c.minipoolCount, prometheus.GaugeValue, finalizedCount, "finalized")
 
 	// Set the total and active count
 	totalMinipoolCount := initializedCount + prelaunchCount + stakingCount + dissolvedCount + finalizedCount
 	activeMinipoolCount := totalMinipoolCount - finalizedCount
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
+		c.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
+		c.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
 }

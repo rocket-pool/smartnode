@@ -92,19 +92,19 @@ func NewSnapshotCollector(logger *log.Logger, sp *services.ServiceProvider) *Sna
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *SnapshotCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.activeProposals
-	channel <- collector.closedProposals
-	channel <- collector.votesActiveProposals
-	channel <- collector.votesClosedProposals
-	channel <- collector.nodeVotingPower
-	channel <- collector.delegateVotingPower
+func (c *SnapshotCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.activeProposals
+	channel <- c.closedProposals
+	channel <- c.votesActiveProposals
+	channel <- c.votesClosedProposals
+	channel <- c.nodeVotingPower
+	channel <- c.delegateVotingPower
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	// Update everything if there's an update due
-	if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
+	if time.Since(c.lastApiCallTimestamp).Hours() >= hoursToWait {
 		var wg errgroup.Group
 		activeProposals := float64(0)
 		closedProposals := float64(0)
@@ -112,14 +112,14 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		votesClosedProposals := float64(0)
 
 		// Services
-		rp := collector.sp.GetRocketPool()
-		cfg := collector.sp.GetConfig()
+		rp := c.sp.GetRocketPool()
+		cfg := c.sp.GetConfig()
 		snapshotID := cfg.GetVotingSnapshotID()
-		nodeAddress, hasNodeAddress := collector.sp.GetWallet().GetAddress()
+		nodeAddress, hasNodeAddress := c.sp.GetWallet().GetAddress()
 		if !hasNodeAddress {
 			return
 		}
-		snapshot := collector.sp.GetSnapshotDelegation()
+		snapshot := c.sp.GetSnapshotDelegation()
 		if snapshot == nil {
 			return
 		}
@@ -130,7 +130,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 			return nil
 		}, nil)
 		if err != nil {
-			collector.logger.Error("Error getting voting delegate for node", log.Err(err))
+			c.logger.Error("Error getting voting delegate for node", log.Err(err))
 			return
 		}
 
@@ -156,10 +156,10 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 				}
 			}
 
-			collector.cachedActiveProposals = activeProposals
-			collector.cachedClosedProposals = closedProposals
-			collector.cachedVotesActiveProposals = votesActiveProposals
-			collector.cachedVotesClosedProposals = votesClosedProposals
+			c.cachedActiveProposals = activeProposals
+			c.cachedClosedProposals = closedProposals
+			c.cachedVotesActiveProposals = votesActiveProposals
+			c.cachedVotesClosedProposals = votesClosedProposals
 			return nil
 		})
 
@@ -169,7 +169,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 			if err != nil {
 				return fmt.Errorf("Error getting Snapshot voted proposals for node address: %w", err)
 			}
-			collector.cachedNodeVotingPower = votingPower
+			c.cachedNodeVotingPower = votingPower
 			return nil
 		})
 
@@ -179,29 +179,29 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 			if err != nil {
 				return fmt.Errorf("Error getting Snapshot voted proposals for delegate address: %w", err)
 			}
-			collector.cachedDelegateVotingPower = delegateVotingPower
+			c.cachedDelegateVotingPower = delegateVotingPower
 			return nil
 		})
 
 		// Wait for data
 		if err := wg.Wait(); err != nil {
-			collector.logger.Error(err.Error())
+			c.logger.Error(err.Error())
 			return
 		}
 
-		collector.lastApiCallTimestamp = time.Now()
+		c.lastApiCallTimestamp = time.Now()
 	}
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.votesActiveProposals, prometheus.GaugeValue, collector.cachedVotesActiveProposals)
+		c.votesActiveProposals, prometheus.GaugeValue, c.cachedVotesActiveProposals)
 	channel <- prometheus.MustNewConstMetric(
-		collector.votesClosedProposals, prometheus.GaugeValue, collector.cachedVotesClosedProposals)
+		c.votesClosedProposals, prometheus.GaugeValue, c.cachedVotesClosedProposals)
 	channel <- prometheus.MustNewConstMetric(
-		collector.activeProposals, prometheus.GaugeValue, collector.cachedActiveProposals)
+		c.activeProposals, prometheus.GaugeValue, c.cachedActiveProposals)
 	channel <- prometheus.MustNewConstMetric(
-		collector.closedProposals, prometheus.GaugeValue, collector.cachedClosedProposals)
+		c.closedProposals, prometheus.GaugeValue, c.cachedClosedProposals)
 	channel <- prometheus.MustNewConstMetric(
-		collector.nodeVotingPower, prometheus.GaugeValue, collector.cachedNodeVotingPower)
+		c.nodeVotingPower, prometheus.GaugeValue, c.cachedNodeVotingPower)
 	channel <- prometheus.MustNewConstMetric(
-		collector.delegateVotingPower, prometheus.GaugeValue, collector.cachedDelegateVotingPower)
+		c.delegateVotingPower, prometheus.GaugeValue, c.cachedDelegateVotingPower)
 }

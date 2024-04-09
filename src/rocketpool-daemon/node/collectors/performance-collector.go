@@ -76,19 +76,19 @@ func NewPerformanceCollector(logger *log.Logger, sp *services.ServiceProvider, s
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *PerformanceCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.ethUtilizationRate
-	channel <- collector.totalStakingBalanceEth
-	channel <- collector.ethRethExchangeRate
-	channel <- collector.totalValueLockedEth
-	channel <- collector.rethContractBalance
-	channel <- collector.totalRethSupply
+func (c *PerformanceCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.ethUtilizationRate
+	channel <- c.totalStakingBalanceEth
+	channel <- c.ethRethExchangeRate
+	channel <- c.totalValueLockedEth
+	channel <- c.rethContractBalance
+	channel <- c.totalRethSupply
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *PerformanceCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
@@ -101,15 +101,15 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 	rethFloat := eth.WeiToEth(state.NetworkDetails.TotalRETHSupply)
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.ethUtilizationRate, prometheus.GaugeValue, ethUtilizationRate)
+		c.ethUtilizationRate, prometheus.GaugeValue, ethUtilizationRate)
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalStakingBalanceEth, prometheus.GaugeValue, balanceFloat)
+		c.totalStakingBalanceEth, prometheus.GaugeValue, balanceFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.ethRethExchangeRate, prometheus.GaugeValue, exchangeRate)
+		c.ethRethExchangeRate, prometheus.GaugeValue, exchangeRate)
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalValueLockedEth, prometheus.GaugeValue, tvlFloat)
+		c.totalValueLockedEth, prometheus.GaugeValue, tvlFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.rethContractBalance, prometheus.GaugeValue, rETHBalance)
+		c.rethContractBalance, prometheus.GaugeValue, rETHBalance)
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalRethSupply, prometheus.GaugeValue, rethFloat)
+		c.totalRethSupply, prometheus.GaugeValue, rethFloat)
 }

@@ -71,18 +71,18 @@ func NewDemandCollector(logger *log.Logger, sp *services.ServiceProvider, stateL
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *DemandCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.depositPoolBalance
-	channel <- collector.depositPoolExcess
-	channel <- collector.totalMinipoolCapacity
-	channel <- collector.effectiveMinipoolCapacity
-	channel <- collector.queueLength
+func (c *DemandCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.depositPoolBalance
+	channel <- c.depositPoolExcess
+	channel <- c.totalMinipoolCapacity
+	channel <- c.effectiveMinipoolCapacity
+	channel <- c.queueLength
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
@@ -94,13 +94,13 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 	queueLength := float64(state.NetworkDetails.QueueLength.Uint64())
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.depositPoolBalance, prometheus.GaugeValue, balanceFloat)
+		c.depositPoolBalance, prometheus.GaugeValue, balanceFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.depositPoolExcess, prometheus.GaugeValue, excessFloat)
+		c.depositPoolExcess, prometheus.GaugeValue, excessFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalMinipoolCapacity, prometheus.GaugeValue, totalFloat)
+		c.totalMinipoolCapacity, prometheus.GaugeValue, totalFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
+		c.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.queueLength, prometheus.GaugeValue, queueLength)
+		c.queueLength, prometheus.GaugeValue, queueLength)
 }

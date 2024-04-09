@@ -86,33 +86,33 @@ func NewTrustedNodeCollector(logger *log.Logger, sp *services.ServiceProvider, s
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *TrustedNodeCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.proposalCount
-	channel <- collector.unvotedProposalCount
-	channel <- collector.proposalTable
-	channel <- collector.ethBalance
-	channel <- collector.balancesParticipation
-	channel <- collector.pricesParticipation
+func (c *TrustedNodeCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.proposalCount
+	channel <- c.unvotedProposalCount
+	channel <- c.proposalTable
+	channel <- c.ethBalance
+	channel <- c.balancesParticipation
+	channel <- c.pricesParticipation
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// Services
-	rp := collector.sp.GetRocketPool()
-	cfg := collector.sp.GetConfig()
+	rp := c.sp.GetRocketPool()
+	cfg := c.sp.GetConfig()
 	if !cfg.Metrics.EnableOdaoMetrics.Value {
 		return
 	}
 
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
 
 	pMgr, err := proposals.NewDaoProposalManager(rp)
 	if err != nil {
-		collector.logger.Error("Error creating DAO proposal manager binding", log.Err(err))
+		c.logger.Error("Error creating DAO proposal manager binding", log.Err(err))
 		return
 	}
 
@@ -128,14 +128,14 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	// Get the number of DAO proposals
 	err = rp.Query(nil, nil, pMgr.ProposalCount)
 	if err != nil {
-		collector.logger.Error("Error getting DAO proposal count", log.Err(err))
+		c.logger.Error("Error getting DAO proposal count", log.Err(err))
 		return
 	}
 
 	// Get the DAO proposals
 	oDaoProps, _, err := pMgr.GetProposals(pMgr.ProposalCount.Formatted(), true, nil)
 	if err != nil {
-		collector.logger.Error("Error getting DAO proposals", log.Err(err))
+		c.logger.Error("Error getting DAO proposals", log.Err(err))
 		return
 	}
 
@@ -151,7 +151,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	ethBalances := make(map[string]float64)
 	balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {
-		collector.logger.Error("Error getting Oracle DAO member balances", log.Err(err))
+		c.logger.Error("Error getting Oracle DAO member balances", log.Err(err))
 		return
 	}
 	for i, member := range state.OracleDaoMemberDetails {
@@ -181,7 +181,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	}
 
 	// Get the local node's voting status
-	nodeAddress, hasNodeAddress := collector.sp.GetWallet().GetAddress()
+	nodeAddress, hasNodeAddress := c.sp.GetWallet().GetAddress()
 	if hasNodeAddress {
 		trusted := false
 		for _, member := range state.OracleDaoMemberDetails {
@@ -200,7 +200,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 				return nil
 			}, nil)
 			if err != nil {
-				collector.logger.Error("Error getting Oracle DAO voting status", log.Err(err))
+				c.logger.Error("Error getting Oracle DAO voting status", log.Err(err))
 				return
 			}
 
@@ -214,26 +214,26 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 
 	// Update all the metrics
 	channel <- prometheus.MustNewConstMetric(
-		collector.unvotedProposalCount, prometheus.GaugeValue, unvotedCount)
+		c.unvotedProposalCount, prometheus.GaugeValue, unvotedCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.proposalCount, prometheus.GaugeValue, pendingCount, "pending")
+		c.proposalCount, prometheus.GaugeValue, pendingCount, "pending")
 	channel <- prometheus.MustNewConstMetric(
-		collector.proposalCount, prometheus.GaugeValue, activeCount, "active")
+		c.proposalCount, prometheus.GaugeValue, activeCount, "active")
 	channel <- prometheus.MustNewConstMetric(
-		collector.proposalCount, prometheus.GaugeValue, succeededCount, "succeeded")
+		c.proposalCount, prometheus.GaugeValue, succeededCount, "succeeded")
 	channel <- prometheus.MustNewConstMetric(
-		collector.proposalCount, prometheus.GaugeValue, executedCount, "executed")
+		c.proposalCount, prometheus.GaugeValue, executedCount, "executed")
 	channel <- prometheus.MustNewConstMetric(
-		collector.proposalCount, prometheus.GaugeValue, cancelledCount, "cancelled")
+		c.proposalCount, prometheus.GaugeValue, cancelledCount, "cancelled")
 	channel <- prometheus.MustNewConstMetric(
-		collector.proposalCount, prometheus.GaugeValue, defeatedCount, "defeated")
+		c.proposalCount, prometheus.GaugeValue, defeatedCount, "defeated")
 	channel <- prometheus.MustNewConstMetric(
-		collector.proposalCount, prometheus.GaugeValue, expiredCount, "expired")
+		c.proposalCount, prometheus.GaugeValue, expiredCount, "expired")
 
 	// Update balance metrics
 	for memberId, balance := range ethBalances {
 		channel <- prometheus.MustNewConstMetric(
-			collector.ethBalance, prometheus.GaugeValue, balance, memberId)
+			c.ethBalance, prometheus.GaugeValue, balance, memberId)
 	}
 
 	// Update proposal metrics
@@ -242,15 +242,15 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 			continue
 		}
 		channel <- prometheus.MustNewConstMetric(
-			collector.proposalTable, prometheus.GaugeValue, proposal.VotesFor.Formatted(), strconv.FormatUint(proposal.ID, 10), "for")
+			c.proposalTable, prometheus.GaugeValue, proposal.VotesFor.Formatted(), strconv.FormatUint(proposal.ID, 10), "for")
 		channel <- prometheus.MustNewConstMetric(
-			collector.proposalTable, prometheus.GaugeValue, proposal.VotesAgainst.Formatted(), strconv.FormatUint(proposal.ID, 10), "against")
+			c.proposalTable, prometheus.GaugeValue, proposal.VotesAgainst.Formatted(), strconv.FormatUint(proposal.ID, 10), "against")
 		channel <- prometheus.MustNewConstMetric(
-			collector.proposalTable, prometheus.GaugeValue, proposal.VotesRequired.Formatted(), strconv.FormatUint(proposal.ID, 10), "required")
+			c.proposalTable, prometheus.GaugeValue, proposal.VotesRequired.Formatted(), strconv.FormatUint(proposal.ID, 10), "required")
 	}
 
 	// Include cached metrics
-	for _, metric := range collector.cachedMetrics {
+	for _, metric := range c.cachedMetrics {
 		channel <- metric
 	}
 }

@@ -80,36 +80,35 @@ func NewSoloMigrationCollector() *SoloMigrationCollector {
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *SoloMigrationCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.totalMinipoolsDesc
-	channel <- collector.doesntExistDesc
-	channel <- collector.invalidStateDesc
-	channel <- collector.timedOutDesc
-	channel <- collector.invalidCredentialsDesc
-	channel <- collector.balanceTooLowDesc
-	channel <- collector.latestBlockTimeDesc
+func (c *SoloMigrationCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.totalMinipoolsDesc
+	channel <- c.doesntExistDesc
+	channel <- c.invalidStateDesc
+	channel <- c.timedOutDesc
+	channel <- c.invalidCredentialsDesc
+	channel <- c.balanceTooLowDesc
+	channel <- c.latestBlockTimeDesc
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *SoloMigrationCollector) Collect(channel chan<- prometheus.Metric) {
-
+func (c *SoloMigrationCollector) Collect(channel chan<- prometheus.Metric) {
 	// Sync
-	collector.UpdateLock.Lock()
-	defer collector.UpdateLock.Unlock()
+	c.UpdateLock.Lock()
+	defer c.UpdateLock.Unlock()
 
 	// Update all of the metrics
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalMinipoolsDesc, prometheus.GaugeValue, collector.TotalMinipools)
+		c.totalMinipoolsDesc, prometheus.GaugeValue, c.TotalMinipools)
 	channel <- prometheus.MustNewConstMetric(
-		collector.doesntExistDesc, prometheus.GaugeValue, collector.DoesntExist)
+		c.doesntExistDesc, prometheus.GaugeValue, c.DoesntExist)
 	channel <- prometheus.MustNewConstMetric(
-		collector.invalidStateDesc, prometheus.GaugeValue, collector.InvalidState)
+		c.invalidStateDesc, prometheus.GaugeValue, c.InvalidState)
 	channel <- prometheus.MustNewConstMetric(
-		collector.timedOutDesc, prometheus.GaugeValue, collector.TimedOut)
+		c.timedOutDesc, prometheus.GaugeValue, c.TimedOut)
 	channel <- prometheus.MustNewConstMetric(
-		collector.invalidCredentialsDesc, prometheus.GaugeValue, collector.InvalidCredentials)
+		c.invalidCredentialsDesc, prometheus.GaugeValue, c.InvalidCredentials)
 	channel <- prometheus.MustNewConstMetric(
-		collector.balanceTooLowDesc, prometheus.GaugeValue, collector.BalanceTooLow)
+		c.balanceTooLowDesc, prometheus.GaugeValue, c.BalanceTooLow)
 	channel <- prometheus.MustNewConstMetric(
-		collector.latestBlockTimeDesc, prometheus.GaugeValue, collector.LatestBlockTime)
+		c.latestBlockTimeDesc, prometheus.GaugeValue, c.LatestBlockTime)
 }

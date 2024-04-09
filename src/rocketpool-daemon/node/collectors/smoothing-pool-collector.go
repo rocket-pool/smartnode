@@ -41,14 +41,14 @@ func NewSmoothingPoolCollector(logger *log.Logger, sp *services.ServiceProvider,
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *SmoothingPoolCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.ethBalanceOnSmoothingPool
+func (c *SmoothingPoolCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.ethBalanceOnSmoothingPool
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
@@ -56,5 +56,5 @@ func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metri
 	ethBalanceOnSmoothingPool := eth.WeiToEth(state.NetworkDetails.SmoothingPoolBalance)
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.ethBalanceOnSmoothingPool, prometheus.GaugeValue, ethBalanceOnSmoothingPool)
+		c.ethBalanceOnSmoothingPool, prometheus.GaugeValue, ethBalanceOnSmoothingPool)
 }

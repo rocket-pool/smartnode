@@ -62,24 +62,24 @@ func NewRplCollector(logger *log.Logger, sp *services.ServiceProvider, stateLock
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *RplCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.rplPrice
-	channel <- collector.totalValueStaked
-	channel <- collector.totalEffectiveStaked
-	channel <- collector.checkpointTime
+func (c *RplCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.rplPrice
+	channel <- c.totalValueStaked
+	channel <- c.totalEffectiveStaked
+	channel <- c.checkpointTime
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *RplCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
 
 	rplPriceFloat := eth.WeiToEth(state.NetworkDetails.RplPrice)
 	totalValueStakedFloat := eth.WeiToEth(state.NetworkDetails.TotalRPLStake)
-	totalEffectiveStake := collector.stateLocker.GetTotalEffectiveRPLStake()
+	totalEffectiveStake := c.stateLocker.GetTotalEffectiveRPLStake()
 	lastCheckpoint := state.NetworkDetails.IntervalStart
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	nextRewardsTime := float64(lastCheckpoint.Add(rewardsInterval).Unix()) * 1000
@@ -88,11 +88,11 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.rplPrice, prometheus.GaugeValue, rplPriceFloat)
+		c.rplPrice, prometheus.GaugeValue, rplPriceFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalValueStaked, prometheus.GaugeValue, totalValueStakedFloat)
+		c.totalValueStaked, prometheus.GaugeValue, totalValueStakedFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalEffectiveStaked, prometheus.GaugeValue, eth.WeiToEth(totalEffectiveStake))
+		c.totalEffectiveStaked, prometheus.GaugeValue, eth.WeiToEth(totalEffectiveStake))
 	channel <- prometheus.MustNewConstMetric(
-		collector.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
+		c.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
 }

@@ -70,25 +70,25 @@ func NewBeaconCollector(logger *log.Logger, ctx context.Context, sp *services.Se
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *BeaconCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.activeSyncCommittee
-	channel <- collector.upcomingSyncCommittee
-	channel <- collector.upcomingProposals
-	channel <- collector.recentProposals
+func (c *BeaconCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.activeSyncCommittee
+	channel <- c.upcomingSyncCommittee
+	channel <- c.upcomingProposals
+	channel <- c.recentProposals
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
 	epoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
 
 	// Get services
-	bc := collector.sp.GetBeaconClient()
-	nodeAddress, hasNodeAddress := collector.sp.GetWallet().GetAddress()
+	bc := c.sp.GetBeaconClient()
+	nodeAddress, hasNodeAddress := c.sp.GetWallet().GetAddress()
 
 	activeSyncCommittee := float64(0)
 	upcomingSyncCommittee := float64(0)
@@ -111,7 +111,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
 		wg.Go(func() error {
 			// Get current duties
-			duties, err := bc.GetValidatorSyncDuties(collector.ctx, validatorIndices, epoch)
+			duties, err := bc.GetValidatorSyncDuties(c.ctx, validatorIndices, epoch)
 			if err != nil {
 				return fmt.Errorf("Error getting sync duties: %w", err)
 			}
@@ -130,7 +130,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 			config := state.BeaconConfig
 
 			// Get upcoming duties
-			duties, err := bc.GetValidatorSyncDuties(collector.ctx, validatorIndices, epoch+config.EpochsPerSyncCommitteePeriod)
+			duties, err := bc.GetValidatorSyncDuties(c.ctx, validatorIndices, epoch+config.EpochsPerSyncCommitteePeriod)
 			if err != nil {
 				return fmt.Errorf("Error getting sync duties: %w", err)
 			}
@@ -146,7 +146,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
 		wg.Go(func() error {
 			// Get proposals in this epoch
-			duties, err := bc.GetValidatorProposerDuties(collector.ctx, validatorIndices, epoch)
+			duties, err := bc.GetValidatorProposerDuties(c.ctx, validatorIndices, epoch)
 			if err != nil {
 				return fmt.Errorf("Error getting proposer duties: %w", err)
 			}
@@ -174,9 +174,9 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
 		wg.Go(func() error {
 			// check the latest finalized epoch for proposals:
-			count, err := collector.getProposedBlockCount(validatorIndices, bc, state.BeaconConfig.SlotsPerEpoch)
+			count, err := c.getProposedBlockCount(validatorIndices, bc, state.BeaconConfig.SlotsPerEpoch)
 			if err != nil {
-				collector.logger.Error("Error getting recent proposed block count", log.Err(err))
+				c.logger.Error("Error getting recent proposed block count", log.Err(err))
 				return err
 			}
 			recentProposalCount = count
@@ -185,26 +185,26 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
 		// Wait for data
 		if err := wg.Wait(); err != nil {
-			collector.logger.Error(err.Error())
+			c.logger.Error(err.Error())
 			return
 		}
 	}
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.activeSyncCommittee, prometheus.GaugeValue, activeSyncCommittee)
+		c.activeSyncCommittee, prometheus.GaugeValue, activeSyncCommittee)
 	channel <- prometheus.MustNewConstMetric(
-		collector.upcomingSyncCommittee, prometheus.GaugeValue, upcomingSyncCommittee)
+		c.upcomingSyncCommittee, prometheus.GaugeValue, upcomingSyncCommittee)
 	channel <- prometheus.MustNewConstMetric(
-		collector.upcomingProposals, prometheus.GaugeValue, upcomingProposals)
+		c.upcomingProposals, prometheus.GaugeValue, upcomingProposals)
 	channel <- prometheus.MustNewConstMetric(
-		collector.recentProposals, prometheus.GaugeValue, recentProposalCount)
+		c.recentProposals, prometheus.GaugeValue, recentProposalCount)
 }
 
-func (collector *BeaconCollector) getProposedBlockCount(validatorIndices []string, bc beacon.IBeaconClient, slotsPerEpoch uint64) (float64, error) {
+func (c *BeaconCollector) getProposedBlockCount(validatorIndices []string, bc beacon.IBeaconClient, slotsPerEpoch uint64) (float64, error) {
 	// Get the Beacon head
-	head, err := bc.GetBeaconHead(collector.ctx)
+	head, err := bc.GetBeaconHead(c.ctx)
 	if err != nil {
-		collector.logger.Error("Error getting Beacon chain head", log.Err(err))
+		c.logger.Error("Error getting Beacon chain head", log.Err(err))
 		return 0, nil
 	}
 
@@ -219,9 +219,9 @@ func (collector *BeaconCollector) getProposedBlockCount(validatorIndices []strin
 	proposedBlockCount := float64(0)
 
 	for slot := latestSlot; slot > latestSlot-slotsPerEpoch; slot-- {
-		block, hasBlock, err := bc.GetBeaconBlockHeader(collector.ctx, strconv.FormatUint(slot, 10))
+		block, hasBlock, err := bc.GetBeaconBlockHeader(c.ctx, strconv.FormatUint(slot, 10))
 		if err != nil {
-			collector.logger.Error("Error getting Beacon block", log.Err(err))
+			c.logger.Error("Error getting Beacon block", log.Err(err))
 			continue
 		}
 		if !hasBlock {
