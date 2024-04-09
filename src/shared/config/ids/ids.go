@@ -2,13 +2,11 @@ package ids
 
 const (
 	// Root IDs
-	VersionID        string = "version"
-	UserDirectoryKey string = "rpUserDir"
-	IsNativeKey      string = "isNative"
-	SmartNodeID      string = "smartNode"
+	VersionID   string = "version"
+	IsNativeKey string = "isNative"
+	SmartNodeID string = "smartNode"
 
 	// Smart Node parameter IDs
-	DebugModeID                     string = "debugMode"
 	NetworkID                       string = "network"
 	ClientModeID                    string = "clientMode"
 	UserDataPathID                  string = "rpUserDataDir"

@@ -17,6 +17,7 @@ type settingsHome struct {
 	saveButton       *tview.Button
 	wizardButton     *tview.Button
 	smartnodePage    *SmartnodeConfigPage
+	loggingPage      *LoggingConfigPage
 	ecPage           *ExecutionConfigPage
 	fallbackPage     *FallbackConfigPage
 	bnPage           *BeaconConfigPage
@@ -43,6 +44,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 
 	// Create the settings subpages
 	home.smartnodePage = NewSmartnodeConfigPage(home)
+	home.loggingPage = NewLoggingConfigPage(home)
 	home.ecPage = NewExecutionConfigPage(home)
 	home.bnPage = NewBeaconConfigPage(home)
 	home.fallbackPage = NewFallbackConfigPage(home)
@@ -52,6 +54,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	home.addonsPage = NewAddonsPage(home)
 	settingsSubpages := []settingsPage{
 		home.smartnodePage,
+		home.loggingPage,
 		home.ecPage,
 		home.bnPage,
 		home.fallbackPage,
@@ -225,6 +228,10 @@ func (home *settingsHome) refresh() {
 		if home.smartnodePage != nil {
 			home.smartnodePage.layout.refresh()
 		}*/
+
+	if home.loggingPage != nil {
+		home.loggingPage.layout.refresh()
+	}
 
 	if home.ecPage != nil {
 		home.ecPage.layout.refresh()

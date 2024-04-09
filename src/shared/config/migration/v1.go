@@ -51,9 +51,6 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// Top level
 	newConfig := map[string]any{}
-	if err = getSettingWithExpandedPath(newConfig, ids.UserDirectoryKey, legacyRootConfig, "rpDir"); err != nil {
-		return nil, err
-	}
 	newConfig[ids.IsNativeKey] = legacyRootConfig["isNative"]
 	newConfig[ids.VersionID] = "v2.0.0-migrate"
 

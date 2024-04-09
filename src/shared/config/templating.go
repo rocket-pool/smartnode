@@ -485,7 +485,7 @@ func (cfg *SmartNodeConfig) GetMevBoostOpenPorts() string {
 // ==============
 
 func (cfg *SmartNodeConfig) GetAddonsFolderPath() string {
-	return filepath.Join(cfg.RocketPoolDirectory, AddonsFolderName)
+	return filepath.Join(cfg.rocketPoolDirectory, AddonsFolderName)
 }
 
 func (cfg *SmartNodeConfig) GetGwwPath() string {

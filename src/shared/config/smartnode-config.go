@@ -29,7 +29,6 @@ const (
 // The master configuration struct
 type SmartNodeConfig struct {
 	// Smart Node settings
-	DebugMode                     config.Parameter[bool]
 	Network                       config.Parameter[config.Network]
 	ClientMode                    config.Parameter[config.ClientMode]
 	ProjectName                   config.Parameter[string]
@@ -81,7 +80,7 @@ type SmartNodeConfig struct {
 
 	// Internal fields
 	Version             string
-	RocketPoolDirectory string
+	rocketPoolDirectory string
 	IsNativeMode        bool
 	resources           *RocketPoolResources
 }
@@ -119,22 +118,9 @@ func LoadFromFile(path string) (*SmartNodeConfig, error) {
 // Creates a new Smart Node configuration instance
 func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 	cfg := &SmartNodeConfig{
-		RocketPoolDirectory: rpDir,
+		rocketPoolDirectory: rpDir,
 		IsNativeMode:        isNativeMode,
-
-		DebugMode: config.Parameter[bool]{
-			ParameterCommon: &config.ParameterCommon{
-				ID:                 ids.DebugModeID,
-				Name:               "Debug Mode",
-				Description:        "Enable debug log printing in the daemon and watchtower.",
-				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon},
-				CanBeBlank:         false,
-				OverwriteOnUpgrade: false,
-			},
-			Default: map[config.Network]bool{
-				config.Network_All: false,
-			},
-		},
+		Version:             shared.RocketPoolVersion,
 
 		Network: config.Parameter[config.Network]{
 			ParameterCommon: &config.ParameterCommon{
@@ -480,8 +466,6 @@ func (cfg *SmartNodeConfig) GetParameters() []config.IParameter {
 		&cfg.CheckpointRetentionLimit,
 		&cfg.WatchtowerStatePath,
 		&cfg.RecordsPath,
-
-		&cfg.DebugMode,
 	}
 }
 
@@ -507,7 +491,6 @@ func (cfg *SmartNodeConfig) Serialize() map[string]any {
 	masterMap := map[string]any{}
 
 	snMap := config.Serialize(cfg)
-	masterMap[ids.UserDirectoryKey] = cfg.RocketPoolDirectory
 	masterMap[ids.VersionID] = fmt.Sprintf("v%s", shared.RocketPoolVersion)
 	masterMap[ids.IsNativeKey] = strconv.FormatBool(cfg.IsNativeMode)
 	masterMap[ids.SmartNodeID] = snMap
@@ -549,11 +532,6 @@ func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
 	}
 
 	// Get the special fields
-	udKey, exists := masterMap[ids.UserDirectoryKey]
-	if !exists {
-		return fmt.Errorf("expected a user directory parameter named [%s] but it was not found", ids.UserDirectoryKey)
-	}
-	cfg.RocketPoolDirectory = udKey.(string)
 	version, exists := masterMap[ids.VersionID]
 	if !exists {
 		return fmt.Errorf("expected a version parameter named [%s] but it was not found", ids.VersionID)
@@ -586,7 +564,7 @@ func (cfg *SmartNodeConfig) ChangeNetwork(newNetwork config.Network) {
 // Create a copy of this configuration.
 func (cfg *SmartNodeConfig) CreateCopy() *SmartNodeConfig {
 	network := cfg.Network.Value
-	copy := NewSmartNodeConfig(cfg.RocketPoolDirectory, cfg.IsNativeMode)
+	copy := NewSmartNodeConfig(cfg.rocketPoolDirectory, cfg.IsNativeMode)
 	config.Clone(cfg, copy, network)
 	copy.updateResources()
 	copy.Version = cfg.Version
@@ -739,6 +717,7 @@ func (cfg *SmartNodeConfig) applyAllDefaults() {
 	cfg.updateResources()
 }
 
+// Update the config's resource cache
 func (cfg *SmartNodeConfig) updateResources() {
 	cfg.resources = newRocketPoolResources(cfg.Network.Value)
 }
