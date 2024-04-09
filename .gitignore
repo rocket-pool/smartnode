@@ -33,5 +33,5 @@ pkg
 .vscode-ctags
 
 # Binaries
-v2/rocketpool-cli/rocketpool-cli
-v2/rocketpool-daemon/rocketpool-daemon
+src/rocketpool-cli/rocketpool-cli
+src/rocketpool-daemon/rocketpool-daemon
