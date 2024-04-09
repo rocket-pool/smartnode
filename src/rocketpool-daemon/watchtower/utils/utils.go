@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 const (

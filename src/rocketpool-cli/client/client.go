@@ -8,11 +8,11 @@ import (
 	docker "github.com/docker/docker/client"
 	"github.com/fatih/color"
 	"github.com/rocket-pool/node-manager-core/log"
-	"github.com/rocket-pool/smartnode/client"
-	rocketpool "github.com/rocket-pool/smartnode/client"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/context"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/client"
+	rocketpool "github.com/rocket-pool/smartnode/v2/client"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/context"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/urfave/cli/v2"
 )
 

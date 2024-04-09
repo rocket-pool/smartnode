@@ -14,8 +14,8 @@ import (
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
 // ===============

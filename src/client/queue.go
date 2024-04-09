@@ -3,7 +3,7 @@ package client
 import (
 	"github.com/rocket-pool/node-manager-core/api/client"
 	"github.com/rocket-pool/node-manager-core/api/types"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
 type QueueRequester struct {

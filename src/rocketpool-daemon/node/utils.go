@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 func getAutoTxInfo(cfg *config.SmartNodeConfig, logger *slog.Logger) (*big.Int, *big.Int) {

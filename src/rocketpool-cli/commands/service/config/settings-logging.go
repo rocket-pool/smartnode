@@ -1,6 +1,6 @@
 package config
 
-import snCfg "github.com/rocket-pool/smartnode/shared/config"
+import snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
 
 // The page wrapper for the logging config
 type LoggingConfigPage struct {

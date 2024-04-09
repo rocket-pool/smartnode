@@ -8,8 +8,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
-	rputils "github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	rputils "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
 // ===============

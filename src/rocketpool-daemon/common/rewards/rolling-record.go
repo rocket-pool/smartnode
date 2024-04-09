@@ -12,10 +12,10 @@ import (
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
-	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/keys"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
+	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
 	"golang.org/x/sync/errgroup"
 )
 

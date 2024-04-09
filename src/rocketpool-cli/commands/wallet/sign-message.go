@@ -9,8 +9,8 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/utils"
 	"github.com/rocket-pool/node-manager-core/wallet"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	cliutils "github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 )
 
 const (

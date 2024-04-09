@@ -13,11 +13,11 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/commands/wallet/bip39"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/wallet/bip39"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
 var (

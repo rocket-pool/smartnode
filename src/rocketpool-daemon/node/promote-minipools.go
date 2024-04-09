@@ -16,13 +16,13 @@ import (
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 
 	"github.com/rocket-pool/node-manager-core/node/wallet"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/gas"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/tx"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/keys"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/gas"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/tx"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )
 
 // Promote minipools task

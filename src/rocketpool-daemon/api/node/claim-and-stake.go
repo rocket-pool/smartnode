@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/rewards"
-	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
+	rprewards "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/rewards"
 )
 
 const (

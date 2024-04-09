@@ -8,13 +8,13 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/node-manager-core/wallet"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	cliwallet "github.com/rocket-pool/smartnode/rocketpool-cli/commands/wallet"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	cliwallet "github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/wallet"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
+	cliutils "github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/urfave/cli/v2"
 )
 

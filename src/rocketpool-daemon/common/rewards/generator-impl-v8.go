@@ -19,10 +19,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/keys"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
+	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
 	"golang.org/x/sync/errgroup"
 )
 

@@ -7,10 +7,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-openapi/strfmt"
-	apiclient "github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/client"
-	apialert "github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/client/alert"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/models"
-	"github.com/rocket-pool/smartnode/shared/config"
+	apiclient "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/client"
+	apialert "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/client/alert"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/models"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 const (

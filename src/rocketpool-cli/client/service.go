@@ -15,7 +15,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/fatih/color"
 	"github.com/mitchellh/go-homedir"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 const (

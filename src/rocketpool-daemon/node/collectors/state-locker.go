@@ -4,7 +4,7 @@ import (
 	"math/big"
 	"sync"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
 )
 
 type StateLocker struct {

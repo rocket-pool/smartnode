@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 
 	"github.com/mitchellh/go-homedir"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client/template"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client/template"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 const (

@@ -7,11 +7,11 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/keys"
+	rprewards "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/rewards"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )
 
 // Manage download rewards trees task

@@ -17,7 +17,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
 )
 
 // Wrapper for callbacks used by functions that will query all of the node's minipools - they follow this pattern:

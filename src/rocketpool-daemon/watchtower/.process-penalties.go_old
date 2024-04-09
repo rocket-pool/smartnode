@@ -19,16 +19,16 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/v2/shared/services/beacon"
 	""
-	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/state"
+	rpgas "github.com/rocket-pool/smartnode/v2/shared/services/gas"
+	"github.com/rocket-pool/smartnode/v2/shared/services/state"
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
+	"github.com/rocket-pool/smartnode/v2/shared/services"
+	"github.com/rocket-pool/smartnode/v2/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/v2/shared/utils/api"
 	"github.com/rocket-pool/node-manager-core/log"
 )
 

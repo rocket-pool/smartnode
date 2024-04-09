@@ -11,10 +11,10 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/node-manager-core/utils/math"
-	"github.com/rocket-pool/smartnode/shared/services/gas"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/v2/shared/services/gas"
+	"github.com/rocket-pool/smartnode/v2/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/v2/shared/utils/cli"
 )
 
 func dissolveMinipools(c *cli.Context) error {

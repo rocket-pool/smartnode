@@ -9,8 +9,8 @@ import (
 	"github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	types "github.com/wealdtech/go-eth2-types/v2"
 )

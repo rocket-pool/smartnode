@@ -6,10 +6,10 @@ import (
 
 	"github.com/dustin/go-humanize"
 	nmc_config "github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/urfave/cli/v2"
 )

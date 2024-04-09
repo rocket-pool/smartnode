@@ -16,8 +16,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/dao/security"
 	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 )
 
 // Settings

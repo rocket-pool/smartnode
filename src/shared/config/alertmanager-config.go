@@ -8,7 +8,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/config"
 	nmc_ids "github.com/rocket-pool/node-manager-core/config/ids"
-	"github.com/rocket-pool/smartnode/shared/config/ids"
+	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
 )
 
 // Constants

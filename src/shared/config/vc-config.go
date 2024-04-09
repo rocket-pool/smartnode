@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/shared/config/ids"
+	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
 )
 
 // Configuration for the Validator Client

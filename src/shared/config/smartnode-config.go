@@ -11,9 +11,9 @@ import (
 	"github.com/alessio/shellescape"
 	"github.com/pbnjay/memory"
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/config/ids"
-	"github.com/rocket-pool/smartnode/shared/config/migration"
+	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
+	"github.com/rocket-pool/smartnode/v2/shared/config/migration"
 	"gopkg.in/yaml.v3"
 )
 

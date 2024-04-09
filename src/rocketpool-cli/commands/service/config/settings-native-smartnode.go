@@ -1,7 +1,7 @@
 package config
 
 import (
-	snids "github.com/rocket-pool/smartnode/shared/config/ids"
+	snids "github.com/rocket-pool/smartnode/v2/shared/config/ids"
 )
 
 // The page wrapper for the Smartnode config

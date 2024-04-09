@@ -10,7 +10,7 @@ import (
 
 	"github.com/alessio/shellescape"
 	"github.com/rocket-pool/node-manager-core/api/types"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"gopkg.in/yaml.v2"
 )
 

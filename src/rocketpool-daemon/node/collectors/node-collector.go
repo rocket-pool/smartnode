@@ -17,10 +17,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
-	"github.com/rocket-pool/smartnode/shared/keys"
+	rprewards "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/rewards"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 	"golang.org/x/sync/errgroup"
 )
 

@@ -13,13 +13,13 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/log"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/keys"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
 // Config

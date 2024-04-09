@@ -21,7 +21,7 @@ import (
 	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
 )
 
 // ===============

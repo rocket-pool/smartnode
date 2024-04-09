@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/shared/config"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
 )
 
 const (

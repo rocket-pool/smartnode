@@ -2,9 +2,9 @@ package config
 
 import (
 	"github.com/rocket-pool/node-manager-core/config"
-	gww "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
-	rn "github.com/rocket-pool/smartnode/addons/rescue_node"
-	"github.com/rocket-pool/smartnode/shared/config/ids"
+	gww "github.com/rocket-pool/smartnode/v2/addons/graffiti_wall_writer"
+	rn "github.com/rocket-pool/smartnode/v2/addons/rescue_node"
+	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
 )
 
 type AddonsConfig struct {

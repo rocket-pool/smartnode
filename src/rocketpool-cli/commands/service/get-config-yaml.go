@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/urfave/cli/v2"
 	"gopkg.in/yaml.v2"
 )

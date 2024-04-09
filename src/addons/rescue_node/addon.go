@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/addons/rescue_node/pb"
+	"github.com/rocket-pool/smartnode/v2/addons/rescue_node/pb"
 )
 
 const (

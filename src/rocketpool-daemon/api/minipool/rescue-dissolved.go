@@ -20,7 +20,7 @@ import (
 	rpbeacon "github.com/rocket-pool/rocketpool-go/beacon"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
 )
 
 // ===============

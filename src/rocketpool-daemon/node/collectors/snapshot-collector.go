@@ -9,10 +9,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/log"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
-	"github.com/rocket-pool/smartnode/shared/keys"
-	"github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/voting"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
+	"github.com/rocket-pool/smartnode/v2/shared/types"
 	"golang.org/x/sync/errgroup"
 )
 

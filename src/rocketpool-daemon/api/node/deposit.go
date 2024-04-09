@@ -24,11 +24,11 @@ import (
 	"github.com/rocket-pool/node-manager-core/node/validator"
 	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/collateral"
-	rputils "github.com/rocket-pool/smartnode/rocketpool-daemon/common/utils"
-	snValidator "github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/collateral"
+	rputils "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
+	snValidator "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
 // ===============

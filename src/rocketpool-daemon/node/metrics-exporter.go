@@ -13,10 +13,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rocket-pool/node-manager-core/log"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
-	wc "github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
-	"github.com/rocket-pool/smartnode/shared/keys"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/node/collectors"
+	wc "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/watchtower/collectors"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )
 
 func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, stateLocker *collectors.StateLocker, wg *sync.WaitGroup,

@@ -7,7 +7,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/utils"
+	"github.com/rocket-pool/smartnode/v2/shared/utils"
 	"github.com/urfave/cli/v2"
 )
 

@@ -11,9 +11,9 @@ import (
 	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	snCfg "github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
+	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/urfave/cli/v2"
 )
 

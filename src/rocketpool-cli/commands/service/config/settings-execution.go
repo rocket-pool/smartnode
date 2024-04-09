@@ -3,7 +3,7 @@ package config
 import (
 	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/config/ids"
-	snCfg "github.com/rocket-pool/smartnode/shared/config"
+	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 // The page wrapper for the EC config

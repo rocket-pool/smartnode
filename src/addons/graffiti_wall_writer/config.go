@@ -5,7 +5,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/config"
 	nmc_ids "github.com/rocket-pool/node-manager-core/config/ids"
-	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer/ids"
+	"github.com/rocket-pool/smartnode/v2/addons/graffiti_wall_writer/ids"
 )
 
 // Constants

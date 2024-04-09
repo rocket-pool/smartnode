@@ -3,8 +3,8 @@ package network
 import (
 	"github.com/urfave/cli/v2"
 
-	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/shared/utils"
+	cliutils "github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/v2/shared/utils"
 )
 
 // Register commands

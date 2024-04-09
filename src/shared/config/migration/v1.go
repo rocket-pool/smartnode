@@ -7,9 +7,9 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	nmc_ids "github.com/rocket-pool/node-manager-core/config/ids"
-	gww_ids "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer/ids"
-	rn_ids "github.com/rocket-pool/smartnode/addons/rescue_node/ids"
-	"github.com/rocket-pool/smartnode/shared/config/ids"
+	gww_ids "github.com/rocket-pool/smartnode/v2/addons/graffiti_wall_writer/ids"
+	rn_ids "github.com/rocket-pool/smartnode/v2/addons/rescue_node/ids"
+	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
 )
 
 // Migrate a legacy v1 config into a new v2 config
