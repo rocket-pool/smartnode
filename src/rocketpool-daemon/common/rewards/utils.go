@@ -22,11 +22,11 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	"github.com/rocket-pool/smartnode/shared/config"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/rocketpool-go/v2/rewards"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
+	rpstate "github.com/rocket-pool/rocketpool-go/v2/utils/state"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
 )
 
 // Settings

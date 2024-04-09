@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	cliutils "github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
+	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
 	"github.com/urfave/cli/v2"
 )
 

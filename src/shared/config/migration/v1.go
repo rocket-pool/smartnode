@@ -5,10 +5,11 @@ import (
 	"reflect"
 	"strconv"
 
+	"github.com/mitchellh/go-homedir"
 	nmc_ids "github.com/rocket-pool/node-manager-core/config/ids"
-	gww_ids "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer/ids"
-	rn_ids "github.com/rocket-pool/smartnode/addons/rescue_node/ids"
-	"github.com/rocket-pool/smartnode/shared/config/ids"
+	gww_ids "github.com/rocket-pool/smartnode/v2/addons/graffiti_wall_writer/ids"
+	rn_ids "github.com/rocket-pool/smartnode/v2/addons/rescue_node/ids"
+	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
 )
 
 // Migrate a legacy v1 config into a new v2 config
@@ -50,14 +51,15 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// Top level
 	newConfig := map[string]any{}
-	newConfig[ids.UserDirectoryKey] = legacyRootConfig["rpDir"]
 	newConfig[ids.IsNativeKey] = legacyRootConfig["isNative"]
 	newConfig[ids.VersionID] = "v2.0.0-migrate"
 
 	// Smart Node
 	newSmartnodeConfig := map[string]any{}
 	newSmartnodeConfig[ids.ProjectNameID] = legacySmartnodeConfig["projectName"]
-	newSmartnodeConfig[ids.UserDataPathID] = legacySmartnodeConfig["dataPath"]
+	if err = getSettingWithExpandedPath(newSmartnodeConfig, ids.UserDataPathID, legacySmartnodeConfig, "dataPath"); err != nil {
+		return nil, err
+	}
 	newSmartnodeConfig[ids.NetworkID] = legacySmartnodeConfig["network"]
 	newSmartnodeConfig[ids.ClientModeID] = legacyRootConfig["executionClientMode"]
 	newSmartnodeConfig[ids.VerifyProposalsID] = legacySmartnodeConfig["verifyProposals"]
@@ -210,8 +212,12 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// Validator Client
 	newValidatorClientConfig := map[string]any{}
-	newValidatorClientConfig[ids.NativeValidatorRestartCommandID] = legacyNativeConfig["validatorRestartCommand"]
-	newValidatorClientConfig[ids.NativeValidatorStopCommandID] = legacyNativeConfig["validatorStopCommand"]
+	if err = getSettingWithExpandedPath(newValidatorClientConfig, ids.NativeValidatorRestartCommandID, legacyNativeConfig, "validatorRestartCommand"); err != nil {
+		return nil, err
+	}
+	if err = getSettingWithExpandedPath(newValidatorClientConfig, ids.NativeValidatorStopCommandID, legacyNativeConfig, "validatorStopCommand"); err != nil {
+		return nil, err
+	}
 	newSmartnodeConfig[ids.ValidatorClientID] = newValidatorClientConfig
 
 	// Get the VC details based on the old client mode
@@ -447,4 +453,13 @@ func getLegacyConfigSection(previousError error, serializedConfig map[string]any
 		legacyConfig[k] = val
 	}
 	return legacyConfig, nil
+}
+
+func getSettingWithExpandedPath(section map[string]any, id string, legacySection map[string]string, legacyID string) error {
+	var err error
+	section[id], err = homedir.Expand(legacySection[legacyID])
+	if err != nil {
+		return fmt.Errorf("error expanding %s [%s]: %w", id, legacySection[legacyID], err)
+	}
+	return nil
 }

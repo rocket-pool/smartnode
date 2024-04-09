@@ -15,8 +15,8 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/v2/minipool"
+	rptypes "github.com/rocket-pool/rocketpool-go/v2/types"
 )
 
 // ===============

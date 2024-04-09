@@ -9,12 +9,12 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/services"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/validator"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/contracts"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 // A container for all of the various services used by the Smartnode
@@ -61,9 +61,16 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	}
 
 	// Attempt a wallet upgrade before anything
-	err = validator.CheckAndUpgradeWallet(cfg.GetWalletFilePath(), cfg.GetNextAccountFilePath(), sp.GetTasksLogger().Logger)
+	tasksLogger := sp.GetTasksLogger().Logger
+	upgraded, err := validator.CheckAndUpgradeWallet(cfg.GetWalletFilePath(), cfg.GetNextAccountFilePath(), tasksLogger)
 	if err != nil {
 		return nil, fmt.Errorf("error checking for legacy wallet upgrade: %w", err)
+	}
+	if upgraded {
+		err = sp.GetWallet().Reload(tasksLogger)
+		if err != nil {
+			return nil, fmt.Errorf("error reloading wallet after upgrade: %w", err)
+		}
 	}
 
 	// Rocket Pool

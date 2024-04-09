@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/rocket-pool/node-manager-core/config"
-	snCfg "github.com/rocket-pool/smartnode/shared/config"
+	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 func createMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {

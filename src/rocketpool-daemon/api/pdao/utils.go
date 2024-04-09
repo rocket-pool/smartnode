@@ -4,10 +4,10 @@ import (
 	"context"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/proposals"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/v2/types"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/proposals"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 // Constructs a pollard for the latest finalized block and saves it to disk

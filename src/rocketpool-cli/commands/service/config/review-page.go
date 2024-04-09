@@ -7,8 +7,8 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/shared"
-	snCfg "github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared"
+	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 // Constants

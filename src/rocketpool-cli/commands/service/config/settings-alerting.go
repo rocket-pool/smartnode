@@ -5,8 +5,8 @@ import (
 
 	"github.com/rivo/tview"
 	nmc_ids "github.com/rocket-pool/node-manager-core/config/ids"
-	"github.com/rocket-pool/smartnode/shared/config"
-	"github.com/rocket-pool/smartnode/shared/config/ids"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
 )
 
 var alertingParametersNativeMode map[string]interface{} = map[string]interface{}{

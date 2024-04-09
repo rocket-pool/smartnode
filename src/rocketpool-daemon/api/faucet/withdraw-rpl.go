@@ -12,9 +12,9 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/contracts"
-	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/contracts"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
 // ===============

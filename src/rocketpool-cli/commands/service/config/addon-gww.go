@@ -5,8 +5,8 @@ import (
 
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/node-manager-core/config"
-	gww "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
-	snCfg "github.com/rocket-pool/smartnode/shared/config"
+	gww "github.com/rocket-pool/smartnode/v2/addons/graffiti_wall_writer"
+	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 // The page wrapper for the Graffiti Wall Writer addon config

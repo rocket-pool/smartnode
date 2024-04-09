@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/urfave/cli/v2"
 )
 

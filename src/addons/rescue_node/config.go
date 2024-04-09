@@ -2,7 +2,7 @@ package rescue_node
 
 import (
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/addons/rescue_node/ids"
+	"github.com/rocket-pool/smartnode/v2/addons/rescue_node/ids"
 )
 
 type RescueNodeConfig struct {

@@ -10,11 +10,11 @@ import (
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/client/alert"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/client/alertgroup"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/client/general"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/client/receiver"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/client/silence"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/client/alert"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/client/alertgroup"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/client/general"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/client/receiver"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/client/silence"
 )
 
 // Default alertmanager HTTP client.

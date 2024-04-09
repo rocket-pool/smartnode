@@ -3,6 +3,7 @@ package collectors
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"math/big"
 	"time"
@@ -11,13 +12,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
-	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/node-manager-core/log"
+	"github.com/rocket-pool/rocketpool-go/v2/minipool"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/v2/types"
+	rpstate "github.com/rocket-pool/rocketpool-go/v2/utils/state"
+	rprewards "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/rewards"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -93,6 +96,9 @@ type NodeCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The next block to start from when looking at cumulative RPL rewards
 	nextRewardsStartBlock *big.Int
 
@@ -107,14 +113,12 @@ type NodeCollector struct {
 
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *NodeCollector {
+func NewNodeCollector(logger *log.Logger, ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *NodeCollector {
 	subsystem := "node"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Node Collector"))
 	return &NodeCollector{
 		totalStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_staked_rpl"),
 			"The total amount of RPL staked on the node",
@@ -198,50 +202,50 @@ func NewNodeCollector(ctx context.Context, sp *services.ServiceProvider, stateLo
 		),
 		ctx:              ctx,
 		sp:               sp,
+		logger:           sublogger,
 		handledIntervals: map[uint64]bool{},
 		stateLocker:      stateLocker,
-		logPrefix:        "Node Collector",
 	}
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.totalStakedRpl
-	channel <- collector.effectiveStakedRpl
-	channel <- collector.rewardableStakedRpl
-	channel <- collector.cumulativeRplRewards
-	channel <- collector.expectedRplRewards
-	channel <- collector.rplApr
-	channel <- collector.balances
-	channel <- collector.activeMinipoolCount
-	channel <- collector.depositedEth
-	channel <- collector.beaconBalance
-	channel <- collector.beaconShare
-	channel <- collector.clientSyncProgress
-	channel <- collector.minipoolBalance
-	channel <- collector.minipoolShare
-	channel <- collector.refundBalance
-	channel <- collector.unclaimedRewards
-	channel <- collector.claimedEthRewards
-	channel <- collector.unclaimedEthRewards
-	channel <- collector.borrowedCollateralRatio
-	channel <- collector.bondedCollateralRatio
+func (c *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.totalStakedRpl
+	channel <- c.effectiveStakedRpl
+	channel <- c.rewardableStakedRpl
+	channel <- c.cumulativeRplRewards
+	channel <- c.expectedRplRewards
+	channel <- c.rplApr
+	channel <- c.balances
+	channel <- c.activeMinipoolCount
+	channel <- c.depositedEth
+	channel <- c.beaconBalance
+	channel <- c.beaconShare
+	channel <- c.clientSyncProgress
+	channel <- c.minipoolBalance
+	channel <- c.minipoolShare
+	channel <- c.refundBalance
+	channel <- c.unclaimedRewards
+	channel <- c.claimedEthRewards
+	channel <- c.unclaimedEthRewards
+	channel <- c.borrowedCollateralRatio
+	channel <- c.bondedCollateralRatio
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
 
 	// Get services
-	rp := collector.sp.GetRocketPool()
-	cfg := collector.sp.GetConfig()
-	ec := collector.sp.GetEthClient()
-	bc := collector.sp.GetBeaconClient()
-	nodeAddress, hasNodeAddress := collector.sp.GetWallet().GetAddress()
+	rp := c.sp.GetRocketPool()
+	cfg := c.sp.GetConfig()
+	ec := c.sp.GetEthClient()
+	bc := c.sp.GetBeaconClient()
+	nodeAddress, hasNodeAddress := c.sp.GetWallet().GetAddress()
 	if !hasNodeAddress {
 		return
 	}
@@ -256,7 +260,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	inflationInterval := state.NetworkDetails.RPLInflationIntervalRate
 	totalRplSupply := state.NetworkDetails.RPLTotalSupply
-	totalEffectiveStake := collector.stateLocker.GetTotalEffectiveRPLStake()
+	totalEffectiveStake := c.stateLocker.GetTotalEffectiveRPLStake()
 	nodeOperatorRewardsPercent := eth.WeiToEth(state.NetworkDetails.NodeOperatorRewardsPercent)
 	previousIntervalTotalNodeWeight := big.NewInt(0)
 	ethBalance := eth.WeiToEth(nd.BalanceETH)
@@ -315,7 +319,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 		// Get the info for each claimed interval
 		for _, claimedInterval := range status.Claimed {
-			_, exists := collector.handledIntervals[claimedInterval]
+			_, exists := c.handledIntervals[claimedInterval]
 			if !exists {
 				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, claimedInterval, nil)
 				if err != nil {
@@ -327,7 +331,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 				newRewards.Add(newRewards, &intervalInfo.CollateralRplAmount.Int)
 				newClaimedEthRewards.Add(newClaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
-				collector.handledIntervals[claimedInterval] = true
+				c.handledIntervals[claimedInterval] = true
 			}
 		}
 		// Get the unclaimed rewards
@@ -351,11 +355,11 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			return fmt.Errorf("Error getting latest block header: %w", err)
 		}
 
-		collector.cumulativeRewards += eth.WeiToEth(newRewards)
-		collector.cumulativeClaimedEthRewards += eth.WeiToEth(newClaimedEthRewards)
+		c.cumulativeRewards += eth.WeiToEth(newRewards)
+		c.cumulativeClaimedEthRewards += eth.WeiToEth(newClaimedEthRewards)
 		unclaimedRplRewards = eth.WeiToEth(unclaimedRplWei)
 		unclaimedEthRewards = eth.WeiToEth(unclaimedEthWei)
-		collector.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
+		c.nextRewardsStartBlock = big.NewInt(0).Add(header.Number, big.NewInt(1))
 
 		return nil
 	})
@@ -363,10 +367,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// get the beacon client sync status:
 	wg.Go(func() error {
 		progress := float64(0)
-		syncStatus, err := bc.GetSyncStatus(collector.ctx)
+		syncStatus, err := bc.GetSyncStatus(c.ctx)
 		if err != nil {
 			// NOTE: returning here causes the metric to not be emitted. the endpoint stays responsive, but also slightly more accurate (progress=nothing instead of 0)
-			fmt.Printf("error getting beacon chain sync status: %w", err)
+			c.logger.Warn("Error getting Beacon Chain sync status", log.Err(err))
 			return nil
 		} else {
 			progress = syncStatus.Progress
@@ -376,16 +380,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 		// note this metric is emitted asynchronously, while others in this file tend to be emitted at the end of the outer function (mostly due to dependencies between metrics). See https://github.com/rocket-pool/smartnode/issues/186
 		channel <- prometheus.MustNewConstMetric(
-			collector.clientSyncProgress, prometheus.GaugeValue, progress, "beacon")
+			c.clientSyncProgress, prometheus.GaugeValue, progress, "beacon")
 		return nil
 	})
 
 	// get the execution client sync status:
 	wg.Go(func() error {
-		syncStatus := ec.CheckStatus(collector.ctx)
+		syncStatus := ec.CheckStatus(c.ctx)
 		// note this metric is emitted asynchronously, while others in this file tend to be emitted at the end of the outer function (mostly due to dependencies between metrics). See https://github.com/rocket-pool/smartnode/issues/186
 		channel <- prometheus.MustNewConstMetric(
-			collector.clientSyncProgress, prometheus.GaugeValue, syncStatus.PrimaryClientStatus.SyncProgress, "execution")
+			c.clientSyncProgress, prometheus.GaugeValue, syncStatus.PrimaryClientStatus.SyncProgress, "execution")
 		return nil
 	})
 
@@ -403,7 +407,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		collector.logError(err)
+		c.logger.Error(err.Error())
 		return
 	}
 
@@ -533,7 +537,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 	minipoolDetails, err := getBeaconBalancesFromState(rp, minipools, state, opts)
 	if err != nil {
-		collector.logError(err)
+		c.logger.Error("Error getting Beacon balances from state", log.Err(err))
 		return
 	}
 	totalDepositBalance := float64(0)
@@ -573,54 +577,49 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Update all the metrics
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalStakedRpl, prometheus.GaugeValue, stakedRpl)
+		c.totalStakedRpl, prometheus.GaugeValue, stakedRpl)
 	channel <- prometheus.MustNewConstMetric(
-		collector.effectiveStakedRpl, prometheus.GaugeValue, effectiveStakedRpl)
+		c.effectiveStakedRpl, prometheus.GaugeValue, effectiveStakedRpl)
 	channel <- prometheus.MustNewConstMetric(
-		collector.rewardableStakedRpl, prometheus.GaugeValue, rewardableStakeFloat)
+		c.rewardableStakedRpl, prometheus.GaugeValue, rewardableStakeFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.cumulativeRplRewards, prometheus.GaugeValue, collector.cumulativeRewards)
+		c.cumulativeRplRewards, prometheus.GaugeValue, c.cumulativeRewards)
 	channel <- prometheus.MustNewConstMetric(
-		collector.expectedRplRewards, prometheus.GaugeValue, estimatedRewards)
+		c.expectedRplRewards, prometheus.GaugeValue, estimatedRewards)
 	channel <- prometheus.MustNewConstMetric(
-		collector.rplApr, prometheus.GaugeValue, rplApr)
+		c.rplApr, prometheus.GaugeValue, rplApr)
 	channel <- prometheus.MustNewConstMetric(
-		collector.balances, prometheus.GaugeValue, ethBalance, "ETH")
+		c.balances, prometheus.GaugeValue, ethBalance, "ETH")
 	channel <- prometheus.MustNewConstMetric(
-		collector.balances, prometheus.GaugeValue, oldRplBalance, "Legacy RPL")
+		c.balances, prometheus.GaugeValue, oldRplBalance, "Legacy RPL")
 	channel <- prometheus.MustNewConstMetric(
-		collector.balances, prometheus.GaugeValue, newRplBalance, "New RPL")
+		c.balances, prometheus.GaugeValue, newRplBalance, "New RPL")
 	channel <- prometheus.MustNewConstMetric(
-		collector.balances, prometheus.GaugeValue, rethBalance, "rETH")
+		c.balances, prometheus.GaugeValue, rethBalance, "rETH")
 	channel <- prometheus.MustNewConstMetric(
-		collector.activeMinipoolCount, prometheus.GaugeValue, activeMinipoolCount)
+		c.activeMinipoolCount, prometheus.GaugeValue, activeMinipoolCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.depositedEth, prometheus.GaugeValue, totalDepositBalance)
+		c.depositedEth, prometheus.GaugeValue, totalDepositBalance)
 	channel <- prometheus.MustNewConstMetric(
-		collector.beaconShare, prometheus.GaugeValue, totalNodeShare)
+		c.beaconShare, prometheus.GaugeValue, totalNodeShare)
 	channel <- prometheus.MustNewConstMetric(
-		collector.beaconBalance, prometheus.GaugeValue, totalBeaconBalance)
+		c.beaconBalance, prometheus.GaugeValue, totalBeaconBalance)
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolBalance, prometheus.GaugeValue, totalMinipoolBalance)
+		c.minipoolBalance, prometheus.GaugeValue, totalMinipoolBalance)
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolShare, prometheus.GaugeValue, totalMinipoolShare)
+		c.minipoolShare, prometheus.GaugeValue, totalMinipoolShare)
 	channel <- prometheus.MustNewConstMetric(
-		collector.refundBalance, prometheus.GaugeValue, totalRefundBalance)
+		c.refundBalance, prometheus.GaugeValue, totalRefundBalance)
 	channel <- prometheus.MustNewConstMetric(
-		collector.unclaimedRewards, prometheus.GaugeValue, unclaimedRplRewards)
+		c.unclaimedRewards, prometheus.GaugeValue, unclaimedRplRewards)
 	channel <- prometheus.MustNewConstMetric(
-		collector.unclaimedEthRewards, prometheus.GaugeValue, unclaimedEthRewards)
+		c.unclaimedEthRewards, prometheus.GaugeValue, unclaimedEthRewards)
 	channel <- prometheus.MustNewConstMetric(
-		collector.claimedEthRewards, prometheus.GaugeValue, collector.cumulativeClaimedEthRewards)
+		c.claimedEthRewards, prometheus.GaugeValue, c.cumulativeClaimedEthRewards)
 	channel <- prometheus.MustNewConstMetric(
-		collector.borrowedCollateralRatio, prometheus.GaugeValue, borrowedCollateralRatio)
+		c.borrowedCollateralRatio, prometheus.GaugeValue, borrowedCollateralRatio)
 	channel <- prometheus.MustNewConstMetric(
-		collector.bondedCollateralRatio, prometheus.GaugeValue, bondedCollateralRatio)
-}
-
-// Log error messages
-func (collector *NodeCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
+		c.bondedCollateralRatio, prometheus.GaugeValue, bondedCollateralRatio)
 }
 
 // Beacon chain balance info for a minipool

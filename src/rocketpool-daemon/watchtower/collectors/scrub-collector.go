@@ -114,49 +114,47 @@ func NewScrubCollector() *ScrubCollector {
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *ScrubCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.prelaunchMinipoolsDesc
-	channel <- collector.beaconPassesDesc
-	channel <- collector.beaconScrubsDesc
-	channel <- collector.prestakePassesDesc
-	channel <- collector.prestakeScrubsDesc
-	channel <- collector.depositContractPassesDesc
-	channel <- collector.depositContractScrubsDesc
-	channel <- collector.poolsWithoutDepositsDesc
-	channel <- collector.uncoveredMinipoolsDesc
-	channel <- collector.safetyScrubsDesc
-	channel <- collector.latestBlockTimeDesc
+func (c *ScrubCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.prelaunchMinipoolsDesc
+	channel <- c.beaconPassesDesc
+	channel <- c.beaconScrubsDesc
+	channel <- c.prestakePassesDesc
+	channel <- c.prestakeScrubsDesc
+	channel <- c.depositContractPassesDesc
+	channel <- c.depositContractScrubsDesc
+	channel <- c.poolsWithoutDepositsDesc
+	channel <- c.uncoveredMinipoolsDesc
+	channel <- c.safetyScrubsDesc
+	channel <- c.latestBlockTimeDesc
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *ScrubCollector) Collect(channel chan<- prometheus.Metric) {
-
+func (c *ScrubCollector) Collect(channel chan<- prometheus.Metric) {
 	// Sync
-	collector.UpdateLock.Lock()
-	defer collector.UpdateLock.Unlock()
+	c.UpdateLock.Lock()
+	defer c.UpdateLock.Unlock()
 
 	// Update all of the metrics
 	channel <- prometheus.MustNewConstMetric(
-		collector.prelaunchMinipoolsDesc, prometheus.GaugeValue, collector.TotalMinipools)
+		c.prelaunchMinipoolsDesc, prometheus.GaugeValue, c.TotalMinipools)
 	channel <- prometheus.MustNewConstMetric(
-		collector.beaconPassesDesc, prometheus.GaugeValue, collector.GoodOnBeaconCount)
+		c.beaconPassesDesc, prometheus.GaugeValue, c.GoodOnBeaconCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.beaconScrubsDesc, prometheus.GaugeValue, collector.BadOnBeaconCount)
+		c.beaconScrubsDesc, prometheus.GaugeValue, c.BadOnBeaconCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.prestakePassesDesc, prometheus.GaugeValue, collector.GoodPrestakeCount)
+		c.prestakePassesDesc, prometheus.GaugeValue, c.GoodPrestakeCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.prestakeScrubsDesc, prometheus.GaugeValue, collector.BadPrestakeCount)
+		c.prestakeScrubsDesc, prometheus.GaugeValue, c.BadPrestakeCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.depositContractPassesDesc, prometheus.GaugeValue, collector.GoodOnDepositContract)
+		c.depositContractPassesDesc, prometheus.GaugeValue, c.GoodOnDepositContract)
 	channel <- prometheus.MustNewConstMetric(
-		collector.depositContractScrubsDesc, prometheus.GaugeValue, collector.BadOnDepositContract)
+		c.depositContractScrubsDesc, prometheus.GaugeValue, c.BadOnDepositContract)
 	channel <- prometheus.MustNewConstMetric(
-		collector.poolsWithoutDepositsDesc, prometheus.GaugeValue, collector.DepositlessMinipools)
+		c.poolsWithoutDepositsDesc, prometheus.GaugeValue, c.DepositlessMinipools)
 	channel <- prometheus.MustNewConstMetric(
-		collector.uncoveredMinipoolsDesc, prometheus.GaugeValue, collector.UncoveredMinipools)
+		c.uncoveredMinipoolsDesc, prometheus.GaugeValue, c.UncoveredMinipools)
 	channel <- prometheus.MustNewConstMetric(
-		collector.safetyScrubsDesc, prometheus.GaugeValue, collector.SafetyScrubs)
+		c.safetyScrubsDesc, prometheus.GaugeValue, c.SafetyScrubs)
 	channel <- prometheus.MustNewConstMetric(
-		collector.latestBlockTimeDesc, prometheus.GaugeValue, collector.LatestBlockTime)
-
+		c.latestBlockTimeDesc, prometheus.GaugeValue, c.LatestBlockTime)
 }

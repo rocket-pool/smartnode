@@ -6,14 +6,14 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client"
-	cliutils "github.com/rocket-pool/smartnode/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/tx"
-	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	cliutils "github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
+	"github.com/rocket-pool/smartnode/v2/shared/utils"
 )
 
 func voteOnProposal(c *cli.Context) error {

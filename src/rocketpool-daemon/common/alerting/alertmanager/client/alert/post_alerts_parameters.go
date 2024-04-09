@@ -15,7 +15,7 @@ import (
 	cr "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/models"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/models"
 )
 
 // NewPostAlertsParams creates a new PostAlertsParams object,

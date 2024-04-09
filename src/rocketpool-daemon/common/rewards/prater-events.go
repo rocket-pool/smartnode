@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/rewards"
+	"github.com/rocket-pool/rocketpool-go/v2/rewards"
 )
 
 // This file contains hardcoded events for Prater for the intervals before the contracts emitted rewards snapshot events,

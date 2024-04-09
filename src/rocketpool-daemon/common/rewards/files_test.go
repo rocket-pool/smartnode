@@ -7,7 +7,7 @@ import (
 	"path"
 	"testing"
 
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
+	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
 )
 
 func TestFilesFromTree(t *testing.T) {

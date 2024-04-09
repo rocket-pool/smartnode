@@ -13,10 +13,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rocket-pool/node-manager-core/log"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/node/collectors"
-	wc "github.com/rocket-pool/smartnode/rocketpool-daemon/watchtower/collectors"
-	"github.com/rocket-pool/smartnode/shared/keys"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/node/collectors"
+	wc "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/watchtower/collectors"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )
 
 func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, stateLocker *collectors.StateLocker, wg *sync.WaitGroup,
@@ -34,16 +34,16 @@ func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger 
 	}
 
 	// Create the collectors
-	demandCollector := collectors.NewDemandCollector(sp, stateLocker)
-	performanceCollector := collectors.NewPerformanceCollector(sp, stateLocker)
-	supplyCollector := collectors.NewSupplyCollector(sp, stateLocker)
-	rplCollector := collectors.NewRplCollector(sp, stateLocker)
-	odaoCollector := collectors.NewOdaoCollector(sp, stateLocker)
-	nodeCollector := collectors.NewNodeCollector(ctx, sp, stateLocker)
-	trustedNodeCollector := collectors.NewTrustedNodeCollector(sp, stateLocker)
-	beaconCollector := collectors.NewBeaconCollector(ctx, sp, stateLocker)
-	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(sp, stateLocker)
-	snapshotCollector := collectors.NewSnapshotCollector(sp)
+	demandCollector := collectors.NewDemandCollector(logger, sp, stateLocker)
+	performanceCollector := collectors.NewPerformanceCollector(logger, sp, stateLocker)
+	supplyCollector := collectors.NewSupplyCollector(logger, sp, stateLocker)
+	rplCollector := collectors.NewRplCollector(logger, sp, stateLocker)
+	odaoCollector := collectors.NewOdaoCollector(logger, sp, stateLocker)
+	nodeCollector := collectors.NewNodeCollector(logger, ctx, sp, stateLocker)
+	trustedNodeCollector := collectors.NewTrustedNodeCollector(logger, sp, stateLocker)
+	beaconCollector := collectors.NewBeaconCollector(logger, ctx, sp, stateLocker)
+	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(logger, sp, stateLocker)
+	snapshotCollector := collectors.NewSnapshotCollector(logger, sp)
 
 	// Set up Prometheus
 	registry := prometheus.NewRegistry()

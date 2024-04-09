@@ -92,15 +92,15 @@ func addAndCheckForDuplicate(portMap map[uint16]bool, param config.Parameter[uin
 }
 
 func (cfg *SmartNodeConfig) GetApiLogFilePath() string {
-	return filepath.Join(cfg.RocketPoolDirectory, LogDir, ApiLogName)
+	return filepath.Join(cfg.rocketPoolDirectory, LogDir, ApiLogName)
 }
 
 func (cfg *SmartNodeConfig) GetTasksLogFilePath() string {
-	return filepath.Join(cfg.RocketPoolDirectory, LogDir, TasksLogName)
+	return filepath.Join(cfg.rocketPoolDirectory, LogDir, TasksLogName)
 }
 
 func (cfg *SmartNodeConfig) GetWatchtowerLogFilePath() string {
-	return filepath.Join(cfg.RocketPoolDirectory, LogDir, WatchtowerLogName)
+	return filepath.Join(cfg.rocketPoolDirectory, LogDir, WatchtowerLogName)
 }
 
 func (cfg *SmartNodeConfig) GetLoggerOptions() log.LoggerOptions {

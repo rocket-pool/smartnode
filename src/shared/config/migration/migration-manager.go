@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/go-version"
-	"github.com/rocket-pool/smartnode/shared/config/ids"
+	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
 )
 
 const (

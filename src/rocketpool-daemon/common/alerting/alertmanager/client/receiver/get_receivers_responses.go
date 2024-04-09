@@ -12,7 +12,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/alerting/alertmanager/models"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/models"
 )
 
 // GetReceiversReader is a Reader for the GetReceivers structure.

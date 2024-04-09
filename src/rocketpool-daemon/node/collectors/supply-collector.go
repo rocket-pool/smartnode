@@ -1,11 +1,13 @@
 package collectors
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/node-manager-core/log"
+	"github.com/rocket-pool/rocketpool-go/v2/types"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )
 
 // Represents the collector for the Supply metrics
@@ -28,16 +30,17 @@ type SupplyCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new PerformanceCollector instance
-func NewSupplyCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *SupplyCollector {
+func NewSupplyCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *SupplyCollector {
 	subsystem := "supply"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Supply Collector"))
 	return &SupplyCollector{
 		nodeCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "node_count"),
 			"The total number of Rocket Pool nodes",
@@ -60,24 +63,24 @@ func NewSupplyCollector(sp *services.ServiceProvider, stateLocker *StateLocker) 
 			nil, nil,
 		),
 		sp:          sp,
+		logger:      sublogger,
 		stateLocker: stateLocker,
-		logPrefix:   "Supply Collector",
 	}
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.nodeCount
-	channel <- collector.nodeFee
-	channel <- collector.minipoolCount
-	channel <- collector.totalMinipools
-	channel <- collector.activeMinipools
+func (c *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.nodeCount
+	channel <- c.nodeFee
+	channel <- c.minipoolCount
+	channel <- c.totalMinipools
+	channel <- c.activeMinipools
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
@@ -113,30 +116,25 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.nodeCount, prometheus.GaugeValue, nodeCount)
+		c.nodeCount, prometheus.GaugeValue, nodeCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.nodeFee, prometheus.GaugeValue, nodeFee)
+		c.nodeFee, prometheus.GaugeValue, nodeFee)
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, initializedCount, "initialized")
+		c.minipoolCount, prometheus.GaugeValue, initializedCount, "initialized")
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, prelaunchCount, "prelaunch")
+		c.minipoolCount, prometheus.GaugeValue, prelaunchCount, "prelaunch")
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, stakingCount, "staking")
+		c.minipoolCount, prometheus.GaugeValue, stakingCount, "staking")
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, dissolvedCount, "dissolved")
+		c.minipoolCount, prometheus.GaugeValue, dissolvedCount, "dissolved")
 	channel <- prometheus.MustNewConstMetric(
-		collector.minipoolCount, prometheus.GaugeValue, finalizedCount, "finalized")
+		c.minipoolCount, prometheus.GaugeValue, finalizedCount, "finalized")
 
 	// Set the total and active count
 	totalMinipoolCount := initializedCount + prelaunchCount + stakingCount + dissolvedCount + finalizedCount
 	activeMinipoolCount := totalMinipoolCount - finalizedCount
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
+		c.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
 	channel <- prometheus.MustNewConstMetric(
-		collector.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
-}
-
-// Log error messages
-func (collector *SupplyCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
+		c.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
 }

@@ -7,8 +7,8 @@ import (
 
 	"github.com/ipfs/go-cid"
 	"github.com/klauspost/compress/zstd"
-	"github.com/rocket-pool/smartnode/shared/config"
-	sharedtypes "github.com/rocket-pool/smartnode/shared/types"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
+	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
 )
 
 // Reads an existing RewardsFile from disk and wraps it in a LocalFile

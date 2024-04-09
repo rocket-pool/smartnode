@@ -5,8 +5,8 @@ import (
 
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/addons/rescue_node"
-	snCfg "github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/addons/rescue_node"
+	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 // The page wrapper for the Rescue Node addon config

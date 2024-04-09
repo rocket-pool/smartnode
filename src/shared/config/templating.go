@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/rocket-pool/node-manager-core/config"
-	gww "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
-	rn "github.com/rocket-pool/smartnode/addons/rescue_node"
-	"github.com/rocket-pool/smartnode/shared"
+	gww "github.com/rocket-pool/smartnode/v2/addons/graffiti_wall_writer"
+	rn "github.com/rocket-pool/smartnode/v2/addons/rescue_node"
+	"github.com/rocket-pool/smartnode/v2/shared"
 )
 
 // =================
@@ -485,7 +485,7 @@ func (cfg *SmartNodeConfig) GetMevBoostOpenPorts() string {
 // ==============
 
 func (cfg *SmartNodeConfig) GetAddonsFolderPath() string {
-	return filepath.Join(cfg.RocketPoolDirectory, AddonsFolderName)
+	return filepath.Join(cfg.rocketPoolDirectory, AddonsFolderName)
 }
 
 func (cfg *SmartNodeConfig) GetGwwPath() string {

@@ -11,10 +11,10 @@ import (
 	"github.com/alessio/shellescape"
 	"github.com/mitchellh/go-homedir"
 	nmc_config "github.com/rocket-pool/node-manager-core/config"
-	gww "github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/client/template"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/shared/config"
+	gww "github.com/rocket-pool/smartnode/v2/addons/graffiti_wall_writer"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client/template"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 const (

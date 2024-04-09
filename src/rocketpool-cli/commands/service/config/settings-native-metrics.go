@@ -2,7 +2,7 @@ package config
 
 import (
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 // The page wrapper for the metrics config

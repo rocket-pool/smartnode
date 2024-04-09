@@ -1,11 +1,13 @@
 package collectors
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/node-manager-core/log"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )
 
 // Represents the collector for the Performance metrics
@@ -31,16 +33,17 @@ type PerformanceCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new PerformanceCollector instance
-func NewPerformanceCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *PerformanceCollector {
+func NewPerformanceCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *PerformanceCollector {
 	subsystem := "performance"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Performance Collector"))
 	return &PerformanceCollector{
 		ethUtilizationRate: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_utilization_rate"),
 			"The ETH utilization rate (%)",
@@ -67,25 +70,25 @@ func NewPerformanceCollector(sp *services.ServiceProvider, stateLocker *StateLoc
 			nil, nil,
 		),
 		sp:          sp,
+		logger:      sublogger,
 		stateLocker: stateLocker,
-		logPrefix:   "Performance Collector",
 	}
 }
 
 // Write metric descriptions to the Prometheus channel
-func (collector *PerformanceCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.ethUtilizationRate
-	channel <- collector.totalStakingBalanceEth
-	channel <- collector.ethRethExchangeRate
-	channel <- collector.totalValueLockedEth
-	channel <- collector.rethContractBalance
-	channel <- collector.totalRethSupply
+func (c *PerformanceCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- c.ethUtilizationRate
+	channel <- c.totalStakingBalanceEth
+	channel <- c.ethRethExchangeRate
+	channel <- c.totalValueLockedEth
+	channel <- c.rethContractBalance
+	channel <- c.totalRethSupply
 }
 
 // Collect the latest metric values and pass them to Prometheus
-func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric) {
+func (c *PerformanceCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the latest state
-	state := collector.stateLocker.GetState()
+	state := c.stateLocker.GetState()
 	if state == nil {
 		return
 	}
@@ -98,20 +101,15 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 	rethFloat := eth.WeiToEth(state.NetworkDetails.TotalRETHSupply)
 
 	channel <- prometheus.MustNewConstMetric(
-		collector.ethUtilizationRate, prometheus.GaugeValue, ethUtilizationRate)
+		c.ethUtilizationRate, prometheus.GaugeValue, ethUtilizationRate)
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalStakingBalanceEth, prometheus.GaugeValue, balanceFloat)
+		c.totalStakingBalanceEth, prometheus.GaugeValue, balanceFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.ethRethExchangeRate, prometheus.GaugeValue, exchangeRate)
+		c.ethRethExchangeRate, prometheus.GaugeValue, exchangeRate)
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalValueLockedEth, prometheus.GaugeValue, tvlFloat)
+		c.totalValueLockedEth, prometheus.GaugeValue, tvlFloat)
 	channel <- prometheus.MustNewConstMetric(
-		collector.rethContractBalance, prometheus.GaugeValue, rETHBalance)
+		c.rethContractBalance, prometheus.GaugeValue, rETHBalance)
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalRethSupply, prometheus.GaugeValue, rethFloat)
-}
-
-// Log error messages
-func (collector *PerformanceCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
+		c.totalRethSupply, prometheus.GaugeValue, rethFloat)
 }
