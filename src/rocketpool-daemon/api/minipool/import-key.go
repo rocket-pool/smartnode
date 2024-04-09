@@ -12,8 +12,8 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/v2/minipool"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
 	"github.com/rocket-pool/node-manager-core/api/server"

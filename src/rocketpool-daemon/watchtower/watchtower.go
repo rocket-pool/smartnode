@@ -8,7 +8,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/utils"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/watchtower/collectors"

@@ -6,7 +6,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"

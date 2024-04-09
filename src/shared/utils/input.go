@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 

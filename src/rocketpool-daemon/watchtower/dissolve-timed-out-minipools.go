@@ -7,9 +7,9 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/log"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/v2/minipool"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
+	rptypes "github.com/rocket-pool/rocketpool-go/v2/types"
 
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/gas"

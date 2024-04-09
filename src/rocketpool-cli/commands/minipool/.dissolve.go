@@ -6,8 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
-	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/types"
+	rocketpoolapi "github.com/rocket-pool/rocketpool-go/v2/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/node-manager-core/utils/math"

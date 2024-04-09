@@ -6,7 +6,7 @@ import (
 	"os"
 
 	"github.com/rocket-pool/node-manager-core/log"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	rprewards "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"

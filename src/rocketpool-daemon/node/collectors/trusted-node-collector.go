@@ -10,8 +10,8 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/log"
-	"github.com/rocket-pool/rocketpool-go/dao/proposals"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/v2/dao/proposals"
+	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )

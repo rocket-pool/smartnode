@@ -17,9 +17,9 @@ import (
 	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	rpbeacon "github.com/rocket-pool/rocketpool-go/beacon"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	rpbeacon "github.com/rocket-pool/rocketpool-go/v2/beacon"
+	"github.com/rocket-pool/rocketpool-go/v2/minipool"
+	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
 )
 
