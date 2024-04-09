@@ -24,19 +24,20 @@ type legacyWallet struct {
 	NextAccount    uint                   `json:"next_account"`
 }
 
-func CheckAndUpgradeWallet(walletDataPath string, nextAccountPath string, logger *slog.Logger) error {
+// Check for a legacy wallet and upgrade it if necessary, returning true if an upgrade was performed
+func CheckAndUpgradeWallet(walletDataPath string, nextAccountPath string, logger *slog.Logger) (bool, error) {
 	// Check if there is a wallet file
 	_, err := os.Stat(walletDataPath)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil
+		return false, nil
 	} else if err != nil {
-		return fmt.Errorf("error checking for presence of wallet file [%s]: %w", walletDataPath, err)
+		return false, fmt.Errorf("error checking for presence of wallet file [%s]: %w", walletDataPath, err)
 	}
 
 	// Read the file
 	bytes, err := os.ReadFile(walletDataPath)
 	if err != nil {
-		return fmt.Errorf("error reading wallet data at [%s]: %w", walletDataPath, err)
+		return false, fmt.Errorf("error reading wallet data at [%s]: %w", walletDataPath, err)
 	}
 
 	// Check if it's a legacy wallet
@@ -44,7 +45,7 @@ func CheckAndUpgradeWallet(walletDataPath string, nextAccountPath string, logger
 	err = json.Unmarshal(bytes, legacyWallet)
 	if err != nil || len(legacyWallet.Crypto) == 0 {
 		// Nothing to decode so this isn't a legacy wallet
-		return nil
+		return false, nil
 	}
 
 	// Convert to the new form
@@ -66,22 +67,22 @@ func CheckAndUpgradeWallet(walletDataPath string, nextAccountPath string, logger
 	// Save the next account data
 	err = saveNextAccount(uint64(legacyWallet.NextAccount), nextAccountPath)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Serialize the new wallet
 	bytes, err = json.Marshal(newWallet)
 	if err != nil {
-		return fmt.Errorf("error serializing new wallet data: %w", err)
+		return false, fmt.Errorf("error serializing new wallet data: %w", err)
 	}
 
 	// Write the file
 	err = os.WriteFile(walletDataPath, bytes, nodewallet.FileMode)
 	if err != nil {
-		return fmt.Errorf("error writing wallet data to [%s]: %w", walletDataPath, err)
+		return false, fmt.Errorf("error writing wallet data to [%s]: %w", walletDataPath, err)
 	}
 
 	// Done
 	logger.Info("Wallet upgrade complete.")
-	return nil
+	return true, nil
 }

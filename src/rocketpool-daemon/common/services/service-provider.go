@@ -61,9 +61,16 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	}
 
 	// Attempt a wallet upgrade before anything
-	err = validator.CheckAndUpgradeWallet(cfg.GetWalletFilePath(), cfg.GetNextAccountFilePath(), sp.GetTasksLogger().Logger)
+	tasksLogger := sp.GetTasksLogger().Logger
+	upgraded, err := validator.CheckAndUpgradeWallet(cfg.GetWalletFilePath(), cfg.GetNextAccountFilePath(), tasksLogger)
 	if err != nil {
 		return nil, fmt.Errorf("error checking for legacy wallet upgrade: %w", err)
+	}
+	if upgraded {
+		err = sp.GetWallet().Reload(tasksLogger)
+		if err != nil {
+			return nil, fmt.Errorf("error reloading wallet after upgrade: %w", err)
+		}
 	}
 
 	// Rocket Pool
