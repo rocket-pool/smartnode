@@ -1,11 +1,13 @@
 package collectors
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Represents the collector for Smoothing Pool metrics
@@ -16,24 +18,25 @@ type SmoothingPoolCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new SmoothingPoolCollector instance
-func NewSmoothingPoolCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *SmoothingPoolCollector {
+func NewSmoothingPoolCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *SmoothingPoolCollector {
 	subsystem := "smoothing_pool"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "SP Collector"))
 	return &SmoothingPoolCollector{
 		ethBalanceOnSmoothingPool: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_balance"),
 			"The ETH balance on the smoothing pool",
 			nil, nil,
 		),
 		sp:          sp,
+		logger:      sublogger,
 		stateLocker: stateLocker,
-		logPrefix:   "SP Collector",
 	}
 }
 
@@ -54,9 +57,4 @@ func (collector *SmoothingPoolCollector) Collect(channel chan<- prometheus.Metri
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.ethBalanceOnSmoothingPool, prometheus.GaugeValue, ethBalanceOnSmoothingPool)
-}
-
-// Log error messages
-func (collector *SmoothingPoolCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

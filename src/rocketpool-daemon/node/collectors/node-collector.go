@@ -3,6 +3,7 @@ package collectors
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math"
 	"math/big"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -18,6 +20,7 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/shared/keys"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -93,6 +96,9 @@ type NodeCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The next block to start from when looking at cumulative RPL rewards
 	nextRewardsStartBlock *big.Int
 
@@ -107,14 +113,12 @@ type NodeCollector struct {
 
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *NodeCollector {
+func NewNodeCollector(logger *log.Logger, ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *NodeCollector {
 	subsystem := "node"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Node Collector"))
 	return &NodeCollector{
 		totalStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_staked_rpl"),
 			"The total amount of RPL staked on the node",
@@ -198,9 +202,9 @@ func NewNodeCollector(ctx context.Context, sp *services.ServiceProvider, stateLo
 		),
 		ctx:              ctx,
 		sp:               sp,
+		logger:           sublogger,
 		handledIntervals: map[uint64]bool{},
 		stateLocker:      stateLocker,
-		logPrefix:        "Node Collector",
 	}
 }
 
@@ -366,7 +370,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		syncStatus, err := bc.GetSyncStatus(collector.ctx)
 		if err != nil {
 			// NOTE: returning here causes the metric to not be emitted. the endpoint stays responsive, but also slightly more accurate (progress=nothing instead of 0)
-			fmt.Printf("error getting beacon chain sync status: %w", err)
+			collector.logger.Warn("Error getting Beacon Chain sync status", log.Err(err))
 			return nil
 		} else {
 			progress = syncStatus.Progress
@@ -403,7 +407,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		collector.logError(err)
+		collector.logger.Error(err.Error())
 		return
 	}
 
@@ -533,7 +537,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 	minipoolDetails, err := getBeaconBalancesFromState(rp, minipools, state, opts)
 	if err != nil {
-		collector.logError(err)
+		collector.logger.Error("Error getting Beacon balances from state", log.Err(err))
 		return
 	}
 	totalDepositBalance := float64(0)
@@ -616,11 +620,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.borrowedCollateralRatio, prometheus.GaugeValue, borrowedCollateralRatio)
 	channel <- prometheus.MustNewConstMetric(
 		collector.bondedCollateralRatio, prometheus.GaugeValue, bondedCollateralRatio)
-}
-
-// Log error messages
-func (collector *NodeCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }
 
 // Beacon chain balance info for a minipool

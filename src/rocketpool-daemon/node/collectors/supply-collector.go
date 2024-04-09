@@ -1,11 +1,13 @@
 package collectors
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Represents the collector for the Supply metrics
@@ -28,16 +30,17 @@ type SupplyCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new PerformanceCollector instance
-func NewSupplyCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *SupplyCollector {
+func NewSupplyCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *SupplyCollector {
 	subsystem := "supply"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Supply Collector"))
 	return &SupplyCollector{
 		nodeCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "node_count"),
 			"The total number of Rocket Pool nodes",
@@ -60,8 +63,8 @@ func NewSupplyCollector(sp *services.ServiceProvider, stateLocker *StateLocker) 
 			nil, nil,
 		),
 		sp:          sp,
+		logger:      sublogger,
 		stateLocker: stateLocker,
-		logPrefix:   "Supply Collector",
 	}
 }
 
@@ -134,9 +137,4 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
 	channel <- prometheus.MustNewConstMetric(
 		collector.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
-}
-
-// Log error messages
-func (collector *SupplyCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

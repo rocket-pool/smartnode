@@ -34,16 +34,16 @@ func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger 
 	}
 
 	// Create the collectors
-	demandCollector := collectors.NewDemandCollector(sp, stateLocker)
-	performanceCollector := collectors.NewPerformanceCollector(sp, stateLocker)
-	supplyCollector := collectors.NewSupplyCollector(sp, stateLocker)
-	rplCollector := collectors.NewRplCollector(sp, stateLocker)
-	odaoCollector := collectors.NewOdaoCollector(sp, stateLocker)
-	nodeCollector := collectors.NewNodeCollector(ctx, sp, stateLocker)
-	trustedNodeCollector := collectors.NewTrustedNodeCollector(sp, stateLocker)
-	beaconCollector := collectors.NewBeaconCollector(ctx, sp, stateLocker)
-	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(sp, stateLocker)
-	snapshotCollector := collectors.NewSnapshotCollector(sp)
+	demandCollector := collectors.NewDemandCollector(logger, sp, stateLocker)
+	performanceCollector := collectors.NewPerformanceCollector(logger, sp, stateLocker)
+	supplyCollector := collectors.NewSupplyCollector(logger, sp, stateLocker)
+	rplCollector := collectors.NewRplCollector(logger, sp, stateLocker)
+	odaoCollector := collectors.NewOdaoCollector(logger, sp, stateLocker)
+	nodeCollector := collectors.NewNodeCollector(logger, ctx, sp, stateLocker)
+	trustedNodeCollector := collectors.NewTrustedNodeCollector(logger, sp, stateLocker)
+	beaconCollector := collectors.NewBeaconCollector(logger, ctx, sp, stateLocker)
+	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(logger, sp, stateLocker)
+	snapshotCollector := collectors.NewSnapshotCollector(logger, sp)
 
 	// Set up Prometheus
 	registry := prometheus.NewRegistry()

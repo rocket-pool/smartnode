@@ -1,11 +1,13 @@
 package collectors
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Represents the collector for the Performance metrics
@@ -31,16 +33,17 @@ type PerformanceCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new PerformanceCollector instance
-func NewPerformanceCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *PerformanceCollector {
+func NewPerformanceCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *PerformanceCollector {
 	subsystem := "performance"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Performance Collector"))
 	return &PerformanceCollector{
 		ethUtilizationRate: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_utilization_rate"),
 			"The ETH utilization rate (%)",
@@ -67,8 +70,8 @@ func NewPerformanceCollector(sp *services.ServiceProvider, stateLocker *StateLoc
 			nil, nil,
 		),
 		sp:          sp,
+		logger:      sublogger,
 		stateLocker: stateLocker,
-		logPrefix:   "Performance Collector",
 	}
 }
 
@@ -109,9 +112,4 @@ func (collector *PerformanceCollector) Collect(channel chan<- prometheus.Metric)
 		collector.rethContractBalance, prometheus.GaugeValue, rETHBalance)
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalRethSupply, prometheus.GaugeValue, rethFloat)
-}
-
-// Log error messages
-func (collector *PerformanceCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

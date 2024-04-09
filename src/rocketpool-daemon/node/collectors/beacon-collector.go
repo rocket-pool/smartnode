@@ -3,11 +3,14 @@ package collectors
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"strconv"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/shared/keys"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -31,16 +34,17 @@ type BeaconCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new BeaconCollector instance
-func NewBeaconCollector(ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *BeaconCollector {
+func NewBeaconCollector(logger *log.Logger, ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *BeaconCollector {
 	subsystem := "beacon"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Beacon Collector"))
 	return &BeaconCollector{
 		activeSyncCommittee: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "active_sync_committee"),
 			"The number of validators on a current sync committee",
@@ -60,8 +64,8 @@ func NewBeaconCollector(ctx context.Context, sp *services.ServiceProvider, state
 		),
 		ctx:         ctx,
 		sp:          sp,
+		logger:      sublogger,
 		stateLocker: stateLocker,
-		logPrefix:   "Beacon Collector",
 	}
 }
 
@@ -172,7 +176,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 			// check the latest finalized epoch for proposals:
 			count, err := collector.getProposedBlockCount(validatorIndices, bc, state.BeaconConfig.SlotsPerEpoch)
 			if err != nil {
-				collector.logError(fmt.Errorf("error getting recent proposed block count: %w", err))
+				collector.logger.Error("Error getting recent proposed block count", log.Err(err))
 				return err
 			}
 			recentProposalCount = count
@@ -181,7 +185,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
 		// Wait for data
 		if err := wg.Wait(); err != nil {
-			collector.logError(err)
+			collector.logger.Error(err.Error())
 			return
 		}
 	}
@@ -200,7 +204,7 @@ func (collector *BeaconCollector) getProposedBlockCount(validatorIndices []strin
 	// Get the Beacon head
 	head, err := bc.GetBeaconHead(collector.ctx)
 	if err != nil {
-		collector.logError(fmt.Errorf("error getting Beacon chain head: %w", err))
+		collector.logger.Error("Error getting Beacon chain head", log.Err(err))
 		return 0, nil
 	}
 
@@ -217,7 +221,7 @@ func (collector *BeaconCollector) getProposedBlockCount(validatorIndices []strin
 	for slot := latestSlot; slot > latestSlot-slotsPerEpoch; slot-- {
 		block, hasBlock, err := bc.GetBeaconBlockHeader(collector.ctx, strconv.FormatUint(slot, 10))
 		if err != nil {
-			collector.logError(fmt.Errorf("error getting beacon block: %w", err))
+			collector.logger.Error("Error getting Beacon block", log.Err(err))
 			continue
 		}
 		if !hasBlock {
@@ -229,9 +233,4 @@ func (collector *BeaconCollector) getProposedBlockCount(validatorIndices []strin
 		proposedBlockCount++
 	}
 	return proposedBlockCount, nil
-}
-
-// Log error messages
-func (collector *BeaconCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

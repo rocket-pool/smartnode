@@ -1,7 +1,7 @@
 package collectors
 
 import (
-	"fmt"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -9,9 +9,11 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/rocketpool-go/dao/proposals"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Represents the collector for the user's trusted node
@@ -37,20 +39,21 @@ type TrustedNodeCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// Cached data
 	cacheTime     time.Time
 	cachedMetrics []prometheus.Metric
 
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
-// Create a new NodeCollector instance
-func NewTrustedNodeCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *TrustedNodeCollector {
+// Create a new TrustedNodeCollector instance
+func NewTrustedNodeCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *TrustedNodeCollector {
 	subsystem := "trusted_node"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "ODAO Stats Collector"))
 	return &TrustedNodeCollector{
 		proposalCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposal_count"),
 			"The number of proposals in each state",
@@ -77,8 +80,8 @@ func NewTrustedNodeCollector(sp *services.ServiceProvider, stateLocker *StateLoc
 			[]string{"member"}, nil,
 		),
 		sp:          sp,
+		logger:      sublogger,
 		stateLocker: stateLocker,
-		logPrefix:   "ODAO Stats Collector",
 	}
 }
 
@@ -109,7 +112,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 
 	pMgr, err := proposals.NewDaoProposalManager(rp)
 	if err != nil {
-		collector.logError(fmt.Errorf("error creating DAO proposal manager binding: %w", err))
+		collector.logger.Error("Error creating DAO proposal manager binding", log.Err(err))
 		return
 	}
 
@@ -125,14 +128,14 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	// Get the number of DAO proposals
 	err = rp.Query(nil, nil, pMgr.ProposalCount)
 	if err != nil {
-		collector.logError(fmt.Errorf("error getting DAO proposal count: %w", err))
+		collector.logger.Error("Error getting DAO proposal count", log.Err(err))
 		return
 	}
 
 	// Get the DAO proposals
 	oDaoProps, _, err := pMgr.GetProposals(pMgr.ProposalCount.Formatted(), true, nil)
 	if err != nil {
-		collector.logError(fmt.Errorf("error getting DAO proposals: %w", err))
+		collector.logger.Error("Error getting DAO proposals", log.Err(err))
 		return
 	}
 
@@ -148,7 +151,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	ethBalances := make(map[string]float64)
 	balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {
-		collector.logError(fmt.Errorf("error getting Oracle DAO member balances: %w", err))
+		collector.logger.Error("Error getting Oracle DAO member balances", log.Err(err))
 		return
 	}
 	for i, member := range state.OracleDaoMemberDetails {
@@ -197,7 +200,7 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 				return nil
 			}, nil)
 			if err != nil {
-				collector.logError(fmt.Errorf("error getting Oracle DAO voting status: %w", err))
+				collector.logger.Error("Error getting Oracle DAO voting status", log.Err(err))
 				return
 			}
 
@@ -250,9 +253,4 @@ func (collector *TrustedNodeCollector) Collect(channel chan<- prometheus.Metric)
 	for _, metric := range collector.cachedMetrics {
 		channel <- metric
 	}
-}
-
-// Log error messages
-func (collector *TrustedNodeCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

@@ -1,11 +1,13 @@
 package collectors
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 // Represents the collector for the RPL metrics
@@ -25,16 +27,17 @@ type RplCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new RplCollector instance
-func NewRplCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *RplCollector {
+func NewRplCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *RplCollector {
 	subsystem := "rpl"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "RPL Collector"))
 	return &RplCollector{
 		rplPrice: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rpl_price"),
 			"The RPL price (in terms of ETH)",
@@ -53,8 +56,8 @@ func NewRplCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *Rp
 			nil, nil,
 		),
 		sp:          sp,
+		logger:      sublogger,
 		stateLocker: stateLocker,
-		logPrefix:   "RPL Collector",
 	}
 }
 
@@ -92,9 +95,4 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.totalEffectiveStaked, prometheus.GaugeValue, eth.WeiToEth(totalEffectiveStake))
 	channel <- prometheus.MustNewConstMetric(
 		collector.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
-}
-
-// Log error messages
-func (collector *RplCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

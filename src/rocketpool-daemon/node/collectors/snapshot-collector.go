@@ -2,13 +2,16 @@ package collectors
 
 import (
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/voting"
+	"github.com/rocket-pool/smartnode/shared/keys"
 	"github.com/rocket-pool/smartnode/shared/types"
 	"golang.org/x/sync/errgroup"
 )
@@ -39,6 +42,9 @@ type SnapshotCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// Store values from the latest API call
 	cachedNodeVotingPower      float64
 	cachedDelegateVotingPower  float64
@@ -49,14 +55,12 @@ type SnapshotCollector struct {
 
 	// Store the last execution time
 	lastApiCallTimestamp time.Time
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new SnapshotCollector instance
-func NewSnapshotCollector(sp *services.ServiceProvider) *SnapshotCollector {
+func NewSnapshotCollector(logger *log.Logger, sp *services.ServiceProvider) *SnapshotCollector {
 	subsystem := "snapshot"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Snapshot Collector"))
 	return &SnapshotCollector{
 		activeProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposals_active"),
 			"The number of active Snapshot proposals",
@@ -82,8 +86,8 @@ func NewSnapshotCollector(sp *services.ServiceProvider) *SnapshotCollector {
 			"The delegate current voting power on Snapshot",
 			nil, nil,
 		),
-		sp:        sp,
-		logPrefix: "Snapshot Collector",
+		sp:     sp,
+		logger: sublogger,
 	}
 }
 
@@ -126,7 +130,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 			return nil
 		}, nil)
 		if err != nil {
-			collector.logError(fmt.Errorf("error getting voting delegate for node: %w", err))
+			collector.logger.Error("Error getting voting delegate for node", log.Err(err))
 			return
 		}
 
@@ -181,7 +185,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 
 		// Wait for data
 		if err := wg.Wait(); err != nil {
-			collector.logError(err)
+			collector.logger.Error(err.Error())
 			return
 		}
 
@@ -200,9 +204,4 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.nodeVotingPower, prometheus.GaugeValue, collector.cachedNodeVotingPower)
 	channel <- prometheus.MustNewConstMetric(
 		collector.delegateVotingPower, prometheus.GaugeValue, collector.cachedDelegateVotingPower)
-}
-
-// Log error messages
-func (collector *SnapshotCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

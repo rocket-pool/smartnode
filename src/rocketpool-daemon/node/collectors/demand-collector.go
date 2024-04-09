@@ -1,11 +1,13 @@
 package collectors
 
 import (
-	"fmt"
+	"log/slog"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/rocketpool-daemon/common/services"
+	"github.com/rocket-pool/smartnode/shared/keys"
 )
 
 const namespace = "rocketpool"
@@ -30,16 +32,17 @@ type DemandCollector struct {
 	// The Smartnode service provider
 	sp *services.ServiceProvider
 
+	// The logger
+	logger *slog.Logger
+
 	// The thread-safe locker for the network state
 	stateLocker *StateLocker
-
-	// Prefix for logging
-	logPrefix string
 }
 
 // Create a new DemandCollector instance
-func NewDemandCollector(sp *services.ServiceProvider, stateLocker *StateLocker) *DemandCollector {
+func NewDemandCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *DemandCollector {
 	subsystem := "demand"
+	sublogger := logger.With(slog.String(keys.RoutineKey, "Demand Collector"))
 	return &DemandCollector{
 		depositPoolBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "deposit_pool_balance"),
 			"The amount of ETH currently in the Deposit Pool",
@@ -62,8 +65,8 @@ func NewDemandCollector(sp *services.ServiceProvider, stateLocker *StateLocker) 
 			nil, nil,
 		),
 		sp:          sp,
+		logger:      sublogger,
 		stateLocker: stateLocker,
-		logPrefix:   "Demand Collector",
 	}
 }
 
@@ -100,9 +103,4 @@ func (collector *DemandCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.effectiveMinipoolCapacity, prometheus.GaugeValue, effectiveFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.queueLength, prometheus.GaugeValue, queueLength)
-}
-
-// Log error messages
-func (collector *DemandCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }
