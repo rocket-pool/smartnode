@@ -72,6 +72,10 @@ func (c *SmartNodeConfig) PrometheusDataVolume() string {
 // === General ===
 // ===============
 
+func (cfg *SmartNodeConfig) RocketPoolDirectory() string {
+	return cfg.rocketPoolDirectory
+}
+
 // Used by text/template to format bn.yml
 func (cfg *SmartNodeConfig) IsLocalMode() bool {
 	return cfg.ClientMode.Value == config.ClientMode_Local && !cfg.IsNativeMode
