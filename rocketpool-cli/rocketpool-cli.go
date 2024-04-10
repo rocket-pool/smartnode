@@ -5,11 +5,9 @@ import (
 	"math/big"
 	"os"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/auction"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/faucet"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/network"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/node"
@@ -20,9 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
 // Run
@@ -113,42 +109,6 @@ ______           _        _    ______           _
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
-
-	// Get the config path from the arguments (or use the default)
-	configPath := "~/.rocketpool"
-	for index, arg := range os.Args {
-		if arg == "-c" || arg == "--config-path" {
-			if len(os.Args)-1 == index {
-				fmt.Fprintf(os.Stderr, "Expected config path after %s but none was given.\n", arg)
-				os.Exit(1)
-			}
-			configPath = os.Args[index+1]
-			break
-		}
-	}
-
-	// Get and parse the config file
-	configFile := fmt.Sprintf("%s/%s", configPath, rocketpool.SettingsFile)
-	expandedPath, err := homedir.Expand(configFile)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Failed to get the global config file path: %s\n", err.Error())
-		os.Exit(1)
-	}
-	// Stop if the config file doesn't exist yet
-	_, err = os.Stat(expandedPath)
-	if !os.IsNotExist(err) {
-		cfg, err := rp.LoadConfigFromFile(expandedPath)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Failed to load the global config file: %s\n", err.Error())
-			os.Exit(1)
-		}
-
-		// Add the faucet if we're on a testnet and it has a contract address
-		if cfg.Smartnode.GetRplFaucetAddress() != "" {
-			faucet.RegisterCommands(app, "faucet", []string{"f"})
-		}
-	}
-
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
 	network.RegisterCommands(app, "network", []string{"e"})
 	node.RegisterCommands(app, "node", []string{"n"})

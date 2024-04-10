@@ -95,20 +95,6 @@ func RequireRocketStorage(c *cli.Context) error {
 	return nil
 }
 
-func RequireRplFaucet(c *cli.Context) error {
-	if err := RequireEthClientSynced(c); err != nil {
-		return err
-	}
-	rplFaucetLoaded, err := getRplFaucetLoaded(c)
-	if err != nil {
-		return err
-	}
-	if !rplFaucetLoaded {
-		return errors.New("The RPL faucet contract was not found; the configured address may be incorrect, or the Eth 1.0 node may not be synced. Please try again later.")
-	}
-	return nil
-}
-
 func RequireNodeRegistered(c *cli.Context) error {
 	if err := RequireNodeWallet(c); err != nil {
 		return err
@@ -283,23 +269,6 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
 		return false, err
 	}
 	code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Smartnode.GetStorageAddress()), nil)
-	if err != nil {
-		return false, err
-	}
-	return (len(code) > 0), nil
-}
-
-// Check if the RPL faucet contract is loaded
-func getRplFaucetLoaded(c *cli.Context) (bool, error) {
-	cfg, err := GetConfig(c)
-	if err != nil {
-		return false, err
-	}
-	ec, err := GetEthClient(c)
-	if err != nil {
-		return false, err
-	}
-	code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Smartnode.GetRplFaucetAddress()), nil)
 	if err != nil {
 		return false, err
 	}

@@ -126,9 +126,6 @@ type SmartnodeConfig struct {
 	// The contract address of the RPL token
 	rplTokenAddress map[config.Network]string `yaml:"-"`
 
-	// The contract address of the RPL faucet
-	rplFaucetAddress map[config.Network]string `yaml:"-"`
-
 	// The contract address for Snapshot delegation
 	snapshotDelegationAddress map[config.Network]string `yaml:"-"`
 
@@ -467,12 +464,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Holesky: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
-		rplFaucetAddress: map[config.Network]string{
-			config.Network_Mainnet: "",
-			config.Network_Devnet:  "",
-			config.Network_Holesky: "0xb4565BDe40Cb22282D7287A839c4ce8534674070",
-		},
-
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
 			config.Network_Devnet:  "0x4be7161080b5d890500194cee2c40B1428002Bd3",
@@ -773,10 +764,6 @@ func (cfg *SmartnodeConfig) GetStorageAddress() string {
 
 func (cfg *SmartnodeConfig) GetRplTokenAddress() string {
 	return cfg.rplTokenAddress[cfg.Network.Value.(config.Network)]
-}
-
-func (cfg *SmartnodeConfig) GetRplFaucetAddress() string {
-	return cfg.rplFaucetAddress[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetSnapshotDelegationAddress() string {
