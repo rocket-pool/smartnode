@@ -469,7 +469,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplFaucetAddress: map[config.Network]string{
 			config.Network_Mainnet: "",
-			config.Network_Devnet:  "0x218a718A1B23B13737E2F566Dd45730E8DAD451b",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "0xb4565BDe40Cb22282D7287A839c4ce8534674070",
 		},
 
