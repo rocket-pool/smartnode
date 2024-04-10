@@ -457,13 +457,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0x24503C4f4CEfCfa2d3930Ec7C8CFD44a78c7a25E",
+			config.Network_Devnet:  "0xf04de123993761Bb9F08c9C39112b0E0b0eccE50",
 			config.Network_Holesky: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0x60AD78075524eCadA707a2fC7E67024f7F30E3D9",
+			config.Network_Devnet:  "0x59A1a7AebCbF103B3C4f85261fbaC166117E1979",
 			config.Network_Holesky: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
@@ -475,7 +475,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  "0xC932ca658b00DDD1EaA5EeB3BDEc7d7825567255",
+			config.Network_Devnet:  "0x4be7161080b5d890500194cee2c40B1428002Bd3",
 			config.Network_Holesky: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
@@ -549,21 +549,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet: {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 			},
-			config.Network_Devnet: {
-				common.HexToAddress("0xd88f4d99e52eb202801628ae37ea1a15e2904d12"),
-				common.HexToAddress("0x7a3fb45C0709d58d2f712b042D1f079988849389"),
-				common.HexToAddress("0x99856894b360843EB487E252ccED703752cE7C64"),
-				common.HexToAddress("0xA426795EE32d77aE10da3147c493Cd5b89d38D8D"),
-				common.HexToAddress("0x287766868E6eA69471CB0DCE7782493a29E75b4a"),
-			},
+			config.Network_Devnet:  {},
 			config.Network_Holesky: {},
 		},
 
 		previousRocketDAOProtocolVerifier: map[config.Network][]common.Address{
 			config.Network_Mainnet: {},
-			config.Network_Devnet: {
-				common.HexToAddress("0x30dF9293490C8388DF35398dA31C19EF61f5115A"),
-			},
+			config.Network_Devnet:  {},
 			config.Network_Holesky: {},
 		},
 
@@ -571,9 +563,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet: {
 				common.HexToAddress("0x751826b107672360b764327631cC5764515fFC37"),
 			},
-			config.Network_Devnet: {
-				common.HexToAddress("0xdBe07d7b0B2be5C2EaFe521255245c745422038e"),
-			},
+			config.Network_Devnet: {},
 			config.Network_Holesky: {
 				common.HexToAddress("0x029d946f28f93399a5b0d09c879fc8c94e596aeb"),
 			},
@@ -583,9 +573,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet: {
 				common.HexToAddress("0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4"),
 			},
-			config.Network_Devnet: {
-				common.HexToAddress("0x8c7CbeaAe48642Fe5DCbFC4587276D6ac3e4162A"),
-			},
+			config.Network_Devnet: {},
 			config.Network_Holesky: {
 				common.HexToAddress("0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8"),
 			},
