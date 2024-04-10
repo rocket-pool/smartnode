@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:bookworm-slim
 
 ARG TARGETARCH
 COPY ./rocketpool/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
