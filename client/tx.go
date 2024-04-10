@@ -60,7 +60,7 @@ func (r *TxRequester) SignTxBatch(txSubmissions []*eth.TransactionSubmission, fi
 		MaxFee:         maxFee,
 		MaxPriorityFee: maxPriorityFee,
 	}
-	return client.SendPostRequest[api.TxBatchSignTxData](r, "batch-sign-tx", "SignTxBatch", body)
+	return client.SendPostRequest[api.TxBatchSignTxData](r, "batch-sign-txs", "SignTxBatch", body)
 }
 
 // Submit a batch of transactions
@@ -71,7 +71,7 @@ func (r *TxRequester) SubmitTxBatch(txSubmissions []*eth.TransactionSubmission, 
 		MaxFee:         maxFee,
 		MaxPriorityFee: maxPriorityFee,
 	}
-	return client.SendPostRequest[api.BatchTxData](r, "batch-submit-tx", "SubmitTxBatch", body)
+	return client.SendPostRequest[api.BatchTxData](r, "batch-submit-txs", "SubmitTxBatch", body)
 }
 
 // Wait for a transaction

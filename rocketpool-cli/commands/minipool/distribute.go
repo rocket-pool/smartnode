@@ -176,7 +176,7 @@ func distributeBalance(c *cli.Context) error {
 	validated, err := tx.HandleTxBatch(c, rp, txs,
 		fmt.Sprintf("Are you sure you want to distribute the ETH balance of %d minipools?", len(selectedMinipools)),
 		func(i int) string {
-			return fmt.Sprintf("distribution of minipoool %s", selectedMinipools[i].Address.Hex())
+			return fmt.Sprintf("distribution of minipool %s", selectedMinipools[i].Address.Hex())
 		},
 		"Distributing balance of minipools...",
 	)
