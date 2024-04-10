@@ -67,9 +67,14 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		return nil, fmt.Errorf("error checking for legacy wallet upgrade: %w", err)
 	}
 	if upgraded {
-		err = sp.GetWallet().Reload(tasksLogger)
+		wallet := sp.GetWallet()
+		err = wallet.Reload(tasksLogger)
 		if err != nil {
 			return nil, fmt.Errorf("error reloading wallet after upgrade: %w", err)
+		}
+		err = wallet.RestoreAddressToWallet()
+		if err != nil {
+			return nil, fmt.Errorf("error restoring node address to wallet address after upgrade: %w", err)
 		}
 	}
 
