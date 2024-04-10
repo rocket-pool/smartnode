@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -9,9 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/rocketpool-go/v2/dao/oracle"
 	"github.com/rocket-pool/rocketpool-go/v2/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/v2/minipool"
@@ -33,7 +36,10 @@ func (f *minipoolBeginReduceBondDetailsContextFactory) Create(args url.Values) (
 	c := &minipoolBeginReduceBondDetailsContext{
 		handler: f.handler,
 	}
-	return c, nil
+	inputErrs := []error{
+		server.ValidateArg("new-bond-amount", args, input.ValidateBigInt, &c.newBondAmountWei),
+	}
+	return c, errors.Join(inputErrs...)
 }
 
 func (f *minipoolBeginReduceBondDetailsContextFactory) RegisterRoute(router *mux.Router) {

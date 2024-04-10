@@ -33,8 +33,11 @@ func (r *MinipoolRequester) GetContext() *client.RequesterContext {
 }
 
 // Get begin reduce bond details
-func (r *MinipoolRequester) GetBeginReduceBondDetails() (*types.ApiResponse[api.MinipoolBeginReduceBondDetailsData], error) {
-	return client.SendGetRequest[api.MinipoolBeginReduceBondDetailsData](r, "begin-reduce-bond/details", "GetBeginReduceBondDetails", nil)
+func (r *MinipoolRequester) GetBeginReduceBondDetails(newBondAmount *big.Int) (*types.ApiResponse[api.MinipoolBeginReduceBondDetailsData], error) {
+	args := map[string]string{
+		"new-bond-amount": newBondAmount.String(),
+	}
+	return client.SendGetRequest[api.MinipoolBeginReduceBondDetailsData](r, "begin-reduce-bond/details", "GetBeginReduceBondDetails", args)
 }
 
 // Begin reduce bond on minipools

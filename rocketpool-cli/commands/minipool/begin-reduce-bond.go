@@ -23,7 +23,8 @@ func beginReduceBondAmount(c *cli.Context) error {
 	}
 
 	// Get details
-	details, err := rp.Api.Minipool.GetBeginReduceBondDetails()
+	newBondAmount := eth.EthToWei(8) // TODO: when LEB4s are a thing this will have to be redone to prompt for the amount first or something
+	details, err := rp.Api.Minipool.GetBeginReduceBondDetails(newBondAmount)
 	if err != nil {
 		return err
 	}
@@ -40,7 +41,6 @@ func beginReduceBondAmount(c *cli.Context) error {
 
 	// TODO POST-ATLAS: Ask the user how much they want the new bond to be; since there's only one option right now there's no point
 	fmt.Printf("This will allow you to begin the bond reduction process to reduce your 16 ETH bond for a minipool down to 8 ETH, awarding you 8 ETH in credit and allowing you to create a second minipool for free (plus gas costs).\n\nThere will be a %.0f-hour wait period after you start the process. After this wait period is over, you will have %.0f hours to complete the process. Your `node` container will do this automatically unless you have it disabled, in which case you must manually run `rocketpool minipool reduce-bond`.\n\n%sNOTE: If you don't run it during this window, your request will time out and you will have to start over.%s\n\n", (time.Duration(details.Data.BondReductionWindowStart) * time.Second).Hours(), (time.Duration(details.Data.BondReductionWindowLength) * time.Second).Hours(), terminal.ColorYellow, terminal.ColorReset)
-	newBondAmount := eth.EthToWei(8)
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || utils.Confirm("Do you understand how the bond reduction process will work?")) {

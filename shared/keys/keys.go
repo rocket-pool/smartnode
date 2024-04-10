@@ -72,4 +72,5 @@ const (
 	ChallengerKey             string = "challenger"
 	BalanceKey                string = "balance"
 	ExpectedKey               string = "expected"
+	PubkeyKey                 string = "pubkey"
 )
