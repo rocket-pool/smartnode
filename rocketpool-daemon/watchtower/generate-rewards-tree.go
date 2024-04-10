@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -24,6 +23,7 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/rewards"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/task"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/rocket-pool/smartnode/v2/shared/keys"
 	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
@@ -31,45 +31,35 @@ import (
 
 // Generate rewards Merkle Tree task
 type GenerateRewardsTree struct {
-	ctx       context.Context
-	sp        *services.ServiceProvider
-	logger    *slog.Logger
-	cfg       *config.SmartNodeConfig
-	rp        *rocketpool.RocketPool
-	ec        eth.IExecutionClient
-	bc        beacon.IBeaconClient
-	lock      *sync.Mutex
-	isRunning bool
+	*task.LockingBackgroundTask
+	sp     *services.ServiceProvider
+	logger *slog.Logger
+	cfg    *config.SmartNodeConfig
+	rp     *rocketpool.RocketPool
+	ec     eth.IExecutionClient
+	bc     beacon.IBeaconClient
 }
 
 // Create generate rewards Merkle Tree task
 func NewGenerateRewardsTree(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *GenerateRewardsTree {
-	lock := &sync.Mutex{}
-	return &GenerateRewardsTree{
-		ctx:       ctx,
-		sp:        sp,
-		logger:    logger.With(slog.String(keys.RoutineKey, "Generate Rewards Tree")),
-		cfg:       sp.GetConfig(),
-		rp:        sp.GetRocketPool(),
-		ec:        sp.GetEthClient(),
-		bc:        sp.GetBeaconClient(),
-		lock:      lock,
-		isRunning: false,
+	out := &GenerateRewardsTree{
+		sp:     sp,
+		logger: logger.With(slog.String(keys.RoutineKey, "Generate Rewards Tree")),
+		cfg:    sp.GetConfig(),
+		rp:     sp.GetRocketPool(),
+		ec:     sp.GetEthClient(),
+		bc:     sp.GetBeaconClient(),
 	}
+	out.LockingBackgroundTask = task.NewLockingBackgroundTask(
+		logger.With(slog.String(keys.RoutineKey, "Generate Rewards Tree")),
+		"manual rewards tree generation request check",
+		out.Run,
+	)
+	return out
 }
 
 // Check for generation requests
-func (t *GenerateRewardsTree) Run() error {
-	t.logger.Info("Starting manual rewards tree generation request check.")
-
-	// Check if rewards generation is already running
-	t.lock.Lock()
-	if t.isRunning {
-		t.logger.Info("Tree generation is already running.")
-		t.lock.Unlock()
-		return nil
-	}
-	t.lock.Unlock()
+func (t *GenerateRewardsTree) Run(taskCtx *task.BackgroundTaskContext) error {
 
 	// Check for requests
 	requestDir := t.cfg.GetWatchtowerFolder()
@@ -102,10 +92,7 @@ func (t *GenerateRewardsTree) Run() error {
 			}
 
 			// Generate the rewards tree
-			t.lock.Lock()
-			t.isRunning = true
-			t.lock.Unlock()
-			go t.generateRewardsTree(index)
+			go t.generateRewardsTree(taskCtx.Ctx, index)
 
 			// Return after the first request, do others at other intervals
 			return nil
@@ -115,7 +102,10 @@ func (t *GenerateRewardsTree) Run() error {
 	return nil
 }
 
-func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
+func (t *GenerateRewardsTree) generateRewardsTree(ctx context.Context, index uint64) {
+	// This function is the async portion of the task, so make sure to signal completion
+	defer t.LockingBackgroundTask.Done()
+
 	// Begin generation of the tree
 	logger := t.logger.With(slog.Uint64(keys.IntervalKey, index))
 	logger.Info("Starting generation of Merkle rewards tree.")
@@ -150,7 +140,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	}, opts)
 	if err == nil {
 		// Create the state manager with using the primary or fallback (not necessarily archive) EC
-		stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, t.rp.Client, t.bc, logger)
+		stateManager, err = state.NewNetworkStateManager(ctx, client, t.cfg, t.rp.Client, t.bc, logger)
 		if err != nil {
 			t.handleError(fmt.Errorf("error creating new NetworkStateManager with Archive EC: %w", err), logger)
 			return
@@ -189,7 +179,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 					return
 				}
 				// Create the state manager with the archive EC
-				stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, ec, t.bc, logger)
+				stateManager, err = state.NewNetworkStateManager(ctx, client, t.cfg, ec, t.bc, logger)
 				if err != nil {
 					t.handleError(fmt.Errorf("error creating new NetworkStateManager with Archive EC: %w", err), logger)
 					return
@@ -210,18 +200,18 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	}
 
 	// Get the state for the target slot
-	state, err := stateManager.GetStateForSlot(t.ctx, rewardsEvent.ConsensusBlock.Uint64())
+	state, err := stateManager.GetStateForSlot(ctx, rewardsEvent.ConsensusBlock.Uint64())
 	if err != nil {
 		t.handleError(fmt.Errorf("error getting state for beacon slot %d: %w", rewardsEvent.ConsensusBlock.Uint64(), err), logger)
 		return
 	}
 
 	// Generate the tree
-	t.generateRewardsTreeImpl(logger, client, index, rewardsEvent, elBlockHeader, state)
+	t.generateRewardsTreeImpl(ctx, logger, client, index, rewardsEvent, elBlockHeader, state)
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *GenerateRewardsTree) generateRewardsTreeImpl(logger *slog.Logger, rp *rocketpool.RocketPool, index uint64, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
+func (t *GenerateRewardsTree) generateRewardsTreeImpl(ctx context.Context, logger *slog.Logger, rp *rocketpool.RocketPool, index uint64, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
 	// Generate the rewards file
 	start := time.Now()
 	treegen, err := rprewards.NewTreeGenerator(t.logger, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state, nil)
@@ -229,7 +219,7 @@ func (t *GenerateRewardsTree) generateRewardsTreeImpl(logger *slog.Logger, rp *r
 		t.handleError(fmt.Errorf("Error creating Merkle tree generator: %w", err), logger)
 		return
 	}
-	rewardsFile, err := treegen.GenerateTree(t.ctx)
+	rewardsFile, err := treegen.GenerateTree(ctx)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", err), logger)
 		return
@@ -273,14 +263,8 @@ func (t *GenerateRewardsTree) generateRewardsTreeImpl(logger *slog.Logger, rp *r
 	}
 
 	t.logger.Info("Merkle tree generation complete!")
-	t.lock.Lock()
-	t.isRunning = false
-	t.lock.Unlock()
 }
 
 func (t *GenerateRewardsTree) handleError(err error, logger *slog.Logger) {
 	logger.Error("*** Rewards tree generation failed. ***", log.Err(err))
-	t.lock.Lock()
-	t.isRunning = false
-	t.lock.Unlock()
 }

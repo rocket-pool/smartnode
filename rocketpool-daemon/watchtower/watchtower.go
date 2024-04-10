@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/task"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
@@ -32,8 +33,10 @@ type TaskManager struct {
 	rp     *rocketpool.RocketPool
 	bc     beacon.IBeaconClient
 
+	// Generic Tasks to run
+	tasks []task.BackgroundTask
+
 	// Tasks
-	generateRewardsTree         *GenerateRewardsTree
 	respondChallenges           *RespondChallenges
 	submitRplPrice              *SubmitRplPrice
 	submitNetworkBalances       *SubmitNetworkBalances
@@ -84,7 +87,6 @@ func NewTaskManager(
 	}
 
 	// Initialize tasks
-	generateRewardsTree := NewGenerateRewardsTree(ctx, sp, logger)
 	respondChallenges := NewRespondChallenges(sp, logger, stateMgr)
 	submitRplPrice := NewSubmitRplPrice(ctx, sp, logger)
 	submitNetworkBalances := NewSubmitNetworkBalances(ctx, sp, logger)
@@ -101,13 +103,15 @@ func NewTaskManager(
 	finalizePdaoProposals := NewFinalizePdaoProposals(sp, logger)
 
 	return &TaskManager{
-		sp:                          sp,
-		logger:                      logger,
-		ctx:                         ctx,
-		cfg:                         cfg,
-		rp:                          rp,
-		bc:                          bc,
-		generateRewardsTree:         generateRewardsTree,
+		sp:     sp,
+		logger: logger,
+		ctx:    ctx,
+		cfg:    cfg,
+		rp:     rp,
+		bc:     bc,
+		tasks: []task.BackgroundTask{
+			NewGenerateRewardsTree(ctx, sp, logger).LockingBackgroundTask,
+		},
 		respondChallenges:           respondChallenges,
 		submitRplPrice:              submitRplPrice,
 		submitNetworkBalances:       submitNetworkBalances,
@@ -146,12 +150,22 @@ func (t *TaskManager) Initialize(stateMgr *state.NetworkStateManager) error {
 
 // Run the task loop
 func (t *TaskManager) Run(isOnOdao bool, state *state.NetworkState) error {
-	// Run the manual rewards tree generation
-	if err := t.generateRewardsTree.Run(); err != nil {
-		t.logger.Error(err.Error())
+	taskCtx := &task.BackgroundTaskContext{
+		// TODO: having a single global context stemming from
+		// context.Background is basically the same as passing around nil,
+		// and we should remove ctx from t and add it to Run()
+		Ctx:      t.ctx,
+		IsOnOdao: isOnOdao,
+		State:    state,
 	}
-	if utils.SleepWithCancel(t.ctx, taskCooldown) {
-		return nil
+	// Run the generic tasks
+	for _, taskItem := range t.tasks {
+		if err := taskItem.Run(taskCtx); err != nil && err != task.ErrAlreadyRunning {
+			t.logger.Error(err.Error())
+		}
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return nil
+		}
 	}
 
 	if isOnOdao {
