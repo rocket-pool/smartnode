@@ -54,7 +54,6 @@ type TaskLoop struct {
 	logger            *log.Logger
 	ctx               context.Context
 	sp                *services.ServiceProvider
-	wg                *sync.WaitGroup
 	cfg               *config.SmartNodeConfig
 	rp                *rocketpool.RocketPool
 	ec                eth.IExecutionClient
@@ -93,7 +92,6 @@ func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
 		sp:                          sp,
 		logger:                      logger,
 		ctx:                         ctx,
-		wg:                          wg,
 		cfg:                         sp.GetConfig(),
 		rp:                          sp.GetRocketPool(),
 		ec:                          sp.GetEthClient(),
@@ -143,10 +141,7 @@ func (t *TaskLoop) Run() error {
 	}
 
 	// Run task loop
-	t.wg.Add(1)
 	go func() {
-		defer t.wg.Done()
-
 		for {
 			// Make sure all of the resources are ready for task processing
 			readyResult := t.waitUntilReady()
@@ -165,7 +160,7 @@ func (t *TaskLoop) Run() error {
 	}()
 
 	// Run metrics loop
-	t.metricsServer = runMetricsServer(t.ctx, t.sp, t.logger, t.stateLocker, t.wg, t.scrubCollector, t.bondReductionCollector, t.soloMigrationCollector)
+	t.metricsServer = runMetricsServer(t.ctx, t.sp, t.logger, t.stateLocker, t.scrubCollector, t.bondReductionCollector, t.soloMigrationCollector)
 
 	return nil
 }
