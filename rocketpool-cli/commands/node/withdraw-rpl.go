@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
@@ -45,8 +46,13 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		amountWei = eth.EthToWei(withdrawalAmount)
 	} else {
 		// Get maximum withdrawable amount
-		maxAmount := big.NewInt(0)
-		maxAmount.Sub(status.Data.RplStake, status.Data.MaximumRplStake)
+		maxAmount := big.NewInt(0).Set(status.Data.RplStake)
+		if maxAmount.Cmp(common.Big0) == 0 {
+			fmt.Println("You do not have any staked RPL available to withdraw.")
+			return nil
+		}
+
+		maxAmount.Sub(maxAmount, status.Data.MaximumRplStake)
 		maxAmount.Sub(maxAmount, status.Data.RplLocked)
 		if maxAmount.Sign() == 1 {
 			// Prompt for maximum amount
@@ -98,6 +104,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		if response.Data.HasDifferentRplWithdrawalAddress {
 			fmt.Println("The RPL withdrawal address has been set, and is not the node address. RPL can only be withdrawn from the RPL withdrawal address.")
 		}
+		return nil
 	}
 
 	// Run the TX
