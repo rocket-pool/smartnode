@@ -29,9 +29,6 @@ func getStatus(c *cli.Context) error {
 		if status.Data.CanLeave {
 			fmt.Println("The node has an executed proposal to leave - you can leave the oracle DAO with 'rocketpool odao leave'")
 		}
-		if status.Data.CanReplace {
-			fmt.Println("The node has an executed proposal to replace itself - you can replace your position in the oracle DAO with 'rocketpool odao replace'")
-		}
 	} else {
 		fmt.Println("The node is not a member of the oracle DAO.")
 		if status.Data.CanJoin {

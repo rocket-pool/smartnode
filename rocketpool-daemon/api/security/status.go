@@ -2,6 +2,7 @@ package security
 
 import (
 	"fmt"
+	"log/slog"
 	"net/url"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -73,11 +75,11 @@ func (c *securityStatusContext) Initialize() (types.ResponseStatus, error) {
 	}
 
 	// Bindings
-	pdaoMgr, err := protocol.NewProtocolDaoManager(c.rp)
+	c.pdaoMgr, err = protocol.NewProtocolDaoManager(c.rp)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating protocol DAO manager binding: %w", err)
 	}
-	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, pdaoMgr.Settings)
+	c.scMgr, err = security.NewSecurityCouncilManager(c.rp, c.pdaoMgr.Settings)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating security council manager binding: %w", err)
 	}
@@ -104,6 +106,8 @@ func (c *securityStatusContext) GetState(mc *batch.MultiCaller) {
 }
 
 func (c *securityStatusContext) PrepareData(data *api.SecurityStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+	logger := c.handler.logger
+
 	// Get member stats
 	data.IsMember = c.scMember.Exists.Get()
 	if data.IsMember {
@@ -115,13 +119,24 @@ func (c *securityStatusContext) PrepareData(data *api.SecurityStatusData, opts *
 	}
 	data.TotalMembers = c.scMgr.MemberCount.Formatted()
 
-	// Get prop statuses
+	// Get proposal count
 	propCount := c.dpm.ProposalCount.Formatted()
+	logger.Debug("Got total proposal count (oDAO and sec council)",
+		slog.Uint64(keys.CountKey, propCount),
+	)
+
+	// Get actual proposals
 	_, props, err := c.dpm.GetProposals(propCount, false, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting proposals: %w", err)
 	}
-	err = c.rp.BatchQuery(int(propCount), propStateBatchSize, func(mc *batch.MultiCaller, i int) error {
+	logger.Debug("Got SC proposals",
+		slog.Int(keys.CountKey, len(props)),
+	)
+
+	// Get the proposal states
+	scPropCount := len(props)
+	err = c.rp.BatchQuery(scPropCount, propStateBatchSize, func(mc *batch.MultiCaller, i int) error {
 		props[i].State.AddToQuery(mc)
 		return nil
 	}, nil)
@@ -129,7 +144,7 @@ func (c *securityStatusContext) PrepareData(data *api.SecurityStatusData, opts *
 		return types.ResponseStatus_Error, fmt.Errorf("error getting proposal states: %w", err)
 	}
 
-	data.ProposalCounts.Total = int(propCount)
+	data.ProposalCounts.Total = scPropCount
 	for _, prop := range props {
 		switch prop.State.Formatted() {
 		case rptypes.ProposalState_Active:
@@ -146,6 +161,11 @@ func (c *securityStatusContext) PrepareData(data *api.SecurityStatusData, opts *
 			data.ProposalCounts.Pending++
 		case rptypes.ProposalState_Succeeded:
 			data.ProposalCounts.Succeeded++
+		default:
+			c.handler.logger.Warn("Unknown proposal state",
+				slog.Int(keys.StateKey, int(prop.State.Formatted())),
+				slog.Uint64(keys.ProposalKey, prop.ID),
+			)
 		}
 	}
 	return types.ResponseStatus_Success, nil

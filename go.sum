@@ -471,8 +471,8 @@ github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd h1:p9K
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd/go.mod h1:UE9fof8P7iESVtLn1K9CTSkNRYVFHZHlf96RKbU33kA=
 github.com/rocket-pool/node-manager-core v0.2.1-0.20240410153515-4d24a35a0eed h1:Py/SQWSCZvwXgt/u/njyq8J9hNbEvEo1kr7ZvNq+Kc8=
 github.com/rocket-pool/node-manager-core v0.2.1-0.20240410153515-4d24a35a0eed/go.mod h1:72Mb6zVvJw9DQ69fhsF5KoHDw/pyWnwxWZnBJBiGo6A=
-github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240409172903-06327a942c19 h1:ueXdI3I7kiOLYq7SXZVXkpPNg48+qyYH3sdED/1KOF8=
-github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240409172903-06327a942c19/go.mod h1:2IMaRByN0wfkLgNa85LA0I9oJ1QKv1nCNoffFdhF714=
+github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240410190621-c3f7e8db7429 h1:E07ZiobxXU6jJv/fugyV4wVGiC6mMVsee74sPEQEibY=
+github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240410190621-c3f7e8db7429/go.mod h1:2IMaRByN0wfkLgNa85LA0I9oJ1QKv1nCNoffFdhF714=
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
 github.com/rogpeppe/go-internal v1.11.0/go.mod h1:ddIwULY96R17DhadqLgMfk9H9tvdUzkipdSkR5nkCZA=
 github.com/rs/cors v1.10.1 h1:L0uuZVXIKlI1SShY2nhFfo44TYvDPQ1w4oFkUJNfhyo=

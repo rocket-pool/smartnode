@@ -73,4 +73,5 @@ const (
 	BalanceKey                string = "balance"
 	ExpectedKey               string = "expected"
 	PubkeyKey                 string = "pubkey"
+	StateKey                  string = "state"
 )
