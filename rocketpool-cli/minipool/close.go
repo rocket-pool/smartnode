@@ -148,7 +148,16 @@ func closeMinipools(c *cli.Context) error {
 	thirtyTwo := eth.EthToWei(32)
 	for _, minipool := range selectedMinipools {
 		distributableBalance := big.NewInt(0).Sub(minipool.Balance, minipool.Refund)
-		if distributableBalance.Cmp(eight) >= 0 {
+		if distributableBalance.Cmp(eight) < 0 {
+			// Dissolved minipools can be closed, even when their distributableBalance is below the deposit balance.
+			// Solo conversions who were scrubbed but carried a beacon balance will have negative distributableBalance.
+			// They set their pre-conversion balance when the minipool contract was deployed, got scrubbed, and have a
+			// 0 UserDepositBalance.
+			if mp.MinipoolStatus != types.Dissolved {
+				fmt.Printf("Cannot close minipool %s: it has an effective balance of %.6f ETH which is too low to close the minipool. Please run `rocketpool minipool distribute-balance` on it instead.\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6))
+				return nil
+			}
+		} else {
 			if distributableBalance.Cmp(minipool.UserDepositBalance) < 0 {
 				// Less than the user deposit balance, ETH + RPL will be slashed
 				fmt.Printf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH which is lower than the amount borrowed from the staking pool (%.6f ETH).\nPlease visit the Rocket Pool Discord's #support channel (https://discord.gg/rocketpool) if you are not expecting this.%s\n", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.UserDepositBalance), 6), colorReset)
@@ -174,9 +183,6 @@ func closeMinipools(c *cli.Context) error {
 					return nil
 				}
 			}
-		} else {
-			fmt.Printf("Cannot close minipool %s: it has an effective balance of %.6f ETH which is too low to close the minipool. Please run `rocketpool minipool distribute-balance` on it instead.\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6))
-			return nil
 		}
 	}
 
