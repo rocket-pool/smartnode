@@ -90,10 +90,16 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 		// Proposals
 		for _, proposal := range proposals {
+			printed := false
 			for _, member := range allMembers.Data.Members {
 				if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
 					fmt.Printf("%d: %s - Proposed by: %s (%s)\n", proposal.ID, proposal.Message, member.ID, proposal.ProposerAddress)
 				}
+				printed = true
+				break
+			}
+			if !printed {
+				fmt.Printf("%d: %s - Proposed by: %s (no longer on the Oracle DAO)\n", proposal.ID, proposal.Message, proposal.ProposerAddress)
 			}
 		}
 
@@ -102,7 +108,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 		fmt.Println()
 	}
 	if count == 0 {
-		fmt.Println("There are no matching Security Council proposals.")
+		fmt.Println("There are no matching Oracle DAO proposals.")
 	}
 	return nil
 }

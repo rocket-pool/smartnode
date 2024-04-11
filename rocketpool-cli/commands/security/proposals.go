@@ -96,6 +96,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 				if bytes.Equal(proposal.ProposerAddress.Bytes(), member.Address.Bytes()) {
 					fmt.Printf("%d: %s - Proposed by: %s (%s)\n", proposal.ID, proposal.Message, member.ID, proposal.ProposerAddress)
 					printed = true
+					break
 				}
 			}
 			if !printed {
