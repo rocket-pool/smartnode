@@ -14,10 +14,7 @@ import (
 
 func setVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get the address
 	var address common.Address
@@ -30,6 +27,7 @@ func setVotingDelegate(c *cli.Context, nameOrAddress string) error {
 		address = response.Data.Address
 		addressString = fmt.Sprintf("%s (%s)", nameOrAddress, address.Hex())
 	} else {
+		var err error
 		address, err = input.ValidateAddress("delegate", nameOrAddress)
 		if err != nil {
 			return err

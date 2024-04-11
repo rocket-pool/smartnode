@@ -40,10 +40,7 @@ func filterProposalState(state string, stateFilter string) bool {
 
 func getProposals(c *cli.Context, stateFilter string) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get oracle DAO proposals
 	allProposals, err := rp.Api.ODao.Proposals()
@@ -115,10 +112,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 func getProposal(c *cli.Context, id uint64) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get oracle DAO proposals
 	allProposals, err := rp.Api.ODao.Proposals()

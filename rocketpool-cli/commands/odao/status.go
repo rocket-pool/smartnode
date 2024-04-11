@@ -9,10 +9,7 @@ import (
 
 func getStatus(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get oracle DAO status
 	status, err := rp.Api.ODao.Status()

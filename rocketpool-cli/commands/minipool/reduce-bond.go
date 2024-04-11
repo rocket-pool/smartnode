@@ -14,10 +14,7 @@ import (
 
 func reduceBondAmount(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get details
 	details, err := rp.Api.Minipool.GetReduceBondDetails()

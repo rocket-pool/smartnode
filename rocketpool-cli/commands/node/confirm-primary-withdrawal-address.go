@@ -11,10 +11,7 @@ import (
 
 func confirmPrimaryWithdrawalAddress(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Check if the withdrawal address can be confirmed
 	response, err := rp.Api.Node.ConfirmPrimaryWithdrawalAddress()

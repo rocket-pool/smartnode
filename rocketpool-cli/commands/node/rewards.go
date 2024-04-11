@@ -14,10 +14,7 @@ import (
 
 func getRewards(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get eligible intervals
 	rewardsInfoResponse, err := rp.Api.Node.GetRewardsInfo()

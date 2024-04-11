@@ -11,10 +11,7 @@ import (
 
 func getStats(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get network stats
 	response, err := rp.Api.Network.Stats()

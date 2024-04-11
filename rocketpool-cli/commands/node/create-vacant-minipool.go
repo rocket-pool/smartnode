@@ -24,10 +24,7 @@ const (
 
 func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Make sure ETH2 is on the correct chain
 	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo()

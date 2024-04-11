@@ -13,10 +13,7 @@ import (
 
 func testRecovery(c *cli.Context) error {
 	// Get RP client
-	rp, ready, err := client.NewClientFromCtx(c).WithStatus()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Load the config
 	cfg, _, err := rp.LoadConfig()
@@ -68,9 +65,6 @@ func testRecovery(c *cli.Context) error {
 		fmt.Printf("Searching for the derivation path and index for wallet %s...\nNOTE: this may take several minutes depending on how large your wallet's index is.\n", address.Hex())
 
 		if !skipValidatorKeyRecovery {
-			if !ready {
-				return fmt.Errorf("unable to recover validator keys without synced and ready clients")
-			}
 			fmt.Println("Testing recovery of node wallet and validator keys...")
 		} else {
 			fmt.Println("Ignoring validator keys, searching for wallet only...")
@@ -116,9 +110,6 @@ func testRecovery(c *cli.Context) error {
 
 		fmt.Println()
 		if !skipValidatorKeyRecovery {
-			if !ready {
-				return fmt.Errorf("unable to recover validator keys without synced and ready clients")
-			}
 			fmt.Println("Testing recovery of node wallet and validator keys...")
 		} else {
 			fmt.Println("Testing recovery of node wallet only (ignoring validator keys)...")

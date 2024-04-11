@@ -13,10 +13,7 @@ import (
 
 func sendMessage(c *cli.Context, toAddressOrEns string, message []byte) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get the address
 	var toAddress common.Address
@@ -29,6 +26,7 @@ func sendMessage(c *cli.Context, toAddressOrEns string, message []byte) error {
 		toAddress = response.Data.Address
 		toAddressString = fmt.Sprintf("%s (%s)", toAddressOrEns, toAddress.Hex())
 	} else {
+		var err error
 		toAddress, err = input.ValidateAddress("to address", toAddressOrEns)
 		if err != nil {
 			return err

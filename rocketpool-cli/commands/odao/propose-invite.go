@@ -12,10 +12,7 @@ import (
 
 func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Build the TX
 	response, err := rp.Api.ODao.ProposeInvite(memberAddress, memberId, memberUrl)

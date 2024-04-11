@@ -11,10 +11,7 @@ import (
 
 func createLot(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Check lot can be created
 	response, err := rp.Api.Auction.CreateLot()
