@@ -363,7 +363,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		}
 	} else {
 		creditBalanceWei, err = node.GetNodeDepositCredit(rp, nodeAccount.Address, nil)
-		if err == nil {
+		if err != nil {
 			return nil, err
 		}
 	}
