@@ -174,7 +174,7 @@ func closeMinipools(c *cli.Context) error {
 					return nil
 				}
 			}
-		} else if minipool.MinipoolStatus != types.Dissolved {
+		} else {
 			fmt.Printf("Cannot close minipool %s: it has an effective balance of %.6f ETH which is too low to close the minipool. Please run `rocketpool minipool distribute-balance` on it instead.\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6))
 			return nil
 		}
