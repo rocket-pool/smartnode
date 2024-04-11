@@ -183,31 +183,33 @@ func getStatus(c *cli.Context) error {
 			fmt.Println("")
 		}
 
-		// Onchain voting status
-		fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
-		if status.IsVotingInitialized {
-			fmt.Println("The node has been initialized for onchain voting.")
+		if status.IsHoustonDeployed {
+			// Onchain voting status
+			fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
+			if status.IsVotingInitialized {
+				fmt.Println("The node has been initialized for onchain voting.")
 
-		} else {
-			fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool network initialize-voting` to participate in onchain votes.")
-		}
-
-		if status.OnchainVotingDelegate == status.AccountAddress {
-			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals.")
-		} else {
-			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, status.OnchainVotingDelegateFormatted, colorReset)
-		}
-		if status.IsRPLLockingAllowed {
-			fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
-			if status.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
-				fmt.Printf("There are currently %.6f RPL locked.\n",
-					math.RoundDown(eth.WeiToEth(status.NodeRPLLocked), 6))
+			} else {
+				fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool network initialize-voting` to participate in onchain votes.")
 			}
 
-		} else {
-			fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
+			if status.OnchainVotingDelegate == status.AccountAddress {
+				fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals.")
+			} else {
+				fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, status.OnchainVotingDelegateFormatted, colorReset)
+			}
+			if status.IsRPLLockingAllowed {
+				fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
+				if status.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
+					fmt.Printf("There are currently %.6f RPL locked.\n",
+						math.RoundDown(eth.WeiToEth(status.NodeRPLLocked), 6))
+				}
+
+			} else {
+				fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
+			}
+			fmt.Println("")
 		}
-		fmt.Println("")
 
 		// Primary withdrawal address & balances
 		fmt.Printf("%s=== Primary Withdrawal Address ===%s\n", colorGreen, colorReset)
