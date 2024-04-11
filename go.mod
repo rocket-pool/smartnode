@@ -29,7 +29,7 @@ require (
 	github.com/prysmaticlabs/prysm/v5 v5.0.2
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854 // DO NOT UPGRADE
 	github.com/rocket-pool/node-manager-core v0.2.1-0.20240410153515-4d24a35a0eed
-	github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240410190621-c3f7e8db7429
+	github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240411012449-89c7a07299e8
 	github.com/shirou/gopsutil/v3 v3.24.2
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/wealdtech/go-ens/v3 v3.6.0
@@ -180,6 +180,6 @@ replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a 
 
 // replace github.com/wealdtech/go-eth2-types/v2 => github.com/rocket-pool/go-eth2-types/v2 v2.0.0-20230130220714-d88838162252
 
-//replace github.com/rocket-pool/rocketpool-go => ../../rocketpool-go
+//replace github.com/rocket-pool/rocketpool-go/v2 => ../rocketpool-go
 
 //replace github.com/rocket-pool/node-manager-core => ../../node-manager-core

@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
@@ -11,9 +12,9 @@ import (
 )
 
 // Constructs a pollard for the latest finalized block and saves it to disk
-func createPollard(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (uint32, []types.VotingTreeNode, error) {
+func createPollard(context context.Context, logger *slog.Logger, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (uint32, []types.VotingTreeNode, error) {
 	// Create a proposal manager
-	propMgr, err := proposals.NewProposalManager(context, nil, cfg, rp, bc)
+	propMgr, err := proposals.NewProposalManager(context, logger, cfg, rp, bc)
 	if err != nil {
 		return 0, nil, err
 	}
@@ -33,9 +34,9 @@ func createPollard(context context.Context, rp *rocketpool.RocketPool, cfg *conf
 }
 
 // Loads (or regenerates) the pollard for a proposal from a block number
-func getPollard(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, blockNumber uint32) ([]types.VotingTreeNode, error) {
+func getPollard(context context.Context, logger *slog.Logger, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, blockNumber uint32) ([]types.VotingTreeNode, error) {
 	// Create a proposal manager
-	propMgr, err := proposals.NewProposalManager(context, nil, cfg, rp, bc)
+	propMgr, err := proposals.NewProposalManager(context, logger, cfg, rp, bc)
 	if err != nil {
 		return nil, err
 	}

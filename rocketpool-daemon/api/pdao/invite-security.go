@@ -116,7 +116,7 @@ func (c *protocolDaoProposeInviteToSecurityCouncilContext) PrepareData(data *api
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(ctx, c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.bc)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}
