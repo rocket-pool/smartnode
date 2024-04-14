@@ -29,7 +29,7 @@ require (
 	github.com/prysmaticlabs/prysm/v5 v5.0.3
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854 // DO NOT UPGRADE
 	github.com/rocket-pool/node-manager-core v0.2.1-0.20240414212301-586ea27e9ef4
-	github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240411012449-89c7a07299e8
+	github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240414212544-29f3e7faf400
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/wealdtech/go-ens/v3 v3.6.0
