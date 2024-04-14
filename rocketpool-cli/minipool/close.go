@@ -148,7 +148,7 @@ func closeMinipools(c *cli.Context) error {
 	thirtyTwo := eth.EthToWei(32)
 	for _, minipool := range selectedMinipools {
 		// Dissolved minipools can always be closed
-		if mp.MinipoolStatus == types.Dissolved {
+		if minipool.MinipoolStatus == types.Dissolved {
 			continue
 		}
 		// Check the distributableBalance, minus any refunds
