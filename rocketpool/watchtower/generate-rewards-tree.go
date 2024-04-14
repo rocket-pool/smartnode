@@ -189,20 +189,20 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 				}
 				client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()))
 				if err != nil {
-					t.handleError(fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", err))
+					t.handleError(fmt.Errorf("Error creating Rocket Pool client connected to archive EC: %w", err))
 					return
 				}
 
 				// Get the rETH address from the archive EC
 				address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
 				if err != nil {
-					t.handleError(fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", err))
+					t.handleError(fmt.Errorf("Error verifying rETH address with Archive EC: %w", err))
 					return
 				}
 				// Create the state manager with the archive EC
 				stateManager, err = state.NewNetworkStateManager(client, t.cfg, ec, t.bc, &t.log)
 				if err != nil {
-					t.handleError(fmt.Errorf("%s Error creating new NetworkStateManager with ARchive EC: %w", err))
+					t.handleError(fmt.Errorf("Error creating new NetworkStateManager with ARchive EC: %w", err))
 					return
 				}
 			} else {

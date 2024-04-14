@@ -34,7 +34,9 @@ func rescueDissolved(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Println("This command will allow you to manually deposit the remaining ETH for any dissolved minipools, activating them so you can exit them and retrieve your minipool's funds.\nPlease read our guide at https://docs.rocketpool.net/guides/node/rescue-dissolved.html to fully read about the process before continuing.\n")
+	fmt.Println("This command will allow you to manually deposit the remaining ETH for any dissolved minipools, activating them so you can exit them and retrieve your minipool's funds.")
+	fmt.Println("Please read our guide at https://docs.rocketpool.net/guides/node/rescue-dissolved.html to fully read about the process before continuing.")
+	fmt.Println()
 
 	// Validate the amount
 	var depositAmount *big.Int
@@ -90,14 +92,14 @@ func rescueDissolved(c *cli.Context) error {
 		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` before rescuing them.%s\n\n", colorReset)
 	}
 	if len(balanceCompletedMinipools) > 0 {
-		fmt.Printf("%NOTE: The following minipools already have 32 ETH or more deposited:\n", colorYellow)
+		fmt.Printf("%sNOTE: The following minipools already have 32 ETH or more deposited:\n", colorYellow)
 		for _, mp := range balanceCompletedMinipools {
 			fmt.Printf("\t%s\n", mp.Address)
 		}
 		fmt.Printf("\nThese minipools don't need to be rescued.%s\n\n", colorReset)
 	}
 	if len(invalidBeaconStateMinipools) > 0 {
-		fmt.Printf("%NOTE: The following minipools have an invalid state on the Beacon Chain (expected 'initialized_pending'):\n", colorYellow)
+		fmt.Printf("%sNOTE: The following minipools have an invalid state on the Beacon Chain (expected 'initialized_pending'):\n", colorYellow)
 		for _, mp := range invalidBeaconStateMinipools {
 			fmt.Printf("\t%s (%s)\n", mp.Address, mp.BeaconState)
 		}

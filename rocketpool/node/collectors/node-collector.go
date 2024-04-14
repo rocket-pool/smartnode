@@ -379,7 +379,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 		if err != nil {
 			// NOTE: returning here causes the metric to not be emitted. the endpoint stays responsive, but also slightly more accurate (progress=nothing instead of 0)
-			fmt.Printf("error getting beacon chain sync status: %w", err)
+			fmt.Printf("error getting beacon chain sync status: %s", err.Error())
 			return nil
 		} else {
 			progress = syncStatus.Progress

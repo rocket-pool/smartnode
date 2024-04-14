@@ -158,7 +158,10 @@ func promptTimezone() string {
 		}
 	}
 
-	fmt.Println("You will now be prompted to enter a timezone.\nFor a complete list of valid entries, please use one of the \"TZ database name\" entries listed here:\nhttps://en.wikipedia.org/wiki/List_of_tz_database_time_zones\n")
+	fmt.Println("You will now be prompted to enter a timezone.")
+	fmt.Println("For a complete list of valid entries, please use one of the \"TZ database name\" entries listed here:")
+	fmt.Println("https://en.wikipedia.org/wiki/List_of_tz_database_time_zones")
+	fmt.Println()
 
 	// Handle situations where we couldn't parse any timezone info from the OS
 	if len(countryNames) == 0 {
@@ -369,7 +372,7 @@ func promptForSoloKeyPassword(rp *rocketpool.Client, cfg *config.RocketPoolConfi
 	}
 
 	if len(pubkeyPasswords) == 0 {
-		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smartnode stack, you will need to put its keystore file into custom-keys first")
+		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smartnode stack, you will need to put its keystore file into custom-keys first", pubkey.String())
 	}
 
 	// Store it in the file
