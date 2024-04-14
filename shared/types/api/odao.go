@@ -13,7 +13,6 @@ type OracleDaoStatusData struct {
 	IsMember       bool   `json:"isMember"`
 	CanJoin        bool   `json:"canJoin"`
 	CanLeave       bool   `json:"canLeave"`
-	CanReplace     bool   `json:"canReplace"`
 	TotalMembers   uint64 `json:"totalMembers"`
 	ProposalCounts struct {
 		Total     int `json:"total"`

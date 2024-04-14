@@ -85,6 +85,7 @@ func (c *oracleDaoLeaveContext) Initialize() (types.ResponseStatus, error) {
 
 func (c *oracleDaoLeaveContext) GetState(mc *batch.MultiCaller) {
 	eth.AddQueryablesToMulticall(mc,
+		c.odaoMember.InvitedTime,
 		c.odaoMember.LeftTime,
 		c.oSettings.Proposal.ActionTime,
 		c.odaoMgr.MemberCount,

@@ -202,7 +202,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 		}
 
 		// Log
-		t.logger.Info("Retrieved RPL price. %.6f ETH", slog.Uint64(keys.BlockKey, blockNumber), slog.Float64(keys.PriceKey, math.RoundDown(eth.WeiToEth(rplPrice), 6)))
+		t.logger.Info("Retrieved RPL price", slog.Uint64(keys.BlockKey, blockNumber), slog.Float64(keys.PriceKey, math.RoundDown(eth.WeiToEth(rplPrice), 6)))
 
 		// Check if we have reported these specific values before
 		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAddress, blockNumber, uint64(nextSubmissionTime.Unix()), rplPrice, true)

@@ -112,7 +112,7 @@ func (t *CheckSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 		return fmt.Errorf("error creating minipool manager: %w", err)
 	}
 
-	t.logger.Info(fmt.Sprintf("Checking solo migrations...", slog.Uint64(keys.SlotKey, state.BeaconSlotNumber), slog.Uint64(keys.BlockKey, state.ElBlockNumber)))
+	t.logger.Info("Checking solo migrations...", slog.Uint64(keys.SlotKey, state.BeaconSlotNumber), slog.Uint64(keys.BlockKey, state.ElBlockNumber))
 	oneGwei := eth.GweiToWei(1)
 	scrubThreshold := time.Duration(state.NetworkDetails.PromotionScrubPeriod.Seconds()*soloMigrationCheckThreshold) * time.Second
 

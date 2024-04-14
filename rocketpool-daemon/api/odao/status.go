@@ -88,7 +88,6 @@ func (c *oracleDaoStatusContext) GetState(mc *batch.MultiCaller) {
 	eth.AddQueryablesToMulticall(mc,
 		c.odaoMember.Exists,
 		c.odaoMember.InvitedTime,
-		c.odaoMember.ReplacedTime,
 		c.odaoMember.LeftTime,
 		c.odaoMgr.MemberCount,
 		c.dpm.ProposalCount,
@@ -111,7 +110,6 @@ func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts
 	data.IsMember = exists
 	if exists {
 		data.CanLeave = isProposalActionable(actionWindow, c.odaoMember.LeftTime.Formatted(), currentTime)
-		data.CanReplace = isProposalActionable(actionWindow, c.odaoMember.ReplacedTime.Formatted(), currentTime)
 	} else {
 		data.CanJoin = isProposalActionable(actionWindow, c.odaoMember.InvitedTime.Formatted(), currentTime)
 	}
@@ -120,7 +118,7 @@ func (c *oracleDaoStatusContext) PrepareData(data *api.OracleDaoStatusData, opts
 	data.TotalMembers = c.odaoMgr.MemberCount.Formatted()
 
 	// Get the proposals
-	_, props, err := c.dpm.GetProposals(c.dpm.ProposalCount.Formatted(), false, nil)
+	props, _, err := c.dpm.GetProposals(c.dpm.ProposalCount.Formatted(), false, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting Oracle DAO proposals: %w", err)
 	}

@@ -110,6 +110,7 @@ func (c *securityProposalsContext) PrepareData(data *api.SecurityProposalsData, 
 			IsCancelled:     scProp.IsCancelled.Get(),
 			IsExecuted:      scProp.IsExecuted.Get(),
 			Payload:         scProp.Payload.Get(),
+			State:           scProp.State.Formatted(),
 		}
 		prop.PayloadStr, err = scProp.GetPayloadAsString()
 		if err != nil {

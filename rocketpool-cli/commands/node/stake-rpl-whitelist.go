@@ -14,10 +14,7 @@ import (
 
 func setStakeRplForAllowed(c *cli.Context, addressOrEns string, allowed bool) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	var address common.Address
 	var addressString string
@@ -29,6 +26,7 @@ func setStakeRplForAllowed(c *cli.Context, addressOrEns string, allowed bool) er
 		address = response.Data.Address
 		addressString = fmt.Sprintf("%s (%s)", addressOrEns, address.Hex())
 	} else {
+		var err error
 		address, err = input.ValidateAddress("address", addressOrEns)
 		if err != nil {
 			return err

@@ -119,7 +119,7 @@ groups:
 
       {{{- if .Alertmanager.AlertEnabled_RPUpdatesAvailable.Value }}}
       - alert: RPUpdatesAvailable
-        expr: max(os_upgrades_pending{job="node"}) > 0
+        expr: max(rocketpool_version_update{job="node"}) > 0
         labels:
           severity: warning
           job: node

@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
@@ -16,10 +17,7 @@ import (
 
 func nodeWithdrawEth(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get withdrawal amount
 	var amountWei *big.Int
@@ -48,6 +46,11 @@ func nodeWithdrawEth(c *cli.Context) error {
 
 		// Get maximum withdrawable amount
 		maxAmount := status.Data.EthOnBehalfBalance
+		if maxAmount.Cmp(common.Big0) == 0 {
+			fmt.Println("You do not have any staked ETH available to withdraw.")
+			return nil
+		}
+
 		// Prompt for maximum amount
 		if utils.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
 			amountWei = maxAmount
@@ -77,6 +80,7 @@ func nodeWithdrawEth(c *cli.Context) error {
 		if response.Data.HasDifferentPrimaryWithdrawalAddress {
 			fmt.Println("The primary withdrawal address has been set, and is not the node address. ETH can only be withdrawn from the primary withdrawal address.")
 		}
+		return nil
 	}
 
 	// Run the TX

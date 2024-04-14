@@ -22,7 +22,10 @@ type SelectionOption[DataType any] struct {
 
 // Get the list of elements the user wants to use for a multi-select operation
 func GetMultiselectIndices[DataType any](c *cli.Context, flagName string, options []SelectionOption[DataType], prompt string) ([]*DataType, error) {
-	flag := strings.TrimSpace(c.String(flagName))
+	flag := ""
+	if c.IsSet(flagName) {
+		flag = strings.TrimSpace(fmt.Sprintf("%v", c.Value(flagName)))
+	}
 
 	// Handle all
 	if flag == "all" {

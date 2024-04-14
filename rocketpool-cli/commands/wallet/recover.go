@@ -14,10 +14,7 @@ import (
 
 func recoverWallet(c *cli.Context) error {
 	// Get RP client
-	rp, ready, err := client.NewClientFromCtx(c).WithStatus()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Load the config
 	cfg, _, err := rp.LoadConfig()
@@ -53,15 +50,6 @@ func recoverWallet(c *cli.Context) error {
 
 	// Handle validator key recovery skipping
 	skipValidatorKeyRecovery := c.Bool(skipValidatorRecoveryFlag.Name)
-	if !skipValidatorKeyRecovery && !ready {
-		fmt.Printf("%sEth Clients are not available.%s Validator keys cannot be recovered until they are synced and ready.\n", terminal.ColorYellow, terminal.ColorReset)
-		fmt.Println("You can recover them later with 'rocketpool wallet rebuild'")
-		if !utils.Confirm("Would you like to skip recovering the validator keys, and recover the node wallet only?") {
-			fmt.Println("Cancelled.")
-			return nil
-		}
-		skipValidatorKeyRecovery = true
-	}
 
 	// Prompt for mnemonic
 	var mnemonic string

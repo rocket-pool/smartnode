@@ -23,9 +23,6 @@ type RocketPoolResources struct {
 	// The contract address of the RPL token
 	RplTokenAddress common.Address
 
-	// The contract address of the RPL faucet
-	RplFaucetAddress *common.Address
-
 	// The contract address of rocketRewardsPool from v1.0.0
 	V1_0_0_RewardsPoolAddress *common.Address
 
@@ -108,7 +105,6 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		StorageAddress:                 common.HexToAddress("0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46"),
 		RethAddress:                    common.HexToAddress("0xae78736Cd615f374D3085123A210448E74Fc6393"),
 		RplTokenAddress:                common.HexToAddress("0xD33526068D116cE69F19A9ee46F0bd304F21A51f"),
-		RplFaucetAddress:               nil,
 		V1_0_0_RewardsPoolAddress:      hexToAddressPtr("0xA3a18348e6E2d3897B6f2671bb8c120e36554802"),
 		V1_0_0_ClaimNodeAddress:        hexToAddressPtr("0x899336A2a86053705E65dB61f52C686dcFaeF548"),
 		V1_0_0_ClaimTrustedNodeAddress: hexToAddressPtr("0x6af730deB0463b432433318dC8002C0A4e9315e8"),
@@ -148,7 +144,6 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		StorageAddress:                       common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 		RethAddress:                          common.HexToAddress("0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1"),
 		RplTokenAddress:                      common.HexToAddress("0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0"),
-		RplFaucetAddress:                     hexToAddressPtr("0xb4565BDe40Cb22282D7287A839c4ce8534674070"),
 		V1_0_0_RewardsPoolAddress:            nil,
 		V1_0_0_ClaimNodeAddress:              nil,
 		V1_0_0_ClaimTrustedNodeAddress:       nil,
@@ -181,47 +176,35 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 
 	// Devnet
 	devnetResources := &RocketPoolResources{
-		NetworkResources:               config.NewResources(config.Network_Holesky),
-		StakeUrl:                       "TBD",
-		StorageAddress:                 common.HexToAddress("0x24503C4f4CEfCfa2d3930Ec7C8CFD44a78c7a25E"),
-		RethAddress:                    common.HexToAddress("0xC932ca658b00DDD1EaA5EeB3BDEc7d7825567255"),
-		RplTokenAddress:                common.HexToAddress("0x60AD78075524eCadA707a2fC7E67024f7F30E3D9"),
-		RplFaucetAddress:               hexToAddressPtr("0x218a718A1B23B13737E2F566Dd45730E8DAD451b"),
-		V1_0_0_RewardsPoolAddress:      nil,
-		V1_0_0_ClaimNodeAddress:        nil,
-		V1_0_0_ClaimTrustedNodeAddress: nil,
-		V1_0_0_MinipoolManagerAddress:  nil,
-		V1_1_0_NetworkPricesAddress:    nil,
-		V1_1_0_NodeStakingAddress:      nil,
-		V1_1_0_NodeDepositAddress:      nil,
-		V1_1_0_MinipoolQueueAddress:    nil,
-		V1_1_0_MinipoolFactoryAddress:  nil,
-		SnapshotDelegationAddress:      nil,
-		SnapshotApiDomain:              "",
-		PreviousRewardsPoolAddresses: []common.Address{
-			common.HexToAddress("0xd88f4d99e52eb202801628ae37ea1a15e2904d12"),
-			common.HexToAddress("0x99856894b360843EB487E252ccED703752cE7C64"),
-			common.HexToAddress("0xA426795EE32d77aE10da3147c493Cd5b89d38D8D"),
-			common.HexToAddress("0x287766868E6eA69471CB0DCE7782493a29E75b4a"),
-		},
-		PreviousProtocolDaoVerifierAddresses: []common.Address{
-			common.HexToAddress("0x30dF9293490C8388DF35398dA31C19EF61f5115A"),
-		},
-		PreviousRocketNetworkPricesAddresses: []common.Address{
-			common.HexToAddress("0xdBe07d7b0B2be5C2EaFe521255245c745422038e"),
-		},
-		PreviousRocketNetworkBalancesAddresses: []common.Address{
-			common.HexToAddress("0x8c7CbeaAe48642Fe5DCbFC4587276D6ac3e4162A"),
-		},
-		OptimismPriceMessengerAddress:   nil,
-		PolygonPriceMessengerAddress:    nil,
-		ArbitrumPriceMessengerAddress:   nil,
-		ArbitrumPriceMessengerAddressV2: nil,
-		ZkSyncEraPriceMessengerAddress:  nil,
-		BasePriceMessengerAddress:       nil,
-		ScrollPriceMessengerAddress:     nil,
-		ScrollFeeEstimatorAddress:       nil,
-		RplTwapPoolAddress:              hexToAddressPtr("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
+		NetworkResources:                       config.NewResources(config.Network_Holesky),
+		StakeUrl:                               "TBD",
+		StorageAddress:                         common.HexToAddress("0xf04de123993761Bb9F08c9C39112b0E0b0eccE50"),
+		RethAddress:                            common.HexToAddress("0x4be7161080b5d890500194cee2c40B1428002Bd3"),
+		RplTokenAddress:                        common.HexToAddress("0x59A1a7AebCbF103B3C4f85261fbaC166117E1979"),
+		V1_0_0_RewardsPoolAddress:              nil,
+		V1_0_0_ClaimNodeAddress:                nil,
+		V1_0_0_ClaimTrustedNodeAddress:         nil,
+		V1_0_0_MinipoolManagerAddress:          nil,
+		V1_1_0_NetworkPricesAddress:            nil,
+		V1_1_0_NodeStakingAddress:              nil,
+		V1_1_0_NodeDepositAddress:              nil,
+		V1_1_0_MinipoolQueueAddress:            nil,
+		V1_1_0_MinipoolFactoryAddress:          nil,
+		SnapshotDelegationAddress:              nil,
+		SnapshotApiDomain:                      "",
+		PreviousRewardsPoolAddresses:           []common.Address{},
+		PreviousProtocolDaoVerifierAddresses:   []common.Address{},
+		PreviousRocketNetworkPricesAddresses:   []common.Address{},
+		PreviousRocketNetworkBalancesAddresses: []common.Address{},
+		OptimismPriceMessengerAddress:          nil,
+		PolygonPriceMessengerAddress:           nil,
+		ArbitrumPriceMessengerAddress:          nil,
+		ArbitrumPriceMessengerAddressV2:        nil,
+		ZkSyncEraPriceMessengerAddress:         nil,
+		BasePriceMessengerAddress:              nil,
+		ScrollPriceMessengerAddress:            nil,
+		ScrollFeeEstimatorAddress:              nil,
+		RplTwapPoolAddress:                     hexToAddressPtr("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
 	}
 	devnetResources.NetworkResources.Network = Network_Devnet
 

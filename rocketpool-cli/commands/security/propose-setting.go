@@ -18,10 +18,7 @@ import (
 // Master general proposal function
 func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocketpool.ContractName, setting protocol.SettingName, value ValueType) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Serialize the value
 	var valueString string

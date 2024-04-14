@@ -17,10 +17,7 @@ import (
 
 func nodeSend(c *cli.Context, amount float64, token string, toAddressOrEns string) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get amount in wei
 	amountWei := eth.EthToWei(amount)
@@ -36,6 +33,7 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrEns strin
 		toAddress = response.Data.Address
 		toAddressString = fmt.Sprintf("%s (%s)", toAddressOrEns, toAddress.Hex())
 	} else {
+		var err error
 		toAddress, err = input.ValidateAddress("to address", toAddressOrEns)
 		if err != nil {
 			return err

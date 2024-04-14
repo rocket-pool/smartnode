@@ -25,10 +25,7 @@ var kickFineFlag *cli.StringFlag = &cli.StringFlag{
 
 func proposeKick(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get DAO members
 	members, err := rp.Api.ODao.Members()

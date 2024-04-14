@@ -89,7 +89,7 @@ func (c *nodeWithdrawEthContext) PrepareData(data *api.NodeWithdrawEthData, opts
 	ethBalance := c.node.DonatedEthBalance.Get()
 	hasDifferentPrimaryWithdrawalAddress := c.nodeAddress != c.node.PrimaryWithdrawalAddress.Get()
 
-	data.InsufficientBalance = (c.amount.Cmp(ethBalance) > 0)
+	data.InsufficientBalance = (c.amount.Cmp(ethBalance) >= 0)
 	data.HasDifferentPrimaryWithdrawalAddress = hasDifferentPrimaryWithdrawalAddress
 
 	// Update & return response

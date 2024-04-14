@@ -11,7 +11,6 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/auction"
-	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/faucet"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/minipool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/network"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/node"
@@ -137,7 +136,6 @@ ______           _        _    ______           _
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
-	faucet.RegisterCommands(app, "faucet", []string{"f"})
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
 	network.RegisterCommands(app, "network", []string{"e"})
 	node.RegisterCommands(app, "node", []string{"n"})

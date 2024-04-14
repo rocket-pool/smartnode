@@ -3,6 +3,7 @@ package minipool
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,6 +19,7 @@ import (
 	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
@@ -128,6 +130,10 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 		if err := c.bc.ExitValidator(ctx, validatorIndex, head.Epoch, signature); err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error submitting exit message for minipool %s (pubkey %s): %w", minipoolAddress.Hex(), validatorPubkey.Hex(), err)
 		}
+		c.handler.logger.Info("Minipool exit submitted",
+			slog.String(keys.MinipoolKey, minipoolAddress.Hex()),
+			slog.String(keys.PubkeyKey, validatorPubkey.Hex()),
+		)
 	}
 	return types.ResponseStatus_Success, nil
 }

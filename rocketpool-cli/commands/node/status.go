@@ -184,6 +184,15 @@ func getStatus(c *cli.Context) error {
 		} else {
 			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", terminal.ColorBlue, status.Data.OnchainVotingDelegateFormatted, terminal.ColorReset)
 		}
+
+		if status.Data.IsRplLockingAllowed {
+			fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
+			if status.Data.RplLocked.Cmp(big.NewInt(0)) != 0 {
+				fmt.Printf("There is currently %.6f RPL locked.\n", math.RoundDown(eth.WeiToEth(status.Data.RplLocked), 6))
+			}
+		} else {
+			fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
+		}
 		fmt.Println("")
 
 		// Primary withdrawal address & balances
@@ -223,14 +232,6 @@ func getStatus(c *cli.Context) error {
 				terminal.ColorReset,
 				math.RoundDown(eth.WeiToEth(status.Data.RplWithdrawalBalances.Eth), 6),
 				math.RoundDown(eth.WeiToEth(status.Data.RplWithdrawalBalances.Rpl), 6))
-		}
-		if status.Data.IsRplLockingAllowed {
-			fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
-			if status.Data.RplLocked.Cmp(big.NewInt(0)) != 0 {
-				fmt.Printf("There is currently %.6f RPL locked.\n", math.RoundDown(eth.WeiToEth(status.Data.RplLocked), 6))
-			}
-		} else {
-			fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
 		}
 		fmt.Println("")
 		if status.Data.PendingRplWithdrawalAddress.Hex() != blankAddress.Hex() {

@@ -22,10 +22,7 @@ const (
 
 func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	var withdrawalAddress common.Address
 	var withdrawalAddressString string
@@ -37,6 +34,7 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 		withdrawalAddress = response.Data.Address
 		withdrawalAddressString = fmt.Sprintf("%s (%s)", withdrawalAddressOrENS, withdrawalAddress.Hex())
 	} else {
+		var err error
 		withdrawalAddress, err = input.ValidateAddress("withdrawal address", withdrawalAddressOrENS)
 		if err != nil {
 			return err

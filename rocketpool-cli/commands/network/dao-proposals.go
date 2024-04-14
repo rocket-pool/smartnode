@@ -15,10 +15,7 @@ import (
 
 func getActiveDAOProposals(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get the config
 	cfg, isNew, err := rp.LoadConfig()

@@ -24,10 +24,7 @@ const (
 
 func closeMinipools(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get minipool statuses
 	details, err := rp.Api.Minipool.GetCloseDetails()
@@ -118,37 +115,61 @@ func closeMinipools(c *cli.Context) error {
 	yellowThreshold := eth.EthToWei(31.5)
 	thirtyTwo := eth.EthToWei(32)
 	for _, minipool := range selectedMinipools {
+		// Dissolved minipools can always be closed
+		if minipool.Status == types.MinipoolStatus_Dissolved {
+			continue
+		}
+
+		// Check the distributableBalance, minus any refunds
 		distributableBalance := big.NewInt(0).Sub(minipool.Balance, minipool.Refund)
-		if distributableBalance.Cmp(eight) >= 0 {
-			if distributableBalance.Cmp(minipool.UserDepositBalance) < 0 {
-				// Less than the user deposit balance, ETH + RPL will be slashed
-				fmt.Printf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH which is lower than the amount borrowed from the staking pool (%.6f ETH).\nPlease visit the Rocket Pool Discord's #support channel (https://discord.gg/rocketpool) if you are not expecting this.%s\n", terminal.ColorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.UserDepositBalance), 6), terminal.ColorReset)
-				if !c.Bool("confirm-slashing") {
-					fmt.Printf("\n%sIf you are *sure* you want to close the minipool anyway, rerun this command with the `--confirm-slashing` flag. Doing so WILL RESULT in both your ETH bond and your RPL collateral being slashed.%s\n", terminal.ColorRed, terminal.ColorReset)
-					return nil
-				} else {
-					if !utils.ConfirmWithIAgree(fmt.Sprintf("\n%sYou have the `--confirm-slashing` flag enabled. Closing this minipool WILL RESULT in the complete loss of your initial ETH bond and enough of your RPL stake to cover the losses to the staking pool. Please confirm you understand this and want to continue closing the minipool.%s", terminal.ColorRed, terminal.ColorReset)) {
-						fmt.Println("Cancelled.")
-						return nil
-					}
-				}
-			} else if distributableBalance.Cmp(yellowThreshold) < 0 {
-				// More than the user deposit balance but less than 31.5, ETH will be slashed with a red warning
-				if !utils.ConfirmWithIAgree(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", terminal.ColorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfEffectiveBalance), 6), terminal.ColorReset)) {
-					fmt.Println("Cancelled.")
-					return nil
-				}
-			} else if distributableBalance.Cmp(thirtyTwo) < 0 {
-				// More than 31.5 but less than 32, ETH will be slashed with a yellow warning
-				if !utils.Confirm(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", terminal.ColorYellow, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfEffectiveBalance), 6), terminal.ColorReset)) {
-					fmt.Println("Cancelled.")
-					return nil
-				}
-			}
-		} else {
+
+		// If it's under 8, it shouldn't be closed, and must be distributed.
+		if distributableBalance.Cmp(eight) < 0 {
 			fmt.Printf("Cannot close minipool %s: it has an effective balance of %.6f ETH which is too low to close the minipool. Please run `rocketpool minipool distribute-balance` on it instead.\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6))
 			return nil
 		}
+
+		// If there isn't enough eth to pay back rETH holders, warn that RPL and ETH will both be penalized
+		if distributableBalance.Cmp(minipool.UserDepositBalance) < 0 {
+			// Less than the user deposit balance, ETH + RPL will be slashed
+			fmt.Printf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH which is lower than the amount borrowed from the staking pool (%.6f ETH).\nPlease visit the Rocket Pool Discord's #support channel (https://discord.gg/rocketpool) if you are not expecting this.%s\n", terminal.ColorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.UserDepositBalance), 6), terminal.ColorReset)
+			if !c.Bool("confirm-slashing") {
+				fmt.Printf("\n%sIf you are *sure* you want to close the minipool anyway, rerun this command with the `--confirm-slashing` flag. Doing so WILL RESULT in both your ETH bond and your RPL collateral being slashed.%s\n", terminal.ColorRed, terminal.ColorReset)
+				return nil
+			}
+			if !utils.ConfirmWithIAgree(fmt.Sprintf("\n%sYou have the `--confirm-slashing` flag enabled. Closing this minipool WILL RESULT in the complete loss of your initial ETH bond and enough of your RPL stake to cover the losses to the staking pool. Please confirm you understand this and want to continue closing the minipool.%s", terminal.ColorRed, terminal.ColorReset)) {
+				fmt.Println("Cancelled.")
+				return nil
+			}
+
+			// User has confirmed they know they are about to be slashed
+			continue
+		}
+
+		if distributableBalance.Cmp(yellowThreshold) < 0 {
+			// More than the user deposit balance but less than 31.5, ETH will be slashed with a red warning
+			if !utils.ConfirmWithIAgree(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", terminal.ColorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfEffectiveBalance), 6), terminal.ColorReset)) {
+				fmt.Println("Cancelled.")
+				return nil
+			}
+
+			// User has confirmed they know they are about to be slashed
+			continue
+		}
+
+		if distributableBalance.Cmp(thirtyTwo) < 0 {
+			// More than 31.5 but less than 32, ETH will be slashed with a yellow warning
+			if !utils.Confirm(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", terminal.ColorYellow, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShareOfEffectiveBalance), 6), terminal.ColorReset)) {
+				fmt.Println("Cancelled.")
+				return nil
+			}
+
+			// User has confirmed they know they are about to be slashed
+			continue
+		}
+
+		// Node Operator has greater than 32 eth in the minpool contract and can safely close the minipool
+		continue
 	}
 
 	// Build the TXs

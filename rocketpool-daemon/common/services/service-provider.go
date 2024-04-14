@@ -25,7 +25,6 @@ type ServiceProvider struct {
 	cfg                *config.SmartNodeConfig
 	rocketPool         *rocketpool.RocketPool
 	validatorManager   *validator.ValidatorManager
-	rplFaucet          *contracts.RplFaucet
 	snapshotDelegation *contracts.SnapshotDelegation
 	watchtowerLog      *log.Logger
 
@@ -41,7 +40,7 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	cfgPath := filepath.Join(userDir, config.ConfigFilename)
 	cfg, err := client.LoadConfigFromFile(os.ExpandEnv(cfgPath))
 	if err != nil {
-		return nil, fmt.Errorf("error loading Smartnode config: %w", err)
+		return nil, fmt.Errorf("error loading Smart Node config: %w", err)
 	}
 	if cfg == nil {
 		return nil, fmt.Errorf("smart node config settings file [%s] not found", cfgPath)
@@ -53,13 +52,6 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		return nil, fmt.Errorf("error creating core service provider: %w", err)
 	}
 
-	// Make the watchtower log
-	loggerOpts := cfg.GetLoggerOptions()
-	watchtowerLogger, err := log.NewLogger(cfg.GetWatchtowerLogFilePath(), loggerOpts)
-	if err != nil {
-		return nil, fmt.Errorf("error creating watchtower logger: %w", err)
-	}
-
 	// Attempt a wallet upgrade before anything
 	tasksLogger := sp.GetTasksLogger().Logger
 	upgraded, err := validator.CheckAndUpgradeWallet(cfg.GetWalletFilePath(), cfg.GetNextAccountFilePath(), tasksLogger)
@@ -67,10 +59,27 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		return nil, fmt.Errorf("error checking for legacy wallet upgrade: %w", err)
 	}
 	if upgraded {
-		err = sp.GetWallet().Reload(tasksLogger)
+		wallet := sp.GetWallet()
+		err = wallet.Reload(tasksLogger)
 		if err != nil {
 			return nil, fmt.Errorf("error reloading wallet after upgrade: %w", err)
 		}
+		err = wallet.RestoreAddressToWallet()
+		if err != nil {
+			return nil, fmt.Errorf("error restoring node address to wallet address after upgrade: %w", err)
+		}
+	}
+
+	return CreateServiceProviderFromComponents(cfg, sp)
+}
+
+// Creates a ServiceProvider instance from a core service provider and Smart Node config
+func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp *services.ServiceProvider) (*ServiceProvider, error) {
+	// Make the watchtower log
+	loggerOpts := cfg.GetLoggerOptions()
+	watchtowerLogger, err := log.NewLogger(cfg.GetWatchtowerLogFilePath(), loggerOpts)
+	if err != nil {
+		return nil, fmt.Errorf("error creating watchtower logger: %w", err)
 	}
 
 	// Rocket Pool
@@ -91,17 +100,6 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error creating validator manager: %w", err)
 	}
-
-	// RPL Faucet
-	var rplFaucet *contracts.RplFaucet
-	faucetAddress := resources.RplFaucetAddress
-	if faucetAddress != nil {
-		rplFaucet, err = contracts.NewRplFaucet(*faucetAddress, sp.GetEthClient(), sp.GetTransactionManager())
-		if err != nil {
-			return nil, fmt.Errorf("error creating RPL faucet binding: %w", err)
-		}
-	}
-
 	// Snapshot delegation
 	var snapshotDelegation *contracts.SnapshotDelegation
 	snapshotAddress := resources.SnapshotDelegationAddress
@@ -115,12 +113,11 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	// Create the provider
 	defaultVersion, _ := version.NewSemver("0.0.0")
 	provider := &ServiceProvider{
-		userDir:               userDir,
+		userDir:               cfg.RocketPoolDirectory(),
 		ServiceProvider:       sp,
 		cfg:                   cfg,
 		rocketPool:            rp,
 		validatorManager:      vMgr,
-		rplFaucet:             rplFaucet,
 		snapshotDelegation:    snapshotDelegation,
 		watchtowerLog:         watchtowerLogger,
 		loadedContractVersion: defaultVersion,
@@ -132,6 +129,10 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 // ===============
 // === Getters ===
 // ===============
+
+func (p *ServiceProvider) GetServiceProvider() *services.ServiceProvider {
+	return p.ServiceProvider
+}
 
 func (p *ServiceProvider) GetUserDir() string {
 	return p.userDir
@@ -147,10 +148,6 @@ func (p *ServiceProvider) GetRocketPool() *rocketpool.RocketPool {
 
 func (p *ServiceProvider) GetValidatorManager() *validator.ValidatorManager {
 	return p.validatorManager
-}
-
-func (p *ServiceProvider) GetRplFaucet() *contracts.RplFaucet {
-	return p.rplFaucet
 }
 
 func (p *ServiceProvider) GetSnapshotDelegation() *contracts.SnapshotDelegation {

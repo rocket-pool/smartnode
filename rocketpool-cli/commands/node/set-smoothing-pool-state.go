@@ -12,10 +12,7 @@ import (
 
 func setSmoothingPoolState(c *cli.Context, optIn bool) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Build the TX
 	response, err := rp.Api.Node.SetSmoothingPoolRegistrationState(optIn)

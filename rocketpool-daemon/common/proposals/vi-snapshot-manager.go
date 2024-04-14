@@ -106,6 +106,7 @@ func (m *VotingInfoSnapshotManager) CreateVotingInfoSnapshot(blockNumber uint32)
 	var nodeCount *big.Int
 	err = m.rp.Query(func(mc *batchquery.MultiCaller) error {
 		networkMgr.GetVotingNodeCountAtBlock(mc, &nodeCount, blockNumber)
+		nodeMgr.NodeCount.AddToQuery(mc)
 		return nil
 	}, nil)
 	if err != nil {
@@ -132,6 +133,9 @@ func (m *VotingInfoSnapshotManager) CreateVotingInfoSnapshot(blockNumber uint32)
 		node.GetVotingPowerAtBlock(mc, &info.VotingPower, blockNumber)
 		return nil
 	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node voting info at block %d: %w", blockNumber, err)
+	}
 
 	return &VotingInfoSnapshot{
 		SmartnodeVersion: shared.RocketPoolVersion,

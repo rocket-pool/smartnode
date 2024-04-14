@@ -36,9 +36,6 @@ func prepareMinipoolBatchTxData(ctx context.Context, sp *services.ServiceProvide
 		return types.ResponseStatus_Error, fmt.Errorf("error creating node transactor: %w", err)
 	}
 
-	// Response
-	response := types.BatchTxInfoData{}
-
 	// Create minipools
 	mpMgr, err := minipool.NewMinipoolManager(rp)
 	if err != nil {
@@ -59,6 +56,6 @@ func prepareMinipoolBatchTxData(ctx context.Context, sp *services.ServiceProvide
 		txInfos[i] = txInfo
 	}
 
-	response.TxInfos = txInfos
+	data.TxInfos = txInfos
 	return types.ResponseStatus_Success, nil
 }

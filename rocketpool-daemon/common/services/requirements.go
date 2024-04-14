@@ -132,14 +132,6 @@ func (sp *ServiceProvider) RequireNodeRegistered(ctx context.Context) (types.Res
 	return types.ResponseStatus_Success, nil
 }
 
-func (sp *ServiceProvider) RequireRplFaucet() error {
-	if sp.rplFaucet == nil {
-		network := string(sp.cfg.Network.Value)
-		return fmt.Errorf("The RPL faucet is not available on the %s network.", network)
-	}
-	return nil
-}
-
 func (sp *ServiceProvider) RequireSnapshot() error {
 	if sp.snapshotDelegation == nil {
 		network := string(sp.cfg.Network.Value)

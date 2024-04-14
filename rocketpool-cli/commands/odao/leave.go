@@ -19,10 +19,7 @@ var leaveRefundAddressFlag *cli.StringFlag = &cli.StringFlag{
 
 func leave(c *cli.Context) error {
 	// Get RP client
-	rp, err := client.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
+	rp := client.NewClientFromCtx(c)
 
 	// Get the RPL bond refund address
 	var bondRefundAddress common.Address

@@ -106,7 +106,7 @@ func (t *CancelBondReductions) checkBondReductions(state *state.NetworkState) er
 		return fmt.Errorf("error creating minipool manager: %w", err)
 	}
 
-	t.logger.Info(fmt.Sprintf("Checking bond reductions... %d (EL block %d)", slog.Uint64(keys.SlotKey, state.BeaconSlotNumber), slog.Uint64(keys.BlockKey, state.ElBlockNumber)))
+	t.logger.Info("Checking bond reductions...", slog.Uint64(keys.SlotKey, state.BeaconSlotNumber), slog.Uint64(keys.BlockKey, state.ElBlockNumber))
 
 	// Check if any of the minipools have bond reduction requests
 	zero := big.NewInt(0)
