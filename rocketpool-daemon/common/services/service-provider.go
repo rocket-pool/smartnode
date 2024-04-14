@@ -41,7 +41,7 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	cfgPath := filepath.Join(userDir, config.ConfigFilename)
 	cfg, err := client.LoadConfigFromFile(os.ExpandEnv(cfgPath))
 	if err != nil {
-		return nil, fmt.Errorf("error loading Smartnode config: %w", err)
+		return nil, fmt.Errorf("error loading Smart Node config: %w", err)
 	}
 	if cfg == nil {
 		return nil, fmt.Errorf("smart node config settings file [%s] not found", cfgPath)
@@ -51,13 +51,6 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	sp, err := services.NewServiceProvider(cfg, config.ClientTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating core service provider: %w", err)
-	}
-
-	// Make the watchtower log
-	loggerOpts := cfg.GetLoggerOptions()
-	watchtowerLogger, err := log.NewLogger(cfg.GetWatchtowerLogFilePath(), loggerOpts)
-	if err != nil {
-		return nil, fmt.Errorf("error creating watchtower logger: %w", err)
 	}
 
 	// Attempt a wallet upgrade before anything
@@ -76,6 +69,18 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error restoring node address to wallet address after upgrade: %w", err)
 		}
+	}
+
+	return CreateServiceProviderFromComponents(cfg, sp)
+}
+
+// Creates a ServiceProvider instance from a core service provider and Smart Node config
+func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp *services.ServiceProvider) (*ServiceProvider, error) {
+	// Make the watchtower log
+	loggerOpts := cfg.GetLoggerOptions()
+	watchtowerLogger, err := log.NewLogger(cfg.GetWatchtowerLogFilePath(), loggerOpts)
+	if err != nil {
+		return nil, fmt.Errorf("error creating watchtower logger: %w", err)
 	}
 
 	// Rocket Pool
@@ -120,7 +125,7 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 	// Create the provider
 	defaultVersion, _ := version.NewSemver("0.0.0")
 	provider := &ServiceProvider{
-		userDir:               userDir,
+		userDir:               cfg.RocketPoolDirectory(),
 		ServiceProvider:       sp,
 		cfg:                   cfg,
 		rocketPool:            rp,
@@ -137,6 +142,10 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 // ===============
 // === Getters ===
 // ===============
+
+func (p *ServiceProvider) GetServiceProvider() *services.ServiceProvider {
+	return p.ServiceProvider
+}
 
 func (p *ServiceProvider) GetUserDir() string {
 	return p.userDir
