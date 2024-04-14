@@ -10,7 +10,6 @@ import (
 type ApiClient struct {
 	context  *client.RequesterContext
 	Auction  *AuctionRequester
-	Faucet   *FaucetRequester
 	Minipool *MinipoolRequester
 	Network  *NetworkRequester
 	Node     *NodeRequester
@@ -30,7 +29,6 @@ func NewApiClient(baseRoute string, socketPath string, logger *slog.Logger) *Api
 	client := &ApiClient{
 		context:  context,
 		Auction:  NewAuctionRequester(context),
-		Faucet:   NewFaucetRequester(context),
 		Minipool: NewMinipoolRequester(context),
 		Network:  NewNetworkRequester(context),
 		Node:     NewNodeRequester(context),

@@ -25,7 +25,6 @@ type ServiceProvider struct {
 	cfg                *config.SmartNodeConfig
 	rocketPool         *rocketpool.RocketPool
 	validatorManager   *validator.ValidatorManager
-	rplFaucet          *contracts.RplFaucet
 	snapshotDelegation *contracts.SnapshotDelegation
 	watchtowerLog      *log.Logger
 
@@ -101,17 +100,6 @@ func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp *servic
 	if err != nil {
 		return nil, fmt.Errorf("error creating validator manager: %w", err)
 	}
-
-	// RPL Faucet
-	var rplFaucet *contracts.RplFaucet
-	faucetAddress := resources.RplFaucetAddress
-	if faucetAddress != nil {
-		rplFaucet, err = contracts.NewRplFaucet(*faucetAddress, sp.GetEthClient(), sp.GetTransactionManager())
-		if err != nil {
-			return nil, fmt.Errorf("error creating RPL faucet binding: %w", err)
-		}
-	}
-
 	// Snapshot delegation
 	var snapshotDelegation *contracts.SnapshotDelegation
 	snapshotAddress := resources.SnapshotDelegationAddress
@@ -130,7 +118,6 @@ func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp *servic
 		cfg:                   cfg,
 		rocketPool:            rp,
 		validatorManager:      vMgr,
-		rplFaucet:             rplFaucet,
 		snapshotDelegation:    snapshotDelegation,
 		watchtowerLog:         watchtowerLogger,
 		loadedContractVersion: defaultVersion,
@@ -161,10 +148,6 @@ func (p *ServiceProvider) GetRocketPool() *rocketpool.RocketPool {
 
 func (p *ServiceProvider) GetValidatorManager() *validator.ValidatorManager {
 	return p.validatorManager
-}
-
-func (p *ServiceProvider) GetRplFaucet() *contracts.RplFaucet {
-	return p.rplFaucet
 }
 
 func (p *ServiceProvider) GetSnapshotDelegation() *contracts.SnapshotDelegation {

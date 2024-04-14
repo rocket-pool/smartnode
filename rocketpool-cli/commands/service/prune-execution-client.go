@@ -51,9 +51,13 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	if selectedEc == nmc_config.ExecutionClient_Geth || selectedEc == nmc_config.ExecutionClient_Besu {
+		if selectedEc == nmc_config.ExecutionClient_Geth {
+			fmt.Printf("%sGeth has a new feature that renders pruning obsolete. Consider enabling PBSS in the Execution Client settings in `rocketpool service config` and resyncing with `rocketpool service resync-eth1` instead of pruning.%s\n", terminal.ColorYellow, terminal.ColorReset)
+		}
+
 		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if !cfg.Fallback.UseFallbackClients.Value {
-			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until your Execution Client is done pruning and has synced again.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", terminal.ColorRed, terminal.ColorReset)
+			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until pruning is done.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", terminal.ColorRed, terminal.ColorReset)
 		} else {
 			fmt.Println("You have fallback clients enabled. The Smart Node (and your Validator Client) will use that while the main client is pruning.")
 		}

@@ -8,7 +8,6 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/api/auction"
-	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/api/faucet"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/api/minipool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/api/network"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/api/node"
@@ -78,7 +77,6 @@ func createServer(origin string, sp *services.ServiceProvider, socketPath string
 
 	handlers := []server.IHandler{
 		auction.NewAuctionHandler(subLogger, ctx, sp),
-		faucet.NewFaucetHandler(subLogger, ctx, sp),
 		minipool.NewMinipoolHandler(subLogger, ctx, sp),
 		network.NewNetworkHandler(subLogger, ctx, sp),
 		node.NewNodeHandler(subLogger, ctx, sp),
