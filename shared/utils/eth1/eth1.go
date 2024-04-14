@@ -30,7 +30,7 @@ func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
 		// otherwise the user is burning gas for no reason
 		ec, err := services.GetEthClient(c)
 		if err != nil {
-			return fmt.Errorf("Could not retrieve ETH1 client: %w", err)
+			return fmt.Errorf("Could not retrieve execution client: %w", err)
 		}
 
 		// Make sure it's not higher than the next available nonce

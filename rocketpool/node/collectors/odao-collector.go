@@ -9,7 +9,7 @@ import (
 
 // Represents the collector for the ODAO metrics
 type OdaoCollector struct {
-	// The latest block reported by the ETH1 client at the time of collecting the metrics
+	// The latest block reported by the execution client at the time of collecting the metrics
 	currentEth1Block *prometheus.Desc
 
 	// The ETH1 block that was used when reporting the latest prices
@@ -36,7 +36,7 @@ func NewOdaoCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *Odao
 	subsystem := "odao"
 	return &OdaoCollector{
 		currentEth1Block: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "current_eth1_block"),
-			"The latest block reported by the ETH1 client at the time of collecting the metrics",
+			"The latest block reported by the execution client at the time of collecting the metrics",
 			nil, nil,
 		),
 		pricesBlock: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "prices_block"),

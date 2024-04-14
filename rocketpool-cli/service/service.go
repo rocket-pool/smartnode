@@ -546,7 +546,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		err := checkForValidatorChange(rp, cfg)
 		if err != nil {
 			fmt.Printf("%sWARNING: couldn't verify that the validator container can be safely restarted:\n\t%s\n", colorYellow, err.Error())
-			fmt.Println("If you are changing to a different ETH2 client, it may resubmit an attestation you have already submitted.")
+			fmt.Println("If you are changing to a different consensus client, it may resubmit an attestation you have already submitted.")
 			fmt.Println("This will slash your validator!")
 			fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.\n")
 			fmt.Println("**If you did NOT change clients, you can safely ignore this warning.**\n")
@@ -1426,7 +1426,7 @@ func getComposeFiles(c *cli.Context) []string {
 	return c.Parent().StringSlice("compose-file")
 }
 
-// Destroy and resync the eth1 client from scratch
+// Destroy and resync the execution client from scratch
 func resyncEth1(c *cli.Context) error {
 
 	// Get RP client
@@ -1442,8 +1442,8 @@ func resyncEth1(c *cli.Context) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
-	fmt.Println("This will delete the chain data of your primary ETH1 client and resync it from scratch.")
-	fmt.Printf("%sYou should only do this if your ETH1 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n", colorYellow, colorReset)
+	fmt.Println("This will delete the chain data of your primary execution client and resync it from scratch.")
+	fmt.Printf("%sYou should only do this if your execution client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n", colorYellow, colorReset)
 
 	// Get the container prefix
 	prefix, err := rp.GetContainerPrefix()
@@ -1452,7 +1452,7 @@ func resyncEth1(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main execution client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1501,13 +1501,13 @@ func resyncEth1(c *cli.Context) error {
 		return fmt.Errorf("Error starting Rocket Pool: %s", err)
 	}
 
-	fmt.Printf("\nDone! Your main ETH1 client is now resyncing. You can follow its progress with `rocketpool service logs eth1`.\n")
+	fmt.Printf("\nDone! Your main execution client is now resyncing. You can follow its progress with `rocketpool service logs eth1`.\n")
 
 	return nil
 
 }
 
-// Destroy and resync the eth2 client from scratch
+// Destroy and resync the consensus client from scratch
 func resyncEth2(c *cli.Context) error {
 
 	// Get RP client
@@ -1523,8 +1523,8 @@ func resyncEth2(c *cli.Context) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
-	fmt.Println("This will delete the chain data of your ETH2 client and resync it from scratch.")
-	fmt.Printf("%sYou should only do this if your ETH2 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n\n", colorYellow, colorReset)
+	fmt.Println("This will delete the chain data of your consensus client and resync it from scratch.")
+	fmt.Printf("%sYou should only do this if your consensus client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n\n", colorYellow, colorReset)
 
 	// Get the parameters that the selected client doesn't support
 	var unsupportedParams []string
@@ -1555,14 +1555,14 @@ func resyncEth2(c *cli.Context) error {
 		}
 	}
 	if !supportsCheckpointSync {
-		fmt.Printf("%sYour ETH2 client (%s) does not support checkpoint sync.\nIf you have active validators, they %swill be considered offline and will leak ETH%s%s while the client is syncing.%s\n\n", colorRed, clientName, colorBold, colorReset, colorRed, colorReset)
+		fmt.Printf("%sYour consensus client (%s) does not support checkpoint sync.\nIf you have active validators, they %swill be considered offline and will leak ETH%s%s while the client is syncing.%s\n\n", colorRed, clientName, colorBold, colorReset, colorRed, colorReset)
 	} else {
 		// Get the current checkpoint sync URL
 		checkpointSyncUrl := cfg.ConsensusCommon.CheckpointSyncProvider.Value.(string)
 		if checkpointSyncUrl == "" {
-			fmt.Printf("%sYou do not have a checkpoint sync provider configured.\nIf you have active validators, they %swill be considered offline and will lose ETH%s%s until your ETH2 client finishes syncing.\nWe strongly recommend you configure a checkpoint sync provider with `rocketpool service config` so it syncs instantly before running this.%s\n\n", colorRed, colorBold, colorReset, colorRed, colorReset)
+			fmt.Printf("%sYou do not have a checkpoint sync provider configured.\nIf you have active validators, they %swill be considered offline and will lose ETH%s%s until your consensus client finishes syncing.\nWe strongly recommend you configure a checkpoint sync provider with `rocketpool service config` so it syncs instantly before running this.%s\n\n", colorRed, colorBold, colorReset, colorRed, colorReset)
 		} else {
-			fmt.Printf("You have a checkpoint sync provider configured (%s).\nYour ETH2 client will use it to sync to the head of the Beacon Chain instantly after being rebuilt.\n\n", checkpointSyncUrl)
+			fmt.Printf("You have a checkpoint sync provider configured (%s).\nYour consensus client will use it to sync to the head of the Beacon Chain instantly after being rebuilt.\n\n", checkpointSyncUrl)
 		}
 	}
 
@@ -1573,7 +1573,7 @@ func resyncEth2(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH2 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main consensus client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1622,7 +1622,7 @@ func resyncEth2(c *cli.Context) error {
 		return fmt.Errorf("Error starting Rocket Pool: %s", err)
 	}
 
-	fmt.Printf("\nDone! Your ETH2 client is now resyncing. You can follow its progress with `rocketpool service logs eth2`.\n")
+	fmt.Printf("\nDone! Your consensus client is now resyncing. You can follow its progress with `rocketpool service logs eth2`.\n")
 
 	return nil
 
@@ -1721,7 +1721,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 	}
 
 	var result string
-	// If dirty flag is used, copies chain data without stopping the eth1 client.
+	// If dirty flag is used, copies chain data without stopping the execution client.
 	// This requires a second quick pass to sync the remaining files after stopping the client.
 	if !c.Bool("dirty") {
 		fmt.Printf("Stopping %s...\n", executionContainerName)

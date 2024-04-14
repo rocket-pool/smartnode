@@ -95,7 +95,7 @@ type NodeCollector struct {
 	// The node's address
 	nodeAddress common.Address
 
-	// The event log interval for the current eth1 client
+	// The event log interval for the current execution client
 	eventLogInterval *big.Int
 
 	// The next block to start from when looking at cumulative RPL rewards

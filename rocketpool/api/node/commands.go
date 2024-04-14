@@ -37,7 +37,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "sync",
 				Aliases:   []string{"y"},
-				Usage:     "Get the sync progress of the eth1 and eth2 clients",
+				Usage:     "Get the sync progress of the execution and consensus clients",
 				UsageText: "rocketpool api node sync",
 				Action: func(c *cli.Context) error {
 
