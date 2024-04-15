@@ -353,3 +353,22 @@ type PDAOFinalizeProposalResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type PDAOCanSetVotingDelegateResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOSetVotingDelegateResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type PDAOCurrentVotingDelegateResponse struct {
+	Status         string         `json:"status"`
+	Error          string         `json:"error"`
+	AccountAddress common.Address `json:"accountAddress"`
+	VotingDelegate common.Address `json:"votingDelegate"`
+}

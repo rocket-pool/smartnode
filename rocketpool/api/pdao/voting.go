@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func estimateSetVotingDelegateGas(c *cli.Context, address common.Address) (*api.NetworkCanSetVotingDelegateResponse, error) {
+func estimateSetVotingDelegateGas(c *cli.Context, address common.Address) (*api.PDAOCanSetVotingDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -28,7 +28,7 @@ func estimateSetVotingDelegateGas(c *cli.Context, address common.Address) (*api.
 	}
 	// Response
 
-	response := api.NetworkCanSetVotingDelegateResponse{}
+	response := api.PDAOCanSetVotingDelegateResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -48,7 +48,7 @@ func estimateSetVotingDelegateGas(c *cli.Context, address common.Address) (*api.
 
 }
 
-func setVotingDelegate(c *cli.Context, address common.Address) (*api.NetworkSetVotingDelegateResponse, error) {
+func setVotingDelegate(c *cli.Context, address common.Address) (*api.PDAOSetVotingDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -64,7 +64,7 @@ func setVotingDelegate(c *cli.Context, address common.Address) (*api.NetworkSetV
 	}
 
 	// Response
-	response := api.NetworkSetVotingDelegateResponse{}
+	response := api.PDAOSetVotingDelegateResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -90,7 +90,7 @@ func setVotingDelegate(c *cli.Context, address common.Address) (*api.NetworkSetV
 
 }
 
-func getCurrentVotingDelegate(c *cli.Context) (*api.NetworkCurrentVotingDelegateResponse, error) {
+func getCurrentVotingDelegate(c *cli.Context) (*api.PDAOCurrentVotingDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -110,7 +110,7 @@ func getCurrentVotingDelegate(c *cli.Context) (*api.NetworkCurrentVotingDelegate
 	}
 
 	// Response
-	response := api.NetworkCurrentVotingDelegateResponse{}
+	response := api.PDAOCurrentVotingDelegateResponse{}
 	response.AccountAddress = nodeAccount.Address
 
 	// Set the delegate

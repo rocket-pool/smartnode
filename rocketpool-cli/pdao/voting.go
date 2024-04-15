@@ -12,7 +12,7 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
-func networkSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
+func pdaoSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {

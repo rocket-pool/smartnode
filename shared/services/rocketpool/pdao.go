@@ -606,3 +606,51 @@ func (c *Client) PDAOFinalizeProposal(proposalID uint64) (api.PDAOFinalizePropos
 	}
 	return response, nil
 }
+
+// CanSetVotingDelegate estimates the gas required to set an on-chain voting delegate
+func (c *Client) EstimateSetVotingDelegateGas(address common.Address) (api.PDAOCanSetVotingDelegateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao estimate-set-voting-delegate-gas %s", address.Hex()))
+	if err != nil {
+		return api.PDAOCanSetVotingDelegateResponse{}, fmt.Errorf("could not call estimate-set-voting-delegate-gas: %w", err)
+	}
+	var response api.PDAOCanSetVotingDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanSetVotingDelegateResponse{}, fmt.Errorf("could not decode estimate-set-voting-delegate-gas response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanSetVotingDelegateResponse{}, fmt.Errorf("error after requesting estimate-set-voting-delegate-gas: %s", response.Error)
+	}
+	return response, nil
+}
+
+// SetVotingDelegate set an on-chain voting delegate for the node
+func (c *Client) SetVotingDelegate(address common.Address) (api.PDAOSetVotingDelegateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao set-voting-delegate %s", address.Hex()))
+	if err != nil {
+		return api.PDAOSetVotingDelegateResponse{}, fmt.Errorf("could not call set-voting-delegate: %w", err)
+	}
+	var response api.PDAOSetVotingDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOSetVotingDelegateResponse{}, fmt.Errorf("could not decode set-voting-delegate response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOSetVotingDelegateResponse{}, fmt.Errorf("error after requesting set-voting-delegate: %s", response.Error)
+	}
+	return response, nil
+}
+
+// GetCurrentVotingDelegate gets the node current on-chain voting delegate
+func (c *Client) GetCurrentVotingDelegate() (api.PDAOCurrentVotingDelegateResponse, error) {
+	responseBytes, err := c.callAPI("pdao get-current-voting-delegate")
+	if err != nil {
+		return api.PDAOCurrentVotingDelegateResponse{}, fmt.Errorf("could not request get-current-voting-delegate: %w", err)
+	}
+	var response api.PDAOCurrentVotingDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCurrentVotingDelegateResponse{}, fmt.Errorf("could not decode get-current-voting-delegate: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCurrentVotingDelegateResponse{}, fmt.Errorf("error after requesting get-current-voting-delegate: %s", response.Error)
+	}
+	return response, nil
+}

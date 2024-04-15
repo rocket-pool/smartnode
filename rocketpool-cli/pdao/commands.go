@@ -57,7 +57,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "initialize-voting",
 				Aliases:   []string{"iv"},
 				Usage:     "Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)",
-				UsageText: "rocketpool network initialize-voting",
+				UsageText: "rocketpool pdao initialize-voting",
 				Action: func(c *cli.Context) error {
 
 					// Run
@@ -70,7 +70,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "set-voting-delegate",
 				Aliases:   []string{"svd"},
 				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",
-				UsageText: "rocketpool network set-voting-delegate address",
+				UsageText: "rocketpool pdao set-voting-delegate address",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -85,7 +85,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 					delegate := c.Args().Get(0)
 					// Run
-					return networkSetVotingDelegate(c, delegate)
+					return pdaoSetVotingDelegate(c, delegate)
 
 				},
 			},

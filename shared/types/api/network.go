@@ -78,13 +78,6 @@ type NetworkDAOProposalsResponse struct {
 	ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 }
 
-type NetworkCurrentVotingDelegateResponse struct {
-	Status         string         `json:"status"`
-	Error          string         `json:"error"`
-	AccountAddress common.Address `json:"accountAddress"`
-	VotingDelegate common.Address `json:"votingDelegate"`
-}
-
 type NetworkCanInitializeVotingResponse struct {
 	Status            string             `json:"status"`
 	Error             string             `json:"error"`
@@ -93,18 +86,6 @@ type NetworkCanInitializeVotingResponse struct {
 }
 
 type NetworkInitializeVotingResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
-
-type NetworkCanSetVotingDelegateResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
-}
-
-type NetworkSetVotingDelegateResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
