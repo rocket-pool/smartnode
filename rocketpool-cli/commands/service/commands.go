@@ -277,16 +277,16 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "daemon-logs",
-				Aliases:   []string{"dl"},
-				Usage:     "View one or more of the logs from the daemon",
+				Name:      "node-logs",
+				Aliases:   []string{"nl"},
+				Usage:     "View one or more of the logs from the node",
 				ArgsUsage: "[api | tasks | watchtower]",
 				Flags: []cli.Flag{
 					tailFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Run command
-					return daemonLogs(c, c.Args().Slice()...)
+					return nodeLogs(c, c.Args().Slice()...)
 				},
 			},
 

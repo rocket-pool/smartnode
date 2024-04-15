@@ -312,7 +312,7 @@ func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNam
 }
 
 // Print the daemon logs
-func (c *Client) PrintDaemonLogs(composeFiles []string, tail string, logPaths ...string) error {
+func (c *Client) PrintNodeLogs(composeFiles []string, tail string, logPaths ...string) error {
 	cmd := fmt.Sprintf("tail -f %s %s", tail, strings.Join(logPaths, " "))
 	return c.printOutput(cmd)
 }
