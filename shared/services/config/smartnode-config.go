@@ -524,6 +524,18 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Holesky: "",
 		},
 
+		v1_2_0_NetworkPricesAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x751826b107672360b764327631cC5764515fFC37",
+			config.Network_Devnet:  "0xBba3FBCD4Bdbfc79118B1B31218602E5A71B426c",
+			config.Network_Holesky: "0x029d946F28F93399a5b0D09c879FC8c94E596AEb",
+		},
+
+		v1_2_0_NetworkBalancesAddress: map[config.Network]string{
+			config.Network_Mainnet: "0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4",
+			config.Network_Devnet:  "0xBe8Dc8CA5f339c196Aef634DfcDFbA61E30DC743",
+			config.Network_Holesky: "0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8",
+		},
+
 		snapshotDelegationAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446",
 			config.Network_Devnet:  "",
