@@ -90,7 +90,7 @@ build_latest_docker_manifest() {
 
 # Print usage
 usage() {
-    echo "Usage: build-release.sh [options] -v <version number>"
+    echo "Usage: build.sh [options] -v <version number>"
     echo "This script assumes it is in a directory that contains subdirectories for all of the Smart Node repositories."
     echo "Options:"
     echo $'\t-a\tBuild all of the artifacts'
