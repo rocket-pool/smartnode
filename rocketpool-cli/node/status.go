@@ -190,7 +190,7 @@ func getStatus(c *cli.Context) error {
 				fmt.Println("The node has been initialized for onchain voting.")
 
 			} else {
-				fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool network initialize-voting` to participate in onchain votes.")
+				fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
 			}
 
 			if status.OnchainVotingDelegate == status.AccountAddress {
