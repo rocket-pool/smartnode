@@ -158,6 +158,6 @@ func (cfg *GraffitiWallWriterConfig) GetSubconfigs() map[string]config.IConfigSe
 	return map[string]config.IConfigSection{}
 }
 
-func (gww *GraffitiWallWriter) GetContainerName() string {
+func (gww *GraffitiWallWriterConfig) GetContainerName() string {
 	return fmt.Sprint(ContainerID_GraffitiWallWriter)
 }

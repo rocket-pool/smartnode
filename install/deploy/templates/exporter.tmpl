@@ -6,7 +6,7 @@
 # for more information on overriding specific parameters of docker-compose files.
 
 services:
-  {{.ExporterContainerName}}:
+  node-exporter: # Explicitly named for backwards compatibility
     image: {{.Metrics.Exporter.ContainerTag}}
     container_name: {{.ProjectName}}_{{.ExporterContainerName}}
     cap_drop:

@@ -170,6 +170,11 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir strin
 		)
 	}
 
+	// Check the alertmanager
+	if cfg.Alertmanager.EnableAlerting.Value {
+		toDeploy = append(toDeploy, config.ContainerID_Alertmanager)
+	}
+
 	// Check if we are running the MEV-Boost container locally
 	if cfg.MevBoost.Enable.Value && cfg.MevBoost.Mode.Value == nmc_config.ClientMode_Local {
 		toDeploy = append(toDeploy, nmc_config.ContainerID_MevBoost)
@@ -310,7 +315,7 @@ func (c *Client) composeAddons(cfg *config.SmartNodeConfig, rocketpoolDir string
 	if cfg.Addons.GraffitiWallWriter.Enabled.Value {
 		composePaths := template.ComposePaths{
 			RuntimePath:  filepath.Join(rocketpoolDir, runtimeDir, config.AddonsFolderName, gww.FolderName),
-			TemplatePath: filepath.Join(rocketpoolDir, templatesDir, config.AddonsFolderName, gww.FolderName),
+			TemplatePath: filepath.Join(templatesDir, config.AddonsFolderName, gww.FolderName),
 			OverridePath: filepath.Join(rocketpoolDir, overrideDir, config.AddonsFolderName, gww.FolderName),
 		}
 
