@@ -1168,6 +1168,12 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 			config.GrafanaContainerName,
 			config.ExporterContainerName,
 			config.PrometheusContainerName,
+		)
+	}
+
+	// Check if Alerts are enabled
+	if cfg.Alertmanager.EnableAlerting.Value == true {
+		toDeploy = append(toDeploy,
 			config.AlertmanagerContainerName,
 		)
 	}
