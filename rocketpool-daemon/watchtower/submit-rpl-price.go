@@ -61,7 +61,7 @@ func NewSubmitRplPrice(ctx context.Context, sp *services.ServiceProvider, logger
 	return &SubmitRplPrice{
 		ctx:    ctx,
 		sp:     sp,
-		logger: logger.With(slog.String(keys.RoutineKey, "Price Report")),
+		logger: logger.With(slog.String(keys.TaskKey, "Price Report")),
 		cfg:    sp.GetConfig(),
 		ec:     sp.GetEthClient(),
 		w:      sp.GetWallet(),

@@ -49,7 +49,7 @@ type ReduceBonds struct {
 // Create reduce bonds task
 func NewReduceBonds(sp *services.ServiceProvider, logger *log.Logger) *ReduceBonds {
 	cfg := sp.GetConfig()
-	log := logger.With(slog.String(keys.RoutineKey, "Reduce Bonds"))
+	log := logger.With(slog.String(keys.TaskKey, "Reduce Bonds"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	gasThreshold := cfg.AutoTxGasThreshold.Value
 

@@ -62,7 +62,7 @@ type VerifyPdaoProps struct {
 
 func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *VerifyPdaoProps {
 	cfg := sp.GetConfig()
-	log := logger.With(slog.String(keys.RoutineKey, "Verify PDAO Proposals"))
+	log := logger.With(slog.String(keys.TaskKey, "Verify PDAO Proposals"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &VerifyPdaoProps{
 		ctx:                 ctx,

@@ -86,7 +86,7 @@ func NewRollingRecordManager(logger *slog.Logger, cfg *config.SmartNodeConfig, r
 		return nil, fmt.Errorf("rolling records folder location exists (%s), but is not a folder", recordsPath)
 	}
 
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Rolling Record"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Rolling Record"))
 	logger.Info("Created Rolling Record manager.", slog.Uint64(keys.StartSlotKey, startSlot))
 	return &RollingRecordManager{
 		Record: NewRollingRecord(sublogger, bc, startSlot, &beaconCfg, rewardsInterval),

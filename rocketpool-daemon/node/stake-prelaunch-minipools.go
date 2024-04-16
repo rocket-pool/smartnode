@@ -48,7 +48,7 @@ type StakePrelaunchMinipools struct {
 // Create stake prelaunch minipools task
 func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger *log.Logger) *StakePrelaunchMinipools {
 	cfg := sp.GetConfig()
-	log := logger.With(slog.String(keys.RoutineKey, "Prelaunch Stake"))
+	log := logger.With(slog.String(keys.TaskKey, "Prelaunch Stake"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &StakePrelaunchMinipools{
 		sp:             sp,

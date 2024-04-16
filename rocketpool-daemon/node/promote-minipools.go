@@ -41,7 +41,7 @@ type PromoteMinipools struct {
 // Create promote minipools task
 func NewPromoteMinipools(sp *services.ServiceProvider, logger *log.Logger) *PromoteMinipools {
 	cfg := sp.GetConfig()
-	log := logger.With(slog.String(keys.RoutineKey, "Promote Minipools"))
+	log := logger.With(slog.String(keys.TaskKey, "Promote Minipools"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &PromoteMinipools{
 		sp:             sp,

@@ -63,7 +63,7 @@ type VotingInfoSnapshotManager struct {
 // Create a new VotingInfoSnapshotManager instance
 func NewVotingInfoSnapshotManager(logger *slog.Logger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool) (*VotingInfoSnapshotManager, error) {
 	// Create the snapshot filename regex
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Voting Info Snapshot"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Voting Info Snapshot"))
 	filenameRegex := regexp.MustCompile(votingInfoSnapshotFilenamePattern)
 
 	// Create the latest compatible snapshot version

@@ -37,7 +37,7 @@ type RplCollector struct {
 // Create a new RplCollector instance
 func NewRplCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *RplCollector {
 	subsystem := "rpl"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "RPL Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "RPL Collector"))
 	return &RplCollector{
 		rplPrice: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rpl_price"),
 			"The RPL price (in terms of ETH)",

@@ -45,7 +45,7 @@ type DistributeMinipools struct {
 // Create distribute minipools task
 func NewDistributeMinipools(sp *services.ServiceProvider, logger *log.Logger) *DistributeMinipools {
 	cfg := sp.GetConfig()
-	log := logger.With(slog.String(keys.RoutineKey, "Distribute Minipools"))
+	log := logger.With(slog.String(keys.TaskKey, "Distribute Minipools"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	gasThreshold := cfg.AutoTxGasThreshold.Value
 

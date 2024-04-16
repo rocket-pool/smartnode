@@ -60,7 +60,7 @@ type SnapshotCollector struct {
 // Create a new SnapshotCollector instance
 func NewSnapshotCollector(logger *log.Logger, sp *services.ServiceProvider) *SnapshotCollector {
 	subsystem := "snapshot"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Snapshot Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Snapshot Collector"))
 	return &SnapshotCollector{
 		activeProposals: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposals_active"),
 			"The number of active Snapshot proposals",

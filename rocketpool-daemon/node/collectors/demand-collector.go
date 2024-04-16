@@ -42,7 +42,7 @@ type DemandCollector struct {
 // Create a new DemandCollector instance
 func NewDemandCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *DemandCollector {
 	subsystem := "demand"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Demand Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Demand Collector"))
 	return &DemandCollector{
 		depositPoolBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "deposit_pool_balance"),
 			"The amount of ETH currently in the Deposit Pool",

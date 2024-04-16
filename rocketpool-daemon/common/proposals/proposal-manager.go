@@ -49,7 +49,7 @@ func NewProposalManager(context context.Context, logger *slog.Logger, cfg *confi
 		return nil, fmt.Errorf("error creating network state manager: %w", err)
 	}
 
-	sublogger := logger.With(slog.String(keys.RoutineKey, "PDAO Proposals"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "PDAO Proposals"))
 	return &ProposalManager{
 		viSnapshotMgr:  viSnapshotMgr,
 		networkTreeMgr: networkMgr,

@@ -48,7 +48,7 @@ func NewGenerateRewardsTree(ctx context.Context, sp *services.ServiceProvider, l
 	return &GenerateRewardsTree{
 		ctx:       ctx,
 		sp:        sp,
-		logger:    logger.With(slog.String(keys.RoutineKey, "Generate Rewards Tree")),
+		logger:    logger.With(slog.String(keys.TaskKey, "Generate Rewards Tree")),
 		cfg:       sp.GetConfig(),
 		rp:        sp.GetRocketPool(),
 		ec:        sp.GetEthClient(),

@@ -5,7 +5,7 @@ const (
 	ContainerKey              string = "container"
 	CommandKey                string = "command"
 	MinipoolKey               string = "minipool"
-	RoutineKey                string = "routine"
+	TaskKey                   string = "task"
 	BlockKey                  string = "block"
 	SlotKey                   string = "slot"
 	FileKey                   string = "file"

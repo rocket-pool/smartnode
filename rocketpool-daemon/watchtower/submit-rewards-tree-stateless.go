@@ -59,7 +59,7 @@ func NewSubmitRewardsTree_Stateless(ctx context.Context, sp *services.ServicePro
 	return &SubmitRewardsTree_Stateless{
 		ctx:       ctx,
 		sp:        sp,
-		logger:    logger.With(slog.String(keys.RoutineKey, "Merkle Tree")),
+		logger:    logger.With(slog.String(keys.TaskKey, "Merkle Tree")),
 		cfg:       sp.GetConfig(),
 		w:         sp.GetWallet(),
 		rp:        sp.GetRocketPool(),

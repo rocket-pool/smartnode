@@ -53,7 +53,7 @@ type TrustedNodeCollector struct {
 // Create a new TrustedNodeCollector instance
 func NewTrustedNodeCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *TrustedNodeCollector {
 	subsystem := "trusted_node"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "ODAO Stats Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "ODAO Stats Collector"))
 	return &TrustedNodeCollector{
 		proposalCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "proposal_count"),
 			"The number of proposals in each state",

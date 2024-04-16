@@ -42,7 +42,7 @@ func NewManageFeeRecipient(ctx context.Context, sp *services.ServiceProvider, lo
 	return &ManageFeeRecipient{
 		ctx:    ctx,
 		sp:     sp,
-		logger: logger.With(slog.String(keys.RoutineKey, "Fee Recipient Check")),
+		logger: logger.With(slog.String(keys.TaskKey, "Fee Recipient Check")),
 		cfg:    sp.GetConfig(),
 		bc:     sp.GetBeaconClient(),
 		d:      sp.GetDocker(),

@@ -40,7 +40,7 @@ type SupplyCollector struct {
 // Create a new PerformanceCollector instance
 func NewSupplyCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *SupplyCollector {
 	subsystem := "supply"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Supply Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Supply Collector"))
 	return &SupplyCollector{
 		nodeCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "node_count"),
 			"The total number of Rocket Pool nodes",

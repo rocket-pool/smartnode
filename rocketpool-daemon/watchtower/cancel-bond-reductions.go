@@ -51,7 +51,7 @@ func NewCancelBondReductions(ctx context.Context, sp *services.ServiceProvider, 
 	return &CancelBondReductions{
 		ctx:       ctx,
 		sp:        sp,
-		logger:    logger.With(slog.String(keys.RoutineKey, "Bond Reduction")),
+		logger:    logger.With(slog.String(keys.TaskKey, "Bond Reduction")),
 		cfg:       sp.GetConfig(),
 		w:         sp.GetWallet(),
 		rp:        sp.GetRocketPool(),
