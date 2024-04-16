@@ -205,11 +205,15 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 				// Make sure the prop and challenge are in the right states
 				if challengeInfo.State == types.ChallengeState_Paid {
 					// Ignore already paid challenges
-					continue;
+					continue
 				}
 				if challengeInfo.State == types.ChallengeState_Responded && propInfo.State != types.ProtocolDaoProposalState_Destroyed {
-					// Only refund responded challenges if the proposal was destroyed 
-					continue;
+					// Only refund responded challenges if the proposal was destroyed
+					continue
+				}
+				if challengeInfo.State == types.ChallengeState_Challenged && propInfo.State < types.ProtocolDaoProposalState_QuorumNotMet {
+					// Unresponded challenges may be claimed after the proposal is finished
+					continue
 				}
 
 				// Increment how many refundable challenges we made
