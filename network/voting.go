@@ -93,21 +93,21 @@ func GetVotingInitialized(rp *rocketpool.RocketPool, address common.Address, opt
 }
 
 // Estimate the gas of InitializeVoting
-func EstimateInitializeVotingGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateInitializeVotingGas(rp *rocketpool.RocketPool, delegate common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNetworkVoting.GetTransactionGasInfo(opts, "initialiseVoting")
+	return rocketNetworkVoting.GetTransactionGasInfo(opts, "initialiseVoting", delegate)
 }
 
 // Initialize on-chain voting for the node
-func InitializeVoting(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
+func InitializeVoting(rp *rocketpool.RocketPool, delegate common.Address, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNetworkVoting.Transact(opts, "initialiseVoting")
+	tx, err := rocketNetworkVoting.Transact(opts, "initialiseVoting", delegate)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error initializing voting: %w", err)
 	}
