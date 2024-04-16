@@ -2,7 +2,7 @@
 FROM rocketpool/smartnode-deb-builder:v1.0.0 AS builder
 ARG BUILDPLATFORM
 
-# Debian packages need a very particular folder structure, so we're basically converting the repo structure into what it wants here 
+# Debian packages need a very particular folder structure, so we're basically converting the repo structure into what it wants here
 COPY . /rocketpool/debian
 WORKDIR /rocketpool/debian
 

@@ -7,8 +7,8 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-// View the daemon logs
-func daemonLogs(c *cli.Context, serviceNames ...string) error {
+// View the node logs
+func nodeLogs(c *cli.Context, serviceNames ...string) error {
 	lines := c.String(tailFlag.Name)
 	lineArg := "--lines="
 	if lines == "all" {
@@ -43,5 +43,5 @@ func daemonLogs(c *cli.Context, serviceNames ...string) error {
 	}
 
 	// Print service logs
-	return rp.PrintDaemonLogs(getComposeFiles(c), lineArg, logPaths...)
+	return rp.PrintNodeLogs(getComposeFiles(c), lineArg, logPaths...)
 }
