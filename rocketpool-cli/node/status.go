@@ -231,7 +231,8 @@ func getStatus(c *cli.Context) error {
 
 		// RPL stake details
 		fmt.Printf("%s=== RPL Stake ===%s\n", colorGreen, colorReset)
-		fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.\n")
+		fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.")
+		fmt.Println()
 		fmt.Printf(
 			"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL.\n",
 			math.RoundDown(eth.WeiToEth(status.RplStake), 6),

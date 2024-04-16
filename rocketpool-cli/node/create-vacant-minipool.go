@@ -41,7 +41,8 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		return nil
 	}
 
-	fmt.Println("Your eth2 client is on the correct network.\n")
+	fmt.Println("Your eth2 client is on the correct network.")
+	fmt.Println()
 
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
@@ -240,7 +241,8 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	if c.IsSet("mnemonic") {
 		mnemonic = c.String("mnemonic")
 	} else if !c.Bool("yes") {
-		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, the Smartnode will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.\n")
+		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, the Smartnode will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.")
+		fmt.Println()
 		if cliutils.Confirm("Would you like to import your key and automatically migrate your withdrawal credentials?") {
 			mnemonic = wallet.PromptMnemonic()
 		}
@@ -250,7 +252,9 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		handleImport(c, rp, response.MinipoolAddress, mnemonic)
 	} else {
 		// Ignore importing / it errored out
-		fmt.Println("Since you're not importing your validator key, you will still be responsible for running and maintaining your own Validator Client with the validator's private key loaded, just as you are today.\n\n")
+		fmt.Println("Since you're not importing your validator key, you will still be responsible for running and maintaining your own Validator Client with the validator's private key loaded, just as you are today.")
+		fmt.Println()
+		fmt.Println()
 		fmt.Printf("You must now upgrade your validator's withdrawal credentials manually, using as tool such as `ethdo` (https://github.com/wealdtech/ethdo), to the following minipool address:\n\n\t%s\n\n", response.MinipoolAddress)
 	}
 

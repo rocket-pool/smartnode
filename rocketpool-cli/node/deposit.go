@@ -42,7 +42,8 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
-	fmt.Println("Your eth2 client is on the correct network.\n")
+	fmt.Println("Your eth2 client is on the correct network.")
+	fmt.Println()
 
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()

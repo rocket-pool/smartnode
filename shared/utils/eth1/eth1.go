@@ -89,13 +89,13 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.RocketPoolConf
 				}
 				client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(cfg.Smartnode.GetStorageAddress()))
 				if err != nil {
-					return nil, fmt.Errorf("%s Error creating Rocket Pool client connected to archive EC: %w", err)
+					return nil, fmt.Errorf("Error creating Rocket Pool client connected to archive EC: %w", err)
 				}
 
 				// Get the rETH address from the archive EC
 				address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
 				if err != nil {
-					return nil, fmt.Errorf("%s Error verifying rETH address with Archive EC: %w", err)
+					return nil, fmt.Errorf("Error verifying rETH address with Archive EC: %w", err)
 				}
 			} else {
 				// No archive node specified
