@@ -926,7 +926,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-initialize-voting",
 				Aliases:   []string{"civ"},
 				Usage:     "Checks if voting can be initialized.",
-				UsageText: "rocketpool api network can-initialize-voting",
+				UsageText: "rocketpool api pdao can-initialize-voting",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -961,7 +961,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "estimate-set-voting-delegate-gas",
 				Usage:     "Estimate the gas required to set an on-chain voting delegate",
-				UsageText: "rocketpool api network estimate-set-voting-delegate-gas address",
+				UsageText: "rocketpool api pdao estimate-set-voting-delegate-gas address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -983,7 +983,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "set-voting-delegate",
 				Usage:     "Set an on-chain voting delegate for the node",
-				UsageText: "rocketpool api network set-voting-delegate address",
+				UsageText: "rocketpool api pdao set-voting-delegate address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -1005,7 +1005,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "get-current-voting-delegate",
 				Usage:     "Get the current on-chain voting delegate for the node",
-				UsageText: "rocketpool api network get-current-voting-delegate",
+				UsageText: "rocketpool api pdao get-current-voting-delegate",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
