@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -94,7 +95,7 @@ func ExportValidators(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+	columns := []string{
 		"Minipool Address",
 		"Validator Pub Key",
 		"Activation Epoch",
@@ -106,7 +107,8 @@ func ExportValidators(c *cli.Context) error {
 		"Finalised",
 		"Active",
 		"Pending",
-	)
+	}
+	fmt.Println(strings.Join(columns, "\t"))
 
 	// Load details in batches
 	for bsi := 0; bsi < len(addresses); bsi += MinipoolBalanceDetailsBatchSize {

@@ -3,6 +3,7 @@ package rocketpool
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -66,7 +67,7 @@ func (c *Client) TNDAOProposals() (api.TNDAOProposalsResponse, error) {
 
 // Get a single oracle DAO proposal
 func (c *Client) TNDAOProposal(id uint64) (api.TNDAOProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("odao proposal-details %d", id))
+	responseBytes, err := c.callAPI("odao proposal-details", strconv.FormatUint(id, 10))
 	if err != nil {
 		return api.TNDAOProposalResponse{}, fmt.Errorf("Could not get oracle DAO proposal: %w", err)
 	}
