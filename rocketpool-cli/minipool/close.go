@@ -54,6 +54,10 @@ func closeMinipools(c *cli.Context) error {
 			// Ignore minipools that are already closed
 			continue
 		}
+		if mp.MinipoolStatus == types.Prelaunch {
+			// Ignore minipools that are currently in prelaunch
+			continue
+		}
 		if mp.CanClose {
 			closableMinipools = append(closableMinipools, mp)
 		} else {
