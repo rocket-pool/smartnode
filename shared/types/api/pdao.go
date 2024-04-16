@@ -372,3 +372,16 @@ type PDAOCurrentVotingDelegateResponse struct {
 	AccountAddress common.Address `json:"accountAddress"`
 	VotingDelegate common.Address `json:"votingDelegate"`
 }
+
+type PDAOCanInitializeVotingResponse struct {
+	Status            string             `json:"status"`
+	Error             string             `json:"error"`
+	VotingInitialized bool               `json:"votingInitialized"`
+	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type PDAOInitializeVotingResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}

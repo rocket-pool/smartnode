@@ -654,3 +654,35 @@ func (c *Client) GetCurrentVotingDelegate() (api.PDAOCurrentVotingDelegateRespon
 	}
 	return response, nil
 }
+
+// CanInitializeVoting fetches whether the node's is initialized for on-chain voting
+func (c *Client) CanInitializeVoting() (api.PDAOCanInitializeVotingResponse, error) {
+	responseBytes, err := c.callAPI("pdao can-initialize-voting")
+	if err != nil {
+		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("could not call can-initialize-voting: %w", err)
+	}
+	var response api.PDAOCanInitializeVotingResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("could not decode can-initialize-voting response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("error after requesting can-initialize-voting: %s", response.Error)
+	}
+	return response, nil
+}
+
+// InitializeVoting unlocks the node's voting power
+func (c *Client) InitializeVoting() (api.PDAOInitializeVotingResponse, error) {
+	responseBytes, err := c.callAPI("pdao initialize-voting")
+	if err != nil {
+		return api.PDAOInitializeVotingResponse{}, fmt.Errorf("could not call initialize-voting: %w", err)
+	}
+	var response api.PDAOInitializeVotingResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOInitializeVotingResponse{}, fmt.Errorf("could not decode initialize-voting response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOInitializeVotingResponse{}, fmt.Errorf("error after requesting initialize-voting: %s", response.Error)
+	}
+	return response, nil
+}

@@ -177,34 +177,3 @@ func (c *Client) GetLatestDelegate() (api.GetLatestDelegateResponse, error) {
 	return response, nil
 }
 
-// CanInitializeVoting fetches whether the node's is initialized for on-chain voting
-func (c *Client) CanInitializeVoting() (api.NetworkCanInitializeVotingResponse, error) {
-	responseBytes, err := c.callAPI("network can-initialize-voting")
-	if err != nil {
-		return api.NetworkCanInitializeVotingResponse{}, fmt.Errorf("could not call can-initialize-voting: %w", err)
-	}
-	var response api.NetworkCanInitializeVotingResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkCanInitializeVotingResponse{}, fmt.Errorf("could not decode can-initialize-voting response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NetworkCanInitializeVotingResponse{}, fmt.Errorf("error after requesting can-initialize-voting: %s", response.Error)
-	}
-	return response, nil
-}
-
-// InitializeVoting unlocks the node's voting power
-func (c *Client) InitializeVoting() (api.NetworkInitializeVotingResponse, error) {
-	responseBytes, err := c.callAPI("network initialize-voting")
-	if err != nil {
-		return api.NetworkInitializeVotingResponse{}, fmt.Errorf("could not call initialize-voting: %w", err)
-	}
-	var response api.NetworkInitializeVotingResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NetworkInitializeVotingResponse{}, fmt.Errorf("could not decode initialize-voting response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NetworkInitializeVotingResponse{}, fmt.Errorf("error after requesting initialize-voting: %s", response.Error)
-	}
-	return response, nil
-}
