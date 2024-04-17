@@ -77,7 +77,7 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.logger.Info("Startig check for minipool bonds to reduce.")
+	t.logger.Info("Starting check for minipool bonds to reduce.")
 
 	// Get the latest state
 	opts := &bind.CallOpts{

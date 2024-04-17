@@ -90,7 +90,7 @@ func (t *DefendPdaoProps) Run(state *state.NetworkState) error {
 	t.pdaoMgr = pdaoMgr
 
 	// Log
-	t.logger.Info("Started checking for Protocol DAO proposal challenges to defend.")
+	t.logger.Info("Starting check for Protocol DAO proposal challenges to defend.")
 
 	// Get the latest state
 	opts := &bind.CallOpts{
