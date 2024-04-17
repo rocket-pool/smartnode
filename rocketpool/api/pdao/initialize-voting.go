@@ -50,7 +50,7 @@ func canNodeInitializeVoting(c *cli.Context) (*api.PDAOCanInitializeVotingRespon
 		return nil, err
 	}
 
-	gasInfo, err := network.EstimateInitializeVotingGas(rp, nodeAccount.Address, opts)
+	gasInfo, err := network.EstimateInitializeVotingGas(rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
 	}
@@ -104,7 +104,7 @@ func nodeInitializedVoting(c *cli.Context) (*api.PDAOInitializeVotingResponse, e
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	hash, err := network.InitializeVoting(rp, nodeAccount.Address, opts)
+	hash, err := network.InitializeVoting(rp, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Error initializing voting: %w", err)
 	}
