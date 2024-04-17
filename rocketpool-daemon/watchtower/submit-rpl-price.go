@@ -99,12 +99,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 	}
 
 	// Get the last prices updated event
-	res := t.cfg.GetRocketPoolResources()
-	addresses := []common.Address{}
-	if res.V1_2_0_NetworkPricesAddress != nil {
-		addresses = append(addresses, *res.V1_2_0_NetworkPricesAddress)
-	}
-	found, event, err := networkMgr.GetPriceUpdatedEvent(lastSubmissionBlock, t.eventLogInterval, addresses, nil)
+	found, event, err := networkMgr.GetPriceUpdatedEvent(lastSubmissionBlock, t.eventLogInterval, nil, nil)
 	if err != nil {
 		return fmt.Errorf("error getting event for price updated on block %d: %w", lastSubmissionBlock, err)
 	}

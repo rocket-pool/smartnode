@@ -108,12 +108,7 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	}
 
 	// Get the last balances updated event
-	res := t.cfg.GetRocketPoolResources()
-	addresses := []common.Address{}
-	if res.V1_2_0_NetworkBalancesAddress != nil {
-		addresses = append(addresses, *res.V1_2_0_NetworkBalancesAddress)
-	}
-	found, event, err := networkMgr.GetBalancesUpdatedEvent(lastSubmissionBlock, t.eventLogInterval, addresses, nil)
+	found, event, err := networkMgr.GetBalancesUpdatedEvent(lastSubmissionBlock, t.eventLogInterval, nil, nil)
 	if err != nil {
 		return fmt.Errorf("error getting event for balances updated on block %d: %w", lastSubmissionBlock, err)
 	}
