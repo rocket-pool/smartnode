@@ -82,7 +82,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 	err := t.updateL2Prices(state)
 	if err != nil {
 		// Error is not fatal for this task so print and continue
-		t.logger.Error("Error updating L2 prices: %s", err.Error())
+		t.logger.Error("Error updating L2 prices", log.Err(err))
 	}
 
 	// Make a new RP binding just for this portion
