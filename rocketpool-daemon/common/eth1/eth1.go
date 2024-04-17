@@ -55,6 +55,12 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.SmartNodeConfi
 					return nil, fmt.Errorf("error creating Rocket Pool client connected to archive EC: %w", err)
 				}
 
+				// Load the contracts from the provided block
+				err = client.LoadAllContracts(opts)
+				if err != nil {
+					return nil, fmt.Errorf("error loading contracts for block %d via archive EC: %w", blockNumber.Uint64(), err)
+				}
+
 				// Get the rETH address from the archive EC
 				err = client.Query(func(mc *batch.MultiCaller) error {
 					client.Storage.GetAddress(mc, &address, string(rocketpool.ContractName_RocketTokenRETH))
