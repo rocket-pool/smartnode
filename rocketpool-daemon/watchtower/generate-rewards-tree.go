@@ -231,7 +231,7 @@ func (t *GenerateRewardsTree) generateRewardsTreeImpl(logger *slog.Logger, rp *r
 	}
 	rewardsFile, err := treegen.GenerateTree(t.ctx)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", err), logger)
+		t.handleError(fmt.Errorf("Error generating Merkle tree: %w", err), logger)
 		return
 	}
 	header := rewardsFile.GetHeader()
