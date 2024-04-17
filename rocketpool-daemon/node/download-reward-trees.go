@@ -26,7 +26,7 @@ type DownloadRewardsTrees struct {
 func NewDownloadRewardsTrees(sp *services.ServiceProvider, logger *log.Logger) *DownloadRewardsTrees {
 	return &DownloadRewardsTrees{
 		sp:     sp,
-		logger: logger.With(slog.String(keys.RoutineKey, "Rewards Tree Download")),
+		logger: logger.With(slog.String(keys.TaskKey, "Rewards Tree Download")),
 		cfg:    sp.GetConfig(),
 		rp:     sp.GetRocketPool(),
 	}

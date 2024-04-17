@@ -118,7 +118,7 @@ type NodeCollector struct {
 // Create a new NodeCollector instance
 func NewNodeCollector(logger *log.Logger, ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *NodeCollector {
 	subsystem := "node"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Node Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Node Collector"))
 	return &NodeCollector{
 		totalStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_staked_rpl"),
 			"The total amount of RPL staked on the node",

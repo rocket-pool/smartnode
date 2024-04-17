@@ -30,7 +30,7 @@ func (m *ValidatorManager) RecoverMinipoolKeys(testOnly bool) ([]beacon.Validato
 	if err != nil {
 		return nil, fmt.Errorf("error getting wallet status: %w", err)
 	}
-	if wallet.IsWalletReady(status) {
+	if !wallet.IsWalletReady(status) {
 		return nil, fmt.Errorf("cannot recover minipool keys without a wallet keystore and matching password loaded")
 	}
 

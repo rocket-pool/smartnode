@@ -64,7 +64,7 @@ type NodeTreeManager struct {
 // Create a new NodeTreeManager instance
 func NewNodeTreeManager(logger *slog.Logger, cfg *config.SmartNodeConfig) (*NodeTreeManager, error) {
 	// Create the snapshot filename regex
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Node Tree"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Node Tree"))
 	filenameRegex := regexp.MustCompile(nodeVotingTreeFilenamePattern)
 
 	// Create the latest compatible snapshot version

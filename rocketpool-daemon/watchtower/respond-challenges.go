@@ -35,7 +35,7 @@ func NewRespondChallenges(sp *services.ServiceProvider, logger *log.Logger, m *s
 		cfg:    sp.GetConfig(),
 		w:      sp.GetWallet(),
 		rp:     sp.GetRocketPool(),
-		logger: logger.With(slog.String(keys.RoutineKey, "Respond to Challenges")),
+		logger: logger.With(slog.String(keys.TaskKey, "Respond to Challenges")),
 	}
 }
 

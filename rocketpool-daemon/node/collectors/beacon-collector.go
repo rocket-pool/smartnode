@@ -44,7 +44,7 @@ type BeaconCollector struct {
 // Create a new BeaconCollector instance
 func NewBeaconCollector(logger *log.Logger, ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *BeaconCollector {
 	subsystem := "beacon"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Beacon Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Beacon Collector"))
 	return &BeaconCollector{
 		activeSyncCommittee: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "active_sync_committee"),
 			"The number of validators on a current sync committee",

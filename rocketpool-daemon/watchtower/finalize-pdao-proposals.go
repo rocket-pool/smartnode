@@ -38,7 +38,7 @@ func NewFinalizePdaoProposals(sp *services.ServiceProvider, logger *log.Logger) 
 		w:      sp.GetWallet(),
 		ec:     sp.GetEthClient(),
 		rp:     sp.GetRocketPool(),
-		logger: logger.With(slog.String(keys.RoutineKey, "Finalize PDAO Proposals")),
+		logger: logger.With(slog.String(keys.TaskKey, "Finalize PDAO Proposals")),
 	}
 }
 

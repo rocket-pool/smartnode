@@ -9,6 +9,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/client"
 	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -20,6 +21,15 @@ func NewWalletRequester(context *client.RequesterContext) *WalletRequester {
 	return &WalletRequester{
 		context: context,
 	}
+}
+
+// Create a validator key and save it to disk
+func (r *WalletRequester) CreateValidatorKey(pubkey beacon.ValidatorPubkey, startIndex uint64) (*types.ApiResponse[types.SuccessData], error) {
+	args := map[string]string{
+		"pubkey":      pubkey.HexWithPrefix(),
+		"start-index": strconv.FormatUint(startIndex, 10),
+	}
+	return client.SendGetRequest[types.SuccessData](r, "create-validator-key", "CreateValidatorKey", args)
 }
 
 func (r *WalletRequester) GetName() string {

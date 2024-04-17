@@ -53,7 +53,7 @@ type NetworkTreeManager struct {
 // Create a new NetworkTreeManager instance
 func NewNetworkTreeManager(logger *slog.Logger, cfg *config.SmartNodeConfig) (*NetworkTreeManager, error) {
 	// Create the snapshot filename regex
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Network Tree"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Network Tree"))
 	filenameRegex := regexp.MustCompile(networkVotingTreeFilenamePattern)
 
 	// Create the latest compatible snapshot version

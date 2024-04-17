@@ -49,7 +49,7 @@ type ReduceBonds struct {
 // Create reduce bonds task
 func NewReduceBonds(sp *services.ServiceProvider, logger *log.Logger) *ReduceBonds {
 	cfg := sp.GetConfig()
-	log := logger.With(slog.String(keys.RoutineKey, "Reduce Bonds"))
+	log := logger.With(slog.String(keys.TaskKey, "Reduce Bonds"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	gasThreshold := cfg.AutoTxGasThreshold.Value
 
@@ -77,7 +77,7 @@ func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	}
 
 	// Log
-	t.logger.Info("Startig check for minipool bonds to reduce.")
+	t.logger.Info("Starting check for minipool bonds to reduce.")
 
 	// Get the latest state
 	opts := &bind.CallOpts{

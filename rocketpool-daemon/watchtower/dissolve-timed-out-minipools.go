@@ -43,7 +43,7 @@ func NewDissolveTimedOutMinipools(sp *services.ServiceProvider, logger *log.Logg
 		w:      sp.GetWallet(),
 		rp:     sp.GetRocketPool(),
 		ec:     sp.GetEthClient(),
-		logger: logger.With(slog.String(keys.RoutineKey, "Dissolve Minipools")),
+		logger: logger.With(slog.String(keys.TaskKey, "Dissolve Minipools")),
 	}
 }
 

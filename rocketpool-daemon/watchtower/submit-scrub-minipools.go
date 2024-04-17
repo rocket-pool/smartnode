@@ -89,7 +89,7 @@ func NewSubmitScrubMinipools(sp *services.ServiceProvider, logger *log.Logger, c
 	lock := &sync.Mutex{}
 	return &SubmitScrubMinipools{
 		sp:        sp,
-		logger:    logger.With(slog.String(keys.RoutineKey, "Minipool Scrub")),
+		logger:    logger.With(slog.String(keys.TaskKey, "Minipool Scrub")),
 		cfg:       sp.GetConfig(),
 		w:         sp.GetWallet(),
 		rp:        sp.GetRocketPool(),

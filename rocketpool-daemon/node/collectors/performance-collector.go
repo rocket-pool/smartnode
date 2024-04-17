@@ -43,7 +43,7 @@ type PerformanceCollector struct {
 // Create a new PerformanceCollector instance
 func NewPerformanceCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *PerformanceCollector {
 	subsystem := "performance"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "Performance Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "Performance Collector"))
 	return &PerformanceCollector{
 		ethUtilizationRate: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_utilization_rate"),
 			"The ETH utilization rate (%)",

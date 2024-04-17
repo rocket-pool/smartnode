@@ -36,7 +36,7 @@ type OdaoCollector struct {
 // Create a new OdaoCollector instance
 func NewOdaoCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *OdaoCollector {
 	subsystem := "odao"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "ODAO Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "ODAO Collector"))
 	return &OdaoCollector{
 		currentEth1Block: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "current_eth1_block"),
 			"The latest block reported by the Execution client at the time of collecting the metrics",

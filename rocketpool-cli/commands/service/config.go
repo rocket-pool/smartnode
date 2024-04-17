@@ -48,7 +48,7 @@ func configureService(c *cli.Context) error {
 	}
 
 	// Save the config and exit in headless mode
-	if c.NumFlags() > 0 {
+	if c.NumFlags() > 0 && !c.IsSet(installUpdateDefaultsFlag.Name) {
 		err := updateConfigParamsFromCliArgs(c, "", cfg)
 		if err != nil {
 			return fmt.Errorf("error updating config from provided arguments: %w", err)

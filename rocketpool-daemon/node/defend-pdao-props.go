@@ -54,7 +54,7 @@ type DefendPdaoProps struct {
 
 func NewDefendPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *DefendPdaoProps {
 	cfg := sp.GetConfig()
-	log := logger.With(slog.String(keys.RoutineKey, "Defend PDAO Proposals"))
+	log := logger.With(slog.String(keys.TaskKey, "Defend PDAO Proposals"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &DefendPdaoProps{
 		ctx:              ctx,
@@ -90,7 +90,7 @@ func (t *DefendPdaoProps) Run(state *state.NetworkState) error {
 	t.pdaoMgr = pdaoMgr
 
 	// Log
-	t.logger.Info("Started checking for Protocol DAO proposal challenges to defend.")
+	t.logger.Info("Starting check for Protocol DAO proposal challenges to defend.")
 
 	// Get the latest state
 	opts := &bind.CallOpts{

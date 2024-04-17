@@ -55,7 +55,7 @@ func NewCheckSoloMigrations(ctx context.Context, sp *services.ServiceProvider, l
 	return &CheckSoloMigrations{
 		ctx:       ctx,
 		sp:        sp,
-		logger:    logger.With(slog.String(keys.RoutineKey, "Solo Migration")),
+		logger:    logger.With(slog.String(keys.TaskKey, "Solo Migration")),
 		cfg:       sp.GetConfig(),
 		w:         sp.GetWallet(),
 		rp:        sp.GetRocketPool(),

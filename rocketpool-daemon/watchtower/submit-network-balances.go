@@ -77,7 +77,7 @@ func NewSubmitNetworkBalances(ctx context.Context, sp *services.ServiceProvider,
 	return &SubmitNetworkBalances{
 		ctx:       ctx,
 		sp:        sp,
-		logger:    logger.With(slog.String(keys.RoutineKey, "Balance Report")),
+		logger:    logger.With(slog.String(keys.TaskKey, "Balance Report")),
 		cfg:       sp.GetConfig(),
 		w:         sp.GetWallet(),
 		ec:        sp.GetEthClient(),

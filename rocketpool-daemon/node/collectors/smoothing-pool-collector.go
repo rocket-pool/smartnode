@@ -28,7 +28,7 @@ type SmoothingPoolCollector struct {
 // Create a new SmoothingPoolCollector instance
 func NewSmoothingPoolCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *SmoothingPoolCollector {
 	subsystem := "smoothing_pool"
-	sublogger := logger.With(slog.String(keys.RoutineKey, "SP Collector"))
+	sublogger := logger.With(slog.String(keys.TaskKey, "SP Collector"))
 	return &SmoothingPoolCollector{
 		ethBalanceOnSmoothingPool: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "eth_balance"),
 			"The ETH balance on the smoothing pool",
