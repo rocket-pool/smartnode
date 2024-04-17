@@ -92,7 +92,8 @@ func getSyncProgress(c *cli.Context) error {
 			depositContractInfo.Data.BeaconDepositContract)
 		return nil
 	} else {
-		fmt.Println("Your Beacon Node is on the correct network.\n")
+		fmt.Println("Your Beacon Node is on the correct network.")
+		fmt.Println()
 	}
 
 	// Get node status

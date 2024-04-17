@@ -299,15 +299,16 @@ func (t *VerifyPdaoProps) getChallengeOrDefeatForProposal(prop *protocol.Protoco
 		}
 
 		// Check if the index has been challenged yet
-		var state func() types.ChallengeState
+		var getState func() types.ChallengeState
 		err = t.rp.Query(func(mc *batch.MultiCaller) error {
-			prop.GetChallengeState(mc, newChallengedIndex)
+			getState = prop.GetChallengeState(mc, newChallengedIndex)
 			return nil
 		}, opts)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error checking challenge state for proposal %d, index %d: %w", prop.ID, challengedIndex, err)
 		}
-		switch state() {
+		state := getState()
+		switch state {
 		case types.ChallengeState_Unchallenged:
 			// If it's unchallenged, this is the index to challenge
 			return &challenge{

@@ -42,7 +42,8 @@ func importEcData(c *cli.Context, sourceDir string) error {
 
 	fmt.Println("This will import execution layer chain data that you previously exported into your execution client.")
 	fmt.Println("If your execution client is running, it will be shut down.")
-	fmt.Println("Once the import is complete, your execution client will restart automatically.\n")
+	fmt.Println("Once the import is complete, your execution client will restart automatically.")
+	fmt.Println()
 
 	// Get the volume to import into
 	executionContainerName := cfg.GetDockerArtifactName(config.ExecutionClientSuffix)

@@ -24,11 +24,13 @@ func reduceBondAmount(c *cli.Context) error {
 
 	// Check the fee distributor
 	if !details.Data.IsFeeDistributorInitialized {
-		fmt.Println("Minipools cannot have their bonds reduced until your fee distributor has been initialized.\nPlease run `rocketpool node initialize-fee-distributor` first, then return here to reduce your bonds.")
+		fmt.Println("Minipools cannot have their bonds reduced until your fee distributor has been initialized.")
+		fmt.Println("Please run `rocketpool node initialize-fee-distributor` first, then return here to reduce your bonds.")
 		return nil
 	}
 
-	fmt.Println("NOTE: this function is used to complete the bond reduction process for a minipool. If you haven't started the process already, please run `rocketpool minipool begin-bond-reduction` first.\n")
+	fmt.Println("NOTE: this function is used to complete the bond reduction process for a minipool. If you haven't started the process already, please run `rocketpool minipool begin-bond-reduction` first.")
+	fmt.Println()
 
 	// Get reduceable minipools
 	reduceableMinipools := []api.MinipoolReduceBondDetails{}
@@ -109,10 +111,12 @@ func forceFeeDistribution(c *cli.Context, rp *client.Client) error {
 
 	balance := response.Data.Balance
 	if balance.Cmp(common.Big0) == 0 {
-		fmt.Println("Your fee distributor does not have any ETH and does not need to be distributed.\n")
+		fmt.Println("Your fee distributor does not have any ETH and does not need to be distributed.")
+		fmt.Println()
 		return nil
 	}
-	fmt.Println("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.\n")
+	fmt.Println("NOTE: prior to bond reduction, you must distribute the funds in your fee distributor.")
+	fmt.Println()
 
 	// Print info
 	balanceFloat := eth.WeiToEth(response.Data.Balance)

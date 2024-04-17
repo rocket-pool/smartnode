@@ -47,7 +47,8 @@ func ImportKey(c *cli.Context, rp *client.Client, minipoolAddress common.Address
 			fmt.Printf("failed!\n%sWARNING: error restarting validator client: %s\n\nPlease restart it manually so it picks up the new validator key for your minipool.%s", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 			return false
 		}
-		fmt.Println("done!\n")
+		fmt.Println("done!")
+		fmt.Println()
 	}
 	return true
 
