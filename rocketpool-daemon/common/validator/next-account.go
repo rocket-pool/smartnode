@@ -6,6 +6,7 @@ import (
 	"io/fs"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/rocket-pool/node-manager-core/node/wallet"
 )
@@ -28,6 +29,7 @@ func loadNextAccount(nextAccountPath string) (uint64, error) {
 
 	// Parse the account
 	nextAccountString := string(bytes)
+	nextAccountString = strings.TrimSpace(nextAccountString)
 	nextAccount, err := strconv.ParseUint(nextAccountString, 10, 64)
 	if err != nil {
 		return 0, fmt.Errorf("error parsing next account data at [%s]: %w", nextAccountPath, err)
