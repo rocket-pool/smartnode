@@ -267,7 +267,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	if status.Exists {
 		return types.ResponseStatus_InvalidChainState, fmt.Errorf("**** ALERT ****\n"+
 			"Your minipool %s has the following as a validator pubkey:\n\t%s\n"+
-			"This key is already in use by validator %d on the Beacon chain!\n"+
+			"This key is already in use by validator %s on the Beacon chain!\n"+
 			"Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.\n"+
 			"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.\n"+
 			"***************\n", minipoolAddress.Hex(), pubkey.Hex(), status.Index)

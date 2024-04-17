@@ -57,7 +57,8 @@ func exportEcData(c *cli.Context, targetDir string) error {
 
 	fmt.Println("This will export your execution client's chain data to an external directory, such as a portable hard drive.")
 	fmt.Println("If your execution client is running, it will be shut down.")
-	fmt.Println("Once the export is complete, your execution client will restart automatically.\n")
+	fmt.Println("Once the export is complete, your execution client will restart automatically.")
+	fmt.Println()
 
 	// Get the EC volume name
 	executionContainerName := cfg.GetDockerArtifactName(config.ExecutionClientSuffix)
