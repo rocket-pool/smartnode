@@ -51,10 +51,10 @@ type RocketPoolResources struct {
 	V1_1_0_MinipoolFactoryAddress *common.Address
 
 	// The contract address of rocketNetworkPrices from v1.2.0
-	v1_2_0_NetworkPricesAddress *common.Address
+	V1_2_0_NetworkPricesAddress *common.Address
 
 	// The contract address of rocketNetworkBalances from v1.2.0
-	v1_2_0_NetworkBalancesAddress *common.Address
+	V1_2_0_NetworkBalancesAddress *common.Address
 
 	// The contract address for Snapshot delegation
 	SnapshotDelegationAddress *common.Address
@@ -120,8 +120,8 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		V1_1_0_NodeDepositAddress:      hexToAddressPtr("0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0"),
 		V1_1_0_MinipoolQueueAddress:    hexToAddressPtr("0x5870dA524635D1310Dc0e6F256Ce331012C9C19E"),
 		V1_1_0_MinipoolFactoryAddress:  hexToAddressPtr("0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788"),
-		v1_2_0_NetworkPricesAddress:    hexToAddressPtr("0x751826b107672360b764327631cC5764515fFC37"),
-		v1_2_0_NetworkBalancesAddress:  hexToAddressPtr("0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4"),
+		V1_2_0_NetworkPricesAddress:    hexToAddressPtr("0x751826b107672360b764327631cC5764515fFC37"),
+		V1_2_0_NetworkBalancesAddress:  hexToAddressPtr("0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4"),
 		SnapshotDelegationAddress:      hexToAddressPtr("0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446"),
 		SnapshotApiDomain:              "hub.snapshot.org",
 		PreviousRewardsPoolAddresses: []common.Address{
@@ -161,8 +161,8 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		V1_1_0_NodeDepositAddress:            nil,
 		V1_1_0_MinipoolQueueAddress:          nil,
 		V1_1_0_MinipoolFactoryAddress:        nil,
-		v1_2_0_NetworkPricesAddress:          hexToAddressPtr("0x029d946F28F93399a5b0D09c879FC8c94E596AEb"),
-		v1_2_0_NetworkBalancesAddress:        hexToAddressPtr("0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8"),
+		V1_2_0_NetworkPricesAddress:          hexToAddressPtr("0x029d946F28F93399a5b0D09c879FC8c94E596AEb"),
+		V1_2_0_NetworkBalancesAddress:        hexToAddressPtr("0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8"),
 		SnapshotDelegationAddress:            nil,
 		SnapshotApiDomain:                    "",
 		PreviousRewardsPoolAddresses:         []common.Address{},
@@ -200,8 +200,8 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		V1_1_0_NodeDepositAddress:      nil,
 		V1_1_0_MinipoolQueueAddress:    nil,
 		V1_1_0_MinipoolFactoryAddress:  nil,
-		v1_2_0_NetworkPricesAddress:    hexToAddressPtr("0xBba3FBCD4Bdbfc79118B1B31218602E5A71B426c"),
-		v1_2_0_NetworkBalancesAddress:  hexToAddressPtr("0xBe8Dc8CA5f339c196Aef634DfcDFbA61E30DC743"),
+		V1_2_0_NetworkPricesAddress:    hexToAddressPtr("0xBba3FBCD4Bdbfc79118B1B31218602E5A71B426c"),
+		V1_2_0_NetworkBalancesAddress:  hexToAddressPtr("0xBe8Dc8CA5f339c196Aef634DfcDFbA61E30DC743"),
 		SnapshotDelegationAddress:      nil,
 		SnapshotApiDomain:              "",
 		PreviousRewardsPoolAddresses: []common.Address{

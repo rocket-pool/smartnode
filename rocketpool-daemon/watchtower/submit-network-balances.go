@@ -41,16 +41,17 @@ const (
 
 // Submit network balances task
 type SubmitNetworkBalances struct {
-	ctx       context.Context
-	sp        *services.ServiceProvider
-	logger    *slog.Logger
-	cfg       *config.SmartNodeConfig
-	w         *wallet.Wallet
-	ec        eth.IExecutionClient
-	rp        *rocketpool.RocketPool
-	bc        beacon.IBeaconClient
-	lock      *sync.Mutex
-	isRunning bool
+	ctx              context.Context
+	sp               *services.ServiceProvider
+	logger           *slog.Logger
+	cfg              *config.SmartNodeConfig
+	w                *wallet.Wallet
+	ec               eth.IExecutionClient
+	rp               *rocketpool.RocketPool
+	bc               beacon.IBeaconClient
+	eventLogInterval *big.Int
+	lock             *sync.Mutex
+	isRunning        bool
 }
 
 // Network balance info
@@ -75,16 +76,17 @@ type minipoolBalanceDetails struct {
 func NewSubmitNetworkBalances(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *SubmitNetworkBalances {
 	lock := &sync.Mutex{}
 	return &SubmitNetworkBalances{
-		ctx:       ctx,
-		sp:        sp,
-		logger:    logger.With(slog.String(keys.TaskKey, "Balance Report")),
-		cfg:       sp.GetConfig(),
-		w:         sp.GetWallet(),
-		ec:        sp.GetEthClient(),
-		rp:        sp.GetRocketPool(),
-		bc:        sp.GetBeaconClient(),
-		lock:      lock,
-		isRunning: false,
+		ctx:              ctx,
+		sp:               sp,
+		logger:           logger.With(slog.String(keys.TaskKey, "Balance Report")),
+		cfg:              sp.GetConfig(),
+		w:                sp.GetWallet(),
+		ec:               sp.GetEthClient(),
+		rp:               sp.GetRocketPool(),
+		bc:               sp.GetBeaconClient(),
+		eventLogInterval: big.NewInt(int64(config.EventLogInterval)),
+		lock:             lock,
+		isRunning:        false,
 	}
 }
 
@@ -106,7 +108,12 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	}
 
 	// Get the last balances updated event
-	found, event, err := networkMgr.GetBalancesUpdatedEvent(lastSubmissionBlock, nil)
+	res := t.cfg.GetRocketPoolResources()
+	addresses := []common.Address{}
+	if res.V1_2_0_NetworkBalancesAddress != nil {
+		addresses = append(addresses, *res.V1_2_0_NetworkBalancesAddress)
+	}
+	found, event, err := networkMgr.GetBalancesUpdatedEvent(lastSubmissionBlock, t.eventLogInterval, addresses, nil)
 	if err != nil {
 		return fmt.Errorf("error getting event for balances updated on block %d: %w", lastSubmissionBlock, err)
 	}
@@ -164,7 +171,7 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	}
 
 	t.logger.Debug("Checking next submission time",
-		slog.Time(keys.TimeKey, time.Now()),
+		slog.Time(keys.TimeKey, time.Now().UTC()),
 		slog.Time(keys.NextKey, nextSubmissionTime),
 	)
 
