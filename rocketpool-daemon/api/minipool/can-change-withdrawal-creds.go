@@ -62,7 +62,6 @@ type minipoolCanChangeCredsContext struct {
 
 	mnemonic        string
 	minipoolAddress common.Address
-	mpMgr           *minipool.MinipoolManager
 	mpv3            *minipool.MinipoolV3
 }
 

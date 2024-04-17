@@ -16,20 +16,6 @@ type parameterizedFormItem struct {
 	item      tview.FormItem
 }
 
-func registerEnableCheckbox(param *config.Parameter[bool], checkbox *tview.Checkbox, form *Form, items []*parameterizedFormItem) {
-	checkbox.SetChangedFunc(func(checked bool) {
-		param.Value = checked
-		if !checked {
-			form.Clear(true)
-			form.AddFormItem(checkbox)
-		} else {
-			for _, item := range items {
-				form.AddFormItem(item.item)
-			}
-		}
-	})
-}
-
 // Create a list of form items based on a set of parameters
 func createParameterizedFormItems(params []config.IParameter, descriptionBox *tview.TextView) []*parameterizedFormItem {
 	formItems := []*parameterizedFormItem{}

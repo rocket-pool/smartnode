@@ -1,12 +1,10 @@
 package pdao
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"net/url"
 	"sort"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -318,23 +316,4 @@ func isRewardedIndex(defeatIndex uint64, nodeIndex uint64) bool {
 		}
 	}
 	return false
-}
-
-func getElBlockForTimestamp(context context.Context, bc beacon.IBeaconClient, beaconCfg beacon.Eth2Config, creationTime time.Time) (*big.Int, error) {
-	// Get the slot number the first proposal was created on
-	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
-	secondsPerSlot := time.Second * time.Duration(beaconCfg.SecondsPerSlot)
-	startSlot := uint64(creationTime.Sub(genesisTime) / secondsPerSlot)
-
-	// Get the Beacon block for the slot
-	block, exists, err := bc.GetBeaconBlock(context, fmt.Sprint(startSlot))
-	if err != nil {
-		return nil, fmt.Errorf("error getting Beacon block at slot %d: %w", startSlot, err)
-	}
-	if !exists {
-		return nil, fmt.Errorf("beacon block at slot %d was missing", startSlot)
-	}
-
-	// Get the EL block for this slot
-	return big.NewInt(int64(block.ExecutionBlockNumber)), nil
 }

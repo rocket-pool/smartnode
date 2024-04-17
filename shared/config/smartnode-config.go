@@ -9,7 +9,6 @@ import (
 	"strings"
 
 	"github.com/alessio/shellescape"
-	"github.com/pbnjay/memory"
 	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/smartnode/v2/shared"
 	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
@@ -751,24 +750,6 @@ func getNetworkOptions() []*config.ParameterOption[config.Network] {
 	}
 
 	return options
-}
-
-// Get a more verbose client description, including warnings
-func getAugmentedEcDescription(client config.ExecutionClient, originalDescription string) string {
-	switch client {
-	case config.ExecutionClient_Nethermind:
-		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
-		if totalMemoryGB < 9 {
-			return fmt.Sprintf("%s\n\n[red]WARNING: Nethermind currently requires over 8 GB of RAM to run smoothly. We do not recommend it for your system. This may be improved in a future release.", originalDescription)
-		}
-	case config.ExecutionClient_Besu:
-		totalMemoryGB := memory.TotalMemory() / 1024 / 1024 / 1024
-		if totalMemoryGB < 9 {
-			return fmt.Sprintf("%s\n\n[red]WARNING: Besu currently requires over 8 GB of RAM to run smoothly. We do not recommend it for your system. This may be improved in a future release.", originalDescription)
-		}
-	}
-
-	return originalDescription
 }
 
 // Get the default data directory
