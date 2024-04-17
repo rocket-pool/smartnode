@@ -10,6 +10,7 @@ import (
 	dt "github.com/docker/docker/api/types"
 	dtc "github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/api/types/filters"
+	dti "github.com/docker/docker/api/types/image"
 )
 
 // Get the current Docker image used by the given container
@@ -114,7 +115,7 @@ func (c *Client) DeleteImage(imageName string) error {
 		return err
 	}
 	// TODO: handle the response here
-	_, err = d.ImageRemove(context.Background(), imageName, dt.ImageRemoveOptions{})
+	_, err = d.ImageRemove(context.Background(), imageName, dti.RemoveOptions{})
 	return err
 }
 
@@ -210,7 +211,7 @@ func (c *Client) GetAllDockerImages() ([]DockerImage, error) {
 		return nil, err
 	}
 
-	imageList, err := d.ImageList(context.Background(), dt.ImageListOptions{All: true})
+	imageList, err := d.ImageList(context.Background(), dti.ListOptions{All: true})
 	if err != nil {
 		return nil, fmt.Errorf("error getting image details: %w", err)
 	}
