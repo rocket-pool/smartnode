@@ -236,6 +236,21 @@ func nodeDeposit(c *cli.Context) error {
 		return err
 	}
 	if !validated {
+		// Prompt for saving the key
+		if c.Bool(utils.YesFlag.Name) || utils.Confirm("Would you like to save the private key for this validator to disk? You'll need to do this if you plan to submit that transaction later and want to be able to attest with this validator.") {
+			_, err = rp.Api.Wallet.CreateValidatorKey(response.Data.ValidatorPubkey, response.Data.Index)
+			if err != nil {
+				return fmt.Errorf("error saving validator key to disk: %w", err)
+			}
+		}
+		return nil
+	}
+
+	// Save the validator key to disk
+	_, err = rp.Api.Wallet.CreateValidatorKey(response.Data.ValidatorPubkey, response.Data.Index)
+	if err != nil {
+		fmt.Printf("%sError saving validator key to disk: %s%s\n", terminal.ColorRed, err.Error(), terminal.ColorReset)
+		fmt.Println("Your deposit has not been submitted, and your ETH is still in your node wallet.")
 		return nil
 	}
 
