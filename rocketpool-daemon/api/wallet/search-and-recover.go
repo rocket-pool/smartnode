@@ -57,7 +57,6 @@ type walletSearchAndRecoverContext struct {
 	mnemonic                 string
 	address                  common.Address
 	password                 string
-	passwordExists           bool
 	savePassword             bool
 }
 

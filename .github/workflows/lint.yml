@@ -35,7 +35,7 @@ jobs:
           # args: --issues-exit-code=0
 
           # For now, Smart Node will only enforce goimports linting
-          args: --disable-all --enable goimports --enable staticcheck --enable ineffassign --enable gosimple
+          args: --disable-all --enable goimports --enable staticcheck --enable ineffassign --enable gosimple --enable unused
 
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           # only-new-issues: true

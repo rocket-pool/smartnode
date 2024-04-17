@@ -3,7 +3,6 @@ package collectors
 import (
 	"log/slog"
 	"strconv"
-	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
@@ -42,8 +41,6 @@ type TrustedNodeCollector struct {
 	// The logger
 	logger *slog.Logger
 
-	// Cached data
-	cacheTime     time.Time
 	cachedMetrics []prometheus.Metric
 
 	// The thread-safe locker for the network state

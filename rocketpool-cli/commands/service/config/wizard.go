@@ -25,7 +25,6 @@ type wizard struct {
 	// Step 5 - BN settings
 	localBnModal                *choiceWizardStep
 	localBnRandomModal          *choiceWizardStep
-	localBnRandomPrysmModal     *choiceWizardStep
 	localBnPrysmWarning         *choiceWizardStep
 	localBnTekuWarning          *choiceWizardStep
 	checkpointSyncProviderModal *textBoxWizardStep

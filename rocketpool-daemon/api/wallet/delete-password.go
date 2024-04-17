@@ -37,9 +37,7 @@ func (f *walletDeletePasswordContextFactory) RegisterRoute(router *mux.Router) {
 // ===============
 
 type walletDeletePasswordContext struct {
-	handler  *WalletHandler
-	password []byte
-	save     bool
+	handler *WalletHandler
 }
 
 func (c *walletDeletePasswordContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
