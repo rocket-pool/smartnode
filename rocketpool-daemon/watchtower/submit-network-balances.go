@@ -95,12 +95,12 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 		return nil
 	}
 
-	// Make a new RP binding just for this portion
-	rp := t.sp.GetRocketPool()
+	// Log
+	t.logger.Info("Starting network balance check.")
 
 	// Check the last submission block
 	lastSubmissionBlock := state.NetworkDetails.BalancesBlock.Uint64()
-	networkMgr, err := network.NewNetworkManager(rp)
+	networkMgr, err := network.NewNetworkManager(t.rp)
 	if err != nil {
 		return fmt.Errorf("error creating network manager binding: %w", err)
 	}
@@ -114,16 +114,20 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	// Get the duration in seconds for the interval between submissions
 	submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesSubmissionFrequency * uint64(time.Second))
 	eth2Config := state.BeaconConfig
+	t.logger.Debug("Got last submission block and interval duration.",
+		slog.Uint64(keys.BlockKey, lastSubmissionBlock),
+		slog.Duration(keys.IntervalKey, submissionIntervalDuration),
+	)
 
 	var nextSubmissionTime time.Time
 	if !found {
 		// The first submission after Houston is deployed won't find an event emitted by this contract
 		// The submission time will be adjusted to align with the reward time
-		rewardsPool, err := rewards.NewRewardsPool(rp)
+		rewardsPool, err := rewards.NewRewardsPool(t.rp)
 		if err != nil {
 			return fmt.Errorf("error creating rewards pool binding: %w", err)
 		}
-		err = rp.Query(nil, nil,
+		err = t.rp.Query(nil, nil,
 			rewardsPool.IntervalStart,
 			rewardsPool.IntervalDuration,
 		)
@@ -141,21 +145,33 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 		submissionsUntilNextCheckpoint := int(timeDifference/submissionIntervalDuration) + 1
 
 		nextSubmissionTime = nextCheckpoint.Add(-time.Duration(submissionsUntilNextCheckpoint) * submissionIntervalDuration)
+
+		t.logger.Debug("Balances updated event not found, using rewards pool",
+			slog.Time(keys.StartKey, lastCheckpoint),
+			slog.Duration(keys.IntervalKey, rewardsInterval),
+			slog.Time(keys.NextKey, nextCheckpoint),
+		)
 	} else {
 		// Get the last submission reference time
 		lastSubmissionTime := event.SlotTimestamp
 
 		// Next submission adds the interval time to the last submission time
 		nextSubmissionTime = lastSubmissionTime.Add(submissionIntervalDuration)
+
+		t.logger.Debug("Found balances updated event",
+			slog.Uint64(keys.SubmittedKey, event.BlockNumber),
+		)
 	}
+
+	t.logger.Debug("Checking next submission time",
+		slog.Time(keys.TimeKey, time.Now()),
+		slog.Time(keys.NextKey, nextSubmissionTime),
+	)
 
 	// Return if the time to submit has not arrived
 	if time.Now().Before(nextSubmissionTime) {
 		return nil
 	}
-
-	// Log
-	t.logger.Info("Starting network balance check.")
 
 	// Get the Beacon block corresponding to this time
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
