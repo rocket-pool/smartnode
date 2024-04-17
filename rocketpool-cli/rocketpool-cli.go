@@ -156,7 +156,7 @@ ______           _        _    ______           _
 
 		err := validateFlags(c)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, err.Error())
+			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
 		}
 		return nil
