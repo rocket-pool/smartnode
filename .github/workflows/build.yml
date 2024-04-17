@@ -18,4 +18,4 @@ jobs:
         with:
           go-version: 1.21.8
       - run: cd ${GITHUB_WORKSPACE}/rocketpool-cli && go build .
-      - run: cd ${GITHUB_WORKSPACE}/rocketpool && go build .
+      - run: cd ${GITHUB_WORKSPACE}/rocketpool-daemon && go build .
