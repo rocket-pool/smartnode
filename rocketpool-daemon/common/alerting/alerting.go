@@ -45,7 +45,7 @@ func AlertFeeRecipientChanged(cfg *config.SmartNodeConfig, newFeeRecipient commo
 		return nil
 	}
 
-	if cfg.Alertmanager.AlertEnabled_FeeRecipientChanged.Value != true {
+	if !cfg.Alertmanager.AlertEnabled_FeeRecipientChanged.Value {
 		logMessage("alert for FeeRecipientChanged is disabled, not sending.")
 		return nil
 	}
@@ -71,7 +71,7 @@ func AlertMinipoolBondReduced(cfg *config.SmartNodeConfig, minipoolAddress commo
 		return nil
 	}
 
-	if cfg.Alertmanager.AlertEnabled_MinipoolBondReduced.Value != true {
+	if !cfg.Alertmanager.AlertEnabled_MinipoolBondReduced.Value {
 		logMessage("alert for MinipoolBondReduced is disabled, not sending.")
 		return nil
 	}
@@ -100,7 +100,7 @@ func AlertMinipoolBalanceDistributed(cfg *config.SmartNodeConfig, minipoolAddres
 		return nil
 	}
 
-	if cfg.Alertmanager.AlertEnabled_MinipoolBalanceDistributed.Value != true {
+	if !cfg.Alertmanager.AlertEnabled_MinipoolBalanceDistributed.Value {
 		logMessage("alert for MinipoolBalanceDistributed is disabled, not sending.")
 		return nil
 	}
@@ -128,7 +128,7 @@ func AlertMinipoolPromoted(cfg *config.SmartNodeConfig, minipoolAddress common.A
 		return nil
 	}
 
-	if cfg.Alertmanager.AlertEnabled_MinipoolPromoted.Value != true {
+	if !cfg.Alertmanager.AlertEnabled_MinipoolPromoted.Value {
 		logMessage("alert for MinipoolPromoted is disabled, not sending.")
 		return nil
 	}
@@ -156,7 +156,7 @@ func AlertMinipoolStaked(cfg *config.SmartNodeConfig, minipoolAddress common.Add
 		return nil
 	}
 
-	if cfg.Alertmanager.AlertEnabled_MinipoolStaked.Value != true {
+	if !cfg.Alertmanager.AlertEnabled_MinipoolStaked.Value {
 		logMessage("alert for MinipoolStaked is disabled, not sending.")
 		return nil
 	}
@@ -193,7 +193,7 @@ func getAlertSettingsForEvent(succeeded bool) (strfmt.DateTime, Severity, string
 }
 
 func AlertExecutionClientSyncComplete(cfg *config.SmartNodeConfig) error {
-	if cfg.Alertmanager.AlertEnabled_ExecutionClientSyncComplete.Value != true {
+	if !cfg.Alertmanager.AlertEnabled_ExecutionClientSyncComplete.Value {
 		logMessage("alert for ExecutionClientSyncComplete is disabled, not sending.")
 		return nil
 	}
@@ -201,7 +201,7 @@ func AlertExecutionClientSyncComplete(cfg *config.SmartNodeConfig) error {
 }
 
 func AlertBeaconClientSyncComplete(cfg *config.SmartNodeConfig) error {
-	if cfg.Alertmanager.AlertEnabled_BeaconClientSyncComplete.Value != true {
+	if !cfg.Alertmanager.AlertEnabled_BeaconClientSyncComplete.Value {
 		logMessage("alert for BeaconClientSyncComplete is disabled, not sending.")
 		return nil
 	}
