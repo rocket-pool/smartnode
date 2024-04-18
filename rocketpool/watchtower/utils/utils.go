@@ -33,18 +33,18 @@ func GetWatchtowerPrioFee(cfg *config.RocketPoolConfig) float64 {
 	return setting
 }
 
-func FindLastExistingELBlockFromSlot(bc beacon.Client, slotNumber uint64) (beacon.Eth1Data, error) {
-	ecBlock := beacon.Eth1Data{}
+func FindLastBlockWithExecutionPayload(bc beacon.Client, slotNumber uint64) (beacon.BeaconBlock, error) {
+	beaconBlock := beacon.BeaconBlock{}
 	var err error
 	for blockExists, searchSlot := false, slotNumber; !blockExists; searchSlot -= 1 {
-		ecBlock, blockExists, err = bc.GetEth1DataForEth2Block(strconv.FormatUint(searchSlot, 10))
+		beaconBlock, blockExists, err = bc.GetBeaconBlock(strconv.FormatUint(searchSlot, 10))
 		if err != nil {
-			return ecBlock, err
+			return beacon.BeaconBlock{}, err
 		}
 		// If we go back more than 32 slots, error out
 		if slotNumber-searchSlot > 32 {
-			return ecBlock, fmt.Errorf("could not find EL block from slot %d", slotNumber)
+			return beacon.BeaconBlock{}, fmt.Errorf("could not find EL block from slot %d", slotNumber)
 		}
 	}
-	return ecBlock, nil
+	return beaconBlock, nil
 }

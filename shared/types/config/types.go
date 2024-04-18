@@ -10,6 +10,7 @@ type RewardsMode string
 type MevRelayID string
 type MevSelectionMode string
 type NimbusPruningMode string
+type PBSubmissionRef int
 
 // Enum to describe which container(s) a parameter impacts, so the Smartnode knows which
 // ones to restart upon a settings change
@@ -81,6 +82,10 @@ const (
 	RewardsMode_Unknown  RewardsMode = ""
 	RewardsMode_Download RewardsMode = "download"
 	RewardsMode_Generate RewardsMode = "generate"
+)
+
+const (
+	PBSubmission_6AM PBSubmissionRef = 1713420000
 )
 
 // Enum to identify MEV-boost relays
