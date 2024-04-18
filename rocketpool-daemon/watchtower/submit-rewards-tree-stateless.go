@@ -123,7 +123,30 @@ func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Get the block and timestamp of the consensus block that best matches the end time
-	snapshotBeaconBlock, elBlockNumber, err := t.getSnapshotConsensusBlock(endTime, state)
+	snapshotBeaconBlock := t.getTargetSlot(endTime, state)
+
+	// Get the beacon head
+	beaconHead, err := t.bc.GetBeaconHead(t.ctx)
+	if err != nil {
+		return fmt.Errorf("error getting Beacon head: %w", err)
+	}
+	eth2Config := state.BeaconConfig
+	targetSlotEpoch := snapshotBeaconBlock / eth2Config.SlotsPerEpoch
+	requiredEpoch := targetSlotEpoch + 1 // The smoothing pool requires 1 epoch beyond the target to be finalized, to check for late attestations
+
+	// Check if the required epoch is finalized yet
+	if beaconHead.FinalizedEpoch < requiredEpoch {
+		t.logger.Info("Rewards are due, waiting until target epoch is finalized.",
+			slog.Time(keys.EndKey, endTime),
+			slog.Uint64(keys.TargetSlotKey, snapshotBeaconBlock),
+			slog.Uint64(keys.TargetEpochKey, targetSlotEpoch),
+			slog.Uint64(keys.RequiredEpochKey, requiredEpoch),
+			slog.Uint64(keys.FinalizedEpochKey, beaconHead.FinalizedEpoch),
+		)
+		return nil
+	}
+
+	elBlockNumber, err := t.getSnapshotExecutionBlock(snapshotBeaconBlock, state)
 	if err != nil {
 		return err
 	}
@@ -445,13 +468,7 @@ func (t *SubmitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
-func (t *SubmitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Time, state *state.NetworkState) (uint64, uint64, error) {
-	// Get the beacon head
-	beaconHead, err := t.bc.GetBeaconHead(t.ctx)
-	if err != nil {
-		return 0, 0, fmt.Errorf("error getting Beacon head: %w", err)
-	}
-
+func (t *SubmitRewardsTree_Stateless) getTargetSlot(endTime time.Time, state *state.NetworkState) uint64 {
 	// Get the target block number
 	eth2Config := state.BeaconConfig
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
@@ -459,19 +476,17 @@ func (t *SubmitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 	targetSlot := uint64(math.Ceil(totalTimespan.Seconds() / float64(eth2Config.SecondsPerSlot)))
 	targetSlotEpoch := targetSlot / eth2Config.SlotsPerEpoch
 	targetSlot = targetSlotEpoch*eth2Config.SlotsPerEpoch + (eth2Config.SlotsPerEpoch - 1) // The target slot becomes the last one in the Epoch
-	requiredEpoch := targetSlotEpoch + 1                                                   // The smoothing pool requires 1 epoch beyond the target to be finalized, to check for late attestations
+	return targetSlot
+}
 
-	// Check if the required epoch is finalized yet
-	if beaconHead.FinalizedEpoch < requiredEpoch {
-		return 0, 0, fmt.Errorf("snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d)", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
-	}
-
+// Get the first finalized, successful consensus block that occurred after the given target time
+func (t *SubmitRewardsTree_Stateless) getSnapshotExecutionBlock(targetSlot uint64, state *state.NetworkState) (uint64, error) {
 	// Get the first successful block
 	for {
 		// Try to get the current block
 		block, exists, err := t.bc.GetBeaconBlock(t.ctx, fmt.Sprint(targetSlot))
 		if err != nil {
-			return 0, 0, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
+			return 0, fmt.Errorf("error getting Beacon block %d: %w", targetSlot, err)
 		}
 
 		// If the block was missing, try the previous one
@@ -480,7 +495,7 @@ func (t *SubmitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 			targetSlot--
 		} else {
 			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
-			return targetSlot, block.ExecutionBlockNumber, nil
+			return block.ExecutionBlockNumber, nil
 		}
 	}
 }

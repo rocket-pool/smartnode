@@ -28,7 +28,7 @@ require (
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prysmaticlabs/prysm/v5 v5.0.3
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854 // DO NOT UPGRADE
-	github.com/rocket-pool/node-manager-core v0.2.1-0.20240418153141-18f1bc9764bd
+	github.com/rocket-pool/node-manager-core v0.2.1-0.20240418155741-75c443c16889
 	github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240418131940-9aa4643f67c7
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/tyler-smith/go-bip39 v1.1.0
