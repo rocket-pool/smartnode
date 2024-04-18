@@ -382,18 +382,15 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		}
 		latestBlockTimestamp := int64(latestEth1Block.Time)
 
-		// Calculate the difference between latestBlockTime and the reference timestamp
-		timeDifference := latestBlockTimestamp - referenceTimestamp
-
-		// Calculate the remainder to find out how far off from a multiple of the interval the current time is
-		remainder := timeDifference % submissionIntervalInSeconds
-
-		// Subtract the remainder from current time to find the first multiple of the interval in the past
-		submissionTimeRef := latestBlockTimestamp - remainder
+		// Calculate the next submission timestamp
+		submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+		if err != nil {
+			return err
+		}
 
 		// Get the Beacon slot corresponding to this time
 		genesisTime := (int64(eth2Config.GenesisTime))
-		timeSinceGenesis := submissionTimeRef - genesisTime
+		timeSinceGenesis := submissionTimestamp - genesisTime
 		slotNumber := uint64(timeSinceGenesis) / eth2Config.SecondsPerSlot
 
 		// Search for the last existing EL block, going back up to 32 slots if the block is not found.
@@ -449,7 +446,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
 			// Check if we have reported these specific values before
-			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, targetBlockNumber, uint64(submissionTimeRef), rplPrice, true)
+			hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, targetBlockNumber, uint64(submissionTimestamp), rplPrice, true)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 				return
@@ -462,7 +459,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			}
 
 			// We haven't submitted these values, check if we've submitted any for this block so we can log it
-			hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, targetBlockNumber, uint64(submissionTimeRef), true)
+			hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, targetBlockNumber, uint64(submissionTimestamp), true)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 				return
@@ -475,7 +472,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			t.log.Println("Submitting RPL price...")
 
 			// Submit RPL price
-			if err := t.submitRplPrice(targetBlockNumber, uint64(submissionTimeRef), rplPrice, true); err != nil {
+			if err := t.submitRplPrice(targetBlockNumber, uint64(submissionTimestamp), rplPrice, true); err != nil {
 				t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
 				return
 			}

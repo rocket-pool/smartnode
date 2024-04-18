@@ -48,3 +48,22 @@ func FindLastBlockWithExecutionPayload(bc beacon.Client, slotNumber uint64) (bea
 	}
 	return beaconBlock, nil
 }
+
+func FindNextSubmissionTimestamp(latestBlockTimestamp int64, referenceTimestamp int64, submissionIntervalInSeconds int64) (int64, error) {
+	if latestBlockTimestamp == 0 || referenceTimestamp == 0 || submissionIntervalInSeconds == 0 {
+		return 0, fmt.Errorf("FindNextSubmissionTimestamp can't use zero values")
+	}
+
+	// Calculate the difference between latestBlockTime and the reference timestamp
+	timeDifference := latestBlockTimestamp - referenceTimestamp
+	if timeDifference < 0 {
+		return 0, fmt.Errorf("FindNextSubmissionTimestamp referenceTimestamp in the future")
+	}
+
+	// Calculate the remainder to find out how far off from a multiple of the interval the current time is
+	remainder := timeDifference % submissionIntervalInSeconds
+
+	// Subtract the remainder from current time to find the first multiple of the interval in the past
+	submissionTimeRef := latestBlockTimestamp - remainder
+	return submissionTimeRef, nil
+}

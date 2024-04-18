@@ -146,19 +146,16 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		if err != nil {
 			return fmt.Errorf("Can't get the latest block time: %w", err)
 		}
-		latestBlockTime := int64(latestEth1Block.Time)
+		latestBlockTimestamp := int64(latestEth1Block.Time)
 
-		// Calculate the difference between latestBlockTime and the reference timestamp
-		timeDifference := latestBlockTime - referenceTimestamp
-
-		// Calculate the remainder to find out how far off from a multiple of the interval the current time is
-		remainder := timeDifference % submissionIntervalInSeconds
-
-		// Subtract the remainder from current time to find the first multiple of the interval in the past
-		submissionTimeRef := latestBlockTime - remainder
+		// Calculate the next submission timestamp
+		submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+		if err != nil {
+			return err
+		}
 
 		// Convert the submission timestamp to time.Time
-		nextSubmissionTime := time.Unix(submissionTimeRef, 0)
+		nextSubmissionTime := time.Unix(submissionTimestamp, 0)
 
 		// Log
 		t.log.Println("Checking for network balance checkpoint...")
