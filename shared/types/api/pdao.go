@@ -162,15 +162,16 @@ type GetPDAOSettingsResponse struct {
 }
 
 type CanProposePDAOSettingResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	CanPropose      bool               `json:"canPropose"`
-	InsufficientRpl bool               `json:"proposalCooldownActive"`
-	StakedRpl       *big.Int           `json:"stakedRpl"`
-	LockedRpl       *big.Int           `json:"lockedRpl"`
-	ProposalBond    *big.Int           `json:"proposalBond"`
-	BlockNumber     uint32             `json:"blockNumber"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string             `json:"status"`
+	Error                  string             `json:"error"`
+	CanPropose             bool               `json:"canPropose"`
+	InsufficientRpl        bool               `json:"proposalCooldownActive"`
+	StakedRpl              *big.Int           `json:"stakedRpl"`
+	LockedRpl              *big.Int           `json:"lockedRpl"`
+	ProposalBond           *big.Int           `json:"proposalBond"`
+	BlockNumber            uint32             `json:"blockNumber"`
+	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	IsRplLockingDisallowed bool               `json:"isRplLockingDisallowed"`
 }
 type ProposePDAOSettingResponse struct {
 	Status     string      `json:"status"`

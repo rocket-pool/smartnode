@@ -55,6 +55,7 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 	var stakedRpl *big.Int
 	var lockedRpl *big.Int
 	var proposalBond *big.Int
+	var isRplLockingAllowed bool
 	var wg errgroup.Group
 
 	// Get the node's RPL stake
@@ -78,6 +79,13 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 		return err
 	})
 
+	// Get is RPL locking allowed
+	wg.Go(func() error {
+		var err error
+		isRplLockingAllowed, err = node.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
+		return err
+	})
+
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return nil, err
@@ -86,9 +94,16 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 	response.StakedRpl = stakedRpl
 	response.LockedRpl = lockedRpl
 	response.ProposalBond = proposalBond
+	response.IsRplLockingDisallowed = !isRplLockingAllowed
 
 	freeRpl := big.NewInt(0).Sub(stakedRpl, lockedRpl)
 	response.InsufficientRpl = (freeRpl.Cmp(proposalBond) < 0)
+
+	// return if proposing is not possible
+	response.CanPropose = !(response.InsufficientRpl || response.IsRplLockingDisallowed)
+	if !response.CanPropose {
+		return &response, nil
+	}
 
 	// Get the latest finalized block number and corresponding pollard
 	blockNumber, pollard, err := createPollard(rp, cfg, bc)
@@ -741,7 +756,6 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 	}
 
 	// Update & return response
-	response.CanPropose = !(response.InsufficientRpl)
 	return &response, nil
 
 }
