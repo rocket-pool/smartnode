@@ -42,13 +42,21 @@ func setSmoothingPoolState(c *cli.Context, optIn bool) error {
 	var identifierMsg string
 	var submitMsg string
 	if optIn {
-		fmt.Println("You are about to opt into the Smoothing Pool.\nYour fee recipient will be changed to the Smoothing Pool contract.\nAll priority fees and MEV you earn via proposals will be shared equally with other members of the Smoothing Pool.\n\nIf you desire, you can opt back out after one full rewards interval has passed.")
+		fmt.Println("You are about to opt into the Smoothing Pool.")
+		fmt.Println("Your fee recipient will be changed to the Smoothing Pool contract.")
+		fmt.Println("All priority fees and MEV you earn via proposals will be shared equally with other members of the Smoothing Pool.")
+		fmt.Println()
+		fmt.Println("If you desire, you can opt back out after one full rewards interval has passed.")
 		fmt.Println()
 		confirmMsg = "Are you sure you want to join the Smoothing Pool?"
 		identifierMsg = "joining Smoothing Pool"
 		submitMsg = "Joining the Smoothing Pool..."
 	} else {
-		fmt.Println("You are about to opt out of the Smoothing Pool.\nYour fee recipient will be changed back to your node's distributor contract once the next Epoch has been finalized.\nAll priority fees and MEV you earn via proposals will go directly to your distributor and will not be shared by the Smoothing Pool members.\n\nIf you desire, you can opt back in after one full rewards interval has passed.")
+		fmt.Println("You are about to opt out of the Smoothing Pool.")
+		fmt.Println("Your fee recipient will be changed back to your node's distributor contract once the next Epoch has been finalized.")
+		fmt.Println("All priority fees and MEV you earn via proposals will go directly to your distributor and will not be shared by the Smoothing Pool members.")
+		fmt.Println()
+		fmt.Println("If you desire, you can opt back in after one full rewards interval has passed.")
 		fmt.Println()
 		confirmMsg = "Are you sure you want to leave the Smoothing Pool?"
 		identifierMsg = "leaving Smoothing Pool"

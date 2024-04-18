@@ -170,7 +170,9 @@ func promptTimezone() string {
 		}
 	}
 
-	fmt.Println("You will now be prompted to enter a timezone.\nFor a complete list of valid entries, please use one of the \"TZ database name\" entries listed here:\nhttps://en.wikipedia.org/wiki/List_of_tz_database_time_zones")
+	fmt.Println("You will now be prompted to enter a timezone.")
+	fmt.Println("For a complete list of valid entries, please use one of the \"TZ database name\" entries listed here:")
+	fmt.Println("https://en.wikipedia.org/wiki/List_of_tz_database_time_zones")
 	fmt.Println()
 
 	// Handle situations where we couldn't parse any timezone info from the OS
@@ -379,7 +381,7 @@ func promptForSoloKeyPassword(cfg *config.SmartNodeConfig, pubkey beacon.Validat
 	}
 
 	if len(pubkeyPasswords) == 0 {
-		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smartnode stack, you will need to put its keystore file into custom-keys first", pubkey.HexWithPrefix())
+		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smart Node stack, you will need to put its keystore file into custom-keys first", pubkey.HexWithPrefix())
 	}
 
 	// Store it in the file

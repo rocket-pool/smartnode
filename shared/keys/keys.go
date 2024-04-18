@@ -74,4 +74,7 @@ const (
 	ExpectedKey               string = "expected"
 	PubkeyKey                 string = "pubkey"
 	StateKey                  string = "state"
+	SubmittedKey              string = "submitted"
+	NextKey                   string = "next"
+	TimeKey                   string = "time"
 )

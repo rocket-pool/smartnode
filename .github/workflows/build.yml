@@ -1,0 +1,21 @@
+name: Smart Node Build 
+on:
+  push:
+    tags:
+      - v*
+    branches:
+      - master
+      - main
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: 1.21.8
+      - run: cd ${GITHUB_WORKSPACE}/rocketpool-cli && go build .
+      - run: cd ${GITHUB_WORKSPACE}/rocketpool-daemon && go build .

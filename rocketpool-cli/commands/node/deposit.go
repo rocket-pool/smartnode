@@ -25,7 +25,7 @@ func nodeDeposit(c *cli.Context) error {
 	// Get RP client
 	rp := client.NewClientFromCtx(c)
 
-	// Make sure ETH2 is on the correct chain
+	// Make sure Beacon is on the correct chain
 	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo()
 	if err != nil {
 		return err
