@@ -83,7 +83,7 @@ func serviceVersion(c *cli.Context) error {
 	case config.ClientMode_External:
 		// Execution client
 		ec := cfg.ExternalExecutionClient.ExecutionClient.Value
-		ecFormat := "%s (Externally managed)\n\tImage: %s"
+		ecFormat := "%s (Externally managed)"
 		switch ec {
 		case config.ExecutionClient_Geth:
 			executionClientString = fmt.Sprintf(ecFormat, "Geth")
