@@ -127,11 +127,6 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		return err
 	}
 
-	rp, err := services.GetRocketPool(t.c)
-	if err != nil {
-		return err
-	}
-
 	// Check if balance submission is enabled
 	if !state.NetworkDetails.SubmitBalancesEnabled {
 		return nil
@@ -147,7 +142,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		eth2Config := state.BeaconConfig
 
 		// Get the time of the latest block
-		latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
+		latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
 		if err != nil {
 			return fmt.Errorf("Can't get the latest block time: %w", err)
 		}
