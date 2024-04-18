@@ -1,12 +1,10 @@
 package pdao
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"net/url"
 	"sort"
-	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -234,16 +232,17 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 				}
 
 				// Make sure the prop and challenge are in the right states
-				if challengeInfo.State != rptypes.ChallengeState_Challenged {
-					if propInfo.State.Formatted() == rptypes.ProtocolDaoProposalState_Destroyed {
-						if challengeInfo.State != rptypes.ChallengeState_Responded {
-							// If the proposal is destroyed, a challenge must be in the challenged or responded states
-							continue
-						}
-					} else {
-						// Only refund non-responded challenges if the proposal was destroyed
-						continue
-					}
+				if challengeInfo.State == rptypes.ChallengeState_Paid {
+					// Ignore already paid challenges
+					continue
+				}
+				if challengeInfo.State == rptypes.ChallengeState_Responded && propInfo.State.Formatted() != rptypes.ProtocolDaoProposalState_Destroyed {
+					// Only refund responded challenges if the proposal was destroyed
+					continue
+				}
+				if challengeInfo.State == rptypes.ChallengeState_Challenged && propInfo.State.Formatted() < rptypes.ProtocolDaoProposalState_QuorumNotMet {
+					// Unresponded challenges may be claimed after the proposal is finished
+					continue
 				}
 
 				// Increment how many refundable challenges we made
@@ -318,23 +317,4 @@ func isRewardedIndex(defeatIndex uint64, nodeIndex uint64) bool {
 		}
 	}
 	return false
-}
-
-func getElBlockForTimestamp(context context.Context, bc beacon.IBeaconClient, beaconCfg beacon.Eth2Config, creationTime time.Time) (*big.Int, error) {
-	// Get the slot number the first proposal was created on
-	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
-	secondsPerSlot := time.Second * time.Duration(beaconCfg.SecondsPerSlot)
-	startSlot := uint64(creationTime.Sub(genesisTime) / secondsPerSlot)
-
-	// Get the Beacon block for the slot
-	block, exists, err := bc.GetBeaconBlock(context, fmt.Sprint(startSlot))
-	if err != nil {
-		return nil, fmt.Errorf("error getting Beacon block at slot %d: %w", startSlot, err)
-	}
-	if !exists {
-		return nil, fmt.Errorf("beacon block at slot %d was missing", startSlot)
-	}
-
-	// Get the EL block for this slot
-	return big.NewInt(int64(block.ExecutionBlockNumber)), nil
 }

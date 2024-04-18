@@ -26,7 +26,7 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 	// Get RP client
 	rp := client.NewClientFromCtx(c)
 
-	// Make sure ETH2 is on the correct chain
+	// Make sure Beacon is on the correct chain
 	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo()
 	if err != nil {
 		return err
@@ -41,7 +41,7 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 		return nil
 	}
 
-	fmt.Println("Your eth2 client is on the correct network.")
+	fmt.Println("Your Beacon Node is on the correct network.")
 	fmt.Println()
 
 	// Check if the fee distributor has been initialized
