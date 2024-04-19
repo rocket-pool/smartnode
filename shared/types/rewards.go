@@ -18,6 +18,7 @@ const (
 	RewardsFileVersionOne
 	RewardsFileVersionTwo
 	RewardsFileVersionThree
+	RewardsFileVersionFour
 	RewardsFileVersionMax = iota - 1
 )
 
