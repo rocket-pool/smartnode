@@ -21,30 +21,37 @@ const (
 	TestingInterval               uint64 = 1000000000 // A large number that won't ever actually be hit
 
 	// Mainnet intervals
-	MainnetV2Interval uint64 = 4
-	MainnetV3Interval uint64 = 5
-	MainnetV4Interval uint64 = 6
-	MainnetV5Interval uint64 = 8
-	MainnetV6Interval uint64 = 12
-	MainnetV7Interval uint64 = 15
-	MainnetV8Interval uint64 = 18
+	MainnetV2Interval  uint64 = 4
+	MainnetV3Interval  uint64 = 5
+	MainnetV4Interval  uint64 = 6
+	MainnetV5Interval  uint64 = 8
+	MainnetV6Interval  uint64 = 12
+	MainnetV7Interval  uint64 = 15
+	MainnetV8Interval  uint64 = 18
+	MainnetV9Interval  uint64 = TestingInterval
+	MainnetV10Interval uint64 = TestingInterval
 
 	// Devnet intervals
-	DevnetV2Interval uint64 = 0
-	DevnetV3Interval uint64 = 0
-	DevnetV4Interval uint64 = 0
-	DevnetV5Interval uint64 = 0
-	DevnetV6Interval uint64 = 0
-	DevnetV7Interval uint64 = 0
+	DevnetV2Interval  uint64 = 0
+	DevnetV3Interval  uint64 = 0
+	DevnetV4Interval  uint64 = 0
+	DevnetV5Interval  uint64 = 0
+	DevnetV6Interval  uint64 = 0
+	DevnetV7Interval  uint64 = 0
+	DevnetV8Interval  uint64 = 0
+	DevnetV9Interval  uint64 = 0
+	DevnetV10Interval uint64 = 0
 
 	// Holesky intervals
-	HoleskyV2Interval uint64 = 0
-	HoleskyV3Interval uint64 = 0
-	HoleskyV4Interval uint64 = 0
-	HoleskyV5Interval uint64 = 0
-	HoleskyV6Interval uint64 = 0
-	HoleskyV7Interval uint64 = 0
-	HoleskyV8Interval uint64 = 93
+	HoleskyV2Interval  uint64 = 0
+	HoleskyV3Interval  uint64 = 0
+	HoleskyV4Interval  uint64 = 0
+	HoleskyV5Interval  uint64 = 0
+	HoleskyV6Interval  uint64 = 0
+	HoleskyV7Interval  uint64 = 0
+	HoleskyV8Interval  uint64 = 93
+	HoleskyV9Interval  uint64 = TestingInterval
+	HoleskyV10Interval uint64 = TestingInterval
 )
 
 type TreeGenerator struct {
@@ -83,6 +90,22 @@ func NewTreeGenerator(logger *slog.Logger, rp *rocketpool.RocketPool, cfg *confi
 		intervalsPassed:  intervalsPassed,
 	}
 
+	// v10
+	var v10_generator treeGeneratorImpl
+	if rollingRecord == nil {
+		v10_generator = newTreeGeneratorImpl_v10(t.logger, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
+	} else {
+		v10_generator = newTreeGeneratorImpl_v10_rolling(t.logger, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+	}
+
+	// v9 - placeholder until it's in, just use v8
+	var v9_generator treeGeneratorImpl
+	if rollingRecord == nil {
+		v9_generator = newTreeGeneratorImpl_v8(t.logger, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
+	} else {
+		v9_generator = newTreeGeneratorImpl_v8_rolling(t.logger, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+	}
+
 	// v8
 	var v8_generator treeGeneratorImpl
 	if rollingRecord == nil {
@@ -93,6 +116,18 @@ func NewTreeGenerator(logger *slog.Logger, rp *rocketpool.RocketPool, cfg *confi
 
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
+		{
+			rewardsRulesetVersion: 10,
+			mainnetStartInterval:  MainnetV10Interval,
+			holeskyStartInterval:  HoleskyV10Interval,
+			generator:             v10_generator,
+		},
+		{
+			rewardsRulesetVersion: 9,
+			mainnetStartInterval:  MainnetV9Interval,
+			holeskyStartInterval:  HoleskyV9Interval,
+			generator:             v9_generator,
+		},
 		{
 			rewardsRulesetVersion: 8,
 			mainnetStartInterval:  MainnetV8Interval,
