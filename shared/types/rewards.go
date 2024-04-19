@@ -52,12 +52,12 @@ type IRewardsFile interface {
 	// Get the rewards file's header
 	GetHeader() *RewardsFileHeader
 
-	// Get all of the node addresses with rewards in this file
-	// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
-	GetNodeAddresses() []common.Address
+	// Get all of the claimer addresses with rewards in this file
+	// NOTE: the order of claimer addresses is not guaranteed to be stable, so don't rely on it
+	GetClaimerAddresses() []common.Address
 
-	// Get info about a node's rewards
-	GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool)
+	// Get info about a claimer's rewards
+	GetClaimerRewardsInfo(address common.Address) (IClaimerRewardsInfo, bool)
 
 	// Gets the minipool performance file corresponding to this rewards file
 	GetMinipoolPerformanceFile() IMinipoolPerformanceFile
@@ -97,7 +97,7 @@ type ISmoothingPoolMinipoolPerformance interface {
 }
 
 // Interface for version-agnostic node operator rewards
-type INodeRewardsInfo interface {
+type IClaimerRewardsInfo interface {
 	GetRewardNetwork() uint64
 	GetCollateralRpl() *QuotedBigInt
 	GetOracleDaoRpl() *QuotedBigInt
@@ -144,7 +144,7 @@ type IntervalInfo struct {
 	CID                    string        `json:"cid"`
 	StartTime              time.Time     `json:"startTime"`
 	EndTime                time.Time     `json:"endTime"`
-	NodeExists             bool          `json:"nodeExists"`
+	ClaimerExists          bool          `json:"claimerExists"`
 	CollateralRplAmount    *QuotedBigInt `json:"collateralRplAmount"`
 	ODaoRplAmount          *QuotedBigInt `json:"oDaoRplAmount"`
 	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`

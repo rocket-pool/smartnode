@@ -142,7 +142,7 @@ func (f *RewardsFile_v2) GetHeader() *sharedtypes.RewardsFileHeader {
 
 // Get all of the node addresses with rewards in this file
 // NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
-func (f *RewardsFile_v2) GetNodeAddresses() []common.Address {
+func (f *RewardsFile_v2) GetClaimerAddresses() []common.Address {
 	addresses := make([]common.Address, len(f.NodeRewards))
 	i := 0
 	for address := range f.NodeRewards {
@@ -153,7 +153,7 @@ func (f *RewardsFile_v2) GetNodeAddresses() []common.Address {
 }
 
 // Get info about a node's rewards
-func (f *RewardsFile_v2) GetNodeRewardsInfo(address common.Address) (sharedtypes.INodeRewardsInfo, bool) {
+func (f *RewardsFile_v2) GetClaimerRewardsInfo(address common.Address) (sharedtypes.IClaimerRewardsInfo, bool) {
 	rewards, exists := f.NodeRewards[address]
 	return rewards, exists
 }

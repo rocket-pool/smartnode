@@ -141,8 +141,11 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, nod
 	info.MerkleRootValid = true
 
 	// Get the rewards from it
-	rewards, exists := proofWrapper.GetNodeRewardsInfo(nodeAddress)
-	info.NodeExists = exists
+	rewards, exists := proofWrapper.GetClaimerRewardsInfo(nodeAddress)
+	// Note this will be false if the node has a different RPL withdrawal address, even if the node earned rewards,
+	// but they can't claim the interval anyway so it's accurate to say they aren't in the file
+	info.ClaimerExists = exists
+
 	if exists {
 		info.CollateralRplAmount = rewards.GetCollateralRpl()
 		info.ODaoRplAmount = rewards.GetOracleDaoRpl()

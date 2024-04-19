@@ -64,9 +64,9 @@ func (f *RewardsFile_v4) GetHeader() *sharedtypes.RewardsFileHeader {
 	return f.RewardsFileHeader
 }
 
-// Get all of the node addresses with rewards in this file
-// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
-func (f *RewardsFile_v4) GetNodeAddresses() []common.Address {
+// Get all of the claimer addresses with rewards in this file
+// NOTE: the order of claimer addresses is not guaranteed to be stable, so don't rely on it
+func (f *RewardsFile_v4) GetClaimerAddresses() []common.Address {
 	addresses := make([]common.Address, len(f.ClaimerRewards))
 	i := 0
 	for address := range f.ClaimerRewards {
@@ -76,8 +76,8 @@ func (f *RewardsFile_v4) GetNodeAddresses() []common.Address {
 	return addresses
 }
 
-// Get info about a node's rewards
-func (f *RewardsFile_v4) GetNodeRewardsInfo(address common.Address) (sharedtypes.INodeRewardsInfo, bool) {
+// Get info about a claimer's rewards
+func (f *RewardsFile_v4) GetClaimerRewardsInfo(address common.Address) (sharedtypes.IClaimerRewardsInfo, bool) {
 	rewards, exists := f.ClaimerRewards[address]
 	return rewards, exists
 }
@@ -94,42 +94,42 @@ func (f *RewardsFile_v4) SetMinipoolPerformanceFileCID(cid string) {
 
 // Generates a merkle tree from the provided rewards map
 func (f *RewardsFile_v4) GenerateMerkleTree() error {
-	// Generate the leaf data for each node
+	// Generate the leaf data for each claimer
 	totalData := make([][]byte, 0, len(f.ClaimerRewards))
-	for address, rewardsForNode := range f.ClaimerRewards {
-		// Ignore nodes that didn't receive any rewards
-		if rewardsForNode.CollateralRpl.Cmp(common.Big0) == 0 && rewardsForNode.OracleDaoRpl.Cmp(common.Big0) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(common.Big0) == 0 {
+	for address, rewardsForClaimers := range f.ClaimerRewards {
+		// Ignore claimers that didn't receive any rewards
+		if rewardsForClaimers.CollateralRpl.Cmp(common.Big0) == 0 && rewardsForClaimers.OracleDaoRpl.Cmp(common.Big0) == 0 && rewardsForClaimers.SmoothingPoolEth.Cmp(common.Big0) == 0 {
 			continue
 		}
 
-		// Node data is address[20] :: network[32] :: RPL[32] :: ETH[32]
-		nodeData := make([]byte, 0, 20+32*3)
+		// Claimer data is address[20] :: network[32] :: RPL[32] :: ETH[32]
+		claimerData := make([]byte, 0, 20+32*3)
 
-		// Node address
+		// Claimer address
 		addressBytes := address.Bytes()
-		nodeData = append(nodeData, addressBytes...)
+		claimerData = append(claimerData, addressBytes...)
 
-		// Node network
-		network := big.NewInt(0).SetUint64(rewardsForNode.RewardNetwork)
+		// Claimer network
+		network := big.NewInt(0).SetUint64(rewardsForClaimers.RewardNetwork)
 		networkBytes := make([]byte, 32)
 		network.FillBytes(networkBytes)
-		nodeData = append(nodeData, networkBytes...)
+		claimerData = append(claimerData, networkBytes...)
 
 		// RPL rewards
 		rplRewards := big.NewInt(0)
-		rplRewards.Add(&rewardsForNode.CollateralRpl.Int, &rewardsForNode.OracleDaoRpl.Int)
+		rplRewards.Add(&rewardsForClaimers.CollateralRpl.Int, &rewardsForClaimers.OracleDaoRpl.Int)
 		rplRewardsBytes := make([]byte, 32)
 		rplRewards.FillBytes(rplRewardsBytes)
-		nodeData = append(nodeData, rplRewardsBytes...)
+		claimerData = append(claimerData, rplRewardsBytes...)
 
 		// ETH rewards
 		ethRewardsBytes := make([]byte, 32)
-		rewardsForNode.SmoothingPoolEth.FillBytes(ethRewardsBytes)
-		nodeData = append(nodeData, ethRewardsBytes...)
+		rewardsForClaimers.SmoothingPoolEth.FillBytes(ethRewardsBytes)
+		claimerData = append(claimerData, ethRewardsBytes...)
 
-		// Assign it to the node rewards tracker and add it to the leaf data slice
-		rewardsForNode.MerkleData = nodeData
-		totalData = append(totalData, nodeData)
+		// Assign it to the claimer rewards tracker and add it to the leaf data slice
+		rewardsForClaimers.MerkleData = claimerData
+		totalData = append(totalData, claimerData)
 	}
 
 	// Generate the tree
@@ -138,12 +138,12 @@ func (f *RewardsFile_v4) GenerateMerkleTree() error {
 		return fmt.Errorf("error generating Merkle Tree: %w", err)
 	}
 
-	// Generate the proofs for each node
-	for address, rewardsForNode := range f.ClaimerRewards {
+	// Generate the proofs for each claimer
+	for address, rewardsForClaimer := range f.ClaimerRewards {
 		// Get the proof
-		proof, err := tree.GenerateProof(rewardsForNode.MerkleData, 0)
+		proof, err := tree.GenerateProof(rewardsForClaimer.MerkleData, 0)
 		if err != nil {
-			return fmt.Errorf("error generating proof for node %s: %w", address.Hex(), err)
+			return fmt.Errorf("error generating proof for claimer %s: %w", address.Hex(), err)
 		}
 
 		// Convert the proof into hex strings
@@ -152,8 +152,8 @@ func (f *RewardsFile_v4) GenerateMerkleTree() error {
 			proofStrings[i] = fmt.Sprintf("0x%s", hex.EncodeToString(hash))
 		}
 
-		// Assign the hex strings to the node rewards struct
-		rewardsForNode.MerkleProof = proofStrings
+		// Assign the hex strings to the claimer rewards struct
+		rewardsForClaimer.MerkleProof = proofStrings
 	}
 
 	f.MerkleTree = tree

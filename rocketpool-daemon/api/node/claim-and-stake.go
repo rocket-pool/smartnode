@@ -97,7 +97,7 @@ func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bin
 		}
 
 		// Get the rewards from it
-		if intervalInfo.NodeExists {
+		if intervalInfo.ClaimerExists {
 			rplForInterval := big.NewInt(0)
 			rplForInterval.Add(rplForInterval, &intervalInfo.CollateralRplAmount.Int)
 			rplForInterval.Add(rplForInterval, &intervalInfo.ODaoRplAmount.Int)

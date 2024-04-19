@@ -127,7 +127,7 @@ func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData
 			data.InvalidIntervals = append(data.InvalidIntervals, intervalInfo)
 			continue
 		}
-		if intervalInfo.NodeExists {
+		if intervalInfo.ClaimerExists {
 			data.UnclaimedIntervals = append(data.UnclaimedIntervals, intervalInfo)
 		}
 	}

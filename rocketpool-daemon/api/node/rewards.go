@@ -153,7 +153,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 		if !intervalInfo.TreeFileExists {
 			return types.ResponseStatus_ResourceConflict, fmt.Errorf("error calculating lifetime node rewards: rewards file %s doesn't exist and interval %d is unclaimed", intervalInfo.TreeFilePath, unclaimed)
 		}
-		if intervalInfo.NodeExists {
+		if intervalInfo.ClaimerExists {
 			unclaimedRplRewards.Add(unclaimedRplRewards, &intervalInfo.CollateralRplAmount.Int)
 			unclaimedODaoRplRewards.Add(unclaimedODaoRplRewards, &intervalInfo.ODaoRplAmount.Int)
 			unclaimedEthRewards.Add(unclaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
