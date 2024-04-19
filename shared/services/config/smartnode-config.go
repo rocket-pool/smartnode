@@ -80,6 +80,9 @@ type SmartnodeConfig struct {
 	// Mode for acquiring Merkle rewards trees
 	RewardsTreeMode config.Parameter `yaml:"rewardsTreeMode,omitempty"`
 
+	// Timestamp used as reference for prices/balances submissions
+	PriceBalanceSubmissionReferenceTimestamp config.Parameter `yaml:"priceBalanceSubmissionReferenceTimestamp,omitempty"`
+
 	// Custom URL to download a rewards tree
 	RewardsTreeCustomUrl config.Parameter `yaml:"rewardsTreeCustomUrl,omitempty"`
 
@@ -344,6 +347,17 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				Description: "Use your node to automatically generate the Merkle Tree rewards file once a checkpoint has passed. This option lets you build and verify the file that the Oracle DAO created if you prefer not to trust it and want to generate the tree yourself.\n\n[orange]WARNING: Generating the tree can take a *very long time* if many node operators are opted into the Smoothing Pool, which could impact your attestation performance!",
 				Value:       config.RewardsMode_Generate,
 			}},
+		},
+
+		PriceBalanceSubmissionReferenceTimestamp: config.Parameter{
+			ID:                 "priceBalanceSubmissionReferenceTimestamp",
+			Name:               "P/B Submission Time Ref",
+			Description:        "Prices and balances submission time reference. An Unix timestamp used by oDAO members as an initial reference to calculate when submissions are due based on the onchain stored submission interval value.",
+			Type:               config.ParameterType_Int,
+			Default:            map[config.Network]interface{}{config.Network_All: int64(config.PBSubmission_6AM)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
 		},
 
 		RewardsTreeCustomUrl: config.Parameter{
@@ -671,6 +685,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
 		&cfg.RewardsTreeMode,
+		&cfg.PriceBalanceSubmissionReferenceTimestamp,
 		&cfg.RewardsTreeCustomUrl,
 		&cfg.ArchiveECUrl,
 		&cfg.WatchtowerMaxFeeOverride,

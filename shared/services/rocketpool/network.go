@@ -176,4 +176,3 @@ func (c *Client) GetLatestDelegate() (api.GetLatestDelegateResponse, error) {
 	}
 	return response, nil
 }
-
