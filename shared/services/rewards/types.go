@@ -149,7 +149,7 @@ type IntervalInfo struct {
 	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`
 	MerkleProof            []common.Hash `json:"merkleProof"`
 
-	TotalNodeWeight        *QuotedBigInt `json:"-"`
+	TotalNodeWeight *QuotedBigInt `json:"-"`
 }
 
 type MinipoolInfo struct {
