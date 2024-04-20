@@ -611,8 +611,8 @@ func (r *treeGeneratorImpl_v10) calculateEthRewards(context context.Context, che
 			claimer := nodeInfo.Address
 			node := r.networkState.NodeDetailsByAddress[nodeInfo.Address]
 			if node.IsRplWithdrawalAddressSet {
-				// Add it to the RPL withdrawal address if set
-				claimer = node.RplWithdrawalAddress
+				// Add the ETH to the primary withdrawal address if the RPL withdrawal address is set
+				claimer = node.PrimaryWithdrawalAddress
 			}
 
 			rewardsForClaimer, exists := r.rewardsFile.ClaimerRewards[claimer]
