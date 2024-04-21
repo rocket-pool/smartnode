@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -173,13 +174,18 @@ func (t *TaskLoop) Run() error {
 }
 
 // Stop the daemon
-func (t *TaskLoop) Stop() {
+func (t *TaskLoop) Stop() error {
 	if t.metricsServer != nil {
 		// Shut down the metrics server
 		ctx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)
 		defer cancel()
-		t.metricsServer.Shutdown(ctx)
+		err := t.metricsServer.Shutdown(ctx)
+		if !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("Error stopping metrics server: %w", err)
+		}
 	}
+
+	return nil
 }
 
 // Wait until the chains and other resources are ready to be queried
@@ -319,7 +325,12 @@ func (t *TaskLoop) runTasks() bool {
 
 	// Run watchtower duties in parallel
 	var watchtowerWg errgroup.Group
-	defer watchtowerWg.Wait()
+	defer func() {
+		err := watchtowerWg.Wait()
+		if err != nil {
+			t.logger.Error("Error processing watchtower duties", log.Err(err))
+		}
+	}()
 	watchtowerWg.Go(func() error {
 		return t.watchtowerTaskMgr.Run(isOnOdao, state)
 	})
