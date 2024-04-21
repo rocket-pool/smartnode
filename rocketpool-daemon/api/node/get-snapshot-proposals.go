@@ -9,8 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
-	"github.com/rocket-pool/rocketpool-go/v2/node"
-	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
@@ -49,10 +47,8 @@ func (f *nodeGetSnapshotProposalsContextFactory) RegisterRoute(router *mux.Route
 
 type nodeGetSnapshotProposalsContext struct {
 	handler *NodeHandler
-	rp      *rocketpool.RocketPool
 
 	activeOnly bool
-	node       *node.Node
 }
 
 func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotProposalsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {

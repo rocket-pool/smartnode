@@ -158,6 +158,9 @@ func (m *ProposalManager) GetNodeTree(blockNumber uint32, nodeIndex uint64, snap
 	if tree != nil {
 		return tree, nil
 	}
+	if err != nil {
+		return nil, err
+	}
 
 	// Try to load the voting info snapshot from disk or create it
 	m.logger.Info("Creating node tree...", slog.Uint64(keys.BlockKey, uint64(blockNumber)), slog.Uint64(keys.NodeIndexKey, nodeIndex))

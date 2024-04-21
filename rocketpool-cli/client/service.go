@@ -132,7 +132,7 @@ func (c *Client) InstallService(verbose bool, noDeps bool, version string, path 
 func (c *Client) InstallUpdateTracker(verbose bool, version string, useLocalInstaller bool) error {
 	// Get installation script flags
 	flags := []string{
-		"-v", fmt.Sprintf("%s", shellescape.Quote(version)),
+		"-v", shellescape.Quote(version),
 	}
 
 	var script []byte

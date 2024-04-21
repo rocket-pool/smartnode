@@ -13,13 +13,6 @@ import (
 // Constants
 const reviewNativePageID string = "review-native-settings"
 
-// The changed settings review page
-type ReviewNativePage struct {
-	md              *mainDisplay
-	changedSettings []*config.ChangedSection
-	page            *page
-}
-
 // Create a page to review any changes
 func NewReviewNativePage(md *mainDisplay, oldConfig *snCfg.SmartNodeConfig, newConfig *snCfg.SmartNodeConfig) *ReviewPage {
 	var changedSettings []*config.ChangedSection

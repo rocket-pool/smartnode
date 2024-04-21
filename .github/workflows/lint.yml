@@ -34,8 +34,8 @@ jobs:
           # Optional: golangci-lint command line arguments.
           # args: --issues-exit-code=0
 
-          # For now, Smart Node will only enforce goimports linting
-          args: --disable-all --enable goimports
+          # For now, Smart Node will enforce everything except errcheck
+          args: --disable errcheck
 
           # Optional: show only new issues if it's a pull request. The default value is `false`.
           # only-new-issues: true
