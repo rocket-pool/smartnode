@@ -15,7 +15,6 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/v2/network"
-	"github.com/rocket-pool/rocketpool-go/v2/rewards"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/v2/types"
 	rpstate "github.com/rocket-pool/rocketpool-go/v2/utils/state"
@@ -101,79 +100,28 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	t.logger.Info("Starting network balance check.")
 
 	// Check the last submission block
-	lastSubmissionBlock := state.NetworkDetails.BalancesBlock.Uint64()
-	networkMgr, err := network.NewNetworkManager(t.rp)
-	if err != nil {
-		return fmt.Errorf("error creating network manager binding: %w", err)
-	}
-
-	// Get the last balances updated event
-	found, event, err := networkMgr.GetBalancesUpdatedEvent(lastSubmissionBlock, t.eventLogInterval, nil, nil)
-	if err != nil {
-		return fmt.Errorf("error getting event for balances updated on block %d: %w", lastSubmissionBlock, err)
-	}
+	lastSubmissionBlock := state.NetworkDetails.PricesBlock
+	referenceTimestamp := t.cfg.PriceBalanceSubmissionReferenceTimestamp.Value
 
 	// Get the duration in seconds for the interval between submissions
-	submissionIntervalDuration := time.Duration(state.NetworkDetails.BalancesSubmissionFrequency * uint64(time.Second))
+	submissionIntervalInSeconds := int64(state.NetworkDetails.PricesSubmissionFrequency)
 	eth2Config := state.BeaconConfig
-	t.logger.Debug("Got last submission block and interval duration.",
-		slog.Uint64(keys.BlockKey, lastSubmissionBlock),
-		slog.Duration(keys.IntervalKey, submissionIntervalDuration),
-	)
 
-	var nextSubmissionTime time.Time
-	if !found {
-		// The first submission after Houston is deployed won't find an event emitted by this contract
-		// The submission time will be adjusted to align with the reward time
-		rewardsPool, err := rewards.NewRewardsPool(t.rp)
-		if err != nil {
-			return fmt.Errorf("error creating rewards pool binding: %w", err)
-		}
-		err = t.rp.Query(nil, nil,
-			rewardsPool.IntervalStart,
-			rewardsPool.IntervalDuration,
-		)
-		if err != nil {
-			return fmt.Errorf("error getting rewards pool interval details: %w", err)
-		}
-		lastCheckpoint := rewardsPool.IntervalStart.Formatted()
-		rewardsInterval := rewardsPool.IntervalDuration.Formatted()
+	// Get the time of the latest block
+	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return fmt.Errorf("Can't get the latest block time: %w", err)
+	}
+	latestBlockTimestamp := int64(latestEth1Block.Time)
 
-		// Find the next checkpoint
-		nextCheckpoint := lastCheckpoint.Add(rewardsInterval)
-
-		// Calculate the number of submissions between now and the next checkpoint adding one so we have the first submission time that is in the past
-		timeDifference := time.Until(nextCheckpoint)
-		submissionsUntilNextCheckpoint := int(timeDifference/submissionIntervalDuration) + 1
-
-		nextSubmissionTime = nextCheckpoint.Add(-time.Duration(submissionsUntilNextCheckpoint) * submissionIntervalDuration)
-
-		t.logger.Debug("Balances updated event not found, using rewards pool",
-			slog.Time(keys.StartKey, lastCheckpoint),
-			slog.Duration(keys.IntervalKey, rewardsInterval),
-			slog.Time(keys.NextKey, nextCheckpoint),
-		)
-	} else {
-		// Get the last submission reference time
-		lastSubmissionTime := event.SlotTimestamp
-
-		// Next submission adds the interval time to the last submission time
-		nextSubmissionTime = lastSubmissionTime.Add(submissionIntervalDuration)
-
-		t.logger.Debug("Found balances updated event",
-			slog.Uint64(keys.SubmittedKey, event.BlockNumber),
-		)
+	// Calculate the next submission timestamp
+	submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+	if err != nil {
+		return err
 	}
 
-	t.logger.Debug("Checking next submission time",
-		slog.Time(keys.TimeKey, time.Now().UTC()),
-		slog.Time(keys.NextKey, nextSubmissionTime),
-	)
-
-	// Return if the time to submit has not arrived
-	if time.Now().Before(nextSubmissionTime) {
-		return nil
-	}
+	// Convert the submission timestamp to time.Time
+	nextSubmissionTime := time.Unix(submissionTimestamp, 0)
 
 	// Get the Beacon block corresponding to this time
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
@@ -181,17 +129,21 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
 
 	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	ecBlock, err := utils.FindLastExistingELBlockFromSlot(t.ctx, t.bc, slotNumber)
+	targetBlock, err := utils.FindLastBlockWithExecutionPayload(t.ctx, t.bc, slotNumber)
 	if err != nil {
 		return err
 	}
 
-	// Fetch the target block
-	targetBlockHeader, err := t.ec.HeaderByHash(t.ctx, ecBlock.BlockHash)
+	targetBlockNumber := targetBlock.ExecutionBlockNumber
+	if targetBlockNumber <= lastSubmissionBlock {
+		// No submission needed: target block older or equal to the last submission
+		return nil
+	}
+
+	targetBlockHeader, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(targetBlockNumber)))
 	if err != nil {
 		return err
 	}
-	blockNumber := targetBlockHeader.Number.Uint64()
 
 	// Check if the required epoch is finalized yet
 	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
@@ -201,7 +153,7 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	}
 	finalizedEpoch := beaconHead.FinalizedEpoch
 	if requiredEpoch > finalizedEpoch {
-		t.logger.Info("Balance report is due, waiting for target epoch to finalize.", slog.Uint64(keys.BlockKey, blockNumber), slog.Uint64(keys.TargetEpochKey, requiredEpoch), slog.Uint64(keys.FinalizedEpochKey, finalizedEpoch))
+		t.logger.Info("Balance report is due, waiting for target epoch to finalize.", slog.Uint64(keys.BlockKey, targetBlockNumber), slog.Uint64(keys.TargetEpochKey, requiredEpoch), slog.Uint64(keys.FinalizedEpochKey, finalizedEpoch))
 		return nil
 	}
 
@@ -223,7 +175,7 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 		t.logger.Info("Starting balance report in a separate thread.")
 
 		// Log
-		t.logger.Info("Calculating network balances...", slog.Uint64(keys.BlockKey, blockNumber))
+		t.logger.Info("Calculating network balances...", slog.Uint64(keys.BlockKey, targetBlockNumber))
 
 		// Get network balances at block
 		balances, err := t.getNetworkBalances(targetBlockHeader, targetBlockHeader.Number, slotNumber, time.Unix(int64(targetBlockHeader.Time), 0))
@@ -244,7 +196,7 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 
 		// Check if we have reported these specific values before
 		balances.SlotTimestamp = uint64(nextSubmissionTime.Unix())
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAddress, blockNumber, balances)
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAddress, targetBlockNumber, balances)
 		if err != nil {
 			t.handleError(err)
 			return
@@ -257,13 +209,13 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 		}
 
 		// We haven't submitted these values, check if we've submitted any for this block so we can log it
-		hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAddress, blockNumber)
+		hasSubmitted, err := t.hasSubmittedBlockBalances(nodeAddress, targetBlockNumber)
 		if err != nil {
 			t.handleError(err)
 			return
 		}
 		if hasSubmitted {
-			t.logger.Info("Have previously submitted out-of-date balances, trying again...", slog.Uint64(keys.BlockKey, blockNumber))
+			t.logger.Info("Have previously submitted out-of-date balances, trying again...", slog.Uint64(keys.BlockKey, targetBlockNumber))
 		}
 
 		// Log
