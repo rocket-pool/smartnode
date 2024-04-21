@@ -58,6 +58,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 		return nil, err
 	}
 
+	// Update & return response
 	response.IsRplLockingDisallowed = !isRplLockingAllowed
 
 	// return if proposing is not possible

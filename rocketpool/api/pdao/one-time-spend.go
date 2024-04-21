@@ -6,10 +6,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 )
 
 func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int) (*api.PDAOCanProposeOneTimeSpendResponse, error) {
@@ -35,6 +37,37 @@ func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.A
 	response := api.PDAOCanProposeOneTimeSpendResponse{}
 
 	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Sync
+	var isRplLockingAllowed bool
+	var wg errgroup.Group
+
+	// Get is RPL locking allowed
+	wg.Go(func() error {
+		var err error
+		isRplLockingAllowed, err = node.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
+		return err
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Update & return response
+	response.IsRplLockingDisallowed = !isRplLockingAllowed
+
+	// return if proposing is not possible
+	response.CanPropose = !response.IsRplLockingDisallowed
+	if !response.CanPropose {
+		return &response, nil
+	}
+
+	// Get the account transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
