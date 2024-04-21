@@ -220,11 +220,14 @@ type PDAOProposeOneTimeSpendResponse struct {
 }
 
 type PDAOCanProposeRecurringSpendResponse struct {
-	Status      string             `json:"status"`
-	Error       string             `json:"error"`
-	BlockNumber uint32             `json:"blockNumber"`
-	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string             `json:"status"`
+	Error                  string             `json:"error"`
+	BlockNumber            uint32             `json:"blockNumber"`
+	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	CanPropose             bool               `json:"canPropose"`
+	IsRplLockingDisallowed bool               `json:"isRplLockingDisallowed"`
 }
+
 type PDAOProposeRecurringSpendResponse struct {
 	Status     string      `json:"status"`
 	Error      string      `json:"error"`
