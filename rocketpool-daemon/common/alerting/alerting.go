@@ -2,15 +2,17 @@ package alerting
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-openapi/strfmt"
+	"github.com/rocket-pool/node-manager-core/log"
 	apiclient "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/client"
 	apialert "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/client/alert"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/models"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )
 
 const (
@@ -18,36 +20,64 @@ const (
 	DefaultEndsAtDurationForSeverityCritical = time.Minute * 60
 )
 
+type AlertFetcher struct {
+	enabled            bool
+	alertmanagerClient *apiclient.Alertmanager
+	cfg                *config.SmartNodeConfig
+}
+
+func NewAlertFetcher(cfg *config.SmartNodeConfig) *AlertFetcher {
+	return &AlertFetcher{
+		enabled:            true,
+		alertmanagerClient: createClient(cfg),
+		cfg:                cfg,
+	}
+}
+
 // fetches the current alerts directly the alertmanager container/application's API.
 // If alerting/metrics are disabled, this function returns an empty array.
-func FetchAlerts(cfg *config.SmartNodeConfig) ([]*models.GettableAlert, error) {
-	// NOTE: don't log to stdout here since this method is on the "api" path and all stdout is parsed as a json "api" response.
-	if !isAlertingEnabled(cfg) {
+func (a *AlertFetcher) FetchAlerts() ([]*models.GettableAlert, error) {
+	if !a.enabled {
 		// metrics are disabled, so no alerts will be fetched.
 		return nil, nil
 	}
 
-	//logMessage("Fetching alerts from alertmanager...")
-	client := createClient(cfg)
 	// request alerts:
-	resp, err := client.Alert.GetAlerts(nil)
+	resp, err := a.alertmanagerClient.Alert.GetAlerts(nil)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching alerts from alertmanager: %w", err)
 	}
 	return resp.Payload, nil
 }
 
+type Alerter struct {
+	enabled            bool
+	alertmanagerClient *apiclient.Alertmanager
+	log                *slog.Logger
+	cfg                *config.SmartNodeConfig
+}
+
+func NewAlerter(cfg *config.SmartNodeConfig, l *log.Logger) *Alerter {
+	if !cfg.Alertmanager.EnableAlerting.Value {
+		return &Alerter{enabled: false}
+	}
+	return &Alerter{
+		enabled:            true,
+		alertmanagerClient: createClient(cfg),
+		log:                l.With(slog.String(keys.ModuleKey, "alerting")),
+		cfg:                cfg,
+	}
+}
+
 // Sends an alert when the node automatically changed a node's fee recipient or attempted to (success or failure).
 // If alerting/metrics are disabled, this function does nothing.
-func AlertFeeRecipientChanged(cfg *config.SmartNodeConfig, newFeeRecipient common.Address, succeeded bool) error {
-	if !isAlertingEnabled(cfg) {
-		logMessage("alerting is disabled, not sending AlertFeeRecipientChanged.")
-		return nil
+func (a *Alerter) AlertFeeRecipientChanged(newFeeRecipient common.Address, succeeded bool) {
+	if !a.enabled {
+		return
 	}
 
-	if !cfg.Alertmanager.AlertEnabled_FeeRecipientChanged.Value {
-		logMessage("alert for FeeRecipientChanged is disabled, not sending.")
-		return nil
+	if !a.cfg.Alertmanager.AlertEnabled_FeeRecipientChanged.Value {
+		return
 	}
 
 	// prepare the alert information:
@@ -60,20 +90,18 @@ func AlertFeeRecipientChanged(cfg *config.SmartNodeConfig, newFeeRecipient commo
 		endsAt,
 		map[string]string{},
 	)
-	return sendAlert(alert, cfg)
+	a.sendAlert(alert)
 }
 
 // Sends an alert when the node automatically reduced a minipool's bond or attempted to (success or failure).
 // If alerting/metrics are disabled, this function does nothing.
-func AlertMinipoolBondReduced(cfg *config.SmartNodeConfig, minipoolAddress common.Address, succeeded bool) error {
-	if !isAlertingEnabled(cfg) {
-		logMessage("alerting is disabled, not sending AlertMinipoolBondReduced.")
-		return nil
+func (a *Alerter) AlertMinipoolBondReduced(minipoolAddress common.Address, succeeded bool) {
+	if !a.enabled {
+		return
 	}
 
-	if !cfg.Alertmanager.AlertEnabled_MinipoolBondReduced.Value {
-		logMessage("alert for MinipoolBondReduced is disabled, not sending.")
-		return nil
+	if !a.cfg.Alertmanager.AlertEnabled_MinipoolBondReduced.Value {
+		return
 	}
 
 	// prepare the alert information:
@@ -88,21 +116,19 @@ func AlertMinipoolBondReduced(cfg *config.SmartNodeConfig, minipoolAddress commo
 			"minipool": minipoolAddress.Hex(),
 		},
 	)
-	return sendAlert(alert, cfg)
+	a.sendAlert(alert)
 
 }
 
 // Sends an alert when the node automatically distributes a minipool's balance (success or failure).
 // If alerting/metrics are disabled, this function does nothing.
-func AlertMinipoolBalanceDistributed(cfg *config.SmartNodeConfig, minipoolAddress common.Address, succeeded bool) error {
-	if !isAlertingEnabled(cfg) {
-		logMessage("alerting is disabled, not sending AlertMinipoolBalanceDistributed.")
-		return nil
+func (a *Alerter) AlertMinipoolBalanceDistributed(minipoolAddress common.Address, succeeded bool) {
+	if !a.enabled {
+		return
 	}
 
-	if !cfg.Alertmanager.AlertEnabled_MinipoolBalanceDistributed.Value {
-		logMessage("alert for MinipoolBalanceDistributed is disabled, not sending.")
-		return nil
+	if !a.cfg.Alertmanager.AlertEnabled_MinipoolBalanceDistributed.Value {
+		return
 	}
 
 	// prepare the alert information:
@@ -117,20 +143,18 @@ func AlertMinipoolBalanceDistributed(cfg *config.SmartNodeConfig, minipoolAddres
 			"minipool": minipoolAddress.Hex(),
 		},
 	)
-	return sendAlert(alert, cfg)
+	a.sendAlert(alert)
 }
 
 // Sends an alert when the node automatically prompted a minipool or attempted to (success or failure).
 // If alerting/metrics are disabled, this function does nothing.
-func AlertMinipoolPromoted(cfg *config.SmartNodeConfig, minipoolAddress common.Address, succeeded bool) error {
-	if !isAlertingEnabled(cfg) {
-		logMessage("alerting is disabled, not sending AlertMinipoolPromoted.")
-		return nil
+func (a *Alerter) AlertMinipoolPromoted(minipoolAddress common.Address, succeeded bool) {
+	if a.enabled {
+		return
 	}
 
-	if !cfg.Alertmanager.AlertEnabled_MinipoolPromoted.Value {
-		logMessage("alert for MinipoolPromoted is disabled, not sending.")
-		return nil
+	if !a.cfg.Alertmanager.AlertEnabled_MinipoolPromoted.Value {
+		return
 	}
 
 	// prepare the alert information:
@@ -145,20 +169,18 @@ func AlertMinipoolPromoted(cfg *config.SmartNodeConfig, minipoolAddress common.A
 			"minipool": minipoolAddress.Hex(),
 		},
 	)
-	return sendAlert(alert, cfg)
+	a.sendAlert(alert)
 }
 
 // Sends an alert when the node automatically staked a minipool or attempted to (success or failure).
 // If alerting/metrics are disabled, this function does nothing.
-func AlertMinipoolStaked(cfg *config.SmartNodeConfig, minipoolAddress common.Address, succeeded bool) error {
-	if !isAlertingEnabled(cfg) {
-		logMessage("alerting is disabled, not sending AlertMinipoolStaked.")
-		return nil
+func (a *Alerter) AlertMinipoolStaked(minipoolAddress common.Address, succeeded bool) {
+	if a.enabled {
+		return
 	}
 
-	if !cfg.Alertmanager.AlertEnabled_MinipoolStaked.Value {
-		logMessage("alert for MinipoolStaked is disabled, not sending.")
-		return nil
+	if !a.cfg.Alertmanager.AlertEnabled_MinipoolStaked.Value {
+		return
 	}
 
 	// prepare the alert information:
@@ -174,7 +196,7 @@ func AlertMinipoolStaked(cfg *config.SmartNodeConfig, minipoolAddress common.Add
 			"minipool": minipoolAddress.Hex(),
 		},
 	)
-	return sendAlert(alert, cfg)
+	a.sendAlert(alert)
 }
 
 // Gets various settings for an alert based on whether a process succeeded or failed.
@@ -192,20 +214,18 @@ func getAlertSettingsForEvent(succeeded bool) (strfmt.DateTime, Severity, string
 	return endsAt, severity, succeededOrFailedText
 }
 
-func AlertExecutionClientSyncComplete(cfg *config.SmartNodeConfig) error {
-	if !cfg.Alertmanager.AlertEnabled_ExecutionClientSyncComplete.Value {
-		logMessage("alert for ExecutionClientSyncComplete is disabled, not sending.")
-		return nil
+func (a *Alerter) AlertExecutionClientSyncComplete() {
+	if !a.cfg.Alertmanager.AlertEnabled_ExecutionClientSyncComplete.Value {
+		return
 	}
-	return alertClientSyncComplete(cfg, ClientKindExecution)
+	a.alertClientSyncComplete(ClientKindExecution)
 }
 
-func AlertBeaconClientSyncComplete(cfg *config.SmartNodeConfig) error {
-	if !cfg.Alertmanager.AlertEnabled_BeaconClientSyncComplete.Value {
-		logMessage("alert for BeaconClientSyncComplete is disabled, not sending.")
-		return nil
+func (a *Alerter) AlertBeaconClientSyncComplete() {
+	if !a.cfg.Alertmanager.AlertEnabled_BeaconClientSyncComplete.Value {
+		return
 	}
-	return alertClientSyncComplete(cfg, ClientKindBeacon)
+	a.alertClientSyncComplete(ClientKindBeacon)
 }
 
 type ClientKind string
@@ -215,11 +235,10 @@ const (
 	ClientKindBeacon    ClientKind = "Beacon"
 )
 
-func alertClientSyncComplete(cfg *config.SmartNodeConfig, client ClientKind) error {
+func (a *Alerter) alertClientSyncComplete(client ClientKind) {
 	alertName := fmt.Sprintf("%sClientSyncComplete", client)
-	if !isAlertingEnabled(cfg) {
-		logMessage(fmt.Sprintf("alerting is disabled, not sending %s.", alertName))
-		return nil
+	if !a.enabled {
+		return
 	}
 
 	alert := createAlert(
@@ -230,19 +249,19 @@ func alertClientSyncComplete(cfg *config.SmartNodeConfig, client ClientKind) err
 		strfmt.DateTime(time.Now().Add(time.Minute*1)),
 		nil,
 	)
-	return sendAlert(alert, cfg)
+	a.sendAlert(alert)
 }
 
-func sendAlert(alert *models.PostableAlert, cfg *config.SmartNodeConfig) error {
-	logMessage("sending alert for %s: %s", alert.Labels["alertname"], alert.Annotations["summary"])
+func (a *Alerter) sendAlert(alert *models.PostableAlert) {
+	a.log.Info("sending alert", "label", alert.Labels["alertname"], "summarry", alert.Annotations["summary"])
 
 	params := apialert.NewPostAlertsParams().WithDefaults().WithAlerts(models.PostableAlerts{alert})
-	client := createClient(cfg)
+	client := a.alertmanagerClient
 	_, err := client.Alert.PostAlerts(params)
+
 	if err != nil {
-		return fmt.Errorf("error posting alert: %s", err.Error())
+		a.log.Error("error posting alert", log.Err(err))
 	}
-	return nil
 }
 
 type Severity string
@@ -252,10 +271,6 @@ const (
 	SeverityWarning  Severity = "warning"
 	SeverityCritical Severity = "critical"
 )
-
-func isAlertingEnabled(cfg *config.SmartNodeConfig) bool {
-	return cfg.Alertmanager.EnableAlerting.Value
-}
 
 // Creates a uniform alert with the basic labels and annotations we expect.
 func createAlert(uniqueName string, summary string, description string, severity Severity, endsAt strfmt.DateTime, extraLabels map[string]string) *models.PostableAlert {
@@ -290,9 +305,4 @@ func createClient(cfg *config.SmartNodeConfig) *apiclient.Alertmanager {
 	transport := apiclient.DefaultTransportConfig().WithHost(host)
 	client := apiclient.NewHTTPClientWithConfig(strfmt.Default, transport)
 	return client
-}
-
-func logMessage(format string, args ...interface{}) {
-	msg := fmt.Sprintf(format, args...)
-	log.Printf("[alerting] %s\n", msg)
 }

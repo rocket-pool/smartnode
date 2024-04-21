@@ -29,6 +29,7 @@ import (
 type PromoteMinipools struct {
 	sp             *services.ServiceProvider
 	logger         *slog.Logger
+	alerter        *alerting.Alerter
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
@@ -46,6 +47,7 @@ func NewPromoteMinipools(sp *services.ServiceProvider, logger *log.Logger) *Prom
 	return &PromoteMinipools{
 		sp:             sp,
 		logger:         log,
+		alerter:        alerting.NewAlerter(cfg, logger),
 		cfg:            cfg,
 		w:              sp.GetWallet(),
 		rp:             sp.GetRocketPool(),
@@ -212,7 +214,7 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 	callbacks := make([]func(err error), len(minipools))
 	for i, mp := range minipools {
 		callbacks[i] = func(err error) {
-			alerting.AlertMinipoolPromoted(t.cfg, mp.MinipoolAddress, err == nil)
+			t.alerter.AlertMinipoolPromoted(mp.MinipoolAddress, err == nil)
 		}
 	}
 

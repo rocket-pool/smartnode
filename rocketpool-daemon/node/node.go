@@ -52,6 +52,7 @@ const (
 type TaskLoop struct {
 	// Services
 	logger            *log.Logger
+	alerter           *alerting.Alerter
 	ctx               context.Context
 	sp                *services.ServiceProvider
 	wg                *sync.WaitGroup
@@ -92,6 +93,7 @@ func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
 	t := &TaskLoop{
 		sp:                          sp,
 		logger:                      logger,
+		alerter:                     alerting.NewAlerter(sp.GetConfig(), logger),
 		ctx:                         ctx,
 		wg:                          wg,
 		cfg:                         sp.GetConfig(),
@@ -198,7 +200,7 @@ func (t *TaskLoop) waitUntilReady() waitUntilReadyResult {
 	if !t.wasExecutionClientSynced {
 		t.logger.Info("Execution Client is now synced.")
 		t.wasExecutionClientSynced = true
-		alerting.AlertExecutionClientSyncComplete(t.cfg)
+		t.alerter.AlertExecutionClientSyncComplete()
 	}
 
 	// Check the BC status
@@ -217,7 +219,7 @@ func (t *TaskLoop) waitUntilReady() waitUntilReadyResult {
 	if !t.wasBeaconClientSynced {
 		t.logger.Info("Beacon Node is now synced.")
 		t.wasBeaconClientSynced = true
-		alerting.AlertBeaconClientSyncComplete(t.cfg)
+		t.alerter.AlertBeaconClientSyncComplete()
 	}
 
 	// Load contracts
