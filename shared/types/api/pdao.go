@@ -257,10 +257,12 @@ type PDAOProposeInviteToSecurityCouncilResponse struct {
 }
 
 type PDAOCanProposeKickFromSecurityCouncilResponse struct {
-	Status      string             `json:"status"`
-	Error       string             `json:"error"`
-	BlockNumber uint32             `json:"blockNumber"`
-	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+	Status                 string             `json:"status"`
+	Error                  string             `json:"error"`
+	BlockNumber            uint32             `json:"blockNumber"`
+	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	CanPropose             bool               `json:"canPropose"`
+	IsRplLockingDisallowed bool               `json:"isRplLockingDisallowed"`
 }
 type PDAOProposeKickFromSecurityCouncilResponse struct {
 	Status     string      `json:"status"`
