@@ -28,7 +28,7 @@ import (
 // Implementation for tree generator ruleset v10 with rolling record support
 type treeGeneratorImpl_v10_rolling struct {
 	networkState         *state.NetworkState
-	rewardsFile          *RewardsFile_v4
+	rewardsFile          *RewardsFile_v3
 	elSnapshotHeader     *types.Header
 	logger               *slog.Logger
 	rp                   *rocketpool.RocketPool
@@ -52,7 +52,7 @@ type treeGeneratorImpl_v10_rolling struct {
 // Create a new tree generator
 func newTreeGeneratorImpl_v10_rolling(logger *slog.Logger, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v10_rolling {
 	return &treeGeneratorImpl_v10_rolling{
-		rewardsFile: &RewardsFile_v4{
+		rewardsFile: &RewardsFile_v3{
 			RewardsFileHeader: &sharedtypes.RewardsFileHeader{
 				RewardsFileVersion:  4,
 				RulesetVersion:      10,
@@ -73,7 +73,7 @@ func newTreeGeneratorImpl_v10_rolling(logger *slog.Logger, index uint64, startTi
 				},
 				NetworkRewards: map[uint64]*sharedtypes.NetworkRewardsInfo{},
 			},
-			ClaimerRewards: map[common.Address]*ClaimerRewardsInfo_v4{},
+			ClaimerRewards: map[common.Address]*ClaimerRewardsInfo_v3{},
 			MinipoolPerformanceFile: MinipoolPerformanceFile_v3{
 				Index:               index,
 				StartTime:           startTime.UTC(),
@@ -428,7 +428,7 @@ func (r *treeGeneratorImpl_v10_rolling) calculateRplRewards() error {
 						network = 0
 					}
 
-					rewardsForClaimer = &ClaimerRewardsInfo_v4{
+					rewardsForClaimer = &ClaimerRewardsInfo_v3{
 						RewardNetwork:    network,
 						CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
 						OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
@@ -529,7 +529,7 @@ func (r *treeGeneratorImpl_v10_rolling) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForClaimer = &ClaimerRewardsInfo_v4{
+			rewardsForClaimer = &ClaimerRewardsInfo_v3{
 				RewardNetwork:    network,
 				CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
 				OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
@@ -634,7 +634,7 @@ func (r *treeGeneratorImpl_v10_rolling) calculateEthRewards(context context.Cont
 					network = 0
 				}
 
-				rewardsForClaimer = &ClaimerRewardsInfo_v4{
+				rewardsForClaimer = &ClaimerRewardsInfo_v3{
 					RewardNetwork:    network,
 					CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
 					OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),

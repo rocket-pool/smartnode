@@ -73,7 +73,7 @@ func newTreeGeneratorImpl_v8_rolling(logger *slog.Logger, index uint64, startTim
 				},
 				NetworkRewards: map[uint64]*sharedtypes.NetworkRewardsInfo{},
 			},
-			NodeRewards: map[common.Address]*NodeRewardsInfo_v3{},
+			ClaimerRewards: map[common.Address]*ClaimerRewardsInfo_v3{},
 			MinipoolPerformanceFile: MinipoolPerformanceFile_v3{
 				Index:               index,
 				StartTime:           startTime.UTC(),
@@ -214,8 +214,8 @@ func (r *treeGeneratorImpl_v8_rolling) approximateStakerShareOfSmoothingPool(con
 // Generates a merkle tree from the provided rewards map
 func (r *treeGeneratorImpl_v8_rolling) generateMerkleTree() error {
 	// Generate the leaf data for each node
-	totalData := make([][]byte, 0, len(r.rewardsFile.NodeRewards))
-	for address, rewardsForNode := range r.rewardsFile.NodeRewards {
+	totalData := make([][]byte, 0, len(r.rewardsFile.ClaimerRewards))
+	for address, rewardsForNode := range r.rewardsFile.ClaimerRewards {
 		// Ignore nodes that didn't receive any rewards
 		if rewardsForNode.CollateralRpl.Cmp(common.Big0) == 0 && rewardsForNode.OracleDaoRpl.Cmp(common.Big0) == 0 && rewardsForNode.SmoothingPoolEth.Cmp(common.Big0) == 0 {
 			continue
@@ -258,7 +258,7 @@ func (r *treeGeneratorImpl_v8_rolling) generateMerkleTree() error {
 	}
 
 	// Generate the proofs for each node
-	for address, rewardsForNode := range r.rewardsFile.NodeRewards {
+	for address, rewardsForNode := range r.rewardsFile.ClaimerRewards {
 		// Get the proof
 		proof, err := tree.GenerateProof(rewardsForNode.MerkleData, 0)
 		if err != nil {
@@ -410,7 +410,7 @@ func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 
 			// If there are pending rewards, add it to the map
 			if nodeRplRewards.Sign() == 1 {
-				rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeDetails.NodeAddress]
+				rewardsForNode, exists := r.rewardsFile.ClaimerRewards[nodeDetails.NodeAddress]
 				if !exists {
 					// Get the network the rewards should go to
 					network := r.networkState.NodeDetails[i].RewardNetwork.Uint64()
@@ -423,13 +423,13 @@ func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 						network = 0
 					}
 
-					rewardsForNode = &NodeRewardsInfo_v3{
+					rewardsForNode = &ClaimerRewardsInfo_v3{
 						RewardNetwork:    network,
 						CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
 						OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
 						SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 					}
-					r.rewardsFile.NodeRewards[nodeDetails.NodeAddress] = rewardsForNode
+					r.rewardsFile.ClaimerRewards[nodeDetails.NodeAddress] = rewardsForNode
 				}
 				rewardsForNode.CollateralRpl.Add(&rewardsForNode.CollateralRpl.Int, nodeRplRewards)
 
@@ -505,7 +505,7 @@ func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 		individualOdaoRewards.Mul(trueODaoNodeTimes[address], totalODaoRewards)
 		individualOdaoRewards.Div(individualOdaoRewards, totalODaoNodeTime)
 
-		rewardsForNode, exists := r.rewardsFile.NodeRewards[address]
+		rewardsForNode, exists := r.rewardsFile.ClaimerRewards[address]
 		if !exists {
 			// Get the network the rewards should go to
 			network := r.networkState.NodeDetailsByAddress[address].RewardNetwork.Uint64()
@@ -518,13 +518,13 @@ func (r *treeGeneratorImpl_v8_rolling) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForNode = &NodeRewardsInfo_v3{
+			rewardsForNode = &ClaimerRewardsInfo_v3{
 				RewardNetwork:    network,
 				CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
 				OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
 				SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 			}
-			r.rewardsFile.NodeRewards[address] = rewardsForNode
+			r.rewardsFile.ClaimerRewards[address] = rewardsForNode
 
 		}
 		rewardsForNode.OracleDaoRpl.Add(&rewardsForNode.OracleDaoRpl.Int, individualOdaoRewards)
@@ -604,7 +604,7 @@ func (r *treeGeneratorImpl_v8_rolling) calculateEthRewards(context context.Conte
 	// Update the rewards maps
 	for nodeAddress, nodeInfo := range r.nodeDetails {
 		if nodeInfo.SmoothingPoolEth.Cmp(common.Big0) > 0 {
-			rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeAddress]
+			rewardsForNode, exists := r.rewardsFile.ClaimerRewards[nodeAddress]
 			if !exists {
 				network := nodeInfo.RewardsNetwork
 				validNetwork, err := r.validateNetwork(network)
@@ -616,13 +616,13 @@ func (r *treeGeneratorImpl_v8_rolling) calculateEthRewards(context context.Conte
 					network = 0
 				}
 
-				rewardsForNode = &NodeRewardsInfo_v3{
+				rewardsForNode = &ClaimerRewardsInfo_v3{
 					RewardNetwork:    network,
 					CollateralRpl:    sharedtypes.NewQuotedBigInt(0),
 					OracleDaoRpl:     sharedtypes.NewQuotedBigInt(0),
 					SmoothingPoolEth: sharedtypes.NewQuotedBigInt(0),
 				}
-				r.rewardsFile.NodeRewards[nodeAddress] = rewardsForNode
+				r.rewardsFile.ClaimerRewards[nodeAddress] = rewardsForNode
 			}
 			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
 

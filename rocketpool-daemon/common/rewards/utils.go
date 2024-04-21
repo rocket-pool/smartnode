@@ -514,9 +514,6 @@ func deserializeRewardsFile(versionHeader *sharedtypes.VersionHeader, bytes []by
 	case sharedtypes.RewardsFileVersionThree:
 		file := &RewardsFile_v3{}
 		return file, file.Deserialize(bytes)
-	case sharedtypes.RewardsFileVersionFour:
-		file := &RewardsFile_v4{}
-		return file, file.Deserialize(bytes)
 	}
 
 	panic("unreachable section of code reached, please report this error to the maintainers")
@@ -535,9 +532,6 @@ func deserializeMinipoolPerformanceFile(versionHeader *sharedtypes.VersionHeader
 		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	case sharedtypes.RewardsFileVersionThree:
-		file := &MinipoolPerformanceFile_v3{}
-		return file, file.Deserialize(bytes)
-	case sharedtypes.RewardsFileVersionFour:
 		file := &MinipoolPerformanceFile_v3{}
 		return file, file.Deserialize(bytes)
 	}
