@@ -32,25 +32,3 @@ func createPollard(context context.Context, logger *slog.Logger, rp *rocketpool.
 	}
 	return blockNumber, pollard, nil
 }
-
-// Loads (or regenerates) the pollard for a proposal from a block number
-func getPollard(context context.Context, logger *slog.Logger, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient, blockNumber uint32) ([]types.VotingTreeNode, error) {
-	// Create a proposal manager
-	propMgr, err := proposals.NewProposalManager(context, logger, cfg, rp, bc)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the pollard
-	pollardPtrs, err := propMgr.GetPollardForProposal(blockNumber)
-	if err != nil {
-		return nil, err
-	}
-
-	// Make a slice of nodes from their pointers
-	pollard := make([]types.VotingTreeNode, len(pollardPtrs))
-	for i := range pollardPtrs {
-		pollard[i] = *pollardPtrs[i]
-	}
-	return pollard, nil
-}

@@ -86,7 +86,6 @@ func (c *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// Sync
-	nodeCount := float64(-1)
 	nodeFee := state.NetworkDetails.NodeFee
 	initializedCount := float64(-1)
 	prelaunchCount := float64(-1)
@@ -95,7 +94,7 @@ func (c *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	finalizedCount := float64(-1)
 
 	// Get total number of Rocket Pool nodes
-	nodeCount = float64(len(state.NodeDetails))
+	nodeCount := float64(len(state.NodeDetails))
 
 	// Get the total number of Rocket Pool minipools
 	for _, mpd := range state.MinipoolDetails {

@@ -5,8 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
-	"github.com/rocket-pool/rocketpool-go/v2/node"
-	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
@@ -41,9 +39,6 @@ func (f *nodeGetSnapshotVotingPowerContextFactory) RegisterRoute(router *mux.Rou
 
 type nodeGetSnapshotVotingPowerContext struct {
 	handler *NodeHandler
-	rp      *rocketpool.RocketPool
-
-	node *node.Node
 }
 
 func (c *nodeGetSnapshotVotingPowerContext) PrepareData(data *api.NodeGetSnapshotVotingPowerData, opts *bind.TransactOpts) (types.ResponseStatus, error) {

@@ -224,14 +224,3 @@ func promptForCustomKeyPasswords(cfg *config.SmartNodeConfig, testOnly bool) (st
 
 	return passwordFile, nil
 }
-
-// Deletes the custom key password file
-func deleteCustomKeyPasswordFile(passwordFile string) error {
-	_, err := os.Stat(passwordFile)
-	if os.IsNotExist(err) {
-		return nil
-	}
-
-	err = os.Remove(passwordFile)
-	return err
-}

@@ -47,7 +47,7 @@ func (mv *MnemonicValidator) Filled() bool {
 
 func (mv *MnemonicValidator) Finalize() (string, error) {
 
-	if mv.Filled() == false {
+	if !mv.Filled() {
 		return "", errors.New("Not enough words were entered.")
 	}
 

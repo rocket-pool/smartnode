@@ -60,7 +60,7 @@ func TestFilesFromTree(t *testing.T) {
 		)
 	}
 
-	localMinipoolPerformanceFile, err = ReadLocalMinipoolPerformanceFile(path.Join(dir, "performance.json"))
+	_, err = ReadLocalMinipoolPerformanceFile(path.Join(dir, "performance.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
