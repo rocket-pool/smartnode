@@ -5,12 +5,14 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	rpnode "github.com/rocket-pool/rocketpool-go/node"
 	psettings "github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 )
 
 func getRewardsPercentages(c *cli.Context) (*api.PDAOGetRewardsPercentagesResponse, error) {
@@ -75,6 +77,37 @@ func canProposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, 
 
 	// Response
 	response := api.PDAOCanProposeRewardsPercentagesResponse{}
+
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Sync
+	var isRplLockingAllowed bool
+	var wg errgroup.Group
+
+	// Get is RPL locking allowed
+	wg.Go(func() error {
+		var err error
+		isRplLockingAllowed, err = rpnode.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
+		return err
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Update & return response
+	response.IsRplLockingDisallowed = !isRplLockingAllowed
+
+	// return if proposing is not possible
+	response.CanPropose = !response.IsRplLockingDisallowed
+	if !response.CanPropose {
+		return &response, nil
+	}
 
 	// Get the account transactor
 	opts, err := w.GetNodeAccountTransactor()
