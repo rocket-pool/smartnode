@@ -94,7 +94,7 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 		return err
 	}
 	if !canResponse.CanPropose {
-		fmt.Println("Cannot propose recurring spend contract:")
+		fmt.Println("Cannot propose recurring spend update:")
 		if canResponse.IsRplLockingDisallowed {
 			fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
 		}
