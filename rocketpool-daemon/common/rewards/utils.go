@@ -339,7 +339,10 @@ func DownloadRewardsFile(cfg *config.SmartNodeConfig, i *sharedtypes.IntervalInf
 			deserializedRewardsFile.GetHeader().MerkleRoot = ""
 
 			// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
-			deserializedRewardsFile.GenerateMerkleTree()
+			err = deserializedRewardsFile.GenerateMerkleTree()
+			if err != nil {
+				return fmt.Errorf("Error generating merkle tree from %s: %w", rewardsTreePath, err)
+			}
 
 			// Get the resulting merkle root
 			calculatedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
