@@ -215,9 +215,9 @@ func (r *treeGeneratorImpl_v10_rolling) approximateStakerShareOfSmoothingPool(co
 func (r *treeGeneratorImpl_v10_rolling) generateMerkleTree() error {
 	// Generate the leaf data for each claimer
 	totalData := make([][]byte, 0, len(r.rewardsFile.ClaimerRewards))
-	for address, rewardsForClaimers := range r.rewardsFile.ClaimerRewards {
+	for address, rewardsForClaimer := range r.rewardsFile.ClaimerRewards {
 		// Ignore claimers that didn't receive any rewards
-		if rewardsForClaimers.CollateralRpl.Cmp(common.Big0) == 0 && rewardsForClaimers.OracleDaoRpl.Cmp(common.Big0) == 0 && rewardsForClaimers.SmoothingPoolEth.Cmp(common.Big0) == 0 {
+		if rewardsForClaimer.CollateralRpl.Cmp(common.Big0) == 0 && rewardsForClaimer.OracleDaoRpl.Cmp(common.Big0) == 0 && rewardsForClaimer.SmoothingPoolEth.Cmp(common.Big0) == 0 {
 			continue
 		}
 
@@ -229,25 +229,25 @@ func (r *treeGeneratorImpl_v10_rolling) generateMerkleTree() error {
 		claimerData = append(claimerData, addressBytes...)
 
 		// Claimer network
-		network := big.NewInt(0).SetUint64(rewardsForClaimers.RewardNetwork)
+		network := big.NewInt(0).SetUint64(rewardsForClaimer.RewardNetwork)
 		networkBytes := make([]byte, 32)
 		network.FillBytes(networkBytes)
 		claimerData = append(claimerData, networkBytes...)
 
 		// RPL rewards
 		rplRewards := big.NewInt(0)
-		rplRewards.Add(&rewardsForClaimers.CollateralRpl.Int, &rewardsForClaimers.OracleDaoRpl.Int)
+		rplRewards.Add(&rewardsForClaimer.CollateralRpl.Int, &rewardsForClaimer.OracleDaoRpl.Int)
 		rplRewardsBytes := make([]byte, 32)
 		rplRewards.FillBytes(rplRewardsBytes)
 		claimerData = append(claimerData, rplRewardsBytes...)
 
 		// ETH rewards
 		ethRewardsBytes := make([]byte, 32)
-		rewardsForClaimers.SmoothingPoolEth.FillBytes(ethRewardsBytes)
+		rewardsForClaimer.SmoothingPoolEth.FillBytes(ethRewardsBytes)
 		claimerData = append(claimerData, ethRewardsBytes...)
 
 		// Assign it to the claimer rewards tracker and add it to the leaf data slice
-		rewardsForClaimers.MerkleData = claimerData
+		rewardsForClaimer.MerkleData = claimerData
 		totalData = append(totalData, claimerData)
 	}
 
@@ -613,10 +613,10 @@ func (r *treeGeneratorImpl_v10_rolling) calculateEthRewards(context context.Cont
 	}
 
 	// Update the rewards maps
-	for _, nodeInfo := range r.nodeDetails {
+	for nodeAddress, nodeInfo := range r.nodeDetails {
 		if nodeInfo.SmoothingPoolEth.Cmp(common.Big0) > 0 {
-			claimer := nodeInfo.Address
-			node := r.networkState.NodeDetailsByAddress[nodeInfo.Address]
+			claimer := nodeAddress
+			node := r.networkState.NodeDetailsByAddress[nodeAddress]
 			if node.IsRplWithdrawalAddressSet && node.PrimaryWithdrawalAddress != node.NodeAddress {
 				// Add the ETH to the primary withdrawal address if the RPL withdrawal address is set
 				claimer = node.PrimaryWithdrawalAddress
@@ -630,7 +630,7 @@ func (r *treeGeneratorImpl_v10_rolling) calculateEthRewards(context context.Cont
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeInfo.Address] = network
+					r.rewardsFile.InvalidNetworkNodes[nodeAddress] = network
 					network = 0
 				}
 
