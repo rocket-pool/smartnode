@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -35,6 +36,30 @@ func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.A
 	response := api.PDAOCanProposeOneTimeSpendResponse{}
 
 	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Sync
+	var isRplLockingAllowed bool
+
+	// Get is RPL locking allowed
+	isRplLockingAllowed, err = node.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update & return response
+	response.IsRplLockingDisallowed = !isRplLockingAllowed
+
+	// return if proposing is not possible
+	response.CanPropose = !response.IsRplLockingDisallowed
+	if !response.CanPropose {
+		return &response, nil
+	}
+
+	// Get the account transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err

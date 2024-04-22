@@ -320,6 +320,9 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 				eth.WeiToEth(big.NewInt(0).Sub(canPropose.StakedRpl, canPropose.LockedRpl)), eth.WeiToEth(canPropose.ProposalBond),
 			)
 		}
+		if canPropose.IsRplLockingDisallowed {
+			fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
+		}
 		return nil
 	}
 

@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	rpnode "github.com/rocket-pool/rocketpool-go/node"
 	psettings "github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -75,6 +76,30 @@ func canProposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, 
 
 	// Response
 	response := api.PDAOCanProposeRewardsPercentagesResponse{}
+
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Sync
+	var isRplLockingAllowed bool
+
+	// Get is RPL locking allowed
+	isRplLockingAllowed, err = rpnode.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Update & return response
+	response.IsRplLockingDisallowed = !isRplLockingAllowed
+
+	// return if proposing is not possible
+	response.CanPropose = !response.IsRplLockingDisallowed
+	if !response.CanPropose {
+		return &response, nil
+	}
 
 	// Get the account transactor
 	opts, err := w.GetNodeAccountTransactor()

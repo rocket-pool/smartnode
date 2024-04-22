@@ -108,6 +108,13 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
+		if !canResponse.CanPropose {
+			fmt.Println("Cannot propose kicking member:")
+			if canResponse.IsRplLockingDisallowed {
+				fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
+			}
+			return nil
+		}
 
 		// Assign max fee
 		err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))

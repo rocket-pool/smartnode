@@ -57,6 +57,9 @@ func proposeSecurityCouncilInvite(c *cli.Context) error {
 		if canResponse.MemberAlreadyExists {
 			fmt.Printf("The node %s is already a member of the security council.\n", address.Hex())
 		}
+		if canResponse.IsRplLockingDisallowed {
+			fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
+		}
 		return nil
 	}
 
