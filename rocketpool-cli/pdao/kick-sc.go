@@ -109,7 +109,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 			return err
 		}
 		if !canResponse.CanPropose {
-			fmt.Println("Cannot propose inviting member:")
+			fmt.Println("Cannot propose kicking member:")
 			if canResponse.IsRplLockingDisallowed {
 				fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
 			}

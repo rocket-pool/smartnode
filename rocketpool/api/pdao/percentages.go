@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 )
 
 func getRewardsPercentages(c *cli.Context) (*api.PDAOGetRewardsPercentagesResponse, error) {
@@ -86,17 +85,10 @@ func canProposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, 
 
 	// Sync
 	var isRplLockingAllowed bool
-	var wg errgroup.Group
 
 	// Get is RPL locking allowed
-	wg.Go(func() error {
-		var err error
-		isRplLockingAllowed, err = rpnode.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
-		return err
-	})
-
-	// Wait for data
-	if err := wg.Wait(); err != nil {
+	isRplLockingAllowed, err = rpnode.GetRPLLockedAllowed(rp, nodeAccount.Address, nil)
+	if err != nil {
 		return nil, err
 	}
 

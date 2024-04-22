@@ -53,6 +53,13 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 		return err
 	})
 
+	// Check if the member exists
+	wg.Go(func() error {
+		var err error
+		response.MemberAlreadyExists, err = security.GetMemberExists(rp, address, nil)
+		return err
+	})
+
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return nil, err
@@ -65,12 +72,6 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 	response.CanPropose = !(response.MemberAlreadyExists || response.IsRplLockingDisallowed)
 	if !response.CanPropose {
 		return &response, nil
-	}
-
-	// Check if the member exists
-	response.MemberAlreadyExists, err = security.GetMemberExists(rp, address, nil)
-	if err != nil {
-		return nil, err
 	}
 
 	// Get the account transactor
