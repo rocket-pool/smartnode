@@ -22,6 +22,7 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/rocketpool-go/v2/node"
 	"github.com/rocket-pool/rocketpool-go/v2/rewards"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	rpstate "github.com/rocket-pool/rocketpool-go/v2/utils/state"
@@ -142,11 +143,28 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, nod
 
 	// Get the rewards from it
 	rewards, exists := proofWrapper.GetClaimerRewardsInfo(nodeAddress)
-	// Note this will be false if the node has a different RPL withdrawal address, even if the node earned rewards,
-	// but they can't claim the interval anyway so it's accurate to say they aren't in the file
-	info.ClaimerExists = exists
 
-	if exists {
+	// Create a node binding
+	node, err := node.NewNode(rp, nodeAddress)
+	if err != nil {
+		err = fmt.Errorf("error creating node binding for %s: %w", nodeAddress.Hex(), err)
+		return
+	}
+
+	// Check if the node has an RPL withdrawal address set
+	err = rp.Query(nil, nil,
+		node.IsRplWithdrawalAddressSet,
+	)
+	if err != nil {
+		err = fmt.Errorf("error checking if node %s has an RPL withdrawal address set: %w", nodeAddress.Hex(), err)
+		return
+	}
+
+	// Assert the node doesn't actually have an entry in the file, even if it does, when it has an RPL withdrawal address set
+	// because it won't be able to claim rewards for that interval
+	info.ClaimerExists = exists && !node.IsRplWithdrawalAddressSet.Get()
+
+	if info.ClaimerExists {
 		info.CollateralRplAmount = rewards.GetCollateralRpl()
 		info.ODaoRplAmount = rewards.GetOracleDaoRpl()
 		info.SmoothingPoolEthAmount = rewards.GetSmoothingPoolEth()

@@ -348,7 +348,7 @@ func (r *treeGeneratorImpl_v10) calculateRplRewards() error {
 
 			// If there are pending rewards, add it to the map
 			claimer := nodeDetails.NodeAddress
-			if nodeDetails.IsRplWithdrawalAddressSet {
+			if nodeDetails.IsRplWithdrawalAddressSet && nodeDetails.PrimaryWithdrawalAddress != nodeDetails.NodeAddress {
 				// Add it to the RPL withdrawal address if set
 				claimer = nodeDetails.RplWithdrawalAddress
 			}
@@ -450,7 +450,7 @@ func (r *treeGeneratorImpl_v10) calculateRplRewards() error {
 
 		claimer := address
 		node := r.networkState.NodeDetailsByAddress[address]
-		if node.IsRplWithdrawalAddressSet {
+		if node.IsRplWithdrawalAddressSet && node.PrimaryWithdrawalAddress != node.NodeAddress {
 			// Add it to the RPL withdrawal address if set
 			claimer = node.RplWithdrawalAddress
 		}
@@ -610,7 +610,7 @@ func (r *treeGeneratorImpl_v10) calculateEthRewards(context context.Context, che
 		if nodeInfo.IsEligible && nodeInfo.SmoothingPoolEth.Cmp(common.Big0) > 0 {
 			claimer := nodeInfo.Address
 			node := r.networkState.NodeDetailsByAddress[nodeInfo.Address]
-			if node.IsRplWithdrawalAddressSet {
+			if node.IsRplWithdrawalAddressSet && node.PrimaryWithdrawalAddress != node.NodeAddress {
 				// Add the ETH to the primary withdrawal address if the RPL withdrawal address is set
 				claimer = node.PrimaryWithdrawalAddress
 			}
