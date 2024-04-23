@@ -1,5 +1,28 @@
 # Changelog
 
+## [v1.13.0](https://github.com/rocket-pool/smartnode/tree/v1.13.0) (2024-04-23)
+
+### Changed
+- Update Geth version
+- Update Besu version
+- Update Lodestar version
+- Update Reth version
+- Updated Go to v1.21 (https://github.com/rocket-pool/smartnode/pull/476)
+
+### Added 
+- Implementation of an On-Chain pDAO. RPIP-33
+- Stake ETH on behalf of node. RPIP-32
+- RPL Withdrawal Address. RPIP-31
+- Time-based Balance and RPL Price Submissions. RPIP-35
+- Added a linter CI action to GitHub (https://github.com/rocket-pool/smartnode/pull/490)
+- Added a Changelog (https://github.com/rocket-pool/smartnode/pull/504)
+
+### Fixed
+- v8-rolling records to have the same behavior as v8 rewards (https://github.com/rocket-pool/smartnode/pull/474)
+- Allow scrubbed/dissolved minipools with refunds to be closed (https://github.com/rocket-pool/smartnode/pull/487)
+
+[Full Changelog](https://github.com/rocket-pool/smartnode/compare/v1.12.1...v1.13.0)
+
 ## [v1.12.1](https://github.com/rocket-pool/smartnode/tree/v1.12.1) (2024-04-02)
 
 ### Fixed
