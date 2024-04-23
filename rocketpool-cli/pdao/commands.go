@@ -42,6 +42,19 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "voting-power",
+				Aliases:   []string{"vp"},
+				Usage:     "Shows the voting power of your node at the latest block",
+				UsageText: "rocketpool pdao get-vote-power",
+				Action: func(c *cli.Context) error {
+
+					// Run
+					return getVotePower(c)
+
+				},
+			},
+
+			{
 				Name:      "rewards-percentages",
 				Aliases:   []string{"rp"},
 				Usage:     "View the RPL rewards allocation percentages for node operators, the Oracle DAO, and the Protocol DAO",
