@@ -308,7 +308,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	}
 
 	// Get alerts from Alertmanager
-	alerts, err := alerting.FetchAlerts(c.cfg)
+	alerts, err := alerting.NewAlertFetcher(c.cfg).FetchAlerts()
 	if err != nil {
 		// no reason to make `rocketpool node status` fail if we can't get alerts
 		// (this is more likely to happen in native mode than docker where

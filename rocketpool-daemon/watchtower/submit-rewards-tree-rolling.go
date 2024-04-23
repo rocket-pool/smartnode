@@ -410,8 +410,7 @@ func (t *SubmitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint6
 
 		var hasSubmitted bool
 		err = t.rp.Query(func(mc *batch.MultiCaller) error {
-			t.rewardsPool.GetTrustedNodeSubmittedSpecificRewards(mc, &hasSubmitted, nodeAddress, submission)
-			return nil
+			return t.rewardsPool.GetTrustedNodeSubmittedSpecificRewards(mc, &hasSubmitted, nodeAddress, submission)
 		}, nil)
 		if err != nil {
 			t.logger.Warn("Could not check if node has previously submitted rewards file; regenerating file...\n", slog.String(keys.FileKey, rewardsTreePath), log.Err(err))

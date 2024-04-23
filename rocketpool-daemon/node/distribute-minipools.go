@@ -29,6 +29,7 @@ import (
 type DistributeMinipools struct {
 	sp                  *services.ServiceProvider
 	logger              *slog.Logger
+	alerter             *alerting.Alerter
 	cfg                 *config.SmartNodeConfig
 	w                   *wallet.Wallet
 	rp                  *rocketpool.RocketPool
@@ -67,6 +68,7 @@ func NewDistributeMinipools(sp *services.ServiceProvider, logger *log.Logger) *D
 	return &DistributeMinipools{
 		sp:                  sp,
 		logger:              log,
+		alerter:             alerting.NewAlerter(cfg, logger),
 		cfg:                 cfg,
 		w:                   sp.GetWallet(),
 		rp:                  sp.GetRocketPool(),
@@ -218,7 +220,7 @@ func (t *DistributeMinipools) distributeMinipools(submissions []*eth.Transaction
 	callbacks := make([]func(err error), len(minipools))
 	for i, mp := range minipools {
 		callbacks[i] = func(err error) {
-			alerting.AlertMinipoolBalanceDistributed(t.cfg, mp.MinipoolAddress, err == nil)
+			t.alerter.AlertMinipoolBalanceDistributed(mp.MinipoolAddress, err == nil)
 		}
 	}
 

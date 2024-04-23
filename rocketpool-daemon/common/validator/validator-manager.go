@@ -117,7 +117,10 @@ func (m *ValidatorManager) GetNextValidatorKey(save bool) (*eth2types.BLSPrivate
 
 		// Increment the next account
 		m.nextAccount++
-		saveNextAccount(m.nextAccount, m.cfg.GetNextAccountFilePath())
+		err = saveNextAccount(m.nextAccount, m.cfg.GetNextAccountFilePath())
+		if err != nil {
+			return nil, 0, err
+		}
 	}
 
 	// Return validator key
@@ -161,7 +164,10 @@ func (m *ValidatorManager) SaveValidatorKey(key ValidatorKey) error {
 	if err != nil {
 		return fmt.Errorf("could not store validator %s key: %w", key.PublicKey.HexWithPrefix(), err)
 	}
-	saveNextAccount(m.nextAccount, m.cfg.GetNextAccountFilePath())
+	err = saveNextAccount(m.nextAccount, m.cfg.GetNextAccountFilePath())
+	if err != nil {
+		return fmt.Errorf("could not store next validator account index: %w", err)
+	}
 
 	// Return
 	return nil
@@ -204,7 +210,10 @@ func (m *ValidatorManager) RecoverValidatorKey(pubkey beacon.ValidatorPubkey, st
 	if err != nil {
 		return 0, fmt.Errorf("error storing validator %s key: %w", pubkey.HexWithPrefix(), err)
 	}
-	saveNextAccount(m.nextAccount, m.cfg.GetNextAccountFilePath())
+	err = saveNextAccount(m.nextAccount, m.cfg.GetNextAccountFilePath())
+	if err != nil {
+		return 0, fmt.Errorf("error storing next validator account index: %w", err)
+	}
 
 	// Return
 	return index + startIndex, nil

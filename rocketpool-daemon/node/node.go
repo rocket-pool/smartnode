@@ -2,6 +2,7 @@ package node
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -52,6 +53,7 @@ const (
 type TaskLoop struct {
 	// Services
 	logger            *log.Logger
+	alerter           *alerting.Alerter
 	ctx               context.Context
 	sp                *services.ServiceProvider
 	wg                *sync.WaitGroup
@@ -92,6 +94,7 @@ func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
 	t := &TaskLoop{
 		sp:                          sp,
 		logger:                      logger,
+		alerter:                     alerting.NewAlerter(sp.GetConfig(), logger),
 		ctx:                         ctx,
 		wg:                          wg,
 		cfg:                         sp.GetConfig(),
@@ -171,13 +174,18 @@ func (t *TaskLoop) Run() error {
 }
 
 // Stop the daemon
-func (t *TaskLoop) Stop() {
+func (t *TaskLoop) Stop() error {
 	if t.metricsServer != nil {
 		// Shut down the metrics server
 		ctx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)
 		defer cancel()
-		t.metricsServer.Shutdown(ctx)
+		err := t.metricsServer.Shutdown(ctx)
+		if !errors.Is(err, http.ErrServerClosed) {
+			return fmt.Errorf("Error stopping metrics server: %w", err)
+		}
 	}
+
+	return nil
 }
 
 // Wait until the chains and other resources are ready to be queried
@@ -198,7 +206,7 @@ func (t *TaskLoop) waitUntilReady() waitUntilReadyResult {
 	if !t.wasExecutionClientSynced {
 		t.logger.Info("Execution Client is now synced.")
 		t.wasExecutionClientSynced = true
-		alerting.AlertExecutionClientSyncComplete(t.cfg)
+		t.alerter.AlertExecutionClientSyncComplete()
 	}
 
 	// Check the BC status
@@ -217,7 +225,7 @@ func (t *TaskLoop) waitUntilReady() waitUntilReadyResult {
 	if !t.wasBeaconClientSynced {
 		t.logger.Info("Beacon Node is now synced.")
 		t.wasBeaconClientSynced = true
-		alerting.AlertBeaconClientSyncComplete(t.cfg)
+		t.alerter.AlertBeaconClientSyncComplete()
 	}
 
 	// Load contracts
@@ -317,7 +325,12 @@ func (t *TaskLoop) runTasks() bool {
 
 	// Run watchtower duties in parallel
 	var watchtowerWg errgroup.Group
-	defer watchtowerWg.Wait()
+	defer func() {
+		err := watchtowerWg.Wait()
+		if err != nil {
+			t.logger.Error("Error processing watchtower duties", log.Err(err))
+		}
+	}()
 	watchtowerWg.Go(func() error {
 		return t.watchtowerTaskMgr.Run(isOnOdao, state)
 	})

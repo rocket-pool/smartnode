@@ -33,6 +33,7 @@ import (
 type StakePrelaunchMinipools struct {
 	sp             *services.ServiceProvider
 	logger         *slog.Logger
+	alerter        *alerting.Alerter
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	vMgr           *validator.ValidatorManager
@@ -53,6 +54,7 @@ func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger *log.Logger
 	return &StakePrelaunchMinipools{
 		sp:             sp,
 		logger:         log,
+		alerter:        alerting.NewAlerter(cfg, logger),
 		cfg:            sp.GetConfig(),
 		w:              sp.GetWallet(),
 		vMgr:           sp.GetValidatorManager(),
@@ -248,7 +250,7 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 			isDue, timeUntilDue := tx.IsTransactionDue(prelaunchTime, minipoolLaunchTimeout)
 			if !isDue {
 				t.logger.Info(fmt.Sprintf("Time until staking minipool %s will be forced for safety: %s", mpd.MinipoolAddress.Hex(), timeUntilDue))
-				alerting.AlertMinipoolStaked(t.cfg, mpd.MinipoolAddress, false)
+				t.alerter.AlertMinipoolStaked(mpd.MinipoolAddress, false)
 				continue
 			}
 			t.logger.Warn("NOTICE: Minipool has exceeded half of the timeout period, so it will be force-staked at the current gas price.", slog.String(keys.MinipoolKey, mpd.MinipoolAddress.Hex()))
@@ -267,7 +269,7 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 	callbacks := make([]func(err error), len(minipools))
 	for i, mp := range minipools {
 		callbacks[i] = func(err error) {
-			alerting.AlertMinipoolStaked(t.cfg, mp.MinipoolAddress, err == nil)
+			t.alerter.AlertMinipoolStaked(mp.MinipoolAddress, err == nil)
 		}
 	}
 

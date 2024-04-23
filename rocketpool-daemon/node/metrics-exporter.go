@@ -71,7 +71,7 @@ func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger 
 	metricsPath := "/metrics"
 	http.Handle(metricsPath, handler)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
+		_, err := w.Write([]byte(`<html>
             <head><title>Rocket Pool Metrics Exporter</title></head>
             <body>
             <h1>Rocket Pool Metrics Exporter</h1>
@@ -79,6 +79,10 @@ func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger 
             </body>
             </html>`,
 		))
+
+		if err != nil {
+			logger.Warn("Error replying to http request in metrics exporter", log.Err(err))
+		}
 	})
 
 	// Run the server

@@ -77,4 +77,5 @@ const (
 	SubmittedKey              string = "submitted"
 	NextKey                   string = "next"
 	TimeKey                   string = "time"
+	ModuleKey                 string = "module"
 )
