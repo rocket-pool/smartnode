@@ -1019,6 +1019,18 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "get-voting-power",
+				Usage:     "get your node's voting power at the latest block",
+				UsageText: "rocketpool api pdao get-voting-power",
+				Action: func(c *cli.Context) error {
+
+					// Run
+					api.PrintResponse(getVotePower(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

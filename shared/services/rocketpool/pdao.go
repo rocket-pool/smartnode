@@ -686,3 +686,19 @@ func (c *Client) InitializeVoting() (api.PDAOInitializeVotingResponse, error) {
 	}
 	return response, nil
 }
+
+// GetVotingPower returns the node's voting power at the latest block
+func (c *Client) GetVotingPower() (api.GetPDAOVotePowerResponse, error) {
+	responseBytes, err := c.callAPI("pdao get-voting-power")
+	if err != nil {
+		return api.GetPDAOVotePowerResponse{}, fmt.Errorf("could not call get-voting-power: %w", err)
+	}
+	var response api.GetPDAOVotePowerResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetPDAOVotePowerResponse{}, fmt.Errorf("could not decode get-voting-power: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetPDAOVotePowerResponse{}, fmt.Errorf("error after requesting get-voting-power: %s", response.Error)
+	}
+	return response, nil
+}
