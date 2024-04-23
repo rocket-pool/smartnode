@@ -5,6 +5,7 @@ import (
 
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
@@ -34,6 +35,6 @@ func getVotePower(c *cli.Context) error {
 
 	// Print Results
 	fmt.Println("== Node Voting Power ==")
-	fmt.Printf("Your current voting power: %d\n", response.VotingPower)
+	fmt.Printf("Your current voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
 	return nil
 }
