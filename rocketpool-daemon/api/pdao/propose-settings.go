@@ -96,12 +96,14 @@ func (c *protocolDaoProposeSettingContext) GetState(mc *batch.MultiCaller) {
 		c.pdaoMgr.Settings.Proposals.ProposalBond,
 		c.node.RplLocked,
 		c.node.RplStake,
+		c.node.IsRplLockingAllowed,
 	)
 }
 
 func (c *protocolDaoProposeSettingContext) PrepareData(data *api.ProtocolDaoProposeSettingData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
+	data.IsRplLockingDisallowed = !c.node.IsRplLockingAllowed.Get()
 	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()
 	unlockedRpl := big.NewInt(0).Sub(data.StakedRpl, data.LockedRpl)
 	data.InsufficientRpl = (unlockedRpl.Cmp(data.ProposalBond) < 0)
@@ -112,7 +114,7 @@ func (c *protocolDaoProposeSettingContext) PrepareData(data *api.ProtocolDaoProp
 	if !exists {
 		data.UnknownSetting = true
 	}
-	data.CanPropose = !(data.InsufficientRpl || data.UnknownSetting)
+	data.CanPropose = !(data.InsufficientRpl || data.UnknownSetting || data.IsRplLockingDisallowed)
 
 	// Get the tx
 	if data.CanPropose && opts != nil {

@@ -9,7 +9,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/docker/docker v26.0.0+incompatible
 	github.com/dustin/go-humanize v1.0.1
-	github.com/ethereum/go-ethereum v1.13.14
+	github.com/ethereum/go-ethereum v1.14.0
 	github.com/fatih/color v1.16.0
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/go-openapi/errors v0.22.0
@@ -28,8 +28,8 @@ require (
 	github.com/prometheus/client_golang v1.19.0
 	github.com/prysmaticlabs/prysm/v5 v5.0.3
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854 // DO NOT UPGRADE
-	github.com/rocket-pool/node-manager-core v0.2.1-0.20240421193204-a16d03d086e8
-	github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240421193935-e15a3e374153
+	github.com/rocket-pool/node-manager-core v0.2.1-0.20240424170646-136fb9278b57
+	github.com/rocket-pool/rocketpool-go/v2 v2.0.0-20240421200135-5ec635bb7db3
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/tyler-smith/go-bip39 v1.1.0
 	github.com/wealdtech/go-ens/v3 v3.6.0
@@ -37,8 +37,8 @@ require (
 	github.com/wealdtech/go-eth2-util v1.8.2
 	github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4 v1.4.1
 	github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a
-	golang.org/x/sync v0.6.0
-	golang.org/x/term v0.18.0
+	golang.org/x/sync v0.7.0
+	golang.org/x/term v0.19.0
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -58,7 +58,7 @@ require (
 	github.com/consensys/gnark-crypto v0.12.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/crackcomm/go-gitignore v0.0.0-20231225121904-e25f5bc08668 // indirect
-	github.com/crate-crypto/go-kzg-4844 v0.7.0 // indirect
+	github.com/crate-crypto/go-kzg-4844 v1.0.0 // indirect
 	github.com/deckarep/golang-set/v2 v2.6.0 // indirect
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.2.0 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
@@ -156,13 +156,12 @@ require (
 	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
-	golang.org/x/mod v0.16.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
-	golang.org/x/sys v0.18.0 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/net v0.24.0 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 	golang.org/x/text v0.14.0
-	golang.org/x/tools v0.19.0 // indirect
+	golang.org/x/tools v0.20.0 // indirect
 	google.golang.org/api v0.171.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240325203815-454cdb8f5daa // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240325203815-454cdb8f5daa // indirect

@@ -53,6 +53,9 @@ func getTypedFormItem(param config.IParameter, descriptionBox *tview.TextView) *
 	if intParam, ok := param.(*config.Parameter[int]); ok {
 		return createParameterizedIntField(intParam)
 	}
+	if int64Param, ok := param.(*config.Parameter[int64]); ok {
+		return createParameterizedInt64Field(int64Param)
+	}
 	if uintParam, ok := param.(*config.Parameter[uint64]); ok {
 		return createParameterizedUintField(uintParam)
 	}
@@ -108,6 +111,41 @@ func createParameterizedIntField(param *config.Parameter[int]) *parameterizedFor
 				item.SetText("")
 			} else {
 				param.Value = int(value)
+			}
+		}
+	})
+	item.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
+		switch event.Key() {
+		case tcell.KeyDown, tcell.KeyTab:
+			return tcell.NewEventKey(tcell.KeyTab, 0, 0)
+		case tcell.KeyUp, tcell.KeyBacktab:
+			return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
+		default:
+			return event
+		}
+	})
+
+	return &parameterizedFormItem{
+		parameter: param,
+		item:      item,
+	}
+}
+
+// Create a standard int64 field
+func createParameterizedInt64Field(param *config.Parameter[int64]) *parameterizedFormItem {
+	item := tview.NewInputField().
+		SetLabel(param.Name).
+		SetAcceptanceFunc(tview.InputFieldInteger)
+	item.SetDoneFunc(func(key tcell.Key) {
+		if key == tcell.KeyEscape {
+			item.SetText("")
+		} else {
+			value, err := strconv.ParseInt(item.GetText(), 0, 0)
+			if err != nil {
+				// TODO: show error modal?
+				item.SetText("")
+			} else {
+				param.Value = value
 			}
 		}
 	})

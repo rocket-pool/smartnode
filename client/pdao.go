@@ -212,3 +212,8 @@ func (r *PDaoRequester) SetVotingDelegate(delegate common.Address) (*types.ApiRe
 func (r *PDaoRequester) GetCurrentVotingDelegate() (*types.ApiResponse[api.ProtocolDaoCurrentVotingDelegateData], error) {
 	return client.SendGetRequest[api.ProtocolDaoCurrentVotingDelegateData](r, "voting-delegate", "GetCurrentVotingDelegate", nil)
 }
+
+// Get the node's voting power as of the chain head
+func (r *PDaoRequester) GetVotingPower() (*types.ApiResponse[api.ProtocolDaoGetVotingPowerData], error) {
+	return client.SendGetRequest[api.ProtocolDaoGetVotingPowerData](r, "get-voting-power", "GetVotingPower", nil)
+}

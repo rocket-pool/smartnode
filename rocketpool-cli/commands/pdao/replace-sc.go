@@ -109,6 +109,9 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 		if response.Data.OldMemberDoesNotExist {
 			fmt.Println("The existing address is not a member of the security council.")
 		}
+		if response.Data.IsRplLockingDisallowed {
+			fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
+		}
 		return nil
 	}
 

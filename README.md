@@ -108,6 +108,7 @@ The following commands are available via the Smartnode client:
   - `rocketpool odao leave, l` - Leave the oracle DAO (requires an executed leave proposal)
 - **pdao**, p - Manage the Rocket Pool Protocol DAO
   - `rocketpool pdao settings, s` - Show all of the current Protocol DAO settings and values
+  - `rocketpool pdao voting-power, vp` - Shows the voting power of your node at the latest block
   - `rocketpool pdao rewards-percentages, rp` - View the RPL rewards allocation percentages for node operators, the Oracle DAO, and the Protocol DAO
   - `rocketpool pdao claim-bonds, cb` - Unlock any bonded RPL you have for a proposal or set of challenges, and claim any bond rewards for defending or defeating the proposal
   - `rocketpool pdao propose, p` - Make a Protocol DAO proposal

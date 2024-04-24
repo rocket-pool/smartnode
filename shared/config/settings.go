@@ -4,8 +4,9 @@ import "time"
 
 const (
 	// Watchtower
-	WatchtowerMaxFeeDefault      uint64 = 200
-	WatchtowerPriorityFeeDefault uint64 = 3
+	WatchtowerMaxFeeDefault      uint64          = 200
+	WatchtowerPriorityFeeDefault uint64          = 3
+	PBSubmission_6AM             PBSubmissionRef = 1713420000
 
 	// Daemon
 	EventLogInterval               int    = 1000

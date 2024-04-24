@@ -68,6 +68,7 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	newSmartnodeConfig[ids.AutoTxGasThresholdID] = legacySmartnodeConfig["minipoolStakeGasThreshold"]
 	newSmartnodeConfig[ids.DistributeThresholdID] = legacySmartnodeConfig["distributeThreshold"]
 	newSmartnodeConfig[ids.RewardsTreeModeID] = legacySmartnodeConfig["rewardsTreeMode"]
+	newSmartnodeConfig[ids.PriceBalanceSubmissionReferenceTimestampID] = legacySmartnodeConfig["priceBalanceSubmissionReferenceTimestamp"]
 	newSmartnodeConfig[ids.RewardsTreeCustomUrlID] = legacySmartnodeConfig["rewardsTreeCustomUrl"]
 	newSmartnodeConfig[ids.WatchtowerMaxFeeOverrideID] = legacySmartnodeConfig["watchtowerMaxFeeOverride"]
 	newSmartnodeConfig[ids.WatchtowerPriorityFeeOverrideID] = legacySmartnodeConfig["watchtowerPrioFeeOverride"]

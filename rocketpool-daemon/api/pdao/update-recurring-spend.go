@@ -102,6 +102,7 @@ func (c *protocolDaoProposeRecurringSpendUpdateContext) GetState(mc *batch.Multi
 		c.pdaoMgr.Settings.Proposals.ProposalBond,
 		c.node.RplLocked,
 		c.node.RplStake,
+		c.node.IsRplLockingAllowed,
 	)
 	c.pdaoMgr.GetContractExists(mc, &c.contractExists, c.contractName)
 }
@@ -111,10 +112,11 @@ func (c *protocolDaoProposeRecurringSpendUpdateContext) PrepareData(data *api.Pr
 	data.DoesNotExist = !c.contractExists
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
+	data.IsRplLockingDisallowed = !c.node.IsRplLockingAllowed.Get()
 	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()
 	unlockedRpl := big.NewInt(0).Sub(data.StakedRpl, data.LockedRpl)
 	data.InsufficientRpl = (unlockedRpl.Cmp(data.ProposalBond) < 0)
-	data.CanPropose = !(data.InsufficientRpl || data.DoesNotExist)
+	data.CanPropose = !(data.InsufficientRpl || data.DoesNotExist || data.IsRplLockingDisallowed)
 
 	// Get the tx
 	if data.CanPropose && opts != nil {

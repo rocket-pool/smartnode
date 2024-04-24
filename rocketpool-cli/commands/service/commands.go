@@ -85,6 +85,12 @@ func createFlagsFromConfigParams(prefix string, section config.IConfigSection, c
 				Usage: fmt.Sprintf("%s\n\tType: uint16\n", description),
 				Value: uint(uint16Param.GetDefault(network)),
 			})
+		} else if int64Param, ok := param.(*config.Parameter[int64]); ok {
+			configFlags = append(configFlags, &cli.Int64Flag{
+				Name:  paramName,
+				Usage: fmt.Sprintf("%s\n\tType: int64\n", description),
+				Value: int64Param.GetDefault(network),
+			})
 		} else {
 			panic(fmt.Sprintf("param [%s] is not a supported type for form item binding", paramName))
 		}

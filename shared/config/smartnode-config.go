@@ -28,25 +28,26 @@ const (
 // The master configuration struct
 type SmartNodeConfig struct {
 	// Smart Node settings
-	Network                       config.Parameter[config.Network]
-	ClientMode                    config.Parameter[config.ClientMode]
-	ProjectName                   config.Parameter[string]
-	UserDataPath                  config.Parameter[string]
-	WatchtowerStatePath           config.Parameter[string]
-	AutoTxMaxFee                  config.Parameter[float64]
-	MaxPriorityFee                config.Parameter[float64]
-	AutoTxGasThreshold            config.Parameter[float64]
-	DistributeThreshold           config.Parameter[float64]
-	RewardsTreeMode               config.Parameter[RewardsMode]
-	RewardsTreeCustomUrl          config.Parameter[string]
-	ArchiveEcUrl                  config.Parameter[string]
-	WatchtowerMaxFeeOverride      config.Parameter[float64]
-	WatchtowerPriorityFeeOverride config.Parameter[float64]
-	UseRollingRecords             config.Parameter[bool]
-	RecordCheckpointInterval      config.Parameter[uint64]
-	CheckpointRetentionLimit      config.Parameter[uint64]
-	RecordsPath                   config.Parameter[string]
-	VerifyProposals               config.Parameter[bool]
+	Network                                  config.Parameter[config.Network]
+	ClientMode                               config.Parameter[config.ClientMode]
+	ProjectName                              config.Parameter[string]
+	UserDataPath                             config.Parameter[string]
+	WatchtowerStatePath                      config.Parameter[string]
+	AutoTxMaxFee                             config.Parameter[float64]
+	MaxPriorityFee                           config.Parameter[float64]
+	AutoTxGasThreshold                       config.Parameter[float64]
+	DistributeThreshold                      config.Parameter[float64]
+	RewardsTreeMode                          config.Parameter[RewardsMode]
+	RewardsTreeCustomUrl                     config.Parameter[string]
+	PriceBalanceSubmissionReferenceTimestamp config.Parameter[int64]
+	ArchiveEcUrl                             config.Parameter[string]
+	WatchtowerMaxFeeOverride                 config.Parameter[float64]
+	WatchtowerPriorityFeeOverride            config.Parameter[float64]
+	UseRollingRecords                        config.Parameter[bool]
+	RecordCheckpointInterval                 config.Parameter[uint64]
+	CheckpointRetentionLimit                 config.Parameter[uint64]
+	RecordsPath                              config.Parameter[string]
+	VerifyProposals                          config.Parameter[bool]
 
 	// Logging
 	Logging *config.LoggerConfig
@@ -291,6 +292,20 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 			},
 		},
 
+		PriceBalanceSubmissionReferenceTimestamp: config.Parameter[int64]{
+			ParameterCommon: &config.ParameterCommon{
+				ID:                 ids.PriceBalanceSubmissionReferenceTimestampID,
+				Name:               "P/B Submission Time Ref",
+				Description:        "Prices and balances submission time reference. An Unix timestamp used by oDAO members as an initial reference to calculate when submissions are due based on the onchain stored submission interval value.",
+				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon},
+				CanBeBlank:         false,
+				OverwriteOnUpgrade: true,
+			},
+			Default: map[config.Network]int64{
+				config.Network_All: int64(PBSubmission_6AM),
+			},
+		},
+
 		RewardsTreeCustomUrl: config.Parameter[string]{
 			ParameterCommon: &config.ParameterCommon{
 				ID:                 ids.RewardsTreeCustomUrlID,
@@ -456,6 +471,7 @@ func (cfg *SmartNodeConfig) GetParameters() []config.IParameter {
 		&cfg.AutoTxGasThreshold,
 		&cfg.DistributeThreshold,
 		&cfg.RewardsTreeMode,
+		&cfg.PriceBalanceSubmissionReferenceTimestamp,
 		&cfg.RewardsTreeCustomUrl,
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPriorityFeeOverride,

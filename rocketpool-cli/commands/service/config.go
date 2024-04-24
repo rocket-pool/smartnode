@@ -198,6 +198,8 @@ func updateConfigParamsFromCliArgs(c *cli.Context, prefix string, section nmc_co
 			uintParam.Value = c.Uint64(paramName)
 		} else if uint16Param, ok := param.(*nmc_config.Parameter[uint16]); ok {
 			uint16Param.Value = uint16(c.Uint(paramName))
+		} else if int64Param, ok := param.(*nmc_config.Parameter[int64]); ok {
+			int64Param.Value = c.Int64(paramName)
 		} else {
 			panic(fmt.Sprintf("param [%s] is not a supported type for form item binding", paramName))
 		}

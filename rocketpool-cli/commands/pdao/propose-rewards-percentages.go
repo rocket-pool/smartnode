@@ -89,6 +89,9 @@ func proposeRewardsPercentages(c *cli.Context) error {
 		if response.Data.InsufficientRpl {
 			fmt.Printf("You do not have enough unlocked RPL (proposals require locking %.6f RPL, but you only have %.6f RPL staked and unlocked).", eth.WeiToEth(response.Data.ProposalBond), eth.WeiToEth(big.NewInt(0).Sub(response.Data.StakedRpl, response.Data.LockedRpl)))
 		}
+		if response.Data.IsRplLockingDisallowed {
+			fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
+		}
 		return nil
 	}
 

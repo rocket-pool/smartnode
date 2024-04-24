@@ -68,6 +68,9 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 			if response.Data.MemberDoesNotExist {
 				fmt.Println("The selected member does not exist.")
 			}
+			if response.Data.IsRplLockingDisallowed {
+				fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
+			}
 			return nil
 		}
 
