@@ -29,23 +29,25 @@ const (
 
 // Manage fee recipient task
 type ManageFeeRecipient struct {
-	ctx    context.Context
-	sp     *services.ServiceProvider
-	cfg    *config.SmartNodeConfig
-	logger *slog.Logger
-	bc     beacon.IBeaconClient
-	d      *client.Client
+	ctx     context.Context
+	sp      *services.ServiceProvider
+	cfg     *config.SmartNodeConfig
+	logger  *slog.Logger
+	alerter *alerting.Alerter
+	bc      beacon.IBeaconClient
+	d       *client.Client
 }
 
 // Create manage fee recipient task
 func NewManageFeeRecipient(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *ManageFeeRecipient {
 	return &ManageFeeRecipient{
-		ctx:    ctx,
-		sp:     sp,
-		logger: logger.With(slog.String(keys.TaskKey, "Fee Recipient Check")),
-		cfg:    sp.GetConfig(),
-		bc:     sp.GetBeaconClient(),
-		d:      sp.GetDocker(),
+		ctx:     ctx,
+		sp:      sp,
+		logger:  logger.With(slog.String(keys.TaskKey, "Fee Recipient Check")),
+		alerter: alerting.NewAlerter(sp.GetConfig(), logger),
+		cfg:     sp.GetConfig(),
+		bc:      sp.GetBeaconClient(),
+		d:       sp.GetDocker(),
 	}
 }
 
@@ -86,7 +88,7 @@ func (t *ManageFeeRecipient) Run(state *state.NetworkState) error {
 
 	// Regenerate the fee recipient files
 	err = t.updateFeeRecipientFile(correctFeeRecipient)
-	alerting.AlertFeeRecipientChanged(t.cfg, correctFeeRecipient, err == nil)
+	t.alerter.AlertFeeRecipientChanged(correctFeeRecipient, err == nil)
 	if err != nil {
 		t.logger.Error("***ERROR*** Error updating fee recipient files", log.Err(err))
 		t.logger.Warn("Shutting down the validator client for safety to prevent you from being penalized...")

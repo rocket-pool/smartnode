@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -40,8 +41,12 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	if isUpdate && !ignoreConfigSuggestion {
 		if c.Bool("yes") || utils.Confirm("Smart Node upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
 			cfg.UpdateDefaults()
-			rp.SaveConfig(cfg)
-			fmt.Printf("%sUpdated settings successfully.%s\n", terminal.ColorGreen, terminal.ColorReset)
+			err := rp.SaveConfig(cfg)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "%sError saving settings: %s%s\n", terminal.ColorRed, err.Error(), terminal.ColorReset)
+			} else {
+				fmt.Printf("%sUpdated settings successfully.%s\n", terminal.ColorGreen, terminal.ColorReset)
+			}
 		} else {
 			fmt.Println("Cancelled.")
 			return nil

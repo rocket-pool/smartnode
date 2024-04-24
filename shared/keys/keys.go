@@ -78,4 +78,5 @@ const (
 	NextKey                   string = "next"
 	TimeKey                   string = "time"
 	RequiredEpochKey          string = "requiredEpoch"
+	ModuleKey                 string = "module"
 )

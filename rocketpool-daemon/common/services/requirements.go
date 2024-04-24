@@ -472,6 +472,9 @@ func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool
 		panic("context didn't have a logger!")
 	}
 
+	// Make an alerter
+	alerter := alerting.NewAlerter(sp.GetConfig(), logger)
+
 	// Wait for sync
 	for {
 		// Check timeout
@@ -488,7 +491,7 @@ func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool
 				return false, err
 			}
 			if synced {
-				alerting.AlertExecutionClientSyncComplete(sp.GetConfig())
+				alerter.AlertExecutionClientSyncComplete()
 				return true, nil
 			}
 		}
@@ -518,7 +521,7 @@ func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool
 			}
 			// Only return true if the last reportedly known block is within our defined threshold
 			if isUpToDate {
-				alerting.AlertExecutionClientSyncComplete(sp.GetConfig())
+				alerter.AlertExecutionClientSyncComplete()
 				return true, nil
 			}
 		}
@@ -556,6 +559,9 @@ func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose b
 		panic("context didn't have a logger!")
 	}
 
+	// Make an alerter
+	alerter := alerting.NewAlerter(sp.GetConfig(), logger)
+
 	// Wait for sync
 	for {
 		// Check timeout
@@ -572,7 +578,7 @@ func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose b
 				return false, err
 			}
 			if synced {
-				alerting.AlertBeaconClientSyncComplete(sp.GetConfig())
+				alerter.AlertBeaconClientSyncComplete()
 				return true, nil
 			}
 		}
@@ -589,7 +595,7 @@ func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose b
 				logger.Info("Beacon Node syncing...", slog.Float64(SyncProgressKey, syncStatus.Progress*100))
 			}
 		} else {
-			alerting.AlertBeaconClientSyncComplete(sp.GetConfig())
+			alerter.AlertBeaconClientSyncComplete()
 			return true, nil
 		}
 

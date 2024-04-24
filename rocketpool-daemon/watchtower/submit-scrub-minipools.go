@@ -247,7 +247,7 @@ func (t *SubmitScrubMinipools) initializeMinipoolDetails(minipools []rpstate.Nat
 }
 
 // Step 1: Verify the Beacon Chain credentials for a minipool if they're present
-func (t *SubmitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.NetworkState) error {
+func (t *SubmitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.NetworkState) {
 	minipoolsToScrub := []minipool.IMinipool{}
 
 	// Get the withdrawal credentials on Beacon for each validator if they exist
@@ -281,8 +281,6 @@ func (t *SubmitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.Ne
 			t.logger.Error("ALERT: Couldn't scrub minipool", slog.String(keys.MinipoolKey, minipool.Common().Address.Hex()), log.Err(err))
 		}
 	}
-
-	return nil
 }
 
 // Get various elements needed to do eth1 prestake and deposit contract searches

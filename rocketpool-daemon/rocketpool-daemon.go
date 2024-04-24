@@ -108,7 +108,10 @@ func main() {
 			fmt.Println("Shutting down node and watchtower...")
 			sp.CancelContextOnShutdown()
 			serverMgr.Stop()
-			nodeLoop.Stop()
+			err := nodeLoop.Stop()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Error shutting down node: %s\n", err.Error())
+			}
 		}()
 
 		// Run the daemon until closed

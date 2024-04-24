@@ -37,6 +37,7 @@ const (
 type ReduceBonds struct {
 	sp             *services.ServiceProvider
 	logger         *slog.Logger
+	alerter        *alerting.Alerter
 	cfg            *config.SmartNodeConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
@@ -60,6 +61,7 @@ func NewReduceBonds(sp *services.ServiceProvider, logger *log.Logger) *ReduceBon
 	return &ReduceBonds{
 		sp:             sp,
 		logger:         log,
+		alerter:        alerting.NewAlerter(cfg, logger),
 		cfg:            cfg,
 		w:              sp.GetWallet(),
 		rp:             sp.GetRocketPool(),
@@ -364,7 +366,7 @@ func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, mini
 	callbacks := make([]func(err error), len(minipools))
 	for i, mp := range minipools {
 		callbacks[i] = func(err error) {
-			alerting.AlertMinipoolBondReduced(t.cfg, mp.Address, err == nil)
+			t.alerter.AlertMinipoolBondReduced(mp.Address, err == nil)
 		}
 	}
 

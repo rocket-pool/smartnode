@@ -131,8 +131,13 @@ func configureService(c *cli.Context) error {
 				suffix := config.GetContainerName(container)
 				name := cfg.GetDockerArtifactName(suffix)
 				fmt.Printf("Stopping %s... ", name)
-				rp.StopContainer(name)
-				fmt.Print("done!\n")
+				err := rp.StopContainer(name)
+				if err != nil {
+					fmt.Println("error!")
+					fmt.Fprintf(os.Stderr, "Error stopping container %s: %s\n", name, err.Error())
+					continue
+				}
+				fmt.Println("done!")
 			}
 
 			fmt.Println()
