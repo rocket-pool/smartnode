@@ -20,6 +20,7 @@
 ### Fixed
 - v8-rolling records to have the same behavior as v8 rewards (https://github.com/rocket-pool/smartnode/pull/474)
 - Allow scrubbed/dissolved minipools with refunds to be closed (https://github.com/rocket-pool/smartnode/pull/487)
+- Fix invalid Smart Node Update available (https://github.com/rocket-pool/smartnode-install/pull/126)
 
 [Full Changelog](https://github.com/rocket-pool/smartnode/compare/v1.12.1...v1.13.0)
 
