@@ -100,6 +100,7 @@ func (c *protocolDaoProposeKickFromSecurityCouncilContext) GetState(mc *batch.Mu
 		c.pdaoMgr.Settings.Proposals.ProposalBond,
 		c.node.RplLocked,
 		c.node.RplStake,
+		c.node.IsRplLockingAllowed,
 	)
 }
 
@@ -108,10 +109,11 @@ func (c *protocolDaoProposeKickFromSecurityCouncilContext) PrepareData(data *api
 	data.MemberDoesNotExist = !c.member.Exists.Get()
 	data.StakedRpl = c.node.RplStake.Get()
 	data.LockedRpl = c.node.RplLocked.Get()
+	data.IsRplLockingDisallowed = !c.node.IsRplLockingAllowed.Get()
 	data.ProposalBond = c.pdaoMgr.Settings.Proposals.ProposalBond.Get()
 	unlockedRpl := big.NewInt(0).Sub(data.StakedRpl, data.LockedRpl)
 	data.InsufficientRpl = (unlockedRpl.Cmp(data.ProposalBond) < 0)
-	data.CanPropose = !(data.MemberDoesNotExist || data.InsufficientRpl)
+	data.CanPropose = !(data.MemberDoesNotExist || data.InsufficientRpl || data.IsRplLockingDisallowed)
 
 	// Get the tx
 	if data.CanPropose && opts != nil {

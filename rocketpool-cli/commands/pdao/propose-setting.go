@@ -51,6 +51,9 @@ func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocket
 		if response.Data.UnknownSetting {
 			fmt.Printf("Unknown setting '%s' on contract '%s'.\n", setting, contract)
 		}
+		if response.Data.IsRplLockingDisallowed {
+			fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
+		}
 		return nil
 	}
 
