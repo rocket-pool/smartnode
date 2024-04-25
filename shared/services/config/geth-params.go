@@ -33,6 +33,9 @@ type GethConfig struct {
 	// Max number of P2P peers to connect to
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
 
+	// Number of seconds EVM calls can run before timing out
+	EvmTimeout config.Parameter `yaml:"evmTimeout,omitempty"`
+
 	// The Docker Hub tag for Geth
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -79,6 +82,17 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		EvmTimeout: config.Parameter{
+			ID:                 "evmTimeout",
+			Name:               "EVM Timeout",
+			Description:        "The number of seconds an Execution Client API call is allowed to run before Geth times out and aborts it. Increase this if you see a lot of timeout errors in your logs.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: 5},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		ContainerTag: config.Parameter{
 			ID:          "containerTag",
 			Name:        "Container Tag",
@@ -120,6 +134,7 @@ func (cfg *GethConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.EnablePbss,
 		&cfg.MaxPeers,
+		&cfg.EvmTimeout,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,
 	}
