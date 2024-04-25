@@ -986,12 +986,6 @@ func pruneExecutionClient(c *cli.Context) error {
 			fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
 			return nil
 		}
-
-	case cfgtypes.ExecutionClient_Geth:
-		if cfg.Geth.EnablePbss.Value == true {
-			fmt.Println("You have PBSS enabled for Geth. Pruning is no longer required when using PBSS.")
-			return nil
-		}
 	}
 
 	if selectedEc == cfgtypes.ExecutionClient_Geth || selectedEc == cfgtypes.ExecutionClient_Besu {
