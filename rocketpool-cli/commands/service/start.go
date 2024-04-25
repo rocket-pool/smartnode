@@ -63,6 +63,10 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	// Update the Alertmanager configuration files even if metrics is disabled; as smartnode sends some alerts directly
+	if cfg.Alertmanager.EnableAlerting.Value {
 		err = rp.UpdateAlertmanagerConfiguration(cfg)
 		if err != nil {
 			return err
