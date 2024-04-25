@@ -87,7 +87,7 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 			Name:               "EVM Timeout",
 			Description:        "The number of seconds an Execution Client API call is allowed to run before Geth times out and aborts it. Increase this if you see a lot of timeout errors in your logs.",
 			Type:               config.ParameterType_Uint16,
-			Default:            map[config.Network]interface{}{config.Network_All: 5},
+			Default:            map[config.Network]interface{}{config.Network_All: uint16(5)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
