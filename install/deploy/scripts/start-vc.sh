@@ -89,7 +89,7 @@ if [ "$CLIENT" = "lodestar" ]; then
         --dataDir $VALIDATORS_DIR/lodestar \
         --beacon-nodes $BN_URL_STRING \
         $FALLBACK_BN_STRING \
-        --keystoresDir $VALIDATORS_DIR/lodestar$VALIDATORS_DIR \
+        --keystoresDir $VALIDATORS_DIR/lodestar/validators \
         --secretsDir $VALIDATORS_DIR/lodestar/secrets \
         --suggestedFeeRecipient $(cat $VALIDATORS_DIR/$FEE_RECIPIENT_FILE) \
         $VC_ADDITIONAL_FLAGS"
@@ -119,7 +119,7 @@ fi
 if [ "$CLIENT" = "nimbus" ]; then
 
     # Nimbus won't start unless the validator directories already exist
-    mkdir -p $VALIDATORS_DIR/nimbus$VALIDATORS_DIR
+    mkdir -p $VALIDATORS_DIR/nimbus/validators
     mkdir -p $VALIDATORS_DIR/nimbus/secrets
 
     # Set up the fallback arg
@@ -131,7 +131,7 @@ if [ "$CLIENT" = "nimbus" ]; then
         --non-interactive \
         --beacon-node=$BN_API_ENDPOINT $FALLBACK_BN_ARG \
         --data-dir=/ethclient/nimbus_vc \
-        --validators-dir=$VALIDATORS_DIR/nimbus$VALIDATORS_DIR \
+        --validators-dir=$VALIDATORS_DIR/nimbus/validators \
         --secrets-dir=$VALIDATORS_DIR/nimbus/secrets \
         --doppelganger-detection=$DOPPELGANGER_DETECTION \
         --suggested-fee-recipient=$(cat $VALIDATORS_DIR/$FEE_RECIPIENT_FILE) \
