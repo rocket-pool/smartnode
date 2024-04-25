@@ -76,7 +76,7 @@ fi
 if [ "$CLIENT" = "lodestar" ]; then
 
     # Remove any lock files that were left over accidentally after an unclean shutdown
-    find $VALIDATORS_DIR/lodestar$VALIDATORS_DIR -name voting-keystore.json.lock -delete
+    find $VALIDATORS_DIR/lodestar/validators -name voting-keystore.json.lock -delete
 
     # Set up the CC + fallback string
     BN_URL_STRING=$BN_API_ENDPOINT

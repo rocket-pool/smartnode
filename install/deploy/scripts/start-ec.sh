@@ -104,6 +104,10 @@ if [ "$CLIENT" = "geth" ]; then
             CMD="$CMD --maxpeers $EC_MAX_PEERS"
         fi
 
+        if [ ! -z "$RP_GETH_EVM_TIMEOUT" ]; then
+            CMD="$CMD --rpc.evmtimeout ${RP_GETH_EVM_TIMEOUT}s"
+        fi
+
         if [ "$ENABLE_METRICS" = "true" ]; then
             CMD="$CMD --metrics --metrics.addr 0.0.0.0 --metrics.port $EC_METRICS_PORT"
         fi
