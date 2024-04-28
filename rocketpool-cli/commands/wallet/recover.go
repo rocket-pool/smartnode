@@ -162,6 +162,7 @@ func recoverWallet(c *cli.Context) error {
 		for _, key := range response.Data.ValidatorKeys {
 			fmt.Println(key.HexWithPrefix())
 		}
+		fmt.Println()
 
 		if !utils.Confirm("Would you like to restart your Validator Client now so it can attest with the recovered keys?") {
 			fmt.Println("Please restart the Validator Client manually at your earliest convenience to load the keys.")

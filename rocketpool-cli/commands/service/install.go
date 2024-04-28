@@ -103,11 +103,14 @@ func printPatchNotes() {
 	fmt.Printf("%s=== Smart Node v%s ===%s\n\n", terminal.ColorGreen, shared.RocketPoolVersion, terminal.ColorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== New Notification Module ===%s\n", terminal.ColorGreen, terminal.ColorReset)
-	fmt.Println("The Smart Node alert notification functionality allows you to receive notifications about the health and important events of your Rocket Pool Smart Node. Check `https://docs.rocketpool.net/guides/node/maintenance/alerting` for more details.")
+	fmt.Printf("%s=== Welcome to the v2.0 Beta! ===%s\n", terminal.ColorGreen, terminal.ColorReset)
+	fmt.Println("Welcome to Smart Node v2! This is a completely redesigned Smart Node from the ground up, taking advantage of years of lessons learned and user feedback. The list of features and changes is far too long to list here, but here are some highlights:")
+	fmt.Println("- Support for installing and updating via Debian's `apt` package manager (other package managers coming soon!)")
+	fmt.Println("- Support for printing transaction data or signed transactions without submitting them to the network")
+	fmt.Println("- Passwordless mode: an opt-in feature that will no longer save your node wallet's password to disk")
+	fmt.Println("- Overhauled Smart Node service with an HTTP API, support for batching Ethereum queries and transactions together, a new logging system, and consolidation of the api / node / watchtower containers into one")
+	fmt.Println("- And much more!")
 	fmt.Println()
-
-	fmt.Printf("%s=== New Geth Mode: PBSS ===%s\n", terminal.ColorGreen, terminal.ColorReset)
-	fmt.Println("Geth has been updated to v1.13, which includes the much-anticipated Path-Based State Scheme (PBSS) storage mode. With PBSS, you never have to manually prune Geth again; it prunes automatically behind the scenes during runtime! To enable it, check the \"Enable PBSS\" box in the Execution Client section of the `rocketpool service config` UI. Note you **will have to resync** Geth after enabling this for it to take effect, and will lose attestations if you don't have a fallback client enabled!")
+	fmt.Println("To learn all about what's changed in Smart Node v2 and how to use it, take a look at our guide: https://github.com/rocket-pool/smartnode/blob/v2/v2.md")
 	fmt.Println()
 }
