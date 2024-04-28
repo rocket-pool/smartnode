@@ -112,5 +112,4 @@ func printPatchNotes() {
 	fmt.Println("- And much more!")
 	fmt.Println()
 	fmt.Println("To learn all about what's changed in Smart Node v2 and how to use it, take a look at our guide: https://github.com/rocket-pool/smartnode/blob/v2/v2.md")
-	fmt.Println()
 }
