@@ -43,6 +43,7 @@ func pruneExecutionClient(c *cli.Context) error {
 			fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
 			return nil
 		}
+	}
 
 	if selectedEc == nmc_config.ExecutionClient_Geth || selectedEc == nmc_config.ExecutionClient_Besu {
 		if selectedEc == nmc_config.ExecutionClient_Geth {
