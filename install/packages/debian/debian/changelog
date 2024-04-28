@@ -1,11 +1,11 @@
 rocketpool (2.0.0~beta.1) UNRELEASED; urgency=medium
 
   * Welcome to Smart Node v2! This is a completely redesigned Smart Node from the ground up, taking advantage of years of lessons learned and user feedback. The list of features and changes is far too long to list here, but here are some highlights:
-	* Support for installing and updating via Debian's `apt` package manager (other package managers coming soon!)
-	* Support for printing transaction data or signed transactions without submitting them to the network
-	* Passwordless mode: an opt-in feature that will no longer save your node wallet's password to disk
-	* Overhauled Smart Node service with an HTTP API, support for batching Ethereum queries and transactions together, a new logging system, and consolidation of the api / node / watchtower containers into one
-	* And much more!
+  * Support for installing and updating via Debian's `apt` package manager (other package managers coming soon!)
+  * Support for printing transaction data or signed transactions without submitting them to the network
+  * Passwordless mode: an opt-in feature that will no longer save your node wallet's password to disk
+  * Overhauled Smart Node service with an HTTP API, support for batching Ethereum queries and transactions together, a new logging system, and consolidation of the api / node / watchtower containers into one
+  * And much more!
   * To learn all about what's changed in Smart Node v2 and how to use it, take a look at our guide: https://github.com/rocket-pool/smartnode/blob/v2/v2.md
 
- -- Rocket Pool <dev@rocketpool.net>  Mon, 19 Feb 2024 15:50:39 -0500
+ -- Rocket Pool <dev@rocketpool.net>  Sun, 28 Apr 2024 16:55:22 +0000
