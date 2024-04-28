@@ -96,10 +96,6 @@ if [ "$CLIENT" = "geth" ]; then
             CMD="$CMD --ethstats $ETHSTATS_LABEL:$ETHSTATS_LOGIN"
         fi
 
-        if [ "$RP_GETH_ENABLE_PBSS" = "true" ]; then
-            CMD="$CMD --state.scheme=path"
-        fi
-
         if [ ! -z "$EC_MAX_PEERS" ]; then
             CMD="$CMD --maxpeers $EC_MAX_PEERS"
         fi

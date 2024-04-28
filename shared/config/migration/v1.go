@@ -110,7 +110,7 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	// Geth
 	if legacyGethConfig != nil {
 		newGethConfig := map[string]any{}
-		newGethConfig[nmc_ids.GethEnablePbssID] = legacyGethConfig["enablePbss"]
+		newGethConfig[nmc_ids.GethEvmTimeoutID] = legacyGethConfig["evmTimeout"]
 		newGethConfig[nmc_ids.MaxPeersID] = legacyGethConfig["maxPeers"]
 		newGethConfig[nmc_ids.ContainerTagID] = legacyGethConfig["containerTag"]
 		newGethConfig[nmc_ids.AdditionalFlagsID] = legacyGethConfig["additionalFlags"]

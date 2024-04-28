@@ -46,7 +46,6 @@ services:
       - RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB={{.LocalExecutionClient.Nethermind.FullPruningThresholdMb}}
       {{- else if eq .LocalExecutionClient.ExecutionClient.String "geth"}}
       - RP_GETH_EVM_TIMEOUT={{.LocalExecutionClient.Geth.EvmTimeout}}
-      - RP_GETH_ENABLE_PBSS={{.LocalExecutionClient.Geth.EnablePbss}}
       {{- end}}
     entrypoint: sh
     command: "/usr/share/rocketpool/scripts/{{.GetEcStartScript}}"

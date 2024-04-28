@@ -274,6 +274,7 @@ if [ "$CLIENT" = "teku" ]; then
         --ee-jwt-secret-file=/secrets/jwtsecret \
         --beacon-liveness-tracking-enabled \
         --validators-proposer-default-fee-recipient=$RETH_ADDRESS \
+        --validators-graffiti-client-append-format=DISABLED \
         $BN_ADDITIONAL_FLAGS"
 
     if [ "$TEKU_ARCHIVE_MODE" = "true" ]; then

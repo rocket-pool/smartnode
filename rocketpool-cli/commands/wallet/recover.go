@@ -149,16 +149,34 @@ func recoverWallet(c *cli.Context) error {
 		// Log & return
 		fmt.Println("The node wallet was successfully recovered.")
 		fmt.Printf("Node account: %s\n", response.Data.AccountAddress.Hex())
-		if !skipValidatorKeyRecovery {
-			if len(response.Data.ValidatorKeys) > 0 {
-				fmt.Println("Validator keys:")
-				for _, key := range response.Data.ValidatorKeys {
-					fmt.Println(key.HexWithPrefix())
-				}
-			} else {
-				fmt.Println("No validator keys were found.")
-			}
+		if skipValidatorKeyRecovery {
+			return nil
 		}
+
+		if len(response.Data.ValidatorKeys) == 0 {
+			fmt.Println("No validator keys were found.")
+			return nil
+		}
+
+		fmt.Println("Validator keys:")
+		for _, key := range response.Data.ValidatorKeys {
+			fmt.Println(key.HexWithPrefix())
+		}
+
+		// Restart the VC
+		if !utils.Confirm("Would you like to restart your Validator Client now so it can attest with the recovered keys?") {
+			fmt.Println("Please restart the Validator Client manually at your earliest convenience to load the keys.")
+			return nil
+		}
+
+		fmt.Println("Restarting Validator Client...")
+		_, err = rp.Api.Service.RestartVc()
+		if err != nil {
+			fmt.Printf("Error restarting Validator Client: %s\n", err.Error())
+			fmt.Println("Please restart the Validator Client manually at your earliest convenience to load the keys.")
+			return nil
+		}
+		fmt.Println("Validator Client restarted successfully.")
 	}
 
 	return nil
