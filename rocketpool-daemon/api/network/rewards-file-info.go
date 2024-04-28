@@ -82,7 +82,7 @@ func (c *networkRewardsFileContext) PrepareData(data *api.NetworkRewardsFileData
 	data.CurrentIndex = c.rewardsPool.RewardIndex.Formatted()
 
 	// Get the path of the file to save
-	filePath := c.cfg.GetRewardsTreePath(c.index)
+	filePath := c.cfg.GetRewardsTreeFilePath(c.index)
 	_, err := os.Stat(filePath)
 	if os.IsNotExist(err) {
 		data.TreeFileExists = false

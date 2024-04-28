@@ -95,5 +95,37 @@ func SaveConfig(cfg *config.SmartNodeConfig, directory string, filename string) 
 		return fmt.Errorf("error updating permissions of %s: %w", path, err)
 	}
 
+	// Create the data directory
+	err = createDataDir(cfg)
+	if err != nil {
+		return fmt.Errorf("error creating user data directory: %w", err)
+	}
+
+	return nil
+}
+
+// Create the user data directory and basic subfolders
+func createDataDir(cfg *config.SmartNodeConfig) error {
+	// Create the data dir
+	dataDir := cfg.UserDataPath.Value
+	err := os.MkdirAll(dataDir, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating user data directory [%s]: %w", dataDir, err)
+	}
+
+	// Create the custom keys dir
+	customKeysPath := cfg.GetCustomKeyPath()
+	err = os.MkdirAll(customKeysPath, 0700)
+	if err != nil {
+		return fmt.Errorf("error creating custom keys directory [%s]: %w", customKeysPath, err)
+	}
+
+	// Create the rewards trees dir
+	rewardsTreesPath := cfg.GetRewardsTreePath()
+	err = os.MkdirAll(rewardsTreesPath, 0755)
+	if err != nil {
+		return fmt.Errorf("error creating rewards trees directory [%s]: %w", rewardsTreesPath, err)
+	}
+
 	return nil
 }

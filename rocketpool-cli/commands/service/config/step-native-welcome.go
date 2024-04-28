@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 
+	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/smartnode/v2/shared"
 )
 
@@ -17,6 +18,7 @@ func createNativeWelcomeStep(wiz *wizard, currentStep int, totalSteps int) *choi
 
 	done := func(buttonIndex int, buttonLabel string) {
 		if buttonIndex == 1 {
+			wiz.md.Config.ClientMode.Value = config.ClientMode_External
 			wiz.nativeNetworkModal.show()
 		} else {
 			wiz.md.app.Stop()

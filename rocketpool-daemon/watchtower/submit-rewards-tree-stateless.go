@@ -180,9 +180,9 @@ func (t *SubmitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Get the expected file paths
-	rewardsTreePath := t.cfg.GetRewardsTreePath(currentIndex)
+	rewardsTreePath := t.cfg.GetRewardsTreeFilePath(currentIndex)
 	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
-	minipoolPerformancePath := t.cfg.GetMinipoolPerformancePath(currentIndex)
+	minipoolPerformancePath := t.cfg.GetMinipoolPerformanceFilePath(currentIndex)
 	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval

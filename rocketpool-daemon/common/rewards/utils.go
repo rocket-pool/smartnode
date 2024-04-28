@@ -112,7 +112,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, nod
 	info.MerkleRoot = merkleRootCanon
 
 	// Check if the tree file exists
-	info.TreeFilePath = cfg.GetRewardsTreePath(interval)
+	info.TreeFilePath = cfg.GetRewardsTreeFilePath(interval)
 	_, err = os.Stat(info.TreeFilePath)
 	if os.IsNotExist(err) {
 		info.TreeFileExists = false
@@ -266,7 +266,7 @@ func DownloadRewardsFile(cfg *config.SmartNodeConfig, i *sharedtypes.IntervalInf
 	expectedCid := i.CID
 	expectedRoot := i.MerkleRoot
 	// Determine file name and path
-	rewardsTreePath, err := homedir.Expand(cfg.GetRewardsTreePath(interval))
+	rewardsTreePath, err := homedir.Expand(cfg.GetRewardsTreeFilePath(interval))
 	if err != nil {
 		return fmt.Errorf("error expanding rewards tree path: %w", err)
 	}

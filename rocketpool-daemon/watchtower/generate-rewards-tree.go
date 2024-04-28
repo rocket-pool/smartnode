@@ -253,11 +253,11 @@ func (t *GenerateRewardsTree) generateRewardsTreeImpl(logger *slog.Logger, rp *r
 	logger.Info("Saving JSON files...")
 	localMinipoolPerformanceFile := rprewards.NewLocalFile[sharedtypes.IMinipoolPerformanceFile](
 		rewardsFile.GetMinipoolPerformanceFile(),
-		t.cfg.GetMinipoolPerformancePath(index),
+		t.cfg.GetMinipoolPerformanceFilePath(index),
 	)
 	localRewardsFile := rprewards.NewLocalFile[sharedtypes.IRewardsFile](
 		rewardsFile,
-		t.cfg.GetRewardsTreePath(index),
+		t.cfg.GetRewardsTreeFilePath(index),
 	)
 
 	// Write the files

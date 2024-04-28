@@ -82,7 +82,7 @@ func main() {
 
 		// Create the data dir
 		dataDir := sp.GetConfig().UserDataPath.Value
-		err = os.MkdirAll(dataDir, 0700)
+		err = os.MkdirAll(dataDir, 0755)
 		if err != nil {
 			return fmt.Errorf("error creating user data directory [%s]: %w", dataDir, err)
 		}
