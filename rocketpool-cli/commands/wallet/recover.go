@@ -163,12 +163,12 @@ func recoverWallet(c *cli.Context) error {
 			fmt.Println(key.HexWithPrefix())
 		}
 
-		// Restart the VC
 		if !utils.Confirm("Would you like to restart your Validator Client now so it can attest with the recovered keys?") {
 			fmt.Println("Please restart the Validator Client manually at your earliest convenience to load the keys.")
 			return nil
 		}
 
+		// Restart the VC
 		fmt.Println("Restarting Validator Client...")
 		_, err = rp.Api.Service.RestartVc()
 		if err != nil {

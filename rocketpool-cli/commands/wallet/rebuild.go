@@ -67,6 +67,7 @@ func rebuildWallet(c *cli.Context) error {
 		for _, key := range response.Data.ValidatorKeys {
 			fmt.Println(key.Hex())
 		}
+		fmt.Println()
 	} else {
 		fmt.Println("No validator keys were found.")
 	}
