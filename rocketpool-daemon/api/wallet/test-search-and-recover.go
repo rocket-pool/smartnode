@@ -10,8 +10,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
-	"github.com/rocket-pool/node-manager-core/node/wallet"
+	nodewallet "github.com/rocket-pool/node-manager-core/node/wallet"
 	"github.com/rocket-pool/node-manager-core/utils/input"
+	"github.com/rocket-pool/node-manager-core/wallet"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -65,7 +66,7 @@ func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAn
 	}
 
 	// Try each derivation path across all of the iterations
-	var recoveredWallet *wallet.Wallet
+	var recoveredWallet *nodewallet.Wallet
 	paths := []string{
 		wallet.DefaultNodeKeyPath,
 		wallet.LedgerLiveNodeKeyPath,
@@ -75,7 +76,7 @@ func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAn
 		for j := 0; j < len(paths); j++ {
 			var err error
 			derivationPath := paths[j]
-			recoveredWallet, err = wallet.TestRecovery(derivationPath, i, c.mnemonic, rs.ChainID)
+			recoveredWallet, err = nodewallet.TestRecovery(derivationPath, i, c.mnemonic, rs.ChainID)
 			if err != nil {
 				return types.ResponseStatus_Error, fmt.Errorf("error recovering wallet with path [%s], index [%d]: %w", derivationPath, i, err)
 			}

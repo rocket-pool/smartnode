@@ -68,7 +68,7 @@ func (c *walletTestRecoverContext) PrepareData(data *api.WalletRecoverData, opts
 	}
 
 	// Parse the derivation path
-	path, err := nodewallet.GetDerivationPath(wallet.DerivationPath(c.derivationPath))
+	path, err := wallet.GetDerivationPath(wallet.DerivationPath(c.derivationPath))
 	if err != nil {
 		return types.ResponseStatus_InvalidArguments, err
 	}
