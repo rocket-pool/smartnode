@@ -202,12 +202,11 @@ func (c *Client) deployTemplates(cfg *config.SmartNodeConfig, smartNodeDir strin
 	}
 
 	// Create the rewards file dir
-	rewardsFilePath, err := homedir.Expand(cfg.GetRewardsTreePath(0))
+	rewardsFileDir, err := homedir.Expand(cfg.GetRewardsTreePath())
 	if err != nil {
 		fmt.Printf("%sWARNING: Couldn't expand the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder manually.%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 		return deployedContainers, nil
 	}
-	rewardsFileDir := filepath.Dir(rewardsFilePath)
 	err = os.MkdirAll(rewardsFileDir, 0775)
 	if err != nil {
 		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", terminal.ColorYellow, err.Error(), rewardsFileDir, terminal.ColorReset)

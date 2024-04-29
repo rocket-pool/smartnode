@@ -44,6 +44,8 @@ if [ "$PLATFORM" = "Linux" ]; then
         PLATFORM="CentOS"
     elif [ -f "/etc/fedora-release" ]; then
         PLATFORM="Fedora"
+    elif [ -f "/etc/rocky-release" ]; then
+        PLATFORM="Rocky"
     fi
 fi
 
@@ -171,8 +173,8 @@ install() {
 
         ;;
 
-        # Centos
-        CentOS)
+        # CentOS / Rocky
+        CentOS|Rocky)
 
             # Install OS dependencies
             progress 1 "Installing OS dependencies..."
@@ -279,8 +281,8 @@ install() {
 
             ;;
 
-            # Centos
-            CentOS)
+            # CentOS / Rocky
+            CentOS|Rocky)
 
                 # Check for existing docker-compose-plugin installation
                 progress 3 "Checking if docker-compose-plugin is installed..."

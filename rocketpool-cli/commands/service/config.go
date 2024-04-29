@@ -22,9 +22,9 @@ func configureService(c *cli.Context) error {
 	rp := client.NewClientFromCtx(c)
 
 	// Make sure the config directory exists first
-	err := os.MkdirAll(rp.Context.ConfigPath, 0700)
+	err := rp.CreateUserDir()
 	if err != nil {
-		fmt.Printf("%sYour Smart Node user configuration directory of [%s] could not be created:%s.%s\n", terminal.ColorYellow, rp.Context.ConfigPath, err.Error(), terminal.ColorReset)
+		fmt.Printf("%sYour Smart Node user configuration directory could not be created: %s.%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 		return nil
 	}
 

@@ -12,9 +12,9 @@ EOF
 
 # Install dependencies
 RUN apt update && \
-    apt install -y -t bookworm devscripts lintian binutils-x86-64-linux-gnu binutils-aarch64-linux-gnu && \
+    apt install -y -t bookworm devscripts lintian binutils-x86-64-linux-gnu binutils-aarch64-linux-gnu nano && \
     apt install -y -t bookworm-backports golang-any && \
     apt install -y -t unstable dh-golang && \
-	# Cleanup
-	apt clean && \
-        rm -rf /var/lib/apt/lists/*
+    # Cleanup
+    apt clean && \
+    rm -rf /var/lib/apt/lists/*

@@ -308,22 +308,24 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	}
 
 	// Get alerts from Alertmanager
-	alerts, err := alerting.NewAlertFetcher(c.cfg).FetchAlerts()
-	if err != nil {
-		// no reason to make `rocketpool node status` fail if we can't get alerts
-		// (this is more likely to happen in native mode than docker where
-		// alertmanager is more complex to set up)
-		// Do save a warning though to print to the user
-		data.Warning = fmt.Sprintf("Error fetching alerts from Alertmanager: %s", err)
-		alerts = make([]*models.GettableAlert, 0)
-	}
-	data.Alerts = make([]api.NodeAlert, len(alerts))
+	if c.cfg.Alertmanager.EnableAlerting.Value {
+		alerts, err := alerting.NewAlertFetcher(c.cfg).FetchAlerts()
+		if err != nil {
+			// no reason to make `rocketpool node status` fail if we can't get alerts
+			// (this is more likely to happen in native mode than docker where
+			// alertmanager is more complex to set up)
+			// Do save a warning though to print to the user
+			data.Warning = fmt.Sprintf("Error fetching alerts from Alertmanager: %s", err)
+			alerts = make([]*models.GettableAlert, 0)
+		}
+		data.Alerts = make([]api.NodeAlert, len(alerts))
 
-	for i, a := range alerts {
-		data.Alerts[i] = api.NodeAlert{
-			State:       *a.Status.State,
-			Labels:      a.Labels,
-			Annotations: a.Annotations,
+		for i, a := range alerts {
+			data.Alerts[i] = api.NodeAlert{
+				State:       *a.Status.State,
+				Labels:      a.Labels,
+				Annotations: a.Annotations,
+			}
 		}
 	}
 

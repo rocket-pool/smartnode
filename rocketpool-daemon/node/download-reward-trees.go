@@ -50,7 +50,7 @@ func (t *DownloadRewardsTrees) Run(state *state.NetworkState) error {
 	missingIntervals := []uint64{}
 	for i := uint64(0); i < currentIndex; i++ {
 		// Check if the tree file exists
-		treeFilePath := t.cfg.GetRewardsTreePath(i)
+		treeFilePath := t.cfg.GetRewardsTreeFilePath(i)
 		_, err := os.Stat(treeFilePath)
 		if os.IsNotExist(err) {
 			t.logger.Info("You are missing a rewards tree file.", slog.Uint64(keys.IntervalKey, i))

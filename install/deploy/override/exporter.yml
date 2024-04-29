@@ -4,5 +4,5 @@
 # for more information on overriding specific parameters of docker-compose files.
 
 services:
-  exporter:
+  node-exporter: # Explicitly named for backwards compatibility
     x-rp-comment: Add your customizations below this line

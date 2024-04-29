@@ -96,12 +96,12 @@ if [ "$CLIENT" = "geth" ]; then
             CMD="$CMD --ethstats $ETHSTATS_LABEL:$ETHSTATS_LOGIN"
         fi
 
-        if [ "$RP_GETH_ENABLE_PBSS" = "true" ]; then
-            CMD="$CMD --state.scheme=path"
-        fi
-
         if [ ! -z "$EC_MAX_PEERS" ]; then
             CMD="$CMD --maxpeers $EC_MAX_PEERS"
+        fi
+
+        if [ ! -z "$RP_GETH_EVM_TIMEOUT" ]; then
+            CMD="$CMD --rpc.evmtimeout ${RP_GETH_EVM_TIMEOUT}s"
         fi
 
         if [ "$ENABLE_METRICS" = "true" ]; then
@@ -303,12 +303,12 @@ if [ "$CLIENT" = "reth" ]; then
         --http.addr 0.0.0.0 \
         --http.port ${EC_HTTP_PORT:-8545} \
         --http.api eth,net,web3 \
-        --http.corsdomain '*' \
+        --http.corsdomain="*" \
         --ws \
         --ws.addr 0.0.0.0 \
         --ws.port ${EC_WS_PORT:-8546} \
         --ws.api eth,net,web3 \
-        --ws.origins '*' \
+        --ws.origins="*" \
         --authrpc.addr 0.0.0.0 \
         --authrpc.port ${EC_ENGINE_PORT:-8551} \
         --authrpc.jwtsecret /secrets/jwtsecret \

@@ -24,8 +24,12 @@ func (cfg *SmartNodeConfig) GetRecordsPath() string {
 	return filepath.Join(cfg.UserDataPath.Value, RecordsFolder)
 }
 
-func (cfg *SmartNodeConfig) GetRewardsTreePath(interval uint64) string {
-	return filepath.Join(cfg.UserDataPath.Value, RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value), interval))
+func (cfg *SmartNodeConfig) GetRewardsTreePath() string {
+	return filepath.Join(cfg.UserDataPath.Value, RewardsTreesFolder)
+}
+
+func (cfg *SmartNodeConfig) GetRewardsTreeFilePath(interval uint64) string {
+	return filepath.Join(cfg.GetRewardsTreePath(), fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value), interval))
 }
 
 func (cfg *SmartNodeConfig) GetVotingSnapshotID() [32]byte {
@@ -64,8 +68,8 @@ func (cfg *SmartNodeConfig) GetWatchtowerFolder() string {
 	return filepath.Join(cfg.UserDataPath.Value, WatchtowerFolder)
 }
 
-func (cfg *SmartNodeConfig) GetMinipoolPerformancePath(interval uint64) string {
-	return filepath.Join(cfg.UserDataPath.Value, RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value), interval))
+func (cfg *SmartNodeConfig) GetMinipoolPerformanceFilePath(interval uint64) string {
+	return filepath.Join(cfg.GetRewardsTreePath(), fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value), interval))
 }
 
 func (cfg *SmartNodeConfig) GetNodeAddressPath() string {

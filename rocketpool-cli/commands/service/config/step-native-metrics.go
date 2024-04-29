@@ -32,7 +32,7 @@ func createNativeMetricsStep(wiz *wizard, currentStep int, totalSteps int) *choi
 	}
 
 	back := func() {
-		wiz.nativeUseFallbackModal.show()
+		wiz.nativeDataModal.show()
 	}
 
 	return newChoiceStep(

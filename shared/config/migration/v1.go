@@ -49,6 +49,14 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 		return nil, err
 	}
 
+	// Basic validation
+	if legacyRootConfig == nil {
+		return nil, fmt.Errorf("legacy root config not found")
+	}
+	if legacySmartnodeConfig == nil {
+		return nil, fmt.Errorf("legacy smartnode config not found")
+	}
+
 	// Top level
 	newConfig := map[string]any{}
 	newConfig[ids.IsNativeKey] = legacyRootConfig["isNative"]
@@ -60,7 +68,14 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	if err = getSettingWithExpandedPath(newSmartnodeConfig, ids.UserDataPathID, legacySmartnodeConfig, "dataPath"); err != nil {
 		return nil, err
 	}
+
+	// Set the network
 	newSmartnodeConfig[ids.NetworkID] = legacySmartnodeConfig["network"]
+	if newSmartnodeConfig[ids.NetworkID] == "prater" {
+		// If they're using a *very* old version of the Smart Node with Prater still on it, error out
+		return nil, fmt.Errorf("Your legacy Smart Node installation was configured to use the Prater test network, which is no longer supported. Your client data, wallet, and validators cannot be used. Please uninstall your old Smart Node and reinstall a new version before continuing.")
+	}
+
 	newSmartnodeConfig[ids.ClientModeID] = legacyRootConfig["executionClientMode"]
 	newSmartnodeConfig[ids.VerifyProposalsID] = legacySmartnodeConfig["verifyProposals"]
 	newSmartnodeConfig[ids.AutoTxMaxFeeID] = legacySmartnodeConfig["manualMaxFee"]
@@ -82,49 +97,59 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// Local execution
 	newLocalExecutionConfig := map[string]any{}
-	newLocalExecutionConfig[nmc_ids.EcID] = legacyRootConfig["executionClient"]
-	newLocalExecutionConfig[nmc_ids.HttpPortID] = legacyExecutionCommonConfig["httpPort"]
-	newLocalExecutionConfig[nmc_ids.LocalEcWebsocketPortID] = legacyExecutionCommonConfig["wsPort"]
-	newLocalExecutionConfig[nmc_ids.LocalEcEnginePortID] = legacyExecutionCommonConfig["enginePort"]
-	newLocalExecutionConfig[nmc_ids.LocalEcOpenApiPortsID] = legacyExecutionCommonConfig["openRpcPorts"]
-	newLocalExecutionConfig[nmc_ids.P2pPortID] = legacyExecutionCommonConfig["p2pPort"]
-	newSmartnodeConfig[ids.LocalExecutionID] = newLocalExecutionConfig
+	if legacyExecutionCommonConfig != nil {
+		newLocalExecutionConfig[nmc_ids.EcID] = legacyRootConfig["executionClient"]
+		newLocalExecutionConfig[nmc_ids.HttpPortID] = legacyExecutionCommonConfig["httpPort"]
+		newLocalExecutionConfig[nmc_ids.LocalEcWebsocketPortID] = legacyExecutionCommonConfig["wsPort"]
+		newLocalExecutionConfig[nmc_ids.LocalEcEnginePortID] = legacyExecutionCommonConfig["enginePort"]
+		newLocalExecutionConfig[nmc_ids.LocalEcOpenApiPortsID] = legacyExecutionCommonConfig["openRpcPorts"]
+		newLocalExecutionConfig[nmc_ids.P2pPortID] = legacyExecutionCommonConfig["p2pPort"]
+		newSmartnodeConfig[ids.LocalExecutionID] = newLocalExecutionConfig
+	}
 
 	// Geth
-	newGethConfig := map[string]any{}
-	newGethConfig[nmc_ids.GethEnablePbssID] = legacyGethConfig["enablePbss"]
-	newGethConfig[nmc_ids.MaxPeersID] = legacyGethConfig["maxPeers"]
-	newGethConfig[nmc_ids.ContainerTagID] = legacyGethConfig["containerTag"]
-	newGethConfig[nmc_ids.AdditionalFlagsID] = legacyGethConfig["additionalFlags"]
-	newLocalExecutionConfig[nmc_ids.LocalEcGethID] = newGethConfig
+	if legacyGethConfig != nil {
+		newGethConfig := map[string]any{}
+		newGethConfig[nmc_ids.GethEvmTimeoutID] = legacyGethConfig["evmTimeout"]
+		newGethConfig[nmc_ids.MaxPeersID] = legacyGethConfig["maxPeers"]
+		newGethConfig[nmc_ids.ContainerTagID] = legacyGethConfig["containerTag"]
+		newGethConfig[nmc_ids.AdditionalFlagsID] = legacyGethConfig["additionalFlags"]
+		newLocalExecutionConfig[nmc_ids.LocalEcGethID] = newGethConfig
+	}
 
 	// Nethermind
-	newNethermindConfig := map[string]any{}
-	newNethermindConfig[nmc_ids.CacheSizeID] = legacyNethermindConfig["cache"]
-	newNethermindConfig[nmc_ids.MaxPeersID] = legacyNethermindConfig["maxPeers"]
-	newNethermindConfig[nmc_ids.NethermindPruneMemSizeID] = legacyNethermindConfig["pruneMemSize"]
-	newNethermindConfig[nmc_ids.NethermindAdditionalModulesID] = legacyNethermindConfig["additionalModules"]
-	newNethermindConfig[nmc_ids.NethermindAdditionalUrlsID] = legacyNethermindConfig["additionalUrls"]
-	newNethermindConfig[nmc_ids.ContainerTagID] = legacyNethermindConfig["containerTag"]
-	newNethermindConfig[nmc_ids.AdditionalFlagsID] = legacyNethermindConfig["additionalFlags"]
-	newLocalExecutionConfig[nmc_ids.LocalEcNethermindID] = newNethermindConfig
+	if legacyNethermindConfig != nil {
+		newNethermindConfig := map[string]any{}
+		newNethermindConfig[nmc_ids.CacheSizeID] = legacyNethermindConfig["cache"]
+		newNethermindConfig[nmc_ids.MaxPeersID] = legacyNethermindConfig["maxPeers"]
+		newNethermindConfig[nmc_ids.NethermindPruneMemSizeID] = legacyNethermindConfig["pruneMemSize"]
+		newNethermindConfig[nmc_ids.NethermindAdditionalModulesID] = legacyNethermindConfig["additionalModules"]
+		newNethermindConfig[nmc_ids.NethermindAdditionalUrlsID] = legacyNethermindConfig["additionalUrls"]
+		newNethermindConfig[nmc_ids.ContainerTagID] = legacyNethermindConfig["containerTag"]
+		newNethermindConfig[nmc_ids.AdditionalFlagsID] = legacyNethermindConfig["additionalFlags"]
+		newLocalExecutionConfig[nmc_ids.LocalEcNethermindID] = newNethermindConfig
+	}
 
 	// Besu
-	newBesuConfig := map[string]any{}
-	newBesuConfig[nmc_ids.BesuJvmHeapSizeID] = legacyBesuConfig["jvmHeapSize"]
-	newBesuConfig[nmc_ids.MaxPeersID] = legacyBesuConfig["maxPeers"]
-	newBesuConfig[nmc_ids.BesuMaxBackLayersID] = legacyBesuConfig["maxBackLayers"]
-	newBesuConfig[nmc_ids.ContainerTagID] = legacyBesuConfig["containerTag"]
-	newBesuConfig[nmc_ids.AdditionalFlagsID] = legacyBesuConfig["additionalFlags"]
-	newLocalExecutionConfig[nmc_ids.LocalEcBesuID] = newBesuConfig
+	if legacyBesuConfig != nil {
+		newBesuConfig := map[string]any{}
+		newBesuConfig[nmc_ids.BesuJvmHeapSizeID] = legacyBesuConfig["jvmHeapSize"]
+		newBesuConfig[nmc_ids.MaxPeersID] = legacyBesuConfig["maxPeers"]
+		newBesuConfig[nmc_ids.BesuMaxBackLayersID] = legacyBesuConfig["maxBackLayers"]
+		newBesuConfig[nmc_ids.ContainerTagID] = legacyBesuConfig["containerTag"]
+		newBesuConfig[nmc_ids.AdditionalFlagsID] = legacyBesuConfig["additionalFlags"]
+		newLocalExecutionConfig[nmc_ids.LocalEcBesuID] = newBesuConfig
+	}
 
 	// Reth
-	newRethConfig := map[string]any{}
-	newRethConfig[nmc_ids.CacheSizeID] = legacyRethConfig["cache"]
-	newRethConfig[nmc_ids.MaxPeersID] = legacyRethConfig["maxPeers"]
-	newRethConfig[nmc_ids.ContainerTagID] = legacyRethConfig["containerTag"]
-	newRethConfig[nmc_ids.AdditionalFlagsID] = legacyRethConfig["additionalFlags"]
-	newLocalExecutionConfig[nmc_ids.LocalEcRethID] = newRethConfig
+	if legacyRethConfig != nil {
+		newRethConfig := map[string]any{}
+		newRethConfig[nmc_ids.CacheSizeID] = legacyRethConfig["cache"]
+		newRethConfig[nmc_ids.MaxPeersID] = legacyRethConfig["maxPeers"]
+		newRethConfig[nmc_ids.ContainerTagID] = legacyRethConfig["containerTag"]
+		newRethConfig[nmc_ids.AdditionalFlagsID] = legacyRethConfig["additionalFlags"]
+		newLocalExecutionConfig[nmc_ids.LocalEcRethID] = newRethConfig
+	}
 
 	// External execution
 	newExternalExecutionConfig := map[string]any{}
@@ -140,84 +165,110 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// Local beacon
 	newLocalBeaconConfig := map[string]any{}
-	newLocalBeaconConfig[nmc_ids.BnID] = legacyRootConfig["consensusClient"]
-	newLocalBeaconConfig[nmc_ids.LocalBnCheckpointSyncUrlID] = legacyConsensusCommonConfig["checkpointSyncUrl"]
-	newLocalBeaconConfig[nmc_ids.P2pPortID] = legacyConsensusCommonConfig["p2pPort"]
-	newLocalBeaconConfig[nmc_ids.HttpPortID] = legacyConsensusCommonConfig["apiPort"]
-	newLocalBeaconConfig[nmc_ids.OpenHttpPortsID] = legacyConsensusCommonConfig["openApiPort"]
-	newSmartnodeConfig[ids.LocalBeaconID] = newLocalBeaconConfig
+	if legacyConsensusCommonConfig != nil {
+		newLocalBeaconConfig[nmc_ids.BnID] = legacyRootConfig["consensusClient"]
+		newLocalBeaconConfig[nmc_ids.LocalBnCheckpointSyncUrlID] = legacyConsensusCommonConfig["checkpointSyncUrl"]
+		newLocalBeaconConfig[nmc_ids.P2pPortID] = legacyConsensusCommonConfig["p2pPort"]
+		newLocalBeaconConfig[nmc_ids.HttpPortID] = legacyConsensusCommonConfig["apiPort"]
+		newLocalBeaconConfig[nmc_ids.OpenHttpPortsID] = legacyConsensusCommonConfig["openApiPort"]
+		newSmartnodeConfig[ids.LocalBeaconID] = newLocalBeaconConfig
+	}
 
 	// Lighthouse BN
-	newLighthouseBnConfig := map[string]any{}
-	newLighthouseBnConfig[nmc_ids.LighthouseQuicPortID] = legacyLighthouseConfig["p2pQuicPort"]
-	newLighthouseBnConfig[nmc_ids.MaxPeersID] = legacyLighthouseConfig["maxPeers"]
-	newLighthouseBnConfig[nmc_ids.ContainerTagID] = legacyLighthouseConfig["containerTag"]
-	newLighthouseBnConfig[nmc_ids.AdditionalFlagsID] = legacyLighthouseConfig["additionalBnFlags"]
-	newLocalBeaconConfig[nmc_ids.LocalBnLighthouseID] = newLighthouseBnConfig
+	if legacyLighthouseConfig != nil {
+		newLighthouseBnConfig := map[string]any{}
+		newLighthouseBnConfig[nmc_ids.LighthouseQuicPortID] = legacyLighthouseConfig["p2pQuicPort"]
+		newLighthouseBnConfig[nmc_ids.MaxPeersID] = legacyLighthouseConfig["maxPeers"]
+		newLighthouseBnConfig[nmc_ids.ContainerTagID] = legacyLighthouseConfig["containerTag"]
+		newLighthouseBnConfig[nmc_ids.AdditionalFlagsID] = legacyLighthouseConfig["additionalBnFlags"]
+		newLocalBeaconConfig[nmc_ids.LocalBnLighthouseID] = newLighthouseBnConfig
+	}
 
 	// Lodestar BN
-	newLodestarBnConfig := map[string]any{}
-	newLodestarBnConfig[nmc_ids.MaxPeersID] = legacyLodestarConfig["maxPeers"]
-	newLodestarBnConfig[nmc_ids.ContainerTagID] = legacyLodestarConfig["containerTag"]
-	newLodestarBnConfig[nmc_ids.AdditionalFlagsID] = legacyLodestarConfig["additionalBnFlags"]
-	newLocalBeaconConfig[nmc_ids.LocalBnLodestarID] = newLodestarBnConfig
+	if legacyLodestarConfig != nil {
+		newLodestarBnConfig := map[string]any{}
+		newLodestarBnConfig[nmc_ids.MaxPeersID] = legacyLodestarConfig["maxPeers"]
+		newLodestarBnConfig[nmc_ids.ContainerTagID] = legacyLodestarConfig["containerTag"]
+		newLodestarBnConfig[nmc_ids.AdditionalFlagsID] = legacyLodestarConfig["additionalBnFlags"]
+		newLocalBeaconConfig[nmc_ids.LocalBnLodestarID] = newLodestarBnConfig
+	}
 
 	// Nimbus BN
-	newNimbusBnConfig := map[string]any{}
-	newNimbusBnConfig[nmc_ids.MaxPeersID] = legacyNimbusConfig["maxPeers"]
-	newNimbusBnConfig[nmc_ids.NimbusPruningModeID] = legacyNimbusConfig["pruningMode"]
-	newNimbusBnConfig[nmc_ids.ContainerTagID] = legacyNimbusConfig["bnContainerTag"]
-	newNimbusBnConfig[nmc_ids.AdditionalFlagsID] = legacyNimbusConfig["additionalBnFlags"]
-	newLocalBeaconConfig[nmc_ids.LocalBnNimbusID] = newNimbusBnConfig
+	if legacyNimbusConfig != nil {
+		newNimbusBnConfig := map[string]any{}
+		newNimbusBnConfig[nmc_ids.MaxPeersID] = legacyNimbusConfig["maxPeers"]
+		newNimbusBnConfig[nmc_ids.NimbusPruningModeID] = legacyNimbusConfig["pruningMode"]
+		newNimbusBnConfig[nmc_ids.ContainerTagID] = legacyNimbusConfig["bnContainerTag"]
+		newNimbusBnConfig[nmc_ids.AdditionalFlagsID] = legacyNimbusConfig["additionalBnFlags"]
+		newLocalBeaconConfig[nmc_ids.LocalBnNimbusID] = newNimbusBnConfig
+	}
 
 	// Prysm BN
-	newPrysmBnConfig := map[string]any{}
-	newPrysmBnConfig[nmc_ids.MaxPeersID] = legacyPrysmConfig["maxPeers"]
-	newPrysmBnConfig[nmc_ids.PrysmRpcPortID] = legacyPrysmConfig["rpcPort"]
-	newPrysmBnConfig[nmc_ids.PrysmOpenRpcPortID] = legacyPrysmConfig["openRpcPort"]
-	newPrysmBnConfig[nmc_ids.ContainerTagID] = legacyPrysmConfig["bnContainerTag"]
-	newPrysmBnConfig[nmc_ids.AdditionalFlagsID] = legacyPrysmConfig["additionalBnFlags"]
-	newLocalBeaconConfig[nmc_ids.LocalBnPrysmID] = newPrysmBnConfig
+	if legacyPrysmConfig != nil {
+		newPrysmBnConfig := map[string]any{}
+		newPrysmBnConfig[nmc_ids.MaxPeersID] = legacyPrysmConfig["maxPeers"]
+		newPrysmBnConfig[nmc_ids.PrysmRpcPortID] = legacyPrysmConfig["rpcPort"]
+		newPrysmBnConfig[nmc_ids.PrysmOpenRpcPortID] = legacyPrysmConfig["openRpcPort"]
+		newPrysmBnConfig[nmc_ids.ContainerTagID] = legacyPrysmConfig["bnContainerTag"]
+		newPrysmBnConfig[nmc_ids.AdditionalFlagsID] = legacyPrysmConfig["additionalBnFlags"]
+		newLocalBeaconConfig[nmc_ids.LocalBnPrysmID] = newPrysmBnConfig
+	}
 
 	// Teku BN
-	newTekuBnConfig := map[string]any{}
-	newTekuBnConfig[nmc_ids.TekuJvmHeapSizeID] = legacyTekuConfig["jvmHeapSize"]
-	newTekuBnConfig[nmc_ids.MaxPeersID] = legacyTekuConfig["maxPeers"]
-	newTekuBnConfig[nmc_ids.TekuArchiveModeID] = legacyTekuConfig["archiveMode"]
-	newTekuBnConfig[nmc_ids.ContainerTagID] = legacyTekuConfig["containerTag"]
-	newTekuBnConfig[nmc_ids.AdditionalFlagsID] = legacyTekuConfig["additionalBnFlags"]
-	newLocalBeaconConfig[nmc_ids.LocalBnTekuID] = newTekuBnConfig
+	if legacyTekuConfig != nil {
+		newTekuBnConfig := map[string]any{}
+		newTekuBnConfig[nmc_ids.TekuJvmHeapSizeID] = legacyTekuConfig["jvmHeapSize"]
+		newTekuBnConfig[nmc_ids.MaxPeersID] = legacyTekuConfig["maxPeers"]
+		newTekuBnConfig[nmc_ids.TekuArchiveModeID] = legacyTekuConfig["archiveMode"]
+		newTekuBnConfig[nmc_ids.ContainerTagID] = legacyTekuConfig["containerTag"]
+		newTekuBnConfig[nmc_ids.AdditionalFlagsID] = legacyTekuConfig["additionalBnFlags"]
+		newLocalBeaconConfig[nmc_ids.LocalBnTekuID] = newTekuBnConfig
+	}
 
 	// External beacon
 	newExternalBeaconConfig := map[string]any{}
 	if isNative {
-		newExternalBeaconConfig[nmc_ids.BnID] = legacyNativeConfig["consensusClient"]
-		newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyNativeConfig["ccHttpUrl"]
+		if legacyNativeConfig != nil {
+			newExternalBeaconConfig[nmc_ids.BnID] = legacyNativeConfig["consensusClient"]
+			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyNativeConfig["ccHttpUrl"]
+		}
 	} else {
 		newExternalBeaconConfig[nmc_ids.BnID] = legacyRootConfig["externalConsensusClient"]
 		switch newExternalBeaconConfig[nmc_ids.BnID] {
 		case "lighthouse":
-			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalLighthouseConfig["httpUrl"]
+			if legacyExternalLighthouseConfig != nil {
+				newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalLighthouseConfig["httpUrl"]
+			}
 		case "lodestar":
-			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalLodestarConfig["httpUrl"]
+			if legacyExternalLodestarConfig != nil {
+				newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalLodestarConfig["httpUrl"]
+			}
 		case "nimbus":
-			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalNimbusConfig["httpUrl"]
+			if legacyExternalNimbusConfig != nil {
+				newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalNimbusConfig["httpUrl"]
+			}
 		case "prysm":
-			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalPrysmConfig["httpUrl"]
-			newExternalBeaconConfig[nmc_ids.PrysmRpcUrlID] = legacyExternalPrysmConfig["jsonRpcUrl"]
+			if legacyExternalPrysmConfig != nil {
+				newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalPrysmConfig["httpUrl"]
+				newExternalBeaconConfig[nmc_ids.PrysmRpcUrlID] = legacyExternalPrysmConfig["jsonRpcUrl"]
+			}
 		case "teku":
-			newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalTekuConfig["httpUrl"]
+			if legacyExternalTekuConfig != nil {
+				newExternalBeaconConfig[nmc_ids.HttpUrlID] = legacyExternalTekuConfig["httpUrl"]
+			}
 		}
 	}
 	newSmartnodeConfig[ids.ExternalBeaconID] = newExternalBeaconConfig
 
 	// Validator Client
 	newValidatorClientConfig := map[string]any{}
-	if err = getSettingWithExpandedPath(newValidatorClientConfig, ids.NativeValidatorRestartCommandID, legacyNativeConfig, "validatorRestartCommand"); err != nil {
-		return nil, err
-	}
-	if err = getSettingWithExpandedPath(newValidatorClientConfig, ids.NativeValidatorStopCommandID, legacyNativeConfig, "validatorStopCommand"); err != nil {
-		return nil, err
+	if legacyNativeConfig != nil {
+		if err = getSettingWithExpandedPath(newValidatorClientConfig, ids.NativeValidatorRestartCommandID, legacyNativeConfig, "validatorRestartCommand"); err != nil {
+			return nil, err
+		}
+		if err = getSettingWithExpandedPath(newValidatorClientConfig, ids.NativeValidatorStopCommandID, legacyNativeConfig, "validatorStopCommand"); err != nil {
+			return nil, err
+		}
 	}
 	newSmartnodeConfig[ids.ValidatorClientID] = newValidatorClientConfig
 
@@ -238,78 +289,112 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	switch legacyRootConfig["consensusClientMode"] {
 	case "local":
 		// VC Common
-		newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyConsensusCommonConfig["graffiti"]
-		newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyConsensusCommonConfig["doppelgangerDetection"]
+		if legacyConsensusCommonConfig != nil {
+			newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyConsensusCommonConfig["graffiti"]
+			newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyConsensusCommonConfig["doppelgangerDetection"]
+		}
 
 		// Lighthouse
-		newLighthouseVcConfig[nmc_ids.ContainerTagID] = legacyLighthouseConfig["containerTag"]
-		newLighthouseVcConfig[nmc_ids.AdditionalFlagsID] = legacyLighthouseConfig["additionalVcFlags"]
+		if legacyLighthouseConfig != nil {
+			newLighthouseVcConfig[nmc_ids.ContainerTagID] = legacyLighthouseConfig["containerTag"]
+			newLighthouseVcConfig[nmc_ids.AdditionalFlagsID] = legacyLighthouseConfig["additionalVcFlags"]
+		}
 
 		// Lodestar
-		newLodestarVcConfig[nmc_ids.ContainerTagID] = legacyLodestarConfig["containerTag"]
-		newLodestarVcConfig[nmc_ids.AdditionalFlagsID] = legacyLodestarConfig["additionalVcFlags"]
+		if legacyLodestarConfig != nil {
+			newLodestarVcConfig[nmc_ids.ContainerTagID] = legacyLodestarConfig["containerTag"]
+			newLodestarVcConfig[nmc_ids.AdditionalFlagsID] = legacyLodestarConfig["additionalVcFlags"]
+		}
 
 		// Nimbus
-		newNimbusVcConfig[nmc_ids.ContainerTagID] = legacyNimbusConfig["containerTag"]
-		newNimbusVcConfig[nmc_ids.AdditionalFlagsID] = legacyNimbusConfig["additionalVcFlags"]
+		if legacyNimbusConfig != nil {
+			newNimbusVcConfig[nmc_ids.ContainerTagID] = legacyNimbusConfig["containerTag"]
+			newNimbusVcConfig[nmc_ids.AdditionalFlagsID] = legacyNimbusConfig["additionalVcFlags"]
+		}
 
 		// Prysm
-		newPrysmVcConfig[nmc_ids.ContainerTagID] = legacyPrysmConfig["vcContainerTag"]
-		newPrysmVcConfig[nmc_ids.AdditionalFlagsID] = legacyPrysmConfig["additionalVcFlags"]
+		if legacyPrysmConfig != nil {
+			newPrysmVcConfig[nmc_ids.ContainerTagID] = legacyPrysmConfig["vcContainerTag"]
+			newPrysmVcConfig[nmc_ids.AdditionalFlagsID] = legacyPrysmConfig["additionalVcFlags"]
+		}
 
 		// Teku
-		newTekuVcConfig[nmc_ids.ContainerTagID] = legacyTekuConfig["containerTag"]
-		newTekuVcConfig[nmc_ids.AdditionalFlagsID] = legacyTekuConfig["additionalVcFlags"]
+		if legacyTekuConfig != nil {
+			newTekuVcConfig[nmc_ids.ContainerTagID] = legacyTekuConfig["containerTag"]
+			newTekuVcConfig[nmc_ids.AdditionalFlagsID] = legacyTekuConfig["additionalVcFlags"]
+		}
 
 	case "external":
 		// VC Common
 		switch newExternalBeaconConfig[nmc_ids.BnID] {
 		case "lighthouse":
-			newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalLighthouseConfig["graffiti"]
-			newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalLighthouseConfig["doppelgangerDetection"]
+			if legacyExternalLighthouseConfig != nil {
+				newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalLighthouseConfig["graffiti"]
+				newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalLighthouseConfig["doppelgangerDetection"]
+			}
 		case "lodestar":
-			newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalLodestarConfig["graffiti"]
-			newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalLodestarConfig["doppelgangerDetection"]
+			if legacyExternalLodestarConfig != nil {
+				newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalLodestarConfig["graffiti"]
+				newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalLodestarConfig["doppelgangerDetection"]
+			}
 		case "nimbus":
-			newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalNimbusConfig["graffiti"]
-			newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalNimbusConfig["doppelgangerDetection"]
+			if legacyExternalNimbusConfig != nil {
+				newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalNimbusConfig["graffiti"]
+				newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalNimbusConfig["doppelgangerDetection"]
+			}
 		case "prysm":
-			newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalPrysmConfig["graffiti"]
-			newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalPrysmConfig["doppelgangerDetection"]
+			if legacyExternalPrysmConfig != nil {
+				newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalPrysmConfig["graffiti"]
+				newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalPrysmConfig["doppelgangerDetection"]
+			}
 		case "teku":
-			newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalTekuConfig["graffiti"]
-			newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalTekuConfig["doppelgangerDetection"]
+			if legacyExternalTekuConfig != nil {
+				newValidatorCommonConfig[nmc_ids.GraffitiID] = legacyExternalTekuConfig["graffiti"]
+				newValidatorCommonConfig[nmc_ids.DoppelgangerDetectionID] = legacyExternalTekuConfig["doppelgangerDetection"]
+			}
 		}
 
 		// Lighthouse
-		newLighthouseVcConfig[nmc_ids.ContainerTagID] = legacyExternalLighthouseConfig["containerTag"]
-		newLighthouseVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalLighthouseConfig["additionalVcFlags"]
+		if legacyExternalLighthouseConfig != nil {
+			newLighthouseVcConfig[nmc_ids.ContainerTagID] = legacyExternalLighthouseConfig["containerTag"]
+			newLighthouseVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalLighthouseConfig["additionalVcFlags"]
+		}
 
 		// Lodestar
-		newLodestarVcConfig[nmc_ids.ContainerTagID] = legacyExternalLodestarConfig["containerTag"]
-		newLodestarVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalLodestarConfig["additionalVcFlags"]
+		if legacyExternalLodestarConfig != nil {
+			newLodestarVcConfig[nmc_ids.ContainerTagID] = legacyExternalLodestarConfig["containerTag"]
+			newLodestarVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalLodestarConfig["additionalVcFlags"]
+		}
 
 		// Nimbus
-		newNimbusVcConfig[nmc_ids.ContainerTagID] = legacyExternalNimbusConfig["containerTag"]
-		newNimbusVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalNimbusConfig["additionalVcFlags"]
+		if legacyExternalNimbusConfig != nil {
+			newNimbusVcConfig[nmc_ids.ContainerTagID] = legacyExternalNimbusConfig["containerTag"]
+			newNimbusVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalNimbusConfig["additionalVcFlags"]
+		}
 
 		// Prysm
-		newPrysmVcConfig[nmc_ids.ContainerTagID] = legacyExternalPrysmConfig["containerTag"]
-		newPrysmVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalPrysmConfig["additionalVcFlags"]
+		if legacyExternalPrysmConfig != nil {
+			newPrysmVcConfig[nmc_ids.ContainerTagID] = legacyExternalPrysmConfig["containerTag"]
+			newPrysmVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalPrysmConfig["additionalVcFlags"]
+		}
 
 		// Teku
-		newTekuVcConfig[nmc_ids.ContainerTagID] = legacyExternalTekuConfig["containerTag"]
-		newTekuVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalTekuConfig["additionalVcFlags"]
+		if legacyExternalTekuConfig != nil {
+			newTekuVcConfig[nmc_ids.ContainerTagID] = legacyExternalTekuConfig["containerTag"]
+			newTekuVcConfig[nmc_ids.AdditionalFlagsID] = legacyExternalTekuConfig["additionalVcFlags"]
+		}
 	}
 
 	// Fallback
 	newFallbackConfig := map[string]any{}
 	newFallbackConfig[nmc_ids.FallbackUseFallbackClientsID] = legacyRootConfig["useFallbackClients"]
 	if (legacyRootConfig["consensusClientMode"] == "local" && legacyRootConfig["consensusClient"] == "prysm") || (legacyRootConfig["consensusClientMode"] == "external" && legacyRootConfig["externalConsensusClient"] == "prysm") {
-		newFallbackConfig[nmc_ids.FallbackEcHttpUrlID] = legacyFallbackPrysmConfig["ecHttpUrl"]
-		newFallbackConfig[nmc_ids.FallbackBnHttpUrlID] = legacyFallbackPrysmConfig["ccHttpUrl"]
-		newFallbackConfig[nmc_ids.PrysmRpcUrlID] = legacyFallbackPrysmConfig["jsonRpcUrl"]
-	} else {
+		if legacyFallbackPrysmConfig != nil {
+			newFallbackConfig[nmc_ids.FallbackEcHttpUrlID] = legacyFallbackPrysmConfig["ecHttpUrl"]
+			newFallbackConfig[nmc_ids.FallbackBnHttpUrlID] = legacyFallbackPrysmConfig["ccHttpUrl"]
+			newFallbackConfig[nmc_ids.PrysmRpcUrlID] = legacyFallbackPrysmConfig["jsonRpcUrl"]
+		}
+	} else if legacyFallbackNormalConfig != nil {
 		newFallbackConfig[nmc_ids.FallbackEcHttpUrlID] = legacyFallbackNormalConfig["ecHttpUrl"]
 		newFallbackConfig[nmc_ids.FallbackBnHttpUrlID] = legacyFallbackNormalConfig["ccHttpUrl"]
 	}
@@ -328,78 +413,90 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// Grafana
 	newGrafanaConfig := map[string]any{}
-	newGrafanaConfig[nmc_ids.PortID] = legacyGrafanaConfig["port"]
-	newGrafanaConfig[nmc_ids.ContainerTagID] = legacyGrafanaConfig["containerTag"]
+	if legacyGrafanaConfig != nil {
+		newGrafanaConfig[nmc_ids.PortID] = legacyGrafanaConfig["port"]
+		newGrafanaConfig[nmc_ids.ContainerTagID] = legacyGrafanaConfig["containerTag"]
+	}
 	newMetricsConfig[nmc_ids.MetricsGrafanaID] = newGrafanaConfig
 
 	// Prometheus
 	newPrometheusConfig := map[string]any{}
-	newPrometheusConfig[nmc_ids.PortID] = legacyPrometheusConfig["port"]
-	newPrometheusConfig[nmc_ids.OpenPortID] = legacyPrometheusConfig["openPort"]
-	newPrometheusConfig[nmc_ids.ContainerTagID] = legacyPrometheusConfig["containerTag"]
-	newPrometheusConfig[nmc_ids.AdditionalFlagsID] = legacyPrometheusConfig["additionalFlags"]
+	if legacyPrometheusConfig != nil {
+		newPrometheusConfig[nmc_ids.PortID] = legacyPrometheusConfig["port"]
+		newPrometheusConfig[nmc_ids.OpenPortID] = legacyPrometheusConfig["openPort"]
+		newPrometheusConfig[nmc_ids.ContainerTagID] = legacyPrometheusConfig["containerTag"]
+		newPrometheusConfig[nmc_ids.AdditionalFlagsID] = legacyPrometheusConfig["additionalFlags"]
+	}
 	newMetricsConfig[nmc_ids.MetricsPrometheusID] = newPrometheusConfig
 
 	// Alertmanager
 	newAlertmanagerConfig := map[string]any{}
-	newAlertmanagerConfig[ids.AlertmanagerEnableAlertingID] = legacyAlertmanagerConfig["enableAlerting"]
-	newAlertmanagerConfig[nmc_ids.PortID] = legacyAlertmanagerConfig["port"]
-	newAlertmanagerConfig[ids.AlertmanagerNativeModeHostID] = legacyAlertmanagerConfig["nativeModeHost"]
-	newAlertmanagerConfig[ids.AlertmanagerNativeModePortID] = legacyAlertmanagerConfig["nativeModePort"]
-	newAlertmanagerConfig[nmc_ids.OpenPortID] = legacyAlertmanagerConfig["openPort"]
-	newAlertmanagerConfig[nmc_ids.ContainerTagID] = legacyAlertmanagerConfig["containerTag"]
-	newAlertmanagerConfig[ids.AlertmanagerDiscordWebhookUrlID] = legacyAlertmanagerConfig["discordWebhookURL"]
-	newAlertmanagerConfig[ids.AlertmanagerClientSyncStatusBeaconID] = legacyAlertmanagerConfig["alertEnabled_ClientSyncStatusBeacon"]
-	newAlertmanagerConfig[ids.AlertmanagerClientSyncStatusExecutionID] = legacyAlertmanagerConfig["alertEnabled_ClientSyncStatusExecution"]
-	newAlertmanagerConfig[ids.AlertmanagerUpcomingSyncCommitteeID] = legacyAlertmanagerConfig["alertEnabled_UpcomingSyncCommittee"]
-	newAlertmanagerConfig[ids.AlertmanagerActiveSyncCommitteeID] = legacyAlertmanagerConfig["alertEnabled_ActiveSyncCommittee"]
-	newAlertmanagerConfig[ids.AlertmanagerUpcomingProposalID] = legacyAlertmanagerConfig["alertEnabled_UpcomingProposal"]
-	newAlertmanagerConfig[ids.AlertmanagerRecentProposalID] = legacyAlertmanagerConfig["alertEnabled_RecentProposal"]
-	newAlertmanagerConfig[ids.AlertmanagerLowDiskSpaceWarningID] = legacyAlertmanagerConfig["alertEnabled_LowDiskSpaceWarning"]
-	newAlertmanagerConfig[ids.AlertmanagerLowDiskSpaceCriticalID] = legacyAlertmanagerConfig["alertEnabled_LowDiskSpaceCritical"]
-	newAlertmanagerConfig[ids.AlertmanagerOSUpdatesAvailableID] = legacyAlertmanagerConfig["alertEnabled_OSUpdatesAvailable"]
-	newAlertmanagerConfig[ids.AlertmanagerRPUpdatesAvailableID] = legacyAlertmanagerConfig["alertEnabled_RPUpdatesAvailable"]
-	newAlertmanagerConfig[ids.AlertmanagerFeeRecipientChangedID] = legacyAlertmanagerConfig["alertEnabled_FeeRecipientChanged"]
-	newAlertmanagerConfig[ids.AlertmanagerMinipoolBondReducedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolBondReduced"]
-	newAlertmanagerConfig[ids.AlertmanagerMinipoolBalanceDistributedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolBalanceDistributed"]
-	newAlertmanagerConfig[ids.AlertmanagerMinipoolPromotedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolPromoted"]
-	newAlertmanagerConfig[ids.AlertmanagerMinipoolStakedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolStaked"]
-	newAlertmanagerConfig[ids.AlertmanagerExecutionClientSyncCompleteID] = legacyAlertmanagerConfig["alertEnabled_ExecutionClientSyncComplete"]
-	newAlertmanagerConfig[ids.AlertmanagerBeaconClientSyncCompleteID] = legacyAlertmanagerConfig["alertEnabled_BeaconClientSyncComplete"]
+	if legacyAlertmanagerConfig != nil {
+		newAlertmanagerConfig[ids.AlertmanagerEnableAlertingID] = legacyAlertmanagerConfig["enableAlerting"]
+		newAlertmanagerConfig[nmc_ids.PortID] = legacyAlertmanagerConfig["port"]
+		newAlertmanagerConfig[ids.AlertmanagerNativeModeHostID] = legacyAlertmanagerConfig["nativeModeHost"]
+		newAlertmanagerConfig[ids.AlertmanagerNativeModePortID] = legacyAlertmanagerConfig["nativeModePort"]
+		newAlertmanagerConfig[nmc_ids.OpenPortID] = legacyAlertmanagerConfig["openPort"]
+		newAlertmanagerConfig[nmc_ids.ContainerTagID] = legacyAlertmanagerConfig["containerTag"]
+		newAlertmanagerConfig[ids.AlertmanagerDiscordWebhookUrlID] = legacyAlertmanagerConfig["discordWebhookURL"]
+		newAlertmanagerConfig[ids.AlertmanagerClientSyncStatusBeaconID] = legacyAlertmanagerConfig["alertEnabled_ClientSyncStatusBeacon"]
+		newAlertmanagerConfig[ids.AlertmanagerClientSyncStatusExecutionID] = legacyAlertmanagerConfig["alertEnabled_ClientSyncStatusExecution"]
+		newAlertmanagerConfig[ids.AlertmanagerUpcomingSyncCommitteeID] = legacyAlertmanagerConfig["alertEnabled_UpcomingSyncCommittee"]
+		newAlertmanagerConfig[ids.AlertmanagerActiveSyncCommitteeID] = legacyAlertmanagerConfig["alertEnabled_ActiveSyncCommittee"]
+		newAlertmanagerConfig[ids.AlertmanagerUpcomingProposalID] = legacyAlertmanagerConfig["alertEnabled_UpcomingProposal"]
+		newAlertmanagerConfig[ids.AlertmanagerRecentProposalID] = legacyAlertmanagerConfig["alertEnabled_RecentProposal"]
+		newAlertmanagerConfig[ids.AlertmanagerLowDiskSpaceWarningID] = legacyAlertmanagerConfig["alertEnabled_LowDiskSpaceWarning"]
+		newAlertmanagerConfig[ids.AlertmanagerLowDiskSpaceCriticalID] = legacyAlertmanagerConfig["alertEnabled_LowDiskSpaceCritical"]
+		newAlertmanagerConfig[ids.AlertmanagerOSUpdatesAvailableID] = legacyAlertmanagerConfig["alertEnabled_OSUpdatesAvailable"]
+		newAlertmanagerConfig[ids.AlertmanagerRPUpdatesAvailableID] = legacyAlertmanagerConfig["alertEnabled_RPUpdatesAvailable"]
+		newAlertmanagerConfig[ids.AlertmanagerFeeRecipientChangedID] = legacyAlertmanagerConfig["alertEnabled_FeeRecipientChanged"]
+		newAlertmanagerConfig[ids.AlertmanagerMinipoolBondReducedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolBondReduced"]
+		newAlertmanagerConfig[ids.AlertmanagerMinipoolBalanceDistributedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolBalanceDistributed"]
+		newAlertmanagerConfig[ids.AlertmanagerMinipoolPromotedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolPromoted"]
+		newAlertmanagerConfig[ids.AlertmanagerMinipoolStakedID] = legacyAlertmanagerConfig["alertEnabled_MinipoolStaked"]
+		newAlertmanagerConfig[ids.AlertmanagerExecutionClientSyncCompleteID] = legacyAlertmanagerConfig["alertEnabled_ExecutionClientSyncComplete"]
+		newAlertmanagerConfig[ids.AlertmanagerBeaconClientSyncCompleteID] = legacyAlertmanagerConfig["alertEnabled_BeaconClientSyncComplete"]
+	}
 	newSmartnodeConfig[ids.AlertmanagerID] = newAlertmanagerConfig
 
 	// Exporter
 	newExporterConfig := map[string]any{}
-	newExporterConfig[nmc_ids.ExporterEnableRootFsID] = legacyExporterConfig["enableRootFs"]
-	newExporterConfig[nmc_ids.ContainerTagID] = legacyExporterConfig["containerTag"]
-	newExporterConfig[nmc_ids.AdditionalFlagsID] = legacyExporterConfig["additionalFlags"]
+	if legacyExporterConfig != nil {
+		newExporterConfig[nmc_ids.ExporterEnableRootFsID] = legacyExporterConfig["enableRootFs"]
+		newExporterConfig[nmc_ids.ContainerTagID] = legacyExporterConfig["containerTag"]
+		newExporterConfig[nmc_ids.AdditionalFlagsID] = legacyExporterConfig["additionalFlags"]
+	}
 	newMetricsConfig[nmc_ids.MetricsExporterID] = newExporterConfig
 
 	// Bitfly
 	newBitflyConfig := map[string]any{}
-	newBitflyConfig[nmc_ids.BitflySecretID] = legacybBitflyNodeMetricsConfig["bitflySecret"]
-	newBitflyConfig[nmc_ids.BitflyEndpointID] = legacybBitflyNodeMetricsConfig["bitflyEndpoint"]
-	newBitflyConfig[nmc_ids.BitflyMachineNameID] = legacybBitflyNodeMetricsConfig["bitflyMachineName"]
+	if legacybBitflyNodeMetricsConfig != nil {
+		newBitflyConfig[nmc_ids.BitflySecretID] = legacybBitflyNodeMetricsConfig["bitflySecret"]
+		newBitflyConfig[nmc_ids.BitflyEndpointID] = legacybBitflyNodeMetricsConfig["bitflyEndpoint"]
+		newBitflyConfig[nmc_ids.BitflyMachineNameID] = legacybBitflyNodeMetricsConfig["bitflyMachineName"]
+	}
 	newMetricsConfig[nmc_ids.MetricsBitflyID] = newBitflyConfig
 
 	// MEV-Boost
 	newMevBoostConfig := map[string]any{}
-	newMevBoostConfig[ids.MevBoostEnableID] = legacyRootConfig["enableMevBoost"]
-	newMevBoostConfig[ids.MevBoostModeID] = legacyMevBoostConfig["mode"]
-	newMevBoostConfig[ids.MevBoostSelectionModeID] = legacyMevBoostConfig["selectionMode"]
-	newMevBoostConfig[ids.MevBoostEnableRegulatedAllID] = legacyMevBoostConfig["enableRegulatedAllMev"]
-	newMevBoostConfig[ids.MevBoostEnableUnregulatedAllID] = legacyMevBoostConfig["enableUnregulatedAllMev"]
-	newMevBoostConfig[ids.MevBoostFlashbotsID] = legacyMevBoostConfig["flashbotsEnabled"]
-	newMevBoostConfig[ids.MevBoostBloxRouteMaxProfitID] = legacyMevBoostConfig["bloxRouteMaxProfitEnabled"]
-	newMevBoostConfig[ids.MevBoostBloxRouteRegulatedID] = legacyMevBoostConfig["bloxRouteRegulatedEnabled"]
-	newMevBoostConfig[ids.MevBoostEdenID] = legacyMevBoostConfig["edenEnabled"]
-	newMevBoostConfig[ids.MevBoostUltrasoundID] = legacyMevBoostConfig["ultrasoundEnabled"]
-	newMevBoostConfig[ids.MevBoostAestusID] = legacyMevBoostConfig["aestusEnabled"]
-	newMevBoostConfig[nmc_ids.PortID] = legacyMevBoostConfig["port"]
-	newMevBoostConfig[nmc_ids.OpenPortID] = legacyMevBoostConfig["openRpcPort"]
-	newMevBoostConfig[nmc_ids.ContainerTagID] = legacyMevBoostConfig["containerTag"]
-	newMevBoostConfig[nmc_ids.AdditionalFlagsID] = legacyMevBoostConfig["additionalFlags"]
-	newMevBoostConfig[ids.MevBoostExternalUrlID] = legacyMevBoostConfig["externalUrl"]
+	if legacyMevBoostConfig != nil {
+		newMevBoostConfig[ids.MevBoostEnableID] = legacyRootConfig["enableMevBoost"]
+		newMevBoostConfig[ids.MevBoostModeID] = legacyMevBoostConfig["mode"]
+		newMevBoostConfig[ids.MevBoostSelectionModeID] = legacyMevBoostConfig["selectionMode"]
+		newMevBoostConfig[ids.MevBoostEnableRegulatedAllID] = legacyMevBoostConfig["enableRegulatedAllMev"]
+		newMevBoostConfig[ids.MevBoostEnableUnregulatedAllID] = legacyMevBoostConfig["enableUnregulatedAllMev"]
+		newMevBoostConfig[ids.MevBoostFlashbotsID] = legacyMevBoostConfig["flashbotsEnabled"]
+		newMevBoostConfig[ids.MevBoostBloxRouteMaxProfitID] = legacyMevBoostConfig["bloxRouteMaxProfitEnabled"]
+		newMevBoostConfig[ids.MevBoostBloxRouteRegulatedID] = legacyMevBoostConfig["bloxRouteRegulatedEnabled"]
+		newMevBoostConfig[ids.MevBoostEdenID] = legacyMevBoostConfig["edenEnabled"]
+		newMevBoostConfig[ids.MevBoostUltrasoundID] = legacyMevBoostConfig["ultrasoundEnabled"]
+		newMevBoostConfig[ids.MevBoostAestusID] = legacyMevBoostConfig["aestusEnabled"]
+		newMevBoostConfig[nmc_ids.PortID] = legacyMevBoostConfig["port"]
+		newMevBoostConfig[nmc_ids.OpenPortID] = legacyMevBoostConfig["openRpcPort"]
+		newMevBoostConfig[nmc_ids.ContainerTagID] = legacyMevBoostConfig["containerTag"]
+		newMevBoostConfig[nmc_ids.AdditionalFlagsID] = legacyMevBoostConfig["additionalFlags"]
+		newMevBoostConfig[ids.MevBoostExternalUrlID] = legacyMevBoostConfig["externalUrl"]
+	}
 	newSmartnodeConfig[ids.MevBoostID] = newMevBoostConfig
 
 	// Addons
@@ -408,20 +505,24 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 
 	// GWW
 	newGwwConfig := map[string]any{}
-	newGwwConfig[gww_ids.GwwEnabledID] = legacyGwwConfig["enabled"]
-	newGwwConfig[gww_ids.GwwInputUrlID] = legacyGwwConfig["inputUrl"]
-	newGwwConfig[gww_ids.GwwUpdateWallTimeID] = legacyGwwConfig["updateWallTime"]
-	newGwwConfig[gww_ids.GwwUpdateInputTimeID] = legacyGwwConfig["updateInputTime"]
-	newGwwConfig[gww_ids.GwwUpdatePixelTimeID] = legacyGwwConfig["updatePixelTime"]
-	newGwwConfig[nmc_ids.ContainerTagID] = legacyGwwConfig["containerTag"]
-	newGwwConfig[nmc_ids.AdditionalFlagsID] = legacyGwwConfig["additionalFlags"]
+	if legacyGwwConfig != nil {
+		newGwwConfig[gww_ids.GwwEnabledID] = legacyGwwConfig["enabled"]
+		newGwwConfig[gww_ids.GwwInputUrlID] = legacyGwwConfig["inputUrl"]
+		newGwwConfig[gww_ids.GwwUpdateWallTimeID] = legacyGwwConfig["updateWallTime"]
+		newGwwConfig[gww_ids.GwwUpdateInputTimeID] = legacyGwwConfig["updateInputTime"]
+		newGwwConfig[gww_ids.GwwUpdatePixelTimeID] = legacyGwwConfig["updatePixelTime"]
+		newGwwConfig[nmc_ids.ContainerTagID] = legacyGwwConfig["containerTag"]
+		newGwwConfig[nmc_ids.AdditionalFlagsID] = legacyGwwConfig["additionalFlags"]
+	}
 	newAddonsConfig[ids.AddonsGwwID] = newGwwConfig
 
 	// Rescue node
 	newRescueNodeConfig := map[string]any{}
-	newRescueNodeConfig[rn_ids.RescueNodeEnabledID] = legacyRescueNodeConfig["enabled"]
-	newRescueNodeConfig[rn_ids.RescueNodeUsernameID] = legacyRescueNodeConfig["username"]
-	newRescueNodeConfig[rn_ids.RescueNodePasswordID] = legacyRescueNodeConfig["password"]
+	if legacyRescueNodeConfig != nil {
+		newRescueNodeConfig[rn_ids.RescueNodeEnabledID] = legacyRescueNodeConfig["enabled"]
+		newRescueNodeConfig[rn_ids.RescueNodeUsernameID] = legacyRescueNodeConfig["username"]
+		newRescueNodeConfig[rn_ids.RescueNodePasswordID] = legacyRescueNodeConfig["password"]
+	}
 	newAddonsConfig[ids.AddonsRescueNodeID] = newRescueNodeConfig
 
 	return newConfig, nil
@@ -435,7 +536,8 @@ func getLegacyConfigSection(previousError error, serializedConfig map[string]any
 	// Get the existing section
 	legacyEntry, exists := serializedConfig[sectionName]
 	if !exists {
-		return nil, fmt.Errorf("legacy config is missing the [%s] section", sectionName)
+		// If it didn't exist then it's from a Smart Node before the section was introduced so return nothing and go with the defaults
+		return nil, nil
 	}
 
 	// Convert it to a map

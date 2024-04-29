@@ -363,7 +363,7 @@ func (t *SubmitRewardsTree_Rolling) getTrueRewardsIntervalSubmissionSlot(targetS
 
 // Checks to see if an existing rewards file is still valid and whether or not it should be regenerated or just resubmitted
 func (t *SubmitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint64, intervalsPassed uint64, nodeAddress common.Address, isInOdao bool) (*rprewards.LocalRewardsFile, bool, bool) {
-	rewardsTreePath := t.cfg.GetRewardsTreePath(rewardIndex)
+	rewardsTreePath := t.cfg.GetRewardsTreeFilePath(rewardIndex)
 
 	// Check if the rewards file exists
 	_, err := os.Stat(rewardsTreePath)
@@ -460,9 +460,9 @@ func (t *SubmitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 	currentIndexBig := big.NewInt(0).SetUint64(currentIndex)
 
 	// Get the expected file paths
-	rewardsTreePath := t.cfg.GetRewardsTreePath(currentIndex)
+	rewardsTreePath := t.cfg.GetRewardsTreeFilePath(currentIndex)
 	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
-	minipoolPerformancePath := t.cfg.GetMinipoolPerformancePath(currentIndex)
+	minipoolPerformancePath := t.cfg.GetMinipoolPerformanceFilePath(currentIndex)
 	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval

@@ -40,6 +40,6 @@ func createNativeEcUrlStep(wiz *wizard, currentStep int, totalSteps int) *textBo
 		show,
 		done,
 		back,
-		"step-native-ec",
+		"step-native-ec-url",
 	)
 }

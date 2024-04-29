@@ -12,7 +12,7 @@ import (
 // Terminate the Rocket Pool service
 func terminateService(c *cli.Context) error {
 	// Prompt for confirmation
-	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smartnode uses `rocketpool service install -d` in order to use it again.%s", terminal.ColorRed, terminal.ColorReset))) {
+	if !(c.Bool(utils.YesFlag.Name) || utils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your Execution Client and Beacon Node chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reconfigure** the Smart Node using `rocketpool service config` in order to use it again.%s", terminal.ColorRed, terminal.ColorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

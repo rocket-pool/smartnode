@@ -65,8 +65,8 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// rp.NodeStatus() will fail with an error, but we can short-circuit it here.
-	if !walletStatus.Wallet.IsOnDisk {
-		return errors.New("The node wallet is not initialized.")
+	if !walletStatus.Address.HasAddress {
+		return errors.New("No node address is loaded.")
 	}
 
 	// Get node status
@@ -355,7 +355,7 @@ func getStatus(c *cli.Context) error {
 
 	// Alerts
 	alerts := status.Data.Alerts
-	if cfg.Metrics.EnableMetrics.Value && len(alerts) > 0 {
+	if cfg.Alertmanager.EnableAlerting.Value && len(alerts) > 0 {
 		// only print alerts if enabled; to avoid misleading the user to thinking everything is fine (since we really don't know).
 		fmt.Printf("\n%s=== Alerts ===%s\n", terminal.ColorGreen, terminal.ColorReset)
 		for i, alert := range alerts {

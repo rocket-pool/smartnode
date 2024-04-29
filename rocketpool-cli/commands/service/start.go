@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	cliwallet "github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/wallet"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
-	cliutils "github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/v2/shared"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
@@ -29,9 +28,14 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	if err != nil {
 		return fmt.Errorf("Error loading user settings: %w", err)
 	}
-
 	if isNew {
 		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smart Node before running it.")
+	}
+
+	// Cancel if running in native mode
+	if cfg.IsNativeMode || rp.Context.NativeMode {
+		fmt.Println("Command unavailable in Native Mode.")
+		return nil
 	}
 
 	// Check if this is a new install
@@ -63,6 +67,10 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	// Update the Alertmanager configuration files even if metrics is disabled; as smartnode sends some alerts directly
+	if cfg.Alertmanager.EnableAlerting.Value {
 		err = rp.UpdateAlertmanagerConfiguration(cfg)
 		if err != nil {
 			return err
@@ -90,13 +98,13 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			fmt.Println()
 			fmt.Println("**If you did NOT change clients, you can safely ignore this warning.**")
 			fmt.Println()
-			if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start the Smart Node:%s", terminal.ColorReset)) {
+			if !utils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start the Smart Node:%s", terminal.ColorReset)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
 		} else if firstRun {
 			fmt.Println("It looks like this is your first time starting a Validator Client.")
-			existingNode := cliutils.Confirm("Just to be sure, does your node have any existing, active validators attesting on the Beacon Chain?")
+			existingNode := utils.Confirm("Just to be sure, does your node have any existing, active validators attesting on the Beacon Chain?")
 			if !existingNode {
 				fmt.Println("Okay, great! You're safe to start. Have fun!")
 			} else {
@@ -105,7 +113,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 				fmt.Println("This will slash your validator!")
 				fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.")
 				fmt.Println()
-				if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start the Smart Node:%s", terminal.ColorReset)) {
+				if !utils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start the Smart Node:%s", terminal.ColorReset)) {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -160,7 +168,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Init
 	fmt.Println("You don't have a node wallet yet.")
-	if c.Bool(cliutils.YesFlag.Name) || !cliutils.Confirm("Would you like to create one now?") {
+	if c.Bool(utils.YesFlag.Name) || !utils.Confirm("Would you like to create one now?") {
 		fmt.Println("Please create one using `rocketpool wallet init` when you're ready.")
 		return nil
 	}
@@ -187,7 +195,7 @@ func promptForPassword(c *cli.Context, rp *client.Client) error {
 	}
 
 	// Get the save flag
-	savePassword := c.Bool(cliwallet.SavePasswordFlag.Name) || cliutils.Confirm("Would you like to save the password to disk? If you do, your node will be able to handle transactions automatically after a client restart; otherwise, you will have to repeat this command to manually enter the password after each restart.")
+	savePassword := c.Bool(cliwallet.SavePasswordFlag.Name) || utils.Confirm("Would you like to save the password to disk? If you do, your node will be able to handle transactions automatically after a client restart; otherwise, you will have to repeat this command to manually enter the password after each restart.")
 
 	// Run it
 	_, err = rp.Api.Wallet.SetPassword(password, savePassword)

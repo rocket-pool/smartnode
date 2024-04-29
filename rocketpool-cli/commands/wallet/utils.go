@@ -151,8 +151,12 @@ func promptForCustomKeyPasswords(cfg *config.SmartNodeConfig, testOnly bool) (st
 	// Check for the custom key directory
 	customKeyDir := cfg.GetCustomKeyPath()
 	info, err := os.Stat(customKeyDir)
-	if os.IsNotExist(err) || !info.IsDir() {
+	if os.IsNotExist(err) {
 		return "", nil
+	} else if err != nil {
+		return "", fmt.Errorf("error checking for custom keystore directory [%s]: %w", customKeyDir, err)
+	} else if !info.IsDir() {
+		return "", fmt.Errorf("custom keystore path [%s] is not a directory", customKeyDir)
 	}
 
 	// Get the custom keystore files

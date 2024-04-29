@@ -96,7 +96,7 @@ func newWizard(md *mainDisplay) *wizard {
 	// === Docker Mode ===
 	// ===================
 	totalDockerSteps := 10
-	stepCount := 0
+	stepCount := 1
 
 	// Step 1 - Welcome
 	wiz.welcomeModal = createWelcomeStep(wiz, stepCount, totalDockerSteps)
@@ -153,8 +153,8 @@ func newWizard(md *mainDisplay) *wizard {
 	// ===================
 	// === Native Mode ===
 	// ===================
-	totalNativeSteps := 10
-	stepCount = 0
+	totalNativeSteps := 9
+	stepCount = 1
 
 	// Step 1 - Welcome
 	wiz.nativeWelcomeModal = createNativeWelcomeStep(wiz, stepCount, totalNativeSteps)

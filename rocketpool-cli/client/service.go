@@ -519,3 +519,14 @@ func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string) (ui
 
 	return dirSize, nil
 }
+
+// Create the user config directory
+func (c *Client) CreateUserDir() error {
+	// Create the user directory
+	err := os.MkdirAll(c.Context.ConfigPath, 0700)
+	if err != nil {
+		return fmt.Errorf("error creating config path [%s]: %w", c.Context.ConfigPath, err)
+	}
+
+	return nil
+}
