@@ -11,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -67,14 +68,17 @@ func (c *protocolDaoGetVotingPowerContext) PrepareData(data *api.ProtocolDaoGetV
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block number: %w", err)
 	}
+	data.BlockNumber = uint32(blockNumber)
 
-	// Get the voting power at that block
+	// Get the voting power and delegate at that block
 	err = rp.Query(func(mc *batch.MultiCaller) error {
-		node.GetVotingPowerAtBlock(mc, &data.VotingPower, uint32(blockNumber))
+		node.GetVotingPowerAtBlock(mc, &data.VotingPower, data.BlockNumber)
+		node.GetVotingDelegateAtBlock(mc, &data.OnchainVotingDelegate, data.BlockNumber)
 		return nil
 	}, nil)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error getting voting power for block %d: %w", blockNumber, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting voting info for block %d: %w", blockNumber, err)
 	}
+	data.OnchainVotingDelegateFormatted = utils.GetFormattedAddress(ec, data.OnchainVotingDelegate)
 	return types.ResponseStatus_Success, nil
 }

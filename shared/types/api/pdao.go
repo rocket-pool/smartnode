@@ -299,5 +299,8 @@ type ProtocolDaoCurrentVotingDelegateData struct {
 }
 
 type ProtocolDaoGetVotingPowerData struct {
-	VotingPower *big.Int `json:"votingPower"`
+	VotingPower                    *big.Int       `json:"votingPower"`
+	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
+	BlockNumber                    uint32         `json:"blockNumber"`
 }
