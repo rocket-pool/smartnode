@@ -180,7 +180,7 @@ func (t *TaskLoop) Stop() error {
 		ctx, cancel := context.WithTimeout(context.Background(), metricsShutdownTimeout)
 		defer cancel()
 		err := t.metricsServer.Shutdown(ctx)
-		if !errors.Is(err, http.ErrServerClosed) {
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
 			return fmt.Errorf("Error stopping metrics server: %w", err)
 		}
 	}
