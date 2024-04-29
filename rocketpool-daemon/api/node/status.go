@@ -20,7 +20,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/v2/tokens"
 	rptypes "github.com/rocket-pool/rocketpool-go/v2/types"
-	ens "github.com/wealdtech/go-ens/v3"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
@@ -29,6 +28,7 @@ import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/alerting/alertmanager/models"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/collateral"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/contracts"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
@@ -211,18 +211,18 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 
 	// Basic properties
 	data.AccountAddress = c.node.Address
-	data.AccountAddressFormatted = c.getFormattedAddress(data.AccountAddress)
+	data.AccountAddressFormatted = utils.GetFormattedAddress(c.ec, data.AccountAddress)
 	data.Trusted = c.odaoMember.Exists.Get()
 	data.Registered = c.node.Exists.Get()
 	data.PrimaryWithdrawalAddress = c.node.PrimaryWithdrawalAddress.Get()
-	data.PrimaryWithdrawalAddressFormatted = c.getFormattedAddress(data.PrimaryWithdrawalAddress)
+	data.PrimaryWithdrawalAddressFormatted = utils.GetFormattedAddress(c.ec, data.PrimaryWithdrawalAddress)
 	data.PendingPrimaryWithdrawalAddress = c.node.PendingPrimaryWithdrawalAddress.Get()
-	data.PendingPrimaryWithdrawalAddressFormatted = c.getFormattedAddress(data.PendingPrimaryWithdrawalAddress)
+	data.PendingPrimaryWithdrawalAddressFormatted = utils.GetFormattedAddress(c.ec, data.PendingPrimaryWithdrawalAddress)
 	data.IsRplWithdrawalAddressSet = c.node.IsRplWithdrawalAddressSet.Get()
 	data.RplWithdrawalAddress = c.node.RplWithdrawalAddress.Get()
-	data.RplWithdrawalAddressFormatted = c.getFormattedAddress(data.RplWithdrawalAddress)
+	data.RplWithdrawalAddressFormatted = utils.GetFormattedAddress(c.ec, data.RplWithdrawalAddress)
 	data.PendingRplWithdrawalAddress = c.node.PendingRplWithdrawalAddress.Get()
-	data.PendingRplWithdrawalAddressFormatted = c.getFormattedAddress(data.PendingRplWithdrawalAddress)
+	data.PendingRplWithdrawalAddressFormatted = utils.GetFormattedAddress(c.ec, data.PendingRplWithdrawalAddress)
 	data.TimezoneLocation = c.node.TimezoneLocation.Get()
 	data.RplStake = c.node.RplStake.Get()
 	data.EffectiveRplStake = c.node.EffectiveRplStake.Get()
@@ -238,7 +238,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	data.RplLocked = c.node.RplLocked.Get()
 	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
 	data.OnchainVotingDelegate = c.node.CurrentVotingDelegate.Get()
-	data.OnchainVotingDelegateFormatted = c.getFormattedAddress(data.OnchainVotingDelegate)
+	data.OnchainVotingDelegateFormatted = utils.GetFormattedAddress(c.ec, data.OnchainVotingDelegate)
 
 	// Minipool info
 	mps, err := c.getMinipoolInfo(data)
@@ -266,7 +266,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 		emptyAddress := common.Address{}
 		data.SnapshotVotingDelegate = c.delegate
 		if data.SnapshotVotingDelegate != emptyAddress {
-			data.SnapshotVotingDelegateFormatted = c.getFormattedAddress(data.SnapshotVotingDelegate)
+			data.SnapshotVotingDelegateFormatted = utils.GetFormattedAddress(c.ec, data.SnapshotVotingDelegate)
 		}
 		props, err := voting.GetSnapshotProposals(c.cfg, c.node.Address, c.delegate, true)
 		if err != nil {
@@ -330,15 +330,6 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	}
 
 	return types.ResponseStatus_Success, nil
-}
-
-// Get a formatting string containing the ENS name for an address (if it exists)
-func (c *nodeStatusContext) getFormattedAddress(address common.Address) string {
-	name, err := ens.ReverseResolve(c.ec, address)
-	if err != nil {
-		return address.Hex()
-	}
-	return fmt.Sprintf("%s (%s)", name, address.Hex())
 }
 
 // Get info pertaining to the node's minipools

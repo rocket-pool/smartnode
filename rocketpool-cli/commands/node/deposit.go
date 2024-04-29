@@ -257,7 +257,7 @@ func nodeDeposit(c *cli.Context) error {
 	// Log & return
 	fmt.Printf("The node deposit of %.6f ETH was made successfully!\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
 	fmt.Printf("Your new minipool's address is: %s\n", response.Data.MinipoolAddress)
-	fmt.Printf("The validator pubkey is: %s\n\n", response.Data.ValidatorPubkey.Hex())
+	fmt.Printf("The validator pubkey is: %s\n\n", response.Data.ValidatorPubkey.HexWithPrefix())
 
 	fmt.Println("Your minipool is now in Initialized status.")
 	fmt.Println("Once the remaining ETH has been assigned to your minipool from the staking pool, it will move to Prelaunch status.")

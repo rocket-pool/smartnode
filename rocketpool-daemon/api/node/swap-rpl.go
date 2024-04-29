@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -101,7 +102,7 @@ func (c *nodeSwapRplContext) PrepareData(data *api.NodeSwapRplData, opts *bind.T
 	if data.CanSwap {
 		if c.allowance.Cmp(c.amount) < 0 {
 			// Do the approve TX if needed
-			approvalAmount := getMaxApproval()
+			approvalAmount := utils.GetMaxApproval()
 			txInfo, err := c.fsrpl.Approve(c.rplAddress, approvalAmount, opts)
 			if err != nil {
 				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info to approve increasing legacy RPL's allowance: %w", err)

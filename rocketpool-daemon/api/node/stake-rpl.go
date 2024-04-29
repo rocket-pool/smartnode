@@ -17,6 +17,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/utils/input"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -102,7 +103,7 @@ func (c *nodeStakeRplContext) PrepareData(data *api.NodeStakeRplData, opts *bind
 	if data.CanStake {
 		if c.allowance.Cmp(c.amount) < 0 {
 			// Do the approve TX if needed
-			approvalAmount := getMaxApproval()
+			approvalAmount := utils.GetMaxApproval()
 			txInfo, err := c.rpl.Approve(c.nsAddress, approvalAmount, opts)
 			if err != nil {
 				return types.ResponseStatus_Error, fmt.Errorf("error getting TX info to approve increasing RPL's allowance: %w", err)
