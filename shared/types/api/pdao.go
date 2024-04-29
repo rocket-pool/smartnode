@@ -405,7 +405,10 @@ type PDAOInitializeVotingResponse struct {
 }
 
 type GetPDAOVotePowerResponse struct {
-	Status      string   `json:"status"`
-	Error       string   `json:"error"`
-	VotingPower *big.Int `json:"votingPower"`
+	Status                         string         `json:"status"`
+	Error                          string         `json:"error"`
+	VotingPower                    *big.Int       `json:"votingPower"`
+	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
+	BlockNumber                    uint64         `json:"blockNumber"`
 }

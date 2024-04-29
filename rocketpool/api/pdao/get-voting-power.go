@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
+	"github.com/wealdtech/go-ens/v3"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -36,10 +39,31 @@ func getVotePower(c *cli.Context) (*api.GetPDAOVotePowerResponse, error) {
 		return nil, err
 	}
 
-	// Get current block number
-	blockNumber, err := ec.BlockNumber(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("Error getting block number: %w", err)
+	// Sync
+	var wg errgroup.Group
+	var blockNumber uint64
+
+	wg.Go(func() error {
+		var err error
+		response.OnchainVotingDelegate, err = network.GetCurrentVotingDelegate(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.OnchainVotingDelegateFormatted = formatResolvedAddress(c, response.OnchainVotingDelegate)
+		}
+		return err
+	})
+
+	wg.Go(func() error {
+		_blockNumber, err := ec.BlockNumber(context.Background())
+		if err != nil {
+			return fmt.Errorf("Error getting block number: %w", err)
+		}
+		blockNumber = _blockNumber
+		return nil
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return nil, err
 	}
 
 	// Cast to uint32
@@ -53,4 +77,17 @@ func getVotePower(c *cli.Context) (*api.GetPDAOVotePowerResponse, error) {
 
 	// Update & return response
 	return &response, nil
+}
+
+func formatResolvedAddress(c *cli.Context, address common.Address) string {
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return address.Hex()
+	}
+
+	name, err := ens.ReverseResolve(rp.Client, address)
+	if err != nil {
+		return address.Hex()
+	}
+	return fmt.Sprintf("%s (%s)", name, address.Hex())
 }
