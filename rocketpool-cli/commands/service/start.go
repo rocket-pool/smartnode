@@ -108,7 +108,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			if !existingNode {
 				fmt.Println("Okay, great! You're safe to start. Have fun!")
 			} else {
-				fmt.Printf("%sSince didn't have any Validator Clients before, the Smart Node can't determine if you attested in the last 15 minutes.\n", terminal.ColorYellow)
+				fmt.Printf("%sSince your node didn't have any Validator Clients before, the Smart Node can't determine if you attested in the last 15 minutes.\n", terminal.ColorYellow)
 				fmt.Println("If you did, it may resubmit an attestation you have already submitted.")
 				fmt.Println("This will slash your validator!")
 				fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.")
