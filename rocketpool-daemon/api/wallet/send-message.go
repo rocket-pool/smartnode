@@ -54,9 +54,9 @@ func (c *walletSendMessageContext) PrepareData(data *types.TxInfoData, opts *bin
 	txMgr := sp.GetTransactionManager()
 
 	// Requirements
-	err := sp.RequireNodeAddress()
+	err := sp.RequireWalletReady()
 	if err != nil {
-		return types.ResponseStatus_AddressNotPresent, err
+		return types.ResponseStatus_WalletNotReady, err
 	}
 
 	txInfo := txMgr.CreateTransactionInfoRaw(c.address, c.message, opts)

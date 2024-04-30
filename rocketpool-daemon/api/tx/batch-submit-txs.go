@@ -1,7 +1,6 @@
 package tx
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	_ "time/tzdata"
@@ -65,6 +64,7 @@ func (c *txBatchSubmitTxsContext) PrepareData(data *api.BatchTxData, opts *bind.
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	ec := sp.GetEthClient()
+	ctx := c.handler.ctx
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
@@ -78,7 +78,7 @@ func (c *txBatchSubmitTxsContext) PrepareData(data *api.BatchTxData, opts *bind.
 	if c.body.FirstNonce != nil {
 		currentNonce = c.body.FirstNonce
 	} else {
-		nonce, err := ec.NonceAt(context.Background(), nodeAddress, nil)
+		nonce, err := ec.NonceAt(ctx, nodeAddress, nil)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error getting latest nonce for node: %w", err)
 		}
