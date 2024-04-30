@@ -158,7 +158,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("%s=== Snapshot Voting ===%s\n", colorGreen, colorReset)
 		blankAddress := common.Address{}
 		if status.SnapshotVotingDelegate == blankAddress {
-			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool Snapshot governance proposals.")
+			fmt.Println("The node does not currently have a voting delegate set, which means it can only vote directly on Snapshot proposals (using a hardware wallet with the node mnemonic loaded).\nRun `rocketpool n sv <address>` to vote from a different wallet or have a delegate represent you. (See https://delegates.rocketpool.net for options)")
 		} else {
 			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, status.SnapshotVotingDelegateFormatted, colorReset)
 		}
@@ -194,7 +194,7 @@ func getStatus(c *cli.Context) error {
 			}
 
 			if status.OnchainVotingDelegate == status.AccountAddress {
-				fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals.")
+				fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
 			} else {
 				fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, status.OnchainVotingDelegateFormatted, colorReset)
 			}

@@ -5,7 +5,7 @@ import (
 )
 
 // Constants
-const grafanaTag string = "grafana/grafana:9.5.17"
+const grafanaTag string = "grafana/grafana:9.5.18"
 
 // Defaults
 const defaultGrafanaPort uint16 = 3100

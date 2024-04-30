@@ -131,13 +131,10 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== New Notification module ===%s\n", colorGreen, colorReset)
-	fmt.Println("The Smartnode alert notification functionality allows you to receive notifications about the health and important events of your Rocket Pool Smartnode. Check `https://docs.rocketpool.net/guides/node/maintenance/alerting` for more details.")
+	fmt.Printf("%s=== Ready for Houston! ===%s\n", colorGreen, colorReset)
+	fmt.Println("Version 1.13.0 has all the features required for the transition from Atlas into the next Rocket Pool upgrade, Houston!\n This includes features like pDAO On-Chain governance, Stake ETH on Behalf of node, a separate RPL withdrawal address, and Time-based Balance and RPL Price Submissions.\nCheck https://docs.rocketpool.net/guides/houston/whats-new for details.")
 	fmt.Println("")
 
-	fmt.Printf("%s=== New Geth Mode: PBSS ===%s\n", colorGreen, colorReset)
-	fmt.Println("Geth has been updated to v1.13, which includes the much-anticipated Path-Based State Scheme (PBSS) storage mode. With PBSS, you never have to manually prune Geth again; it prunes automatically behind the scenes during runtime! To enable it, check the \"Enable PBSS\" box in the Execution Client section of the `rocketpool service config` UI. Note you **will have to resync** Geth after enabling this for it to take effect, and will lose attestations if you don't have a fallback client enabled!")
-	fmt.Println("")
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
