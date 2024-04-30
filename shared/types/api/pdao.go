@@ -410,5 +410,5 @@ type GetPDAOVotePowerResponse struct {
 	VotingPower                    *big.Int       `json:"votingPower"`
 	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
 	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
-	BlockNumber                    uint64         `json:"blockNumber"`
+	BlockNumber                    uint32         `json:"blockNumber"`
 }
