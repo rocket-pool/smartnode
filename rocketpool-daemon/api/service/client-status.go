@@ -2,6 +2,7 @@ package service
 
 import (
 	"net/url"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
@@ -45,13 +46,24 @@ func (c *serviceClientStatusContext) PrepareData(data *api.ServiceClientStatusDa
 	bc := sp.GetBeaconClient()
 	ctx := c.handler.ctx
 
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+
 	// Get the EC manager status
-	ecMgrStatus := ec.CheckStatus(ctx)
-	data.EcManagerStatus = *ecMgrStatus
+	go func() {
+		ecMgrStatus := ec.CheckStatus(ctx)
+		data.EcManagerStatus = *ecMgrStatus
+		wg.Done()
+	}()
 
 	// Get the BC manager status
-	bcMgrStatus := bc.CheckStatus(ctx)
-	data.BcManagerStatus = *bcMgrStatus
+	go func() {
+		bcMgrStatus := bc.CheckStatus(ctx)
+		data.BcManagerStatus = *bcMgrStatus
+		wg.Done()
+	}()
+
+	wg.Wait()
 
 	return types.ResponseStatus_Success, nil
 }
