@@ -67,10 +67,10 @@ func getVotePower(c *cli.Context) (*api.GetPDAOVotePowerResponse, error) {
 	}
 
 	// Cast to uint32
-	blockNumber32 := uint32(blockNumber)
+	response.BlockNumber = uint32(blockNumber)
 
 	// Check voting power
-	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, blockNumber32, nil)
+	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, response.BlockNumber, nil)
 	if err != nil {
 		return nil, err
 	}

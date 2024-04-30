@@ -12,6 +12,7 @@ import (
 const (
 	colorBlue  string = "\033[36m"
 	colorReset string = "\033[0m"
+	colorGreen string = "\033[32m"
 )
 
 func getVotePower(c *cli.Context) error {
@@ -44,7 +45,7 @@ func getVotePower(c *cli.Context) error {
 	}
 
 	// Print Results
-	fmt.Println("== Node Voting Power ==")
+	fmt.Printf("%s== Node Voting Power ==%s\n", colorGreen, colorReset)
 	if status.IsVotingInitialized {
 		fmt.Println("The node has been initialized for onchain voting.")
 
