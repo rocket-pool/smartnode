@@ -58,7 +58,7 @@ func newTreeGeneratorImpl_v10(logger *slog.Logger, index uint64, startTime time.
 	return &treeGeneratorImpl_v10{
 		rewardsFile: &RewardsFile_v3{
 			RewardsFileHeader: &sharedtypes.RewardsFileHeader{
-				RewardsFileVersion:  4,
+				RewardsFileVersion:  3,
 				RulesetVersion:      10,
 				Index:               index,
 				StartTime:           startTime.UTC(),
