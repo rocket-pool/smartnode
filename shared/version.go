@@ -1,6 +1,6 @@
 package shared
 
-const RocketPoolVersion string = "2.0.0-b1"
+const RocketPoolVersion string = "2.0.0-dev"
 
 const Logo string = `______           _        _    ______           _
 | ___ \         | |      | |   | ___ \         | |
