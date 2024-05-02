@@ -78,7 +78,7 @@ func getStatus(c *cli.Context) error {
 
 	// Onchain Voting Status
 	if status.IsHoustonDeployed {
-		fmt.Printf("%s== Onchain Voting ==%s\n", colorGreen, colorReset)
+		fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
 		if status.IsVotingInitialized {
 			fmt.Println("The node has been initialized for onchain voting.")
 
@@ -106,7 +106,25 @@ func getStatus(c *cli.Context) error {
 			fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
 		}
 		fmt.Printf("Your current voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
+		fmt.Println("")
+	}
 
+	// Claimable Bonds Status:
+	fmt.Printf("%s=== Claimable RPL Bonds ===%s\n", colorGreen, colorReset)
+
+	// Get protocol DAO proposals
+	claimableBondsResponse, err := rp.PDAOGetClaimableBonds()
+	if err != nil {
+		fmt.Errorf("error checking for claimable bonds: %w", err)
+	}
+	claimableBonds := claimableBondsResponse.ClaimableBonds
+
+	// Check for executable proposals
+	if len(claimableBonds) == 0 {
+		fmt.Println("You do not have any unlockable bonds or claimable rewards.")
+		return nil
+	} else {
+		fmt.Println("This node has unlockable bonds or claimable rewards available. Use 'rocketpool pdao claim-bonds' to view and claim.")
 	}
 
 	return nil
