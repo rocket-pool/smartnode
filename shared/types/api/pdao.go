@@ -404,7 +404,7 @@ type PDAOInitializeVotingResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type GetPDAOVotePowerResponse struct {
+type PDAOStatusResponse struct {
 	Status                         string         `json:"status"`
 	Error                          string         `json:"error"`
 	VotingPower                    *big.Int       `json:"votingPower"`

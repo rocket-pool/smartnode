@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getVotePower(c *cli.Context) (*api.GetPDAOVotePowerResponse, error) {
+func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 
 	// Get services
 	rp, err := services.GetRocketPool(c)
@@ -31,7 +31,7 @@ func getVotePower(c *cli.Context) (*api.GetPDAOVotePowerResponse, error) {
 	}
 
 	// Response
-	response := api.GetPDAOVotePowerResponse{}
+	response := api.PDAOStatusResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

@@ -16,7 +16,7 @@ const (
 	colorGreen string = "\033[32m"
 )
 
-func getVotePower(c *cli.Context) error {
+func getStatus(c *cli.Context) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -34,8 +34,8 @@ func getVotePower(c *cli.Context) error {
 		return nil
 	}
 
-	// Get node's voting power at the latest block
-	response, err := rp.GetVotingPower()
+	// Get PDAO status at the latest block
+	response, err := rp.PDAOStatus()
 	if err != nil {
 		return err
 	}
