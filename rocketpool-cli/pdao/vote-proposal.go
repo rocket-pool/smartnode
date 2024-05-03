@@ -154,13 +154,13 @@ func voteOnProposal(c *cli.Context) error {
 	if !canVote.CanVote {
 		fmt.Printf("Cannot %s on proposal:\n", actionString)
 		if canVote.InsufficientPower {
-			fmt.Println("You do not have any voting power.")
+			fmt.Println("You didn't have voting power at the proposal snapshot.")
 		}
 		return nil
 	}
 
 	// Print the voting power
-	fmt.Printf("\n\nYour current voting power: %d\n\n", canVote.VotingPower)
+	fmt.Printf("\n\nYour voting power on this proposal: %d\n\n", canVote.VotingPower)
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
