@@ -3,6 +3,7 @@ package pdao
 import (
 	"encoding/hex"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
@@ -149,7 +150,7 @@ func getProposal(c *cli.Context, id uint64) error {
 	fmt.Printf("Payload:                %s\n", proposal.PayloadStr)
 	fmt.Printf("Payload (bytes):        %s\n", hex.EncodeToString(proposal.Payload))
 	fmt.Printf("Proposed by:            %s\n", proposal.ProposerAddress.Hex())
-	fmt.Printf("Created at:             %s\n", proposal.CreatedTime.Format(time.RFC822))
+	fmt.Printf("Created at:             %s, %s\n", proposal.CreatedTime.Format(time.RFC822), getTimeDifference(proposal.CreatedTime))
 	fmt.Printf("State:                  %s\n", types.ProtocolDaoProposalStates[proposal.State])
 
 	// Start block - pending proposals
@@ -162,15 +163,15 @@ func getProposal(c *cli.Context, id uint64) error {
 
 	// End block - active proposals
 	if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 {
-		fmt.Printf("Phase 1 end:            %s\n", proposal.Phase1EndTime.Format(time.RFC822))
+		fmt.Printf("Phase 1 end:            %s, %s\n", proposal.Phase1EndTime.Format(time.RFC822), getTimeDifference(proposal.Phase1EndTime))
 	}
 	if proposal.State == types.ProtocolDaoProposalState_ActivePhase2 {
-		fmt.Printf("Phase 2 end:            %s\n", proposal.Phase2EndTime.Format(time.RFC822))
+		fmt.Printf("Phase 2 end:            %s, %s\n", proposal.Phase2EndTime.Format(time.RFC822), getTimeDifference(proposal.Phase2EndTime))
 	}
 
 	// Expiry block - succeeded proposals
 	if proposal.State == types.ProtocolDaoProposalState_Succeeded {
-		fmt.Printf("Expires at:             %s\n", proposal.ExpiryTime.Format(time.RFC822))
+		fmt.Printf("Expires at:             %s, %s\n", proposal.ExpiryTime.Format(time.RFC822), getTimeDifference(proposal.ExpiryTime))
 	}
 
 	// Vote details
@@ -186,4 +187,29 @@ func getProposal(c *cli.Context, id uint64) error {
 	}
 
 	return nil
+}
+
+func getTimeDifference(t time.Time) string {
+	// Get the current time
+	currentTime := time.Now()
+
+	// Calculate the time difference
+	timeDiff := currentTime.Sub(t)
+
+	// Round timeDiff to the nearest whole second
+	roundedSeconds := time.Duration(int64(timeDiff.Seconds() + 0.5))
+	timeDiff = time.Duration(roundedSeconds) * time.Second
+
+	// Absolute value
+	absTimeDiff := time.Duration(math.Abs(float64(timeDiff)))
+
+	var message string
+
+	if timeDiff < 0 {
+		message = fmt.Sprintf("in %s", absTimeDiff)
+	} else {
+		message = fmt.Sprintf("was %s ago", timeDiff)
+	}
+
+	return message
 }
