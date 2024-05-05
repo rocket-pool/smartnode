@@ -23,7 +23,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Implementation for tree generator ruleset v8
+// Implementation for tree generator ruleset v9
 type treeGeneratorImpl_v9 struct {
 	networkState           *state.NetworkState
 	rewardsFile            *RewardsFile_v3
@@ -57,7 +57,7 @@ func newTreeGeneratorImpl_v9(log *log.ColorLogger, logPrefix string, index uint6
 		rewardsFile: &RewardsFile_v3{
 			RewardsFileHeader: &RewardsFileHeader{
 				RewardsFileVersion:  3,
-				RulesetVersion:      8,
+				RulesetVersion:      9,
 				Index:               index,
 				StartTime:           startTime.UTC(),
 				EndTime:             endTime.UTC(),

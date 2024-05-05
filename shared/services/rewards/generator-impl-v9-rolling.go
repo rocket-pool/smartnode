@@ -22,7 +22,7 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
-// Implementation for tree generator ruleset v8 with rolling record support
+// Implementation for tree generator ruleset v9 with rolling record support
 type treeGeneratorImpl_v9_rolling struct {
 	networkState         *state.NetworkState
 	rewardsFile          *RewardsFile_v3
@@ -53,7 +53,7 @@ func newTreeGeneratorImpl_v9_rolling(log *log.ColorLogger, logPrefix string, ind
 		rewardsFile: &RewardsFile_v3{
 			RewardsFileHeader: &RewardsFileHeader{
 				RewardsFileVersion:  3,
-				RulesetVersion:      8,
+				RulesetVersion:      9,
 				Index:               index,
 				StartTime:           startTime.UTC(),
 				EndTime:             endTime.UTC(),
