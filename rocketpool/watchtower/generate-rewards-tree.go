@@ -273,12 +273,12 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 	)
 
 	// Write the files
-	err = localMinipoolPerformanceFile.Write()
+	_, err = localMinipoolPerformanceFile.Write()
 	if err != nil {
 		t.handleError(fmt.Errorf("%s error saving minipool performance file: %w", generationPrefix, err))
 		return
 	}
-	err = localRewardsFile.Write()
+	_, err = localRewardsFile.Write()
 	if err != nil {
 		t.handleError(fmt.Errorf("%s error saving rewards file: %w", generationPrefix, err))
 		return

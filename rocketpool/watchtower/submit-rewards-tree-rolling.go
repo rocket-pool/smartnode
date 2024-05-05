@@ -551,7 +551,7 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		rewardsFile.GetMinipoolPerformanceFile(),
 		minipoolPerformancePath,
 	)
-	err = localMinipoolPerformanceFile.Write()
+	_, err = localMinipoolPerformanceFile.Write()
 	if err != nil {
 		return fmt.Errorf("Error serializing minipool performance file into JSON: %w", err)
 	}
@@ -576,7 +576,7 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	t.printMessage("Generation complete! Saving tree...")
 
 	// Write the rewards tree to disk
-	err = localRewardsFile.Write()
+	_, err = localRewardsFile.Write()
 	if err != nil {
 		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
 	}

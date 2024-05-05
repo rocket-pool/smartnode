@@ -342,7 +342,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 				deserializedRewardsFile,
 				rewardsTreePath,
 			)
-			err = localRewardsFile.Write()
+			_, err = localRewardsFile.Write()
 			if err != nil {
 				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 			}
