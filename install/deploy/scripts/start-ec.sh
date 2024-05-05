@@ -298,7 +298,7 @@ if [ "$CLIENT" = "reth" ]; then
 
     # Create the JWT secret
     if [ ! -f "/secrets/jwtsecret" ]; then
-        openssl rand -hex 32 | tr -d "\n" > /secrets/jwtsecret
+        echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/reth node $RETH_NETWORK \
