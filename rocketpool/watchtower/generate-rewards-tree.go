@@ -269,7 +269,7 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 	)
 	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
 		rewardsFile,
-		t.cfg.Smartnode.GetRewardsTreePath(index, true),
+		t.cfg.Smartnode.GetRewardsTreePath(index, true, config.RewardsExtensionJSON),
 	)
 
 	// Write the files
