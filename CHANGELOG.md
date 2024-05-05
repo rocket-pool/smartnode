@@ -1,6 +1,6 @@
 # Changelog
 
-## [v1.13.0](https://github.com/rocket-pool/smartnode/tree/v1.13.0) (2024-05-02)
+## [v1.13.1](https://github.com/rocket-pool/smartnode/tree/v1.13.1) (2024-05-02)
 
 ### Changed
 
