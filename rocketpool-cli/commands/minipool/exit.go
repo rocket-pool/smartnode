@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/urfave/cli/v2"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
@@ -38,7 +39,7 @@ func exitMinipools(c *cli.Context) error {
 	}
 
 	// Get selected minipools
-	options := make([]utils.SelectionOption[api.MinipoolDetails], len(activeMinipools))
+	options := make([]ncli.SelectionOption[api.MinipoolDetails], len(activeMinipools))
 	for i, mp := range activeMinipools {
 		option := &options[i]
 		option.Element = &activeMinipools[i]

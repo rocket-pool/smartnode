@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/urfave/cli/v2"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
@@ -44,7 +45,7 @@ func executeProposals(c *cli.Context) error {
 	}
 
 	// Get selected proposals
-	options := make([]utils.SelectionOption[api.ProtocolDaoProposalDetails], len(executableProposals))
+	options := make([]ncli.SelectionOption[api.ProtocolDaoProposalDetails], len(executableProposals))
 	for i, prop := range executableProposals {
 		option := &options[i]
 		option.Element = &executableProposals[i]

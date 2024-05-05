@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
@@ -31,7 +32,7 @@ func claimBonds(c *cli.Context) error {
 	}
 
 	// Get selected proposals
-	options := make([]utils.SelectionOption[api.BondClaimResult], len(claimableBonds))
+	options := make([]ncli.SelectionOption[api.BondClaimResult], len(claimableBonds))
 	for i, bond := range claimableBonds {
 		option := &options[i]
 		option.Element = &claimableBonds[i]

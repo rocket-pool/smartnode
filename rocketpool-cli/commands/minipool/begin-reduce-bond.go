@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
@@ -88,7 +89,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 	}
 
 	// Get selected minipools
-	options := make([]utils.SelectionOption[api.MinipoolBeginReduceBondDetails], len(reduceableMinipools))
+	options := make([]ncli.SelectionOption[api.MinipoolBeginReduceBondDetails], len(reduceableMinipools))
 	for i, mp := range reduceableMinipools {
 		option := &options[i]
 		option.Element = &reduceableMinipools[i]

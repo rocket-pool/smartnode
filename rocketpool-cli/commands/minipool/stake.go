@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
@@ -38,7 +39,7 @@ func stakeMinipools(c *cli.Context) error {
 	}
 
 	// Get selected minipools
-	options := make([]utils.SelectionOption[api.MinipoolDetails], len(stakeableMinipools))
+	options := make([]ncli.SelectionOption[api.MinipoolDetails], len(stakeableMinipools))
 	for i, mp := range stakeableMinipools {
 		option := &options[i]
 		option.Element = &stakeableMinipools[i]

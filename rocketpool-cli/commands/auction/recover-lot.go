@@ -6,6 +6,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
@@ -42,7 +43,7 @@ func recoverRplFromLot(c *cli.Context) error {
 	}
 
 	// Get selected lots
-	options := make([]utils.SelectionOption[api.AuctionLotDetails], len(recoverableLots))
+	options := make([]ncli.SelectionOption[api.AuctionLotDetails], len(recoverableLots))
 	for i, lot := range recoverableLots {
 		option := &options[i]
 		option.Element = &recoverableLots[i]

@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
@@ -38,7 +39,7 @@ func setUseLatestDelegates(c *cli.Context, setting bool) error {
 	}
 
 	// Get selected minipools
-	options := make([]utils.SelectionOption[api.MinipoolDetails], len(settableMinipools))
+	options := make([]ncli.SelectionOption[api.MinipoolDetails], len(settableMinipools))
 	for i, mp := range settableMinipools {
 		option := &options[i]
 		option.Element = &settableMinipools[i]

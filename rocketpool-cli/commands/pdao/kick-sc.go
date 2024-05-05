@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
@@ -37,7 +38,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 	}
 
 	// Get selected members
-	options := make([]utils.SelectionOption[api.SecurityMemberDetails], len(members))
+	options := make([]ncli.SelectionOption[api.SecurityMemberDetails], len(members))
 	for i, member := range members {
 		option := &options[i]
 		option.Element = &members[i]

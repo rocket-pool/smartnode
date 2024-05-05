@@ -3,6 +3,7 @@ package security
 import (
 	"fmt"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
@@ -43,7 +44,7 @@ func executeProposal(c *cli.Context) error {
 	}
 
 	// Get selected proposals
-	options := make([]utils.SelectionOption[api.SecurityProposalDetails], len(executableProposals))
+	options := make([]ncli.SelectionOption[api.SecurityProposalDetails], len(executableProposals))
 	for i, prop := range executableProposals {
 		option := &options[i]
 		option.Element = &executableProposals[i]
