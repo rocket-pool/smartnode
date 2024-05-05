@@ -31,6 +31,11 @@ func (r *ServiceRequester) ClientStatus() (*types.ApiResponse[api.ServiceClientS
 	return client.SendGetRequest[api.ServiceClientStatusData](r, "client-status", "ClientStatus", nil)
 }
 
+// Gets the Smart Node configuration
+func (r *ServiceRequester) GetConfig() (*types.ApiResponse[api.ServiceGetConfigData], error) {
+	return client.SendGetRequest[api.ServiceGetConfigData](r, "get-config", "GetConfig", nil)
+}
+
 // Restarts the Validator client
 func (r *ServiceRequester) RestartVc() (*types.ApiResponse[types.SuccessData], error) {
 	return client.SendGetRequest[types.SuccessData](r, "restart-vc", "RestartVc", nil)

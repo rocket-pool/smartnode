@@ -24,6 +24,7 @@ func NewServiceHandler(logger *log.Logger, ctx context.Context, serviceProvider 
 	}
 	h.factories = []server.IContextFactory{
 		&serviceClientStatusContextFactory{h},
+		&serviceGetConfigContextFactory{h},
 		&serviceRestartVcContextFactory{h},
 		&serviceTerminateDataFolderContextFactory{h},
 		&serviceVersionContextFactory{h},
