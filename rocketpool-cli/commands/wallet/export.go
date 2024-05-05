@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	nutils "github.com/rocket-pool/node-manager-core/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/urfave/cli/v2"
@@ -47,7 +48,7 @@ func exportWallet(c *cli.Context) error {
 	// Print wallet & return
 	fmt.Println("Node account private key:")
 	fmt.Println("")
-	fmt.Println(export.Data.AccountPrivateKey)
+	fmt.Println(nutils.EncodeHexWithPrefix(export.Data.AccountPrivateKey))
 	fmt.Println("")
 	fmt.Println("Wallet password:")
 	fmt.Println("")
