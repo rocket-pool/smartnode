@@ -22,9 +22,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the node's status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getStatus(c)
@@ -44,9 +42,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(registerTimezoneFlag) != "" {
@@ -66,9 +62,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the time and your expected RPL rewards of the next checkpoint",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getRewards(c)
@@ -89,9 +83,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 					withdrawalAddress := c.Args().Get(0)
 
 					// Run
@@ -108,9 +100,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return confirmPrimaryWithdrawalAddress(c)
@@ -131,9 +121,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 					withdrawalAddress := c.Args().Get(0)
 
 					// Run
@@ -150,9 +138,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return confirmRplWithdrawalAddress(c)
@@ -168,9 +154,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return setRplLockingAllowed(c, true)
@@ -186,9 +170,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 					// Run
 					return setRplLockingAllowed(c, false)
 				},
@@ -207,9 +189,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(timezoneFlag) != "" {
@@ -236,9 +216,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(amountFlag) != "" && c.String(amountFlag) != "all" {
@@ -271,9 +249,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(amountFlag) != "" &&
@@ -299,9 +275,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				ArgsUsage: "address",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 
 					addressOrEns := c.Args().Get(0)
 
@@ -318,9 +292,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 
 					addressOrEns := c.Args().Get(0)
 
@@ -344,9 +316,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return nodeClaimRewards(c)
@@ -367,9 +337,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(amountFlag) != "" && c.String(amountFlag) != "max" {
@@ -396,9 +364,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(amountFlag) != "" && c.String(amountFlag) != "max" {
@@ -436,9 +402,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(amountFlag) != "" {
@@ -495,9 +459,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 					pubkey, err := input.ValidatePubkey("pubkey", c.Args().Get(0))
 					if err != nil {
 						return err
@@ -535,9 +497,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 3); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 3)
 					amount, err := input.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
 					if err != nil {
 						return err
@@ -562,9 +522,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 					delegate := c.Args().Get(0)
 
 					// Run
@@ -580,9 +538,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return nodeClearVotingDelegate(c)
@@ -598,9 +554,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return initializeFeeDistributor(c)
@@ -616,9 +570,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return distribute(c)
@@ -634,9 +586,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return setSmoothingPoolState(c, true)
@@ -652,9 +602,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return setSmoothingPoolState(c, false)

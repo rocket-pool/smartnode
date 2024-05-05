@@ -193,9 +193,7 @@ func createSettingCommandStub[ValueType SettingType, SettingNameType any](
 		Flags:     flags,
 		Action: func(c *cli.Context) error {
 			// Validate args
-			if err := utils.ValidateArgCount(c, 1); err != nil {
-				return err
-			}
+			utils.ValidateArgCount(c, 1)
 
 			// Parse the value
 			value, err := parser(c)

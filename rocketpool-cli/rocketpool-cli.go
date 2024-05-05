@@ -166,6 +166,7 @@ ______           _        _    ______           _
 	fmt.Println()
 	if err := app.Run(os.Args); err != nil {
 		utils.PrettyPrintError(err)
+		os.Exit(1)
 	}
 	fmt.Println()
 }

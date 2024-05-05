@@ -24,9 +24,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the node wallet status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getStatus(c)
@@ -45,9 +43,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(PasswordFlag.Name) != "" {
@@ -75,9 +71,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(PasswordFlag.Name) != "" {
@@ -102,9 +96,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Rebuild validator keystores from derived keys",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return rebuildWallet(c)
@@ -124,9 +116,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Validate flags
 					if c.String(mnemonicFlag.Name) != "" {
@@ -150,9 +140,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return setPassword(c)
@@ -168,9 +156,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return deletePassword(c)
@@ -183,9 +169,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Export the node wallet in JSON format",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return exportWallet(c)
@@ -198,9 +182,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Print the node wallet (encrypted with the wallet's password) in the JSON format used by eth-account and other tools for interoperability",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return exportEthKey(c)
@@ -214,9 +196,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				ArgsUsage: "name",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 
 					// Run
 					return setEnsName(c, c.Args().Get(0))
@@ -228,9 +208,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage: fmt.Sprintf("%sDeletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!%s", terminal.ColorRed, terminal.ColorReset),
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return purge(c)
@@ -259,9 +237,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 2); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 2)
 					message, err := input.ValidateByteArray("message", c.Args().Get(1))
 					if err != nil {
 						return err
@@ -282,9 +258,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return masquerade(c)
@@ -301,9 +275,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return restoreAddress(c)

@@ -140,9 +140,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return installService(c)
@@ -156,9 +154,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags:   configFlags,
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return configureService(c)
@@ -171,9 +167,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the sync progress of the Execution and Consensus clients",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getSyncProgress(c)
@@ -186,9 +180,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "View the Rocket Pool service status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return serviceStatus(c)
@@ -205,9 +197,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return startService(c, false)
@@ -223,9 +213,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					_, err := stopService(c)
@@ -243,9 +231,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return resetDocker(c)
@@ -261,9 +247,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return pruneDocker(c)
@@ -304,9 +288,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "View the Rocket Pool service stats",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return serviceStats(c)
@@ -318,9 +300,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage: "View the Rocket Pool service docker compose config",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return serviceCompose(c)
@@ -333,9 +313,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "View the Rocket Pool service version information",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return serviceVersion(c)
@@ -348,9 +326,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Shuts down the main ETH1 client and prunes its database, freeing up disk space, then restarts it when it's done.",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return pruneExecutionClient(c)
@@ -368,9 +344,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return installUpdateTracker(c)
@@ -383,9 +357,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Checks if your CPU supports all of the features required by the \"modern\" version of certain client images. If not, it prints what features are missing.",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return checkCpuFeatures()
@@ -397,9 +369,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage: "Generate YAML that shows the current configuration schema, including all of the parameters and their descriptions",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return getConfigYaml(c)
@@ -418,9 +388,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 					targetDir := c.Args().Get(0)
 
 					// Run command
@@ -435,9 +403,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				ArgsUsage: "source-folder",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 					sourceDir := c.Args().Get(0)
 
 					// Run command
@@ -451,9 +417,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   fmt.Sprintf("%sDeletes the main Execution client's chain data and resyncs it from scratch. Only use this as a last resort!%s", terminal.ColorRed, terminal.ColorReset),
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return resyncExecutionClient(c)
@@ -466,9 +430,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   fmt.Sprintf("%sDeletes the Consensus client's chain data and resyncs it from scratch. Only use this as a last resort!%s", terminal.ColorRed, terminal.ColorReset),
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return resyncConsensusClient(c)
@@ -484,9 +446,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run command
 					return terminateService(c)
