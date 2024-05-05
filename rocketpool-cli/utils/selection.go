@@ -51,7 +51,7 @@ func GetMultiselectIndices[DataType any](c *cli.Context, flagName string, option
 		fmt.Printf("%d: %s\n", i+1, option.Display)
 	}
 	fmt.Println()
-	indexSelection := Prompt("Use a comma separated list (such as '1,2,3') or leave it blank to select all options.", "^$|^\\d+(,\\d+)*$", "Invalid index selection")
+	indexSelection := Prompt("Use a comma separated list (such as '1,2,3' or '1-4,6-8,10') or leave it blank to select all options.", ".*", "Invalid index selection")
 	return parseIndexSelection(indexSelection, options)
 }
 
@@ -73,33 +73,64 @@ func parseIndexSelection[DataType any](selectionString string, options []Selecti
 		trimmedElements[i] = strings.TrimSpace(element)
 	}
 
-	// Remove duplicates
-	uniqueElements := make([]string, 0, len(elements))
-	seenIndices := map[string]bool{}
-	for _, element := range trimmedElements {
-		_, exists := seenIndices[element]
-		if !exists {
-			uniqueElements = append(uniqueElements, element)
-			seenIndices[element] = true
-		}
-	}
-
-	// Validate
+	// Process elements
 	optionLength := uint64(len(options))
-	selectedElements := make([]*DataType, len(uniqueElements))
-	for i, element := range uniqueElements {
-		// Parse it
-		index, err := strconv.ParseUint(element, 10, 64)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing index '%s': %w", element, err)
-		}
-		index--
+	seenIndices := map[uint64]bool{}
+	selectedElements := []*DataType{}
+	for _, element := range trimmedElements {
+		before, after, found := strings.Cut(element, "-")
+		if !found {
+			// Handle non-ranges
+			index, err := strconv.ParseUint(element, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing index '%s': %w", element, err)
+			}
+			index--
 
-		// Make sure it's in the list of options
-		if index >= optionLength {
-			return nil, fmt.Errorf("selection '%s' is not a valid option", element)
+			// Make sure it's in the list of options
+			if index >= optionLength {
+				return nil, fmt.Errorf("selection '%s' is too large", element)
+			}
+
+			// Add it if it's new
+			_, exists := seenIndices[index]
+			if !exists {
+				seenIndices[index] = true
+				selectedElements = append(selectedElements, options[index].Element)
+			}
+		} else {
+			// Handle ranges
+			start, err := strconv.ParseUint(before, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing range start in '%s': %w", element, err)
+			}
+			end, err := strconv.ParseUint(after, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("error parsing range end in '%s': %w", element, err)
+			}
+			start--
+			end--
+
+			// Make sure the start and end are in the list of options
+			if end <= start {
+				return nil, fmt.Errorf("range end for '%s' is not greater than the start", element)
+			}
+			if start >= optionLength {
+				return nil, fmt.Errorf("range start for '%s' is too large", element)
+			}
+			if end >= optionLength {
+				return nil, fmt.Errorf("range end for '%s' is too large", element)
+			}
+
+			// Add each index if it's new
+			for index := start; index <= end; index++ {
+				_, exists := seenIndices[index]
+				if !exists {
+					seenIndices[index] = true
+					selectedElements = append(selectedElements, options[index].Element)
+				}
+			}
 		}
-		selectedElements[i] = options[index].Element
 	}
 	return selectedElements, nil
 }
