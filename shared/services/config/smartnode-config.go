@@ -18,8 +18,8 @@ const (
 	NetworkID                          string = "network"
 	ProjectNameID                      string = "projectName"
 	SnapshotID                         string = "rocketpool-dao.eth"
-	RewardsTreeFilenameFormat          string = "rp-rewards-%s-%d.json"
-	MinipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d.json"
+	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
+	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d.json"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
 	ChecksumTableFilename              string = "checksums.sha384"
@@ -40,6 +40,13 @@ const (
 	defaultProjectName       string = "rocketpool"
 	WatchtowerMaxFeeDefault  uint64 = 200
 	WatchtowerPrioFeeDefault uint64 = 3
+)
+
+type RewardsExtension string
+
+const (
+	RewardsExtensionJSON RewardsExtension = ".json"
+	RewardsExtensionSSZ  RewardsExtension = ".ssz"
 )
 
 // Configuration for the Smartnode
@@ -851,20 +858,35 @@ func getDefaultRecordsDir(config *RocketPoolConfig) string {
 	return filepath.Join(getDefaultDataDir(config), "records")
 }
 
-func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool) string {
+func (cfg *SmartnodeConfig) GetRewardsTreeDirectory(daemon bool) string {
 	if daemon && !cfg.parent.IsNativeMode {
-		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
+		return filepath.Join(DaemonDataPath, RewardsTreesFolder)
 	}
 
-	return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(RewardsTreeFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
+	return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder)
+}
+
+func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool, extension RewardsExtension) string {
+	return filepath.Join(
+		cfg.GetRewardsTreeDirectory(daemon),
+		fmt.Sprintf(
+			rewardsTreeFilenameFormat,
+			string(cfg.Network.Value.(config.Network)),
+			interval,
+			string(extension),
+		),
+	)
 }
 
 func (cfg *SmartnodeConfig) GetMinipoolPerformancePath(interval uint64, daemon bool) string {
-	if daemon && !cfg.parent.IsNativeMode {
-		return filepath.Join(DaemonDataPath, RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
-	}
-
-	return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder, fmt.Sprintf(MinipoolPerformanceFilenameFormat, string(cfg.Network.Value.(config.Network)), interval))
+	return filepath.Join(
+		cfg.GetRewardsTreeDirectory(daemon),
+		fmt.Sprintf(
+			minipoolPerformanceFilenameFormat,
+			string(cfg.Network.Value.(config.Network)),
+			interval,
+		),
+	)
 }
 
 func (cfg *SmartnodeConfig) GetRegenerateRewardsTreeRequestPath(interval uint64, daemon bool) string {
