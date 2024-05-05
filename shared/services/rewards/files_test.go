@@ -1,6 +1,7 @@
 package rewards
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -28,9 +29,16 @@ func TestFilesFromTree(t *testing.T) {
 		path.Join(dir, "rewards.json"),
 	)
 
-	err := localRewardsFile.Write()
+	rewardsFileBytes, err := localRewardsFile.Write()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if rewardsFileBytes == nil {
+		t.Fatal("Write() should have returned serialized data")
+	}
+	directBytes, _ := f.Serialize()
+	if !bytes.Equal(directBytes, rewardsFileBytes) {
+		t.Fatal("Write() returned something different than Serialize()")
 	}
 
 	minipoolPerformanceFile := localRewardsFile.Impl().GetMinipoolPerformanceFile()
@@ -39,9 +47,16 @@ func TestFilesFromTree(t *testing.T) {
 		path.Join(dir, "performance.json"),
 	)
 
-	err = localMinipoolPerformanceFile.Write()
+	miniPerfFileBytes, err := localMinipoolPerformanceFile.Write()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if miniPerfFileBytes == nil {
+		t.Fatal("Write() should have returned serialized data")
+	}
+	directBytes, _ = minipoolPerformanceFile.Serialize()
+	if !bytes.Equal(directBytes, miniPerfFileBytes) {
+		t.Fatal("Write() returned something different than Serialize()")
 	}
 
 	// Check that the file can be parsed

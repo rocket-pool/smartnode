@@ -79,17 +79,17 @@ func (lf *LocalFile[T]) Serialize() ([]byte, error) {
 }
 
 // Serializes the file and writes it to disk
-func (lf *LocalFile[T]) Write() error {
+func (lf *LocalFile[T]) Write() ([]byte, error) {
 	data, err := lf.Serialize()
 	if err != nil {
-		return fmt.Errorf("error serializing file: %w", err)
+		return nil, fmt.Errorf("error serializing file: %w", err)
 	}
 
 	err = os.WriteFile(lf.fullPath, data, 0644)
 	if err != nil {
-		return fmt.Errorf("error writing file to %s: %w", lf.fullPath, err)
+		return nil, fmt.Errorf("error writing file to %s: %w", lf.fullPath, err)
 	}
-	return nil
+	return data, nil
 }
 
 // Computes the CID that would be used if we compressed the file with zst,
