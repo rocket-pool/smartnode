@@ -69,15 +69,34 @@ func getSyncProgress(c *cli.Context) error {
 		return err
 	}
 
-	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo()
+	// Get node status
+	status, err := rp.Api.Service.ClientStatus()
 	if err != nil {
 		return err
 	}
-	if !depositContractInfo.Data.SufficientSync {
+
+	// Print client status
+	printSyncProgress(&status.Data.EcManagerStatus, "execution")
+	printSyncProgress(&status.Data.BcManagerStatus, "beacon")
+	fmt.Println()
+
+	// Check the EL sync status
+	synced := status.Data.EcManagerStatus.PrimaryClientStatus.IsSynced
+	if !synced && status.Data.EcManagerStatus.FallbackEnabled {
+		synced = status.Data.EcManagerStatus.FallbackClientStatus.IsSynced
+	}
+	if !synced {
 		fmt.Printf("%sYour Execution Client hasn't synced enough to determine if your Execution Client and Beacon Node are on the same network.\n", terminal.ColorYellow)
 		fmt.Printf("To run this safety check, try again later when the Execution Client has made more sync progress.%s\n\n", terminal.ColorReset)
-	} else if depositContractInfo.Data.RPNetwork != depositContractInfo.Data.BeaconNetwork ||
+		return nil
+	}
+
+	// Make sure the clients are on the same chain
+	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo(false)
+	if err != nil {
+		return err
+	}
+	if depositContractInfo.Data.RPNetwork != depositContractInfo.Data.BeaconNetwork ||
 		depositContractInfo.Data.RPDepositContract != depositContractInfo.Data.BeaconDepositContract {
 		utils.PrintDepositMismatchError(
 			depositContractInfo.Data.RPNetwork,
@@ -89,18 +108,6 @@ func getSyncProgress(c *cli.Context) error {
 		fmt.Println("Your Beacon Node is on the correct network.")
 		fmt.Println()
 	}
-
-	// Get node status
-	status, err := rp.Api.Service.ClientStatus()
-	if err != nil {
-		return err
-	}
-
-	// Print EC status
-	printSyncProgress(&status.Data.EcManagerStatus, "execution")
-
-	// Print CC status
-	printSyncProgress(&status.Data.BcManagerStatus, "beacon")
 
 	// Return
 	return nil

@@ -1,3 +1,13 @@
+rocketpool (2.0.0~b2) UNRELEASED; urgency=medium
+
+  * The slippage check during `node deposit` now properly checks if the min is the same as the max and ignores the prompt.
+  * Proposing PDAO rewards percentages now uses the correct service route.
+  * Multiselect commands (such as `minipool distribute`) now support ranges as well as comma-separated options - e.g., things like `1-3,4,5,6-10` will now work.
+  * `minipool exit` now properly respects your minipool choice.
+  * Added the archive mode setting for Geth.
+
+ -- Rocket Pool <dev@rocketpool.net>  Sun, 05 May 2024 15:36:22 +0000
+
 rocketpool (2.0.0~b1) unstable; urgency=medium
 
   * Welcome to Smart Node v2! This is a completely redesigned Smart Node from the ground up, taking advantage of years of lessons learned and user feedback. The list of features and changes is far too long to list here, but here are some highlights:

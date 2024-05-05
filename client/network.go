@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/rocket-pool/node-manager-core/api/client"
 	"github.com/rocket-pool/node-manager-core/api/types"
@@ -34,8 +35,11 @@ func (r *NetworkRequester) GetActiveDaoProposals() (*types.ApiResponse[api.Netwo
 }
 
 // Get the deposit contract info for Rocket Pool and the Beacon Client
-func (r *NetworkRequester) GetDepositContractInfo() (*types.ApiResponse[api.NetworkDepositContractInfoData], error) {
-	return client.SendGetRequest[api.NetworkDepositContractInfoData](r, "deposit-contract-info", "GetDepositContractInfo", nil)
+func (r *NetworkRequester) GetDepositContractInfo(checkSync bool) (*types.ApiResponse[api.NetworkDepositContractInfoData], error) {
+	args := map[string]string{
+		"checkSync": strconv.FormatBool(checkSync),
+	}
+	return client.SendGetRequest[api.NetworkDepositContractInfoData](r, "deposit-contract-info", "GetDepositContractInfo", args)
 }
 
 // Download a rewards info file from IPFS or Github for the given interval

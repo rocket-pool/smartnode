@@ -1,6 +1,7 @@
 package network
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	rputils "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
@@ -24,7 +26,10 @@ func (f *networkDepositInfoContextFactory) Create(args url.Values) (*networkDepo
 	c := &networkDepositInfoContext{
 		handler: f.handler,
 	}
-	return c, nil
+	inputErrs := []error{
+		server.ValidateArg("checkSync", args, input.ValidateBool, &c.checkSync),
+	}
+	return c, errors.Join(inputErrs...)
 }
 
 func (f *networkDepositInfoContextFactory) RegisterRoute(router *mux.Router) {
@@ -38,7 +43,8 @@ func (f *networkDepositInfoContextFactory) RegisterRoute(router *mux.Router) {
 // ===============
 
 type networkDepositInfoContext struct {
-	handler *NetworkHandler
+	handler   *NetworkHandler
+	checkSync bool
 }
 
 func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContractInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
@@ -49,9 +55,18 @@ func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContract
 	ctx := c.handler.ctx
 
 	// Requirements
-	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
-	if err != nil {
-		return status, err
+	if c.checkSync {
+		// Check the EL sync progress and the RP contract cache
+		status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
+		if err != nil {
+			return status, err
+		}
+	} else {
+		// Just check the RP contract cache
+		err := sp.RefreshRocketPoolContracts()
+		if err != nil {
+			return types.ResponseStatus_Error, err
+		}
 	}
 
 	// Get the deposit contract info

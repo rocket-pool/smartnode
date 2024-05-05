@@ -27,7 +27,7 @@ type MinipoolDetails struct {
 		DepositBalance  *big.Int       `json:"depositBalance"`
 		RefundBalance   *big.Int       `json:"refundBalance"`
 		DepositAssigned bool           `json:"depositAssigned"`
-	}
+	} `json:"node"`
 	User struct {
 		DepositBalance      *big.Int  `json:"depositBalance"`
 		DepositAssigned     bool      `json:"depositAssigned"`
