@@ -116,7 +116,7 @@ func nodeDeposit(c *cli.Context) error {
 		}
 	} else {
 		// Prompt for min node fee
-		if nodeFeeResponse.Data.MinNodeFee == nodeFeeResponse.Data.MaxNodeFee {
+		if nodeFeeResponse.Data.MinNodeFee.Cmp(nodeFeeResponse.Data.MaxNodeFee) == 0 {
 			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)*100)
 			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		} else {
