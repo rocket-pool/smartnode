@@ -96,7 +96,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	}
 
 	// This thing is so complex it's easier to just get the state snapshot and go from there
-	stateMgr, err := state.NewNetworkStateManager(ctx, rp, cfg, ec, bc, nil)
+	stateMgr, err := state.NewNetworkStateManager(ctx, rp, cfg, ec, bc, c.handler.logger.Logger)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating network state manager: %w", err)
 	}
