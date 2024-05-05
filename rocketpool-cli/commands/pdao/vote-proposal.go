@@ -130,7 +130,7 @@ func voteOnProposal(c *cli.Context) error {
 	if !response.Data.CanVote {
 		fmt.Printf("Cannot %s on proposal:\n", actionString)
 		if response.Data.InsufficientPower {
-			fmt.Println("You do not have any voting power.")
+			fmt.Println("You didn't have voting power at the proposal snapshot.")
 		}
 		if response.Data.AlreadyVoted {
 			fmt.Println("You already voted on this proposal.")
@@ -145,7 +145,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Print voting power
-	fmt.Printf("You currently have %s voting power.\n\n", response.Data.VotingPower.String())
+	fmt.Printf("Your voting power on this proposal: %.6f\n\n", eth.WeiToEth(response.Data.VotingPower))
 
 	// Run the TX
 	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
