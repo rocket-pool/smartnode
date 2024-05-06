@@ -114,6 +114,19 @@ func InitializeVoting(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (commo
 	return tx.Hash(), nil
 }
 
+// Initialize on-chain voting for the node and delegate voting power at the same transaction
+func InitializeVotingWithDelegate(rp *rocketpool.RocketPool, common.Address delegateAddress, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNetworkVoting.Transact(opts, "initialiseVotingWithDelegate", delegateAddress)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error initializing voting with delegate: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get the number of nodes that were present in the network at the provided block
 func GetVotingNodeCount(rp *rocketpool.RocketPool, blockNumber uint32, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
