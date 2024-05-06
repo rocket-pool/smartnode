@@ -10,10 +10,10 @@ import (
 )
 
 type NetworkRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewNetworkRequester(context *client.RequesterContext) *NetworkRequester {
+func NewNetworkRequester(context client.IRequesterContext) *NetworkRequester {
 	return &NetworkRequester{
 		context: context,
 	}
@@ -25,7 +25,7 @@ func (r *NetworkRequester) GetName() string {
 func (r *NetworkRequester) GetRoute() string {
 	return "network"
 }
-func (r *NetworkRequester) GetContext() *client.RequesterContext {
+func (r *NetworkRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 

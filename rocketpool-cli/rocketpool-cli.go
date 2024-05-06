@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -23,10 +24,12 @@ import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/context"
 	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 const (
-	defaultConfigFolder string = ".rocketpool"
+	defaultConfigFolder string      = ".rocketpool"
+	traceMode           os.FileMode = 0644
 )
 
 // Flags
@@ -71,6 +74,17 @@ var (
 		Name:    "secure-session",
 		Aliases: []string{"s"},
 		Usage:   "Some commands may print sensitive information to your terminal. Use this flag when nobody can see your screen to allow sensitive data to be printed without prompting",
+	}
+	apiAddressFlag *cli.StringFlag = &cli.StringFlag{
+		Name:    "api-address",
+		Aliases: []string{"a"},
+		Usage:   "The address of the Smart Node API server to connect to",
+		Value:   "http://localhost:8080",
+	}
+	httpTracePathFlag *cli.StringFlag = &cli.StringFlag{
+		Name:    "http-trace-path",
+		Aliases: []string{"htp"},
+		Usage:   "The path to save HTTP trace logs to. Leave blank to disable HTTP tracing",
 	}
 )
 
@@ -122,12 +136,14 @@ ______           _        _    ______           _
 		allowRootFlag,
 		configPathFlag,
 		nativeFlag,
+		apiAddressFlag,
 		maxFeeFlag,
 		maxPriorityFeeFlag,
 		nonceFlag,
 		utils.PrintTxDataFlag,
 		utils.SignTxOnlyFlag,
 		debugFlag,
+		httpTracePathFlag,
 		secureSessionFlag,
 	}
 
@@ -146,6 +162,7 @@ ______           _        _    ______           _
 	service.RegisterCommands(app, "service", []string{"s"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
+	var snCtx *context.SmartNodeContext
 	app.Before = func(c *cli.Context) error {
 		// Check user ID
 		if os.Getuid() == 0 && !c.Bool(allowRootFlag.Name) {
@@ -154,7 +171,8 @@ ______           _        _    ______           _
 			os.Exit(1)
 		}
 
-		err := validateFlags(c)
+		var err error
+		snCtx, err = validateFlags(c)
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
@@ -163,6 +181,9 @@ ______           _        _    ______           _
 	}
 
 	// Run application
+	if snCtx != nil && snCtx.HttpTraceFile != nil {
+		defer snCtx.HttpTraceFile.Close()
+	}
 	fmt.Println()
 	if err := app.Run(os.Args); err != nil {
 		utils.PrettyPrintError(err)
@@ -186,7 +207,7 @@ func setDefaultPaths() {
 }
 
 // Validate the global flags
-func validateFlags(c *cli.Context) error {
+func validateFlags(c *cli.Context) (*context.SmartNodeContext, error) {
 	snCtx := &context.SmartNodeContext{
 		MaxFee:         c.Float64(maxFeeFlag.Name),
 		MaxPriorityFee: c.Float64(maxPriorityFeeFlag.Name),
@@ -205,7 +226,7 @@ func validateFlags(c *cli.Context) error {
 	configPath := c.String(configPathFlag.Name)
 	path, err := homedir.Expand(strings.TrimSpace(configPath))
 	if err != nil {
-		return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
+		return nil, fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
 	}
 	snCtx.ConfigPath = path
 
@@ -213,7 +234,24 @@ func validateFlags(c *cli.Context) error {
 	nativeMode := c.Bool(nativeFlag.Name)
 	snCtx.NativeMode = nativeMode
 
+	// Get the API URL
+	address := c.String(apiAddressFlag.Name)
+	baseUrl, err := url.Parse(address)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing API address [%s]: %w", snCtx.ApiUrl, err)
+	}
+	snCtx.ApiUrl = baseUrl.JoinPath(config.SmartNodeApiClientRoute)
+
+	// Get the HTTP trace flag
+	httpTracePath := c.String(httpTracePathFlag.Name)
+	if httpTracePath != "" {
+		snCtx.HttpTraceFile, err = os.OpenFile(httpTracePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, traceMode)
+		if err != nil {
+			return nil, fmt.Errorf("error opening HTTP trace file [%s]: %w", httpTracePath, err)
+		}
+	}
+
 	// TODO: more here
 	context.SetSmartnodeContext(c, snCtx)
-	return nil
+	return snCtx, nil
 }

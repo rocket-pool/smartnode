@@ -13,10 +13,10 @@ import (
 )
 
 type MinipoolRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewMinipoolRequester(context *client.RequesterContext) *MinipoolRequester {
+func NewMinipoolRequester(context client.IRequesterContext) *MinipoolRequester {
 	return &MinipoolRequester{
 		context: context,
 	}
@@ -28,7 +28,7 @@ func (r *MinipoolRequester) GetName() string {
 func (r *MinipoolRequester) GetRoute() string {
 	return "minipool"
 }
-func (r *MinipoolRequester) GetContext() *client.RequesterContext {
+func (r *MinipoolRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 

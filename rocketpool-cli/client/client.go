@@ -3,7 +3,7 @@ package client
 import (
 	"fmt"
 	"log/slog"
-	"path/filepath"
+	"net/http/httptrace"
 
 	docker "github.com/docker/docker/client"
 	"github.com/fatih/color"
@@ -37,17 +37,24 @@ type Client struct {
 	isNewCfg bool
 }
 
-// Create new Rocket Pool client from CLI context without checking for sync status
-// Only use this function from commands that may work if the Daemon service doesn't exist
-// Most users should call NewClientFromCtx(c).WithStatus() or NewClientFromCtx(c).WithReady()
+// Create new Rocket Pool client from CLI context
 func NewClientFromCtx(c *cli.Context) *Client {
 	snCtx := context.GetSmartNodeContext(c)
-	socketPath := filepath.Join(snCtx.ConfigPath, config.SmartNodeCliSocketFilename)
+	logger := log.NewTerminalLogger(snCtx.DebugEnabled, terminalLogColor)
+
+	// Create the tracer if required
+	var tracer *httptrace.ClientTrace
+	if snCtx.HttpTraceFile != nil {
+		var err error
+		tracer, err = createTracer(snCtx.HttpTraceFile, logger.Logger)
+		if err != nil {
+			logger.Error("Error creating HTTP trace", log.Err(err))
+		}
+	}
 
 	// Make the client
-	logger := log.NewTerminalLogger(snCtx.DebugEnabled, terminalLogColor)
 	client := &Client{
-		Api:     client.NewApiClient(config.SmartNodeApiClientRoute, socketPath, logger.Logger),
+		Api:     client.NewApiClient(snCtx.ApiUrl, logger.Logger, tracer),
 		Context: snCtx,
 		Logger:  logger.Logger,
 	}

@@ -7,10 +7,10 @@ import (
 )
 
 type ServiceRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewServiceRequester(context *client.RequesterContext) *ServiceRequester {
+func NewServiceRequester(context client.IRequesterContext) *ServiceRequester {
 	return &ServiceRequester{
 		context: context,
 	}
@@ -22,7 +22,7 @@ func (r *ServiceRequester) GetName() string {
 func (r *ServiceRequester) GetRoute() string {
 	return "service"
 }
-func (r *ServiceRequester) GetContext() *client.RequesterContext {
+func (r *ServiceRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 

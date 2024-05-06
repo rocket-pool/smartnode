@@ -2,6 +2,8 @@ package context
 
 import (
 	"math/big"
+	"net/url"
+	"os"
 
 	"github.com/urfave/cli/v2"
 )
@@ -32,6 +34,12 @@ type SmartNodeContext struct {
 
 	// True if this is a secure session
 	SecureSession bool
+
+	// The address and URL of the API server
+	ApiUrl *url.URL
+
+	// The HTTP trace file if tracing is enabled
+	HttpTraceFile *os.File
 }
 
 // Add the Smart Node context into a CLI context

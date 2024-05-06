@@ -10,10 +10,10 @@ import (
 )
 
 type AuctionRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewAuctionRequester(context *client.RequesterContext) *AuctionRequester {
+func NewAuctionRequester(context client.IRequesterContext) *AuctionRequester {
 	return &AuctionRequester{
 		context: context,
 	}
@@ -25,7 +25,7 @@ func (r *AuctionRequester) GetName() string {
 func (r *AuctionRequester) GetRoute() string {
 	return "auction"
 }
-func (r *AuctionRequester) GetContext() *client.RequesterContext {
+func (r *AuctionRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 

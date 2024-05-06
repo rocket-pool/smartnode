@@ -11,10 +11,10 @@ import (
 )
 
 type TxRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewTxRequester(context *client.RequesterContext) *TxRequester {
+func NewTxRequester(context client.IRequesterContext) *TxRequester {
 	return &TxRequester{
 		context: context,
 	}
@@ -26,7 +26,7 @@ func (r *TxRequester) GetName() string {
 func (r *TxRequester) GetRoute() string {
 	return "tx"
 }
-func (r *TxRequester) GetContext() *client.RequesterContext {
+func (r *TxRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 

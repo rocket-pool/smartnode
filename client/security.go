@@ -11,10 +11,10 @@ import (
 )
 
 type SecurityRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewSecurityRequester(context *client.RequesterContext) *SecurityRequester {
+func NewSecurityRequester(context client.IRequesterContext) *SecurityRequester {
 	return &SecurityRequester{
 		context: context,
 	}
@@ -26,7 +26,7 @@ func (r *SecurityRequester) GetName() string {
 func (r *SecurityRequester) GetRoute() string {
 	return "security"
 }
-func (r *SecurityRequester) GetContext() *client.RequesterContext {
+func (r *SecurityRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 

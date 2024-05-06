@@ -15,10 +15,10 @@ import (
 )
 
 type PDaoRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewPDaoRequester(context *client.RequesterContext) *PDaoRequester {
+func NewPDaoRequester(context client.IRequesterContext) *PDaoRequester {
 	return &PDaoRequester{
 		context: context,
 	}
@@ -30,7 +30,7 @@ func (r *PDaoRequester) GetName() string {
 func (r *PDaoRequester) GetRoute() string {
 	return "pdao"
 }
-func (r *PDaoRequester) GetContext() *client.RequesterContext {
+func (r *PDaoRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 

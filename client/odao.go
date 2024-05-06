@@ -14,10 +14,10 @@ import (
 )
 
 type ODaoRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewODaoRequester(context *client.RequesterContext) *ODaoRequester {
+func NewODaoRequester(context client.IRequesterContext) *ODaoRequester {
 	return &ODaoRequester{
 		context: context,
 	}
@@ -29,7 +29,7 @@ func (r *ODaoRequester) GetName() string {
 func (r *ODaoRequester) GetRoute() string {
 	return "odao"
 }
-func (r *ODaoRequester) GetContext() *client.RequesterContext {
+func (r *ODaoRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 
