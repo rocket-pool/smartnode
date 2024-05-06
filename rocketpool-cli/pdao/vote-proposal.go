@@ -160,7 +160,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Print the voting power
-	fmt.Printf("\n\nYour voting power on this proposal: %d\n\n", canVote.VotingPower)
+	fmt.Printf("\n\nYour voting power on this proposal: %.10f\n\n", eth.WeiToEth(canVote.VotingPower))
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
