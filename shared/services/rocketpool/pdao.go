@@ -656,8 +656,8 @@ func (c *Client) GetCurrentVotingDelegate() (api.PDAOCurrentVotingDelegateRespon
 }
 
 // CanInitializeVoting fetches whether the node's is initialized for on-chain voting
-func (c *Client) CanInitializeVoting() (api.PDAOCanInitializeVotingResponse, error) {
-	responseBytes, err := c.callAPI("pdao can-initialize-voting")
+func (c *Client) CanInitializeVoting(delegateAddress common.Address) (api.PDAOCanInitializeVotingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-initialize-voting %s", delegateAddress.Hex()))
 	if err != nil {
 		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("could not call can-initialize-voting: %w", err)
 	}
@@ -672,8 +672,8 @@ func (c *Client) CanInitializeVoting() (api.PDAOCanInitializeVotingResponse, err
 }
 
 // InitializeVoting unlocks the node's voting power
-func (c *Client) InitializeVoting() (api.PDAOInitializeVotingResponse, error) {
-	responseBytes, err := c.callAPI("pdao initialize-voting")
+func (c *Client) InitializeVoting(delegateAddress common.Address) (api.PDAOInitializeVotingResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao initialize-voting %s", delegateAddress.Hex()))
 	if err != nil {
 		return api.PDAOInitializeVotingResponse{}, fmt.Errorf("could not call initialize-voting: %w", err)
 	}
