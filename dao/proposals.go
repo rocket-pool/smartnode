@@ -435,7 +435,7 @@ func GetProposalCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, e
 	}
 	proposalCount := new(*big.Int)
 	if err := rocketDAOProposal.Call(opts, proposalCount, "getTotal"); err != nil {
-		return 0, fmt.Errorf("Could not get proposal count: %w", err)
+		return 0, fmt.Errorf("error getting proposal count: %w", err)
 	}
 	return (*proposalCount).Uint64(), nil
 }
@@ -448,7 +448,7 @@ func GetProposalDAO(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Cal
 	}
 	daoName := new(string)
 	if err := rocketDAOProposal.Call(opts, daoName, "getDAO", big.NewInt(int64(proposalId))); err != nil {
-		return "", fmt.Errorf("Could not get proposal %d DAO: %w", proposalId, err)
+		return "", fmt.Errorf("error getting proposal %d DAO: %w", proposalId, err)
 	}
 	return strings.Sanitize(*daoName), nil
 }
@@ -459,7 +459,7 @@ func GetProposalProposerAddress(rp *rocketpool.RocketPool, proposalId uint64, op
 	}
 	proposerAddress := new(common.Address)
 	if err := rocketDAOProposal.Call(opts, proposerAddress, "getProposer", big.NewInt(int64(proposalId))); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get proposal %d proposer address: %w", proposalId, err)
+		return common.Address{}, fmt.Errorf("error getting proposal %d proposer address: %w", proposalId, err)
 	}
 	return *proposerAddress, nil
 }
@@ -470,7 +470,7 @@ func GetProposalMessage(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	}
 	message := new(string)
 	if err := rocketDAOProposal.Call(opts, message, "getMessage", big.NewInt(int64(proposalId))); err != nil {
-		return "", fmt.Errorf("Could not get proposal %d message: %w", proposalId, err)
+		return "", fmt.Errorf("error getting proposal %d message: %w", proposalId, err)
 	}
 	return strings.Sanitize(*message), nil
 }
@@ -481,7 +481,7 @@ func GetProposalCreatedTime(rp *rocketpool.RocketPool, proposalId uint64, opts *
 	}
 	createdTime := new(*big.Int)
 	if err := rocketDAOProposal.Call(opts, createdTime, "getCreated", big.NewInt(int64(proposalId))); err != nil {
-		return 0, fmt.Errorf("Could not get proposal %d created time: %w", proposalId, err)
+		return 0, fmt.Errorf("error getting proposal %d created time: %w", proposalId, err)
 	}
 	return (*createdTime).Uint64(), nil
 }
@@ -492,7 +492,7 @@ func GetProposalStartTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bi
 	}
 	startTime := new(*big.Int)
 	if err := rocketDAOProposal.Call(opts, startTime, "getStart", big.NewInt(int64(proposalId))); err != nil {
-		return 0, fmt.Errorf("Could not get proposal %d start time: %w", proposalId, err)
+		return 0, fmt.Errorf("error getting proposal %d start time: %w", proposalId, err)
 	}
 	return (*startTime).Uint64(), nil
 }
@@ -503,7 +503,7 @@ func GetProposalEndTime(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	}
 	endTime := new(*big.Int)
 	if err := rocketDAOProposal.Call(opts, endTime, "getEnd", big.NewInt(int64(proposalId))); err != nil {
-		return 0, fmt.Errorf("Could not get proposal %d end time: %w", proposalId, err)
+		return 0, fmt.Errorf("error getting proposal %d end time: %w", proposalId, err)
 	}
 	return (*endTime).Uint64(), nil
 }
@@ -514,7 +514,7 @@ func GetProposalExpiryTime(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 	}
 	expiryTime := new(*big.Int)
 	if err := rocketDAOProposal.Call(opts, expiryTime, "getExpires", big.NewInt(int64(proposalId))); err != nil {
-		return 0, fmt.Errorf("Could not get proposal %d expiry time: %w", proposalId, err)
+		return 0, fmt.Errorf("error getting proposal %d expiry time: %w", proposalId, err)
 	}
 	return (*expiryTime).Uint64(), nil
 }
@@ -525,7 +525,7 @@ func GetProposalVotesRequired(rp *rocketpool.RocketPool, proposalId uint64, opts
 	}
 	votesRequired := new(*big.Int)
 	if err := rocketDAOProposal.Call(opts, votesRequired, "getVotesRequired", big.NewInt(int64(proposalId))); err != nil {
-		return 0, fmt.Errorf("Could not get proposal %d votes required: %w", proposalId, err)
+		return 0, fmt.Errorf("error getting proposal %d votes required: %w", proposalId, err)
 	}
 	return eth.WeiToEth(*votesRequired), nil
 }
@@ -536,7 +536,7 @@ func GetProposalVotesFor(rp *rocketpool.RocketPool, proposalId uint64, opts *bin
 	}
 	votesFor := new(*big.Int)
 	if err := rocketDAOProposal.Call(opts, votesFor, "getVotesFor", big.NewInt(int64(proposalId))); err != nil {
-		return 0, fmt.Errorf("Could not get proposal %d votes for: %w", proposalId, err)
+		return 0, fmt.Errorf("error getting proposal %d votes for: %w", proposalId, err)
 	}
 	return eth.WeiToEth(*votesFor), nil
 }
@@ -547,7 +547,7 @@ func GetProposalVotesAgainst(rp *rocketpool.RocketPool, proposalId uint64, opts 
 	}
 	votesAgainst := new(*big.Int)
 	if err := rocketDAOProposal.Call(opts, votesAgainst, "getVotesAgainst", big.NewInt(int64(proposalId))); err != nil {
-		return 0, fmt.Errorf("Could not get proposal %d votes against: %w", proposalId, err)
+		return 0, fmt.Errorf("error getting proposal %d votes against: %w", proposalId, err)
 	}
 	return eth.WeiToEth(*votesAgainst), nil
 }
@@ -558,7 +558,7 @@ func GetProposalIsCancelled(rp *rocketpool.RocketPool, proposalId uint64, opts *
 	}
 	cancelled := new(bool)
 	if err := rocketDAOProposal.Call(opts, cancelled, "getCancelled", big.NewInt(int64(proposalId))); err != nil {
-		return false, fmt.Errorf("Could not get proposal %d cancelled status: %w", proposalId, err)
+		return false, fmt.Errorf("error getting proposal %d cancelled status: %w", proposalId, err)
 	}
 	return *cancelled, nil
 }
@@ -569,7 +569,7 @@ func GetProposalIsExecuted(rp *rocketpool.RocketPool, proposalId uint64, opts *b
 	}
 	executed := new(bool)
 	if err := rocketDAOProposal.Call(opts, executed, "getExecuted", big.NewInt(int64(proposalId))); err != nil {
-		return false, fmt.Errorf("Could not get proposal %d executed status: %w", proposalId, err)
+		return false, fmt.Errorf("error getting proposal %d executed status: %w", proposalId, err)
 	}
 	return *executed, nil
 }
@@ -580,7 +580,7 @@ func GetProposalPayload(rp *rocketpool.RocketPool, proposalId uint64, opts *bind
 	}
 	payload := new([]byte)
 	if err := rocketDAOProposal.Call(opts, payload, "getPayload", big.NewInt(int64(proposalId))); err != nil {
-		return []byte{}, fmt.Errorf("Could not get proposal %d payload: %w", proposalId, err)
+		return []byte{}, fmt.Errorf("error getting proposal %d payload: %w", proposalId, err)
 	}
 	return *payload, nil
 }
@@ -606,7 +606,7 @@ func GetProposalState(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.C
 	}
 	state := new(uint8)
 	if err := rocketDAOProposal.Call(opts, state, "getState", big.NewInt(int64(proposalId))); err != nil {
-		return 0, fmt.Errorf("Could not get proposal %d state: %w", proposalId, err)
+		return 0, fmt.Errorf("error getting proposal %d state: %w", proposalId, err)
 	}
 	return rptypes.ProposalState(*state), nil
 }
@@ -619,7 +619,7 @@ func GetProposalMemberVoted(rp *rocketpool.RocketPool, proposalId uint64, member
 	}
 	voted := new(bool)
 	if err := rocketDAOProposal.Call(opts, voted, "getReceiptHasVoted", big.NewInt(int64(proposalId)), memberAddress); err != nil {
-		return false, fmt.Errorf("Could not get proposal %d member %s voted status: %w", proposalId, memberAddress.Hex(), err)
+		return false, fmt.Errorf("error getting proposal %d member %s voted status: %w", proposalId, memberAddress.Hex(), err)
 	}
 	return *voted, nil
 }
@@ -632,7 +632,7 @@ func GetProposalMemberSupported(rp *rocketpool.RocketPool, proposalId uint64, me
 	}
 	supported := new(bool)
 	if err := rocketDAOProposal.Call(opts, supported, "getReceiptSupported", big.NewInt(int64(proposalId)), memberAddress); err != nil {
-		return false, fmt.Errorf("Could not get proposal %d member %s supported status: %w", proposalId, memberAddress.Hex(), err)
+		return false, fmt.Errorf("error getting proposal %d member %s supported status: %w", proposalId, memberAddress.Hex(), err)
 	}
 	return *supported, nil
 }

@@ -24,7 +24,7 @@ func GetNetworkEnabled(rp *rocketpool.RocketPool, network *big.Int, opts *bind.C
 	}
 	value := new(bool)
 	if err := rewardsSettingsContract.Call(opts, value, "getNetworkEnabled", network); err != nil {
-		return false, fmt.Errorf("Could not check if network %s is enabled: %w", network.String(), err)
+		return false, fmt.Errorf("error checking if network %s is enabled: %w", network.String(), err)
 	}
 	return (*value), nil
 }

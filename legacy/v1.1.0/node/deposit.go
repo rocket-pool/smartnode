@@ -31,7 +31,7 @@ func Deposit(rp *rocketpool.RocketPool, minimumNodeFee float64, validatorPubkey 
 	}
 	tx, err := rocketNodeDeposit.Transact(opts, "deposit", eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
 	if err != nil {
-		return nil, fmt.Errorf("Could not make node deposit: %w", err)
+		return nil, fmt.Errorf("error making node deposit: %w", err)
 	}
 	return tx, nil
 }
@@ -45,7 +45,7 @@ func GetDepositType(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.CallO
 
 	depositType := new(uint8)
 	if err := rocketNodeDeposit.Call(opts, depositType, "getDepositType", amount); err != nil {
-		return rptypes.Empty, fmt.Errorf("Could not get deposit type: %w", err)
+		return rptypes.Empty, fmt.Errorf("error getting deposit type: %w", err)
 	}
 	return rptypes.MinipoolDeposit(*depositType), nil
 }

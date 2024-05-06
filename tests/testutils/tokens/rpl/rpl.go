@@ -42,7 +42,7 @@ func MintFixedSupplyRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Accoun
 		return err
 	}
 	if _, err := rocketTokenFixedSupplyRPL.Transact(ownerAccount.GetTransactor(), "mint", toAccount.Address, amount); err != nil {
-		return fmt.Errorf("Could not mint fixed-supply RPL tokens to %s: %w", toAccount.Address.Hex(), err)
+		return fmt.Errorf("error minting fixed-supply RPL tokens to %s: %w", toAccount.Address.Hex(), err)
 	}
 	return nil
 }

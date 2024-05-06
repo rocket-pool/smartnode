@@ -72,7 +72,7 @@ func TestDetails(t *testing.T) {
 	}
 	err = evm.IncreaseTime(int(scrubPeriod + 1))
 	if err != nil {
-		t.Fatal(fmt.Errorf("Could not increase time: %w", err))
+		t.Fatal(fmt.Errorf("error increasing time: %w", err))
 	}
 
 	// Stake minipool
@@ -255,7 +255,7 @@ func TestStake(t *testing.T) {
 	}
 	err = evm.IncreaseTime(int(scrubPeriod + 1))
 	if err != nil {
-		t.Fatal(fmt.Errorf("Could not increase time: %w", err))
+		t.Fatal(fmt.Errorf("error increasing time: %w", err))
 	}
 
 	// Stake minipool
@@ -421,7 +421,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
 	}
 	err = evm.IncreaseTime(int(scrubPeriod + 1))
 	if err != nil {
-		t.Fatal(fmt.Errorf("Could not increase time: %w", err))
+		t.Fatal(fmt.Errorf("error increasing time: %w", err))
 	}
 
 	// Stake minipool
@@ -539,7 +539,7 @@ func TestWithdrawValidatorBalanceAndFinalise(t *testing.T) {
 	}
 	err = evm.IncreaseTime(int(scrubPeriod + 1))
 	if err != nil {
-		t.Fatal(fmt.Errorf("Could not increase time: %w", err))
+		t.Fatal(fmt.Errorf("error increasing time: %w", err))
 	}
 
 	// Stake minipool

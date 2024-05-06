@@ -35,7 +35,7 @@ func GetContractVersion(rp *RocketPool, contractAddress common.Address, opts *bi
 		// Parse ABI using the hardcoded string until the contract is deployed
 		abiParsed, err := abi.JSON(strings.NewReader(rocketVersionInterfaceAbiString))
 		if err != nil {
-			return 0, fmt.Errorf("Could not parse version interface JSON: %w", err)
+			return 0, fmt.Errorf("error parsing version interface JSON: %w", err)
 		}
 		versionAbi = &abiParsed
 	}
@@ -51,7 +51,7 @@ func GetContractVersion(rp *RocketPool, contractAddress common.Address, opts *bi
 	// Get the contract version
 	version := new(uint8)
 	if err := contract.Call(opts, version, "version"); err != nil {
-		return 0, fmt.Errorf("Could not get contract version: %w", err)
+		return 0, fmt.Errorf("error getting contract version: %w", err)
 	}
 
 	return *version, nil
@@ -63,7 +63,7 @@ func GetRocketVersionContractForAddress(rp *RocketPool, address common.Address) 
 		// Parse ABI using the hardcoded string until the contract is deployed
 		abiParsed, err := abi.JSON(strings.NewReader(rocketVersionInterfaceAbiString))
 		if err != nil {
-			return nil, fmt.Errorf("Could not parse version interface JSON: %w", err)
+			return nil, fmt.Errorf("error parsing version interface JSON: %w", err)
 		}
 		versionAbi = &abiParsed
 	}

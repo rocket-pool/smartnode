@@ -22,14 +22,14 @@ func DecodeAbi(abiEncoded string) (*abi.ABI, error) {
 	// base64 decode
 	abiCompressed, err := base64.StdEncoding.DecodeString(abiEncoded)
 	if err != nil {
-		return nil, fmt.Errorf("Could not decode base64 data: %w", err)
+		return nil, fmt.Errorf("error decoding base64 data: %w", err)
 	}
 
 	// zlib decompress
 	byteReader := bytes.NewReader(abiCompressed)
 	zlibReader, err := zlib.NewReader(byteReader)
 	if err != nil {
-		return nil, fmt.Errorf("Could not decompress zlib data: %w", err)
+		return nil, fmt.Errorf("error decompressing zlib data: %w", err)
 	}
 	defer func() {
 		_ = zlibReader.Close()
@@ -38,7 +38,7 @@ func DecodeAbi(abiEncoded string) (*abi.ABI, error) {
 	// Parse ABI
 	abiParsed, err := abi.JSON(zlibReader)
 	if err != nil {
-		return nil, fmt.Errorf("Could not parse JSON: %w", err)
+		return nil, fmt.Errorf("error parsing JSON: %w", err)
 	}
 
 	decoderCache.Store(abiEncoded, &abiParsed)
@@ -55,13 +55,13 @@ func EncodeAbiStr(abiStr string) (string, error) {
 	var abiCompressed bytes.Buffer
 	zlibWriter := zlib.NewWriter(&abiCompressed)
 	if _, err := zlibWriter.Write([]byte(abiStr)); err != nil {
-		return "", fmt.Errorf("Could not zlib-compress ABI string: %w", err)
+		return "", fmt.Errorf("error zlib-compressing ABI string: %w", err)
 	}
 	if err := zlibWriter.Flush(); err != nil {
-		return "", fmt.Errorf("Could not zlib-compress ABI string: %w", err)
+		return "", fmt.Errorf("error zlib-compressing ABI string: %w", err)
 	}
 	if err := zlibWriter.Close(); err != nil {
-		return "", fmt.Errorf("Could not zlib-compress ABI string: %w", err)
+		return "", fmt.Errorf("error zlib-compressing ABI string: %w", err)
 	}
 
 	// base64 encode & return

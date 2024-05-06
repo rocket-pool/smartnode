@@ -27,7 +27,7 @@ func SubmitMinipoolWithdrawable(rp *rocketpool.RocketPool, minipoolAddress commo
 	}
 	tx, err := rocketMinipoolStatus.Transact(opts, "submitMinipoolWithdrawable", minipoolAddress)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not submit minipool withdrawable event: %w", err)
+		return common.Hash{}, fmt.Errorf("error submitting minipool withdrawable event: %w", err)
 	}
 	return tx.Hash(), nil
 }

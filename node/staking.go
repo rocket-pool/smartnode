@@ -28,7 +28,7 @@ func GetTotalRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 	}
 	totalRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, totalRplStake, "getTotalRPLStake"); err != nil {
-		return nil, fmt.Errorf("Could not get total network RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting total network RPL stake: %w", err)
 	}
 	return *totalRplStake, nil
 }
@@ -41,7 +41,7 @@ func GetNodeRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 	}
 	nodeRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeRplStake, "getNodeRPLStake", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get total node RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting total node RPL stake: %w", err)
 	}
 	return *nodeRplStake, nil
 }
@@ -54,12 +54,12 @@ func GetNodeEffectiveRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addr
 	}
 	nodeEffectiveRplStakeWrapper := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeEffectiveRplStakeWrapper, "getNodeEffectiveRPLStake", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get effective node RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting effective node RPL stake: %w", err)
 	}
 
 	minimumStake, err := GetNodeMinimumRPLStake(rp, nodeAddress, opts)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get minimum node RPL stake to verify effective stake: %w", err)
+		return nil, fmt.Errorf("error getting minimum node RPL stake to verify effective stake: %w", err)
 	}
 
 	nodeEffectiveRplStake := *nodeEffectiveRplStakeWrapper
@@ -79,7 +79,7 @@ func GetNodeMinimumRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addres
 	}
 	nodeMinimumRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeMinimumRplStake, "getNodeMinimumRPLStake", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get minimum node RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting minimum node RPL stake: %w", err)
 	}
 	return *nodeMinimumRplStake, nil
 }
@@ -92,7 +92,7 @@ func GetNodeMaximumRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addres
 	}
 	nodeMaximumRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeMaximumRplStake, "getNodeMaximumRPLStake", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get maximum node RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting maximum node RPL stake: %w", err)
 	}
 	return *nodeMaximumRplStake, nil
 }
@@ -105,7 +105,7 @@ func GetNodeRPLStakedTime(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	}
 	nodeRplStakedTime := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeRplStakedTime, "getNodeRPLStakedTime", nodeAddress); err != nil {
-		return 0, fmt.Errorf("Could not get node RPL staked time: %w", err)
+		return 0, fmt.Errorf("error getting node RPL staked time: %w", err)
 	}
 	return (*nodeRplStakedTime).Uint64(), nil
 }
@@ -118,7 +118,7 @@ func GetNodeEthMatched(rp *rocketpool.RocketPool, nodeAddress common.Address, op
 	}
 	nodeEthMatched := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeEthMatched, "getNodeETHMatched", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get node ETH matched: %w", err)
+		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
 	}
 	return *nodeEthMatched, nil
 }
@@ -131,7 +131,7 @@ func GetNodeEthMatchedLimit(rp *rocketpool.RocketPool, nodeAddress common.Addres
 	}
 	nodeEthMatchedLimit := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeEthMatchedLimit, "getNodeETHMatchedLimit", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get node ETH matched limit: %w", err)
+		return nil, fmt.Errorf("error getting node ETH matched limit: %w", err)
 	}
 	return *nodeEthMatchedLimit, nil
 }
@@ -153,9 +153,44 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
 	}
 	tx, err := rocketNodeStaking.Transact(opts, "stakeRPL", rplAmount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not stake RPL: %w", err)
+		return common.Hash{}, fmt.Errorf("error staking RPL: %w", err)
 	}
 	return tx.Hash(), nil
+}
+
+// Estimate the gas of set RPL locking allowed
+func EstimateSetRPLLockingAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeStaking.GetTransactionGasInfo(opts, "setRPLLockingAllowed", caller, allowed)
+}
+
+// Set RPL locking allowed
+func SetRPLLockingAllowed(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNodeStaking.Transact(opts, "setRPLLockingAllowed", caller, allowed)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error setting RPL locking allowed: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
+// Get RPL locking allowed state for a node
+func GetRPLLockedAllowed(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	value := new(bool)
+	if err := rocketNodeStaking.Call(opts, value, "getRPLLockingAllowed", nodeAddress); err != nil {
+		return false, fmt.Errorf("error getting node RPL locked: %w", err)
+	}
+	return *value, nil
 }
 
 // Estimate the gas of set stake RPL for allowed
@@ -175,29 +210,29 @@ func SetStakeRPLForAllowed(rp *rocketpool.RocketPool, caller common.Address, all
 	}
 	tx, err := rocketNodeStaking.Transact(opts, "setStakeRPLForAllowed", caller, allowed)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not set stake RPL for allowed: %w", err)
+		return common.Hash{}, fmt.Errorf("error setting stake RPL for allowed: %w", err)
 	}
 	return tx.Hash(), nil
 }
 
 // Estimate the gas of WithdrawRPL
-func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, nodeAddress common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawRPL", rplAmount)
+	return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawRPL", nodeAddress, rplAmount)
 }
 
 // Withdraw staked RPL
-func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func WithdrawRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNodeStaking.Transact(opts, "withdrawRPL", rplAmount)
+	tx, err := rocketNodeStaking.Transact(opts, "withdrawRPL", nodeAddress, rplAmount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not withdraw staked RPL: %w", err)
+		return common.Hash{}, fmt.Errorf("error withdrawing staked RPL: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -210,9 +245,22 @@ func CalculateTotalEffectiveRPLStake(rp *rocketpool.RocketPool, offset, limit, r
 	}
 	totalEffectiveRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, totalEffectiveRplStake, "calculateTotalEffectiveRPLStake", offset, limit, rplPrice); err != nil {
-		return nil, fmt.Errorf("Could not get total effective RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting total effective RPL stake: %w", err)
 	}
 	return *totalEffectiveRplStake, nil
+}
+
+// Get the amount of RPL locked as part of active PDAO proposals or challenges
+func GetNodeRPLLocked(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, value, "getNodeRPLLocked", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node RPL locked: %w", err)
+	}
+	return *value, nil
 }
 
 // Get contracts

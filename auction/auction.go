@@ -278,7 +278,7 @@ func GetTotalRPLBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.In
 	}
 	totalRplBalance := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, totalRplBalance, "getTotalRPLBalance"); err != nil {
-		return nil, fmt.Errorf("Could not get auction contract total RPL balance: %w", err)
+		return nil, fmt.Errorf("error getting auction contract total RPL balance: %w", err)
 	}
 	return *totalRplBalance, nil
 }
@@ -291,7 +291,7 @@ func GetAllottedRPLBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 	}
 	allottedRplBalance := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, allottedRplBalance, "getAllottedRPLBalance"); err != nil {
-		return nil, fmt.Errorf("Could not get auction contract allotted RPL balance: %w", err)
+		return nil, fmt.Errorf("error getting auction contract allotted RPL balance: %w", err)
 	}
 	return *allottedRplBalance, nil
 }
@@ -304,7 +304,7 @@ func GetRemainingRPLBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*bi
 	}
 	remainingRplBalance := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, remainingRplBalance, "getRemainingRPLBalance"); err != nil {
-		return nil, fmt.Errorf("Could not get auction contract remaining RPL balance: %w", err)
+		return nil, fmt.Errorf("error getting auction contract remaining RPL balance: %w", err)
 	}
 	return *remainingRplBalance, nil
 }
@@ -317,7 +317,7 @@ func GetLotCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error)
 	}
 	lotCount := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotCount, "getLotCount"); err != nil {
-		return 0, fmt.Errorf("Could not get lot count: %w", err)
+		return 0, fmt.Errorf("error getting lot count: %w", err)
 	}
 	return (*lotCount).Uint64(), nil
 }
@@ -330,7 +330,7 @@ func GetLotExists(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallOpt
 	}
 	lotExists := new(bool)
 	if err := rocketAuctionManager.Call(opts, lotExists, "getLotExists", big.NewInt(int64(lotIndex))); err != nil {
-		return false, fmt.Errorf("Could not get lot %d exists status: %w", lotIndex, err)
+		return false, fmt.Errorf("error getting lot %d exists status: %w", lotIndex, err)
 	}
 	return *lotExists, nil
 }
@@ -341,7 +341,7 @@ func GetLotStartBlock(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.Cal
 	}
 	lotStartBlock := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotStartBlock, "getLotStartBlock", big.NewInt(int64(lotIndex))); err != nil {
-		return 0, fmt.Errorf("Could not get lot %d start block: %w", lotIndex, err)
+		return 0, fmt.Errorf("error getting lot %d start block: %w", lotIndex, err)
 	}
 	return (*lotStartBlock).Uint64(), nil
 }
@@ -352,7 +352,7 @@ func GetLotEndBlock(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.CallO
 	}
 	lotEndBlock := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotEndBlock, "getLotEndBlock", big.NewInt(int64(lotIndex))); err != nil {
-		return 0, fmt.Errorf("Could not get lot %d end block: %w", lotIndex, err)
+		return 0, fmt.Errorf("error getting lot %d end block: %w", lotIndex, err)
 	}
 	return (*lotEndBlock).Uint64(), nil
 }
@@ -363,7 +363,7 @@ func GetLotStartPrice(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.Cal
 	}
 	lotStartPrice := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotStartPrice, "getLotStartPrice", big.NewInt(int64(lotIndex))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d start price: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d start price: %w", lotIndex, err)
 	}
 	return *lotStartPrice, nil
 }
@@ -374,7 +374,7 @@ func GetLotReservePrice(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.C
 	}
 	lotReservePrice := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotReservePrice, "getLotReservePrice", big.NewInt(int64(lotIndex))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d reserve price: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d reserve price: %w", lotIndex, err)
 	}
 	return *lotReservePrice, nil
 }
@@ -385,7 +385,7 @@ func GetLotTotalRPLAmount(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind
 	}
 	lotTotalRplAmount := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotTotalRplAmount, "getLotTotalRPLAmount", big.NewInt(int64(lotIndex))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d total RPL amount: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d total RPL amount: %w", lotIndex, err)
 	}
 	return *lotTotalRplAmount, nil
 }
@@ -396,7 +396,7 @@ func GetLotTotalBidAmount(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind
 	}
 	lotTotalBidAmount := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotTotalBidAmount, "getLotTotalBidAmount", big.NewInt(int64(lotIndex))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d total ETH bid amount: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d total ETH bid amount: %w", lotIndex, err)
 	}
 	return *lotTotalBidAmount, nil
 }
@@ -407,7 +407,7 @@ func GetLotRPLRecovered(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.C
 	}
 	lotRplRecovered := new(bool)
 	if err := rocketAuctionManager.Call(opts, lotRplRecovered, "getLotRPLRecovered", big.NewInt(int64(lotIndex))); err != nil {
-		return false, fmt.Errorf("Could not get lot %d RPL recovered status: %w", lotIndex, err)
+		return false, fmt.Errorf("error getting lot %d RPL recovered status: %w", lotIndex, err)
 	}
 	return *lotRplRecovered, nil
 }
@@ -418,7 +418,7 @@ func GetLotPriceAtCurrentBlock(rp *rocketpool.RocketPool, lotIndex uint64, opts 
 	}
 	lotPriceAtCurrentBlock := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotPriceAtCurrentBlock, "getLotPriceAtCurrentBlock", big.NewInt(int64(lotIndex))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d price by current block: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d price by current block: %w", lotIndex, err)
 	}
 	return *lotPriceAtCurrentBlock, nil
 }
@@ -429,7 +429,7 @@ func GetLotPriceByTotalBids(rp *rocketpool.RocketPool, lotIndex uint64, opts *bi
 	}
 	lotPriceByTotalBids := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotPriceByTotalBids, "getLotPriceByTotalBids", big.NewInt(int64(lotIndex))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d price by total bids: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d price by total bids: %w", lotIndex, err)
 	}
 	return *lotPriceByTotalBids, nil
 }
@@ -440,7 +440,7 @@ func GetLotCurrentPrice(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.C
 	}
 	lotCurrentPrice := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotCurrentPrice, "getLotCurrentPrice", big.NewInt(int64(lotIndex))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d current price: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d current price: %w", lotIndex, err)
 	}
 	return *lotCurrentPrice, nil
 }
@@ -451,7 +451,7 @@ func GetLotClaimedRPLAmount(rp *rocketpool.RocketPool, lotIndex uint64, opts *bi
 	}
 	lotClaimedRplAmount := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotClaimedRplAmount, "getLotClaimedRPLAmount", big.NewInt(int64(lotIndex))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d claimed RPL amount: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d claimed RPL amount: %w", lotIndex, err)
 	}
 	return *lotClaimedRplAmount, nil
 }
@@ -462,7 +462,7 @@ func GetLotRemainingRPLAmount(rp *rocketpool.RocketPool, lotIndex uint64, opts *
 	}
 	lotRemainingRplAmount := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotRemainingRplAmount, "getLotRemainingRPLAmount", big.NewInt(int64(lotIndex))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d remaining RPL amount: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d remaining RPL amount: %w", lotIndex, err)
 	}
 	return *lotRemainingRplAmount, nil
 }
@@ -473,7 +473,7 @@ func GetLotIsCleared(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.Call
 	}
 	lotIsCleared := new(bool)
 	if err := rocketAuctionManager.Call(opts, lotIsCleared, "getLotIsCleared", big.NewInt(int64(lotIndex))); err != nil {
-		return false, fmt.Errorf("Could not get lot %d cleared status: %w", lotIndex, err)
+		return false, fmt.Errorf("error getting lot %d cleared status: %w", lotIndex, err)
 	}
 	return *lotIsCleared, nil
 }
@@ -486,7 +486,7 @@ func GetLotPriceAtBlock(rp *rocketpool.RocketPool, lotIndex, blockNumber uint64,
 	}
 	lotPriceAtBlock := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lotPriceAtBlock, "getLotPriceAtBlock", big.NewInt(int64(lotIndex)), big.NewInt(int64(blockNumber))); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d price at block: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d price at block: %w", lotIndex, err)
 	}
 	return *lotPriceAtBlock, nil
 }
@@ -499,7 +499,7 @@ func GetLotAddressBidAmount(rp *rocketpool.RocketPool, lotIndex uint64, bidder c
 	}
 	lot := new(*big.Int)
 	if err := rocketAuctionManager.Call(opts, lot, "getLotAddressBidAmount", big.NewInt(int64(lotIndex)), bidder); err != nil {
-		return nil, fmt.Errorf("Could not get lot %d address ETH bid amount: %w", lotIndex, err)
+		return nil, fmt.Errorf("error getting lot %d address ETH bid amount: %w", lotIndex, err)
 	}
 	return *lot, nil
 }
@@ -525,7 +525,7 @@ func CreateLot(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (uint64, comm
 	}
 	tx, err := rocketAuctionManager.Transact(opts, "createLot")
 	if err != nil {
-		return 0, common.Hash{}, fmt.Errorf("Could not create lot: %w", err)
+		return 0, common.Hash{}, fmt.Errorf("error creating lot: %w", err)
 	}
 	return lotCount, tx.Hash(), nil
 }
@@ -547,7 +547,7 @@ func PlaceBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpt
 	}
 	tx, err := rocketAuctionManager.Transact(opts, "placeBid", big.NewInt(int64(lotIndex)))
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not place bid on lot %d: %w", lotIndex, err)
+		return common.Hash{}, fmt.Errorf("error placing bid on lot %d: %w", lotIndex, err)
 	}
 	return tx.Hash(), nil
 }
@@ -569,7 +569,7 @@ func ClaimBid(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.TransactOpt
 	}
 	tx, err := rocketAuctionManager.Transact(opts, "claimBid", big.NewInt(int64(lotIndex)))
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not claim bid from lot %d: %w", lotIndex, err)
+		return common.Hash{}, fmt.Errorf("error claiming bid from lot %d: %w", lotIndex, err)
 	}
 	return tx.Hash(), nil
 }
@@ -591,7 +591,7 @@ func RecoverUnclaimedRPL(rp *rocketpool.RocketPool, lotIndex uint64, opts *bind.
 	}
 	tx, err := rocketAuctionManager.Transact(opts, "recoverUnclaimedRPL", big.NewInt(int64(lotIndex)))
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not recover unclaimed RPL from lot %d: %w", lotIndex, err)
+		return common.Hash{}, fmt.Errorf("error recovering unclaimed RPL from lot %d: %w", lotIndex, err)
 	}
 	return tx.Hash(), nil
 }

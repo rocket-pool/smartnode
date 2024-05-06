@@ -19,7 +19,7 @@ func GetNodeStakingVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts, legac
 	}
 	version := new(uint8)
 	if err := rocketNodeStaking.Call(opts, version, "version"); err != nil {
-		return 0, fmt.Errorf("Could not get node staking version: %w", err)
+		return 0, fmt.Errorf("error getting node staking version: %w", err)
 	}
 	return *version, nil
 }
@@ -32,7 +32,7 @@ func GetTotalRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRock
 	}
 	totalRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, totalRplStake, "getTotalRPLStake"); err != nil {
-		return nil, fmt.Errorf("Could not get total network RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting total network RPL stake: %w", err)
 	}
 	return *totalRplStake, nil
 }
@@ -45,7 +45,7 @@ func GetTotalEffectiveRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts, l
 	}
 	totalEffectiveRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, totalEffectiveRplStake, "getTotalEffectiveRPLStake"); err != nil {
-		return nil, fmt.Errorf("Could not get effective network RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting effective network RPL stake: %w", err)
 	}
 	return *totalEffectiveRplStake, nil
 }
@@ -58,7 +58,7 @@ func GetNodeRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 	}
 	nodeRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeRplStake, "getNodeRPLStake", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get total node RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting total node RPL stake: %w", err)
 	}
 	return *nodeRplStake, nil
 }
@@ -71,12 +71,12 @@ func GetNodeEffectiveRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addr
 	}
 	nodeEffectiveRplStakeWrapper := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeEffectiveRplStakeWrapper, "getNodeEffectiveRPLStake", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get effective node RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting effective node RPL stake: %w", err)
 	}
 
 	minimumStake, err := GetNodeMinimumRPLStake(rp, nodeAddress, opts, legacyRocketNodeStakingAddress)
 	if err != nil {
-		return nil, fmt.Errorf("Could not get minimum node RPL stake to verify effective stake: %w", err)
+		return nil, fmt.Errorf("error getting minimum node RPL stake to verify effective stake: %w", err)
 	}
 
 	nodeEffectiveRplStake := *nodeEffectiveRplStakeWrapper
@@ -96,7 +96,7 @@ func GetNodeMinimumRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addres
 	}
 	nodeMinimumRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeMinimumRplStake, "getNodeMinimumRPLStake", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get minimum node RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting minimum node RPL stake: %w", err)
 	}
 	return *nodeMinimumRplStake, nil
 }
@@ -109,7 +109,7 @@ func GetNodeMaximumRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Addres
 	}
 	nodeMaximumRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeMaximumRplStake, "getNodeMaximumRPLStake", nodeAddress); err != nil {
-		return nil, fmt.Errorf("Could not get maximum node RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting maximum node RPL stake: %w", err)
 	}
 	return *nodeMaximumRplStake, nil
 }
@@ -122,7 +122,7 @@ func GetNodeRPLStakedTime(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	}
 	nodeRplStakedTime := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, nodeRplStakedTime, "getNodeRPLStakedTime", nodeAddress); err != nil {
-		return 0, fmt.Errorf("Could not get node RPL staked time: %w", err)
+		return 0, fmt.Errorf("error getting node RPL staked time: %w", err)
 	}
 	return (*nodeRplStakedTime).Uint64(), nil
 }
@@ -135,7 +135,7 @@ func GetNodeMinipoolLimit(rp *rocketpool.RocketPool, nodeAddress common.Address,
 	}
 	minipoolLimit := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, minipoolLimit, "getNodeMinipoolLimit", nodeAddress); err != nil {
-		return 0, fmt.Errorf("Could not get node minipool limit: %w", err)
+		return 0, fmt.Errorf("error getting node minipool limit: %w", err)
 	}
 	return (*minipoolLimit).Uint64(), nil
 }
@@ -157,7 +157,7 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
 	}
 	tx, err := rocketNodeStaking.Transact(opts, "stakeRPL", rplAmount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not stake RPL: %w", err)
+		return common.Hash{}, fmt.Errorf("error staking RPL: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -179,7 +179,7 @@ func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Trans
 	}
 	tx, err := rocketNodeStaking.Transact(opts, "withdrawRPL", rplAmount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not withdraw staked RPL: %w", err)
+		return common.Hash{}, fmt.Errorf("error withdrawing staked RPL: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -192,7 +192,7 @@ func CalculateTotalEffectiveRPLStake(rp *rocketpool.RocketPool, offset, limit, r
 	}
 	totalEffectiveRplStake := new(*big.Int)
 	if err := rocketNodeStaking.Call(opts, totalEffectiveRplStake, "calculateTotalEffectiveRPLStake", offset, limit, rplPrice); err != nil {
-		return nil, fmt.Errorf("Could not get total effective RPL stake: %w", err)
+		return nil, fmt.Errorf("error getting total effective RPL stake: %w", err)
 	}
 	return *totalEffectiveRplStake, nil
 }

@@ -28,7 +28,7 @@ func SubmitPenalty(rp *rocketpool.RocketPool, minipoolAddress common.Address, bl
 	}
 	tx, err := rocketNetworkPrices.Transact(opts, "submitPenalty", minipoolAddress, block)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not submit penalty: %w", err)
+		return common.Hash{}, fmt.Errorf("error submitting penalty: %w", err)
 	}
 	return tx.Hash(), nil
 }

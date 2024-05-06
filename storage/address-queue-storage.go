@@ -20,7 +20,7 @@ func GetAddressQueueLength(rp *rocketpool.RocketPool, opts *bind.CallOpts, key [
 	}
 	length := new(*big.Int)
 	if err := addressQueueStorage.Call(opts, length, "getIndexOf", key); err != nil {
-		return 0, fmt.Errorf("Could not get address queue length for key: %w", key, err)
+		return 0, fmt.Errorf("error getting address queue length for key: %w", key, err)
 	}
 	return (*length).Uint64(), nil
 }
@@ -33,7 +33,7 @@ func GetAddressQueueItem(rp *rocketpool.RocketPool, opts *bind.CallOpts, key [32
 	}
 	address := new(common.Address)
 	if err := addressQueueStorage.Call(opts, address, "getItem", key, index); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get address item at index %d: %w", index, key, err)
+		return common.Address{}, fmt.Errorf("error getting address item at index %d: %w", index, key, err)
 	}
 	return *address, nil
 }
@@ -46,7 +46,7 @@ func GetAddressQueueIndexOf(rp *rocketpool.RocketPool, opts *bind.CallOpts, key 
 	}
 	index := new(*big.Int)
 	if err := addressQueueStorage.Call(opts, index, "getIndexOf", key, address); err != nil {
-		return 0, fmt.Errorf("Could not get index for address %s: %w", address.String(), err)
+		return 0, fmt.Errorf("error getting index for address %s: %w", address.String(), err)
 	}
 	return (*index).Int64(), nil
 }

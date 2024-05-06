@@ -23,6 +23,7 @@ type VersionManager struct {
 	V1_0_0     LegacyVersionWrapper
 	V1_1_0_RC1 LegacyVersionWrapper
 	V1_1_0     LegacyVersionWrapper
+	V1_2_0     LegacyVersionWrapper
 
 	rp *RocketPool
 }
@@ -32,6 +33,7 @@ func NewVersionManager(rp *RocketPool) *VersionManager {
 		V1_0_0:     newLegacyVersionWrapper_v1_0_0(rp),
 		V1_1_0_RC1: newLegacyVersionWrapper_v1_1_0_rc1(rp),
 		V1_1_0:     newLegacyVersionWrapper_v1_1_0(rp),
+		V1_2_0:     newLegacyVersionWrapper_v1_2_0(rp),
 		rp:         rp,
 	}
 }
@@ -58,7 +60,7 @@ func getLegacyContract(rp *RocketPool, contractName string, m LegacyVersionWrapp
 	emptyAddress := common.Address{}
 	address, err := rp.RocketStorage.GetAddress(nil, crypto.Keccak256Hash([]byte("contract.address"), []byte(legacyName)))
 	if err != nil {
-		return nil, fmt.Errorf("Could not load v%s contract %s address: %w", m.GetVersion().String(), contractName, err)
+		return nil, fmt.Errorf("error loading v%s contract %s address: %w", m.GetVersion().String(), contractName, err)
 	}
 
 	if address == emptyAddress {
@@ -70,7 +72,7 @@ func getLegacyContract(rp *RocketPool, contractName string, m LegacyVersionWrapp
 	abiEncoded := m.GetEncodedABI(contractName)
 	abi, err := DecodeAbi(abiEncoded)
 	if err != nil {
-		return nil, fmt.Errorf("Could not decode contract %s ABI: %w", contractName, err)
+		return nil, fmt.Errorf("error decoding contract %s ABI: %w", contractName, err)
 	}
 
 	contract := &Contract{
@@ -90,7 +92,7 @@ func getLegacyContractWithAddress(rp *RocketPool, contractName string, address c
 	abiEncoded := m.GetEncodedABI(contractName)
 	abi, err := DecodeAbi(abiEncoded)
 	if err != nil {
-		return nil, fmt.Errorf("Could not decode contract %s ABI: %w", contractName, err)
+		return nil, fmt.Errorf("error decoding contract %s ABI: %w", contractName, err)
 	}
 
 	contract := &Contract{

@@ -3,7 +3,6 @@ package rewards
 import (
 	"fmt"
 	"math/big"
-	"reflect"
 	"sync"
 	"time"
 
@@ -53,6 +52,15 @@ type RewardSubmission struct {
 	UserETH         *big.Int   `json:"userETH"`
 }
 
+// Internal struct - this is the structure of what gets returned by the RewardSnapshot event
+type rewardSnapshot struct {
+	RewardIndex       *big.Int         `json:"rewardIndex"`
+	Submission        RewardSubmission `json:"submission"`
+	IntervalStartTime *big.Int         `json:"intervalStartTime"`
+	IntervalEndTime   *big.Int         `json:"intervalEndTime"`
+	Time              *big.Int         `json:"time"`
+}
+
 // Get the index of the active rewards period
 func GetRewardIndex(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
@@ -61,7 +69,7 @@ func GetRewardIndex(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, e
 	}
 	index := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, index, "getRewardIndex"); err != nil {
-		return nil, fmt.Errorf("Could not get current reward index: %w", err)
+		return nil, fmt.Errorf("error getting current reward index: %w", err)
 	}
 	return *index, nil
 }
@@ -74,7 +82,7 @@ func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	}
 	unixTime := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, unixTime, "getClaimIntervalTimeStart"); err != nil {
-		return time.Time{}, fmt.Errorf("Could not get claim interval time start: %w", err)
+		return time.Time{}, fmt.Errorf("error getting claim interval time start: %w", err)
 	}
 	return time.Unix((*unixTime).Int64(), 0), nil
 }
@@ -87,7 +95,7 @@ func GetClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.
 	}
 	unixTime := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, unixTime, "getClaimIntervalTime"); err != nil {
-		return 0, fmt.Errorf("Could not get claim interval time: %w", err)
+		return 0, fmt.Errorf("error getting claim interval time: %w", err)
 	}
 	return time.Duration((*unixTime).Int64()) * time.Second, nil
 }
@@ -100,7 +108,7 @@ func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	}
 	perc := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimNode"); err != nil {
-		return nil, fmt.Errorf("Could not get node operator rewards percent: %w", err)
+		return nil, fmt.Errorf("error getting node operator rewards percent: %w", err)
 	}
 	return *perc, nil
 }
@@ -113,7 +121,7 @@ func GetTrustedNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.
 	}
 	perc := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimTrustedNode"); err != nil {
-		return nil, fmt.Errorf("Could not get trusted node operator rewards percent: %w", err)
+		return nil, fmt.Errorf("error getting trusted node operator rewards percent: %w", err)
 	}
 	return *perc, nil
 }
@@ -126,7 +134,7 @@ func GetProtocolDaoRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts
 	}
 	perc := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, perc, "getClaimingContractPerc", "rocketClaimDAO"); err != nil {
-		return nil, fmt.Errorf("Could not get protocol DAO rewards percent: %w", err)
+		return nil, fmt.Errorf("error getting protocol DAO rewards percent: %w", err)
 	}
 	return *perc, nil
 }
@@ -139,7 +147,7 @@ func GetPendingRPLRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 	}
 	rewards := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, rewards, "getPendingRPLRewards"); err != nil {
-		return nil, fmt.Errorf("Could not get pending RPL rewards: %w", err)
+		return nil, fmt.Errorf("error getting pending RPL rewards: %w", err)
 	}
 	return *rewards, nil
 }
@@ -152,7 +160,7 @@ func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.
 	}
 	rewards := new(*big.Int)
 	if err := rocketRewardsPool.Call(opts, rewards, "getPendingETHRewards"); err != nil {
-		return nil, fmt.Errorf("Could not get pending ETH rewards: %w", err)
+		return nil, fmt.Errorf("error getting pending ETH rewards: %w", err)
 	}
 	return *rewards, nil
 }
@@ -167,7 +175,7 @@ func GetTrustedNodeSubmitted(rp *rocketpool.RocketPool, nodeAddress common.Addre
 	indexBig := big.NewInt(0).SetUint64(rewardsIndex)
 	hasSubmitted := new(bool)
 	if err := rocketRewardsPool.Call(opts, hasSubmitted, "getTrustedNodeSubmitted", nodeAddress, indexBig); err != nil {
-		return false, fmt.Errorf("Could not get trusted node submission status: %w", err)
+		return false, fmt.Errorf("error getting trusted node submission status: %w", err)
 	}
 	return *hasSubmitted, nil
 }
@@ -228,7 +236,7 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission
 	}
 	tx, err := rocketRewardsPool.Transact(opts, "submitRewardSnapshot", submission)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not submit rewards snapshot: %w", err)
+		return common.Hash{}, fmt.Errorf("error submitting rewards snapshot: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -267,34 +275,36 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	}
 
 	// Construct a filter query for relevant logs
+	rewardsSnapshotEvent := rocketRewardsPool.ABI.Events["RewardSnapshot"]
 	indexBytes := [32]byte{}
 	indexBig.FillBytes(indexBytes[:])
 	addressFilter := rocketRewardsPoolAddresses
-	topicFilter := [][]common.Hash{{rocketRewardsPool.ABI.Events["RewardSnapshot"].ID}, {indexBytes}}
+	topicFilter := [][]common.Hash{{rewardsSnapshotEvent.ID}, {indexBytes}}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), block, block, nil)
 	if err != nil {
 		return false, RewardsEvent{}, err
 	}
-
-	// Get the log info
-	values := make(map[string]interface{})
 	if len(logs) == 0 {
 		return false, RewardsEvent{}, nil
 	}
-	err = rocketRewardsPool.ABI.Events["RewardSnapshot"].Inputs.UnpackIntoMap(values, logs[0].Data)
+
+	// Get the log info values
+	values, err := rewardsSnapshotEvent.Inputs.Unpack(logs[0].Data)
 	if err != nil {
-		return false, RewardsEvent{}, err
+		return false, RewardsEvent{}, fmt.Errorf("error unpacking rewards snapshot event data: %w", err)
+	}
+
+	// Convert to a native struct
+	var snapshot rewardSnapshot
+	err = rewardsSnapshotEvent.Inputs.Copy(&snapshot, values)
+	if err != nil {
+		return false, RewardsEvent{}, fmt.Errorf("error converting rewards snapshot event data to struct: %w", err)
 	}
 
 	// Get the decoded data
-	submissionPrototype := RewardSubmission{}
-	submissionType := reflect.TypeOf(submissionPrototype)
-	submission := reflect.ValueOf(values["submission"]).Convert(submissionType).Interface().(RewardSubmission)
-	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
-	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
-	submissionTime := values["time"].(*big.Int)
+	submission := snapshot.Submission
 	eventData := RewardsEvent{
 		Index:             indexBig,
 		ExecutionBlock:    submission.ExecutionBlock,
@@ -305,11 +315,11 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 		NodeRPL:           submission.NodeRPL,
 		NodeETH:           submission.NodeETH,
 		UserETH:           submission.UserETH,
-		MerkleRoot:        common.BytesToHash(submission.MerkleRoot[:]),
+		MerkleRoot:        submission.MerkleRoot,
 		MerkleTreeCID:     submission.MerkleTreeCID,
-		IntervalStartTime: time.Unix(eventIntervalStartTime.Int64(), 0),
-		IntervalEndTime:   time.Unix(eventIntervalEndTime.Int64(), 0),
-		SubmissionTime:    time.Unix(submissionTime.Int64(), 0),
+		IntervalStartTime: time.Unix(snapshot.IntervalStartTime.Int64(), 0),
+		IntervalEndTime:   time.Unix(snapshot.IntervalEndTime.Int64(), 0),
+		SubmissionTime:    time.Unix(snapshot.Time.Int64(), 0),
 	}
 
 	// Convert v1.1.0-rc1 events to modern ones

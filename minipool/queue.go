@@ -64,7 +64,7 @@ func GetQueueTotalLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64
 	}
 	length := new(*big.Int)
 	if err := rocketMinipoolQueue.Call(opts, length, "getTotalLength"); err != nil {
-		return 0, fmt.Errorf("Could not get total minipool queue length: %w", err)
+		return 0, fmt.Errorf("error getting total minipool queue length: %w", err)
 	}
 	return (*length).Uint64(), nil
 }
@@ -77,7 +77,7 @@ func GetQueueTotalCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big
 	}
 	capacity := new(*big.Int)
 	if err := rocketMinipoolQueue.Call(opts, capacity, "getTotalCapacity"); err != nil {
-		return nil, fmt.Errorf("Could not get minipool queue total capacity: %w", err)
+		return nil, fmt.Errorf("error getting minipool queue total capacity: %w", err)
 	}
 	return *capacity, nil
 }
@@ -90,7 +90,7 @@ func GetQueueEffectiveCapacity(rp *rocketpool.RocketPool, opts *bind.CallOpts) (
 	}
 	capacity := new(*big.Int)
 	if err := rocketMinipoolQueue.Call(opts, capacity, "getEffectiveCapacity"); err != nil {
-		return nil, fmt.Errorf("Could not get minipool queue effective capacity: %w", err)
+		return nil, fmt.Errorf("error getting minipool queue effective capacity: %w", err)
 	}
 	return *capacity, nil
 }
@@ -116,7 +116,7 @@ func GetQueuePositionOfMinipool(rp *rocketpool.RocketPool, minipoolAddress commo
 	}
 	position := new(*big.Int)
 	if err := rocketMinipoolQueue.Call(opts, position, "getMinipoolPosition", minipoolAddress); err != nil {
-		return 0, fmt.Errorf("Could not get queue position for minipool %s: %w", minipoolAddress.Hex(), err)
+		return 0, fmt.Errorf("error getting queue position for minipool %s: %w", minipoolAddress.Hex(), err)
 	}
 	return (*position).Int64() + 1, nil
 }
@@ -129,7 +129,7 @@ func GetQueueMinipoolAtPosition(rp *rocketpool.RocketPool, position uint64, opts
 	}
 	address := new(common.Address)
 	if err := rocketMinipoolQueue.Call(opts, address, "getMinipoolAt", big.NewInt(int64(position))); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get minipool at queue position %d: %w", position, err)
+		return common.Address{}, fmt.Errorf("error getting minipool at queue position %d: %w", position, err)
 	}
 	return *address, nil
 }

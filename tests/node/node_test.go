@@ -57,8 +57,8 @@ func TestRegisterNode(t *testing.T) {
 		if !nodeDetails.Exists {
 			t.Error("Incorrect node exists status")
 		}
-		if !bytes.Equal(nodeDetails.WithdrawalAddress.Bytes(), nodeAccount.Address.Bytes()) {
-			t.Errorf("Incorrect node withdrawal address '%s'", nodeDetails.WithdrawalAddress.Hex())
+		if !bytes.Equal(nodeDetails.PrimaryWithdrawalAddress.Bytes(), nodeAccount.Address.Bytes()) {
+			t.Errorf("Incorrect node withdrawal address '%s'", nodeDetails.PrimaryWithdrawalAddress.Hex())
 		}
 		if nodeDetails.TimezoneLocation != timezoneLocation {
 			t.Errorf("Incorrect node timezone location '%s'", nodeDetails.TimezoneLocation)

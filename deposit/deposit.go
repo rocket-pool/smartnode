@@ -19,7 +19,7 @@ func GetBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error
 	}
 	balance := new(*big.Int)
 	if err := rocketDepositPool.Call(opts, balance, "getBalance"); err != nil {
-		return nil, fmt.Errorf("Could not get deposit pool balance: %w", err)
+		return nil, fmt.Errorf("error getting deposit pool balance: %w", err)
 	}
 	return *balance, nil
 }
@@ -32,7 +32,7 @@ func GetUserBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, e
 	}
 	balance := new(*big.Int)
 	if err := rocketDepositPool.Call(opts, balance, "getUserBalance"); err != nil {
-		return nil, fmt.Errorf("Could not get deposit pool user balance: %w", err)
+		return nil, fmt.Errorf("error getting deposit pool user balance: %w", err)
 	}
 	return *balance, nil
 }
@@ -45,7 +45,7 @@ func GetExcessBalance(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int,
 	}
 	excessBalance := new(*big.Int)
 	if err := rocketDepositPool.Call(opts, excessBalance, "getExcessBalance"); err != nil {
-		return nil, fmt.Errorf("Could not get deposit pool excess balance: %w", err)
+		return nil, fmt.Errorf("error getting deposit pool excess balance: %w", err)
 	}
 	return *excessBalance, nil
 }
@@ -67,7 +67,7 @@ func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, e
 	}
 	tx, err := rocketDepositPool.Transact(opts, "deposit")
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not deposit: %w", err)
+		return common.Hash{}, fmt.Errorf("error depositing: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -89,7 +89,7 @@ func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.
 	}
 	tx, err := rocketDepositPool.Transact(opts, "assignDeposits")
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not assign deposits: %w", err)
+		return common.Hash{}, fmt.Errorf("error assigning deposits: %w", err)
 	}
 	return tx.Hash(), nil
 }

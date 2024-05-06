@@ -49,7 +49,7 @@ func TestSubmitMinipoolWithdrawable(t *testing.T) {
 	}
 	err = evm.IncreaseTime(int(scrubPeriod + 1))
 	if err != nil {
-		t.Fatal(fmt.Errorf("Could not increase time: %w", err))
+		t.Fatal(fmt.Errorf("error increasing time: %w", err))
 	}
 
 	if err := minipoolutils.StakeMinipool(rp, mp, nodeAccount); err != nil {

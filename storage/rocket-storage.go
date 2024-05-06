@@ -14,7 +14,7 @@ import (
 func GetNodeWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
 	withdrawalAddress := new(common.Address)
 	if err := rp.RocketStorageContract.Call(opts, withdrawalAddress, "getNodeWithdrawalAddress", nodeAddress); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get node %s withdrawal address: %w", nodeAddress.Hex(), err)
+		return common.Address{}, fmt.Errorf("error getting node %s withdrawal address: %w", nodeAddress.Hex(), err)
 	}
 	return *withdrawalAddress, nil
 }
@@ -23,7 +23,7 @@ func GetNodeWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Addr
 func GetNodePendingWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
 	withdrawalAddress := new(common.Address)
 	if err := rp.RocketStorageContract.Call(opts, withdrawalAddress, "getNodePendingWithdrawalAddress", nodeAddress); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get node %s pending withdrawal address: %w", nodeAddress.Hex(), err)
+		return common.Address{}, fmt.Errorf("error getting node %s pending withdrawal address: %w", nodeAddress.Hex(), err)
 	}
 	return *withdrawalAddress, nil
 }
@@ -37,7 +37,7 @@ func EstimateSetWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress comm
 func SetWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := rp.RocketStorageContract.Transact(opts, "setWithdrawalAddress", nodeAddress, withdrawalAddress, confirm)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not set node withdrawal address: %w", err)
+		return common.Hash{}, fmt.Errorf("error setting node withdrawal address: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -51,7 +51,7 @@ func EstimateConfirmWithdrawalAddressGas(rp *rocketpool.RocketPool, nodeAddress 
 func ConfirmWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := rp.RocketStorageContract.Transact(opts, "confirmWithdrawalAddress", nodeAddress)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not confirm node withdrawal address: %w", err)
+		return common.Hash{}, fmt.Errorf("error confirming node withdrawal address: %w", err)
 	}
 	return tx.Hash(), nil
 }

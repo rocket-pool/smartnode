@@ -4,40 +4,91 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
-	protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 // Config
-const RewardsSettingsContractName = "rocketDAOProtocolSettingsRewards"
+const (
+	RewardsSettingsContractName            string = "rocketDAOProtocolSettingsRewards"
+	RewardsClaimIntervalPeriodsSettingPath string = "rewards.claimsperiods"
+)
 
-// The claim amount for a claimer as a fraction
-func GetRewardsClaimerPerc(rp *rocketpool.RocketPool, contractName string, opts *bind.CallOpts) (float64, error) {
-	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
-	if err != nil {
-		return 0, err
-	}
-	value := new(*big.Int)
-	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimerPerc", contractName); err != nil {
-		return 0, fmt.Errorf("Could not get rewards claimer percent: %w", err)
-	}
-	return eth.WeiToEth(*value), nil
+// Rewards claimer percents
+type RplRewardsPercentages struct {
+	OdaoPercentage *big.Int `abi:"trustedNodePerc"`
+	PdaoPercentage *big.Int `abi:"protocolPerc"`
+	NodePercentage *big.Int `abi:"nodePerc"`
 }
 
-// The time that a claimer's share was last updated
-func GetRewardsClaimerPercTimeUpdated(rp *rocketpool.RocketPool, contractName string, opts *bind.CallOpts) (uint64, error) {
+// The RPL rewards percentages for the Oracle DAO, Protocol DAO, and node operators
+func GetRewardsPercentages(rp *rocketpool.RocketPool, opts *bind.CallOpts) (RplRewardsPercentages, error) {
+	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
+	if err != nil {
+		return RplRewardsPercentages{}, err
+	}
+	value := new(RplRewardsPercentages)
+	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersPerc"); err != nil {
+		return RplRewardsPercentages{}, fmt.Errorf("error getting rewards percentages: %w", err)
+	}
+	return *value, nil
+}
+
+// The total RPL rewards percentage for node operator collateral
+func GetNodeOperatorRewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersNodePerc"); err != nil {
+		return nil, fmt.Errorf("error getting node operator rewards percent: %w", err)
+	}
+	return *value, nil
+}
+
+// The total RPL rewards percentage for Oracle DAO members
+func GetOracleDAORewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersTrustedNodePerc"); err != nil {
+		return nil, fmt.Errorf("error getting oracle DAO rewards percent: %w", err)
+	}
+	return *value, nil
+}
+
+// The total RPL rewards percentage for the Protocol DAO treasury
+func GetProtocolDAORewardsPercent(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersProtocolPerc"); err != nil {
+		return nil, fmt.Errorf("error getting protocol DAO rewards percent: %w", err)
+	}
+	return *value, nil
+}
+
+// The time that the RPL rewards percentages were last updated
+func GetRewardsClaimerPercTimeUpdated(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
-	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimerPercTimeUpdated", contractName); err != nil {
-		return 0, fmt.Errorf("Could not get rewards claimer updated time: %w", err)
+	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersTimeUpdated"); err != nil {
+		return 0, fmt.Errorf("error getting rewards claimer updated time: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
@@ -50,25 +101,28 @@ func GetRewardsClaimersPercTotal(rp *rocketpool.RocketPool, opts *bind.CallOpts)
 	}
 	value := new(*big.Int)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimersPercTotal"); err != nil {
-		return 0, fmt.Errorf("Could not get rewards claimers total percent: %w", err)
+		return 0, fmt.Errorf("error getting rewards claimers total percent: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
 
 // Rewards claim interval time
-func GetRewardsClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetRewardsClaimIntervalTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	rewardsSettingsContract, err := getRewardsSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
 	if err := rewardsSettingsContract.Call(opts, value, "getRewardsClaimIntervalTime"); err != nil {
-		return 0, fmt.Errorf("Could not get rewards claim interval: %w", err)
+		return 0, fmt.Errorf("error getting rewards claim interval: %w", err)
 	}
-	return (*value).Uint64(), nil
+	return time.Duration((*value).Uint64()) * time.Second, nil
 }
-func BootstrapRewardsClaimIntervalTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, RewardsSettingsContractName, "rpl.rewards.claim.period.time", big.NewInt(int64(value)), opts)
+func ProposeRewardsClaimIntervalTime(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", RewardsClaimIntervalPeriodsSettingPath), RewardsSettingsContractName, RewardsClaimIntervalPeriodsSettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeRewardsClaimIntervalTimeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", RewardsClaimIntervalPeriodsSettingPath), RewardsSettingsContractName, RewardsClaimIntervalPeriodsSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts

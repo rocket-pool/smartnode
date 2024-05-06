@@ -29,10 +29,11 @@ func TestSubmitBalances(t *testing.T) {
 
 	// Submit balances
 	var balancesBlock uint64 = 100
+	var slotTimestamp uint64 = 16000000
 	totalEth := eth.EthToWei(100)
 	stakingEth := eth.EthToWei(80)
 	rethSupply := eth.EthToWei(70)
-	if _, err := network.SubmitBalances(rp, balancesBlock, totalEth, stakingEth, rethSupply, trustedNodeAccount.GetTransactor()); err != nil {
+	if _, err := network.SubmitBalances(rp, balancesBlock, slotTimestamp, totalEth, stakingEth, rethSupply, trustedNodeAccount.GetTransactor()); err != nil {
 		t.Fatal(err)
 	}
 

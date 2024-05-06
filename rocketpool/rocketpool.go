@@ -52,7 +52,7 @@ func NewRocketPool(client ExecutionClient, rocketStorageAddress common.Address) 
 	// Initialize RocketStorage contract
 	rocketStorage, err := contracts.NewRocketStorage(rocketStorageAddress, client)
 	if err != nil {
-		return nil, fmt.Errorf("Could not initialize Rocket Pool storage contract: %w", err)
+		return nil, fmt.Errorf("error initializing Rocket Pool storage contract: %w", err)
 	}
 
 	// Create a Contract for it
@@ -99,7 +99,7 @@ func (rp *RocketPool) GetAddress(contractName string, opts *bind.CallOpts) (*com
 	// Get address
 	address, err := rp.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.address"), []byte(contractName)))
 	if err != nil {
-		return nil, fmt.Errorf("Could not load contract %s address: %w", contractName, err)
+		return nil, fmt.Errorf("error loading contract %s address: %w", contractName, err)
 	}
 
 	// Cache address
@@ -160,13 +160,13 @@ func (rp *RocketPool) GetABI(contractName string, opts *bind.CallOpts) (*abi.ABI
 	// Get ABI
 	abiEncoded, err := rp.RocketStorage.GetString(opts, crypto.Keccak256Hash([]byte("contract.abi"), []byte(contractName)))
 	if err != nil {
-		return nil, fmt.Errorf("Could not load contract %s ABI: %w", contractName, err)
+		return nil, fmt.Errorf("error loading contract %s ABI: %w", contractName, err)
 	}
 
 	// Decode ABI
 	abi, err := DecodeAbi(abiEncoded)
 	if err != nil {
-		return nil, fmt.Errorf("Could not decode contract %s ABI: %w", contractName, err)
+		return nil, fmt.Errorf("error decoding contract %s ABI: %w", contractName, err)
 	}
 
 	// Cache ABI

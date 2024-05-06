@@ -19,7 +19,7 @@ func GetPricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocket
 	}
 	pricesBlock := new(*big.Int)
 	if err := rocketNetworkPrices.Call(opts, pricesBlock, "getPricesBlock"); err != nil {
-		return 0, fmt.Errorf("Could not get network prices block: %w", err)
+		return 0, fmt.Errorf("error getting network prices block: %w", err)
 	}
 	return (*pricesBlock).Uint64(), nil
 }
@@ -32,7 +32,7 @@ func GetRPLPrice(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketNet
 	}
 	rplPrice := new(*big.Int)
 	if err := rocketNetworkPrices.Call(opts, rplPrice, "getRPLPrice"); err != nil {
-		return nil, fmt.Errorf("Could not get network RPL price: %w", err)
+		return nil, fmt.Errorf("error getting network RPL price: %w", err)
 	}
 	return *rplPrice, nil
 }
@@ -54,7 +54,7 @@ func SubmitPrices(rp *rocketpool.RocketPool, block uint64, rplPrice, effectiveRp
 	}
 	tx, err := rocketNetworkPrices.Transact(opts, "submitPrices", big.NewInt(int64(block)), rplPrice, effectiveRplStake)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not submit network prices: %w", err)
+		return common.Hash{}, fmt.Errorf("error submitting network prices: %w", err)
 	}
 	return tx.Hash(), nil
 }
@@ -67,7 +67,7 @@ func InConsensus(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyRocketNet
 	}
 	isInConsensus := new(bool)
 	if err := rocketNetworkPrices.Call(opts, isInConsensus, "inConsensus"); err != nil {
-		return false, fmt.Errorf("Could not get consensus status: %w", err)
+		return false, fmt.Errorf("error getting consensus status: %w", err)
 	}
 	return *isInConsensus, nil
 }
@@ -80,7 +80,7 @@ func GetLatestReportablePricesBlock(rp *rocketpool.RocketPool, opts *bind.CallOp
 	}
 	latestReportableBlock := new(*big.Int)
 	if err := rocketNetworkPrices.Call(opts, latestReportableBlock, "getLatestReportableBlock"); err != nil {
-		return nil, fmt.Errorf("Could not get latest reportable block: %w", err)
+		return nil, fmt.Errorf("error getting latest reportable block: %w", err)
 	}
 	return *latestReportableBlock, nil
 }

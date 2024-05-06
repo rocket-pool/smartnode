@@ -8,7 +8,6 @@ require (
 	github.com/princjef/gomarkdoc v0.4.1
 	github.com/prysmaticlabs/go-ssz v0.0.0-20210121151755-f6208871c388
 	golang.org/x/sync v0.1.0
-	gonum.org/v1/gonum v0.12.0
 )
 
 require (
@@ -32,6 +31,7 @@ require (
 	github.com/go-ole/go-ole v1.2.1 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
+	github.com/google/go-cmp v0.5.7 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/imdario/mergo v0.3.12 // indirect

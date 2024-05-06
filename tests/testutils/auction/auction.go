@@ -51,7 +51,7 @@ func CreateSlashedRPL(t *testing.T, rp *rocketpool.RocketPool, ownerAccount *acc
 	}
 	err = evm.IncreaseTime(int(scrubPeriod + 1))
 	if err != nil {
-		return fmt.Errorf("Could not increase time: %w", err)
+		return fmt.Errorf("error increasing time: %w", err)
 	}
 
 	// Stake minipool

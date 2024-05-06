@@ -6,15 +6,15 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/common"
 
-	protocoldao "github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 // Config
-const InflationSettingsContractName = "rocketDAOProtocolSettingsInflation"
+const (
+	InflationSettingsContractName string = "rocketDAOProtocolSettingsInflation"
+)
 
 // RPL inflation rate per interval
 func GetInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
@@ -24,12 +24,22 @@ func GetInflationIntervalRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (f
 	}
 	value := new(*big.Int)
 	if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalRate"); err != nil {
-		return 0, fmt.Errorf("Could not get inflation rate: %w", err)
+		return 0, fmt.Errorf("error getting inflation rate: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
-func BootstrapInflationIntervalRate(rp *rocketpool.RocketPool, value float64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.rate", eth.EthToWei(value), opts)
+
+// RPL inflation rate per interval
+func GetInflationIntervalRateRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	inflationSettingsContract, err := getInflationSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalRate"); err != nil {
+		return nil, fmt.Errorf("error getting inflation rate: %w", err)
+	}
+	return *value, nil
 }
 
 // RPL inflation start time
@@ -40,12 +50,9 @@ func GetInflationStartTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 	}
 	value := new(*big.Int)
 	if err := inflationSettingsContract.Call(opts, value, "getInflationIntervalStartTime"); err != nil {
-		return 0, fmt.Errorf("Could not get inflation start time: %w", err)
+		return 0, fmt.Errorf("error getting inflation start time: %w", err)
 	}
 	return (*value).Uint64(), nil
-}
-func BootstrapInflationStartTime(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	return protocoldao.BootstrapUint(rp, InflationSettingsContractName, "rpl.inflation.interval.start", big.NewInt(int64(value)), opts)
 }
 
 // Get contracts

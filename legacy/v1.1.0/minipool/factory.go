@@ -18,7 +18,7 @@ func GetMinipoolBytecode(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacyR
 	}
 	bytecode := new([]byte)
 	if err := rocketMinipoolFactory.Call(opts, bytecode, "getMinipoolBytecode"); err != nil {
-		return []byte{}, fmt.Errorf("Could not get minipool contract bytecode: %w", err)
+		return []byte{}, fmt.Errorf("error getting minipool contract bytecode: %w", err)
 	}
 	return *bytecode, nil
 }

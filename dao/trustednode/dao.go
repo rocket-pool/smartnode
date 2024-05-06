@@ -19,7 +19,7 @@ const (
 	MemberDetailsBatchSize = 20
 )
 
-// Proposal details
+// Member details
 type MemberDetails struct {
 	Address                common.Address `json:"address"`
 	Exists                 bool           `json:"exists"`
@@ -195,7 +195,7 @@ func GetMinimumMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint
 	}
 	minMemberCount := new(*big.Int)
 	if err := rocketDAONodeTrusted.Call(opts, minMemberCount, "getMemberMinRequired"); err != nil {
-		return 0, fmt.Errorf("Could not get trusted node DAO minimum member count: %w", err)
+		return 0, fmt.Errorf("error getting trusted node DAO minimum member count: %w", err)
 	}
 	return (*minMemberCount).Uint64(), nil
 }
@@ -208,7 +208,7 @@ func GetMemberCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, err
 	}
 	memberCount := new(*big.Int)
 	if err := rocketDAONodeTrusted.Call(opts, memberCount, "getMemberCount"); err != nil {
-		return 0, fmt.Errorf("Could not get trusted node DAO member count: %w", err)
+		return 0, fmt.Errorf("error getting trusted node DAO member count: %w", err)
 	}
 	return (*memberCount).Uint64(), nil
 }
@@ -221,7 +221,7 @@ func GetMemberAt(rp *rocketpool.RocketPool, index uint64, opts *bind.CallOpts) (
 	}
 	memberAddress := new(common.Address)
 	if err := rocketDAONodeTrusted.Call(opts, memberAddress, "getMemberAt", big.NewInt(int64(index))); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get trusted node DAO member %d address: %w", index, err)
+		return common.Address{}, fmt.Errorf("error getting trusted node DAO member %d address: %w", index, err)
 	}
 	return *memberAddress, nil
 }
@@ -234,7 +234,7 @@ func GetMemberExists(rp *rocketpool.RocketPool, memberAddress common.Address, op
 	}
 	exists := new(bool)
 	if err := rocketDAONodeTrusted.Call(opts, exists, "getMemberIsValid", memberAddress); err != nil {
-		return false, fmt.Errorf("Could not get trusted node DAO member %s exists status: %w", memberAddress.Hex(), err)
+		return false, fmt.Errorf("error getting trusted node DAO member %s exists status: %w", memberAddress.Hex(), err)
 	}
 	return *exists, nil
 }
@@ -245,7 +245,7 @@ func GetMemberID(rp *rocketpool.RocketPool, memberAddress common.Address, opts *
 	}
 	id := new(string)
 	if err := rocketDAONodeTrusted.Call(opts, id, "getMemberID", memberAddress); err != nil {
-		return "", fmt.Errorf("Could not get trusted node DAO member %s ID: %w", memberAddress.Hex(), err)
+		return "", fmt.Errorf("error getting trusted node DAO member %s ID: %w", memberAddress.Hex(), err)
 	}
 	return strings.Sanitize(*id), nil
 }
@@ -256,7 +256,7 @@ func GetMemberUrl(rp *rocketpool.RocketPool, memberAddress common.Address, opts 
 	}
 	url := new(string)
 	if err := rocketDAONodeTrusted.Call(opts, url, "getMemberUrl", memberAddress); err != nil {
-		return "", fmt.Errorf("Could not get trusted node DAO member %s URL: %w", memberAddress.Hex(), err)
+		return "", fmt.Errorf("error getting trusted node DAO member %s URL: %w", memberAddress.Hex(), err)
 	}
 	return strings.Sanitize(*url), nil
 }
@@ -267,7 +267,7 @@ func GetMemberJoinedTime(rp *rocketpool.RocketPool, memberAddress common.Address
 	}
 	joinedTime := new(*big.Int)
 	if err := rocketDAONodeTrusted.Call(opts, joinedTime, "getMemberJoinedTime", memberAddress); err != nil {
-		return 0, fmt.Errorf("Could not get trusted node DAO member %s joined time: %w", memberAddress.Hex(), err)
+		return 0, fmt.Errorf("error getting trusted node DAO member %s joined time: %w", memberAddress.Hex(), err)
 	}
 	return (*joinedTime).Uint64(), nil
 }
@@ -278,7 +278,7 @@ func GetMemberLastProposalTime(rp *rocketpool.RocketPool, memberAddress common.A
 	}
 	lastProposalTime := new(*big.Int)
 	if err := rocketDAONodeTrusted.Call(opts, lastProposalTime, "getMemberLastProposalTime", memberAddress); err != nil {
-		return 0, fmt.Errorf("Could not get trusted node DAO member %s last proposal time: %w", memberAddress.Hex(), err)
+		return 0, fmt.Errorf("error getting trusted node DAO member %s last proposal time: %w", memberAddress.Hex(), err)
 	}
 	return (*lastProposalTime).Uint64(), nil
 }
@@ -289,7 +289,7 @@ func GetMemberRPLBondAmount(rp *rocketpool.RocketPool, memberAddress common.Addr
 	}
 	rplBondAmount := new(*big.Int)
 	if err := rocketDAONodeTrusted.Call(opts, rplBondAmount, "getMemberRPLBondAmount", memberAddress); err != nil {
-		return nil, fmt.Errorf("Could not get trusted node DAO member %s RPL bond amount: %w", memberAddress.Hex(), err)
+		return nil, fmt.Errorf("error getting trusted node DAO member %s RPL bond amount: %w", memberAddress.Hex(), err)
 	}
 	return *rplBondAmount, nil
 }
@@ -300,7 +300,7 @@ func GetMemberUnbondedValidatorCount(rp *rocketpool.RocketPool, memberAddress co
 	}
 	unbondedValidatorCount := new(*big.Int)
 	if err := rocketDAONodeTrusted.Call(opts, unbondedValidatorCount, "getMemberUnbondedValidatorCount", memberAddress); err != nil {
-		return 0, fmt.Errorf("Could not get trusted node DAO member %s unbonded validator count: %w", memberAddress.Hex(), err)
+		return 0, fmt.Errorf("error getting trusted node DAO member %s unbonded validator count: %w", memberAddress.Hex(), err)
 	}
 	return (*unbondedValidatorCount).Uint64(), nil
 }
@@ -322,7 +322,7 @@ func GetMemberProposalExecutedTime(rp *rocketpool.RocketPool, proposalType strin
 	}
 	proposalExecutedTime := new(*big.Int)
 	if err := rocketDAONodeTrusted.Call(opts, proposalExecutedTime, "getMemberProposalExecutedTime", proposalType, memberAddress); err != nil {
-		return 0, fmt.Errorf("Could not get trusted node DAO %s proposal executed time for member %s: %w", proposalType, memberAddress.Hex(), err)
+		return 0, fmt.Errorf("error getting trusted node DAO %s proposal executed time for member %s: %w", proposalType, memberAddress.Hex(), err)
 	}
 	return (*proposalExecutedTime).Uint64(), nil
 }
@@ -335,7 +335,7 @@ func GetMemberReplacementAddress(rp *rocketpool.RocketPool, memberAddress common
 	}
 	replacementAddress := new(common.Address)
 	if err := rocketDAONodeTrusted.Call(opts, replacementAddress, "getMemberReplacedAddress", "new", memberAddress); err != nil {
-		return common.Address{}, fmt.Errorf("Could not get trusted node DAO member %s replacement address: %w", memberAddress.Hex(), err)
+		return common.Address{}, fmt.Errorf("error getting trusted node DAO member %s replacement address: %w", memberAddress.Hex(), err)
 	}
 	return *replacementAddress, nil
 }
@@ -348,107 +348,9 @@ func GetMemberIsChallenged(rp *rocketpool.RocketPool, memberAddress common.Addre
 	}
 	isChallenged := new(bool)
 	if err := rocketDAONodeTrusted.Call(opts, isChallenged, "getMemberIsChallenged", memberAddress); err != nil {
-		return false, fmt.Errorf("Could not get trusted node DAO member %s is challenged status: %w", memberAddress.Hex(), err)
+		return false, fmt.Errorf("error getting trusted node DAO member %s is challenged status: %w", memberAddress.Hex(), err)
 	}
 	return *isChallenged, nil
-}
-
-// Estimate the gas of BootstrapBool
-func EstimateBootstrapBoolGas(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapSettingBool", contractName, settingPath, value)
-}
-
-// Bootstrap a bool setting
-func BootstrapBool(rp *rocketpool.RocketPool, contractName, settingPath string, value bool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingBool", contractName, settingPath, value)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node setting %s.%s: %w", contractName, settingPath, err)
-	}
-	return tx.Hash(), nil
-}
-
-// Estimate the gas of BootstrapUint
-func EstimateBootstrapUintGas(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapSettingUint", contractName, settingPath, value)
-}
-
-// Bootstrap a uint256 setting
-func BootstrapUint(rp *rocketpool.RocketPool, contractName, settingPath string, value *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketDAONodeTrusted.Transact(opts, "bootstrapSettingUint", contractName, settingPath, value)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node setting %s.%s: %w", contractName, settingPath, err)
-	}
-	return tx.Hash(), nil
-}
-
-// Estimate the gas of BootstrapMember
-func EstimateBootstrapMemberGas(rp *rocketpool.RocketPool, id, url string, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	url = strings.Sanitize(url)
-	return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapMember", id, url, nodeAddress)
-}
-
-// Bootstrap a DAO member
-func BootstrapMember(rp *rocketpool.RocketPool, id, url string, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	url = strings.Sanitize(url)
-	tx, err := rocketDAONodeTrusted.Transact(opts, "bootstrapMember", id, url, nodeAddress)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not bootstrap trusted node member %s: %w", id, err)
-	}
-	return tx.Hash(), nil
-}
-
-// Estimate the gas of BootstrapUpgrade
-func EstimateBootstrapUpgradeGas(rp *rocketpool.RocketPool, upgradeType, contractName, contractAbi string, contractAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	compressedAbi, err := rocketpool.EncodeAbiStr(contractAbi)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketDAONodeTrusted.GetTransactionGasInfo(opts, "bootstrapUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
-}
-
-// Bootstrap a contract upgrade
-func BootstrapUpgrade(rp *rocketpool.RocketPool, upgradeType, contractName, contractAbi string, contractAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	compressedAbi, err := rocketpool.EncodeAbiStr(contractAbi)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketDAONodeTrusted.Transact(opts, "bootstrapUpgrade", upgradeType, contractName, compressedAbi, contractAddress)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("Could not bootstrap contract '%s' upgrade (%s): %w", contractName, upgradeType, err)
-	}
-	return tx.Hash(), nil
 }
 
 // Get contracts
