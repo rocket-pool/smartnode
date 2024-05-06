@@ -181,15 +181,15 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	t.lock.Unlock()
 
 	// Get the expected file paths
-	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON)
-	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
+	rewardsTreePathJSON := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON)
+	compressedRewardsTreePathJSON := rewardsTreePathJSON + config.RewardsTreeIpfsExtension
 	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
 	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval
-	if t.isExistingRewardsFileValid(rewardsTreePath, uint64(intervalsPassed)) {
+	if t.isExistingRewardsFileValid(rewardsTreePathJSON, uint64(intervalsPassed)) {
 		if !nodeTrusted {
-			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, rewardsTreePath)
+			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, rewardsTreePathJSON)
 			return nil
 		}
 
@@ -202,10 +202,10 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 			return nil
 		}
 
-		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, rewardsTreePath)
+		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, rewardsTreePathJSON)
 
 		// Deserialize the file
-		localRewardsFile, err := rprewards.ReadLocalRewardsFile(rewardsTreePath)
+		localRewardsFile, err := rprewards.ReadLocalRewardsFile(rewardsTreePathJSON)
 		if err != nil {
 			return fmt.Errorf("Error reading rewards tree file: %w", err)
 		}
@@ -215,7 +215,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		// Save the compressed file and get the CID for it
 		cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePathJSON, err)
 		}
 
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
@@ -231,7 +231,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Generate the tree
-	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePathJSON, compressedRewardsTreePathJSON, minipoolPerformancePath, compressedMinipoolPerformancePath)
 
 	// Done
 	return nil

@@ -484,8 +484,8 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 	currentIndexBig := big.NewInt(0).SetUint64(currentIndex)
 
 	// Get the expected file paths
-	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON)
-	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
+	rewardsTreePathJSON := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON)
+	compressedRewardsTreePathJSON := rewardsTreePathJSON + config.RewardsTreeIpfsExtension
 	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
 	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
@@ -496,12 +496,12 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 			return nil
 		}
 
-		t.log.Printlnf("%s Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", t.logPrefix, currentIndex, rewardsTreePath)
+		t.log.Printlnf("%s Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", t.logPrefix, currentIndex, rewardsTreePathJSON)
 
 		// Save the compressed file and get the CID for it
 		cid, err := existingRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePathJSON, err)
 		}
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
@@ -516,7 +516,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 	}
 
 	// Generate the tree
-	err = t.generateTree(client, state, intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	err = t.generateTree(client, state, intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePathJSON, compressedRewardsTreePathJSON, minipoolPerformancePath, compressedMinipoolPerformancePath)
 	if err != nil {
 		return fmt.Errorf("error generating rewards tree: %w", err)
 	}
