@@ -115,7 +115,7 @@ func InitializeVoting(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (commo
 }
 
 // Estimate the gas of InitializeVotingWithDelegate
-func EstimateInitializeVotingGas(rp *rocketpool.RocketPool, delegateAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateInitializeVotingWithDelegateGas(rp *rocketpool.RocketPool, delegateAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -124,7 +124,7 @@ func EstimateInitializeVotingGas(rp *rocketpool.RocketPool, delegateAddress comm
 }
 
 // Initialize on-chain voting for the node and delegate voting power at the same transaction
-func InitializeVotingWithDelegate(rp *rocketpool.RocketPool, common.Address delegateAddress, opts *bind.TransactOpts) (common.Hash, error) {
+func InitializeVotingWithDelegate(rp *rocketpool.RocketPool, delegateAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
