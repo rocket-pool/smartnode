@@ -515,7 +515,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		v1_1_0_NodeStakingAddress: map[config.Network]string{
-			config.Network_Mainnet: "0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2",
+			config.Network_Mainnet: "0x0d8D8f8541B12A0e1194B7CC4b6D954b90AB82ec",
 			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},

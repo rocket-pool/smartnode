@@ -926,16 +926,21 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-initialize-voting",
 				Aliases:   []string{"civ"},
 				Usage:     "Checks if voting can be initialized.",
-				UsageText: "rocketpool api pdao can-initialize-voting",
+				UsageText: "rocketpool api pdao can-initialize-voting delegate-address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegateAddress, err := cliutils.ValidateAddress("delegate address", c.Args().Get(0))
+					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canNodeInitializeVoting(c))
+					api.PrintResponse(canNodeInitializeVoting(c, delegateAddress))
 					return nil
 
 				},
@@ -944,16 +949,21 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "initialize-voting",
 				Aliases:   []string{"iv"},
 				Usage:     "Initialize voting.",
-				UsageText: "rocketpool api pdao initialize-voting",
+				UsageText: "rocketpool api pdao initialize-voting delegate-address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					delegateAddress, err := cliutils.ValidateAddress("delegate address", c.Args().Get(0))
+					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(nodeInitializedVoting(c))
+					api.PrintResponse(nodeInitializeVoting(c, delegateAddress))
 					return nil
 
 				},

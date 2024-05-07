@@ -134,13 +134,13 @@ func (f *Form) SetButtonTextColor(color tcell.Color) *Form {
 	return f
 }
 
-// SetButtonBackgroundColor sets the background color of the buttons when activated.
+// SetButtonBackgroundActivatedColor sets the background color of the buttons when activated.
 func (f *Form) SetButtonBackgroundActivatedColor(color tcell.Color) *Form {
 	f.buttonBackgroundActivatedColor = color
 	return f
 }
 
-// SetButtonTextColor sets the color of the button texts when activated.
+// SetButtonTextActivatedColor sets the color of the button texts when activated.
 func (f *Form) SetButtonTextActivatedColor(color tcell.Color) *Form {
 	f.buttonTextActivatedColor = color
 	return f

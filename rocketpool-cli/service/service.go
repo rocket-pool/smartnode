@@ -128,7 +128,7 @@ ______           _        _    ______           _
 \_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|
 
 `)
-	fmt.Printf("%s=== Smartnode v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
+	fmt.Printf("%s=== Smart Node v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
 	fmt.Printf("%s=== Ready for Houston! ===%s\n", colorGreen, colorReset)
@@ -162,7 +162,7 @@ func installUpdateTracker(c *cli.Context) error {
 	fmt.Println("")
 	fmt.Println("The Rocket Pool update tracker service was successfully installed!")
 	fmt.Println("")
-	fmt.Printf("%sNOTE:\nPlease restart the Smartnode stack to enable update tracking on the metrics dashboard.%s\n", colorYellow, colorReset)
+	fmt.Printf("%sNOTE:\nPlease restart the Smart Node stack to enable update tracking on the metrics dashboard.%s\n", colorYellow, colorReset)
 	fmt.Println("")
 	return nil
 
@@ -203,7 +203,7 @@ func configureService(c *cli.Context) error {
 	}
 	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
-		fmt.Printf("%sYour configured Rocket Pool directory of [%s] does not exist.\nPlease follow the instructions at https://docs.rocketpool.net/guides/node/docker.html to install the Smartnode.%s\n", colorYellow, path, colorReset)
+		fmt.Printf("%sYour configured Rocket Pool directory of [%s] does not exist.\nPlease follow the instructions at https://docs.rocketpool.net/guides/node/docker.html to install the Smart Node.%s\n", colorYellow, path, colorReset)
 		return nil
 	}
 
@@ -280,21 +280,21 @@ func configureService(c *cli.Context) error {
 
 			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed. If you had a Checkpoint Sync URL provided for your Consensus client, it will be removed and you will need to specify a different one that supports the new network.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
 
-			if !cliutils.Confirm("Would you like the Smartnode to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
+			if !cliutils.Confirm("Would you like the Smart Node to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
 				fmt.Println("To change networks manually, please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).")
 				return nil
 			}
 
 			err = changeNetworks(c, rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix))
 			if err != nil {
-				fmt.Printf("%s%s%s\nThe Smartnode could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).\n", colorRed, err.Error(), colorReset)
+				fmt.Printf("%s%s%s\nThe Smart Node could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).\n", colorRed, err.Error(), colorReset)
 			}
 			return nil
 		}
 
 		// Query for service start if this is a new installation
 		if isNew {
-			if !cliutils.Confirm("Would you like to start the Smartnode services automatically now?") {
+			if !cliutils.Confirm("Would you like to start the Smart Node services automatically now?") {
 				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
 				return nil
 			}
@@ -325,7 +325,7 @@ func configureService(c *cli.Context) error {
 			return startService(c, true)
 		}
 	} else {
-		fmt.Println("Your changes have not been saved. Your Smartnode configuration is the same as it was before.")
+		fmt.Println("Your changes have not been saved. Your Smart Node configuration is the same as it was before.")
 		return nil
 	}
 
@@ -491,7 +491,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	}
 
 	if isNew {
-		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smartnode before running it.")
+		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smart Node before running it.")
 	}
 
 	// Check if this is a new install
@@ -500,7 +500,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		return fmt.Errorf("error checking for first-run status: %w", err)
 	}
 	if isUpdate && !ignoreConfigSuggestion {
-		if c.Bool("yes") || cliutils.Confirm("Smartnode upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
+		if c.Bool("yes") || cliutils.Confirm("Smart Node upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
 			err = cfg.UpdateDefaults()
 			if err != nil {
 				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
@@ -569,14 +569,14 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		previousVersion := "0.0.0"
 		backupCfg, err := rp.LoadBackupConfig()
 		if err != nil {
-			fmt.Printf("WARNING: Couldn't determine previous Smartnode version from backup settings: %s\n", err.Error())
+			fmt.Printf("WARNING: Couldn't determine previous Smart Node version from backup settings: %s\n", err.Error())
 		} else if backupCfg != nil {
 			previousVersion = backupCfg.Version
 		}
 
 		oldVersion, err := version.NewVersion(strings.TrimPrefix(previousVersion, "v"))
 		if err != nil {
-			fmt.Printf("WARNING: Backup configuration states the previous Smartnode installation used version %s, which is not a valid version\n", previousVersion)
+			fmt.Printf("WARNING: Backup configuration states the previous Smart Node installation used version %s, which is not a valid version\n", previousVersion)
 			oldVersion, _ = version.NewVersion("0.0.0")
 		}
 
@@ -626,8 +626,8 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 	previousVersion := "0.0.0"
 	backupCfg, err := rp.LoadBackupConfig()
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't determine previous Smartnode version from backup settings: %s%s\n", colorYellow, err.Error(), colorReset)
-		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smartnode v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
+		fmt.Printf("%sWARNING: Couldn't determine previous Smart Node version from backup settings: %s%s\n", colorYellow, err.Error(), colorReset)
+		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smart Node v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
 		fmt.Println()
 		if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 			fmt.Println("Cancelled.")
@@ -637,8 +637,8 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 	} else if backupCfg != nil {
 		previousVersion = backupCfg.Version
 	} else {
-		fmt.Printf("%sWARNING: Couldn't determine previous Smartnode version from backup settings because the backup configuration didn't exist.%s\n", colorYellow, colorReset)
-		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smartnode v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
+		fmt.Printf("%sWARNING: Couldn't determine previous Smart Node version from backup settings because the backup configuration didn't exist.%s\n", colorYellow, colorReset)
+		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smart Node v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
 		fmt.Println()
 		if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 			fmt.Println("Cancelled.")
@@ -649,8 +649,8 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 
 	oldVersion, err := version.NewVersion(strings.TrimPrefix(previousVersion, "v"))
 	if err != nil {
-		fmt.Printf("%sWARNING: Backup configuration states the previous Smartnode installation used version %s, which is not a valid version%s\n", colorYellow, previousVersion, colorReset)
-		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smartnode v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
+		fmt.Printf("%sWARNING: Backup configuration states the previous Smart Node installation used version %s, which is not a valid version%s\n", colorYellow, previousVersion, colorReset)
+		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smart Node v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
 		fmt.Println()
 		if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 			fmt.Println("Cancelled.")
@@ -710,7 +710,7 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 
 		if !successfulStop {
 			fmt.Println()
-			fmt.Printf("%sWARNING: Some of the Nimbus containers couldn't be shut down safely.\nThe Smartnode can't guarantee the safe transfer of the slashing database. If you have active validators, you **must ensure** you have waited 15 minutes since your last attestation and **missed at least two attestations** before continuing.\nIf you don't, you %sMAY BE SLASHED!%s\n\n", colorYellow, colorRed, colorReset)
+			fmt.Printf("%sWARNING: Some of the Nimbus containers couldn't be shut down safely.\nThe Smart Node can't guarantee the safe transfer of the slashing database. If you have active validators, you **must ensure** you have waited 15 minutes since your last attestation and **missed at least two attestations** before continuing.\nIf you don't, you %sMAY BE SLASHED!%s\n\n", colorYellow, colorRed, colorReset)
 			fmt.Println()
 			if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 				fmt.Println("Cancelled.")
@@ -727,7 +727,7 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 func handleTekuSlashProtectionMigrationDelay(rp *rocketpool.Client, cfg *config.RocketPoolConfig) error {
 
 	fmt.Printf("%s=== NOTICE ===\n", colorYellow)
-	fmt.Printf("You are currently using Teku as your Consensus client.\nv1.3.1+ fixes an issue that would cause Teku's slashing protection database to be lost after an upgrade.\nIt will now be rebuilt.\n\nFor the absolute safety of your funds, your node will wait for 15 minutes before starting.\nYou will miss a few attestations during this process; this is expected.\n\nThis delay only needs to happen the first time you start the Smartnode after upgrading to v1.3.1 or higher.%s\n\nIf you are installing the Smartnode for the first time or don't have any validators yet, you can skip this with `rocketpool service start --ignore-slash-timer`. Otherwise, we strongly recommend you wait for the full delay.\n\n", colorReset)
+	fmt.Printf("You are currently using Teku as your Consensus client.\nv1.3.1+ fixes an issue that would cause Teku's slashing protection database to be lost after an upgrade.\nIt will now be rebuilt.\n\nFor the absolute safety of your funds, your node will wait for 15 minutes before starting.\nYou will miss a few attestations during this process; this is expected.\n\nThis delay only needs to happen the first time you start the Smart Node after upgrading to v1.3.1 or higher.%s\n\nIf you are installing the Smart Node for the first time or don't have any validators yet, you can skip this with `rocketpool service start --ignore-slash-timer`. Otherwise, we strongly recommend you wait for the full delay.\n\n", colorReset)
 
 	// Get the container prefix
 	prefix, err := rp.GetContainerPrefix()
@@ -832,13 +832,13 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 		fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
 	} else if (currentValidatorName == "nimbus-eth2" && pendingValidatorName == "nimbus-validator-client") || (pendingValidatorName == "nimbus-eth2" && currentValidatorName == "nimbus-validator-client") {
 		// Handle the transition from Nimbus v22.11.x to Nimbus v22.12.x where they split the VC into its own container
-		fmt.Printf("Validator client [%s] was previously used, you are changing to [%s] but the Smartnode will migrate your slashing database automatically to this new client. No slashing prevention delay is necessary.\n", currentValidatorName, pendingValidatorName)
+		fmt.Printf("Validator client [%s] was previously used, you are changing to [%s] but the Smart Node will migrate your slashing database automatically to this new client. No slashing prevention delay is necessary.\n", currentValidatorName, pendingValidatorName)
 	} else {
 
 		consensusClient, _ := cfg.GetSelectedConsensusClient()
 		// Warn about Lodestar
 		if consensusClient == cfgtypes.ConsensusClient_Lodestar {
-			fmt.Printf("%sNOTE:\nIf this is your first time running Lodestar and you have existing minipools, you must run `rocketpool wallet rebuild` after the Smartnode starts to generate the validator keys for it.\nIf you have run it before or you don't have any minipools, you can ignore this message.%s\n\n", colorYellow, colorReset)
+			fmt.Printf("%sNOTE:\nIf this is your first time running Lodestar and you have existing minipools, you must run `rocketpool wallet rebuild` after the Smart Node starts to generate the validator keys for it.\nIf you have run it before or you don't have any minipools, you can ignore this message.%s\n\n", colorYellow, colorReset)
 		}
 
 		// Get the time that the container responsible for validator duties exited
@@ -965,16 +965,16 @@ func pruneExecutionClient(c *cli.Context) error {
 		return err
 	}
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	// Sanity checks
 	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
-		fmt.Println("You are using an externally managed Execution client.\nThe Smartnode cannot prune it for you.")
+		fmt.Println("You are using an externally managed Execution client.\nThe Smart Node cannot prune it for you.")
 		return nil
 	}
 	if cfg.IsNativeMode {
-		fmt.Println("You are using Native Mode.\nThe Smartnode cannot prune your Execution client for you, you'll have to do it manually.")
+		fmt.Println("You are using Native Mode.\nThe Smart Node cannot prune your Execution client for you, you'll have to do it manually.")
 	}
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 	switch selectedEc {
@@ -1161,7 +1161,7 @@ func pruneDocker(c *cli.Context) error {
 			return fmt.Errorf("error getting all docker images: %w", err)
 		}
 
-		fmt.Println("Deleting images not used by the Rocket Pool Smartnode...")
+		fmt.Println("Deleting images not used by the Rocket Pool Smart Node...")
 		for _, image := range allImages {
 			if _, ok := ourImagesMap[image.TagString()]; !ok {
 				fmt.Printf("Deleting %s...\n", image.String())
@@ -1173,7 +1173,7 @@ func pruneDocker(c *cli.Context) error {
 				continue
 			}
 
-			fmt.Printf("Skipping image used by Smartnode stack: %s\n", image.String())
+			fmt.Printf("Skipping image used by Smart Node stack: %s\n", image.String())
 		}
 	}
 
@@ -1225,7 +1225,7 @@ func pauseService(c *cli.Context) (bool, error) {
 func terminateService(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smartnode uses `rocketpool service install -d` in order to use it again.%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1433,7 +1433,7 @@ func resyncEth1(c *cli.Context) error {
 		return err
 	}
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	fmt.Println("This will delete the chain data of your primary ETH1 client and resync it from scratch.")
@@ -1514,7 +1514,7 @@ func resyncEth2(c *cli.Context) error {
 		return err
 	}
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	fmt.Println("This will delete the chain data of your ETH2 client and resync it from scratch.")
@@ -1647,7 +1647,7 @@ func exportEcData(c *cli.Context, targetDir string) error {
 		return err
 	}
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	// Make the path absolute
@@ -1768,7 +1768,7 @@ func importEcData(c *cli.Context, sourceDir string) error {
 		return err
 	}
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	// Make the path absolute

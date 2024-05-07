@@ -27,7 +27,17 @@ func initializeVoting(c *cli.Context) error {
 		return nil
 	}
 
-	resp, err := rp.CanInitializeVoting()
+	// Get the address
+	delegateAddressString := c.String("address")
+	if delegateAddressString == "" {
+		delegateAddressString = cliutils.Prompt("Please enter the delegate's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
+	}
+	delegateAddress, err := cliutils.ValidateAddress("delegateAddress", delegateAddressString)
+	if err != nil {
+		return err
+	}
+
+	resp, err := rp.CanInitializeVoting(delegateAddress)
 	if err != nil {
 		return fmt.Errorf("error calling get-voting-initialized: %w", err)
 	}
@@ -50,7 +60,7 @@ func initializeVoting(c *cli.Context) error {
 	}
 
 	// Initialize voting
-	response, err := rp.InitializeVoting()
+	response, err := rp.InitializeVoting(delegateAddress)
 	if err != nil {
 		return fmt.Errorf("error calling initialize-voting: %w", err)
 	}

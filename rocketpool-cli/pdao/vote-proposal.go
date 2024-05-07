@@ -143,8 +143,8 @@ func voteOnProposal(c *cli.Context) error {
 		}
 	} else {
 		// Check if proposal can be overriden on
-		actionString = "override your delegate's vote"
-		actionPast = "overrode delegate with a vote for"
+		actionString = "override the Phase 1 vote"
+		actionPast = "overrode the Phase 1 vote with a vote for"
 		canVote, err = rp.PDAOCanOverrideVote(selectedProposal.ID, voteDirection)
 		if err != nil {
 			return err
@@ -154,13 +154,13 @@ func voteOnProposal(c *cli.Context) error {
 	if !canVote.CanVote {
 		fmt.Printf("Cannot %s on proposal:\n", actionString)
 		if canVote.InsufficientPower {
-			fmt.Println("You do not have any voting power.")
+			fmt.Println("You didn't have voting power at the proposal snapshot.")
 		}
 		return nil
 	}
 
 	// Print the voting power
-	fmt.Printf("\n\nYour current voting power: %d\n\n", canVote.VotingPower)
+	fmt.Printf("\n\nYour voting power on this proposal: %.10f\n\n", eth.WeiToEth(canVote.VotingPower))
 
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
@@ -169,7 +169,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to %s '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to %s with a vote for '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

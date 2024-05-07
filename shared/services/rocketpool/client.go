@@ -1074,7 +1074,7 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 	}
 
 	if isNew {
-		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode before starting it.")
+		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node before starting it.")
 	}
 
 	// Check config
@@ -1194,12 +1194,12 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	// Create the custom keys dir
 	customKeyDir, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys"))
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
+		fmt.Printf("%sWARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
 		return deployedContainers, nil
 	}
 	err = os.MkdirAll(customKeyDir, 0775)
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smartnode until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), customKeyDir, colorReset)
+		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), customKeyDir, colorReset)
 	}
 
 	// Create the rewards file dir
@@ -1444,7 +1444,7 @@ func (c *Client) GetContainerPrefix() (string, error) {
 		return "", err
 	}
 	if isNew {
-		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	return cfg.Smartnode.ProjectName.Value.(string), nil
