@@ -42,6 +42,10 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 	addressesString := c.String("addresses")
 	if addressesString == "" {
 		// Print the members
+		if len(membersResponse.Members) == 0 {
+			fmt.Printf("There are no security council members.")
+			return nil
+		}
 		for i, member := range membersResponse.Members {
 			fmt.Printf("%d: %s (%s), joined %s\n", i+1, member.ID, member.Address, time.Unix(int64(member.JoinedTime), 0))
 		}
