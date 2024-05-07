@@ -52,7 +52,7 @@ func printTransactionHashImpl(rp *rocketpool.Client, hash common.Hash, finalMess
 	}
 
 	if isNew {
-		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 		return
 	}
 
@@ -131,16 +131,16 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
 // Prints what network you're currently on
 func PrintNetwork(currentNetwork cfgtypes.Network, isNew bool) error {
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	switch currentNetwork {
 	case cfgtypes.Network_Mainnet:
-		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", colorGreen, colorReset)
+		fmt.Printf("Your Smart Node is currently using the %sEthereum Mainnet.%s\n\n", colorGreen, colorReset)
 	case cfgtypes.Network_Devnet:
-		fmt.Printf("Your Smartnode is currently using the %sHolesky Development Network.%s\n\n", colorYellow, colorReset)
+		fmt.Printf("Your Smart Node is currently using the %sHolesky Development Network.%s\n\n", colorYellow, colorReset)
 	case cfgtypes.Network_Holesky:
-		fmt.Printf("Your Smartnode is currently using the %sHolesky Test Network.%s\n\n", colorYellow, colorReset)
+		fmt.Printf("Your Smart Node is currently using the %sHolesky Test Network.%s\n\n", colorYellow, colorReset)
 	default:
 		fmt.Printf("%sYou are on an unexpected network [%v].%s\n\n", colorYellow, currentNetwork, colorReset)
 	}
