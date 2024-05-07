@@ -411,4 +411,5 @@ type PDAOStatusResponse struct {
 	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
 	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
 	BlockNumber                    uint32         `json:"blockNumber"`
+	VerifyEnabled                  bool           `json:"verifyEnabled"`
 }

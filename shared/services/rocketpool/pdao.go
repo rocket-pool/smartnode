@@ -687,7 +687,7 @@ func (c *Client) InitializeVoting() (api.PDAOInitializeVotingResponse, error) {
 	return response, nil
 }
 
-// GetVotingPower returns the node's voting power at the latest block
+// Get PDAO Status
 func (c *Client) PDAOStatus() (api.PDAOStatusResponse, error) {
 	responseBytes, err := c.callAPI("pdao status")
 	if err != nil {

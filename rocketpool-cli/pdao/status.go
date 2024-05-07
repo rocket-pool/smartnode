@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/fatih/color"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -13,9 +14,10 @@ import (
 )
 
 const (
-	colorBlue  string = "\033[36m"
-	colorReset string = "\033[0m"
-	colorGreen string = "\033[32m"
+	colorBlue            string = "\033[36m"
+	colorReset           string = "\033[0m"
+	colorGreen           string = "\033[32m"
+	VerifyPdaoPropsColor        = color.FgYellow
 )
 
 func getStatus(c *cli.Context) error {
@@ -26,26 +28,24 @@ func getStatus(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
 	// Get PDAO status at the latest block
 	response, err := rp.PDAOStatus()
 	if err != nil {
 		return err
 	}
 
+	// Get node status
 	status, err := rp.NodeStatus()
 	if err != nil {
 		return err
 	}
+
+	// Get protocol DAO proposals
+	claimableBondsResponse, err := rp.PDAOGetClaimableBonds()
+	if err != nil {
+		fmt.Errorf("error checking for claimable bonds: %w", err)
+	}
+	claimableBonds := claimableBondsResponse.ClaimableBonds
 
 	// Snapshot voting status
 	fmt.Printf("%s=== Snapshot Voting ===%s\n", colorGreen, colorReset)
@@ -111,21 +111,22 @@ func getStatus(c *cli.Context) error {
 
 	// Claimable Bonds Status:
 	fmt.Printf("%s=== Claimable RPL Bonds ===%s\n", colorGreen, colorReset)
-
-	// Get protocol DAO proposals
-	claimableBondsResponse, err := rp.PDAOGetClaimableBonds()
-	if err != nil {
-		fmt.Errorf("error checking for claimable bonds: %w", err)
-	}
-	claimableBonds := claimableBondsResponse.ClaimableBonds
-
-	// Check for executable proposals
 	if len(claimableBonds) == 0 {
 		fmt.Println("You do not have any unlockable bonds or claimable rewards.")
-		return nil
 	} else {
-		fmt.Println("This node has unlockable bonds or claimable rewards available. Use 'rocketpool pdao claim-bonds' to view and claim.")
+		fmt.Println("The node has unlockable bonds or claimable rewards available. Use 'rocketpool pdao claim-bonds' to view and claim.")
 	}
+	fmt.Println("")
+
+	// Check if PDAO proposal checking duty is enabled
+	fmt.Printf("%s=== PDAO Proposal Checking Duty ===%s\n", colorGreen, colorReset)
+	// Make sure the user opted into this duty
+	if response.VerifyEnabled {
+		fmt.Println("The node has PDAO proposal checking duties enabled. It will periodically check for proposals to challenge")
+	} else {
+		fmt.Println("The node does not have PDAO proposal checking duties enabled. (See https://docs.rocketpool.net/guides/houston/pdao#challenge-process to learn more about this duty)")
+	}
+	fmt.Println("")
 
 	return nil
 

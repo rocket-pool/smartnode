@@ -29,6 +29,10 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.PDAOStatusResponse{}
@@ -43,6 +47,7 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	var wg errgroup.Group
 	var blockNumber uint64
 
+	// Get the node onchain voting delegate
 	wg.Go(func() error {
 		var err error
 		response.OnchainVotingDelegate, err = network.GetCurrentVotingDelegate(rp, nodeAccount.Address, nil)
@@ -52,12 +57,23 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 		return err
 	})
 
+	// Get latest block number
 	wg.Go(func() error {
 		_blockNumber, err := ec.BlockNumber(context.Background())
 		if err != nil {
 			return fmt.Errorf("Error getting block number: %w", err)
 		}
 		blockNumber = _blockNumber
+		return nil
+	})
+
+	// Check if node is opted into pdao proposal checking duty
+	wg.Go(func() error {
+		var err error
+		response.VerifyEnabled = cfg.Smartnode.VerifyProposals.Value.(bool)
+		if err != nil {
+			return fmt.Errorf("Error loading configuration: %w", err)
+		}
 		return nil
 	})
 
