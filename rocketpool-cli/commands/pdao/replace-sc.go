@@ -32,7 +32,10 @@ var scReplaceNewAddressFlag *cli.StringFlag = &cli.StringFlag{
 
 func proposeSecurityCouncilReplace(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the list of members
 	membersResponse, err := rp.Api.Security.Members()

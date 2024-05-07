@@ -27,7 +27,10 @@ var (
 // Export the EC volume to an external folder
 func exportEcData(c *cli.Context, targetDir string) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the config
 	cfg, isNew, err := rp.LoadConfig()

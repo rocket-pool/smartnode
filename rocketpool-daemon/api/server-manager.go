@@ -2,9 +2,7 @@ package api
 
 import (
 	"fmt"
-	"path/filepath"
 	"sync"
-	"syscall"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/api/auction"
@@ -22,74 +20,60 @@ import (
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
-const (
-	cliOrigin string = "cli"
-	webOrigin string = "net"
-)
-
 // ServerManager manages all of the daemon sockets and servers run by the main Smart Node daemon
 type ServerManager struct {
-	// The server for the CLI to interact with
-	cliServer *server.ApiServer
+	// The server for clients to interact with
+	apiServer *server.NetworkSocketApiServer
 }
 
 // Creates a new server manager
-func NewServerManager(sp *services.ServiceProvider, cfgPath string, stopWg *sync.WaitGroup) (*ServerManager, error) {
-	// Get the owner of the config file
-	var cfgFileStat syscall.Stat_t
-	err := syscall.Stat(cfgPath, &cfgFileStat)
+func NewServerManager(sp *services.ServiceProvider, ip string, port uint16, stopWg *sync.WaitGroup) (*ServerManager, error) {
+	// Start the API server
+	apiServer, err := createServer(sp, ip, port)
 	if err != nil {
-		return nil, fmt.Errorf("error getting config file [%s] info: %w", cfgPath, err)
+		return nil, fmt.Errorf("error creating API server: %w", err)
 	}
-
-	// Start the CLI server
-	cliSocketPath := filepath.Join(sp.GetUserDir(), config.SmartNodeCliSocketFilename)
-	cliServer, err := createServer(cliOrigin, sp, cliSocketPath)
+	err = apiServer.Start(stopWg)
 	if err != nil {
-		return nil, fmt.Errorf("error creating CLI server: %w", err)
+		return nil, fmt.Errorf("error starting API server: %w", err)
 	}
-	err = cliServer.Start(stopWg, cfgFileStat.Uid, cfgFileStat.Gid)
-	if err != nil {
-		return nil, fmt.Errorf("error starting CLI server: %w", err)
-	}
-	fmt.Printf("CLI daemon started on %s\n", cliSocketPath)
+	fmt.Printf("API server started on %s:%d\n", ip, port)
 
 	// Create the manager
 	mgr := &ServerManager{
-		cliServer: cliServer,
+		apiServer: apiServer,
 	}
 	return mgr, nil
 }
 
 // Stops and shuts down the servers
 func (m *ServerManager) Stop() {
-	err := m.cliServer.Stop()
+	err := m.apiServer.Stop()
 	if err != nil {
-		fmt.Printf("WARNING: CLI server didn't shutdown cleanly: %s\n", err.Error())
+		fmt.Printf("WARNING: API server didn't shutdown cleanly: %s\n", err.Error())
 	}
 }
 
 // Creates a new Smart Node API server
-func createServer(origin string, sp *services.ServiceProvider, socketPath string) (*server.ApiServer, error) {
+func createServer(sp *services.ServiceProvider, ip string, port uint16) (*server.NetworkSocketApiServer, error) {
 	apiLogger := sp.GetApiLogger()
-	subLogger := apiLogger.CreateSubLogger(origin)
-	ctx := subLogger.CreateContextWithLogger(sp.GetBaseContext())
+	ctx := apiLogger.CreateContextWithLogger(sp.GetBaseContext())
 
 	handlers := []server.IHandler{
-		auction.NewAuctionHandler(subLogger, ctx, sp),
-		minipool.NewMinipoolHandler(subLogger, ctx, sp),
-		network.NewNetworkHandler(subLogger, ctx, sp),
-		node.NewNodeHandler(subLogger, ctx, sp),
-		odao.NewOracleDaoHandler(subLogger, ctx, sp),
-		pdao.NewProtocolDaoHandler(subLogger, ctx, sp),
-		queue.NewQueueHandler(subLogger, ctx, sp),
-		security.NewSecurityCouncilHandler(subLogger, ctx, sp),
-		service.NewServiceHandler(subLogger, ctx, sp),
-		tx.NewTxHandler(subLogger, ctx, sp),
-		wallet.NewWalletHandler(subLogger, ctx, sp),
+		auction.NewAuctionHandler(apiLogger, ctx, sp),
+		minipool.NewMinipoolHandler(apiLogger, ctx, sp),
+		network.NewNetworkHandler(apiLogger, ctx, sp),
+		node.NewNodeHandler(apiLogger, ctx, sp),
+		odao.NewOracleDaoHandler(apiLogger, ctx, sp),
+		pdao.NewProtocolDaoHandler(apiLogger, ctx, sp),
+		queue.NewQueueHandler(apiLogger, ctx, sp),
+		security.NewSecurityCouncilHandler(apiLogger, ctx, sp),
+		service.NewServiceHandler(apiLogger, ctx, sp),
+		tx.NewTxHandler(apiLogger, ctx, sp),
+		wallet.NewWalletHandler(apiLogger, ctx, sp),
 	}
 
-	server, err := server.NewApiServer(subLogger.Logger, socketPath, handlers, config.SmartNodeDaemonBaseRoute, config.SmartNodeApiVersion)
+	server, err := server.NewNetworkSocketApiServer(apiLogger.Logger, ip, port, handlers, config.SmartNodeDaemonBaseRoute, config.SmartNodeApiVersion)
 	if err != nil {
 		return nil, err
 	}

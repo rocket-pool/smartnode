@@ -17,7 +17,10 @@ import (
 
 func nodeSend(c *cli.Context, amount float64, token string, toAddressOrEns string) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get amount in wei
 	amountWei := eth.EthToWei(amount)

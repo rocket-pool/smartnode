@@ -104,6 +104,10 @@ if [ "$CLIENT" = "geth" ]; then
             CMD="$CMD --rpc.evmtimeout ${RP_GETH_EVM_TIMEOUT}s"
         fi
 
+        if [ "$RP_GETH_ARCHIVE_MODE" = "true" ]; then
+            CMD="$CMD --syncmode=full --gcmode=archive"
+        fi
+
         if [ "$ENABLE_METRICS" = "true" ]; then
             CMD="$CMD --metrics --metrics.addr 0.0.0.0 --metrics.port $EC_METRICS_PORT"
         fi
@@ -294,7 +298,7 @@ if [ "$CLIENT" = "reth" ]; then
 
     # Create the JWT secret
     if [ ! -f "/secrets/jwtsecret" ]; then
-        openssl rand -hex 32 | tr -d "\n" > /secrets/jwtsecret
+        echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/reth node $RETH_NETWORK \

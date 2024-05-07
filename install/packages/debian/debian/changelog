@@ -1,3 +1,21 @@
+rocketpool (2.0.0~b2) unstable; urgency=medium
+
+  * Fixed voting on Protocol DAO proposals.
+  * Proposing PDAO rewards percentages now uses the correct service route.
+  * Fixed the `node rewards` command.
+  * Fixed the `pdao proposals list` command.
+  * The slippage check during `node deposit` now properly checks if the min is the same as the max and ignores the prompt.
+  * Multiselect commands (such as `minipool distribute`) now support ranges as well as comma-separated options - e.g., things like `1-3,4,5,6-10` will now work. Embrace your inner printer page dialog!
+  * `wallet export` now prints the wallet key as a hex string.
+  * The `--local-script` flag has been added back to `service install`.
+  * Fixed some typos.
+  * The node API no longer uses a Unix socket; it's been moved to a network socket (bound to `localhost`, default port `8080`) as part of macOS support.
+  * `minipool exit` now properly respects your minipool choice.
+  * Added the archive mode setting for Geth.
+  * Added the `service/get-config` route to the daemon to dynamically get the Smart Node's config from the API.
+
+ -- Rocket Pool <dev@rocketpool.net>  Sun, 05 May 2024 19:40:44 +0000
+
 rocketpool (2.0.0~b1) unstable; urgency=medium
 
   * Welcome to Smart Node v2! This is a completely redesigned Smart Node from the ground up, taking advantage of years of lessons learned and user feedback. The list of features and changes is far too long to list here, but here are some highlights:

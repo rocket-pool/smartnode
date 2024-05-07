@@ -18,9 +18,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the deposit pool and minipool queue status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getStatus(c)
@@ -33,9 +31,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Process the deposit pool",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return processQueue(c)

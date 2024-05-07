@@ -23,10 +23,13 @@ const (
 
 func nodeDeposit(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Make sure Beacon is on the correct chain
-	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo()
+	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo(true)
 	if err != nil {
 		return err
 	}
@@ -116,7 +119,7 @@ func nodeDeposit(c *cli.Context) error {
 		}
 	} else {
 		// Prompt for min node fee
-		if nodeFeeResponse.Data.MinNodeFee == nodeFeeResponse.Data.MaxNodeFee {
+		if nodeFeeResponse.Data.MinNodeFee.Cmp(nodeFeeResponse.Data.MaxNodeFee) == 0 {
 			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)*100)
 			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		} else {

@@ -3,7 +3,7 @@ package client
 import (
 	"fmt"
 	"log/slog"
-	"path/filepath"
+	"net/http/httptrace"
 
 	docker "github.com/docker/docker/client"
 	"github.com/fatih/color"
@@ -37,21 +37,43 @@ type Client struct {
 	isNewCfg bool
 }
 
-// Create new Rocket Pool client from CLI context without checking for sync status
-// Only use this function from commands that may work if the Daemon service doesn't exist
-// Most users should call NewClientFromCtx(c).WithStatus() or NewClientFromCtx(c).WithReady()
-func NewClientFromCtx(c *cli.Context) *Client {
+// Create new Rocket Pool client from CLI context
+func NewClientFromCtx(c *cli.Context) (*Client, error) {
 	snCtx := context.GetSmartNodeContext(c)
-	socketPath := filepath.Join(snCtx.ConfigPath, config.SmartNodeCliSocketFilename)
+	logger := log.NewTerminalLogger(snCtx.DebugEnabled, terminalLogColor)
+
+	// Create the tracer if required
+	var tracer *httptrace.ClientTrace
+	if snCtx.HttpTraceFile != nil {
+		var err error
+		tracer, err = createTracer(snCtx.HttpTraceFile, logger.Logger)
+		if err != nil {
+			logger.Error("Error creating HTTP trace", log.Err(err))
+		}
+	}
 
 	// Make the client
-	logger := log.NewTerminalLogger(snCtx.DebugEnabled, terminalLogColor)
-	client := &Client{
-		Api:     client.NewApiClient(config.SmartNodeApiClientRoute, socketPath, logger.Logger),
+	rpClient := &Client{
 		Context: snCtx,
 		Logger:  logger.Logger,
 	}
-	return client
+
+	// Get the API URL
+	url := snCtx.ApiUrl
+	if url == nil {
+		// Load the config to get the API port
+		cfg, _, err := rpClient.LoadConfig()
+		if err != nil {
+			return nil, fmt.Errorf("error loading config: %w", err)
+		}
+
+		url, err = url.Parse(fmt.Sprintf("http://localhost:%d/%s", cfg.ApiPort.Value, config.SmartNodeApiClientRoute))
+		if err != nil {
+			return nil, fmt.Errorf("error parsing API URL: %w", err)
+		}
+	}
+	rpClient.Api = client.NewApiClient(url, logger.Logger, tracer)
+	return rpClient, nil
 }
 
 // Get the Docker client

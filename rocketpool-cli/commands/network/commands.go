@@ -20,9 +20,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get stats about the Rocket Pool network and its tokens",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getStats(c)
@@ -35,9 +33,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Shows a table of the timezones that node operators belong to",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getTimezones(c)
@@ -50,9 +46,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the current network node commission rate",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getNodeFee(c)
@@ -65,9 +59,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the current network RPL price in ETH",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getRplPrice(c)
@@ -85,9 +77,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return generateRewardsTree(c)
@@ -100,9 +90,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the currently active DAO proposals",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getActiveDAOProposals(c)

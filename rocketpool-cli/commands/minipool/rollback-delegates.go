@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
@@ -15,7 +16,10 @@ import (
 
 func rollbackDelegates(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get minipool statuses
 	status, err := rp.Api.Minipool.Status()
@@ -39,7 +43,7 @@ func rollbackDelegates(c *cli.Context) error {
 	}
 
 	// Get selected minipools
-	options := make([]utils.SelectionOption[api.MinipoolDetails], len(eligibleMinipools))
+	options := make([]ncli.SelectionOption[api.MinipoolDetails], len(eligibleMinipools))
 	for i, mp := range eligibleMinipools {
 		option := &options[i]
 		option.Element = &eligibleMinipools[i]

@@ -11,7 +11,10 @@ import (
 
 func defeatProposal(c *cli.Context, proposalID uint64, challengedIndex uint64) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Build the TX
 	response, err := rp.Api.PDao.DefeatProposal(proposalID, challengedIndex)

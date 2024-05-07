@@ -7,10 +7,10 @@ import (
 )
 
 type QueueRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewQueueRequester(context *client.RequesterContext) *QueueRequester {
+func NewQueueRequester(context client.IRequesterContext) *QueueRequester {
 	return &QueueRequester{
 		context: context,
 	}
@@ -22,7 +22,7 @@ func (r *QueueRequester) GetName() string {
 func (r *QueueRequester) GetRoute() string {
 	return "queue"
 }
-func (r *QueueRequester) GetContext() *client.RequesterContext {
+func (r *QueueRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 

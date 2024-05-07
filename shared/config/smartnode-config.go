@@ -31,6 +31,7 @@ type SmartNodeConfig struct {
 	Network                                  config.Parameter[config.Network]
 	ClientMode                               config.Parameter[config.ClientMode]
 	ProjectName                              config.Parameter[string]
+	ApiPort                                  config.Parameter[uint16]
 	UserDataPath                             config.Parameter[string]
 	WatchtowerStatePath                      config.Parameter[string]
 	AutoTxMaxFee                             config.Parameter[float64]
@@ -176,6 +177,20 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 			},
 			Default: map[config.Network]string{
 				config.Network_All: "rocketpool",
+			},
+		},
+
+		ApiPort: config.Parameter[uint16]{
+			ParameterCommon: &config.ParameterCommon{
+				ID:                 ids.ApiPortID,
+				Name:               "Node API Port",
+				Description:        "The port that the Smart Node's API server should run on. Note this is bound to the local machine only; it cannot be accessed by other machines.",
+				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon},
+				CanBeBlank:         false,
+				OverwriteOnUpgrade: false,
+			},
+			Default: map[config.Network]uint16{
+				config.Network_All: 8080,
 			},
 		},
 
@@ -463,6 +478,7 @@ func (cfg *SmartNodeConfig) GetParameters() []config.IParameter {
 	return []config.IParameter{
 		&cfg.ProjectName,
 		&cfg.UserDataPath,
+		&cfg.ApiPort,
 		&cfg.Network,
 		&cfg.ClientMode,
 		&cfg.VerifyProposals,
@@ -694,6 +710,7 @@ func (cfg *SmartNodeConfig) Validate() []string {
 
 	// Ensure the selected port numbers are unique. Keeps track of all the errors
 	portMap := make(map[uint16]bool)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ApiPort, errors)
 	if cfg.ClientMode.Value == config.ClientMode_Local {
 		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconClient.HttpPort, errors)
 		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconClient.P2pPort, errors)

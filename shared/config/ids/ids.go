@@ -11,6 +11,7 @@ const (
 	ClientModeID                               string = "clientMode"
 	UserDataPathID                             string = "rpUserDataDir"
 	ProjectNameID                              string = "projectName"
+	ApiPortID                                  string = "apiPort"
 	WatchtowerStatePath                        string = "watchtowerStatePath"
 	AutoTxMaxFeeID                             string = "autoTxMaxFee"
 	MaxPriorityFeeID                           string = "maxPriorityFee"

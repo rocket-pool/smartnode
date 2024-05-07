@@ -6,7 +6,8 @@ ARG BUILDPLATFORM
 COPY . /rocketpool/debian
 WORKDIR /rocketpool/debian
 
-RUN mv /rocketpool/debian/install/packages/debian/debian /rocketpool/debian/debian && \
+RUN rm -rf /rocketpool/debian/build && \
+    mv /rocketpool/debian/install/packages/debian/debian /rocketpool/debian/debian && \
     mv /rocketpool/debian/install/deploy /rocketpool/debian/deploy
 
 # Build the native arch package and source package

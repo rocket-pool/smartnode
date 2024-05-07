@@ -15,10 +15,10 @@ import (
 )
 
 type PDaoRequester struct {
-	context *client.RequesterContext
+	context client.IRequesterContext
 }
 
-func NewPDaoRequester(context *client.RequesterContext) *PDaoRequester {
+func NewPDaoRequester(context client.IRequesterContext) *PDaoRequester {
 	return &PDaoRequester{
 		context: context,
 	}
@@ -30,7 +30,7 @@ func (r *PDaoRequester) GetName() string {
 func (r *PDaoRequester) GetRoute() string {
 	return "pdao"
 }
-func (r *PDaoRequester) GetContext() *client.RequesterContext {
+func (r *PDaoRequester) GetContext() client.IRequesterContext {
 	return r.context
 }
 
@@ -142,7 +142,7 @@ func (r *PDaoRequester) ProposeRewardsPercentages(node *big.Int, odao *big.Int, 
 		"odao": odao.String(),
 		"pdao": pdao.String(),
 	}
-	return client.SendGetRequest[api.ProtocolDaoGeneralProposeData](r, "rewards-percentages/proposee", "ProposeRewardsPercentages", args)
+	return client.SendGetRequest[api.ProtocolDaoGeneralProposeData](r, "rewards-percentages/propose", "ProposeRewardsPercentages", args)
 }
 
 // Propose inviting someone to the security council

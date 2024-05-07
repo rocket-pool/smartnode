@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/urfave/cli/v2"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
@@ -24,7 +25,10 @@ const (
 
 func closeMinipools(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get minipool statuses
 	details, err := rp.Api.Minipool.GetCloseDetails()
@@ -98,7 +102,7 @@ func closeMinipools(c *cli.Context) error {
 	}
 
 	// Get selected minipools
-	options := make([]utils.SelectionOption[api.MinipoolCloseDetails], len(closableMinipools))
+	options := make([]ncli.SelectionOption[api.MinipoolCloseDetails], len(closableMinipools))
 	for i, mp := range closableMinipools {
 		option := &options[i]
 		option.Element = &closableMinipools[i]

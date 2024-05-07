@@ -17,7 +17,10 @@ import (
 
 func nodeWithdrawRpl(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get node status
 	status, err := rp.Api.Node.Status()

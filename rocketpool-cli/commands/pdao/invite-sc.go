@@ -27,10 +27,12 @@ var scInviteAddressFlag *cli.StringFlag = &cli.StringFlag{
 
 func proposeSecurityCouncilInvite(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the ID
-	var err error
 	id := c.String(scInviteIdFlag.Name)
 	if id == "" {
 		id = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")

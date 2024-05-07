@@ -27,7 +27,10 @@ const (
 
 func rescueDissolved(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	fmt.Println("This command will allow you to manually deposit the remaining ETH for any dissolved minipools, activating them so you can exit them and retrieve your minipool's funds.")
 	fmt.Println("Please read our guide at https://docs.rocketpool.net/guides/node/rescue-dissolved.html to fully read about the process before continuing.")

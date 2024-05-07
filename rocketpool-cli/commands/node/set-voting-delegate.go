@@ -14,7 +14,10 @@ import (
 
 func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	var address common.Address
 	var addressString string

@@ -66,9 +66,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get security council status",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getStatus(c)
@@ -81,9 +79,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Get the security council members",
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return getMembers(c)
@@ -109,9 +105,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								},
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := utils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
+									utils.ValidateArgCount(c, 0)
 
 									// Run
 									return proposeLeave(c)
@@ -149,9 +143,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Run
 							return getProposals(c, c.String(proposalsListStatesFlag.Name))
@@ -166,9 +158,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Action: func(c *cli.Context) error {
 							// Validate args
 							var err error
-							if err = utils.ValidateArgCount(c, 1); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 1)
 							id, err := input.ValidateUint("proposal-id", c.Args().Get(0))
 							if err != nil {
 								return err
@@ -188,9 +178,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Run
 							return cancelProposal(c)
@@ -208,9 +196,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Validate flags
 							if c.String(voteSupportFlag.Name) != "" {
@@ -233,9 +219,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Run
 							return executeProposal(c)
@@ -253,9 +237,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return join(c)
@@ -271,9 +253,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return leave(c)

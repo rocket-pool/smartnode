@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"net/url"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/v2/minipool"
-	"github.com/rocket-pool/rocketpool-go/v2/node"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -42,8 +42,8 @@ func (f *minipoolExitContextFactory) Create(args url.Values) (*minipoolExitConte
 }
 
 func (f *minipoolExitContextFactory) RegisterRoute(router *mux.Router) {
-	RegisterMinipoolRoute[*minipoolExitContext, types.SuccessData](
-		router, "exit", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
+	server.RegisterSingleStageRoute[*minipoolExitContext, types.SuccessData](
+		router, "exit", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -56,6 +56,7 @@ type minipoolExitContext struct {
 	rp      *rocketpool.RocketPool
 	vMgr    *validator.ValidatorManager
 	bc      beacon.IBeaconClient
+	mps     []minipool.IMinipool
 
 	minipoolAddresses []common.Address
 }
@@ -75,21 +76,24 @@ func (c *minipoolExitContext) Initialize() (types.ResponseStatus, error) {
 	if err != nil {
 		return types.ResponseStatus_WalletNotReady, err
 	}
+	mpMgr, err := minipool.NewMinipoolManager(c.rp)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool manager binding: %w", err)
+	}
+	c.mps, err = mpMgr.CreateMinipoolsFromAddresses(c.minipoolAddresses, false, nil)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("error creating minipool bindings: %w", err)
+	}
 	return types.ResponseStatus_Success, nil
 }
 
-func (c *minipoolExitContext) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (c *minipoolExitContext) GetState(mc *batch.MultiCaller) {
+	for _, mp := range c.mps {
+		mp.Common().Pubkey.AddToQuery(mc)
+	}
 }
 
-func (c *minipoolExitContext) CheckState(node *node.Node, response *types.SuccessData) bool {
-	return true
-}
-
-func (c *minipoolExitContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
-	mp.Common().Pubkey.AddToQuery(mc)
-}
-
-func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.SuccessData) (types.ResponseStatus, error) {
+func (c *minipoolExitContext) PrepareData(data *types.SuccessData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ctx := c.handler.ctx
 	// Get beacon head
 	head, err := c.bc.GetBeaconHead(ctx)
@@ -103,7 +107,7 @@ func (c *minipoolExitContext) PrepareData(addresses []common.Address, mps []mini
 		return types.ResponseStatus_Error, fmt.Errorf("error getting beacon domain data: %w", err)
 	}
 
-	for _, mp := range mps {
+	for _, mp := range c.mps {
 		mpCommon := mp.Common()
 		minipoolAddress := mpCommon.Address
 		validatorPubkey := mpCommon.Pubkey.Get()

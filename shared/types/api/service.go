@@ -18,6 +18,10 @@ type ServiceClientStatusData struct {
 	BcManagerStatus types.ClientManagerStatus `json:"bcManagerStatus"`
 }
 
+type ServiceGetConfigData struct {
+	Config map[string]any `json:"config"`
+}
+
 type ServiceVersionData struct {
 	Version string `json:"version"`
 }

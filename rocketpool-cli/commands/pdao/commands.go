@@ -164,9 +164,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 0)
 
 					// Run
 					return claimBonds(c)
@@ -191,9 +189,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Run
 							return proposeRewardsPercentages(c)
@@ -213,9 +209,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Run
 							return proposeOneTimeSpend(c)
@@ -238,9 +232,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Run
 							return proposeRecurringSpend(c)
@@ -262,9 +254,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Run
 							return proposeRecurringSpendUpdate(c)
@@ -287,9 +277,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								},
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := utils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
+									utils.ValidateArgCount(c, 0)
 
 									// Run
 									return proposeSecurityCouncilInvite(c)
@@ -306,9 +294,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								},
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := utils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
+									utils.ValidateArgCount(c, 0)
 
 									// Run
 									return proposeSecurityCouncilKick(c)
@@ -327,9 +313,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								},
 								Action: func(c *cli.Context) error {
 									// Validate args
-									if err := utils.ValidateArgCount(c, 0); err != nil {
-										return err
-									}
+									utils.ValidateArgCount(c, 0)
 
 									// Run
 									return proposeSecurityCouncilReplace(c)
@@ -370,9 +354,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Run
 							return getProposals(c, c.String("states"))
@@ -387,9 +369,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Action: func(c *cli.Context) error {
 							// Validate args
 							var err error
-							if err = utils.ValidateArgCount(c, 1); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 1)
 							id, err := input.ValidateUint("proposal-id", c.Args().Get(0))
 							if err != nil {
 								return err
@@ -411,9 +391,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Run
 							return voteOnProposal(c)
@@ -430,9 +408,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 0); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 0)
 
 							// Validate flags
 							if c.String(executeProposalFlag.Name) != "" && c.String(executeProposalFlag.Name) != "all" {
@@ -456,9 +432,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 2); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 2)
 							proposalId, err := input.ValidatePositiveUint("proposal-id", c.Args().Get(0))
 							if err != nil {
 								return err
@@ -483,9 +457,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						},
 						Action: func(c *cli.Context) error {
 							// Validate args
-							if err := utils.ValidateArgCount(c, 1); err != nil {
-								return err
-							}
+							utils.ValidateArgCount(c, 1)
 							proposalId, err := input.ValidatePositiveUint("proposal-id", c.Args().Get(0))
 							if err != nil {
 								return err
@@ -518,9 +490,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
-					if err := utils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
+					utils.ValidateArgCount(c, 1)
 					delegate := c.Args().Get(0)
 					// Run
 					return setVotingDelegate(c, delegate)

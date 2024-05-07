@@ -11,7 +11,10 @@ import (
 
 func restoreAddress(c *cli.Context) error {
 	// Get client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the wallet status
 	response, err := rp.Api.Wallet.Status()

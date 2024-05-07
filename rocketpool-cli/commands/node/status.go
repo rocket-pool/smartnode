@@ -26,7 +26,10 @@ const (
 
 func getStatus(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the config
 	cfg, isNew, err := rp.LoadConfig()
@@ -148,7 +151,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("%s=== DAO Voting ===%s\n", terminal.ColorGreen, terminal.ColorReset)
 		blankAddress := common.Address{}
 		if status.Data.SnapshotVotingDelegate == blankAddress {
-			fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool Snapshot governance proposals.")
+			fmt.Println("The node does not currently have a voting delegate set, which means it can only vote directly on Snapshot proposals (using a hardware wallet with the node mnemonic loaded).\nRun `rocketpool n sv <address>` to vote from a different wallet or have a delegate represent you. (See https://delegates.rocketpool.net for options)")
 		} else {
 			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", terminal.ColorBlue, status.Data.SnapshotVotingDelegateFormatted, terminal.ColorReset)
 		}
@@ -179,8 +182,10 @@ func getStatus(c *cli.Context) error {
 			fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
 		}
 
-		if status.Data.OnchainVotingDelegate == status.Data.AccountAddress {
-			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals.")
+		if status.Data.OnchainVotingDelegate == blankAddress {
+			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
+		} else if status.Data.OnchainVotingDelegate == status.Data.AccountAddress {
+			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
 		} else {
 			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", terminal.ColorBlue, status.Data.OnchainVotingDelegateFormatted, terminal.ColorReset)
 		}

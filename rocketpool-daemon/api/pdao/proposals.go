@@ -138,9 +138,9 @@ func (c *protocolDaoProposalsContext) PrepareData(data *api.ProtocolDaoProposals
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error getting node %s votes: %w", c.nodeAddress.Hex(), err)
 		}
-	}
-	for i := range returnProps {
-		returnProps[i].NodeVoteDirection = nodeVoteDirs[i]()
+		for i := range returnProps {
+			returnProps[i].NodeVoteDirection = nodeVoteDirs[i]()
+		}
 	}
 
 	// Return

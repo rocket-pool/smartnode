@@ -13,7 +13,10 @@ import (
 
 func getMembers(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get oracle DAO members
 	members, err := rp.Api.ODao.Members()

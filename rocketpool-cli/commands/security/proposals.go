@@ -41,7 +41,10 @@ func filterProposalState(state string, stateFilter string) bool {
 
 func getProposals(c *cli.Context, stateFilter string) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get security council proposals
 	allProposals, err := rp.Api.Security.Proposals()
@@ -113,7 +116,10 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 func getProposal(c *cli.Context, id uint64) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get security council proposals
 	allProposals, err := rp.Api.Security.Proposals()

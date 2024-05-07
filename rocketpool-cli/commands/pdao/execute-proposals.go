@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/urfave/cli/v2"
 
+	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
@@ -21,7 +22,10 @@ var executeProposalFlag *cli.StringFlag = &cli.StringFlag{
 
 func executeProposals(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get protocol DAO proposals
 	proposals, err := rp.Api.PDao.Proposals()
@@ -44,7 +48,7 @@ func executeProposals(c *cli.Context) error {
 	}
 
 	// Get selected proposals
-	options := make([]utils.SelectionOption[api.ProtocolDaoProposalDetails], len(executableProposals))
+	options := make([]ncli.SelectionOption[api.ProtocolDaoProposalDetails], len(executableProposals))
 	for i, prop := range executableProposals {
 		option := &options[i]
 		option.Element = &executableProposals[i]

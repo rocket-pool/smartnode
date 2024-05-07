@@ -21,7 +21,10 @@ import (
 // Start the Rocket Pool service
 func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Update the Prometheus template with the assigned ports
 	cfg, isNew, err := rp.LoadConfig()
@@ -108,7 +111,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			if !existingNode {
 				fmt.Println("Okay, great! You're safe to start. Have fun!")
 			} else {
-				fmt.Printf("%sSince didn't have any Validator Clients before, the Smart Node can't determine if you attested in the last 15 minutes.\n", terminal.ColorYellow)
+				fmt.Printf("%sSince your node didn't have any Validator Clients before, the Smart Node can't determine if you attested in the last 15 minutes.\n", terminal.ColorYellow)
 				fmt.Println("If you did, it may resubmit an attestation you have already submitted.")
 				fmt.Println("This will slash your validator!")
 				fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.")
@@ -151,7 +154,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Handle errors
 	if status == nil {
-		fmt.Println("The Smart Node couldn't check your node wallet status yet. Check on it again later with `rocketpool wallet status`. If you haven't madea wallet yet, you can do so now with `rocketpool wallet init`.")
+		fmt.Println("The Smart Node couldn't check your node wallet status yet. Check on it again later with `rocketpool wallet status`. If you haven't made a wallet yet, you can do so now with `rocketpool wallet init`.")
 		return nil
 	}
 

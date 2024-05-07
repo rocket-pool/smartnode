@@ -12,7 +12,10 @@ import (
 // Pause the Rocket Pool service. Returns whether the action proceeded (was confirmed by user and no error occurred before starting it)
 func stopService(c *cli.Context) (bool, error) {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return false, err
+	}
 
 	// Get the config
 	cfg, _, err := rp.LoadConfig()
