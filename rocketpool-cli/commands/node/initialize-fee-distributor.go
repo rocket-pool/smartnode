@@ -11,7 +11,10 @@ import (
 
 func initializeFeeDistributor(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Check if it's already initialized
 	response, err := rp.Api.Node.InitializeFeeDistributor()

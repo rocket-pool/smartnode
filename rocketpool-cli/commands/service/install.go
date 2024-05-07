@@ -56,10 +56,13 @@ func installService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Install service
-	err := rp.InstallService(
+	err = rp.InstallService(
 		c.Bool(installVerboseFlag.Name),
 		c.Bool(installNoDepsFlag.Name),
 		c.String(installVersionFlag.Name),

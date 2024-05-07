@@ -22,7 +22,10 @@ const (
 
 func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	var withdrawalAddress common.Address
 	var withdrawalAddressString string

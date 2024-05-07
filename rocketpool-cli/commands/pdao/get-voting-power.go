@@ -12,7 +12,10 @@ import (
 
 func getVotePower(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get node's voting power at the latest block
 	vpResponse, err := rp.Api.PDao.GetVotingPower()

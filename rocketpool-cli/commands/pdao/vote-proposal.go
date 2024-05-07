@@ -18,7 +18,10 @@ import (
 
 func voteOnProposal(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get Protocol DAO proposals
 	proposals, err := rp.Api.PDao.Proposals()

@@ -22,7 +22,10 @@ var joinSwapFlag *cli.BoolFlag = &cli.BoolFlag{
 
 func join(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get node status
 	status, err := rp.Api.Node.Status()

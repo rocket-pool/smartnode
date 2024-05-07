@@ -18,7 +18,10 @@ func nodeLogs(c *cli.Context, serviceNames ...string) error {
 	}
 
 	// Get client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 	cfg, _, err := rp.LoadConfig()
 	if err != nil {
 		return fmt.Errorf("error loading Smart Node configuration: %w", err)

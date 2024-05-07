@@ -20,7 +20,10 @@ const (
 
 func recoverRplFromLot(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get lot details
 	lots, err := rp.Api.Auction.Lots()

@@ -19,10 +19,13 @@ import (
 // Configure the service
 func configureService(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Make sure the config directory exists first
-	err := rp.CreateUserDir()
+	err = rp.CreateUserDir()
 	if err != nil {
 		fmt.Printf("%sYour Smart Node user configuration directory could not be created: %s.%s\n", terminal.ColorYellow, err.Error(), terminal.ColorReset)
 		return nil

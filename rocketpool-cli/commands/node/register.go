@@ -15,7 +15,10 @@ const (
 
 func registerNode(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Prompt for timezone location
 	var timezoneLocation string

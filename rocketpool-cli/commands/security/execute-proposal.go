@@ -21,7 +21,10 @@ var executeProposalFlag *cli.StringFlag = &cli.StringFlag{
 
 func executeProposal(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get security council proposals
 	proposals, err := rp.Api.Security.Proposals()

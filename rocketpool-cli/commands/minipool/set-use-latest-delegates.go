@@ -16,7 +16,10 @@ import (
 
 func setUseLatestDelegates(c *cli.Context, setting bool) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get minipool statuses
 	status, err := rp.Api.Minipool.Status()

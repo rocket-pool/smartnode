@@ -10,7 +10,10 @@ import (
 
 func pruneDocker(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// NOTE: we deliberately avoid using `docker system prune -a` and delete all
 	//   images manually so that we can preserve the current smartnode-stack
@@ -51,7 +54,7 @@ func pruneDocker(c *cli.Context) error {
 	// now we can run docker system prune (potentially without --all) to remove
 	// all stopped containers and networks:
 	fmt.Println("Pruning Docker system...")
-	err := rp.DockerSystemPrune(deleteAllImages)
+	err = rp.DockerSystemPrune(deleteAllImages)
 	if err != nil {
 		return fmt.Errorf("error pruning Docker system: %w", err)
 	}

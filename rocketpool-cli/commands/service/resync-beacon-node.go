@@ -13,7 +13,10 @@ import (
 // Destroy and resync the Beacon Node from scratch
 func resyncConsensusClient(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the merged config
 	cfg, isNew, err := rp.LoadConfig()

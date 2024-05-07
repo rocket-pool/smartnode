@@ -78,8 +78,7 @@ var (
 	apiAddressFlag *cli.StringFlag = &cli.StringFlag{
 		Name:    "api-address",
 		Aliases: []string{"a"},
-		Usage:   "The address of the Smart Node API server to connect to",
-		Value:   "http://localhost:8080",
+		Usage:   "The address of the Smart Node API server to connect to. If left blank it will default to 'localhost' at the port specified in the service configuration.",
 	}
 	httpTracePathFlag *cli.StringFlag = &cli.StringFlag{
 		Name:    "http-trace-path",
@@ -236,11 +235,13 @@ func validateFlags(c *cli.Context) (*context.SmartNodeContext, error) {
 
 	// Get the API URL
 	address := c.String(apiAddressFlag.Name)
-	baseUrl, err := url.Parse(address)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing API address [%s]: %w", snCtx.ApiUrl, err)
+	if address != "" {
+		baseUrl, err := url.Parse(address)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing API address [%s]: %w", snCtx.ApiUrl, err)
+		}
+		snCtx.ApiUrl = baseUrl.JoinPath(config.SmartNodeApiClientRoute)
 	}
-	snCtx.ApiUrl = baseUrl.JoinPath(config.SmartNodeApiClientRoute)
 
 	// Get the HTTP trace flag
 	httpTracePath := c.String(httpTracePathFlag.Name)

@@ -710,6 +710,7 @@ func (cfg *SmartNodeConfig) Validate() []string {
 
 	// Ensure the selected port numbers are unique. Keeps track of all the errors
 	portMap := make(map[uint16]bool)
+	portMap, errors = addAndCheckForDuplicate(portMap, cfg.ApiPort, errors)
 	if cfg.ClientMode.Value == config.ClientMode_Local {
 		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconClient.HttpPort, errors)
 		portMap, errors = addAndCheckForDuplicate(portMap, cfg.LocalBeaconClient.P2pPort, errors)

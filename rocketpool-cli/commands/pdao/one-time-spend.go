@@ -20,7 +20,10 @@ var oneTimeSpendInvoiceFlag *cli.StringFlag = &cli.StringFlag{
 
 func proposeOneTimeSpend(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Check for the raw flag
 	rawEnabled := c.Bool(utils.RawFlag.Name)

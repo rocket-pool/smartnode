@@ -17,7 +17,10 @@ import (
 
 func proposeSetting[ValueType utils.SettingType](c *cli.Context, contract rocketpool.ContractName, setting oracle.SettingName, value ValueType) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Serialize the value
 	var valueString string

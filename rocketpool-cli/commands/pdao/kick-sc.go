@@ -22,7 +22,10 @@ var scKickAddressesFlag *cli.StringFlag = &cli.StringFlag{
 
 func proposeSecurityCouncilKick(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the list of members
 	membersResponse, err := rp.Api.Security.Members()

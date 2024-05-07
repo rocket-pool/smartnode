@@ -12,7 +12,10 @@ import (
 
 func getSettings(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get oracle DAO settings
 	response, err := rp.Api.ODao.Settings()

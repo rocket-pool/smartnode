@@ -22,7 +22,10 @@ var executeProposalFlag *cli.StringFlag = &cli.StringFlag{
 
 func executeProposals(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get protocol DAO proposals
 	proposals, err := rp.Api.PDao.Proposals()

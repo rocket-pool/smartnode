@@ -13,7 +13,10 @@ import (
 
 func sendMessage(c *cli.Context, toAddressOrEns string, message []byte) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the address
 	var toAddress common.Address

@@ -17,7 +17,10 @@ import (
 // Prepares the execution client for pruning
 func pruneExecutionClient(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the config
 	cfg, isNew, err := rp.LoadConfig()

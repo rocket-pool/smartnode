@@ -23,7 +23,10 @@ func serviceLogs(c *cli.Context, aliasedNames ...string) error {
 	}
 
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Print service logs
 	return rp.PrintServiceLogs(getComposeFiles(c), c.String("tail"), serviceNames...)

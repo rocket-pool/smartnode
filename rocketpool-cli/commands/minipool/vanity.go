@@ -26,7 +26,10 @@ const (
 
 func findVanitySalt(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get the target prefix
 	prefix := c.String(vanityPrefixFlag)

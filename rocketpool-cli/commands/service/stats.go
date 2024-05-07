@@ -8,7 +8,10 @@ import (
 // View the Rocket Pool service stats
 func serviceStats(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Print service stats
 	return rp.PrintServiceStats(getComposeFiles(c))

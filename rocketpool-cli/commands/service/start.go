@@ -21,7 +21,10 @@ import (
 // Start the Rocket Pool service
 func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Update the Prometheus template with the assigned ports
 	cfg, isNew, err := rp.LoadConfig()

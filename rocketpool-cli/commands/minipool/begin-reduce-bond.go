@@ -17,7 +17,10 @@ import (
 
 func beginReduceBondAmount(c *cli.Context) error {
 	// Get RP client
-	rp := client.NewClientFromCtx(c)
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
 
 	// Get details
 	newBondAmount := eth.EthToWei(8) // TODO: when LEB4s are a thing this will have to be redone to prompt for the amount first or something

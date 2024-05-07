@@ -38,7 +38,7 @@ type Client struct {
 }
 
 // Create new Rocket Pool client from CLI context
-func NewClientFromCtx(c *cli.Context) *Client {
+func NewClientFromCtx(c *cli.Context) (*Client, error) {
 	snCtx := context.GetSmartNodeContext(c)
 	logger := log.NewTerminalLogger(snCtx.DebugEnabled, terminalLogColor)
 
@@ -53,12 +53,27 @@ func NewClientFromCtx(c *cli.Context) *Client {
 	}
 
 	// Make the client
-	client := &Client{
-		Api:     client.NewApiClient(snCtx.ApiUrl, logger.Logger, tracer),
+	rpClient := &Client{
 		Context: snCtx,
 		Logger:  logger.Logger,
 	}
-	return client
+
+	// Get the API URL
+	url := snCtx.ApiUrl
+	if url == nil {
+		// Load the config to get the API port
+		cfg, _, err := rpClient.LoadConfig()
+		if err != nil {
+			return nil, fmt.Errorf("error loading config: %w", err)
+		}
+
+		url, err = url.Parse(fmt.Sprintf("http://localhost:%d/%s", cfg.ApiPort.Value, config.SmartNodeApiClientRoute))
+		if err != nil {
+			return nil, fmt.Errorf("error parsing API URL: %w", err)
+		}
+	}
+	rpClient.Api = client.NewApiClient(url, logger.Logger, tracer)
+	return rpClient, nil
 }
 
 // Get the Docker client
