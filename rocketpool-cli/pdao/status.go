@@ -8,8 +8,10 @@ import (
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -36,6 +38,12 @@ func getStatus(c *cli.Context) error {
 
 	// Get node status
 	status, err := rp.NodeStatus()
+	if err != nil {
+		return err
+	}
+
+	// Get Protocol DAO proposals
+	allProposals, err := rp.PDAOProposals()
 	if err != nil {
 		return err
 	}
@@ -122,12 +130,67 @@ func getStatus(c *cli.Context) error {
 	fmt.Printf("%s=== PDAO Proposal Checking Duty ===%s\n", colorGreen, colorReset)
 	// Make sure the user opted into this duty
 	if response.VerifyEnabled {
-		fmt.Println("The node has PDAO proposal checking duties enabled. It will periodically check for proposals to challenge")
+		fmt.Println("The node has PDAO proposal checking duties enabled. It will periodically check for proposals to challenge.")
 	} else {
-		fmt.Println("The node does not have PDAO proposal checking duties enabled. (See https://docs.rocketpool.net/guides/houston/pdao#challenge-process to learn more about this duty)")
+		fmt.Println("The node does not have PDAO proposal checking duties enabled (See https://docs.rocketpool.net/guides/houston/pdao#challenge-process to learn more about this duty).")
 	}
 	fmt.Println("")
 
+	// Claimable Bonds Status:
+	fmt.Printf("%s=== Pending, Active and Succeeded Proposals ===%s\n", colorGreen, colorReset)
+	// Get proposals by state
+	stateProposals := map[string][]api.PDAOProposalWithNodeVoteDirection{}
+	for _, proposal := range allProposals.Proposals {
+		stateName := types.ProtocolDaoProposalStates[proposal.State]
+		if _, ok := stateProposals[stateName]; !ok {
+			stateProposals[stateName] = []api.PDAOProposalWithNodeVoteDirection{}
+		}
+		stateProposals[stateName] = append(stateProposals[stateName], proposal)
+	}
+
+	// Proposal states print order
+	proposalStates := []string{"Pending", "Active (Phase 1)", "Active (Phase 2)", "Succeeded"}
+	proposalStateInputs := []string{"pending", "phase1", "phase2", "succeeded"}
+
+	// Print & return
+	count := 0
+	succeededExists := false
+	for i, stateName := range proposalStates {
+		proposals, ok := stateProposals[stateName]
+		if !ok {
+			continue
+		}
+
+		// Check filter
+		if filterProposalState(proposalStateInputs[i], "") {
+			continue
+		}
+
+		// Print message for Succeeded Proposals
+		if stateName == "Succeeded" {
+			succeededExists = true
+			fmt.Printf("%sThe following proposal(s) have succeeded and are waiting to be executed. Use `rocketpool pdao proposals execute` to execute.%s\n\n", colorBlue, colorReset)
+		}
+
+		// Proposal state count
+		fmt.Printf("%d %s proposal(s):\n", len(proposals), stateName)
+		fmt.Println("")
+
+		// Proposals
+		for _, proposal := range proposals {
+			fmt.Printf("%d: %s - Proposed by: %s\n", proposal.ID, proposal.Message, proposal.ProposerAddress)
+		}
+
+		count += len(proposals)
+
+		fmt.Println()
+	}
+	if count == 0 {
+		fmt.Println("There are no onchain proposals open for voting.")
+	}
+	if !succeededExists {
+		fmt.Println("There are no proposals waiting to be executed.")
+	}
 	return nil
 
 }
