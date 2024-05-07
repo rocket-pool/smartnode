@@ -55,16 +55,16 @@ func main() {
 		Required: true,
 	}
 	ipFlag := &cli.StringFlag{
-		Name:     "ip",
-		Aliases:  []string{"i"},
-		Usage:    "The IP address to bind the API server to",
-		Required: true,
+		Name:    "ip",
+		Aliases: []string{"i"},
+		Usage:   "The IP address to bind the API server to",
+		Value:   "127.0.0.1",
 	}
 	portFlag := &cli.UintFlag{
-		Name:     "port",
-		Aliases:  []string{"p"},
-		Usage:    "The port to bind the API server to",
-		Required: true,
+		Name:    "port",
+		Aliases: []string{"p"},
+		Usage:   "The port to bind the API server to",
+		Value:   8080,
 	}
 
 	// Set application flags

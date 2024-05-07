@@ -151,7 +151,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Handle errors
 	if status == nil {
-		fmt.Println("The Smart Node couldn't check your node wallet status yet. Check on it again later with `rocketpool wallet status`. If you haven't madea wallet yet, you can do so now with `rocketpool wallet init`.")
+		fmt.Println("The Smart Node couldn't check your node wallet status yet. Check on it again later with `rocketpool wallet status`. If you haven't made a wallet yet, you can do so now with `rocketpool wallet init`.")
 		return nil
 	}
 
