@@ -10,6 +10,8 @@ services:
     image: {{.GetSmartNodeContainerTag}}
     container_name: {{.ProjectName}}_{{.DaemonContainerName}}
     restart: unless-stopped
+    ports:
+      - "127.0.0.1:{{.ApiPort}}:{{.ApiPort}}/tcp" # Restricted to localhost outside of Docker
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - {{.RocketPoolDirectory}}:{{.RocketPoolDirectory}}
@@ -17,6 +19,10 @@ services:
     command:
       - --user-dir
       - "{{.RocketPoolDirectory}}"
+      - --ip
+      - "0.0.0.0" # Open to all Docker traffic
+      - --port
+      - "{{.ApiPort}}"
     networks:
       - net
     cap_drop:
