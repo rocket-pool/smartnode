@@ -143,8 +143,8 @@ func voteOnProposal(c *cli.Context) error {
 		}
 	} else {
 		// Check if proposal can be overriden on
-		actionString = "override your delegate's vote"
-		actionPast = "overrode delegate with a vote for"
+		actionString = "override the Phase 1 vote"
+		actionPast = "overrode the Phase 1 vote with a vote for"
 		canVote, err = rp.PDAOCanOverrideVote(selectedProposal.ID, voteDirection)
 		if err != nil {
 			return err
@@ -169,7 +169,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to %s '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to %s with a vote for '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
