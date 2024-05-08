@@ -179,7 +179,7 @@ func getProposal(c *cli.Context, id uint64) error {
 	fmt.Printf("Voting power for:       %.10f\n", eth.WeiToEth(proposal.VotingPowerFor))
 	fmt.Printf("Voting power against:   %.10f\n", eth.WeiToEth(proposal.VotingPowerAgainst))
 	fmt.Printf("Voting power abstained: %.10f\n", eth.WeiToEth(proposal.VotingPowerAbstained))
-	fmt.Printf("Voting power against:   %.10f\n", eth.WeiToEth(proposal.VotingPowerToVeto))
+	fmt.Printf("Voting power veto:   %.10f\n", eth.WeiToEth(proposal.VotingPowerToVeto))
 	if proposal.NodeVoteDirection != types.VoteDirection_NoVote {
 		fmt.Printf("Node has voted:         %s\n", types.VoteDirections[proposal.NodeVoteDirection])
 	} else {
