@@ -155,7 +155,7 @@ func getProposal(c *cli.Context, id uint64) error {
 
 	// Start block - pending proposals
 	if proposal.State == types.ProtocolDaoProposalState_Pending {
-		fmt.Printf("Voting start:           %s\n", proposal.VotingStartTime.Format(time.RFC822))
+		fmt.Printf("Voting start:           %s, %s\n", proposal.VotingStartTime.Format(time.RFC822), getTimeDifference(proposal.VotingStartTime))
 	}
 	if proposal.State == types.ProtocolDaoProposalState_Pending {
 		fmt.Printf("Challenge window:       %s\n", proposal.ChallengeWindow)
