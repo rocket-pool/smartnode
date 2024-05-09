@@ -810,10 +810,10 @@ func (r *treeGeneratorImpl_v8) processEpoch(context context.Context, getDuties b
 
 	// Process all of the slots in the epoch
 	for i := uint64(0); i < r.slotsPerEpoch; i++ {
-		slot := epoch*r.slotsPerEpoch + i
+		inclusionSlot := epoch*r.slotsPerEpoch + i
 		attestations := attestationsPerSlot[i]
 		if len(attestations) > 0 {
-			r.checkDutiesForSlot(attestations, slot)
+			r.checkDutiesForSlot(attestations, inclusionSlot)
 		}
 	}
 
@@ -822,7 +822,7 @@ func (r *treeGeneratorImpl_v8) processEpoch(context context.Context, getDuties b
 }
 
 // Handle all of the attestations in the given slot
-func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.AttestationInfo, slot uint64) {
+func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.AttestationInfo, inclusionSlot uint64) {
 
 	one := eth.EthToWei(1)
 	validatorReq := eth.EthToWei(32)
@@ -832,6 +832,10 @@ func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.Attestat
 		// Get the RP committees for this attestation's slot and index
 		slotInfo, exists := r.intervalDutiesInfo.Slots[attestation.SlotIndex]
 		if !exists {
+			continue
+		}
+		// Ignore attestations delayed by more than 32 slots
+		if inclusionSlot-attestation.SlotIndex > r.beaconConfig.SlotsPerEpoch {
 			continue
 		}
 		rpCommittee, exists := slotInfo.Committees[attestation.CommitteeIndex]

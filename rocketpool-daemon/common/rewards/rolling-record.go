@@ -28,6 +28,7 @@ type RollingRecord struct {
 	LastDutiesSlot    uint64                   `json:"lastDutiesSlot"`
 	ValidatorIndexMap map[string]*MinipoolInfo `json:"validatorIndexMap"`
 	RewardsInterval   uint64                   `json:"rewardsInterval"`
+	Ruleset           uint64                   `json:"ruleset,omitempty"`
 	SmartnodeVersion  string                   `json:"smartnodeVersion,omitempty"`
 
 	// Private fields
@@ -43,12 +44,13 @@ type RollingRecord struct {
 }
 
 // Create a new rolling record wrapper
-func NewRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, startSlot uint64, beaconConfig *beacon.Eth2Config, rewardsInterval uint64) *RollingRecord {
+func NewRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, startSlot uint64, beaconConfig *beacon.Eth2Config, rewardsInterval uint64, ruleset uint64) *RollingRecord {
 	return &RollingRecord{
 		StartSlot:         startSlot,
 		LastDutiesSlot:    0,
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
 		RewardsInterval:   rewardsInterval,
+		Ruleset:           ruleset,
 		SmartnodeVersion:  shared.RocketPoolVersion,
 
 		bc:           bc,
@@ -65,7 +67,7 @@ func NewRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, startSlot ui
 }
 
 // Load an existing record from serialized JSON data
-func DeserializeRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, beaconConfig *beacon.Eth2Config, bytes []byte) (*RollingRecord, error) {
+func DeserializeRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, beaconConfig *beacon.Eth2Config, bytes []byte, expectedRuleset uint64) (*RollingRecord, error) {
 	record := &RollingRecord{
 		bc:           bc,
 		beaconConfig: beaconConfig,
@@ -82,6 +84,11 @@ func DeserializeRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, beac
 	err := json.Unmarshal(bytes, &record)
 	if err != nil {
 		return nil, fmt.Errorf("error deserializing record: %w", err)
+	}
+
+	// Handle cases where the ruleset wasn't included yet
+	if record.Ruleset == 0 {
+		record.Ruleset = expectedRuleset
 	}
 
 	return record, nil
@@ -352,41 +359,52 @@ func (r *RollingRecord) processAttestationsInEpoch(context context.Context, epoc
 func (r *RollingRecord) processAttestationsInSlot(inclusionSlot uint64, attestations []beacon.AttestationInfo, state *state.NetworkState) {
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
+		// Check if this slot has any RP validators
+		slotInfo, exists := r.intervalDutiesInfo.Slots[attestation.SlotIndex]
+		if !exists {
+			continue
+		}
+
+		// Ignore attestations delayed by more than 32 slots if using v8 or below
+		// TODO: CHANGE THIS NUMBER BASED ON GOVERNANCE DECISION
+		if r.Ruleset < 9 && inclusionSlot-attestation.SlotIndex > r.beaconConfig.SlotsPerEpoch {
+			continue
+		}
 
 		// Get the RP committees for this attestation's slot and index
-		slotInfo, exists := r.intervalDutiesInfo.Slots[attestation.SlotIndex]
-		if exists && inclusionSlot-attestation.SlotIndex <= r.beaconConfig.SlotsPerEpoch { // Ignore attestations delayed by more than 32 slots
-			rpCommittee, exists := slotInfo.Committees[attestation.CommitteeIndex]
-			if exists {
-				blockTime := r.genesisTime.Add(time.Second * time.Duration(r.beaconConfig.SecondsPerSlot*attestation.SlotIndex))
+		rpCommittee, exists := slotInfo.Committees[attestation.CommitteeIndex]
+		if !exists {
+			continue
+		}
 
-				// Check if each RP validator attested successfully
-				for position, validator := range rpCommittee.Positions {
-					if attestation.AggregationBits.BitAt(uint64(position)) {
-						// This was seen, so remove it from the missing attestations
-						delete(rpCommittee.Positions, position)
-						if len(rpCommittee.Positions) == 0 {
-							delete(slotInfo.Committees, attestation.CommitteeIndex)
-						}
-						if len(slotInfo.Committees) == 0 {
-							delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
-						}
-						delete(validator.MissingAttestationSlots, attestation.SlotIndex)
-
-						// Get the pseudoscore for this attestation
-						details := state.MinipoolDetailsByAddress[validator.Address]
-						bond, fee := getMinipoolBondAndNodeFee(details, blockTime)
-						minipoolScore := big.NewInt(0).Sub(r.one, fee)   // 1 - fee
-						minipoolScore.Mul(minipoolScore, bond)           // Multiply by bond
-						minipoolScore.Div(minipoolScore, r.validatorReq) // Divide by 32 to get the bond as a fraction of a total validator
-						minipoolScore.Add(minipoolScore, fee)            // Total = fee + (bond/32)(1 - fee)
-
-						// Add it to the minipool's score
-						validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
-						validator.AttestationCount++
-					}
-				}
+		// Check if each RP validator attested successfully
+		blockTime := r.genesisTime.Add(time.Second * time.Duration(r.beaconConfig.SecondsPerSlot*attestation.SlotIndex))
+		for position, validator := range rpCommittee.Positions {
+			if !attestation.AggregationBits.BitAt(uint64(position)) {
+				continue
 			}
+
+			// This was seen, so remove it from the missing attestations
+			delete(rpCommittee.Positions, position)
+			if len(rpCommittee.Positions) == 0 {
+				delete(slotInfo.Committees, attestation.CommitteeIndex)
+			}
+			if len(slotInfo.Committees) == 0 {
+				delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
+			}
+			delete(validator.MissingAttestationSlots, attestation.SlotIndex)
+
+			// Get the pseudoscore for this attestation
+			details := state.MinipoolDetailsByAddress[validator.Address]
+			bond, fee := getMinipoolBondAndNodeFee(details, blockTime)
+			minipoolScore := big.NewInt(0).Sub(r.one, fee)   // 1 - fee
+			minipoolScore.Mul(minipoolScore, bond)           // Multiply by bond
+			minipoolScore.Div(minipoolScore, r.validatorReq) // Divide by 32 to get the bond as a fraction of a total validator
+			minipoolScore.Add(minipoolScore, fee)            // Total = fee + (bond/32)(1 - fee)
+
+			// Add it to the minipool's score
+			validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
+			validator.AttestationCount++
 		}
 	}
 }

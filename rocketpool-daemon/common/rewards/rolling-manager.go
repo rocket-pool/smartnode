@@ -88,8 +88,9 @@ func NewRollingRecordManager(logger *slog.Logger, cfg *config.SmartNodeConfig, r
 
 	sublogger := logger.With(slog.String(keys.TaskKey, "Rolling Record"))
 	logger.Info("Created Rolling Record manager.", slog.Uint64(keys.StartSlotKey, startSlot))
+	rewardsRuleset, _ := GetRulesetVersionForInterval(cfg.Network.Value, rewardsInterval)
 	return &RollingRecordManager{
-		Record: NewRollingRecord(sublogger, bc, startSlot, &beaconCfg, rewardsInterval),
+		Record: NewRollingRecord(sublogger, bc, startSlot, &beaconCfg, rewardsInterval, rewardsRuleset),
 
 		logger:               sublogger,
 		cfg:                  cfg,
@@ -255,6 +256,7 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 	if err != nil {
 		return nil, fmt.Errorf("error parsing latest compatible version string [%s]: %w", latestCompatibleVersionString, err)
 	}
+	rewardsRuleset, _ := GetRulesetVersionForInterval(r.cfg.Network.Value, rewardsInterval)
 
 	// Parse the checksum file
 	exists, lines, err := r.parseChecksumFile()
@@ -264,7 +266,7 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 	if !exists {
 		// There isn't a checksum file so start over
 		r.logger.Info("Checksum file not found, creating a new record from the start of the interval.")
-		record := NewRollingRecord(r.logger, r.bc, startSlot, &r.beaconCfg, rewardsInterval)
+		record := NewRollingRecord(r.logger, r.bc, startSlot, &r.beaconCfg, rewardsInterval, rewardsRuleset)
 		r.Record = record
 		r.nextEpochToSave = startSlot/r.beaconCfg.SlotsPerEpoch + recordCheckpointInterval - 1
 		return record, nil
@@ -301,7 +303,7 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 
 		// Try to load it
 		fullFilename := filepath.Join(recordsPath, filename)
-		record, err := r.loadRecordFromFile(fullFilename, checksum)
+		record, err := r.loadRecordFromFile(fullFilename, checksum, rewardsRuleset)
 		if err != nil {
 			r.logger.Warn("Error loading record from file... attempting previous file", slog.String(keys.FileKey, fullFilename), log.Err(err))
 			continue
@@ -344,7 +346,7 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 
 	// If we got here then none of the saved files worked so we have to make a new record
 	r.logger.Warn("None of the saved record checkpoint files were eligible for use, creating a new record from the start of the interval.")
-	record := NewRollingRecord(r.logger, r.bc, startSlot, &r.beaconCfg, rewardsInterval)
+	record := NewRollingRecord(r.logger, r.bc, startSlot, &r.beaconCfg, rewardsInterval, rewardsRuleset)
 	r.Record = record
 	r.nextEpochToSave = startSlot/r.beaconCfg.SlotsPerEpoch + recordCheckpointInterval - 1
 	return record, nil
@@ -456,7 +458,7 @@ func (r *RollingRecordManager) updateImpl(context context.Context, state *state.
 	// Log the update
 	startEpoch := r.Record.StartSlot / r.beaconCfg.SlotsPerEpoch
 	currentEpoch := r.Record.LastDutiesSlot / r.beaconCfg.SlotsPerEpoch
-	r.logger.Info("Record update complete. (slot %d-%d, epoch %d-%d).", slog.Uint64(keys.StartSlotKey, r.Record.StartSlot), slog.Uint64(keys.StartEpochKey, startEpoch), slog.Uint64(keys.EndSlotKey, r.Record.LastDutiesSlot), slog.Uint64(keys.EndEpochKey, currentEpoch))
+	r.logger.Info("Record update complete.", slog.Uint64(keys.StartSlotKey, r.Record.StartSlot), slog.Uint64(keys.StartEpochKey, startEpoch), slog.Uint64(keys.EndSlotKey, r.Record.LastDutiesSlot), slog.Uint64(keys.EndEpochKey, currentEpoch))
 	return nil
 }
 
@@ -505,7 +507,7 @@ func (r *RollingRecordManager) getSlotFromFilename(filename string) (uint64, err
 }
 
 // Load a record from a file, making sure its contents match the provided checksum
-func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedChecksum []byte) (*RollingRecord, error) {
+func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedChecksum []byte, rewardsRuleset uint64) (*RollingRecord, error) {
 	// Read the file
 	compressedBytes, err := os.ReadFile(filename)
 	if err != nil {
@@ -527,7 +529,7 @@ func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedCheck
 	}
 
 	// Create a new record from the data
-	return DeserializeRollingRecord(r.logger, r.bc, &r.beaconCfg, bytes)
+	return DeserializeRollingRecord(r.logger, r.bc, &r.beaconCfg, bytes, rewardsRuleset)
 }
 
 // Get the lines from the checksum file
@@ -635,7 +637,8 @@ func (r *RollingRecordManager) createNewRecord(context context.Context, state *s
 
 	// Create a new record for the start slot
 	r.logger.Info("Current record is for an old interval, creating a new record.", slog.Uint64(keys.RecordIntervalKey, r.Record.RewardsInterval), slog.Uint64(keys.ActualIntervalKey, state.NetworkDetails.RewardIndex), slog.Uint64(keys.StartSlotKey, startSlot), slog.Uint64(keys.StartEpochKey, newEpoch))
-	r.Record = NewRollingRecord(r.logger, r.bc, startSlot, &r.beaconCfg, state.NetworkDetails.RewardIndex)
+	rewardsRuleset, _ := GetRulesetVersionForInterval(r.cfg.Network.Value, state.NetworkDetails.RewardIndex)
+	r.Record = NewRollingRecord(r.logger, r.bc, startSlot, &r.beaconCfg, state.NetworkDetails.RewardIndex, rewardsRuleset)
 	r.startSlot = startSlot
 	recordCheckpointInterval := r.cfg.RecordCheckpointInterval.Value
 	r.nextEpochToSave = startSlot/r.beaconCfg.SlotsPerEpoch + recordCheckpointInterval - 1

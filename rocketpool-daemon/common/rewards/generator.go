@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	nmc_config "github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
@@ -232,4 +233,62 @@ func (t *TreeGenerator) ApproximateStakerShareOfSmoothingPoolWithRuleset(context
 		return nil, fmt.Errorf("ruleset v%d is obsolete and no longer supported by this Smart Node", ruleset)
 	}
 	return info.generator.approximateStakerShareOfSmoothingPool(context, t.rp, t.cfg, t.bc)
+}
+
+// Gets the ruleset to use for rewards calculation and rewards approximation respectively for a given interval
+func GetRulesetVersionForInterval(network nmc_config.Network, interval uint64) (uint64, uint64) {
+	// TODO: Refactor this into something more elegant
+	mainnetIntervals := []uint64{
+		MainnetV2Interval,
+		MainnetV3Interval,
+		MainnetV4Interval,
+		MainnetV5Interval,
+		MainnetV6Interval,
+		MainnetV7Interval,
+		MainnetV8Interval,
+	}
+
+	devnetIntervals := []uint64{
+		DevnetV2Interval,
+		DevnetV3Interval,
+		DevnetV4Interval,
+		DevnetV5Interval,
+		DevnetV6Interval,
+		DevnetV7Interval,
+	}
+
+	holeskyIntervals := []uint64{
+		HoleskyV2Interval,
+		HoleskyV3Interval,
+		HoleskyV4Interval,
+		HoleskyV5Interval,
+		HoleskyV6Interval,
+		HoleskyV7Interval,
+		HoleskyV8Interval,
+	}
+
+	var intervals []uint64
+	switch network {
+	case nmc_config.Network_Mainnet:
+		intervals = mainnetIntervals
+	case nmc_config.Network_Holesky:
+		intervals = holeskyIntervals
+	case config.Network_Devnet:
+		intervals = devnetIntervals
+	default:
+		panic(fmt.Sprintf("unknown network in ruleset version lookup: %s", network))
+	}
+
+	rewardsRuleset := uint64(1)
+	approxRuleset := uint64(1)
+	for ruleset, startInterval := range intervals {
+		if interval >= startInterval {
+			rewardsRuleset = uint64(ruleset)
+		}
+		if interval > startInterval {
+			approxRuleset = uint64(ruleset)
+		}
+	}
+
+	return rewardsRuleset, approxRuleset
 }
