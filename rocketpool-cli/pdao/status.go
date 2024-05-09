@@ -32,6 +32,12 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
+	// Return if Houston hasn't been deployed
+	if !response.IsHoustonDeployed {
+		fmt.Println("This command cannot be used until Houston has been deployed")
+		return nil
+	}
+
 	// Get Protocol DAO proposals
 	allProposals, err := rp.PDAOProposals()
 	if err != nil {
@@ -75,37 +81,33 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Onchain Voting Status
-	if response.IsHoustonDeployed {
-		fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
-		if response.IsVotingInitialized {
-			fmt.Println("The node has been initialized for onchain voting.")
+	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
+	if response.IsVotingInitialized {
+		fmt.Println("The node has been initialized for onchain voting.")
 
-		} else {
-			fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
-		}
-
-		blankAddress := common.Address{}
-
-		if response.OnchainVotingDelegate == blankAddress {
-			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
-		} else if response.OnchainVotingDelegate == response.AccountAddress {
-			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
-		} else {
-			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, response.OnchainVotingDelegateFormatted, colorReset)
-		}
-		if response.IsRPLLockingAllowed {
-			fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
-			if response.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
-				fmt.Printf("The node currently has %.6f RPL locked.\n",
-					math.RoundDown(eth.WeiToEth(response.NodeRPLLocked), 6))
-			}
-
-		} else {
-			fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
-		}
-		fmt.Printf("Your current voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
-		fmt.Println("")
+	} else {
+		fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
 	}
+
+	if response.OnchainVotingDelegate == blankAddress {
+		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
+	} else if response.OnchainVotingDelegate == response.AccountAddress {
+		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
+	} else {
+		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, response.OnchainVotingDelegateFormatted, colorReset)
+	}
+	if response.IsRPLLockingAllowed {
+		fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
+		if response.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
+			fmt.Printf("The node currently has %.6f RPL locked.\n",
+				math.RoundDown(eth.WeiToEth(response.NodeRPLLocked), 6))
+		}
+
+	} else {
+		fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
+	}
+	fmt.Printf("Your current voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
+	fmt.Println("")
 
 	// Claimable Bonds Status:
 	fmt.Printf("%s=== Claimable RPL Bonds ===%s\n", colorGreen, colorReset)
