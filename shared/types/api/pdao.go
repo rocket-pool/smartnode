@@ -405,12 +405,24 @@ type PDAOInitializeVotingResponse struct {
 }
 
 type PDAOStatusResponse struct {
-	Status                         string         `json:"status"`
-	Error                          string         `json:"error"`
-	VotingPower                    *big.Int       `json:"votingPower"`
-	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
-	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
-	BlockNumber                    uint32         `json:"blockNumber"`
-	VerifyEnabled                  bool           `json:"verifyEnabled"`
-	IsHoustonDeployed              bool           `json:"isHoustonDeployed"`
+	Status                          string         `json:"status"`
+	Error                           string         `json:"error"`
+	VotingPower                     *big.Int       `json:"votingPower"`
+	OnchainVotingDelegate           common.Address `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted  string         `json:"onchainVotingDelegateFormatted"`
+	BlockNumber                     uint32         `json:"blockNumber"`
+	VerifyEnabled                   bool           `json:"verifyEnabled"`
+	IsHoustonDeployed               bool           `json:"isHoustonDeployed"`
+	IsVotingInitialized             bool           `json:"isVotingInitialized"`
+	SnapshotVotingDelegate          common.Address `json:"snapshotVotingDelegate"`
+	SnapshotVotingDelegateFormatted string         `json:"snapshotVotingDelegateFormatted"`
+	SnapshotResponse                struct {
+		Error                   string                 `json:"error"`
+		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
+		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
+	} `json:"snapshotResponse"`
+	IsRPLLockingAllowed     bool           `json:"isRPLLockingAllowed"`
+	NodeRPLLocked           *big.Int       `json:"nodeRPLLocked"`
+	AccountAddress          common.Address `json:"accountAddress"`
+	AccountAddressFormatted string         `json:"accountAddressFormatted"`
 }
