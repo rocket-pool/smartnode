@@ -303,7 +303,7 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 
 		// Try to load it
 		fullFilename := filepath.Join(recordsPath, filename)
-		record, err := r.loadRecordFromFile(fullFilename, checksum)
+		record, err := r.loadRecordFromFile(fullFilename, checksum, rewardsRuleset)
 		if err != nil {
 			r.logger.Warn("Error loading record from file... attempting previous file", slog.String(keys.FileKey, fullFilename), log.Err(err))
 			continue
@@ -458,7 +458,7 @@ func (r *RollingRecordManager) updateImpl(context context.Context, state *state.
 	// Log the update
 	startEpoch := r.Record.StartSlot / r.beaconCfg.SlotsPerEpoch
 	currentEpoch := r.Record.LastDutiesSlot / r.beaconCfg.SlotsPerEpoch
-	r.logger.Info("Record update complete. (slot %d-%d, epoch %d-%d).", slog.Uint64(keys.StartSlotKey, r.Record.StartSlot), slog.Uint64(keys.StartEpochKey, startEpoch), slog.Uint64(keys.EndSlotKey, r.Record.LastDutiesSlot), slog.Uint64(keys.EndEpochKey, currentEpoch))
+	r.logger.Info("Record update complete.", slog.Uint64(keys.StartSlotKey, r.Record.StartSlot), slog.Uint64(keys.StartEpochKey, startEpoch), slog.Uint64(keys.EndSlotKey, r.Record.LastDutiesSlot), slog.Uint64(keys.EndEpochKey, currentEpoch))
 	return nil
 }
 
@@ -507,7 +507,7 @@ func (r *RollingRecordManager) getSlotFromFilename(filename string) (uint64, err
 }
 
 // Load a record from a file, making sure its contents match the provided checksum
-func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedChecksum []byte) (*RollingRecord, error) {
+func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedChecksum []byte, rewardsRuleset uint64) (*RollingRecord, error) {
 	// Read the file
 	compressedBytes, err := os.ReadFile(filename)
 	if err != nil {
@@ -529,7 +529,7 @@ func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedCheck
 	}
 
 	// Create a new record from the data
-	return DeserializeRollingRecord(r.logger, r.bc, &r.beaconCfg, bytes)
+	return DeserializeRollingRecord(r.logger, r.bc, &r.beaconCfg, bytes, rewardsRuleset)
 }
 
 // Get the lines from the checksum file

@@ -67,7 +67,7 @@ func NewRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, startSlot ui
 }
 
 // Load an existing record from serialized JSON data
-func DeserializeRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, beaconConfig *beacon.Eth2Config, bytes []byte) (*RollingRecord, error) {
+func DeserializeRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, beaconConfig *beacon.Eth2Config, bytes []byte, expectedRuleset uint64) (*RollingRecord, error) {
 	record := &RollingRecord{
 		bc:           bc,
 		beaconConfig: beaconConfig,
@@ -86,9 +86,9 @@ func DeserializeRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, beac
 		return nil, fmt.Errorf("error deserializing record: %w", err)
 	}
 
-	// Handle cases where the ruleset wasn't included yet (it started at interval 8).
+	// Handle cases where the ruleset wasn't included yet
 	if record.Ruleset == 0 {
-		record.Ruleset = 8
+		record.Ruleset = expectedRuleset
 	}
 
 	return record, nil
