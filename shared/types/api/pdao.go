@@ -421,8 +421,11 @@ type PDAOStatusResponse struct {
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
-	IsRPLLockingAllowed     bool           `json:"isRPLLockingAllowed"`
-	NodeRPLLocked           *big.Int       `json:"nodeRPLLocked"`
-	AccountAddress          common.Address `json:"accountAddress"`
-	AccountAddressFormatted string         `json:"accountAddressFormatted"`
+	IsRPLLockingAllowed     bool                   `json:"isRPLLockingAllowed"`
+	NodeRPLLocked           *big.Int               `json:"nodeRPLLocked"`
+	AccountAddress          common.Address         `json:"accountAddress"`
+	AccountAddressFormatted string                 `json:"accountAddressFormatted"`
+	TotalDelegatedVp        *big.Int               `json:"totalDelegateVp"`
+	NodeIndex               uint64                 `json:"nodeIndex"`
+	Proof                   []types.VotingTreeNode `json:"proof"`
 }

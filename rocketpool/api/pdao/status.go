@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -42,6 +43,10 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 		return nil, err
 	}
 	s, err := services.GetSnapshotDelegation(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +167,20 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	// Cast to uint32
 	response.BlockNumber = uint32(blockNumber)
 
-	// Check voting power
+	// Get the proposal artifacts
+	propMgr, err := proposals.NewProposalManager(nil, cfg, rp, bc)
+	if err != nil {
+		return nil, err
+	}
+	_totalDelegatedVP, _nodeIndex, _proof, err := propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
+	if err != nil {
+		return nil, err
+	}
+	response.TotalDelegatedVp = _totalDelegatedVP
+	response.NodeIndex = _nodeIndex
+	response.Proof = _proof
+
+	// Get voting power
 	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, response.BlockNumber, nil)
 	if err != nil {
 		return nil, err

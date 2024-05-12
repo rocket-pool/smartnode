@@ -106,7 +106,10 @@ func getStatus(c *cli.Context) error {
 	} else {
 		fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
 	}
-	fmt.Printf("Your current voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
+	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
+
+	fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.TotalDelegatedVp))
+
 	fmt.Println("")
 
 	// Claimable Bonds Status:
