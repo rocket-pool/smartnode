@@ -111,7 +111,7 @@ func (c *securityVoteOnProposalContext) PrepareData(data *api.SecurityVoteOnProp
 	data.DoesNotExist = (c.id > c.dpm.ProposalCount.Formatted())
 	data.InvalidState = !(state == rptypes.ProposalState_Active)
 	data.AlreadyVoted = c.hasVoted
-	data.JoinedAfterCreated = (c.prop.CreatedTime.Formatted().After(c.member.JoinedTime.Formatted()))
+	data.JoinedAfterCreated = (c.member.JoinedTime.Formatted().After(c.prop.CreatedTime.Formatted()))
 	data.CanVote = !(data.DoesNotExist || data.InvalidState || data.AlreadyVoted || data.JoinedAfterCreated)
 
 	// Get the tx
