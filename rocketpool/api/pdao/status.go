@@ -180,6 +180,13 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	response.NodeIndex = _nodeIndex
 	response.Proof = _proof
 
+	// Get the local tree
+	votingTree, err := propMgr.GetNetworkTree(response.BlockNumber, nil)
+	if err != nil {
+		return nil, err
+	}
+	response.SumVotingPower = votingTree.Nodes[0].Sum
+
 	// Get voting power
 	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, response.BlockNumber, nil)
 	if err != nil {

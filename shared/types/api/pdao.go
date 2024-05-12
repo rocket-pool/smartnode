@@ -428,4 +428,5 @@ type PDAOStatusResponse struct {
 	TotalDelegatedVp        *big.Int               `json:"totalDelegateVp"`
 	NodeIndex               uint64                 `json:"nodeIndex"`
 	Proof                   []types.VotingTreeNode `json:"proof"`
+	SumVotingPower          *big.Int               `json:"sumVotingPower"`
 }

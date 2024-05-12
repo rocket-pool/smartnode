@@ -110,6 +110,8 @@ func getStatus(c *cli.Context) error {
 
 	fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.TotalDelegatedVp))
 
+	fmt.Printf("Network total registered voting power %.10f\n", eth.WeiToEth(response.SumVotingPower))
+
 	fmt.Println("")
 
 	// Claimable Bonds Status:
