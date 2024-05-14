@@ -59,49 +59,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
-			{
-				Name:      "can-cancel-proposal",
-				Usage:     "Check whether the node can cancel a proposal",
-				UsageText: "rocketpool api pdao can-cancel-proposal proposal-id",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					proposalId, err := cliutils.ValidatePositiveUint("proposal ID", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canCancelProposal(c, proposalId))
-					return nil
-
-				},
-			},
-			{
-				Name:      "cancel-proposal",
-				Aliases:   []string{"c"},
-				Usage:     "Cancel a proposal made by the node",
-				UsageText: "rocketpool api pdao cancel-proposal proposal-id",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					proposalId, err := cliutils.ValidatePositiveUint("proposal ID", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(cancelProposal(c, proposalId))
-					return nil
-
-				},
-			},
 
 			{
 				Name:      "can-vote-proposal",
