@@ -21,6 +21,7 @@ const (
 // Proposal details
 type protocolDaoProposalDetailsRaw struct {
 	ID                   uint64
+	DAO                  string
 	ProposerAddress      common.Address
 	TargetBlock          *big.Int
 	Message              string
@@ -146,6 +147,7 @@ func getProposalDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, 
 func addProposalCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *protocolDaoProposalDetailsRaw, opts *bind.CallOpts) error {
 	id := big.NewInt(0).SetUint64(details.ID)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ProposerAddress, "getProposer", id)
+	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.DAO, "getDAO", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.TargetBlock, "getProposalBlock", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Message, "getMessage", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingStartTime, "getStart", id)
@@ -175,6 +177,7 @@ func addProposalCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc
 // Converts a raw proposal to a well-formatted one
 func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDaoProposalDetailsRaw, details *protocol.ProtocolDaoProposalDetails, opts *bind.CallOpts) error {
 	details.ID = rawDetails.ID
+	details.DAO = rawDetails.DAO
 	details.ProposerAddress = rawDetails.ProposerAddress
 	details.TargetBlock = uint32(rawDetails.TargetBlock.Uint64())
 	details.Message = rawDetails.Message

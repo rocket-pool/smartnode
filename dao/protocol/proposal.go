@@ -33,6 +33,7 @@ const (
 // Proposal details
 type ProtocolDaoProposalDetails struct {
 	ID                   uint64                         `json:"id"`
+	DAO                  string                         `json:"dao"`
 	ProposerAddress      common.Address                 `json:"proposerAddress"`
 	TargetBlock          uint32                         `json:"targetBlock"`
 	Message              string                         `json:"message"`
@@ -607,7 +608,6 @@ func submitProposal(rp *rocketpool.RocketPool, message string, payload []byte, b
 	return proposalCount + 1, tx.Hash(), nil
 }
 
-
 // Estimate the gas of CancelProposal
 func EstimateCancelProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
@@ -629,7 +629,6 @@ func CancelProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.Tra
 	}
 	return tx.Hash(), nil
 }
-
 
 // Estimate the gas of VoteOnProposal
 func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, votingPower *big.Int, nodeIndex uint64, witness []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
