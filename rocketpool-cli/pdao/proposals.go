@@ -146,6 +146,7 @@ func getProposal(c *cli.Context, id uint64) error {
 
 	// Main details
 	fmt.Printf("Proposal ID:            %d\n", proposal.ID)
+	fmt.Printf("DAO:                    %s\n", proposal.DAO)
 	fmt.Printf("Message:                %s\n", proposal.Message)
 	fmt.Printf("Payload:                %s\n", proposal.PayloadStr)
 	fmt.Printf("Payload (bytes):        %s\n", hex.EncodeToString(proposal.Payload))
