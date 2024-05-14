@@ -608,28 +608,6 @@ func submitProposal(rp *rocketpool.RocketPool, message string, payload []byte, b
 	return proposalCount + 1, tx.Hash(), nil
 }
 
-// Estimate the gas of CancelProposal
-func EstimateCancelProposalGas(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketDAOProtocolProposal.GetTransactionGasInfo(opts, "cancel", big.NewInt(int64(proposalId)))
-}
-
-// Cancel a submitted proposal
-func CancelProposal(rp *rocketpool.RocketPool, proposalId uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketDAOProtocolProposal.Transact(opts, "cancel", big.NewInt(int64(proposalId)))
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error cancelling security DAO proposal %d: %w", proposalId, err)
-	}
-	return tx.Hash(), nil
-}
-
 // Estimate the gas of VoteOnProposal
 func EstimateVoteOnProposalGas(rp *rocketpool.RocketPool, proposalId uint64, voteDirection types.VoteDirection, votingPower *big.Int, nodeIndex uint64, witness []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposal, err := getRocketDAOProtocolProposal(rp, nil)
