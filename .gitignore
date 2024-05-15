@@ -17,3 +17,4 @@ Dockerfile
 /rocketpool/rocketpool-daemon-darwin-arm64
 /rocketpool/rocketpool-daemon-linux-arm64
 .vscode-ctags
+build/
