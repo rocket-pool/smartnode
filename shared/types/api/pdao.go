@@ -412,7 +412,6 @@ type PDAOStatusResponse struct {
 	OnchainVotingDelegateFormatted  string         `json:"onchainVotingDelegateFormatted"`
 	BlockNumber                     uint32         `json:"blockNumber"`
 	VerifyEnabled                   bool           `json:"verifyEnabled"`
-	IsHoustonDeployed               bool           `json:"isHoustonDeployed"`
 	IsVotingInitialized             bool           `json:"isVotingInitialized"`
 	SnapshotVotingDelegate          common.Address `json:"snapshotVotingDelegate"`
 	SnapshotVotingDelegateFormatted string         `json:"snapshotVotingDelegateFormatted"`

@@ -19,7 +19,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -95,13 +94,6 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 			return fmt.Errorf("Error loading configuration: %w", err)
 		}
 		return nil
-	})
-
-	// Check if houston deployed and add to response
-	wg.Go(func() error {
-		var err error
-		response.IsHoustonDeployed, err = state.IsHoustonDeployed(rp, nil)
-		return err
 	})
 
 	// Check if Voting is initialized and add to response
