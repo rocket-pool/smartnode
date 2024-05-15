@@ -51,6 +51,12 @@ type MevBoostConfig struct {
 	// Aestus relay
 	AestusRelay config.Parameter `yaml:"aestusEnabled,omitempty"`
 
+	// Titan Global relay
+	TitanGlobalRelay config.Parameter `yaml:"titanGlobalEnabled,omitempty"`
+
+	// Titan Regional relay
+	TitanRegionalRelay config.Parameter `yaml:"titanRegionalEnabled,omitempty"`
+
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
 
@@ -141,6 +147,8 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		EdenRelay:               generateRelayParameter("edenEnabled", relayMap[config.MevRelayID_Eden]),
 		UltrasoundRelay:         generateRelayParameter("ultrasoundEnabled", relayMap[config.MevRelayID_Ultrasound]),
 		AestusRelay:             generateRelayParameter("aestusEnabled", relayMap[config.MevRelayID_Aestus]),
+		TitanGlobalRelay:        generateRelayParameter("titanGlobalEnabled", relayMap[config.MevRelayID_TitanGlobal]),
+		TitanRegionalRelay:      generateRelayParameter("titanRegionalEnabled", relayMap[config.MevRelayID_TitanRegional]),
 
 		Port: config.Parameter{
 			ID:                 "port",
@@ -216,6 +224,8 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.EdenRelay,
 		&cfg.UltrasoundRelay,
 		&cfg.AestusRelay,
+		&cfg.TitanGlobalRelay,
+		&cfg.TitanRegionalRelay,
 		&cfg.Port,
 		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,
@@ -323,6 +333,18 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 				relays = append(relays, cfg.relayMap[config.MevRelayID_Aestus])
 			}
 		}
+		if cfg.TitanGlobalRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_TitanGlobal].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_TitanGlobal])
+			}
+		}
+		if cfg.TitanRegionalRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_TitanRegional].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_TitanRegional])
+			}
+		}
 	}
 
 	return relays
@@ -413,6 +435,30 @@ func createDefaultRelays() []config.MevRelay {
 				config.Network_Devnet:  "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@goerli.aestus.live?id=rocketpool",
 			},
 			Regulated: false,
+		},
+
+		// Titan Global
+		{
+			ID:          config.MevRelayID_TitanGlobal,
+			Name:        "Titan Global (non-filtering)",
+			Description: "Select this to enable the \"non-filtering\" relay from Titan.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@global.titanrelay.xyz",
+				config.Network_Devnet:  "",
+			},
+			Regulated: false,
+		},
+
+		// Titan Regional
+		{
+			ID:          config.MevRelayID_TitanRegional,
+			Name:        "Titan Regional (filtering)",
+			Description: "Select this to enable the \"filtering\" relay from Titan.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
+				config.Network_Devnet:  "",
+			},
+			Regulated: true,
 		},
 	}
 

@@ -25,6 +25,8 @@ type MevBoostConfigPage struct {
 	edenBox               *parameterizedFormItem
 	ultrasoundBox         *parameterizedFormItem
 	aestusBox             *parameterizedFormItem
+	titanGlobalBox        *parameterizedFormItem
+	titanRegionalBox      *parameterizedFormItem
 }
 
 // Creates a new page for the MEV-Boost settings
@@ -83,10 +85,12 @@ func (configPage *MevBoostConfigPage) createContent() {
 	configPage.edenBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EdenRelay)
 	configPage.ultrasoundBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.UltrasoundRelay)
 	configPage.aestusBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.AestusRelay)
+	configPage.titanGlobalBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.TitanGlobalRelay)
+	configPage.titanRegionalBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.TitanRegionalRelay)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox, configPage.selectionModeBox)
-	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteRegulatedBox, configPage.edenBox, configPage.ultrasoundBox, configPage.aestusBox)
+	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteRegulatedBox, configPage.edenBox, configPage.ultrasoundBox, configPage.aestusBox, configPage.titanGlobalBox, configPage.titanRegionalBox)
 	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
 
@@ -173,6 +177,10 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 				configPage.layout.form.AddFormItem(configPage.ultrasoundBox.item)
 			case cfgtypes.MevRelayID_Aestus:
 				configPage.layout.form.AddFormItem(configPage.aestusBox.item)
+			case cfgtypes.MevRelayID_TitanGlobal:
+				configPage.layout.form.AddFormItem(configPage.titanGlobalBox.item)
+			case cfgtypes.MevRelayID_TitanRegional:
+				configPage.layout.form.AddFormItem(configPage.titanRegionalBox.item)
 			}
 		}
 	}
