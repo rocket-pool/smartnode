@@ -209,7 +209,7 @@ func getEthClient(c *cli.Context, cfg *config.RocketPoolConfig) (*ExecutionClien
 	var err error
 	initECManager.Do(func() {
 		// Create a new client manager
-		ecManager, err = NewExecutionClientManager(cfg)
+		ecManager, err = NewExecutionClientManager(cfg, true)
 		if err == nil {
 			// Check if the manager should ignore sync checks and/or default to using the fallback (used by the API container when driven by the CLI)
 			if c.GlobalBool("ignore-sync-check") {
@@ -246,7 +246,7 @@ func getBeaconClient(c *cli.Context, cfg *config.RocketPoolConfig) (*BeaconClien
 	var err error
 	initBCManager.Do(func() {
 		// Create a new client manager
-		bcManager, err = NewBeaconClientManager(cfg)
+		bcManager, err = NewBeaconClientManager(cfg, cfg.Smartnode.GetChainID())
 		if err == nil {
 			// Check if the manager should ignore sync checks and/or default to using the fallback (used by the API container when driven by the CLI)
 			if c.GlobalBool("ignore-sync-check") {
