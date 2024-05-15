@@ -96,6 +96,16 @@ func getStatus(c *cli.Context) error {
 	} else {
 		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, response.OnchainVotingDelegateFormatted, colorReset)
 	}
+	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
+
+	fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.TotalDelegatedVp))
+
+	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(response.SumVotingPower))
+
+	fmt.Println("")
+
+	// Claimable Bonds Status:
+	fmt.Printf("%s=== Claimable RPL Bonds ===%s\n", colorGreen, colorReset)
 	if response.IsRPLLockingAllowed {
 		fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
 		if response.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
@@ -104,18 +114,8 @@ func getStatus(c *cli.Context) error {
 		}
 
 	} else {
-		fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
+		fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges. Use 'rocketpool node  allow-rpl-locking, to allow RPL locking.\n")
 	}
-	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
-
-	fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.TotalDelegatedVp))
-
-	fmt.Printf("Network total registered voting power %.10f\n", eth.WeiToEth(response.SumVotingPower))
-
-	fmt.Println("")
-
-	// Claimable Bonds Status:
-	fmt.Printf("%s=== Claimable RPL Bonds ===%s\n", colorGreen, colorReset)
 	if len(claimableBonds) == 0 {
 		fmt.Println("You do not have any unlockable bonds or claimable rewards.")
 	} else {

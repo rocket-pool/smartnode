@@ -172,13 +172,11 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	_totalDelegatedVP, _nodeIndex, _proof, err := propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
+	totalDelegatedVP, _, _, err := propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
-	response.TotalDelegatedVp = _totalDelegatedVP
-	response.NodeIndex = _nodeIndex
-	response.Proof = _proof
+	response.TotalDelegatedVp = totalDelegatedVP
 
 	// Get the local tree
 	votingTree, err := propMgr.GetNetworkTree(response.BlockNumber, nil)
