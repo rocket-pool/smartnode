@@ -404,11 +404,26 @@ type PDAOInitializeVotingResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type GetPDAOVotePowerResponse struct {
-	Status                         string         `json:"status"`
-	Error                          string         `json:"error"`
-	VotingPower                    *big.Int       `json:"votingPower"`
-	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
-	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
-	BlockNumber                    uint32         `json:"blockNumber"`
+type PDAOStatusResponse struct {
+	Status                          string         `json:"status"`
+	Error                           string         `json:"error"`
+	VotingPower                     *big.Int       `json:"votingPower"`
+	OnchainVotingDelegate           common.Address `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted  string         `json:"onchainVotingDelegateFormatted"`
+	BlockNumber                     uint32         `json:"blockNumber"`
+	VerifyEnabled                   bool           `json:"verifyEnabled"`
+	IsVotingInitialized             bool           `json:"isVotingInitialized"`
+	SnapshotVotingDelegate          common.Address `json:"snapshotVotingDelegate"`
+	SnapshotVotingDelegateFormatted string         `json:"snapshotVotingDelegateFormatted"`
+	SnapshotResponse                struct {
+		Error                   string                 `json:"error"`
+		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
+		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
+	} `json:"snapshotResponse"`
+	IsRPLLockingAllowed     bool           `json:"isRPLLockingAllowed"`
+	NodeRPLLocked           *big.Int       `json:"nodeRPLLocked"`
+	AccountAddress          common.Address `json:"accountAddress"`
+	AccountAddressFormatted string         `json:"accountAddressFormatted"`
+	TotalDelegatedVp        *big.Int       `json:"totalDelegateVp"`
+	SumVotingPower          *big.Int       `json:"sumVotingPower"`
 }

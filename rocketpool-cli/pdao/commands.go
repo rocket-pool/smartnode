@@ -29,27 +29,27 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Subcommands: []cli.Command{
 
 			{
-				Name:      "settings",
+				Name:      "status",
 				Aliases:   []string{"s"},
+				Usage:     "Get the pdao status",
+				UsageText: "rocketpool pdao status",
+				Action: func(c *cli.Context) error {
+
+					// Run
+					return getStatus(c)
+
+				},
+			},
+
+			{
+				Name:      "settings",
+				Aliases:   []string{"st"},
 				Usage:     "Show all of the current Protocol DAO settings and values",
 				UsageText: "rocketpool pdao settings",
 				Action: func(c *cli.Context) error {
 
 					// Run
 					return getSettings(c)
-
-				},
-			},
-
-			{
-				Name:      "voting-power",
-				Aliases:   []string{"vp"},
-				Usage:     "Shows the voting power of your node at the latest block",
-				UsageText: "rocketpool pdao get-vote-power",
-				Action: func(c *cli.Context) error {
-
-					// Run
-					return getVotePower(c)
 
 				},
 			},
