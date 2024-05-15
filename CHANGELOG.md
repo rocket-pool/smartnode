@@ -1,5 +1,13 @@
 # Changelog
 
+## [v1.13.2] - 2024-05-15
+### :sparkles: New Features
+- [`bac8696`](https://github.com/rocket-pool/smartnode/commit/bac8696d5a36afdaeb65d35503bd1c32925379cf) - changelog auto-generation github workflow *(commit by [@Nimja1234](https://github.com/Nimja1234))*
+
+### :wrench: Chores
+- [`210b030`](https://github.com/rocket-pool/smartnode/commit/210b0304715869c3bcd05acca4489de837289673) - fix function names *(commit by [@kevincatty](https://github.com/kevincatty))*
+
+
 ## [v1.13.1](https://github.com/rocket-pool/smartnode/tree/v1.13.1) (2024-05-02)
 
 ### Changed
@@ -389,3 +397,4 @@
 - Removed debug line (shared/services/rewards/rolling-record.go, line #197)
 
 [Full Changelog](https://github.com/rocket-pool/smartnode/compare/v1.9.8...v1.10.0)
+[v1.13.2]: https://github.com/rocket-pool/smartnode/compare/v2.0.0-b2...v1.13.2
