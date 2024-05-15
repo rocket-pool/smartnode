@@ -32,6 +32,11 @@ type mainDisplay struct {
 	ChangeNetworks      bool
 }
 
+const (
+	// Background for non-interactive elements
+	NonInteractiveBackgroundColor tcell.Color = tcell.ColorBlack
+)
+
 // Creates a new MainDisplay instance.
 func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isUpdate bool, isNative bool) *mainDisplay {
 
@@ -45,11 +50,18 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 		SetColumns(1, 0, 1).   // 1-unit border
 		SetRows(1, 1, 1, 0, 1) // Also 1-unit border
 
+	grid.SetBackgroundColor(NonInteractiveBackgroundColor)
+
 	grid.SetBorder(true).
 		SetTitle(fmt.Sprintf(" Rocket Pool Smartnode %s Configuration ", shared.RocketPoolVersion)).
 		SetBorderColor(tcell.ColorOrange).
 		SetTitleColor(tcell.ColorOrange).
-		SetBackgroundColor(tcell.ColorBlack)
+		SetBackgroundColor(NonInteractiveBackgroundColor)
+
+	// Padding
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 0, 0, 1, 1, 0, 0, false)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 0, 1, 1, 1, 0, 0, false)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 0, 2, 1, 1, 0, 0, false)
 
 	// Create the navigation header
 	navHeader := tview.NewTextView().
@@ -57,10 +69,24 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 		SetRegions(false).
 		SetWrap(false)
 	grid.AddItem(navHeader, 1, 1, 1, 1, 0, 0, false)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 1, 0, 1, 1, 0, 0, false)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 1, 2, 1, 1, 0, 0, false)
+
+	// Padding
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 2, 0, 1, 1, 0, 0, false)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 2, 1, 1, 1, 0, 0, false)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 2, 2, 1, 1, 0, 0, false)
 
 	// Create the page collection
 	pages := tview.NewPages()
 	grid.AddItem(pages, 3, 1, 1, 1, 0, 0, true)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 3, 0, 1, 1, 0, 0, false)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 3, 2, 1, 1, 0, 0, false)
+
+	// Padding
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 4, 0, 1, 1, 0, 0, false)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 4, 1, 1, 1, 0, 0, false)
+	grid.AddItem(tview.NewBox().SetBackgroundColor(NonInteractiveBackgroundColor), 4, 2, 1, 1, 0, 0, false)
 
 	// Create the resize warning
 	resizeWarning := tview.NewTextView().
