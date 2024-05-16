@@ -179,6 +179,9 @@ func getStatus(c *cli.Context) error {
 
 		// Proposals
 		for _, proposal := range proposals {
+			if len(proposal.Message) > 200 {
+				proposal.Message = proposal.Message[:200]
+			}
 			fmt.Printf("%d: %s - Proposed by: %s\n", proposal.ID, proposal.Message, proposal.ProposerAddress)
 		}
 
