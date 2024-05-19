@@ -9,6 +9,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/rocketpool-go/utils/strings"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
@@ -182,6 +183,7 @@ func getStatus(c *cli.Context) error {
 			if len(proposal.Message) > 200 {
 				proposal.Message = proposal.Message[:200]
 			}
+			proposal.Message = strings.Sanitize(proposal.Message)
 			fmt.Printf("%d: %s - Proposed by: %s\n", proposal.ID, proposal.Message, proposal.ProposerAddress)
 		}
 
