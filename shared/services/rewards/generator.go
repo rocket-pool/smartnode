@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -74,6 +75,8 @@ type treeGeneratorImpl interface {
 	generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (IRewardsFile, error)
 	approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error)
 	getRulesetVersion() uint64
+	// Returns the primary artifact cid for consensus, all cids of all files in a map, and any potential errors
+	saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)
 }
 
 func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
@@ -188,4 +191,8 @@ func (t *TreeGenerator) ApproximateStakerShareOfSmoothingPoolWithRuleset(ruleset
 	}
 
 	return info.generator.approximateStakerShareOfSmoothingPool(t.rp, t.cfg, t.bc)
+}
+
+func (t *TreeGenerator) SaveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return t.generatorImpl.saveFiles(rewardsFile, nodeTrusted)
 }

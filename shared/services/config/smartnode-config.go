@@ -866,26 +866,29 @@ func (cfg *SmartnodeConfig) GetRewardsTreeDirectory(daemon bool) string {
 	return filepath.Join(cfg.DataPath.Value.(string), RewardsTreesFolder)
 }
 
+func (cfg *SmartnodeConfig) formatRewardsFilename(f string, interval uint64, extension RewardsExtension) string {
+	return fmt.Sprintf(f, string(cfg.Network.Value.(config.Network)), interval, string(extension))
+}
+
+func (cfg *SmartnodeConfig) GetRewardsTreeFilename(interval uint64, extension RewardsExtension) string {
+	return cfg.formatRewardsFilename(rewardsTreeFilenameFormat, interval, extension)
+}
+
+func (cfg *SmartnodeConfig) GetMinipoolPerformanceFilename(interval uint64, extension RewardsExtension) string {
+	return cfg.formatRewardsFilename(minipoolPerformanceFilenameFormat, interval, extension)
+}
+
 func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool, extension RewardsExtension) string {
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
-		fmt.Sprintf(
-			rewardsTreeFilenameFormat,
-			string(cfg.Network.Value.(config.Network)),
-			interval,
-			string(extension),
-		),
+		cfg.GetRewardsTreeFilename(interval, extension),
 	)
 }
 
 func (cfg *SmartnodeConfig) GetMinipoolPerformancePath(interval uint64, daemon bool) string {
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
-		fmt.Sprintf(
-			minipoolPerformanceFilenameFormat,
-			string(cfg.Network.Value.(config.Network)),
-			interval,
-		),
+		cfg.GetMinipoolPerformanceFilename(interval, RewardsExtensionJSON),
 	)
 }
 

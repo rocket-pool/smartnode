@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 )
 
@@ -106,14 +107,20 @@ func TestCompressionAndCids(t *testing.T) {
 		path.Join(dir, "performance.json"),
 	)
 
-	rewardsCid, err := localRewardsFile.CreateCompressedFileAndCid()
+	returnedFilename, rewardsCid, err := localRewardsFile.CreateCompressedFileAndCid()
 	if err != nil {
 		t.Fatal(err)
 	}
+	if filepath.Base(returnedFilename) != "rewards.json.zst" {
+		t.Fatalf("Unexpected filename: %s", returnedFilename)
+	}
 
-	performanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
+	returnedFilename, performanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
 	if err != nil {
 		t.Fatal(err)
+	}
+	if filepath.Base(returnedFilename) != "performance.json.zst" {
+		t.Fatalf("Unexpected filename: %s", returnedFilename)
 	}
 
 	// Check that compressed files were written to disk and their cids match what was returned by CompressedCid

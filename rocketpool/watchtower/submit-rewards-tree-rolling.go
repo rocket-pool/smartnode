@@ -414,7 +414,7 @@ func (t *submitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint6
 
 	if isInOdao {
 		// Save the compressed file and get the CID for it
-		cid, err := localRewardsFile.CreateCompressedFileAndCid()
+		_, cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			t.log.Printlnf("%s WARNING: failed to get CID for %s: %s; regenerating file...\n", t.logPrefix, rewardsTreePath, err.Error())
 			return nil, false, true
@@ -486,8 +486,6 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 	// Get the expected file paths
 	rewardsTreePathJSON := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON)
 	compressedRewardsTreePathJSON := rewardsTreePathJSON + config.RewardsTreeIpfsExtension
-	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
-	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval
 	if !mustRegenerate {
@@ -499,7 +497,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 		t.log.Printlnf("%s Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", t.logPrefix, currentIndex, rewardsTreePathJSON)
 
 		// Save the compressed file and get the CID for it
-		cid, err := existingRewardsFile.CreateCompressedFileAndCid()
+		_, cid, err := existingRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("error getting CID for file %s: %w", compressedRewardsTreePathJSON, err)
 		}
@@ -516,7 +514,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 	}
 
 	// Generate the tree
-	err = t.generateTree(client, state, intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePathJSON, compressedRewardsTreePathJSON, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	err = t.generateTree(client, state, intervalsPassed, isInOdao, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader)
 	if err != nil {
 		return fmt.Errorf("error generating rewards tree: %w", err)
 	}
@@ -525,7 +523,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(client *rocketpool.
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
+func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, state *state.NetworkState, intervalsPassed uint64, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header) error {
 
 	// Log
 	if intervalsPassed > 1 {
@@ -546,46 +544,17 @@ func (t *submitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 		t.printMessage(fmt.Sprintf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network))
 	}
 
-	// Serialize the minipool performance file
-	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
-		rewardsFile.GetMinipoolPerformanceFile(),
-		minipoolPerformancePath,
-	)
-	_, err = localMinipoolPerformanceFile.Write()
+	// Save the files
+	t.printMessage("Generation complete! Saving files...")
+	cid, cids, err := treegen.SaveFiles(rewardsFile, nodeTrusted)
 	if err != nil {
-		return fmt.Errorf("Error serializing minipool performance file into JSON: %w", err)
+		return fmt.Errorf("Error writing rewards artifacts to disk: %w", err)
+	}
+	for filename, cid := range cids {
+		t.printMessage(fmt.Sprintf("\t%s - CID %s", filename, cid.String()))
 	}
 
 	if nodeTrusted {
-		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
-		if err != nil {
-			return fmt.Errorf("Error getting the CID for file %s: %w", compressedMinipoolPerformancePath, err)
-		}
-		t.printMessage(fmt.Sprintf("Calculated minipool performance CID: %s", minipoolPerformanceCid))
-		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
-	} else {
-		t.printMessage("Saved minipool performance file.")
-		rewardsFile.SetMinipoolPerformanceFileCID("---")
-	}
-
-	// Serialize the rewards tree to JSON
-	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
-		rewardsFile,
-		rewardsTreePath,
-	)
-	t.printMessage("Generation complete! Saving tree...")
-
-	// Write the rewards tree to disk
-	_, err = localRewardsFile.Write()
-	if err != nil {
-		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
-	}
-
-	if nodeTrusted {
-		cid, err := localRewardsFile.CreateCompressedFileAndCid()
-		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
-		}
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 		// Submit to the contracts
 		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))

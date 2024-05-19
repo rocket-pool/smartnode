@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
@@ -1199,4 +1200,8 @@ func (r *treeGeneratorImpl_v8) getMinipoolBondAndNodeFee(details *rpstate.Native
 	}
 
 	return currentBond, currentFee
+}
+
+func (r *treeGeneratorImpl_v8) saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveJSONArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
 }
