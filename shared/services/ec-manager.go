@@ -373,14 +373,14 @@ func (p *ExecutionClientManager) CheckStatus(cfg *config.RocketPoolConfig, check
 	}
 
 	// Get the primary EC status
-	status.PrimaryClientStatus = checkEcStatus(p.primaryEc, true)
+	status.PrimaryClientStatus = checkEcStatus(p.primaryEc, checkChainIDs)
 
 	// Flag if primary client is ready
 	p.primaryReady = (status.PrimaryClientStatus.IsWorking && status.PrimaryClientStatus.IsSynced)
 
 	// Get the fallback EC status if applicable
 	if status.FallbackEnabled {
-		status.FallbackClientStatus = checkEcStatus(p.fallbackEc, true)
+		status.FallbackClientStatus = checkEcStatus(p.fallbackEc, checkChainIDs)
 		// Check if fallback is using the expected network
 		expectedChainID := cfg.Smartnode.GetChainID()
 		if status.FallbackClientStatus.Error == "" && status.FallbackClientStatus.ChainId != expectedChainID {
