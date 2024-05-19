@@ -260,27 +260,13 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, header.MerkleRoot)
 	}
 
-	// Create the JSON files
 	rewardsFile.SetMinipoolPerformanceFileCID("---")
-	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
-	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
-		rewardsFile.GetMinipoolPerformanceFile(),
-		t.cfg.Smartnode.GetMinipoolPerformancePath(index, true),
-	)
-	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
-		rewardsFile,
-		t.cfg.Smartnode.GetRewardsTreePath(index, true, config.RewardsExtensionJSON),
-	)
 
-	// Write the files
-	_, err = localMinipoolPerformanceFile.Write()
+	// Save the files
+	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
+	_, _, err = treegen.SaveFiles(rewardsFile, false)
 	if err != nil {
-		t.handleError(fmt.Errorf("%s error saving minipool performance file: %w", generationPrefix, err))
-		return
-	}
-	_, err = localRewardsFile.Write()
-	if err != nil {
-		t.handleError(fmt.Errorf("%s error saving rewards file: %w", generationPrefix, err))
+		t.handleError(fmt.Errorf("%s failed to save rewards artifacts: %w", generationPrefix, err))
 		return
 	}
 

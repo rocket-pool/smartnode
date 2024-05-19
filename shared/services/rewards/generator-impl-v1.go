@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -963,7 +964,6 @@ func (r *treeGeneratorImpl_v1) getSmoothingPoolNodeDetails() error {
 		if iterationEndIndex > nodeCount {
 			iterationEndIndex = nodeCount
 		}
-
 		if nodesDone >= 100 {
 			timeTaken := time.Since(startTime)
 			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, iterationStartIndex, nodeCount, float64(iterationStartIndex)/float64(nodeCount)*100.0, timeTaken)
@@ -1138,4 +1138,8 @@ func (r *treeGeneratorImpl_v1) getStartBlocksForInterval(previousIntervalEvent r
 	}
 
 	return startElHeader, nil
+}
+
+func (r *treeGeneratorImpl_v1) saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveJSONArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
 }

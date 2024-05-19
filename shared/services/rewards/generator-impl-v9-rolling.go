@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -804,4 +805,8 @@ func (r *treeGeneratorImpl_v9_rolling) getCheaters() map[common.Address]bool {
 	}
 
 	return cheatingNodes
+}
+
+func (r *treeGeneratorImpl_v9_rolling) saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveJSONArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
 }

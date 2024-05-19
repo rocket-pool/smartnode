@@ -183,8 +183,6 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	// Get the expected file paths
 	rewardsTreePathJSON := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON)
 	compressedRewardsTreePathJSON := rewardsTreePathJSON + config.RewardsTreeIpfsExtension
-	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
-	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval
 	if t.isExistingRewardsFileValid(rewardsTreePathJSON, uint64(intervalsPassed)) {
@@ -213,7 +211,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		proofWrapper := localRewardsFile.Impl()
 
 		// Save the compressed file and get the CID for it
-		cid, err := localRewardsFile.CreateCompressedFileAndCid()
+		_, cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePathJSON, err)
 		}
@@ -231,7 +229,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Generate the tree
-	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePathJSON, compressedRewardsTreePathJSON, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader)
 
 	// Done
 	return nil
@@ -280,7 +278,7 @@ func (t *submitRewardsTree_Stateless) isExistingRewardsFileValid(rewardsTreePath
 }
 
 // Kick off the tree generation goroutine
-func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) {
+func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header) {
 
 	go func() {
 		t.lock.Lock()
@@ -295,7 +293,7 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 		}
 
 		// Generate the tree
-		err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+		err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader)
 		if err != nil {
 			t.handleError(err)
 		}
@@ -308,7 +306,7 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
+func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header) error {
 
 	// Log
 	if uint64(intervalsPassed) > 1 {
@@ -341,49 +339,17 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		t.printMessage(fmt.Sprintf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network))
 	}
 
-	// Serialize the minipool performance file
-	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
-		rewardsFile.GetMinipoolPerformanceFile(),
-		minipoolPerformancePath,
-	)
-
-	// Write it to disk
-	_, err = localMinipoolPerformanceFile.Write()
+	// Save the files
+	t.printMessage("Generation complete! Saving files...")
+	cid, cids, err := treegen.SaveFiles(rewardsFile, nodeTrusted)
 	if err != nil {
-		return fmt.Errorf("Error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
+		return fmt.Errorf("Error writing rewards artifacts to disk: %w", err)
+	}
+	for filename, cid := range cids {
+		t.printMessage(fmt.Sprintf("\t%s - CID %s", filename, cid.String()))
 	}
 
 	if nodeTrusted {
-		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
-		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
-		}
-		t.printMessage(fmt.Sprintf("Calculated minipool performance CID: %s", minipoolPerformanceCid))
-		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
-	} else {
-		t.printMessage("Saved minipool performance file.")
-		rewardsFile.SetMinipoolPerformanceFileCID("---")
-	}
-
-	// Serialize the rewards tree to JSON
-	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
-		rewardsFile,
-		rewardsTreePath,
-	)
-	t.printMessage("Generation complete! Saving tree...")
-
-	// Write the rewards tree to disk
-	_, err = localRewardsFile.Write()
-	if err != nil {
-		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
-	}
-
-	if nodeTrusted {
-		// Save the compressed file and get the CID for it
-		cid, err := localRewardsFile.CreateCompressedFileAndCid()
-		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s : %w", rewardsTreePath, err)
-		}
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
