@@ -9,6 +9,8 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	utilsStrings "github.com/rocket-pool/rocketpool-go/utils/strings"
+
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -95,6 +97,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 			if len(proposal.Message) > 200 {
 				proposal.Message = proposal.Message[:200]
 			}
+			proposal.Message = utilsStrings.Sanitize(proposal.Message)
 			fmt.Printf("%d: %s - Proposed by: %s\n", proposal.ID, proposal.Message, proposal.ProposerAddress)
 		}
 
@@ -147,6 +150,8 @@ func getProposal(c *cli.Context, id uint64) error {
 		fmt.Printf("Proposal with ID %d does not exist.\n", id)
 		return nil
 	}
+
+	proposal.Message = utilsStrings.Sanitize(proposal.Message)
 
 	// Main details
 	fmt.Printf("Proposal ID:            %d\n", proposal.ID)
