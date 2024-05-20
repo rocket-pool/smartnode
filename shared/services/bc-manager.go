@@ -315,7 +315,7 @@ func (m *BeaconClientManager) ChangeWithdrawalCredentials(validatorIndex string,
 /// Internal Functions
 /// ==================
 
-func (m *BeaconClientManager) CheckStatus(checkChainIDs bool) *api.ClientManagerStatus {
+func (m *BeaconClientManager) CheckStatus() *api.ClientManagerStatus {
 
 	status := &api.ClientManagerStatus{
 		FallbackEnabled: m.fallbackBc != nil,
@@ -333,8 +333,8 @@ func (m *BeaconClientManager) CheckStatus(checkChainIDs bool) *api.ClientManager
 	}
 
 	// Get the primary BC status
-	status.PrimaryClientStatus = checkBcStatus(m.primaryBc, checkChainIDs)
-	if checkChainIDs && status.PrimaryClientStatus.Error == "" && status.PrimaryClientStatus.ChainId != m.expectedChainID {
+	status.PrimaryClientStatus = checkBcStatus(m.primaryBc)
+	if status.PrimaryClientStatus.Error == "" && status.PrimaryClientStatus.ChainId != m.expectedChainID {
 		m.primaryReady = false
 		status.PrimaryClientStatus.Error = fmt.Sprintf("The primary client is using a different chain (%d) than what your node is configured for (%d)", status.PrimaryClientStatus.ChainId, m.expectedChainID)
 	} else {
@@ -344,9 +344,9 @@ func (m *BeaconClientManager) CheckStatus(checkChainIDs bool) *api.ClientManager
 
 	// Get the fallback BC status if applicable
 	if status.FallbackEnabled {
-		status.FallbackClientStatus = checkBcStatus(m.fallbackBc, checkChainIDs)
+		status.FallbackClientStatus = checkBcStatus(m.fallbackBc)
 		// Check if fallback is using the expected network
-		if checkChainIDs && status.FallbackClientStatus.Error == "" && status.FallbackClientStatus.ChainId != m.expectedChainID {
+		if status.FallbackClientStatus.Error == "" && status.FallbackClientStatus.ChainId != m.expectedChainID {
 			m.fallbackReady = false
 			status.FallbackClientStatus.Error = fmt.Sprintf("The fallback client is using a different chain (%d) than what your node is configured for (%d)", status.FallbackClientStatus.ChainId, m.expectedChainID)
 			return status
@@ -362,22 +362,20 @@ func (m *BeaconClientManager) CheckStatus(checkChainIDs bool) *api.ClientManager
 }
 
 // Check the client status
-func checkBcStatus(client beacon.Client, checkChainIDs bool) api.ClientStatus {
+func checkBcStatus(client beacon.Client) api.ClientStatus {
 
 	status := api.ClientStatus{}
 
-	if checkChainIDs {
-		// Get the Chain ID
-		contractInfo, err := client.GetEth2DepositContract()
-		if err != nil {
-			status.Error = fmt.Sprintf("Chain ID check failed with [%s]", err.Error())
-			status.IsSynced = false
-			status.IsWorking = false
-			return status
-		}
-
-		status.ChainId = uint(contractInfo.ChainID)
+	// Get the Chain ID
+	contractInfo, err := client.GetEth2DepositContract()
+	if err != nil {
+		status.Error = fmt.Sprintf("Chain ID check failed with [%s]", err.Error())
+		status.IsSynced = false
+		status.IsWorking = false
+		return status
 	}
+
+	status.ChainId = uint(contractInfo.ChainID)
 
 	// Get the fallback's sync progress
 	syncStatus, err := client.GetSyncStatus()

@@ -71,7 +71,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig, checkChainIDs bool)
 		return nil, fmt.Errorf("error connecting to primary EC at [%s]: %w", primaryEcUrl, err)
 	}
 
-	status.PrimaryClientStatus = checkEcStatus(primaryEc, checkChainIDs)
+	status.PrimaryClientStatus = checkEcStatus(primaryEc)
 	primaryReady := false
 	// Check if primary is using the expected network
 	if checkChainIDs && status.PrimaryClientStatus.Error == "" && status.PrimaryClientStatus.ChainId != cfg.Smartnode.GetChainID() {
@@ -92,7 +92,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig, checkChainIDs bool)
 
 	fallbackReady := false
 	if status.FallbackEnabled {
-		status.FallbackClientStatus = checkEcStatus(fallbackEc, checkChainIDs)
+		status.FallbackClientStatus = checkEcStatus(fallbackEc)
 		// Check if fallback is using the expected network
 		if checkChainIDs && status.FallbackClientStatus.Error == "" && status.FallbackClientStatus.ChainId != bcManager.expectedChainID {
 			fallbackReady = false
@@ -355,7 +355,7 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 /// Internal functions
 /// ==================
 
-func (p *ExecutionClientManager) CheckStatus(cfg *config.RocketPoolConfig, checkChainIDs bool) *api.ClientManagerStatus {
+func (p *ExecutionClientManager) CheckStatus(cfg *config.RocketPoolConfig) *api.ClientManagerStatus {
 
 	status := &api.ClientManagerStatus{
 		FallbackEnabled: p.fallbackEc != nil,
@@ -373,14 +373,14 @@ func (p *ExecutionClientManager) CheckStatus(cfg *config.RocketPoolConfig, check
 	}
 
 	// Get the primary EC status
-	status.PrimaryClientStatus = checkEcStatus(p.primaryEc, checkChainIDs)
+	status.PrimaryClientStatus = checkEcStatus(p.primaryEc)
 
 	// Flag if primary client is ready
 	p.primaryReady = (status.PrimaryClientStatus.IsWorking && status.PrimaryClientStatus.IsSynced)
 
 	// Get the fallback EC status if applicable
 	if status.FallbackEnabled {
-		status.FallbackClientStatus = checkEcStatus(p.fallbackEc, checkChainIDs)
+		status.FallbackClientStatus = checkEcStatus(p.fallbackEc)
 		// Check if fallback is using the expected network
 		expectedChainID := cfg.Smartnode.GetChainID()
 		if status.FallbackClientStatus.Error == "" && status.FallbackClientStatus.ChainId != expectedChainID {
@@ -410,7 +410,7 @@ func getNetworkNameFromId(networkId uint) string {
 }
 
 // Check the client status
-func checkEcStatus(client *ethclient.Client, checkChainIDs bool) api.ClientStatus {
+func checkEcStatus(client *ethclient.Client) api.ClientStatus {
 
 	status := api.ClientStatus{}
 
