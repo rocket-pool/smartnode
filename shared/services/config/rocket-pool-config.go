@@ -1198,7 +1198,7 @@ func (cfg *RocketPoolConfig) GetECMaxPeers() (uint16, error) {
 	case config.ExecutionClient_Besu:
 		return cfg.Besu.MaxPeers.Value.(uint16), nil
 	case config.ExecutionClient_Reth:
-		return cfg.Reth.MaxPeers.Value.(uint16), nil
+		return cfg.Reth.MaxInboundPeers.Value.(uint16) + cfg.Reth.MaxOutboundPeers.Value.(uint16), nil
 	}
 
 	return 0, fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
