@@ -24,7 +24,7 @@ func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
 	}
 
 	// Get the status of the EC and fallback EC
-	ecStatus := ecMgr.CheckStatus(cfg, true)
+	ecStatus := ecMgr.CheckStatus(cfg)
 	response.EcStatus = *ecStatus
 
 	// Get the BC manager
@@ -34,7 +34,7 @@ func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
 	}
 
 	// Get the status of the BC and fallback BC
-	bcStatus := bcMgr.CheckStatus(true)
+	bcStatus := bcMgr.CheckStatus()
 	response.BcStatus = *bcStatus
 
 	// Return response
