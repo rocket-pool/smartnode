@@ -808,5 +808,5 @@ func (r *treeGeneratorImpl_v9_rolling) getCheaters() map[common.Address]bool {
 }
 
 func (r *treeGeneratorImpl_v9_rolling) saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	return saveJSONArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
+	return saveRewardsArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
 }

@@ -155,10 +155,12 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Get the block and timestamp of the consensus block that best matches the end time
-	snapshotBeaconBlock, elBlockNumber, err := t.getSnapshotConsensusBlock(endTime, state)
+	snapshotEnd, err := t.getSnapshotEnd(endTime, state)
 	if err != nil {
 		return err
 	}
+	snapshotBeaconBlock := snapshotEnd.ConsensusBlock
+	elBlockNumber := snapshotEnd.ExecutionBlock
 
 	// Get the number of the EL block matching the CL snapshot block
 	snapshotElBlockHeader, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
@@ -229,7 +231,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Generate the tree
-	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader)
+	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotEnd, elBlockIndex, startTime, endTime, snapshotElBlockHeader)
 
 	// Done
 	return nil
@@ -278,7 +280,7 @@ func (t *submitRewardsTree_Stateless) isExistingRewardsFileValid(rewardsTreePath
 }
 
 // Kick off the tree generation goroutine
-func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header) {
+func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotEnd *rprewards.SnapshotEnd, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header) {
 
 	go func() {
 		t.lock.Lock()
@@ -293,7 +295,7 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 		}
 
 		// Generate the tree
-		err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader)
+		err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotEnd, elBlockIndex, startTime, endTime, snapshotElBlockHeader)
 		if err != nil {
 			t.handleError(err)
 		}
@@ -306,7 +308,8 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header) error {
+func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotEnd *rprewards.SnapshotEnd, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header) error {
+	snapshotBeaconBlock := snapshotEnd.ConsensusBlock
 
 	// Log
 	if uint64(intervalsPassed) > 1 {
@@ -327,7 +330,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, nil)
+	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotEnd, snapshotElBlockHeader, uint64(intervalsPassed), state, nil)
 	if err != nil {
 		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
 	}
@@ -459,12 +462,12 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
-func (t *submitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Time, state *state.NetworkState) (uint64, uint64, error) {
+func (t *submitRewardsTree_Stateless) getSnapshotEnd(endTime time.Time, state *state.NetworkState) (*rprewards.SnapshotEnd, error) {
 
 	// Get the beacon head
 	beaconHead, err := t.bc.GetBeaconHead()
 	if err != nil {
-		return 0, 0, fmt.Errorf("Error getting Beacon head: %w", err)
+		return nil, fmt.Errorf("Error getting Beacon head: %w", err)
 	}
 
 	// Get the target block number
@@ -478,7 +481,11 @@ func (t *submitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 
 	// Check if the required epoch is finalized yet
 	if beaconHead.FinalizedEpoch < requiredEpoch {
-		return 0, 0, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
+		return nil, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
+	}
+
+	out := &rprewards.SnapshotEnd{
+		Slot: targetSlot,
 	}
 
 	// Get the first successful block
@@ -486,19 +493,23 @@ func (t *submitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 		// Try to get the current block
 		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
 		if err != nil {
-			return 0, 0, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
+			return nil, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
 		}
 
 		// If the block was missing, try the previous one
 		if !exists {
 			t.log.Printlnf("Slot %d was missing, trying the previous one...", targetSlot)
 			targetSlot--
-		} else {
-			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
-			return targetSlot, block.ExecutionBlockNumber, nil
+			continue
 		}
+
+		// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
+		out.ConsensusBlock = targetSlot
+		out.ExecutionBlock = block.ExecutionBlockNumber
+		break
 	}
 
+	return out, nil
 }
 
 // Check whether the rewards tree for the current interval been submitted by the node
