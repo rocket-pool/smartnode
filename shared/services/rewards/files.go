@@ -140,12 +140,34 @@ func (lf *LocalFile[T]) CreateCompressedFileAndCid() (string, cid.Cid, error) {
 	return filename, c, nil
 }
 
+// Saves all rewards artifacts, including ssz if the rewards file is at least v3.
+// If nodeTrusted is passed, zstd compressed copies will also be saved, with the cid of the
+// compressed minipool perf file added to the rewards file before the latter is compressed.
+//
+// If the rewards file is at least v3, the cid of the uncompressed ssz file is returned for consensus
+// Otherwise, the cid of the compressed json rewards file is returned for consensus.
+// Thus, this function is only suitable for v9+ and versions below should use saveJSONArtifacts instead
+func saveRewardsArtifacts(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	if rewardsFile.GetHeader().RewardsFileVersion < rewardsFileVersionThree {
+		return saveJSONArtifacts(smartnode, rewardsFile, nodeTrusted)
+	}
+
+	return saveArtifactsImpl(smartnode, rewardsFile, nodeTrusted, true)
+}
+
 // Saves JSON artifacts from tree generation
 // If nodeTrusted is passed, zstd compressed copies will also be saved, with the cid of the
 // compressed minipool perf file added to the rewards file before the latter is compressed.
 //
 // Returns the cid of the compressed rewards file, a map containing all the other cids, or an error.
 func saveJSONArtifacts(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveArtifactsImpl(smartnode, rewardsFile, nodeTrusted, false)
+}
+
+// Saves JSON artifacts and optionally compressed + ssz artifacts
+// If includeSSZ is true, the primary cid is the uncompressed reward ssz.
+// Otherwise, it is the compressed rewards json.
+func saveArtifactsImpl(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFile, nodeTrusted bool, includeSSZ bool) (cid.Cid, map[string]cid.Cid, error) {
 	currentIndex := rewardsFile.GetHeader().Index
 
 	var primaryCid *cid.Cid
@@ -163,6 +185,11 @@ func saveJSONArtifacts(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFi
 			rewardsFile,
 			smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON),
 		),
+		// i == 2 - ssz rewards file
+		//NewLocalFile[IRewardsFile](
+		//	rewardsFile.SSZFile(),
+		//	smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionSSZ),
+		//),
 	} {
 
 		data, err := f.Write()
@@ -170,11 +197,11 @@ func saveJSONArtifacts(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFi
 			return cid.Cid{}, nil, fmt.Errorf("error saving %s: %w", f.Path(), err)
 		}
 
-		c, err := singleFileDirIPFSCid(data, f.FileName())
+		uncompressedCid, err := singleFileDirIPFSCid(data, f.FileName())
 		if err != nil {
 			return cid.Cid{}, nil, fmt.Errorf("error calculating cid for saved file %s: %w", f.Path(), err)
 		}
-		out[f.FileName()] = c
+		out[f.FileName()] = uncompressedCid
 
 		if !nodeTrusted {
 			// For some reason we didn't simply omit this in the past, so for consistency, keep setting it.
@@ -184,20 +211,29 @@ func saveJSONArtifacts(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFi
 		}
 
 		// Save compressed versions
-		compressedFilePath, c, err := f.CreateCompressedFileAndCid()
+		compressedFilePath, compressedCid, err := f.CreateCompressedFileAndCid()
 		if err != nil {
 			return cid.Cid{}, nil, fmt.Errorf("error compressing file %s: %w", f.Path(), err)
 		}
-		out[filepath.Base(compressedFilePath)] = c
+		out[filepath.Base(compressedFilePath)] = compressedCid
 
 		// Note the performance cid in the rewards file
 		if i == 0 {
-			rewardsFile.SetMinipoolPerformanceFileCID(c.String())
+			rewardsFile.SetMinipoolPerformanceFileCID(compressedCid.String())
 		}
 
-		// Note the primary cid for JSON artifacts used for consensus
-		if i == 1 {
-			primaryCid = &c
+		// Note the primary cid for artifacts used for consensus
+		if !includeSSZ {
+			// JSON rewards file
+			if i == 1 {
+				primaryCid = &compressedCid
+			}
+		} else {
+			// SSZ rewards file
+			if i == 2 {
+				// Consensus is on the uncompressed cid when using ssz
+				primaryCid = &uncompressedCid
+			}
 		}
 
 	}

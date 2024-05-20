@@ -66,11 +66,20 @@ type TreeGenerator struct {
 	index                uint64
 	startTime            time.Time
 	endTime              time.Time
-	consensusBlock       uint64
+	snapshotEnd          *SnapshotEnd
 	elSnapshotHeader     *types.Header
 	intervalsPassed      uint64
 	generatorImpl        treeGeneratorImpl
 	approximatorImpl     treeGeneratorImpl
+}
+
+type SnapshotEnd struct {
+	// Slot is the last slot of the interval
+	Slot uint64
+	// ConsensusBlock is the last non-missed slot of the interval
+	ConsensusBlock uint64
+	// ExecutionBlock is the EL block number of ConsensusBlock
+	ExecutionBlock uint64
 }
 
 type treeGeneratorImpl interface {
@@ -81,7 +90,7 @@ type treeGeneratorImpl interface {
 	saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)
 }
 
-func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
+func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
 	t := &TreeGenerator{
 		logger:           logger,
 		logPrefix:        logPrefix,
@@ -91,7 +100,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 		index:            index,
 		startTime:        startTime,
 		endTime:          endTime,
-		consensusBlock:   consensusBlock,
+		snapshotEnd:      snapshotEnd,
 		elSnapshotHeader: elSnapshotHeader,
 		intervalsPassed:  intervalsPassed,
 	}
@@ -99,17 +108,17 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	// v9
 	var v9_generator treeGeneratorImpl
 	if rollingRecord == nil {
-		v9_generator = newTreeGeneratorImpl_v9(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
+		v9_generator = newTreeGeneratorImpl_v9(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
 	} else {
-		v9_generator = newTreeGeneratorImpl_v9_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+		v9_generator = newTreeGeneratorImpl_v9_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.snapshotEnd.ConsensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
 	}
 
 	// v8
 	var v8_generator treeGeneratorImpl
 	if rollingRecord == nil {
-		v8_generator = newTreeGeneratorImpl_v8(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
+		v8_generator = newTreeGeneratorImpl_v8(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.snapshotEnd.ConsensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
 	} else {
-		v8_generator = newTreeGeneratorImpl_v8_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+		v8_generator = newTreeGeneratorImpl_v8_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.snapshotEnd.ConsensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
 	}
 
 	// Create the interval wrappers

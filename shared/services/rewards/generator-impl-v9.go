@@ -29,6 +29,7 @@ type treeGeneratorImpl_v9 struct {
 	networkState           *state.NetworkState
 	rewardsFile            *RewardsFile_v3
 	elSnapshotHeader       *types.Header
+	snapshotEnd            *SnapshotEnd
 	log                    *log.ColorLogger
 	logPrefix              string
 	rp                     *rocketpool.RocketPool
@@ -53,17 +54,14 @@ type treeGeneratorImpl_v9 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v9(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v9 {
+func newTreeGeneratorImpl_v9(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v9 {
 	return &treeGeneratorImpl_v9{
 		rewardsFile: &RewardsFile_v3{
 			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion:  3,
-				RulesetVersion:      9,
-				Index:               index,
-				StartTime:           startTime.UTC(),
-				EndTime:             endTime.UTC(),
-				ConsensusEndBlock:   consensusBlock,
-				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
+				RewardsFileVersion: 3,
+				RulesetVersion:     9,
+				Index:              index,
+				// in v9 startTime is the time of the slot that starts the interval
 				IntervalsPassed:     intervalsPassed,
 				InvalidNetworkNodes: map[common.Address]uint64{},
 				TotalRewards: &TotalRewards{
@@ -79,16 +77,13 @@ func newTreeGeneratorImpl_v9(log *log.ColorLogger, logPrefix string, index uint6
 			NodeRewards: map[common.Address]*NodeRewardsInfo_v3{},
 			MinipoolPerformanceFile: MinipoolPerformanceFile_v3{
 				Index:               index,
-				StartTime:           startTime.UTC(),
-				EndTime:             endTime.UTC(),
-				ConsensusEndBlock:   consensusBlock,
-				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v3{},
 			},
 		},
 		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
 		validatorIndexMap:     map[string]*MinipoolInfo{},
 		elSnapshotHeader:      elSnapshotHeader,
+		snapshotEnd:           snapshotEnd,
 		log:                   log,
 		logPrefix:             logPrefix,
 		totalAttestationScore: big.NewInt(0),
@@ -533,7 +528,7 @@ func (r *treeGeneratorImpl_v9) calculateEthRewards(checkBeaconPerformance bool) 
 	if err != nil {
 		return err
 	}
-	startElBlockHeader, err := r.getStartBlocksForInterval(previousIntervalEvent)
+	startElBlockHeader, err := r.getBlocksAndTimesForInterval(previousIntervalEvent)
 	if err != nil {
 		return err
 	}
@@ -1117,7 +1112,7 @@ func (r *treeGeneratorImpl_v9) validateNetwork(network uint64) (bool, error) {
 }
 
 // Gets the start blocks for the given interval
-func (r *treeGeneratorImpl_v9) getStartBlocksForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
+func (r *treeGeneratorImpl_v9) getBlocksAndTimesForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
 	// Sanity check to confirm the BN can access the block from the previous interval
 	_, exists, err := r.bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
 	if err != nil {
@@ -1129,8 +1124,25 @@ func (r *treeGeneratorImpl_v9) getStartBlocksForInterval(previousIntervalEvent r
 
 	previousEpoch := previousIntervalEvent.ConsensusBlock.Uint64() / r.beaconConfig.SlotsPerEpoch
 	nextEpoch := previousEpoch + 1
+
+	consensusStartSlot := nextEpoch * r.beaconConfig.SlotsPerEpoch
+	startTime := r.beaconConfig.GetSlotTime(consensusStartSlot)
+	endTime := r.beaconConfig.GetSlotTime(r.snapshotEnd.Slot)
+
+	r.rewardsFile.StartTime = startTime
+	r.rewardsFile.MinipoolPerformanceFile.StartTime = startTime
+
+	r.rewardsFile.EndTime = endTime
+	r.rewardsFile.MinipoolPerformanceFile.EndTime = endTime
+
 	r.rewardsFile.ConsensusStartBlock = nextEpoch * r.beaconConfig.SlotsPerEpoch
 	r.rewardsFile.MinipoolPerformanceFile.ConsensusStartBlock = r.rewardsFile.ConsensusStartBlock
+
+	r.rewardsFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
+	r.rewardsFile.MinipoolPerformanceFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
+
+	r.rewardsFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
+	r.rewardsFile.MinipoolPerformanceFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
 
 	// Get the first block that isn't missing
 	var elBlockNumber uint64
@@ -1197,5 +1209,5 @@ func (r *treeGeneratorImpl_v9) getMinipoolBondAndNodeFee(details *rpstate.Native
 }
 
 func (r *treeGeneratorImpl_v9) saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	return saveJSONArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
+	return saveRewardsArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
 }

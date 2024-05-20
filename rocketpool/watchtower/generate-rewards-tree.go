@@ -234,9 +234,16 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 // Implementation for rewards tree generation using a viable EC
 func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool, index uint64, generationPrefix string, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
 
+	// Determine the end of the interval
+	snapshotEnd := &rprewards.SnapshotEnd{
+		ConsensusBlock: rewardsEvent.ConsensusBlock.Uint64(),
+		ExecutionBlock: rewardsEvent.ExecutionBlock.Uint64(),
+		Slot:           state.BeaconConfig.FirstSlotAtLeast(rewardsEvent.IntervalEndTime.Unix()),
+	}
+
 	// Generate the rewards file
 	start := time.Now()
-	treegen, err := rprewards.NewTreeGenerator(&t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state, nil)
+	treegen, err := rprewards.NewTreeGenerator(&t.log, generationPrefix, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, snapshotEnd, elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state, nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error creating Merkle tree generator: %w", generationPrefix, err))
 		return
