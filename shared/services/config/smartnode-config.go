@@ -177,12 +177,6 @@ type SmartnodeConfig struct {
 	// Addresses for RocketDAOProtocolVerifier that have been upgraded during development
 	previousRocketDAOProtocolVerifier map[config.Network][]common.Address `yaml:"-"`
 
-	// Addresses for RocketNetworkPrices that have been upgraded during development
-	previousRocketNetworkPricesAddresses map[config.Network][]common.Address `yaml:"-"`
-
-	// Addresses for RocketNetworkBalances that have been upgraded during development
-	previousRocketNetworkBalancesAddresses map[config.Network][]common.Address `yaml:"-"`
-
 	// The RocketOvmPriceMessenger Optimism address for each network
 	optimismPriceMessengerAddress map[config.Network]string `yaml:"-"`
 
@@ -580,26 +574,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Holesky: {},
 		},
 
-		previousRocketNetworkPricesAddresses: map[config.Network][]common.Address{
-			config.Network_Mainnet: {
-				common.HexToAddress("0x751826b107672360b764327631cC5764515fFC37"),
-			},
-			config.Network_Devnet: {},
-			config.Network_Holesky: {
-				common.HexToAddress("0x029d946f28f93399a5b0d09c879fc8c94e596aeb"),
-			},
-		},
-
-		previousRocketNetworkBalancesAddresses: map[config.Network][]common.Address{
-			config.Network_Mainnet: {
-				common.HexToAddress("0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4"),
-			},
-			config.Network_Devnet: {},
-			config.Network_Holesky: {
-				common.HexToAddress("0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8"),
-			},
-		},
-
 		optimismPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xdddcf2c25d50ec22e67218e873d46938650d03a7",
 			config.Network_Devnet:  "",
@@ -938,13 +912,6 @@ func (cfg *SmartnodeConfig) GetPreviousRocketDAOProtocolVerifierAddresses() []co
 	return cfg.previousRocketDAOProtocolVerifier[cfg.Network.Value.(config.Network)]
 }
 
-func (cfg *SmartnodeConfig) GetPreviousRocketNetworkPricesAddresses() []common.Address {
-	return cfg.previousRocketNetworkPricesAddresses[cfg.Network.Value.(config.Network)]
-}
-
-func (cfg *SmartnodeConfig) GetPreviousRocketNetworkBalancesAddresses() []common.Address {
-	return cfg.previousRocketNetworkBalancesAddresses[cfg.Network.Value.(config.Network)]
-}
 func (cfg *SmartnodeConfig) GetOptimismMessengerAddress() string {
 	return cfg.optimismPriceMessengerAddress[cfg.Network.Value.(config.Network)]
 }
