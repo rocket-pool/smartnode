@@ -42,7 +42,7 @@ func TestFilesFromTree(t *testing.T) {
 		t.Fatal("Write() returned something different than Serialize()")
 	}
 
-	minipoolPerformanceFile := localRewardsFile.Impl().GetMinipoolPerformanceFile()
+	minipoolPerformanceFile := &f.MinipoolPerformanceFile
 	localMinipoolPerformanceFile := NewLocalFile[IMinipoolPerformanceFile](
 		minipoolPerformanceFile,
 		path.Join(dir, "performance.json"),
@@ -101,7 +101,7 @@ func TestCompressionAndCids(t *testing.T) {
 		path.Join(dir, "rewards.json"),
 	)
 
-	minipoolPerformanceFile := localRewardsFile.Impl().GetMinipoolPerformanceFile()
+	minipoolPerformanceFile := &f.MinipoolPerformanceFile
 	localMinipoolPerformanceFile := NewLocalFile[IMinipoolPerformanceFile](
 		minipoolPerformanceFile,
 		path.Join(dir, "performance.json"),
@@ -181,12 +181,12 @@ func TestCompressionAndCids(t *testing.T) {
 		)
 	}
 
-	if localRewardsFile.Impl().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v2).RulesetVersion !=
+	if minipoolPerformanceFile.RulesetVersion !=
 		parsedPerformance.(*MinipoolPerformanceFile_v2).RulesetVersion {
 
 		t.Fatalf(
 			"expected parsed version %d to match serialized version %d\n",
-			localRewardsFile.Impl().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v2).RulesetVersion,
+			minipoolPerformanceFile.RulesetVersion,
 			parsedPerformance.(*MinipoolPerformanceFile_v2).RulesetVersion,
 		)
 	}

@@ -62,9 +62,6 @@ type IRewardsFile interface {
 	// Get info about a node's rewards
 	GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool)
 
-	// Gets the minipool performance file corresponding to this rewards file
-	GetMinipoolPerformanceFile() IMinipoolPerformanceFile
-
 	// Sets the CID of the minipool performance file corresponding to this rewards file
 	SetMinipoolPerformanceFileCID(cid string)
 

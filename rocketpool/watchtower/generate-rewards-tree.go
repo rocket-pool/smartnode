@@ -272,7 +272,7 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 
 	// Save the files
 	t.log.Printlnf("%s Saving JSON files...", generationPrefix)
-	_, _, err = treegen.SaveFiles(rewardsFile, false)
+	_, _, err = treegen.SaveFiles(treeResult, false)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s failed to save rewards artifacts: %w", generationPrefix, err))
 		return

@@ -156,11 +156,6 @@ func (f *RewardsFile_v2) GetNodeRewardsInfo(address common.Address) (INodeReward
 	return rewards, exists
 }
 
-// Gets the minipool performance file corresponding to this rewards file
-func (f *RewardsFile_v2) GetMinipoolPerformanceFile() IMinipoolPerformanceFile {
-	return &f.MinipoolPerformanceFile
-}
-
 // Sets the CID of the minipool performance file corresponding to this rewards file
 func (f *RewardsFile_v2) SetMinipoolPerformanceFileCID(cid string) {
 	f.MinipoolPerformanceFileCID = cid

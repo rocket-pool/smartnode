@@ -88,7 +88,7 @@ type treeGeneratorImpl interface {
 	approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error)
 	getRulesetVersion() uint64
 	// Returns the primary artifact cid for consensus, all cids of all files in a map, and any potential errors
-	saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)
+	saveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)
 }
 
 func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
@@ -186,8 +186,9 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 }
 
 type GenerateTreeResult struct {
-	RewardsFile         IRewardsFile
-	InvalidNetworkNodes map[common.Address]uint64
+	RewardsFile             IRewardsFile
+	MinipoolPerformanceFile IMinipoolPerformanceFile
+	InvalidNetworkNodes     map[common.Address]uint64
 }
 
 func (t *TreeGenerator) GenerateTree() (*GenerateTreeResult, error) {
@@ -224,6 +225,6 @@ func (t *TreeGenerator) ApproximateStakerShareOfSmoothingPoolWithRuleset(ruleset
 	return info.generator.approximateStakerShareOfSmoothingPool(t.rp, t.cfg, t.bc)
 }
 
-func (t *TreeGenerator) SaveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	return t.generatorImpl.saveFiles(rewardsFile, nodeTrusted)
+func (t *TreeGenerator) SaveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return t.generatorImpl.saveFiles(treeResult, nodeTrusted)
 }
