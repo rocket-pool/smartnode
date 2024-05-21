@@ -424,7 +424,6 @@ func (t *submitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint6
 	}
 
 	proofWrapper := localRewardsFile.Impl()
-	header := proofWrapper.GetHeader()
 
 	if isInOdao {
 		// Save the compressed file and get the CID for it
@@ -436,17 +435,17 @@ func (t *submitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint6
 
 		// Check if this file has already been submitted
 		submission := rewards.RewardSubmission{
-			RewardIndex:     big.NewInt(0).SetUint64(header.Index),
-			ExecutionBlock:  big.NewInt(0).SetUint64(header.ExecutionEndBlock),
-			ConsensusBlock:  big.NewInt(0).SetUint64(header.ConsensusEndBlock),
-			MerkleRoot:      common.HexToHash(header.MerkleRoot),
+			RewardIndex:     big.NewInt(0).SetUint64(proofWrapper.GetIndex()),
+			ExecutionBlock:  big.NewInt(0).SetUint64(proofWrapper.GetExecutionEndBlock()),
+			ConsensusBlock:  big.NewInt(0).SetUint64(proofWrapper.GetConsensusEndBlock()),
+			MerkleRoot:      common.HexToHash(proofWrapper.GetMerkleRoot()),
 			MerkleTreeCID:   cid.String(),
-			IntervalsPassed: big.NewInt(0).SetUint64(header.IntervalsPassed),
-			TreasuryRPL:     &header.TotalRewards.ProtocolDaoRpl.Int,
-			TrustedNodeRPL:  []*big.Int{&header.TotalRewards.TotalOracleDaoRpl.Int},
-			NodeRPL:         []*big.Int{&header.TotalRewards.TotalCollateralRpl.Int},
-			NodeETH:         []*big.Int{&header.TotalRewards.NodeOperatorSmoothingPoolEth.Int},
-			UserETH:         &header.TotalRewards.PoolStakerSmoothingPoolEth.Int,
+			IntervalsPassed: big.NewInt(0).SetUint64(proofWrapper.GetIntervalsPassed()),
+			TreasuryRPL:     proofWrapper.GetTotalProtocolDaoRpl(),
+			TrustedNodeRPL:  []*big.Int{proofWrapper.GetTotalOracleDaoRpl()},
+			NodeRPL:         []*big.Int{proofWrapper.GetTotalCollateralRpl()},
+			NodeETH:         []*big.Int{proofWrapper.GetTotalNodeOperatorSmoothingPoolEth()},
+			UserETH:         proofWrapper.GetTotalPoolStakerSmoothingPoolEth(),
 		}
 
 		hasSubmitted, err := rewards.GetTrustedNodeSubmittedSpecificRewards(t.rp, nodeAddress, submission, nil)
@@ -455,18 +454,28 @@ func (t *submitRewardsTree_Rolling) isExistingRewardsFileValid(rewardIndex uint6
 			return nil, false, true
 		}
 		if !hasSubmitted {
-			if header.IntervalsPassed != intervalsPassed {
-				t.log.Printlnf("%s Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...", t.logPrefix, header.Index, header.IntervalsPassed, intervalsPassed)
+			if proofWrapper.GetIntervalsPassed() != intervalsPassed {
+				t.log.Printlnf("%s Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...",
+					t.logPrefix,
+					proofWrapper.GetIndex(),
+					proofWrapper.GetIntervalsPassed(),
+					intervalsPassed,
+				)
 				return localRewardsFile, false, true
 			}
-			t.log.Printlnf("%s Existing file for interval %d has not been submitted yet.", t.logPrefix, header.Index)
+			t.log.Printlnf("%s Existing file for interval %d has not been submitted yet.", t.logPrefix, proofWrapper.GetIndex())
 			return localRewardsFile, false, false
 		}
 	}
 
 	// Check if the file's valid (same number of intervals passed as the current time)
-	if header.IntervalsPassed != intervalsPassed {
-		t.log.Printlnf("%s Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...", t.logPrefix, header.Index, header.IntervalsPassed, intervalsPassed)
+	if proofWrapper.GetIntervalsPassed() != intervalsPassed {
+		t.log.Printlnf("%s Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...",
+			t.logPrefix,
+			proofWrapper.GetIndex(),
+			proofWrapper.GetIntervalsPassed(),
+			intervalsPassed,
+		)
 		return localRewardsFile, false, true
 	}
 
@@ -526,7 +535,7 @@ func (t *submitRewardsTree_Rolling) runRewardsIntervalReport(
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, existingRewardsFile.Impl().GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, existingRewardsFile.Impl(), cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("error submitting rewards snapshot: %w", err)
 		}
@@ -591,7 +600,7 @@ func (t *submitRewardsTree_Rolling) generateTree(
 	if nodeTrusted {
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile, cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -606,9 +615,9 @@ func (t *submitRewardsTree_Rolling) generateTree(
 }
 
 // Submit rewards info to the contracts
-func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFileHeader *rprewards.RewardsFileHeader, cid string, intervalsPassed *big.Int) error {
+func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFile rprewards.IRewardsFile, cid string, intervalsPassed *big.Int) error {
 
-	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFileHeader.MerkleRoot))
+	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFile.GetMerkleRoot()))
 	if err != nil {
 		return fmt.Errorf("Error decoding merkle root: %w", err)
 	}
@@ -622,8 +631,8 @@ func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 	// Create the total rewards for each network
 	network := uint64(0)
 	for {
-		networkRewards, exists := rewardsFileHeader.NetworkRewards[network]
-		if !exists {
+		networkRewards := rewardsFile.GetNetworkRewards(network)
+		if networkRewards == nil {
 			break
 		}
 
@@ -648,11 +657,11 @@ func (t *submitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 		MerkleRoot:      treeRoot,
 		MerkleTreeCID:   cid,
 		IntervalsPassed: intervalsPassed,
-		TreasuryRPL:     &rewardsFileHeader.TotalRewards.ProtocolDaoRpl.Int,
+		TreasuryRPL:     rewardsFile.GetTotalProtocolDaoRpl(),
 		NodeRPL:         collateralRplRewards,
 		TrustedNodeRPL:  oDaoRplRewards,
 		NodeETH:         smoothingPoolEthRewards,
-		UserETH:         &rewardsFileHeader.TotalRewards.PoolStakerSmoothingPoolEth.Int,
+		UserETH:         rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
 	}
 
 	// Get the gas limit
