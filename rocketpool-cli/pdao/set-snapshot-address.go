@@ -5,7 +5,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func setSnapshotDelegate(c *cli.Context, snapshotAddress common.Address, signature string) error {
+func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) error {
 
 	// fmt.Printf("address: %s, signature: %s", snapshotAddress.String(), signature)
 
@@ -20,8 +20,8 @@ func setSnapshotDelegate(c *cli.Context, snapshotAddress common.Address, signatu
 
 	// Prompt for confirmation
 
-	// Network call for set-snapshot-delegate on RocketSignerRegistry
-	// rp.SetSnapshotDelegate call here
+	// Network call for set-snapshot-address on RocketSignerRegistry
+	// rp.SetSnapshotAddress call here
 
 	// Log & Retrn
 

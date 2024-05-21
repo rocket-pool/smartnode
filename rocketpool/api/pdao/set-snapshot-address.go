@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func canSetSnapshotDelegate(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOCanSetSnapshotDelegateResponse, error) {
+func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOCanSetSnapshotAddressResponse, error) {
 
 	// // Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -29,7 +29,7 @@ func canSetSnapshotDelegate(c *cli.Context, snapshotAddress common.Address, sign
 	}
 
 	// Response
-	response := api.PDAOCanSetSnapshotDelegateResponse{}
+	response := api.PDAOCanSetSnapshotAddressResponse{}
 
 	// TODO:
 	// check if the node can set a snapshot delegate
@@ -44,7 +44,7 @@ func canSetSnapshotDelegate(c *cli.Context, snapshotAddress common.Address, sign
 	return &response, nil
 }
 
-func setSnapshotDelegate(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOSetSnapshotDelegateResponse, error) {
+func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOSetSnapshotAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -63,7 +63,7 @@ func setSnapshotDelegate(c *cli.Context, snapshotAddress common.Address, signatu
 	}
 
 	//response
-	response := api.PDAOSetSnapshotDelegateResponse{}
+	response := api.PDAOSetSnapshotAddressResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -78,8 +78,8 @@ func setSnapshotDelegate(c *cli.Context, snapshotAddress common.Address, signatu
 	}
 
 	// Todo:
-	// Network call set-snapshot-delegate on RocketSignerRegistry
-	// network.SetSnapshotDelegate in the rocketpool-go lib
+	// Network call set-snapshot-address on RocketSignerRegistry
+	// network.SetSnapshotAddress in the rocketpool-go lib
 
 	// Update response with txhash
 

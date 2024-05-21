@@ -428,14 +428,14 @@ type PDAOStatusResponse struct {
 	SumVotingPower          *big.Int       `json:"sumVotingPower"`
 }
 
-type PDAOCanSetSnapshotDelegateResponse struct {
-	Status                 string             `json:"status"`
-	Error                  string             `json:"error"`
-	CanSetSnapshotDelegate bool               `json:"canSetSnapshotDelegate"`
-	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+type PDAOCanSetSnapshotAddressResponse struct {
+	Status                string             `json:"status"`
+	Error                 string             `json:"error"`
+	CanSetSnapshotAddress bool               `json:"canSetSnapshotAddress"`
+	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
 }
 
-type PDAOSetSnapshotDelegateResponse struct {
+type PDAOSetSnapshotAddressResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`

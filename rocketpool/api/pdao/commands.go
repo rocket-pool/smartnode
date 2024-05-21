@@ -1047,7 +1047,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "set-snapshot-delegate",
+				Name:      "set-snapshot-address",
 				Usage:     "Set the snapshot delegate address for the node",
 				UsageText: "rocketpool api pdao set-snapshot-address snapshot-address signature",
 				Action: func(c *cli.Context) error {
@@ -1066,7 +1066,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(setSnapshotDelegate(c, snapshotAddress, signature))
+					api.PrintResponse(setSnapshotAddress(c, snapshotAddress, signature))
 					return nil
 
 				},
