@@ -52,6 +52,7 @@ type treeGeneratorImpl_v8 struct {
 	totalAttestationScore  *big.Int
 	successfulAttestations uint64
 	genesisTime            time.Time
+	invalidNetworkNodes    map[common.Address]uint64
 }
 
 // Create a new tree generator
@@ -59,15 +60,14 @@ func newTreeGeneratorImpl_v8(log *log.ColorLogger, logPrefix string, index uint6
 	return &treeGeneratorImpl_v8{
 		rewardsFile: &RewardsFile_v3{
 			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion:  3,
-				RulesetVersion:      8,
-				Index:               index,
-				StartTime:           startTime.UTC(),
-				EndTime:             endTime.UTC(),
-				ConsensusEndBlock:   consensusBlock,
-				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				IntervalsPassed:     intervalsPassed,
-				InvalidNetworkNodes: map[common.Address]uint64{},
+				RewardsFileVersion: 3,
+				RulesetVersion:     8,
+				Index:              index,
+				StartTime:          startTime.UTC(),
+				EndTime:            endTime.UTC(),
+				ConsensusEndBlock:  consensusBlock,
+				ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
+				IntervalsPassed:    intervalsPassed,
 				TotalRewards: &TotalRewards{
 					ProtocolDaoRpl:               NewQuotedBigInt(0),
 					TotalCollateralRpl:           NewQuotedBigInt(0),
@@ -95,6 +95,7 @@ func newTreeGeneratorImpl_v8(log *log.ColorLogger, logPrefix string, index uint6
 		logPrefix:             logPrefix,
 		totalAttestationScore: big.NewInt(0),
 		networkState:          state,
+		invalidNetworkNodes:   map[common.Address]uint64{},
 	}
 }
 
@@ -364,7 +365,7 @@ func (r *treeGeneratorImpl_v8) calculateRplRewards() error {
 						return err
 					}
 					if !validNetwork {
-						r.rewardsFile.InvalidNetworkNodes[nodeDetails.NodeAddress] = network
+						r.invalidNetworkNodes[nodeDetails.NodeAddress] = network
 						network = 0
 					}
 
@@ -459,7 +460,7 @@ func (r *treeGeneratorImpl_v8) calculateRplRewards() error {
 				return err
 			}
 			if !validNetwork {
-				r.rewardsFile.InvalidNetworkNodes[address] = network
+				r.invalidNetworkNodes[address] = network
 				network = 0
 			}
 
@@ -614,7 +615,7 @@ func (r *treeGeneratorImpl_v8) calculateEthRewards(checkBeaconPerformance bool) 
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeInfo.Address] = network
+					r.invalidNetworkNodes[nodeInfo.Address] = network
 					network = 0
 				}
 

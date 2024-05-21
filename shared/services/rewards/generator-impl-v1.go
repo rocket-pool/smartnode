@@ -49,6 +49,7 @@ type treeGeneratorImpl_v1 struct {
 	epsilon              *big.Int
 	intervalSeconds      *big.Int
 	beaconConfig         beacon.Eth2Config
+	invalidNetworkNodes  map[common.Address]uint64
 }
 
 // Get the version of the ruleset used by this generator
@@ -61,15 +62,14 @@ func newTreeGeneratorImpl_v1(log *log.ColorLogger, logPrefix string, index uint6
 	return &treeGeneratorImpl_v1{
 		rewardsFile: &RewardsFile_v1{
 			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion:  1,
-				RulesetVersion:      1,
-				Index:               index,
-				StartTime:           startTime.UTC(),
-				EndTime:             endTime.UTC(),
-				ConsensusEndBlock:   consensusBlock,
-				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				IntervalsPassed:     intervalsPassed,
-				InvalidNetworkNodes: map[common.Address]uint64{},
+				RewardsFileVersion: 1,
+				RulesetVersion:     1,
+				Index:              index,
+				StartTime:          startTime.UTC(),
+				EndTime:            endTime.UTC(),
+				ConsensusEndBlock:  consensusBlock,
+				ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
+				IntervalsPassed:    intervalsPassed,
 				TotalRewards: &TotalRewards{
 					ProtocolDaoRpl:               NewQuotedBigInt(0),
 					TotalCollateralRpl:           NewQuotedBigInt(0),
@@ -90,9 +90,10 @@ func newTreeGeneratorImpl_v1(log *log.ColorLogger, logPrefix string, index uint6
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v1{},
 			},
 		},
-		elSnapshotHeader: elSnapshotHeader,
-		log:              log,
-		logPrefix:        logPrefix,
+		elSnapshotHeader:    elSnapshotHeader,
+		log:                 log,
+		logPrefix:           logPrefix,
+		invalidNetworkNodes: map[common.Address]uint64{},
 	}
 }
 
@@ -325,7 +326,7 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[address] = network
+					r.invalidNetworkNodes[address] = network
 					network = 0
 				}
 
@@ -423,7 +424,7 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 				return err
 			}
 			if !validNetwork {
-				r.rewardsFile.InvalidNetworkNodes[address] = network
+				r.invalidNetworkNodes[address] = network
 				network = 0
 			}
 
@@ -584,7 +585,7 @@ func (r *treeGeneratorImpl_v1) calculateEthRewards(checkBeaconPerformance bool) 
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeInfo.Address] = network
+					r.invalidNetworkNodes[nodeInfo.Address] = network
 					network = 0
 				}
 

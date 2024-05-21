@@ -58,6 +58,7 @@ type treeGeneratorImpl_v4 struct {
 	maxCollateralFraction  *big.Int
 	stakingMinipoolPubkeys []rptypes.ValidatorPubkey
 	nodeStakes             []*big.Int
+	invalidNetworkNodes    map[common.Address]uint64
 }
 
 // Create a new tree generator
@@ -65,15 +66,14 @@ func newTreeGeneratorImpl_v4(log *log.ColorLogger, logPrefix string, index uint6
 	return &treeGeneratorImpl_v4{
 		rewardsFile: &RewardsFile_v1{
 			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion:  1,
-				RulesetVersion:      4,
-				Index:               index,
-				StartTime:           startTime.UTC(),
-				EndTime:             endTime.UTC(),
-				ConsensusEndBlock:   consensusBlock,
-				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				IntervalsPassed:     intervalsPassed,
-				InvalidNetworkNodes: map[common.Address]uint64{},
+				RewardsFileVersion: 1,
+				RulesetVersion:     4,
+				Index:              index,
+				StartTime:          startTime.UTC(),
+				EndTime:            endTime.UTC(),
+				ConsensusEndBlock:  consensusBlock,
+				ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
+				IntervalsPassed:    intervalsPassed,
 				TotalRewards: &TotalRewards{
 					ProtocolDaoRpl:               NewQuotedBigInt(0),
 					TotalCollateralRpl:           NewQuotedBigInt(0),
@@ -94,11 +94,12 @@ func newTreeGeneratorImpl_v4(log *log.ColorLogger, logPrefix string, index uint6
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v1{},
 			},
 		},
-		stakingMinipoolMap: map[common.Address][]minipool.MinipoolDetails{},
-		validatorStatusMap: map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
-		elSnapshotHeader:   elSnapshotHeader,
-		log:                log,
-		logPrefix:          logPrefix,
+		stakingMinipoolMap:  map[common.Address][]minipool.MinipoolDetails{},
+		validatorStatusMap:  map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
+		elSnapshotHeader:    elSnapshotHeader,
+		log:                 log,
+		logPrefix:           logPrefix,
+		invalidNetworkNodes: map[common.Address]uint64{},
 	}
 }
 
@@ -383,7 +384,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[address] = network
+					r.invalidNetworkNodes[address] = network
 					network = 0
 				}
 
@@ -484,7 +485,7 @@ func (r *treeGeneratorImpl_v4) calculateRplRewards() error {
 				return err
 			}
 			if !validNetwork {
-				r.rewardsFile.InvalidNetworkNodes[address] = network
+				r.invalidNetworkNodes[address] = network
 				network = 0
 			}
 
@@ -643,7 +644,7 @@ func (r *treeGeneratorImpl_v4) calculateEthRewards(checkBeaconPerformance bool) 
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeInfo.Address] = network
+					r.invalidNetworkNodes[nodeInfo.Address] = network
 					network = 0
 				}
 
