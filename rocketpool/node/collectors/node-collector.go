@@ -321,8 +321,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		if !previousInterval.TreeFileExists {
 			return fmt.Errorf("Error retrieving previous interval's total node weight: rewards file %s doesn't exist for interval %d", previousInterval.TreeFilePath, previousRewardIndex)
 		}
-		// Convert to a float, accuracy loss is meaningless compared to the heuristic's natural inaccuracy.
-		previousIntervalTotalNodeWeight = &previousInterval.TotalNodeWeight.Int
+
+		if previousInterval.TotalNodeWeight != nil {
+			previousIntervalTotalNodeWeight.Set(previousInterval.TotalNodeWeight)
+		}
 
 		// Get the info for each claimed interval
 		for _, claimedInterval := range claimed {
@@ -533,6 +535,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 		nodeWeightSum := big.NewInt(0).Add(nodeWeight, previousIntervalTotalNodeWeight)
 
+		// Convert to a float, accuracy loss is meaningless compared to the heuristic's natural inaccuracy.
 		// nodeWeightRatio = current_node_weight / (current_node_weight + previous_interval_total_node_weight)
 		nodeWeightRatio, _ := big.NewFloat(0).Quo(
 			big.NewFloat(0).SetInt(nodeWeight),
