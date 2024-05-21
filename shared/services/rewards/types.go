@@ -133,8 +133,7 @@ type RewardsFileHeader struct {
 	NetworkRewards             map[uint64]*NetworkRewardsInfo `json:"networkRewards"`
 
 	// Non-serialized fields
-	MerkleTree          *merkletree.MerkleTree    `json:"-"`
-	InvalidNetworkNodes map[common.Address]uint64 `json:"-"`
+	MerkleTree *merkletree.MerkleTree `json:"-"`
 }
 
 // Information about an interval
