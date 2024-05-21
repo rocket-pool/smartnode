@@ -133,9 +133,69 @@ func (f *RewardsFile_v2) Deserialize(bytes []byte) error {
 	return json.Unmarshal(bytes, &f)
 }
 
-// Get the rewards file's header
-func (f *RewardsFile_v2) GetHeader() *RewardsFileHeader {
-	return f.RewardsFileHeader
+// Get the rewards file version
+func (f *RewardsFile_v2) GetRewardsFileVersion() rewardsFileVersion {
+	return rewardsFileVersionTwo
+}
+
+// Get the rewards file index
+func (f *RewardsFile_v2) GetIndex() uint64 {
+	return f.RewardsFileHeader.Index
+}
+
+// Get the TotalNodeWeight (only added in v3)
+func (f *RewardsFile_v2) GetTotalNodeWeight() *big.Int {
+	return nil
+}
+
+// Get the merkle root
+func (f *RewardsFile_v2) GetMerkleRoot() string {
+	return f.RewardsFileHeader.MerkleRoot
+}
+
+// Get network rewards for a specific network
+func (f *RewardsFile_v2) GetNetworkRewards(network uint64) *NetworkRewardsInfo {
+	return f.RewardsFileHeader.NetworkRewards[network]
+}
+
+// Get the number of intervals that have passed
+func (f *RewardsFile_v2) GetIntervalsPassed() uint64 {
+	return f.RewardsFileHeader.IntervalsPassed
+}
+
+// Get the total RPL sent to the pDAO
+func (f *RewardsFile_v2) GetTotalProtocolDaoRpl() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.ProtocolDaoRpl.Int
+}
+
+// Get the total RPL sent to the pDAO
+func (f *RewardsFile_v2) GetTotalOracleDaoRpl() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.TotalOracleDaoRpl.Int
+}
+
+// Get the total Eth sent to pool stakers from the SP
+func (f *RewardsFile_v2) GetTotalPoolStakerSmoothingPoolEth() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.PoolStakerSmoothingPoolEth.Int
+}
+
+// Get the total rpl sent to stakers
+func (f *RewardsFile_v2) GetTotalCollateralRpl() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.TotalCollateralRpl.Int
+}
+
+// Get the total smoothing pool eth sent to node operators
+func (f *RewardsFile_v2) GetTotalNodeOperatorSmoothingPoolEth() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.NodeOperatorSmoothingPoolEth.Int
+}
+
+// Get the the execution end block
+func (f *RewardsFile_v2) GetExecutionEndBlock() uint64 {
+	return f.RewardsFileHeader.ExecutionEndBlock
+}
+
+// Get the the consensus end block
+func (f *RewardsFile_v2) GetConsensusEndBlock() uint64 {
+	return f.RewardsFileHeader.ConsensusEndBlock
 }
 
 // Get all of the node addresses with rewards in this file

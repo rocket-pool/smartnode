@@ -260,12 +260,11 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 	t.log.Printlnf("%s Finished in %s", generationPrefix, time.Since(start).String())
 
 	// Validate the Merkle root
-	header := rewardsFile.GetHeader()
-	root := common.BytesToHash(header.MerkleTree.Root())
-	if root != rewardsEvent.MerkleRoot {
-		t.log.Printlnf("%s WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", generationPrefix, root.Hex(), rewardsEvent.MerkleRoot.Hex())
+	root := rewardsFile.GetMerkleRoot()
+	if root != rewardsEvent.MerkleRoot.Hex() {
+		t.log.Printlnf("%s WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", generationPrefix, root, rewardsEvent.MerkleRoot.Hex())
 	} else {
-		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, header.MerkleRoot)
+		t.log.Printlnf("%s Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", generationPrefix, root)
 	}
 
 	rewardsFile.SetMinipoolPerformanceFileCID("---")

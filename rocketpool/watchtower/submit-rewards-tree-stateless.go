@@ -221,7 +221,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -268,9 +268,12 @@ func (t *submitRewardsTree_Stateless) isExistingRewardsFileValid(rewardsTreePath
 
 	// Compare the number of intervals in it with the current number of intervals
 	proofWrapper := localRewardsFile.Impl()
-	header := proofWrapper.GetHeader()
-	if header.IntervalsPassed != intervalsPassed {
-		t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n", header.Index, header.IntervalsPassed, intervalsPassed)
+	if proofWrapper.GetIntervalsPassed() != intervalsPassed {
+		t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n",
+			proofWrapper.GetIndex(),
+			proofWrapper.GetIntervalsPassed(),
+			intervalsPassed,
+		)
 		return false
 	}
 
@@ -357,7 +360,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile, cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -372,9 +375,9 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 }
 
 // Submit rewards info to the contracts
-func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFileHeader *rprewards.RewardsFileHeader, cid string, intervalsPassed *big.Int) error {
+func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFile rprewards.IRewardsFile, cid string, intervalsPassed *big.Int) error {
 
-	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFileHeader.MerkleRoot))
+	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFile.GetMerkleRoot()))
 	if err != nil {
 		return fmt.Errorf("Error decoding merkle root: %w", err)
 	}
@@ -388,8 +391,8 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	// Create the total rewards for each network
 	network := uint64(0)
 	for {
-		networkRewards, exists := rewardsFileHeader.NetworkRewards[network]
-		if !exists {
+		networkRewards := rewardsFile.GetNetworkRewards(network)
+		if networkRewards == nil {
 			break
 		}
 
@@ -414,11 +417,11 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 		MerkleRoot:      treeRoot,
 		MerkleTreeCID:   cid,
 		IntervalsPassed: intervalsPassed,
-		TreasuryRPL:     &rewardsFileHeader.TotalRewards.ProtocolDaoRpl.Int,
+		TreasuryRPL:     rewardsFile.GetTotalProtocolDaoRpl(),
 		NodeRPL:         collateralRplRewards,
 		TrustedNodeRPL:  oDaoRplRewards,
 		NodeETH:         smoothingPoolEthRewards,
-		UserETH:         &rewardsFileHeader.TotalRewards.PoolStakerSmoothingPoolEth.Int,
+		UserETH:         rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
 	}
 
 	// Get the gas limit

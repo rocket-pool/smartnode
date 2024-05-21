@@ -66,10 +66,10 @@ func TestFilesFromTree(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if localRewardsFile.Impl().GetHeader().RulesetVersion != f.RewardsFileHeader.RulesetVersion {
+	if localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion != f.RewardsFileHeader.RulesetVersion {
 		t.Fatalf(
 			"expected parsed version %d to match serialized version %d\n",
-			localRewardsFile.Impl().GetHeader().RulesetVersion,
+			localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion,
 			f.RewardsFileHeader.RulesetVersion,
 		)
 	}
@@ -173,11 +173,11 @@ func TestCompressionAndCids(t *testing.T) {
 	}
 
 	// Make sure values were preserved in the round trip
-	if localRewardsFile.Impl().GetHeader().RulesetVersion != parsedRewards.GetHeader().RulesetVersion {
+	if localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion != parsedRewards.(*RewardsFile_v3).RulesetVersion {
 		t.Fatalf(
 			"expected parsed version %d to match serialized version %d\n",
-			localRewardsFile.Impl().GetHeader().RulesetVersion,
-			parsedRewards.GetHeader().RulesetVersion,
+			localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion,
+			parsedRewards.(*RewardsFile_v3).RulesetVersion,
 		)
 	}
 

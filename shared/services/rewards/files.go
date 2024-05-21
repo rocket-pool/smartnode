@@ -148,7 +148,7 @@ func (lf *LocalFile[T]) CreateCompressedFileAndCid() (string, cid.Cid, error) {
 // Otherwise, the cid of the compressed json rewards file is returned for consensus.
 // Thus, this function is only suitable for v9+ and versions below should use saveJSONArtifacts instead
 func saveRewardsArtifacts(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	if treeResult.RewardsFile.GetHeader().RewardsFileVersion < rewardsFileVersionThree {
+	if treeResult.RewardsFile.GetRewardsFileVersion() < rewardsFileVersionThree {
 		return saveJSONArtifacts(smartnode, treeResult, nodeTrusted)
 	}
 
@@ -169,7 +169,7 @@ func saveJSONArtifacts(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 // Otherwise, it is the compressed rewards json.
 func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool, includeSSZ bool) (cid.Cid, map[string]cid.Cid, error) {
 	rewardsFile := treeResult.RewardsFile
-	currentIndex := rewardsFile.GetHeader().Index
+	currentIndex := rewardsFile.GetIndex()
 
 	var primaryCid *cid.Cid
 	out := make(map[string]cid.Cid, 4)

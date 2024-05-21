@@ -119,13 +119,10 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 
 	proofWrapper := localRewardsFile.Impl()
 
-	totalNodeWeight := proofWrapper.GetHeader().TotalRewards.TotalNodeWeight
-	if totalNodeWeight != nil {
-		info.TotalNodeWeight = &totalNodeWeight.Int
-	}
+	info.TotalNodeWeight = proofWrapper.GetTotalNodeWeight()
 
 	// Make sure the Merkle root has the expected value
-	merkleRootFromFile := common.HexToHash(proofWrapper.GetHeader().MerkleRoot)
+	merkleRootFromFile := common.HexToHash(proofWrapper.GetMerkleRoot())
 	if merkleRootCanon != merkleRootFromFile {
 		info.MerkleRootValid = false
 		return
@@ -319,16 +316,13 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 			}
 
 			// Get the original merkle root
-			downloadedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
-
-			// Clear the merkle root so we have a safer comparison after calculating it again
-			deserializedRewardsFile.GetHeader().MerkleRoot = ""
+			downloadedRoot := deserializedRewardsFile.GetMerkleRoot()
 
 			// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
 			deserializedRewardsFile.generateMerkleTree()
 
 			// Get the resulting merkle root
-			calculatedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
+			calculatedRoot := deserializedRewardsFile.GetMerkleRoot()
 
 			// Compare the merkle roots to see if the original is correct
 			if !strings.EqualFold(downloadedRoot, calculatedRoot) {

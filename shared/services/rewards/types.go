@@ -52,8 +52,19 @@ type IRewardsFile interface {
 	// Deserialize a rewards file from bytes
 	Deserialize([]byte) error
 
-	// Get the rewards file's header
-	GetHeader() *RewardsFileHeader
+	GetRewardsFileVersion() rewardsFileVersion
+	GetIndex() uint64
+	GetTotalNodeWeight() *big.Int
+	GetMerkleRoot() string
+	GetNetworkRewards(network uint64) *NetworkRewardsInfo
+	GetIntervalsPassed() uint64
+	GetTotalProtocolDaoRpl() *big.Int
+	GetTotalOracleDaoRpl() *big.Int
+	GetTotalCollateralRpl() *big.Int
+	GetTotalNodeOperatorSmoothingPoolEth() *big.Int
+	GetTotalPoolStakerSmoothingPoolEth() *big.Int
+	GetExecutionEndBlock() uint64
+	GetConsensusEndBlock() uint64
 
 	// Get all of the node addresses with rewards in this file
 	// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
