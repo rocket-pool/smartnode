@@ -80,6 +80,38 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "set-snapshot-delegate",
+				Aliases:   []string{"ssd"},
+				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",
+				UsageText: "rocketpool pdao set-voting-delegate address",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm delegate setting",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					snapshotAddress, err := cliutils.ValidateAddress("snapshot-address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					signature, err := cliutils.ValidateSignature("signature", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return setSnapshotAddress(c, snapshotAddress, signature)
+
+				},
+			},
+
+			{
 				Name:      "set-voting-delegate",
 				Aliases:   []string{"svd"},
 				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",

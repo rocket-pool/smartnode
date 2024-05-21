@@ -427,3 +427,7 @@ type PDAOStatusResponse struct {
 	TotalDelegatedVp        *big.Int       `json:"totalDelegateVp"`
 	SumVotingPower          *big.Int       `json:"sumVotingPower"`
 }
+
+type PDAOSetSnapshotAddressResponse struct {
+	Placeholder *big.Int `json:"placeholder"`
+}

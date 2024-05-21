@@ -82,6 +82,19 @@ func ValidateAddress(name, value string) (common.Address, error) {
 	return common.HexToAddress(value), nil
 }
 
+// ValidateSignature validates a hexadecimal signature.
+func ValidateSignature(name, value string) (string, error) {
+	if len(value) != 130 || value[:2] != "0x" {
+		return "", fmt.Errorf("Invalid %s, '%s'", name, value)
+	}
+	signature := value[2:]
+	if !regexp.MustCompile("/^#?([a-f0-9]{6}|[a-f0-9]{3})$/").MatchString(signature) {
+		return "", fmt.Errorf("Invalid %s, '%s'", name, value)
+
+	}
+	return signature, nil
+}
+
 // Validate a collection of addresses
 func ValidateAddresses(name, value string) ([]common.Address, error) {
 	elements := strings.Split(value, ",")
