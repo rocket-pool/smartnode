@@ -248,18 +248,19 @@ func (t *generateRewardsTree) generateRewardsTreeImpl(rp *rocketpool.RocketPool,
 		t.handleError(fmt.Errorf("%s Error creating Merkle tree generator: %w", generationPrefix, err))
 		return
 	}
-	rewardsFile, err := treegen.GenerateTree()
+	treeResult, err := treegen.GenerateTree()
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error generating Merkle tree: %w", generationPrefix, err))
 		return
 	}
-	header := rewardsFile.GetHeader()
-	for address, network := range header.InvalidNetworkNodes {
+	rewardsFile := treeResult.RewardsFile
+	for address, network := range treeResult.InvalidNetworkNodes {
 		t.log.Printlnf("%s WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", generationPrefix, address.Hex(), network)
 	}
 	t.log.Printlnf("%s Finished in %s", generationPrefix, time.Since(start).String())
 
 	// Validate the Merkle root
+	header := rewardsFile.GetHeader()
 	root := common.BytesToHash(header.MerkleTree.Root())
 	if root != rewardsEvent.MerkleRoot {
 		t.log.Printlnf("%s WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", generationPrefix, root.Hex(), rewardsEvent.MerkleRoot.Hex())

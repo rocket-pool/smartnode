@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -83,7 +84,7 @@ type SnapshotEnd struct {
 }
 
 type treeGeneratorImpl interface {
-	generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (IRewardsFile, error)
+	generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*GenerateTreeResult, error)
 	approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error)
 	getRulesetVersion() uint64
 	// Returns the primary artifact cid for consensus, all cids of all files in a map, and any potential errors
@@ -184,7 +185,12 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	return t, nil
 }
 
-func (t *TreeGenerator) GenerateTree() (IRewardsFile, error) {
+type GenerateTreeResult struct {
+	RewardsFile         IRewardsFile
+	InvalidNetworkNodes map[common.Address]uint64
+}
+
+func (t *TreeGenerator) GenerateTree() (*GenerateTreeResult, error) {
 	return t.generatorImpl.generateTree(t.rp, t.cfg, t.bc)
 }
 
@@ -200,7 +206,7 @@ func (t *TreeGenerator) GetApproximatorRulesetVersion() uint64 {
 	return t.approximatorImpl.getRulesetVersion()
 }
 
-func (t *TreeGenerator) GenerateTreeWithRuleset(ruleset uint64) (IRewardsFile, error) {
+func (t *TreeGenerator) GenerateTreeWithRuleset(ruleset uint64) (*GenerateTreeResult, error) {
 	info, exists := t.rewardsIntervalInfos[ruleset]
 	if !exists {
 		return nil, fmt.Errorf("ruleset v%d does not exist", ruleset)

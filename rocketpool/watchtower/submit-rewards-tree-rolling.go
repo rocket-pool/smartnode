@@ -569,11 +569,12 @@ func (t *submitRewardsTree_Rolling) generateTree(
 	if err != nil {
 		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
 	}
-	rewardsFile, err := treegen.GenerateTree()
+	treeResult, err := treegen.GenerateTree()
 	if err != nil {
 		return fmt.Errorf("Error generating Merkle tree: %w", err)
 	}
-	for address, network := range rewardsFile.GetHeader().InvalidNetworkNodes {
+	rewardsFile := treeResult.RewardsFile
+	for address, network := range treeResult.InvalidNetworkNodes {
 		t.printMessage(fmt.Sprintf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network))
 	}
 
