@@ -97,7 +97,7 @@ func newTreeGeneratorImpl_v1(log *log.ColorLogger, logPrefix string, index uint6
 	}
 }
 
-func (r *treeGeneratorImpl_v1) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (IRewardsFile, error) {
+func (r *treeGeneratorImpl_v1) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -159,7 +159,10 @@ func (r *treeGeneratorImpl_v1) generateTree(rp *rocketpool.RocketPool, cfg *conf
 		})
 	}
 
-	return r.rewardsFile, nil
+	return &GenerateTreeResult{
+		RewardsFile:         r.rewardsFile,
+		InvalidNetworkNodes: r.invalidNetworkNodes,
+	}, nil
 
 }
 
