@@ -160,8 +160,9 @@ func (r *treeGeneratorImpl_v3) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	}
 
 	return &GenerateTreeResult{
-		RewardsFile:         r.rewardsFile,
-		InvalidNetworkNodes: r.invalidNetworkNodes,
+		RewardsFile:             r.rewardsFile,
+		InvalidNetworkNodes:     r.invalidNetworkNodes,
+		MinipoolPerformanceFile: &r.rewardsFile.MinipoolPerformanceFile,
 	}, nil
 
 }
@@ -1244,6 +1245,6 @@ func (r *treeGeneratorImpl_v3) getStartBlocksForInterval(previousIntervalEvent r
 	return startElHeader, nil
 }
 
-func (r *treeGeneratorImpl_v3) saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	return saveJSONArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
+func (r *treeGeneratorImpl_v3) saveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveJSONArtifacts(r.cfg.Smartnode, treeResult, nodeTrusted)
 }

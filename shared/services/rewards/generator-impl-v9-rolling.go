@@ -164,8 +164,9 @@ func (r *treeGeneratorImpl_v9_rolling) generateTree(rp *rocketpool.RocketPool, c
 	}
 
 	return &GenerateTreeResult{
-		RewardsFile:         r.rewardsFile,
-		InvalidNetworkNodes: r.invalidNetworkNodes,
+		RewardsFile:             r.rewardsFile,
+		InvalidNetworkNodes:     r.invalidNetworkNodes,
+		MinipoolPerformanceFile: &r.rewardsFile.MinipoolPerformanceFile,
 	}, nil
 
 }
@@ -811,6 +812,6 @@ func (r *treeGeneratorImpl_v9_rolling) getCheaters() map[common.Address]bool {
 	return cheatingNodes
 }
 
-func (r *treeGeneratorImpl_v9_rolling) saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	return saveRewardsArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
+func (r *treeGeneratorImpl_v9_rolling) saveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveRewardsArtifacts(r.cfg.Smartnode, treeResult, nodeTrusted)
 }

@@ -147,12 +147,12 @@ func (lf *LocalFile[T]) CreateCompressedFileAndCid() (string, cid.Cid, error) {
 // If the rewards file is at least v3, the cid of the uncompressed ssz file is returned for consensus
 // Otherwise, the cid of the compressed json rewards file is returned for consensus.
 // Thus, this function is only suitable for v9+ and versions below should use saveJSONArtifacts instead
-func saveRewardsArtifacts(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	if rewardsFile.GetHeader().RewardsFileVersion < rewardsFileVersionThree {
-		return saveJSONArtifacts(smartnode, rewardsFile, nodeTrusted)
+func saveRewardsArtifacts(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	if treeResult.RewardsFile.GetHeader().RewardsFileVersion < rewardsFileVersionThree {
+		return saveJSONArtifacts(smartnode, treeResult, nodeTrusted)
 	}
 
-	return saveArtifactsImpl(smartnode, rewardsFile, nodeTrusted, true)
+	return saveArtifactsImpl(smartnode, treeResult, nodeTrusted, true)
 }
 
 // Saves JSON artifacts from tree generation
@@ -160,14 +160,15 @@ func saveRewardsArtifacts(smartnode *config.SmartnodeConfig, rewardsFile IReward
 // compressed minipool perf file added to the rewards file before the latter is compressed.
 //
 // Returns the cid of the compressed rewards file, a map containing all the other cids, or an error.
-func saveJSONArtifacts(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	return saveArtifactsImpl(smartnode, rewardsFile, nodeTrusted, false)
+func saveJSONArtifacts(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveArtifactsImpl(smartnode, treeResult, nodeTrusted, false)
 }
 
 // Saves JSON artifacts and optionally compressed + ssz artifacts
 // If includeSSZ is true, the primary cid is the uncompressed reward ssz.
 // Otherwise, it is the compressed rewards json.
-func saveArtifactsImpl(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFile, nodeTrusted bool, includeSSZ bool) (cid.Cid, map[string]cid.Cid, error) {
+func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool, includeSSZ bool) (cid.Cid, map[string]cid.Cid, error) {
+	rewardsFile := treeResult.RewardsFile
 	currentIndex := rewardsFile.GetHeader().Index
 
 	var primaryCid *cid.Cid
@@ -177,7 +178,7 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, rewardsFile IRewardsFi
 		// Do not reorder!
 		// i == 0 - minipool performance file
 		NewLocalFile[IMinipoolPerformanceFile](
-			rewardsFile.GetMinipoolPerformanceFile(),
+			treeResult.MinipoolPerformanceFile,
 			smartnode.GetMinipoolPerformancePath(currentIndex, true),
 		),
 		// i == 1 - rewards file

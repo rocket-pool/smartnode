@@ -185,8 +185,9 @@ func (r *treeGeneratorImpl_v4) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	}
 
 	return &GenerateTreeResult{
-		RewardsFile:         r.rewardsFile,
-		InvalidNetworkNodes: r.invalidNetworkNodes,
+		RewardsFile:             r.rewardsFile,
+		InvalidNetworkNodes:     r.invalidNetworkNodes,
+		MinipoolPerformanceFile: &r.rewardsFile.MinipoolPerformanceFile,
 	}, nil
 
 }
@@ -1470,6 +1471,6 @@ func (r *treeGeneratorImpl_v4) getNodeEffectiveRPLStakes() ([]*big.Int, error) {
 
 }
 
-func (r *treeGeneratorImpl_v4) saveFiles(rewardsFile IRewardsFile, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	return saveJSONArtifacts(r.cfg.Smartnode, rewardsFile, nodeTrusted)
+func (r *treeGeneratorImpl_v4) saveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveJSONArtifacts(r.cfg.Smartnode, treeResult, nodeTrusted)
 }

@@ -580,7 +580,7 @@ func (t *submitRewardsTree_Rolling) generateTree(
 
 	// Save the files
 	t.printMessage("Generation complete! Saving files...")
-	cid, cids, err := treegen.SaveFiles(rewardsFile, nodeTrusted)
+	cid, cids, err := treegen.SaveFiles(treeResult, nodeTrusted)
 	if err != nil {
 		return fmt.Errorf("Error writing rewards artifacts to disk: %w", err)
 	}
