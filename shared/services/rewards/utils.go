@@ -119,7 +119,10 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 
 	proofWrapper := localRewardsFile.Impl()
 
-	info.TotalNodeWeight = proofWrapper.GetHeader().TotalRewards.TotalNodeWeight
+	totalNodeWeight := proofWrapper.GetHeader().TotalRewards.TotalNodeWeight
+	if totalNodeWeight != nil {
+		info.TotalNodeWeight = &totalNodeWeight.Int
+	}
 
 	// Make sure the Merkle root has the expected value
 	merkleRootFromFile := common.HexToHash(proofWrapper.GetHeader().MerkleRoot)
