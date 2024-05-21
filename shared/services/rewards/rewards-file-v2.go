@@ -13,7 +13,6 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
-// Holds information
 type MinipoolPerformanceFile_v2 struct {
 	RewardsFileVersion  rewardsFileVersion                                      `json:"rewardsFileVersion"`
 	RulesetVersion      uint64                                                  `json:"rulesetVersion"`

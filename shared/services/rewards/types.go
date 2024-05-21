@@ -279,7 +279,7 @@ func (versionHeader *VersionHeader) deserializeMinipoolPerformanceFile(bytes []b
 		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	case rewardsFileVersionThree:
-		file := &MinipoolPerformanceFile_v3{}
+		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	}
 
