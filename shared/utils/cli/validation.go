@@ -82,14 +82,14 @@ func ValidateAddress(name, value string) (common.Address, error) {
 	return common.HexToAddress(value), nil
 }
 
-// ValidateSignature validates a hexadecimal signature.
+// ValidateSignature validates an EIP-712 signature.
 func ValidateSignature(name, value string) (string, error) {
-	if len(value) != 130 || value[:2] != "0x" {
-		return "", fmt.Errorf("Invalid %s, '%s'", name, value)
+	if len(value) != 132 || value[:2] != "0x" {
+		return "", fmt.Errorf("Invalid %s, '%s'\n", name, value)
 	}
 	signature := value[2:]
-	if !regexp.MustCompile("/^#?([a-f0-9]{6}|[a-f0-9]{3})$/").MatchString(signature) {
-		return "", fmt.Errorf("Invalid %s, '%s'", name, value)
+	if !regexp.MustCompile("^[A-Fa-f0-9]+$").MatchString(signature) {
+		return "", fmt.Errorf("Invalid %s, '%s'\n", name, value)
 
 	}
 	return signature, nil

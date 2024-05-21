@@ -106,7 +106,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return setSnapshotAddress(c, snapshotAddress, signature)
+					return setSnapshotDelegate(c, snapshotAddress, signature)
 
 				},
 			},
