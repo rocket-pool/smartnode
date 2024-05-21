@@ -78,14 +78,14 @@ func newTreeGeneratorImpl_v8(log *log.ColorLogger, logPrefix string, index uint6
 				},
 				NetworkRewards: map[uint64]*NetworkRewardsInfo{},
 			},
-			NodeRewards: map[common.Address]*NodeRewardsInfo_v3{},
-			MinipoolPerformanceFile: MinipoolPerformanceFile_v3{
+			NodeRewards: map[common.Address]*NodeRewardsInfo_v2{},
+			MinipoolPerformanceFile: MinipoolPerformanceFile_v2{
 				Index:               index,
 				StartTime:           startTime.UTC(),
 				EndTime:             endTime.UTC(),
 				ConsensusEndBlock:   consensusBlock,
 				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v3{},
+				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
 			},
 		},
 		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
@@ -368,7 +368,7 @@ func (r *treeGeneratorImpl_v8) calculateRplRewards() error {
 						network = 0
 					}
 
-					rewardsForNode = &NodeRewardsInfo_v3{
+					rewardsForNode = &NodeRewardsInfo_v2{
 						RewardNetwork:    network,
 						CollateralRpl:    NewQuotedBigInt(0),
 						OracleDaoRpl:     NewQuotedBigInt(0),
@@ -463,7 +463,7 @@ func (r *treeGeneratorImpl_v8) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForNode = &NodeRewardsInfo_v3{
+			rewardsForNode = &NodeRewardsInfo_v2{
 				RewardNetwork:    network,
 				CollateralRpl:    NewQuotedBigInt(0),
 				OracleDaoRpl:     NewQuotedBigInt(0),
@@ -618,7 +618,7 @@ func (r *treeGeneratorImpl_v8) calculateEthRewards(checkBeaconPerformance bool) 
 					network = 0
 				}
 
-				rewardsForNode = &NodeRewardsInfo_v3{
+				rewardsForNode = &NodeRewardsInfo_v2{
 					RewardNetwork:    network,
 					CollateralRpl:    NewQuotedBigInt(0),
 					OracleDaoRpl:     NewQuotedBigInt(0),
@@ -632,7 +632,7 @@ func (r *treeGeneratorImpl_v8) calculateEthRewards(checkBeaconPerformance bool) 
 			for _, minipoolInfo := range nodeInfo.Minipools {
 				successfulAttestations := uint64(len(minipoolInfo.CompletedAttestations))
 				missingAttestations := uint64(len(minipoolInfo.MissingAttestationSlots))
-				performance := &SmoothingPoolMinipoolPerformance_v3{
+				performance := &SmoothingPoolMinipoolPerformance_v2{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					SuccessfulAttestations:  successfulAttestations,
 					MissedAttestations:      missingAttestations,

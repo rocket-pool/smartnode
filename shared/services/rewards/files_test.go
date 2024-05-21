@@ -19,7 +19,7 @@ func TestFilesFromTree(t *testing.T) {
 			RewardsFileVersion: 3,
 			RulesetVersion:     8,
 		},
-		MinipoolPerformanceFile: MinipoolPerformanceFile_v3{
+		MinipoolPerformanceFile: MinipoolPerformanceFile_v2{
 			RewardsFileVersion: 3,
 			RulesetVersion:     8,
 		},
@@ -90,7 +90,7 @@ func TestCompressionAndCids(t *testing.T) {
 			RewardsFileVersion: 3,
 			RulesetVersion:     8,
 		},
-		MinipoolPerformanceFile: MinipoolPerformanceFile_v3{
+		MinipoolPerformanceFile: MinipoolPerformanceFile_v2{
 			RewardsFileVersion: 3,
 			RulesetVersion:     9,
 		},
@@ -181,13 +181,13 @@ func TestCompressionAndCids(t *testing.T) {
 		)
 	}
 
-	if localRewardsFile.Impl().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v3).RulesetVersion !=
-		parsedPerformance.(*MinipoolPerformanceFile_v3).RulesetVersion {
+	if localRewardsFile.Impl().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v2).RulesetVersion !=
+		parsedPerformance.(*MinipoolPerformanceFile_v2).RulesetVersion {
 
 		t.Fatalf(
 			"expected parsed version %d to match serialized version %d\n",
-			localRewardsFile.Impl().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v3).RulesetVersion,
-			parsedPerformance.(*MinipoolPerformanceFile_v3).RulesetVersion,
+			localRewardsFile.Impl().GetMinipoolPerformanceFile().(*MinipoolPerformanceFile_v2).RulesetVersion,
+			parsedPerformance.(*MinipoolPerformanceFile_v2).RulesetVersion,
 		)
 	}
 }

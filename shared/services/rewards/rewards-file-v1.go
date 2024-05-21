@@ -14,7 +14,6 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
-// Holds information
 type MinipoolPerformanceFile_v1 struct {
 	Index               uint64                                                  `json:"index"`
 	Network             string                                                  `json:"network"`
