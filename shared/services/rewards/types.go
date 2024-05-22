@@ -52,6 +52,7 @@ type IRewardsFile interface {
 	// Deserialize a rewards file from bytes
 	Deserialize([]byte) error
 
+	// Getters for general interval info
 	GetRewardsFileVersion() rewardsFileVersion
 	GetIndex() uint64
 	GetTotalNodeWeight() *big.Int
@@ -70,8 +71,12 @@ type IRewardsFile interface {
 	// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
 	GetNodeAddresses() []common.Address
 
-	// Get info about a node's rewards
-	GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool)
+	// Getters for into about specific node's rewards
+	HasRewardsFor(common.Address) bool
+	GetNodeCollateralRpl(common.Address) *big.Int
+	GetNodeOracleDaoRpl(common.Address) *big.Int
+	GetNodeSmoothingPoolEth(common.Address) *big.Int
+	GetMerkleProof(common.Address) []common.Hash
 
 	// Sets the CID of the minipool performance file corresponding to this rewards file
 	SetMinipoolPerformanceFileCID(cid string)
@@ -105,15 +110,6 @@ type ISmoothingPoolMinipoolPerformance interface {
 	GetMissedAttestationCount() uint64
 	GetMissingAttestationSlots() []uint64
 	GetEthEarned() *big.Int
-}
-
-// Interface for version-agnostic node operator rewards
-type INodeRewardsInfo interface {
-	GetRewardNetwork() uint64
-	GetCollateralRpl() *QuotedBigInt
-	GetOracleDaoRpl() *QuotedBigInt
-	GetSmoothingPoolEth() *QuotedBigInt
-	GetMerkleProof() ([]common.Hash, error)
 }
 
 // Small struct to test version information for rewards files during deserialization
