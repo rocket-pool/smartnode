@@ -236,6 +236,39 @@ func (f *RewardsFile_v2) GetNodeSmoothingPoolEth(addr common.Address) *big.Int {
 	return &nr.SmoothingPoolEth.Int
 }
 
+// Getters for network info
+func (f *RewardsFile_v2) HasRewardsForNetwork(network uint64) bool {
+	_, ok := f.NetworkRewards[network]
+	return ok
+}
+
+func (f *RewardsFile_v2) GetNetworkCollateralRpl(network uint64) *big.Int {
+	nr, ok := f.NetworkRewards[network]
+	if !ok {
+		return big.NewInt(0)
+	}
+
+	return &nr.CollateralRpl.Int
+}
+
+func (f *RewardsFile_v2) GetNetworkOracleDaoRpl(network uint64) *big.Int {
+	nr, ok := f.NetworkRewards[network]
+	if !ok {
+		return big.NewInt(0)
+	}
+
+	return &nr.OracleDaoRpl.Int
+}
+
+func (f *RewardsFile_v2) GetNetworkSmoothingPoolEth(network uint64) *big.Int {
+	nr, ok := f.NetworkRewards[network]
+	if !ok {
+		return big.NewInt(0)
+	}
+
+	return &nr.SmoothingPoolEth.Int
+}
+
 // Sets the CID of the minipool performance file corresponding to this rewards file
 func (f *RewardsFile_v2) SetMinipoolPerformanceFileCID(cid string) {
 	f.MinipoolPerformanceFileCID = cid
