@@ -687,6 +687,38 @@ func (c *Client) InitializeVoting(delegateAddress common.Address) (api.PDAOIniti
 	return response, nil
 }
 
+// CanSetSnapshotAddress fetches whether the node's is initialized for on-chain voting
+func (c *Client) CanSetSnapshotAddress(snapshotAddress common.Address, signature string) (api.PDAOCanSetSnapshotAddressResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-set-snapshot-address %s, signature: %s", snapshotAddress.Hex(), signature))
+	if err != nil {
+		return api.PDAOCanSetSnapshotAddressResponse{}, fmt.Errorf("could not call can-set-snapshot-address: %w", err)
+	}
+	var response api.PDAOCanSetSnapshotAddressResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOCanSetSnapshotAddressResponse{}, fmt.Errorf("could not decode can-set-snapshot-address response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOCanSetSnapshotAddressResponse{}, fmt.Errorf("error after requesting can-set-snapshot-address: %s", response.Error)
+	}
+	return response, nil
+}
+
+// SetSnapshotAddress sets the node's snapshot address
+func (c *Client) SetSnapshotAddress(snapshotAddress common.Address, signature string) (api.PDAOSetSnapshotAddressResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao set-snapshot-address %s, signature: %s", snapshotAddress.Hex(), signature))
+	if err != nil {
+		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("could not call set-snapshot-address: %w", err)
+	}
+	var response api.PDAOSetSnapshotAddressResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("could not decode set-snapshot-address response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("error after requesting set-snapshot-address: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Get PDAO Status
 func (c *Client) PDAOStatus() (api.PDAOStatusResponse, error) {
 	responseBytes, err := c.callAPI("pdao status")
