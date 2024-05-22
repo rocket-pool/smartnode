@@ -1,6 +1,8 @@
 package big
 
 import (
+	"math/big"
+
 	ssz "github.com/ferranbt/fastssz"
 	"github.com/holiman/uint256"
 )
@@ -60,4 +62,8 @@ func (u *Uint256) UnmarshalJSON(data []byte) error {
 
 func (u Uint256) MarshalJSON() ([]byte, error) {
 	return u.repr.MarshalJSON()
+}
+
+func (u Uint256) ToBig() *big.Int {
+	return u.repr.ToBig()
 }

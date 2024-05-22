@@ -11,20 +11,21 @@ import (
 	"github.com/wealdtech/go-merkletree"
 )
 
-type rewardsFileVersion uint64
-
 const (
-	rewardsFileVersionUnknown rewardsFileVersion = iota
+	rewardsFileVersionUnknown uint64 = iota
 	rewardsFileVersionOne
 	rewardsFileVersionTwo
 	rewardsFileVersionThree
 	rewardsFileVersionMax = iota - 1
+
+	minRewardsFileVersionSSZ = rewardsFileVersionThree
 )
 
 // Interface for version-agnostic minipool performance
 type IMinipoolPerformanceFile interface {
 	// Serialize a minipool performance file into bytes
 	Serialize() ([]byte, error)
+	SerializeSSZ() ([]byte, error)
 
 	// Serialize a minipool performance file into bytes designed for human readability
 	SerializeHuman() ([]byte, error)
@@ -44,12 +45,13 @@ type IMinipoolPerformanceFile interface {
 type IRewardsFile interface {
 	// Serialize a rewards file into bytes
 	Serialize() ([]byte, error)
+	SerializeSSZ() ([]byte, error)
 
 	// Deserialize a rewards file from bytes
 	Deserialize([]byte) error
 
 	// Getters for general interval info
-	GetRewardsFileVersion() rewardsFileVersion
+	GetRewardsFileVersion() uint64
 	GetIndex() uint64
 	GetTotalNodeWeight() *big.Int
 	GetMerkleRoot() string
@@ -71,7 +73,7 @@ type IRewardsFile interface {
 	GetNodeCollateralRpl(common.Address) *big.Int
 	GetNodeOracleDaoRpl(common.Address) *big.Int
 	GetNodeSmoothingPoolEth(common.Address) *big.Int
-	GetMerkleProof(common.Address) []common.Hash
+	GetMerkleProof(common.Address) ([]common.Hash, error)
 
 	// Getters for network info
 	HasRewardsForNetwork(network uint64) bool
@@ -83,7 +85,7 @@ type IRewardsFile interface {
 	SetMinipoolPerformanceFileCID(cid string)
 
 	// Generate the Merkle Tree and its root from the rewards file's proofs
-	generateMerkleTree() error
+	GenerateMerkleTree() error
 }
 
 // Rewards per network
@@ -115,13 +117,13 @@ type ISmoothingPoolMinipoolPerformance interface {
 
 // Small struct to test version information for rewards files during deserialization
 type VersionHeader struct {
-	RewardsFileVersion rewardsFileVersion `json:"rewardsFileVersion,omitempty"`
+	RewardsFileVersion uint64 `json:"rewardsFileVersion,omitempty"`
 }
 
 // General version-agnostic information about a rewards file
 type RewardsFileHeader struct {
 	// Serialized fields
-	RewardsFileVersion         rewardsFileVersion             `json:"rewardsFileVersion"`
+	RewardsFileVersion         uint64                         `json:"rewardsFileVersion"`
 	RulesetVersion             uint64                         `json:"rulesetVersion,omitempty"`
 	Index                      uint64                         `json:"index"`
 	Network                    string                         `json:"network"`

@@ -138,11 +138,13 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.ODaoRplAmount = &QuotedBigInt{*proofWrapper.GetNodeOracleDaoRpl(nodeAddress)}
 	info.SmoothingPoolEthAmount = &QuotedBigInt{*proofWrapper.GetNodeSmoothingPoolEth(nodeAddress)}
 
-	var proof []common.Hash
-	proof = proofWrapper.GetMerkleProof(nodeAddress)
+	proof, err := proofWrapper.GetMerkleProof(nodeAddress)
 	if proof == nil {
 		err = fmt.Errorf("error deserializing merkle proof for %s, node %s: no proof for this node found", info.TreeFilePath, nodeAddress.Hex())
 		return
+	}
+	if err != nil {
+		err = fmt.Errorf("error deserializing merkle proof for %s, node %s: %w", info.TreeFilePath, nodeAddress.Hex(), err)
 	}
 	info.MerkleProof = proof
 
@@ -319,7 +321,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 			downloadedRoot := deserializedRewardsFile.GetMerkleRoot()
 
 			// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
-			deserializedRewardsFile.generateMerkleTree()
+			deserializedRewardsFile.GenerateMerkleTree()
 
 			// Get the resulting merkle root
 			calculatedRoot := deserializedRewardsFile.GetMerkleRoot()

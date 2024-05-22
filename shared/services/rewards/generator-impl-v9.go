@@ -19,10 +19,14 @@ import (
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"golang.org/x/sync/errgroup"
 )
+
+// Type assertion to ensure SSZFile_v1 is IRewardsFile
+var _ IRewardsFile = (*ssz_types.SSZFile_v1)(nil)
 
 // Implementation for tree generator ruleset v9
 type treeGeneratorImpl_v9 struct {
@@ -152,7 +156,7 @@ func (r *treeGeneratorImpl_v9) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.updateNetworksAndTotals()
 
 	// Generate the Merkle Tree
-	err = r.rewardsFile.generateMerkleTree()
+	err = r.rewardsFile.GenerateMerkleTree()
 	if err != nil {
 		return nil, fmt.Errorf("error generating Merkle tree: %w", err)
 	}

@@ -14,7 +14,7 @@ import (
 )
 
 type MinipoolPerformanceFile_v2 struct {
-	RewardsFileVersion  rewardsFileVersion                                      `json:"rewardsFileVersion"`
+	RewardsFileVersion  uint64                                                  `json:"rewardsFileVersion"`
 	RulesetVersion      uint64                                                  `json:"rulesetVersion"`
 	Index               uint64                                                  `json:"index"`
 	Network             string                                                  `json:"network"`
@@ -30,6 +30,10 @@ type MinipoolPerformanceFile_v2 struct {
 // Serialize a minipool performance file into bytes
 func (f *MinipoolPerformanceFile_v2) Serialize() ([]byte, error) {
 	return json.Marshal(f)
+}
+
+func (f *MinipoolPerformanceFile_v2) SerializeSSZ() ([]byte, error) {
+	return nil, fmt.Errorf("ssz format not implemented for minipool performance files")
 }
 
 // Serialize a minipool performance file into bytes designed for human readability
@@ -96,16 +100,16 @@ type NodeRewardsInfo_v2 struct {
 	MerkleProof      []string      `json:"merkleProof"`
 }
 
-func (f *RewardsFile_v2) GetMerkleProof(addr common.Address) []common.Hash {
+func (f *RewardsFile_v2) GetMerkleProof(addr common.Address) ([]common.Hash, error) {
 	nr, ok := f.getNodeRewardsInfo(addr)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	proof := make([]common.Hash, 0, len(nr.MerkleProof))
 	for _, proofLevel := range nr.MerkleProof {
 		proof = append(proof, common.HexToHash(proofLevel))
 	}
-	return proof
+	return proof, nil
 }
 
 // JSON struct for a complete rewards file
@@ -120,13 +124,17 @@ func (f *RewardsFile_v2) Serialize() ([]byte, error) {
 	return json.Marshal(f)
 }
 
+func (f *RewardsFile_v2) SerializeSSZ() ([]byte, error) {
+	return nil, fmt.Errorf("ssz format not implemented for rewards file v2")
+}
+
 // Deserialize a rewards file from bytes
 func (f *RewardsFile_v2) Deserialize(bytes []byte) error {
 	return json.Unmarshal(bytes, &f)
 }
 
 // Get the rewards file version
-func (f *RewardsFile_v2) GetRewardsFileVersion() rewardsFileVersion {
+func (f *RewardsFile_v2) GetRewardsFileVersion() uint64 {
 	return rewardsFileVersionTwo
 }
 
@@ -275,7 +283,7 @@ func (f *RewardsFile_v2) SetMinipoolPerformanceFileCID(cid string) {
 }
 
 // Generates a merkle tree from the provided rewards map
-func (f *RewardsFile_v2) generateMerkleTree() error {
+func (f *RewardsFile_v2) GenerateMerkleTree() error {
 	// Generate the leaf data for each node
 	totalData := make([][]byte, 0, len(f.NodeRewards))
 	for address, rewardsForNode := range f.NodeRewards {
