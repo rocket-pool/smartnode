@@ -389,18 +389,11 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	smoothingPoolEthRewards := []*big.Int{}
 
 	// Create the total rewards for each network
-	network := uint64(0)
-	for {
-		networkRewards := rewardsFile.GetNetworkRewards(network)
-		if networkRewards == nil {
-			break
-		}
+	for network := uint64(0); rewardsFile.HasRewardsForNetwork(network); network++ {
 
-		collateralRplRewards = append(collateralRplRewards, &networkRewards.CollateralRpl.Int)
-		oDaoRplRewards = append(oDaoRplRewards, &networkRewards.OracleDaoRpl.Int)
-		smoothingPoolEthRewards = append(smoothingPoolEthRewards, &networkRewards.SmoothingPoolEth.Int)
-
-		network++
+		collateralRplRewards = append(collateralRplRewards, rewardsFile.GetNetworkCollateralRpl(network))
+		oDaoRplRewards = append(oDaoRplRewards, rewardsFile.GetNetworkOracleDaoRpl(network))
+		smoothingPoolEthRewards = append(smoothingPoolEthRewards, rewardsFile.GetNetworkSmoothingPoolEth(network))
 	}
 
 	// Get transactor
