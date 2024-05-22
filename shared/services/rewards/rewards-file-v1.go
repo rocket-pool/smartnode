@@ -31,6 +31,10 @@ func (f *MinipoolPerformanceFile_v1) Serialize() ([]byte, error) {
 	return json.Marshal(f)
 }
 
+func (f *MinipoolPerformanceFile_v1) SerializeSSZ() ([]byte, error) {
+	return nil, fmt.Errorf("ssz format not implemented for minipool performance files")
+}
+
 // Serialize a minipool performance file into bytes designed for human readability
 func (f *MinipoolPerformanceFile_v1) SerializeHuman() ([]byte, error) {
 	return json.MarshalIndent(f, "", "\t")
@@ -99,16 +103,16 @@ type NodeRewardsInfo_v1 struct {
 	MerkleProof                  []string      `json:"merkleProof"`
 }
 
-func (f *RewardsFile_v1) GetMerkleProof(addr common.Address) []common.Hash {
+func (f *RewardsFile_v1) GetMerkleProof(addr common.Address) ([]common.Hash, error) {
 	nr, ok := f.getNodeRewardsInfo(addr)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	proof := make([]common.Hash, 0, len(nr.MerkleProof))
 	for _, proofLevel := range nr.MerkleProof {
 		proof = append(proof, common.HexToHash(proofLevel))
 	}
-	return proof
+	return proof, nil
 }
 
 // JSON struct for a complete rewards file
@@ -123,13 +127,17 @@ func (f *RewardsFile_v1) Serialize() ([]byte, error) {
 	return json.Marshal(f)
 }
 
+func (f *RewardsFile_v1) SerializeSSZ() ([]byte, error) {
+	return nil, fmt.Errorf("ssz format not implemented for rewards file v1")
+}
+
 // Deserialize a rewards file from bytes
 func (f *RewardsFile_v1) Deserialize(bytes []byte) error {
 	return json.Unmarshal(bytes, &f)
 }
 
 // Get the rewards file version
-func (f *RewardsFile_v1) GetRewardsFileVersion() rewardsFileVersion {
+func (f *RewardsFile_v1) GetRewardsFileVersion() uint64 {
 	return rewardsFileVersionOne
 }
 
@@ -278,7 +286,7 @@ func (f *RewardsFile_v1) SetMinipoolPerformanceFileCID(cid string) {
 }
 
 // Generates a merkle tree from the provided rewards map
-func (f *RewardsFile_v1) generateMerkleTree() error {
+func (f *RewardsFile_v1) GenerateMerkleTree() error {
 	// Generate the leaf data for each node
 	totalData := make([][]byte, 0, len(f.NodeRewards))
 	for address, rewardsForNode := range f.NodeRewards {

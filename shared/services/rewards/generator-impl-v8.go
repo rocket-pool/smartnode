@@ -159,7 +159,7 @@ func (r *treeGeneratorImpl_v8) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.updateNetworksAndTotals()
 
 	// Generate the Merkle Tree
-	err = r.rewardsFile.generateMerkleTree()
+	err = r.rewardsFile.GenerateMerkleTree()
 	if err != nil {
 		return nil, fmt.Errorf("error generating Merkle tree: %w", err)
 	}

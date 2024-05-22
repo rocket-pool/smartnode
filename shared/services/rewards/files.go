@@ -46,6 +46,7 @@ func ReadLocalMinipoolPerformanceFile(path string) (*LocalMinipoolPerformanceFil
 type ISerializable interface {
 	// Converts the underlying interface to a byte slice
 	Serialize() ([]byte, error)
+	SerializeSSZ() ([]byte, error)
 }
 
 // A wrapper around ISerializable representing a local rewards file or minipool performance file.
@@ -58,6 +59,7 @@ type LocalFile[T ISerializable] struct {
 type ILocalFile interface {
 	ISerializable
 	Write() ([]byte, error)
+	WriteSSZ() ([]byte, error)
 	Path() string
 	FileName() string
 	CreateCompressedFileAndCid() (string, cid.Cid, error)
@@ -86,9 +88,28 @@ func (lf *LocalFile[T]) Serialize() ([]byte, error) {
 	return lf.f.Serialize()
 }
 
+// Converts the underlying interface to a byte slice by calling its SerializeSSZ function
+func (lf *LocalFile[T]) SerializeSSZ() ([]byte, error) {
+	return lf.f.SerializeSSZ()
+}
+
 // Serializes the file and writes it to disk
 func (lf *LocalFile[T]) Write() ([]byte, error) {
 	data, err := lf.Serialize()
+	if err != nil {
+		return nil, fmt.Errorf("error serializing file: %w", err)
+	}
+
+	err = os.WriteFile(lf.fullPath, data, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("error writing file to %s: %w", lf.fullPath, err)
+	}
+	return data, nil
+}
+
+// Serializes the file and writes it to disk
+func (lf *LocalFile[T]) WriteSSZ() ([]byte, error) {
+	data, err := lf.SerializeSSZ()
 	if err != nil {
 		return nil, fmt.Errorf("error serializing file: %w", err)
 	}
@@ -174,7 +195,7 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 	var primaryCid *cid.Cid
 	out := make(map[string]cid.Cid, 4)
 
-	for i, f := range []ILocalFile{
+	files := []ILocalFile{
 		// Do not reorder!
 		// i == 0 - minipool performance file
 		NewLocalFile[IMinipoolPerformanceFile](
@@ -186,14 +207,31 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 			rewardsFile,
 			smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON),
 		),
-		// i == 2 - ssz rewards file
-		//NewLocalFile[IRewardsFile](
-		//	rewardsFile.SSZFile(),
-		//	smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionSSZ),
-		//),
-	} {
+	}
 
-		data, err := f.Write()
+	// Only include ssz for supported versions
+	includeSSZ = includeSSZ && rewardsFile.GetRewardsFileVersion() >= minRewardsFileVersionSSZ
+
+	if includeSSZ {
+		files = append(
+			files,
+			// i == 2 - ssz rewards file
+			NewLocalFile[IRewardsFile](
+				rewardsFile,
+				smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionSSZ),
+			),
+		)
+	}
+
+	for i, f := range files {
+		var data []byte
+		var err error
+
+		if includeSSZ && i == 2 {
+			data, err = f.WriteSSZ()
+		} else {
+			data, err = f.Write()
+		}
 		if err != nil {
 			return cid.Cid{}, nil, fmt.Errorf("error saving %s: %w", f.Path(), err)
 		}

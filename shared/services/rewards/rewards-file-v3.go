@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
@@ -23,13 +24,31 @@ func (f *RewardsFile_v3) Serialize() ([]byte, error) {
 	return json.Marshal(f)
 }
 
+// Serialize as SSZ
+func (f *RewardsFile_v3) SerializeSSZ() ([]byte, error) {
+	// In order to avoid multiple code paths, we won't bother making a RewardsFile_v3 <-> SSZFile_v1 function
+	// Instead, we can serialize json, parse to SSZFile_v1, and then serialize that as SSZ
+	data, err := f.Serialize()
+	if err != nil {
+		return nil, fmt.Errorf("error converting RewardsFile v3 to json so it could be parsed as SSZFile_v1: %w", err)
+	}
+
+	s := &ssz_types.SSZFile_v1{}
+	err = s.UnmarshalSSZ(data)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing RewardsFile v3 json as SSZFile_v1: %w", err)
+	}
+
+	return s.SerializeSSZ()
+}
+
 // Deserialize a rewards file from bytes
 func (f *RewardsFile_v3) Deserialize(bytes []byte) error {
 	return json.Unmarshal(bytes, &f)
 }
 
 // Get the rewards file version
-func (f *RewardsFile_v3) GetRewardsFileVersion() rewardsFileVersion {
+func (f *RewardsFile_v3) GetRewardsFileVersion() uint64 {
 	return rewardsFileVersionThree
 }
 
@@ -139,16 +158,16 @@ func (f *RewardsFile_v3) GetNodeSmoothingPoolEth(addr common.Address) *big.Int {
 	return &nr.SmoothingPoolEth.Int
 }
 
-func (f *RewardsFile_v3) GetMerkleProof(addr common.Address) []common.Hash {
+func (f *RewardsFile_v3) GetMerkleProof(addr common.Address) ([]common.Hash, error) {
 	nr, ok := f.getNodeRewardsInfo(addr)
 	if !ok {
-		return nil
+		return nil, nil
 	}
 	proof := make([]common.Hash, 0, len(nr.MerkleProof))
 	for _, proofLevel := range nr.MerkleProof {
 		proof = append(proof, common.HexToHash(proofLevel))
 	}
-	return proof
+	return proof, nil
 }
 
 // Getters for network info
@@ -190,7 +209,7 @@ func (f *RewardsFile_v3) SetMinipoolPerformanceFileCID(cid string) {
 }
 
 // Generates a merkle tree from the provided rewards map
-func (f *RewardsFile_v3) generateMerkleTree() error {
+func (f *RewardsFile_v3) GenerateMerkleTree() error {
 	// Generate the leaf data for each node
 	totalData := make([][]byte, 0, len(f.NodeRewards))
 	for address, rewardsForNode := range f.NodeRewards {
