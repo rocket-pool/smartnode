@@ -130,21 +130,21 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.MerkleRootValid = true
 
 	// Get the rewards from it
-	rewards, exists := proofWrapper.GetNodeRewardsInfo(nodeAddress)
-	info.NodeExists = exists
-	if exists {
-		info.CollateralRplAmount = rewards.GetCollateralRpl()
-		info.ODaoRplAmount = rewards.GetOracleDaoRpl()
-		info.SmoothingPoolEthAmount = rewards.GetSmoothingPoolEth()
-
-		var proof []common.Hash
-		proof, err = rewards.GetMerkleProof()
-		if err != nil {
-			err = fmt.Errorf("error deserializing merkle proof for %s, node %s: %w", info.TreeFilePath, nodeAddress.Hex(), err)
-			return
-		}
-		info.MerkleProof = proof
+	info.NodeExists = proofWrapper.HasRewardsFor(nodeAddress)
+	if !info.NodeExists {
+		return
 	}
+	info.CollateralRplAmount = &QuotedBigInt{*proofWrapper.GetNodeCollateralRpl(nodeAddress)}
+	info.ODaoRplAmount = &QuotedBigInt{*proofWrapper.GetNodeOracleDaoRpl(nodeAddress)}
+	info.SmoothingPoolEthAmount = &QuotedBigInt{*proofWrapper.GetNodeSmoothingPoolEth(nodeAddress)}
+
+	var proof []common.Hash
+	proof = proofWrapper.GetMerkleProof(nodeAddress)
+	if proof == nil {
+		err = fmt.Errorf("error deserializing merkle proof for %s, node %s: no proof for this node found", info.TreeFilePath, nodeAddress.Hex())
+		return
+	}
+	info.MerkleProof = proof
 
 	return
 }

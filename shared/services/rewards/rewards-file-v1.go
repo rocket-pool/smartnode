@@ -99,24 +99,16 @@ type NodeRewardsInfo_v1 struct {
 	MerkleProof                  []string      `json:"merkleProof"`
 }
 
-func (i *NodeRewardsInfo_v1) GetRewardNetwork() uint64 {
-	return i.RewardNetwork
-}
-func (i *NodeRewardsInfo_v1) GetCollateralRpl() *QuotedBigInt {
-	return i.CollateralRpl
-}
-func (i *NodeRewardsInfo_v1) GetOracleDaoRpl() *QuotedBigInt {
-	return i.OracleDaoRpl
-}
-func (i *NodeRewardsInfo_v1) GetSmoothingPoolEth() *QuotedBigInt {
-	return i.SmoothingPoolEth
-}
-func (n *NodeRewardsInfo_v1) GetMerkleProof() ([]common.Hash, error) {
-	proof := []common.Hash{}
-	for _, proofLevel := range n.MerkleProof {
+func (f *RewardsFile_v1) GetMerkleProof(addr common.Address) []common.Hash {
+	nr, ok := f.getNodeRewardsInfo(addr)
+	if !ok {
+		return nil
+	}
+	proof := make([]common.Hash, 0, len(nr.MerkleProof))
+	for _, proofLevel := range nr.MerkleProof {
 		proof = append(proof, common.HexToHash(proofLevel))
 	}
-	return proof, nil
+	return proof
 }
 
 // JSON struct for a complete rewards file
@@ -213,10 +205,38 @@ func (f *RewardsFile_v1) GetNodeAddresses() []common.Address {
 	return addresses
 }
 
-// Get info about a node's rewards
-func (f *RewardsFile_v1) GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool) {
+func (f *RewardsFile_v1) getNodeRewardsInfo(address common.Address) (*NodeRewardsInfo_v1, bool) {
 	rewards, exists := f.NodeRewards[address]
 	return rewards, exists
+}
+
+func (f *RewardsFile_v1) HasRewardsFor(addr common.Address) bool {
+	_, ok := f.NodeRewards[addr]
+	return ok
+}
+
+func (f *RewardsFile_v1) GetNodeCollateralRpl(addr common.Address) *big.Int {
+	nr, ok := f.NodeRewards[addr]
+	if !ok {
+		return big.NewInt(0)
+	}
+	return &nr.CollateralRpl.Int
+}
+
+func (f *RewardsFile_v1) GetNodeOracleDaoRpl(addr common.Address) *big.Int {
+	nr, ok := f.NodeRewards[addr]
+	if !ok {
+		return big.NewInt(0)
+	}
+	return &nr.OracleDaoRpl.Int
+}
+
+func (f *RewardsFile_v1) GetNodeSmoothingPoolEth(addr common.Address) *big.Int {
+	nr, ok := f.NodeRewards[addr]
+	if !ok {
+		return big.NewInt(0)
+	}
+	return &nr.SmoothingPoolEth.Int
 }
 
 // Sets the CID of the minipool performance file corresponding to this rewards file
