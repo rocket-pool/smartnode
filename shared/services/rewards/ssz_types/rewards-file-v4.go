@@ -218,11 +218,15 @@ func (f *SSZFile_v1) Proofs() (map[Address]MerkleProof, error) {
 		// 20 bytes for address, 32 each for network/rpl/eth
 		address := nr.Address
 		network := uint256.NewInt(nr.Network).Bytes32()
-		rpl := uint256.NewInt(0)
-		rpl.Add(rpl, nr.CollateralRpl.Unwrap())
-		rpl.Add(rpl, nr.OracleDaoRpl.Unwrap())
-		rplBytes := rpl.Bytes32()
-		eth := nr.SmoothingPoolEth.Unwrap().Bytes32()
+		rpl := stdbig.NewInt(0)
+		rpl.Add(rpl, nr.CollateralRpl.Int)
+		rpl.Add(rpl, nr.OracleDaoRpl.Int)
+		rplBytes := make([]byte, 32)
+		rplBytes = rpl.FillBytes(rplBytes)
+		eth, err := nr.SmoothingPoolEth.Bytes32()
+		if err != nil {
+			return nil, fmt.Errorf("error converting big.Int to uint256 byte slice: %w", err)
+		}
 
 		const dataSize = 20 + 32*3
 		nodeData := make([]byte, dataSize)
@@ -452,7 +456,7 @@ func (f *SSZFile_v1) GetNetworkCollateralRpl(network uint64) *stdbig.Int {
 		return stdbig.NewInt(0)
 	}
 
-	return nr.CollateralRpl.ToBig()
+	return nr.CollateralRpl.Int
 }
 
 func (f *SSZFile_v1) GetNetworkOracleDaoRpl(network uint64) *stdbig.Int {
@@ -461,7 +465,7 @@ func (f *SSZFile_v1) GetNetworkOracleDaoRpl(network uint64) *stdbig.Int {
 		return stdbig.NewInt(0)
 	}
 
-	return nr.OracleDaoRpl.ToBig()
+	return nr.OracleDaoRpl.Int
 }
 
 func (f *SSZFile_v1) GetNetworkSmoothingPoolEth(network uint64) *stdbig.Int {
@@ -470,7 +474,7 @@ func (f *SSZFile_v1) GetNetworkSmoothingPoolEth(network uint64) *stdbig.Int {
 		return stdbig.NewInt(0)
 	}
 
-	return nr.SmoothingPoolEth.ToBig()
+	return nr.SmoothingPoolEth.Int
 }
 
 func (f *SSZFile_v1) getNodeRewards(addr common.Address) *NodeReward {
@@ -489,7 +493,7 @@ func (f *SSZFile_v1) GetNodeCollateralRpl(addr common.Address) *stdbig.Int {
 		return stdbig.NewInt(0)
 	}
 
-	return nr.CollateralRpl.ToBig()
+	return nr.CollateralRpl.Int
 }
 
 func (f *SSZFile_v1) GetNodeOracleDaoRpl(addr common.Address) *stdbig.Int {
@@ -498,7 +502,7 @@ func (f *SSZFile_v1) GetNodeOracleDaoRpl(addr common.Address) *stdbig.Int {
 		return stdbig.NewInt(0)
 	}
 
-	return nr.OracleDaoRpl.ToBig()
+	return nr.OracleDaoRpl.Int
 }
 
 func (f *SSZFile_v1) GetNodeSmoothingPoolEth(addr common.Address) *stdbig.Int {
@@ -507,7 +511,7 @@ func (f *SSZFile_v1) GetNodeSmoothingPoolEth(addr common.Address) *stdbig.Int {
 		return stdbig.NewInt(0)
 	}
 
-	return nr.SmoothingPoolEth.ToBig()
+	return nr.SmoothingPoolEth.Int
 }
 
 func (f *SSZFile_v1) GetRewardsFileVersion() uint64 {
@@ -515,25 +519,25 @@ func (f *SSZFile_v1) GetRewardsFileVersion() uint64 {
 }
 
 func (f *SSZFile_v1) GetTotalCollateralRpl() *stdbig.Int {
-	return f.TotalRewards.TotalCollateralRpl.ToBig()
+	return f.TotalRewards.TotalCollateralRpl.Int
 }
 
 func (f *SSZFile_v1) GetTotalNodeOperatorSmoothingPoolEth() *stdbig.Int {
-	return f.TotalRewards.NodeOperatorSmoothingPoolEth.ToBig()
+	return f.TotalRewards.NodeOperatorSmoothingPoolEth.Int
 }
 
 func (f *SSZFile_v1) GetTotalNodeWeight() *stdbig.Int {
-	return f.TotalRewards.TotalNodeWeight.ToBig()
+	return f.TotalRewards.TotalNodeWeight.Int
 }
 
 func (f *SSZFile_v1) GetTotalOracleDaoRpl() *stdbig.Int {
-	return f.TotalRewards.TotalOracleDaoRpl.ToBig()
+	return f.TotalRewards.TotalOracleDaoRpl.Int
 }
 
 func (f *SSZFile_v1) GetTotalPoolStakerSmoothingPoolEth() *stdbig.Int {
-	return f.TotalRewards.PoolStakerSmoothingPoolEth.ToBig()
+	return f.TotalRewards.PoolStakerSmoothingPoolEth.Int
 }
 
 func (f *SSZFile_v1) GetTotalProtocolDaoRpl() *stdbig.Int {
-	return f.TotalRewards.ProtocolDaoRpl.ToBig()
+	return f.TotalRewards.ProtocolDaoRpl.Int
 }
