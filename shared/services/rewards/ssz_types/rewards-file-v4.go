@@ -402,6 +402,12 @@ func (n NodeRewards) Find(addr Address) *NodeReward {
 	return n[idx]
 }
 
+func AddressFromBytes(b []byte) Address {
+	out := Address{}
+	copy(out[:], b)
+	return out
+}
+
 // Functions to implement IRewardsFile
 func (f *SSZFile_v1) Deserialize(data []byte) error {
 	if bytes.HasPrefix(data, Magic[:]) {

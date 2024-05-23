@@ -20,6 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types"
+	sszbig "github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types/big"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"golang.org/x/sync/errgroup"
@@ -30,59 +31,56 @@ var _ IRewardsFile = (*ssz_types.SSZFile_v1)(nil)
 
 // Implementation for tree generator ruleset v9
 type treeGeneratorImpl_v9 struct {
-	networkState           *state.NetworkState
-	rewardsFile            *RewardsFile_v3
-	elSnapshotHeader       *types.Header
-	snapshotEnd            *SnapshotEnd
-	log                    *log.ColorLogger
-	logPrefix              string
-	rp                     *rocketpool.RocketPool
-	cfg                    *config.RocketPoolConfig
-	bc                     beacon.Client
-	opts                   *bind.CallOpts
-	nodeDetails            []*NodeSmoothingDetails
-	smoothingPoolBalance   *big.Int
-	intervalDutiesInfo     *IntervalDutiesInfo
-	slotsPerEpoch          uint64
-	validatorIndexMap      map[string]*MinipoolInfo
-	elStartTime            time.Time
-	elEndTime              time.Time
-	validNetworkCache      map[uint64]bool
-	epsilon                *big.Int
-	intervalSeconds        *big.Int
-	beaconConfig           beacon.Eth2Config
-	validatorStatusMap     map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
-	totalAttestationScore  *big.Int
-	successfulAttestations uint64
-	genesisTime            time.Time
-	invalidNetworkNodes    map[common.Address]uint64
+	networkState            *state.NetworkState
+	rewardsFile             *ssz_types.SSZFile_v1
+	elSnapshotHeader        *types.Header
+	snapshotEnd             *SnapshotEnd
+	log                     *log.ColorLogger
+	logPrefix               string
+	rp                      *rocketpool.RocketPool
+	cfg                     *config.RocketPoolConfig
+	bc                      beacon.Client
+	opts                    *bind.CallOpts
+	nodeDetails             []*NodeSmoothingDetails
+	smoothingPoolBalance    *big.Int
+	intervalDutiesInfo      *IntervalDutiesInfo
+	slotsPerEpoch           uint64
+	validatorIndexMap       map[string]*MinipoolInfo
+	elStartTime             time.Time
+	elEndTime               time.Time
+	validNetworkCache       map[uint64]bool
+	epsilon                 *big.Int
+	intervalSeconds         *big.Int
+	beaconConfig            beacon.Eth2Config
+	validatorStatusMap      map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
+	totalAttestationScore   *big.Int
+	successfulAttestations  uint64
+	genesisTime             time.Time
+	invalidNetworkNodes     map[common.Address]uint64
+	minipoolPerformanceFile *MinipoolPerformanceFile_v2
+	nodeRewards             map[common.Address]*ssz_types.NodeReward
+	networkRewards          map[ssz_types.Layer]*ssz_types.NetworkReward
 }
 
 // Create a new tree generator
 func newTreeGeneratorImpl_v9(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v9 {
 	return &treeGeneratorImpl_v9{
-		rewardsFile: &RewardsFile_v3{
-			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion: 3,
-				RulesetVersion:     9,
-				Index:              index,
-				// in v9 startTime is the time of the slot that starts the interval
-				IntervalsPassed: intervalsPassed,
-				TotalRewards: &TotalRewards{
-					ProtocolDaoRpl:               NewQuotedBigInt(0),
-					TotalCollateralRpl:           NewQuotedBigInt(0),
-					TotalOracleDaoRpl:            NewQuotedBigInt(0),
-					TotalSmoothingPoolEth:        NewQuotedBigInt(0),
-					PoolStakerSmoothingPoolEth:   NewQuotedBigInt(0),
-					NodeOperatorSmoothingPoolEth: NewQuotedBigInt(0),
-				},
-				NetworkRewards: map[uint64]*NetworkRewardsInfo{},
+		rewardsFile: &ssz_types.SSZFile_v1{
+			RewardsFileVersion: 3,
+			RulesetVersion:     9,
+			Index:              index,
+			IntervalsPassed:    intervalsPassed,
+			TotalRewards: &ssz_types.TotalRewards{
+				ProtocolDaoRpl:               sszbig.NewUint256(0),
+				TotalCollateralRpl:           sszbig.NewUint256(0),
+				TotalOracleDaoRpl:            sszbig.NewUint256(0),
+				TotalSmoothingPoolEth:        sszbig.NewUint256(0),
+				PoolStakerSmoothingPoolEth:   sszbig.NewUint256(0),
+				NodeOperatorSmoothingPoolEth: sszbig.NewUint256(0),
+				TotalNodeWeight:              sszbig.NewUint256(0),
 			},
-			NodeRewards: map[common.Address]*NodeRewardsInfo_v2{},
-			MinipoolPerformanceFile: MinipoolPerformanceFile_v2{
-				Index:               index,
-				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
-			},
+			NetworkRewards: ssz_types.NetworkRewards{},
+			NodeRewards:    ssz_types.NodeRewards{},
 		},
 		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
 		validatorIndexMap:     map[string]*MinipoolInfo{},
@@ -93,6 +91,12 @@ func newTreeGeneratorImpl_v9(log *log.ColorLogger, logPrefix string, index uint6
 		totalAttestationScore: big.NewInt(0),
 		networkState:          state,
 		invalidNetworkNodes:   map[common.Address]uint64{},
+		minipoolPerformanceFile: &MinipoolPerformanceFile_v2{
+			Index:               index,
+			MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
+		},
+		nodeRewards:    map[common.Address]*ssz_types.NodeReward{},
+		networkRewards: map[ssz_types.Layer]*ssz_types.NetworkReward{},
 	}
 }
 
@@ -114,10 +118,10 @@ func (r *treeGeneratorImpl_v9) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	}
 
 	// Set the network name
-	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
-	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
-	r.rewardsFile.MinipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
-	r.rewardsFile.MinipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
+	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(fmt.Sprint(cfg.Smartnode.Network.Value))
+	r.minipoolPerformanceFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.minipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.minipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -152,8 +156,16 @@ func (r *treeGeneratorImpl_v9) generateTree(rp *rocketpool.RocketPool, cfg *conf
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
 
-	// Calculate the network reward map and the totals
-	r.updateNetworksAndTotals()
+	// Sort and assign the maps to the ssz file lists
+	for nodeAddress, nodeReward := range r.nodeRewards {
+		copy(nodeReward.Address[:], nodeAddress[:])
+		r.rewardsFile.NodeRewards = append(r.rewardsFile.NodeRewards, nodeReward)
+	}
+
+	for layer, networkReward := range r.networkRewards {
+		networkReward.Network = layer
+		r.rewardsFile.NetworkRewards = append(r.rewardsFile.NetworkRewards, networkReward)
+	}
 
 	// Generate the Merkle Tree
 	err = r.rewardsFile.GenerateMerkleTree()
@@ -162,7 +174,7 @@ func (r *treeGeneratorImpl_v9) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	}
 
 	// Sort all of the missed attestations so the files are always generated in the same state
-	for _, minipoolInfo := range r.rewardsFile.MinipoolPerformanceFile.MinipoolPerformance {
+	for _, minipoolInfo := range r.minipoolPerformanceFile.MinipoolPerformance {
 		sort.Slice(minipoolInfo.MissingAttestationSlots, func(i, j int) bool {
 			return minipoolInfo.MissingAttestationSlots[i] < minipoolInfo.MissingAttestationSlots[j]
 		})
@@ -171,7 +183,7 @@ func (r *treeGeneratorImpl_v9) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	return &GenerateTreeResult{
 		RewardsFile:             r.rewardsFile,
 		InvalidNetworkNodes:     r.invalidNetworkNodes,
-		MinipoolPerformanceFile: &r.rewardsFile.MinipoolPerformanceFile,
+		MinipoolPerformanceFile: r.minipoolPerformanceFile,
 	}, nil
 
 }
@@ -189,10 +201,10 @@ func (r *treeGeneratorImpl_v9) approximateStakerShareOfSmoothingPool(rp *rocketp
 	}
 
 	// Set the network name
-	r.rewardsFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
-	r.rewardsFile.MinipoolPerformanceFile.Network = r.rewardsFile.Network
-	r.rewardsFile.MinipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
-	r.rewardsFile.MinipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
+	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(fmt.Sprint(cfg.Smartnode.Network.Value))
+	r.minipoolPerformanceFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.minipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.minipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -221,33 +233,7 @@ func (r *treeGeneratorImpl_v9) approximateStakerShareOfSmoothingPool(rp *rocketp
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
 
-	return &r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Int, nil
-}
-
-// Calculates the per-network distribution amounts and the total reward amounts
-func (r *treeGeneratorImpl_v9) updateNetworksAndTotals() {
-
-	// Get the highest network index with valid rewards
-	highestNetworkIndex := uint64(0)
-	for network := range r.rewardsFile.NetworkRewards {
-		if network > highestNetworkIndex {
-			highestNetworkIndex = network
-		}
-	}
-
-	// Create the map for each network, including unused ones
-	for network := uint64(0); network <= highestNetworkIndex; network++ {
-		_, exists := r.rewardsFile.NetworkRewards[network]
-		if !exists {
-			rewardsForNetwork := &NetworkRewardsInfo{
-				CollateralRpl:    NewQuotedBigInt(0),
-				OracleDaoRpl:     NewQuotedBigInt(0),
-				SmoothingPoolEth: NewQuotedBigInt(0),
-			}
-			r.rewardsFile.NetworkRewards[network] = rewardsForNetwork
-		}
-	}
-
+	return r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Int, nil
 }
 
 func (r *treeGeneratorImpl_v9) calculateNodeRplRewards(
@@ -309,10 +295,10 @@ func (r *treeGeneratorImpl_v9) calculateRplRewards() error {
 
 	// Get baseline Protocol DAO rewards
 	pDaoPercent := r.networkState.NetworkDetails.ProtocolDaoRewardsPercent
-	pDaoRewards := NewQuotedBigInt(0)
+	pDaoRewards := big.NewInt(0)
 	pDaoRewards.Mul(pendingRewards, pDaoPercent)
-	pDaoRewards.Div(&pDaoRewards.Int, eth.EthToWei(1))
-	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
+	pDaoRewards.Div(pDaoRewards, eth.EthToWei(1))
+	r.log.Printlnf("%s Expected Protocol DAO rewards: %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(pDaoRewards))
 
 	// Get node operator rewards
 	nodeOpPercent := r.networkState.NetworkDetails.NodeOperatorRewardsPercent
@@ -340,9 +326,7 @@ func (r *treeGeneratorImpl_v9) calculateRplRewards() error {
 	// Operate normally if any node has rewards
 	if totalNodeEffectiveStake.Sign() > 0 && totalNodeWeight.Sign() > 0 {
 		// Make sure to record totalNodeWeight in the rewards file
-		quotedTotalNodeWeight := NewQuotedBigInt(0)
-		quotedTotalNodeWeight.Set(totalNodeWeight)
-		r.rewardsFile.TotalRewards.TotalNodeWeight = quotedTotalNodeWeight
+		r.rewardsFile.TotalRewards.TotalNodeWeight.Set(totalNodeWeight)
 
 		r.log.Printlnf("%s Calculating individual collateral rewards...", r.logPrefix)
 		for i, nodeDetails := range r.networkState.NodeDetails {
@@ -357,7 +341,7 @@ func (r *treeGeneratorImpl_v9) calculateRplRewards() error {
 
 			// If there are pending rewards, add it to the map
 			if nodeRplRewards.Sign() == 1 {
-				rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeDetails.NodeAddress]
+				rewardsForNode, exists := r.nodeRewards[nodeDetails.NodeAddress]
 				if !exists {
 					// Get the network the rewards should go to
 					network := r.networkState.NodeDetails[i].RewardNetwork.Uint64()
@@ -369,47 +353,41 @@ func (r *treeGeneratorImpl_v9) calculateRplRewards() error {
 						network = 0
 					}
 
-					rewardsForNode = &NodeRewardsInfo_v2{
-						RewardNetwork:    network,
-						CollateralRpl:    NewQuotedBigInt(0),
-						OracleDaoRpl:     NewQuotedBigInt(0),
-						SmoothingPoolEth: NewQuotedBigInt(0),
-					}
-					r.rewardsFile.NodeRewards[nodeDetails.NodeAddress] = rewardsForNode
+					rewardsForNode = ssz_types.NewNodeReward(
+						network,
+						ssz_types.AddressFromBytes(nodeDetails.NodeAddress.Bytes()),
+					)
+					r.nodeRewards[nodeDetails.NodeAddress] = rewardsForNode
 				}
-				rewardsForNode.CollateralRpl.Add(&rewardsForNode.CollateralRpl.Int, nodeRplRewards)
+				rewardsForNode.CollateralRpl.Add(rewardsForNode.CollateralRpl.Int, nodeRplRewards)
 
 				// Add the rewards to the running total for the specified network
-				rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
+				rewardsForNetwork, exists := r.networkRewards[rewardsForNode.Network]
 				if !exists {
-					rewardsForNetwork = &NetworkRewardsInfo{
-						CollateralRpl:    NewQuotedBigInt(0),
-						OracleDaoRpl:     NewQuotedBigInt(0),
-						SmoothingPoolEth: NewQuotedBigInt(0),
-					}
-					r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
+					rewardsForNetwork = ssz_types.NewNetworkReward(rewardsForNode.Network)
+					r.networkRewards[rewardsForNode.Network] = rewardsForNetwork
 				}
-				rewardsForNetwork.CollateralRpl.Add(&rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
+				rewardsForNetwork.CollateralRpl.Int.Add(rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 			}
 		}
 
 		// Sanity check to make sure we arrived at the correct total
 		delta := big.NewInt(0)
 		totalCalculatedNodeRewards := big.NewInt(0)
-		for _, networkRewards := range r.rewardsFile.NetworkRewards {
-			totalCalculatedNodeRewards.Add(totalCalculatedNodeRewards, &networkRewards.CollateralRpl.Int)
+		for _, networkRewards := range r.networkRewards {
+			totalCalculatedNodeRewards.Add(totalCalculatedNodeRewards, networkRewards.CollateralRpl.Int)
 		}
 		delta.Sub(totalNodeRewards, totalCalculatedNodeRewards).Abs(delta)
 		if delta.Cmp(r.epsilon) == 1 {
 			return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
 		}
-		r.rewardsFile.TotalRewards.TotalCollateralRpl.Int = *totalCalculatedNodeRewards
+		r.rewardsFile.TotalRewards.TotalCollateralRpl.Int.Set(totalCalculatedNodeRewards)
 		r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 		pDaoRewards.Sub(pendingRewards, totalCalculatedNodeRewards)
 	} else {
 		// In this situation, none of the nodes in the network had eligible rewards so send it all to the pDAO
-		pDaoRewards.Add(&pDaoRewards.Int, totalNodeRewards)
-		r.log.Printlnf("%s None of the nodes were eligible for collateral rewards, sending everything to the pDAO; now at %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(&pDaoRewards.Int))
+		pDaoRewards.Add(pDaoRewards, totalNodeRewards)
+		r.log.Printlnf("%s None of the nodes were eligible for collateral rewards, sending everything to the pDAO; now at %s (%.3f)", r.logPrefix, pDaoRewards.String(), eth.WeiToEth(pDaoRewards))
 	}
 
 	// Handle Oracle DAO rewards
@@ -451,7 +429,7 @@ func (r *treeGeneratorImpl_v9) calculateRplRewards() error {
 		individualOdaoRewards.Mul(trueODaoNodeTimes[address], totalODaoRewards)
 		individualOdaoRewards.Div(individualOdaoRewards, totalODaoNodeTime)
 
-		rewardsForNode, exists := r.rewardsFile.NodeRewards[address]
+		rewardsForNode, exists := r.nodeRewards[address]
 		if !exists {
 			// Get the network the rewards should go to
 			network := r.networkState.NodeDetailsByAddress[address].RewardNetwork.Uint64()
@@ -464,46 +442,41 @@ func (r *treeGeneratorImpl_v9) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForNode = &NodeRewardsInfo_v2{
-				RewardNetwork:    network,
-				CollateralRpl:    NewQuotedBigInt(0),
-				OracleDaoRpl:     NewQuotedBigInt(0),
-				SmoothingPoolEth: NewQuotedBigInt(0),
-			}
-			r.rewardsFile.NodeRewards[address] = rewardsForNode
+			rewardsForNode = ssz_types.NewNodeReward(
+				network,
+				ssz_types.AddressFromBytes(address.Bytes()),
+			)
+			r.nodeRewards[address] = rewardsForNode
 
 		}
-		rewardsForNode.OracleDaoRpl.Add(&rewardsForNode.OracleDaoRpl.Int, individualOdaoRewards)
+		rewardsForNode.OracleDaoRpl.Add(rewardsForNode.OracleDaoRpl.Int, individualOdaoRewards)
 
 		// Add the rewards to the running total for the specified network
-		rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
+		rewardsForNetwork, exists := r.networkRewards[rewardsForNode.Network]
 		if !exists {
-			rewardsForNetwork = &NetworkRewardsInfo{
-				CollateralRpl:    NewQuotedBigInt(0),
-				OracleDaoRpl:     NewQuotedBigInt(0),
-				SmoothingPoolEth: NewQuotedBigInt(0),
-			}
-			r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
+			rewardsForNetwork = ssz_types.NewNetworkReward(rewardsForNode.Network)
+			r.rewardsFile.NetworkRewards[rewardsForNode.Network] = rewardsForNetwork
 		}
-		rewardsForNetwork.OracleDaoRpl.Add(&rewardsForNetwork.OracleDaoRpl.Int, individualOdaoRewards)
+		rewardsForNetwork.OracleDaoRpl.Add(rewardsForNetwork.OracleDaoRpl.Int, individualOdaoRewards)
 	}
 
 	// Sanity check to make sure we arrived at the correct total
 	totalCalculatedOdaoRewards := big.NewInt(0)
 	delta := big.NewInt(0)
-	for _, networkRewards := range r.rewardsFile.NetworkRewards {
-		totalCalculatedOdaoRewards.Add(totalCalculatedOdaoRewards, &networkRewards.OracleDaoRpl.Int)
+	for _, networkRewards := range r.networkRewards {
+		totalCalculatedOdaoRewards.Add(totalCalculatedOdaoRewards, networkRewards.OracleDaoRpl.Int)
 	}
 	delta.Sub(totalODaoRewards, totalCalculatedOdaoRewards).Abs(delta)
 	if delta.Cmp(r.epsilon) == 1 {
 		return fmt.Errorf("error calculating ODao RPL: total was %s, but expected %s; error was too large", totalCalculatedOdaoRewards.String(), totalODaoRewards.String())
 	}
-	r.rewardsFile.TotalRewards.TotalOracleDaoRpl.Int = *totalCalculatedOdaoRewards
+	r.rewardsFile.TotalRewards.TotalOracleDaoRpl.Int.Set(totalCalculatedOdaoRewards)
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get actual protocol DAO rewards
-	pDaoRewards.Sub(&pDaoRewards.Int, totalCalculatedOdaoRewards)
-	r.rewardsFile.TotalRewards.ProtocolDaoRpl = pDaoRewards
+	pDaoRewards.Sub(pDaoRewards, totalCalculatedOdaoRewards)
+	r.rewardsFile.TotalRewards.ProtocolDaoRpl = sszbig.NewUint256(0)
+	r.rewardsFile.TotalRewards.ProtocolDaoRpl.Set(pDaoRewards)
 	r.log.Printlnf("%s Actual Protocol DAO rewards:  %s to account for truncation", r.logPrefix, pDaoRewards.String())
 
 	// Print total node weight
@@ -607,7 +580,7 @@ func (r *treeGeneratorImpl_v9) calculateEthRewards(checkBeaconPerformance bool) 
 	// Update the rewards maps
 	for _, nodeInfo := range r.nodeDetails {
 		if nodeInfo.IsEligible && nodeInfo.SmoothingPoolEth.Cmp(common.Big0) > 0 {
-			rewardsForNode, exists := r.rewardsFile.NodeRewards[nodeInfo.Address]
+			rewardsForNode, exists := r.nodeRewards[nodeInfo.Address]
 			if !exists {
 				network := nodeInfo.RewardsNetwork
 				validNetwork, err := r.validateNetwork(network)
@@ -619,15 +592,13 @@ func (r *treeGeneratorImpl_v9) calculateEthRewards(checkBeaconPerformance bool) 
 					network = 0
 				}
 
-				rewardsForNode = &NodeRewardsInfo_v2{
-					RewardNetwork:    network,
-					CollateralRpl:    NewQuotedBigInt(0),
-					OracleDaoRpl:     NewQuotedBigInt(0),
-					SmoothingPoolEth: NewQuotedBigInt(0),
-				}
-				r.rewardsFile.NodeRewards[nodeInfo.Address] = rewardsForNode
+				rewardsForNode = ssz_types.NewNodeReward(
+					network,
+					ssz_types.AddressFromBytes(nodeInfo.Address.Bytes()),
+				)
+				r.nodeRewards[nodeInfo.Address] = rewardsForNode
 			}
-			rewardsForNode.SmoothingPoolEth.Add(&rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
+			rewardsForNode.SmoothingPoolEth.Add(rewardsForNode.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
 
 			// Add minipool rewards to the JSON
 			for _, minipoolInfo := range nodeInfo.Minipools {
@@ -648,27 +619,23 @@ func (r *treeGeneratorImpl_v9) calculateEthRewards(checkBeaconPerformance bool) 
 				for slot := range minipoolInfo.MissingAttestationSlots {
 					performance.MissingAttestationSlots = append(performance.MissingAttestationSlots, slot)
 				}
-				r.rewardsFile.MinipoolPerformanceFile.MinipoolPerformance[minipoolInfo.Address] = performance
+				r.minipoolPerformanceFile.MinipoolPerformance[minipoolInfo.Address] = performance
 			}
 
 			// Add the rewards to the running total for the specified network
-			rewardsForNetwork, exists := r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork]
+			rewardsForNetwork, exists := r.networkRewards[rewardsForNode.Network]
 			if !exists {
-				rewardsForNetwork = &NetworkRewardsInfo{
-					CollateralRpl:    NewQuotedBigInt(0),
-					OracleDaoRpl:     NewQuotedBigInt(0),
-					SmoothingPoolEth: NewQuotedBigInt(0),
-				}
-				r.rewardsFile.NetworkRewards[rewardsForNode.RewardNetwork] = rewardsForNetwork
+				rewardsForNetwork = ssz_types.NewNetworkReward(rewardsForNode.Network)
+				r.networkRewards[rewardsForNode.Network] = rewardsForNetwork
 			}
-			rewardsForNetwork.SmoothingPoolEth.Add(&rewardsForNetwork.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
+			rewardsForNetwork.SmoothingPoolEth.Add(rewardsForNetwork.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
 		}
 	}
 
 	// Set the totals
-	r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Int = *poolStakerETH
-	r.rewardsFile.TotalRewards.NodeOperatorSmoothingPoolEth.Int = *nodeOpEth
-	r.rewardsFile.TotalRewards.TotalSmoothingPoolEth.Int = *r.smoothingPoolBalance
+	r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Set(poolStakerETH)
+	r.rewardsFile.TotalRewards.NodeOperatorSmoothingPoolEth.Set(nodeOpEth)
+	r.rewardsFile.TotalRewards.TotalSmoothingPoolEth.Set(r.smoothingPoolBalance)
 	return nil
 
 }
@@ -1138,19 +1105,19 @@ func (r *treeGeneratorImpl_v9) getBlocksAndTimesForInterval(previousIntervalEven
 	endTime := r.beaconConfig.GetSlotTime(r.snapshotEnd.Slot)
 
 	r.rewardsFile.StartTime = startTime
-	r.rewardsFile.MinipoolPerformanceFile.StartTime = startTime
+	r.minipoolPerformanceFile.StartTime = startTime
 
 	r.rewardsFile.EndTime = endTime
-	r.rewardsFile.MinipoolPerformanceFile.EndTime = endTime
+	r.minipoolPerformanceFile.EndTime = endTime
 
 	r.rewardsFile.ConsensusStartBlock = nextEpoch * r.beaconConfig.SlotsPerEpoch
-	r.rewardsFile.MinipoolPerformanceFile.ConsensusStartBlock = r.rewardsFile.ConsensusStartBlock
+	r.minipoolPerformanceFile.ConsensusStartBlock = r.rewardsFile.ConsensusStartBlock
 
 	r.rewardsFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
-	r.rewardsFile.MinipoolPerformanceFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
+	r.minipoolPerformanceFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
 
 	r.rewardsFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
-	r.rewardsFile.MinipoolPerformanceFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
+	r.minipoolPerformanceFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
 
 	// Get the first block that isn't missing
 	var elBlockNumber uint64
@@ -1161,7 +1128,7 @@ func (r *treeGeneratorImpl_v9) getBlocksAndTimesForInterval(previousIntervalEven
 		}
 		if !exists {
 			r.rewardsFile.ConsensusStartBlock++
-			r.rewardsFile.MinipoolPerformanceFile.ConsensusStartBlock++
+			r.minipoolPerformanceFile.ConsensusStartBlock++
 		} else {
 			elBlockNumber = beaconBlock.ExecutionBlockNumber
 			break
@@ -1172,7 +1139,7 @@ func (r *treeGeneratorImpl_v9) getBlocksAndTimesForInterval(previousIntervalEven
 	if elBlockNumber == 0 {
 		// We are pre-merge, so get the first block after the one from the previous interval
 		r.rewardsFile.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
-		r.rewardsFile.MinipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
+		r.minipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
 		startElHeader, err = r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(r.rewardsFile.ExecutionStartBlock)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL start block %d: %w", r.rewardsFile.ExecutionStartBlock, err)
@@ -1180,7 +1147,7 @@ func (r *treeGeneratorImpl_v9) getBlocksAndTimesForInterval(previousIntervalEven
 	} else {
 		// We are post-merge, so get the EL block corresponding to the BC block
 		r.rewardsFile.ExecutionStartBlock = elBlockNumber
-		r.rewardsFile.MinipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
+		r.minipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
 		startElHeader, err = r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL header for block %d: %w", elBlockNumber, err)
