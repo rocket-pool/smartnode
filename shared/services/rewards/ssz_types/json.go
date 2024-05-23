@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-var networkMap = map[string]uint64{
+var networkMap = map[string]Network{
 	"mainnet": 1,
 	"holesky": 17000,
 }
@@ -85,6 +85,11 @@ func (h Hash) MarshalJSON() ([]byte, error) {
 	return []byte(`"` + h.String() + `"`), nil
 }
 
+func NetworkFromString(s string) (Network, bool) {
+	n, ok := networkMap[s]
+	return n, ok
+}
+
 func (n *Network) UnmarshalJSON(data []byte) error {
 	var s string
 	err := json.Unmarshal(data, &s)
@@ -92,7 +97,7 @@ func (n *Network) UnmarshalJSON(data []byte) error {
 		return err
 	}
 
-	id, ok := networkMap[s]
+	id, ok := NetworkFromString(s)
 	if ok {
 		*n = Network(id)
 		return nil
@@ -111,7 +116,7 @@ func (n *Network) UnmarshalJSON(data []byte) error {
 }
 
 func (n Network) MarshalJSON() ([]byte, error) {
-	id := uint64(n)
+	id := n
 	for k, v := range networkMap {
 		if v == id {
 			return json.Marshal(k)
@@ -119,7 +124,7 @@ func (n Network) MarshalJSON() ([]byte, error) {
 	}
 
 	// If the network id isn't in the map, serialize it as a string
-	return json.Marshal(strconv.FormatUint(id, 10))
+	return json.Marshal(strconv.FormatUint(uint64(id), 10))
 }
 
 func (n *NetworkRewards) UnmarshalJSON(data []byte) error {
