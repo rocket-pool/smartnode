@@ -83,7 +83,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "set-snapshot-address",
 				Aliases:   []string{"ssa"},
 				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",
-				UsageText: "rocketpool pdao set-voting-delegate address",
+				UsageText: "rocketpool pdao set-snapshot-address address",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",
