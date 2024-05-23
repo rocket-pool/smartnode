@@ -31,7 +31,14 @@ type Address [20]byte
 type Hash [32]byte
 type NetworkRewards []*NetworkReward
 type NodeRewards []*NodeReward
+
+// Network corresponds to the top-level Network field, where 1 means mainnet
 type Network uint64
+
+// Layer corresponds to rewards-level Network fields, where 0 means layer 1...
+// Using an alias of uint64 helps serve as documentation rather than function
+type Layer = uint64
+
 type MerkleProof []Hash
 
 type SSZFile_v1 struct {
@@ -303,7 +310,7 @@ type TotalRewards struct {
 
 type NetworkReward struct {
 	// Chain ID (key)
-	Network uint64 `json:"-"`
+	Network Layer `json:"-"`
 
 	// Amount of RPL sent to the network for Node Operators
 	CollateralRpl big.Uint256 `ssz-size:"32" json:"collateralRpl"`
@@ -333,7 +340,7 @@ type NodeReward struct {
 	Address Address `ssz-size:"20" json:"-"`
 
 	// Chain ID on which the Node will claim
-	Network uint64 `json:"rewardNetwork"`
+	Network Layer `json:"rewardNetwork"`
 	// Amount of staking RPL earned by the Node
 	CollateralRpl big.Uint256 `ssz-size:"32" json:"collateralRpl"`
 	// Amount of oDAO RPL earned by the Node
