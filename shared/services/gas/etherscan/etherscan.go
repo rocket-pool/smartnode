@@ -75,7 +75,7 @@ func GetGasPrices() (GasFeeSuggestion, error) {
 type uinteger uint64
 
 func (i uinteger) MarshalJSON() ([]byte, error) {
-	return json.Marshal(strconv.Itoa(int(i)))
+	return json.Marshal(strconv.FormatUint(uint64(i), 10))
 }
 
 func (i *uinteger) UnmarshalJSON(data []byte) error {
