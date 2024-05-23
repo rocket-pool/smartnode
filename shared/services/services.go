@@ -209,7 +209,7 @@ func getEthClient(c *cli.Context, cfg *config.RocketPoolConfig) (*ExecutionClien
 	var err error
 	initECManager.Do(func() {
 		// Create a new client manager
-		ecManager, err = NewExecutionClientManager(cfg, true)
+		ecManager, err = NewExecutionClientManager(cfg)
 		if err == nil {
 			// Check if the manager should ignore sync checks and/or default to using the fallback (used by the API container when driven by the CLI)
 			if c.GlobalBool("ignore-sync-check") {

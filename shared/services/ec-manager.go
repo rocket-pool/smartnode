@@ -35,7 +35,7 @@ type ExecutionClientManager struct {
 type ecFunction func(*ethclient.Client) (interface{}, error)
 
 // Creates a new ExecutionClientManager instance based on the Rocket Pool config
-func NewExecutionClientManager(cfg *config.RocketPoolConfig, checkChainIDs bool) (*ExecutionClientManager, error) {
+func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientManager, error) {
 	status := &api.ClientManagerStatus{
 		FallbackEnabled: cfg.UseFallbackClients.Value == true,
 	}
@@ -74,7 +74,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig, checkChainIDs bool)
 	status.PrimaryClientStatus = checkEcStatus(primaryEc)
 	primaryReady := false
 	// Check if primary is using the expected network
-	if checkChainIDs && status.PrimaryClientStatus.Error == "" && status.PrimaryClientStatus.ChainId != cfg.Smartnode.GetChainID() {
+	if status.PrimaryClientStatus.Error == "" && status.PrimaryClientStatus.ChainId != cfg.Smartnode.GetChainID() {
 		primaryReady = false
 		status.PrimaryClientStatus.Error = fmt.Sprintf("The primary client is using a different chain (%d) than what your node is configured for (%d)", status.PrimaryClientStatus.ChainId, bcManager.expectedChainID)
 	} else {
@@ -94,7 +94,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig, checkChainIDs bool)
 	if status.FallbackEnabled {
 		status.FallbackClientStatus = checkEcStatus(fallbackEc)
 		// Check if fallback is using the expected network
-		if checkChainIDs && status.FallbackClientStatus.Error == "" && status.FallbackClientStatus.ChainId != bcManager.expectedChainID {
+		if status.FallbackClientStatus.Error == "" && status.FallbackClientStatus.ChainId != bcManager.expectedChainID {
 			fallbackReady = false
 			status.FallbackClientStatus.Error = fmt.Sprintf("The fallback client is using a different chain (%d) than what your node is configured for (%d)", status.FallbackClientStatus.ChainId, bcManager.expectedChainID)
 		}
