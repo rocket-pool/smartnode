@@ -196,8 +196,11 @@ func (r *PDaoRequester) ProposeSetting(contractName rocketpool.ContractName, set
 }
 
 // Initialize voting so the node can vote on Protocol DAO proposals
-func (r *PDaoRequester) InitializeVoting() (*types.ApiResponse[api.ProtocolDaoInitializeVotingData], error) {
-	return client.SendGetRequest[api.ProtocolDaoInitializeVotingData](r, "initialize-voting", "InitializeVoting", nil)
+func (r *PDaoRequester) InitializeVoting(delegate common.Address) (*types.ApiResponse[api.ProtocolDaoInitializeVotingData], error) {
+	args := map[string]string{
+		"delegate": delegate.Hex(),
+	}
+	return client.SendGetRequest[api.ProtocolDaoInitializeVotingData](r, "initialize-voting", "InitializeVoting", args)
 }
 
 // Set the delegate for voting on Protocol DAO proposals
@@ -213,7 +216,7 @@ func (r *PDaoRequester) GetCurrentVotingDelegate() (*types.ApiResponse[api.Proto
 	return client.SendGetRequest[api.ProtocolDaoCurrentVotingDelegateData](r, "voting-delegate", "GetCurrentVotingDelegate", nil)
 }
 
-// Get the node's voting power as of the chain head
-func (r *PDaoRequester) GetVotingPower() (*types.ApiResponse[api.ProtocolDaoGetVotingPowerData], error) {
-	return client.SendGetRequest[api.ProtocolDaoGetVotingPowerData](r, "get-voting-power", "GetVotingPower", nil)
+// Get the pDAO status
+func (r *PDaoRequester) GetStatus() (*types.ApiResponse[api.ProtocolDAOStatusResponse], error) {
+	return client.SendGetRequest[api.ProtocolDAOStatusResponse](r, "get-status", "GetStatus", nil)
 }

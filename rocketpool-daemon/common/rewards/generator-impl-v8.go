@@ -823,7 +823,6 @@ func (r *treeGeneratorImpl_v8) processEpoch(context context.Context, getDuties b
 
 // Handle all of the attestations in the given slot
 func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.AttestationInfo, inclusionSlot uint64) {
-
 	one := eth.EthToWei(1)
 	validatorReq := eth.EthToWei(32)
 

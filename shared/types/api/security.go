@@ -39,6 +39,7 @@ type SecurityMembersData struct {
 
 type SecurityProposalDetails struct {
 	ID              uint64              `json:"id"`
+	DAO             string              `json:"dao"`
 	ProposerAddress common.Address      `json:"proposerAddress"`
 	Message         string              `json:"message"`
 	CreatedTime     time.Time           `json:"createdTime"`

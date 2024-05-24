@@ -1,11 +1,13 @@
 package pdao
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	_ "time/tzdata"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/v2/node"
@@ -14,6 +16,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -29,7 +32,10 @@ func (f *protocolDaoInitializeVotingContextFactory) Create(args url.Values) (*pr
 	c := &protocolDaoInitializeVotingContext{
 		handler: f.handler,
 	}
-	return c, nil
+	inputErrs := []error{
+		server.ValidateArg("delegate", args, input.ValidateAddress, &c.delegate),
+	}
+	return c, errors.Join(inputErrs...)
 }
 
 func (f *protocolDaoInitializeVotingContextFactory) RegisterRoute(router *mux.Router) {
@@ -46,7 +52,8 @@ type protocolDaoInitializeVotingContext struct {
 	handler *ProtocolDaoHandler
 	rp      *rocketpool.RocketPool
 
-	node *node.Node
+	delegate common.Address
+	node     *node.Node
 }
 
 func (c *protocolDaoInitializeVotingContext) Initialize() (types.ResponseStatus, error) {
@@ -80,7 +87,7 @@ func (c *protocolDaoInitializeVotingContext) PrepareData(data *api.ProtocolDaoIn
 
 	// Get TX info
 	if data.CanInitialize {
-		txInfo, err := c.node.InitializeVoting(opts)
+		txInfo, err := c.node.InitializeVotingWithDelegate(c.delegate, opts)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error getting TX info for InitializeVoting: %w", err)
 		}

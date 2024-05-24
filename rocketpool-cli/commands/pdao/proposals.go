@@ -11,6 +11,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/urfave/cli/v2"
 
+	utilsMath "github.com/rocket-pool/node-manager-core/utils/math"
+	utilsStrings "github.com/rocket-pool/rocketpool-go/v2/utils/strings"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
@@ -86,6 +88,10 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 		// Proposals
 		for _, proposal := range proposals {
+			if len(proposal.Message) > 200 {
+				proposal.Message = proposal.Message[:200]
+			}
+			proposal.Message = utilsStrings.Sanitize(proposal.Message)
 			fmt.Printf("%d: %s - Proposed by: %s\n", proposal.ID, proposal.Message, proposal.ProposerAddress)
 		}
 
@@ -127,6 +133,8 @@ func getProposal(c *cli.Context, id uint64) error {
 		return nil
 	}
 
+	proposal.Message = utilsStrings.Sanitize(proposal.Message)
+
 	// Main details
 	fmt.Printf("Proposal ID:            %d\n", proposal.ID)
 	fmt.Printf("Message:                %s\n", proposal.Message)
@@ -138,7 +146,7 @@ func getProposal(c *cli.Context, id uint64) error {
 
 	// Start block - pending proposals
 	if proposal.State == types.ProtocolDaoProposalState_Pending {
-		fmt.Printf("Voting start:           %s\n", proposal.VotingStartTime.Format(time.RFC822))
+		fmt.Printf("Voting start:           %s, %s\n", proposal.VotingStartTime.Format(time.RFC822), getTimeDifference(proposal.VotingStartTime))
 	}
 	if proposal.State == types.ProtocolDaoProposalState_Pending {
 		fmt.Printf("Challenge window:       %s\n", proposal.ChallengeWindow)
@@ -158,11 +166,14 @@ func getProposal(c *cli.Context, id uint64) error {
 	}
 
 	// Vote details
-	fmt.Printf("Voting power required:  %.10f\n", eth.WeiToEth(proposal.VotingPowerRequired))
-	fmt.Printf("Voting power for:       %.10f\n", eth.WeiToEth(proposal.VotingPowerFor))
-	fmt.Printf("Voting power against:   %.10f\n", eth.WeiToEth(proposal.VotingPowerAgainst))
-	fmt.Printf("Voting power abstained: %.10f\n", eth.WeiToEth(proposal.VotingPowerAbstained))
-	fmt.Printf("Voting power against:   %.10f\n", eth.WeiToEth(proposal.VotingPowerToVeto))
+	votingPowerFor := utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerFor), 2)
+	votingPowerRequired := utilsMath.RoundUp(eth.WeiToEth(proposal.VotingPowerRequired), 2)
+	votingPowerToVeto := utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerToVeto), 2)
+	vetoQuorum := utilsMath.RoundUp(eth.WeiToEth(proposal.VetoQuorum), 2)
+	fmt.Printf("Voting power for:       %.2f / %.2f (%.2f%%)\n", votingPowerFor, votingPowerRequired, votingPowerFor/votingPowerRequired*100)
+	fmt.Printf("Voting power against:   %.2f\n", utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerAgainst), 2))
+	fmt.Printf("   Against with veto:   %.2f / %2.f (%.2f%%)\n", votingPowerToVeto, vetoQuorum, votingPowerToVeto/vetoQuorum*100)
+	fmt.Printf("Voting power abstained: %.2f\n", utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerAbstained), 2))
 	if proposal.NodeVoteDirection != types.VoteDirection_NoVote {
 		fmt.Printf("Node has voted:         %s\n", types.VoteDirections[proposal.NodeVoteDirection])
 	} else {

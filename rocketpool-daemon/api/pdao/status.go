@@ -19,20 +19,20 @@ import (
 // === Factory ===
 // ===============
 
-type protocolDaoGetVotingPowerContextFactory struct {
+type protocolDaoGetStatusContextFactory struct {
 	handler *ProtocolDaoHandler
 }
 
-func (f *protocolDaoGetVotingPowerContextFactory) Create(args url.Values) (*protocolDaoGetVotingPowerContext, error) {
-	c := &protocolDaoGetVotingPowerContext{
+func (f *protocolDaoGetStatusContextFactory) Create(args url.Values) (*protocolDaoGetStatusContext, error) {
+	c := &protocolDaoGetStatusContext{
 		handler: f.handler,
 	}
 	return c, nil
 }
 
-func (f *protocolDaoGetVotingPowerContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*protocolDaoGetVotingPowerContext, api.ProtocolDaoGetVotingPowerData](
-		router, "get-voting-power", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+func (f *protocolDaoGetStatusContextFactory) RegisterRoute(router *mux.Router) {
+	server.RegisterQuerylessGet[*protocolDaoGetStatusContext, api.ProtocolDAOStatusResponse](
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
@@ -40,11 +40,11 @@ func (f *protocolDaoGetVotingPowerContextFactory) RegisterRoute(router *mux.Rout
 // === Context ===
 // ===============
 
-type protocolDaoGetVotingPowerContext struct {
+type protocolDaoGetStatusContext struct {
 	handler *ProtocolDaoHandler
 }
 
-func (c *protocolDaoGetVotingPowerContext) PrepareData(data *api.ProtocolDaoGetVotingPowerData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	ec := sp.GetEthClient()

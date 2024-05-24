@@ -137,10 +137,15 @@ func getProposal(c *cli.Context, id uint64) error {
 	var proposal *api.SecurityProposalDetails
 
 	for i, p := range allProposals.Data.Proposals {
-		if p.ID == id {
+		if p.ID == id && p.DAO == "rocketDAOSecurityProposals" {
 			proposal = &allProposals.Data.Proposals[i]
 			break
 		}
+	}
+
+	if proposal == nil {
+		fmt.Printf("Security Proposal with ID %d does not exist.\n", id)
+		return nil
 	}
 
 	// Find the proposer
@@ -151,13 +156,9 @@ func getProposal(c *cli.Context, id uint64) error {
 		}
 	}
 
-	if proposal == nil {
-		fmt.Printf("Proposal with ID %d does not exist.\n", id)
-		return nil
-	}
-
 	// Main details
 	fmt.Printf("Proposal ID:          %d\n", proposal.ID)
+	fmt.Printf("DAO:                  %s\n", proposal.DAO)
 	fmt.Printf("Message:              %s\n", proposal.Message)
 	fmt.Printf("Payload:              %s\n", proposal.PayloadStr)
 	fmt.Printf("Payload (bytes):      %s\n", hex.EncodeToString(proposal.Payload))
