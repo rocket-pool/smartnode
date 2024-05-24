@@ -12,8 +12,6 @@ import (
 
 func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) error {
 
-	// fmt.Printf("address: %s, signature: %s", snapshotAddress.String(), signature)
-
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -36,7 +34,6 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 		return fmt.Errorf("error calling can-set-snapshot-address: %w", err)
 	}
 
-	// Todo:
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, c.Bool("yes"))
 	if err != nil {
@@ -44,7 +41,7 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to initialize voting?")) {
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to set the snapshot address?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

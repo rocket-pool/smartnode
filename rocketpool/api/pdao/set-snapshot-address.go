@@ -1,15 +1,15 @@
 package pdao
 
 import (
-	"encoding/hex"
 	"fmt"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+
 	"github.com/urfave/cli"
 )
 
@@ -48,10 +48,16 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 		return nil, err
 	}
 
-	// Gas info
-	gasInfo, err := network.EstimateInitializeVotingGas(rp, opts)
+	// Parse signature into vrs components, v to uint8 and v,s to *[32]byte
+	_v, _r, _s, err := apiutils.ParseEIP712(signature)
 	if err != nil {
-		return nil, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
+		fmt.Println("Error parsing signature", err)
+	}
+
+	// Gas info
+	gasInfo, err := network.EstimateSetSnapshotAddress(rp, snapshotAddress, _v, _r, _s, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Could not estimate the gas required set snapshot address: %w", err)
 	}
 	response.GasInfo = gasInfo
 
@@ -89,22 +95,11 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 		return nil, fmt.Errorf("Voting must be initialized to set a snapshot address. Use 'rocketpool pdao initialize-voting' to initialize voting first.")
 	}
 
-	// Slice signature string into v, r, s component of a signature giving node permission to use the given signer
-	str_v := signature[len(signature)-2:]
-	str_r := signature[:64]
-	str_s := signature[64:128]
-
-	// Convert v to uint8 and v,s to [32]byte
-	bytes_r, err := hex.DecodeString(str_r)
-	bytes_s, err := hex.DecodeString(str_s)
-	int_v, err := strconv.Atoi(str_v)
+	// Parse signature into vrs components, v to uint8 and v,s to *[32]byte
+	_v, _r, _s, err := apiutils.ParseEIP712(signature)
 	if err != nil {
-		fmt.Println("Error converting string", err)
+		fmt.Println("Error parsing signature", err)
 	}
-	_v := uint8(int_v)
-	_r := (*[32]byte)(bytes_r)
-	_s := (*[32]byte)(bytes_s)
-
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
@@ -119,10 +114,9 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 
 	// Todo:
 	// Network call set-snapshot-address on RocketSignerRegistry
-	// network.SetSnapshotAddress in the rocketpool-go lib
 	hash, err := network.SetSnapshotAddress(rp, snapshotAddress, _v, _r, _s, opts)
 	if err != nil {
-		return nil, fmt.Errorf("Error initializing voting: %w", err)
+		return nil, fmt.Errorf("Error setting snapshot address: %w", err)
 	}
 	response.TxHash = hash
 

@@ -82,12 +82,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "set-snapshot-address",
 				Aliases:   []string{"ssa"},
-				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",
-				UsageText: "rocketpool pdao set-snapshot-address address",
+				Usage:     "Set the address you want to use to represent your node on Snapshot",
+				UsageText: "rocketpool pdao set-snapshot-address signature",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",
-						Usage: "Automatically confirm delegate setting",
+						Usage: "Automatically confirm all interactive questions",
 					},
 				},
 				Action: func(c *cli.Context) error {
