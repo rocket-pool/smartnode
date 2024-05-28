@@ -126,6 +126,9 @@ type SmartnodeConfig struct {
 	// The contract address of RocketStorage
 	storageAddress map[config.Network]string `yaml:"-"`
 
+	// The contract address of RocketStorage
+	rocketSignerRegistryAddress map[config.Network]string `yaml:"-"`
+
 	// The contract address of the RPL token
 	rplTokenAddress map[config.Network]string `yaml:"-"`
 
@@ -470,6 +473,12 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			config.Network_Devnet:  "0xf04de123993761Bb9F08c9C39112b0E0b0eccE50",
 			config.Network_Holesky: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
+		},
+
+		rocketSignerRegistryAddress: map[config.Network]string{
+			config.Network_Mainnet: "",
+			config.Network_Devnet:  "",
+			config.Network_Holesky: "0x2d6ee8313663ca9f75A33EE129E90247dB5B26AF",
 		},
 
 		rplTokenAddress: map[config.Network]string{
