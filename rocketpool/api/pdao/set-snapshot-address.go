@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/registry"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
@@ -48,14 +49,14 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 		return nil, err
 	}
 
-	// Parse signature into vrs components, v to uint8 and v,s to *[32]byte
-	_v, _r, _s, err := apiutils.ParseEIP712(signature)
+	// Parse signature into vrs components, v to uint8 and v,s to [32]byte
+	sig, err := apiutils.ParseEIP712(signature)
 	if err != nil {
 		fmt.Println("Error parsing signature", err)
 	}
 
 	// Gas info
-	gasInfo, err := network.EstimateSetSnapshotAddress(rp, snapshotAddress, _v, _r, _s, opts)
+	gasInfo, err := registry.EstimateSetSnapshotAddress(rp, snapshotAddress, sig.V, sig.R, sig.S, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Could not estimate the gas required set snapshot address: %w", err)
 	}
@@ -95,11 +96,12 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 		return nil, fmt.Errorf("Voting must be initialized to set a snapshot address. Use 'rocketpool pdao initialize-voting' to initialize voting first.")
 	}
 
-	// Parse signature into vrs components, v to uint8 and v,s to *[32]byte
-	_v, _r, _s, err := apiutils.ParseEIP712(signature)
+	// Parse signature into vrs components, v to uint8 and v,s to [32]byte
+	sig, err := apiutils.ParseEIP712(signature)
 	if err != nil {
 		fmt.Println("Error parsing signature", err)
 	}
+
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
@@ -114,7 +116,7 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 
 	// Todo:
 	// Network call set-snapshot-address on RocketSignerRegistry
-	hash, err := network.SetSnapshotAddress(rp, snapshotAddress, _v, _r, _s, opts)
+	hash, err := registry.SetSnapshotAddress(rp, snapshotAddress, sig.V, sig.R, sig.S, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Error setting snapshot address: %w", err)
 	}
