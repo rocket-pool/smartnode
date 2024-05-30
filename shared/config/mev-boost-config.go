@@ -255,6 +255,7 @@ func (cfg *MevBoostConfig) GetTitle() string {
 // Get the Parameters for this config
 func (cfg *MevBoostConfig) GetParameters() []config.IParameter {
 	return []config.IParameter{
+		&cfg.Enable,
 		&cfg.Mode,
 		&cfg.SelectionMode,
 		&cfg.EnableRegulatedAllMev,
