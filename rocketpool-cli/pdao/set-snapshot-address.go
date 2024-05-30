@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/urfave/cli"
@@ -28,17 +29,17 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 		return nil
 	}
 
-	// TODO:
-	// resp, err := rp.CanSetSnapshotAddress(snapshotAddress, signature)
-	// if err != nil {
-	// 	return fmt.Errorf("error calling can-set-snapshot-address: %w", err)
-	// }
+	// Get the gas estimation
+	gasEstimate, err := rp.CanSetSnapshotAddress(snapshotAddress, signature)
+	if err != nil {
+		return fmt.Errorf("error calling can-set-snapshot-address: %w", err)
+	}
 
-	// // Assign max fees
-	// err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, c.Bool("yes"))
-	// if err != nil {
-	// 	return err
-	// }
+	// Assign max fees
+	err = gas.AssignMaxFeeAndLimit(gasEstimate.GasInfo, rp, c.Bool("yes"))
+	if err != nil {
+		return err
+	}
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to set the snapshot address?")) {
@@ -59,6 +60,7 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 	}
 
 	// Log & Return
-	fmt.Println("Successfully set snapshot address.")
+	fmt.Println("The node's snapshot address was successfully set")
+	// fmt.Println("The node's snapshot address was successfully set to %s.\n", snapshotAddress)
 	return nil
 }

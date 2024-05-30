@@ -53,13 +53,13 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
-		return nil, fmt.Errorf("error getting transactor")
+		return nil, err
 	}
 
 	// Create the signer registry contract binding
-	rocketSignerRegistryAbi, err := abi.JSON(strings.NewReader(contracts.SnapshotDelegationABI))
+	rocketSignerRegistryAbi, err := abi.JSON(strings.NewReader(contracts.RocketSignerRegistryABI))
 	if err != nil {
-		return nil, fmt.Errorf("error getting abi ")
+		return nil, err
 	}
 	contract := &rocketpool.Contract{
 		Contract: bind.NewBoundContract(rocketSignerRegistryAddress, rocketSignerRegistryAbi, ec, ec, ec),
@@ -75,36 +75,14 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 	}
 
 	// Get the gas info
-	gasInfo, err := contract.GetTransactionGasInfo(opts, "SetSigningDelegate", snapshotAddress, sig.V, sig.R, sig.S)
+	gasInfo, err := contract.GetTransactionGasInfo(opts, "setSigningDelegate", snapshotAddress, sig.V, sig.R, sig.S)
 	if err != nil {
-		return nil, fmt.Errorf("error getting gas info")
+		return nil, err
 	}
 	response.GasInfo = gasInfo
 
 	// Return response
 	return &response, nil
-
-	// // Get transactor
-	// opts, err := w.GetNodeAccountTransactor()
-	// if err != nil {
-	// 	return nil, err
-	// }
-
-	// // Parse signature into vrs components, v to uint8 and v,s to [32]byte
-	// sig, err := apiutils.ParseEIP712(signature)
-	// if err != nil {
-	// 	fmt.Println("Error parsing signature", err)
-	// }
-
-	// // Gas info
-	// gasInfo, err := registry.GetTransactionGasInfo(rp, snapshotAddress, sig.V, sig.R, sig.S, opts)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("Could not estimate the gas required set snapshot address: %w", err)
-	// }
-	// response.GasInfo = gasInfo
-
-	// Update response
-	// return &response, nil
 }
 
 func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOSetSnapshotAddressResponse, error) {
