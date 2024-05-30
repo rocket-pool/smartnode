@@ -83,7 +83,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "set-snapshot-address",
 				Aliases:   []string{"ssa"},
 				Usage:     "Set the address you want to use to represent your node on Snapshot",
-				UsageText: "rocketpool pdao set-snapshot-address signature",
+				UsageText: "rocketpool pdao set-snapshot-address snapshot-address signature",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",

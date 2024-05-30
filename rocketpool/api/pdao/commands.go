@@ -1047,6 +1047,32 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-set-snapshot-address",
+				Usage:     "Checks if snapshot address can be set.",
+				UsageText: "rocketpool api pdao can-set-snapshot-address snapshot-address signature",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					snapshotAddress, err := cliutils.ValidateAddress("snapshot-address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					signature, err := cliutils.ValidateSignature("signature", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canSetSnapshotAddress(c, snapshotAddress, signature))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "set-snapshot-address",
 				Usage:     "Set the snapshot delegate address for the node",
 				UsageText: "rocketpool api pdao set-snapshot-address snapshot-address signature",

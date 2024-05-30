@@ -689,7 +689,7 @@ func (c *Client) InitializeVoting(delegateAddress common.Address) (api.PDAOIniti
 
 // CanSetSnapshotAddress fetches whether the node's is initialized for on-chain voting
 func (c *Client) CanSetSnapshotAddress(snapshotAddress common.Address, signature string) (api.PDAOCanSetSnapshotAddressResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-set-snapshot-address %s, signature: %s", snapshotAddress.Hex(), signature))
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-set-snapshot-address %s %s", snapshotAddress.Hex(), signature))
 	if err != nil {
 		return api.PDAOCanSetSnapshotAddressResponse{}, fmt.Errorf("could not call can-set-snapshot-address: %w", err)
 	}
@@ -705,7 +705,7 @@ func (c *Client) CanSetSnapshotAddress(snapshotAddress common.Address, signature
 
 // SetSnapshotAddress sets the node's snapshot address
 func (c *Client) SetSnapshotAddress(snapshotAddress common.Address, signature string) (api.PDAOSetSnapshotAddressResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao set-snapshot-address %s, signature: %s", snapshotAddress.Hex(), signature))
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao set-snapshot-address %s %s", snapshotAddress.Hex(), signature))
 	if err != nil {
 		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("could not call set-snapshot-address: %w", err)
 	}
