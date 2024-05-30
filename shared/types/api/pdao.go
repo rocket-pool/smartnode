@@ -429,12 +429,26 @@ type PDAOStatusResponse struct {
 }
 
 type PDAOCanSetSnapshotAddressResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status            string             `json:"status"`
+	Error             string             `json:"error"`
+	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
+	VotingInitialized bool               `json:"votingInitialized"`
 }
 
 type PDAOSetSnapshotAddressResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type PDAOCanClearSnapshotAddressResponse struct {
+	Status            string             `json:"status"`
+	Error             string             `json:"error"`
+	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
+	VotingInitialized bool               `json:"votingInitialized"`
+}
+
+type PDAOClearSnapshotAddressResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`

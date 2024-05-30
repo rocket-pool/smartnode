@@ -21,8 +21,6 @@ import (
 
 func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOCanSetSnapshotAddressResponse, error) {
 
-	// TODO:: this function should really be a `set snapshot address gas estimate", not a "can set snapshot address'
-
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -39,11 +37,24 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 	if err != nil {
 		return nil, err
 	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.PDAOCanSetSnapshotAddressResponse{}
 
-	// Get contract address
+	response.VotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
+	if !response.VotingInitialized {
+		return nil, fmt.Errorf("Voting must be initialized to set a snapshot address. Use 'rocketpool pdao initialize-voting' to initialize voting first.")
+	}
+
+	// Get signer registry contract address
 	addressString := cfg.Smartnode.GetRocketSignerRegistryAddress()
 	if addressString == "" {
 		return nil, fmt.Errorf("Network [%v] does not have a signer registry contract.", cfg.Smartnode.Network.Value.(cfgtypes.Network))
@@ -95,14 +106,6 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 	if err != nil {
 		return nil, err
 	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
@@ -117,11 +120,6 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 
 	// Response
 	response := api.PDAOSetSnapshotAddressResponse{}
-
-	votingInitialized, err := network.GetVotingInitialized(rp, nodeAccount.Address, nil)
-	if !votingInitialized {
-		return nil, fmt.Errorf("Voting must be initialized to set a snapshot address. Use 'rocketpool pdao initialize-voting' to initialize voting first.")
-	}
 
 	// Parse signature into vrs components, v to uint8 and v,s to [32]byte
 	sig, err := apiutils.ParseEIP712(signature)
@@ -152,4 +150,104 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 	return &response, nil
 }
 
-// TODO func unset snapshot address
+func canClearSnapshotAddress(c *cli.Context) (*api.PDAOCanClearSnapshotAddressResponse, error) {
+	// Get services
+	if err := services.RequireNodeWallet(c); err != nil {
+		return nil, err
+	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := services.GetEthClient(c)
+	if err != nil {
+		return nil, err
+	}
+
+	response := api.PDAOCanClearSnapshotAddressResponse{}
+
+	// Get signer registry contract address
+	addressString := cfg.Smartnode.GetRocketSignerRegistryAddress()
+	if addressString == "" {
+		return nil, fmt.Errorf("Network [%v] does not have a signer registry contract.", cfg.Smartnode.Network.Value.(cfgtypes.Network))
+	}
+	rocketSignerRegistryAddress := common.HexToAddress(addressString)
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create the signer registry contract binding
+	rocketSignerRegistryAbi, err := abi.JSON(strings.NewReader(contracts.RocketSignerRegistryABI))
+	if err != nil {
+		return nil, err
+	}
+	contract := &rocketpool.Contract{
+		Contract: bind.NewBoundContract(rocketSignerRegistryAddress, rocketSignerRegistryAbi, ec, ec, ec),
+		Address:  &rocketSignerRegistryAddress,
+		ABI:      &rocketSignerRegistryAbi,
+		Client:   ec,
+	}
+
+	// Get the gas info
+	gasInfo, err := contract.GetTransactionGasInfo(opts, "clearSigningDelegate")
+	if err != nil {
+		return nil, err
+	}
+	response.GasInfo = gasInfo
+
+	return &response, nil
+}
+
+func clearSnapshotAddress(c *cli.Context) (*api.PDAOClearSnapshotAddressResponse, error) {
+	// Get services
+	if err := services.RequireNodeWallet(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	reg, err := services.GetRocketSignerRegistry(c)
+	if err != nil {
+		return nil, err
+	}
+	if reg == nil {
+		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
+	}
+
+	response := api.PDAOClearSnapshotAddressResponse{}
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	}
+
+	// Clear the snapshot address
+	tx, err := reg.ClearSigningDelegate(opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error clearing the snapshot address: %w", err)
+	}
+	response.TxHash = tx.Hash()
+
+	// Return response
+	return &response, nil
+
+}

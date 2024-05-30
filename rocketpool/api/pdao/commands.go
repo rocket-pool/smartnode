@@ -1097,6 +1097,38 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "can-clear-snapshot-address",
+				Usage:     "Checks if snapshot address can be cleared.",
+				UsageText: "rocketpool api pdao can-clear-snapshot-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(canClearSnapshotAddress(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "clear-snapshot-address",
+				Usage:     "Clear the snapshot delegate address for the node",
+				UsageText: "rocketpool api pdao clear-snapshot-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(clearSnapshotAddress(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

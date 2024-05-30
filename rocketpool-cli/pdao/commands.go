@@ -112,6 +112,30 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "clear-snapshot-address",
+				Aliases:   []string{"csa"},
+				Usage:     "Clear the node's snapshot address",
+				UsageText: "rocketpool pdao clear-snapshot-address snapshot-address signature",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm all interactive questions",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return clearSnapshotAddress(c)
+
+				},
+			},
+
+			{
 				Name:      "set-voting-delegate",
 				Aliases:   []string{"svd"},
 				Usage:     "Set the address you want to use when voting on Rocket Pool on-chain governance proposals, or the address you want to delegate your voting power to.",
