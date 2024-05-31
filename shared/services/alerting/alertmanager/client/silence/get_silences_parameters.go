@@ -157,7 +157,7 @@ func (o *GetSilencesParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.R
 	return nil
 }
 
-// bindParamGetSilences binds the parameter filter
+// bindParamFilter binds the parameter filter
 func (o *GetSilencesParams) bindParamFilter(formats strfmt.Registry) []string {
 	filterIR := o.Filter
 

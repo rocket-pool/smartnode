@@ -316,7 +316,7 @@ func (o *GetAlertGroupsParams) WriteToRequest(r runtime.ClientRequest, reg strfm
 	return nil
 }
 
-// bindParamGetAlertGroups binds the parameter filter
+// bindParamFilter binds the parameter filter
 func (o *GetAlertGroupsParams) bindParamFilter(formats strfmt.Registry) []string {
 	filterIR := o.Filter
 
