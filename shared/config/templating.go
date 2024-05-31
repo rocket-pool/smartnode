@@ -231,7 +231,7 @@ func (cfg *SmartNodeConfig) GetExternalIP() string {
 
 // Used by text/template to format bn.yml
 func (cfg *SmartNodeConfig) GetEcHttpEndpoint() string {
-	if cfg.ClientMode.Value == config.ClientMode_Local {
+	if cfg.IsLocalMode() {
 		return fmt.Sprintf("http://%s:%d", ExecutionClientSuffix, cfg.LocalExecutionClient.HttpPort.Value)
 	}
 
@@ -276,7 +276,7 @@ func (cfg *SmartNodeConfig) GetBnOpenPorts() []string {
 
 // Used by text/template to format bn.yml
 func (cfg *SmartNodeConfig) GetEcWsEndpoint() string {
-	if cfg.ClientMode.Value == config.ClientMode_Local {
+	if cfg.IsLocalMode() {
 		return fmt.Sprintf("ws://%s:%d", ExecutionClientSuffix, cfg.LocalExecutionClient.WebsocketPort.Value)
 	}
 
@@ -353,7 +353,7 @@ func (cfg *SmartNodeConfig) GetPrometheusOpenPorts() string {
 // Gets the hostname portion of the Execution Client's URI.
 // Used by text/template to format prometheus.yml.
 func (cfg *SmartNodeConfig) GetExecutionHostname() (string, error) {
-	if cfg.ClientMode.Value == config.ClientMode_Local {
+	if cfg.IsLocalMode() {
 		return ExecutionClientSuffix, nil
 	}
 	ecUrl, err := url.Parse(cfg.ExternalExecutionClient.HttpUrl.Value)
@@ -367,7 +367,7 @@ func (cfg *SmartNodeConfig) GetExecutionHostname() (string, error) {
 // Gets the hostname portion of the Beacon Node's URI.
 // Used by text/template to format prometheus.yml.
 func (cfg *SmartNodeConfig) GetBeaconHostname() (string, error) {
-	if cfg.ClientMode.Value == config.ClientMode_Local {
+	if cfg.IsLocalMode() {
 		return BeaconNodeSuffix, nil
 	}
 	bnUrl, err := url.Parse(cfg.ExternalBeaconClient.HttpUrl.Value)
