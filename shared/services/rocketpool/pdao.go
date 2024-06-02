@@ -735,7 +735,7 @@ func (c *Client) CanClearSnapshotAddress() (api.PDAOCanClearSnapshotAddressRespo
 	return response, nil
 }
 
-// SetSnapshotAddress sets the node's snapshot address
+// ClearSnapshotAddress sets the node's snapshot address
 func (c *Client) ClearSnapshotAddress() (api.PDAOSetSnapshotAddressResponse, error) {
 	responseBytes, err := c.callAPI("pdao clear-snapshot-address")
 	if err != nil {

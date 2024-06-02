@@ -60,8 +60,8 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 	}
 
 	// Log & Return
-	fmt.Println("The node's snapshot address was successfully set")
-	// fmt.Printf("The node's snapshot address was successfully set to %s.\n", snapshotAddress)
+	// fmt.Println("The node's snapshot address was successfully set.")
+	fmt.Printf("The node's snapshot address was successfully set to %s\n", snapshotAddress.String())
 	return nil
 }
 
@@ -90,6 +90,11 @@ func clearSnapshotAddress(c *cli.Context) error {
 		return fmt.Errorf("error calling can-clear-set-snapshot-address: %w", err)
 	}
 
+	// Return if there is no signer
+	if resp.NodeToSigner == (common.Address{}) {
+		return fmt.Errorf("Could not clear snapshot address, no signer set.")
+	}
+
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, c.Bool("yes"))
 	if err != nil {
@@ -115,7 +120,7 @@ func clearSnapshotAddress(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Println("The node's snapshot address was sucessfully cleared")
+	fmt.Println("The node's snapshot address was sucessfully cleared.")
 	return nil
 
 }

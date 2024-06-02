@@ -52,7 +52,7 @@ func getStatus(c *cli.Context) error {
 	// Get protocol DAO proposals
 	claimableBondsResponse, err := rp.PDAOGetClaimableBonds()
 	if err != nil {
-		fmt.Errorf("error checking for claimable bonds: %w", err)
+		return fmt.Errorf("error checking for claimable bonds: %w", err)
 	}
 	claimableBonds := claimableBondsResponse.ClaimableBonds
 
@@ -88,7 +88,7 @@ func getStatus(c *cli.Context) error {
 	// Onchain Voting Status
 	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
 	if response.IsVotingInitialized {
-		fmt.Println("The node has been initialized for onchain voting.")
+		fmt.Printf("The node has %s%s%s been initialized for onchain voting.", colorBlue, response.AccountAddressFormatted, colorReset)
 
 	} else {
 		fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")

@@ -168,6 +168,20 @@ func canClearSnapshotAddress(c *cli.Context) (*api.PDAOCanClearSnapshotAddressRe
 		return nil, err
 	}
 
+	reg, err := services.GetRocketSignerRegistry(c)
+	if err != nil {
+		return nil, err
+	}
+	if reg == nil {
+		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
+	}
+
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
 	response := api.PDAOCanClearSnapshotAddressResponse{}
 
 	// Get signer registry contract address
@@ -181,6 +195,19 @@ func canClearSnapshotAddress(c *cli.Context) (*api.PDAOCanClearSnapshotAddressRe
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if the node already has a signer
+	callOpts := &bind.CallOpts{}
+	nodeToSigner, err := reg.NodeToSigner(callOpts, nodeAccount.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return if there is no signer
+	response.NodeToSigner = nodeToSigner
+	if nodeToSigner == (common.Address{}) {
+		return &response, nil
 	}
 
 	// Create the signer registry contract binding
