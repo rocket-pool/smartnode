@@ -97,6 +97,9 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 
 	// Get the node shares
 	err = c.rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
+		if !details[i].CanClose {
+			return nil
+		}
 		mpv3, success := minipool.GetMinipoolAsV3(mps[i])
 		if success {
 			details[i].Distributed = mpv3.HasUserDistributed.Get()
