@@ -190,6 +190,17 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 			return
 		}
 
+		// Offline mode
+		if cfg.Offline.Value == true {
+			operatorAddress := cfg.NodeAddress.Value.(string)
+
+			if operatorAddress == "" {
+				fmt.Println("Offline mode enabled, but no operator address specified in config file, skipping offline setup...")
+				return
+			}
+			nodeWallet.SetOffline(operatorAddress)
+		}
+
 		// Keystores
 		lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
 		lodestarKeystore := lokeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
