@@ -35,6 +35,11 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 		return fmt.Errorf("error calling can-set-snapshot-address: %w", err)
 	}
 
+	// Return if there is no signer
+	if resp.NodeToSigner == snapshotAddress {
+		return fmt.Errorf("Could not set snapshot address, signer address already in use.")
+	}
+
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, c.Bool("yes"))
 	if err != nil {

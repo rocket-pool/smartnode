@@ -433,6 +433,7 @@ type PDAOCanSetSnapshotAddressResponse struct {
 	Error             string             `json:"error"`
 	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
 	VotingInitialized bool               `json:"votingInitialized"`
+	NodeToSigner      common.Address     `json:"nodeToSigner"`
 }
 
 type PDAOSetSnapshotAddressResponse struct {

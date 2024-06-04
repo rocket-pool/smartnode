@@ -46,6 +46,14 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 		return nil, err
 	}
 
+	reg, err := services.GetRocketSignerRegistry(c)
+	if err != nil {
+		return nil, err
+	}
+	if reg == nil {
+		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
+	}
+
 	// Response
 	response := api.PDAOCanSetSnapshotAddressResponse{}
 
@@ -65,6 +73,19 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if the node already has a signer
+	callOpts := &bind.CallOpts{}
+	nodeToSigner, err := reg.NodeToSigner(callOpts, nodeAccount.Address)
+	if err != nil {
+		return nil, err
+	}
+
+	// Return if there is no signer
+	response.NodeToSigner = nodeToSigner
+	if nodeToSigner == snapshotAddress {
+		return &response, nil
 	}
 
 	// Create the signer registry contract binding
