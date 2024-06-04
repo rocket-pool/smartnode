@@ -98,8 +98,8 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -112,6 +112,7 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 
 	// Upgrade minipools
 	for _, minipool := range selectedMinipools {
+		g.Assign(rp)
 		response, err := rp.DelegateUpgradeMinipool(minipool)
 		if err != nil {
 			fmt.Printf("Could not upgrade minipool %s: %s.\n", minipool.Hex(), err)
@@ -204,8 +205,8 @@ func delegateRollbackMinipools(c *cli.Context) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -218,6 +219,7 @@ func delegateRollbackMinipools(c *cli.Context) error {
 
 	// Rollback minipools
 	for _, minipool := range selectedMinipools {
+		g.Assign(rp)
 		response, err := rp.DelegateRollbackMinipool(minipool)
 		if err != nil {
 			fmt.Printf("Could not rollback minipool %s: %s.\n", minipool.Hex(), err)
@@ -330,8 +332,8 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -344,6 +346,7 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 
 	// Update minipools
 	for _, minipool := range selectedMinipools {
+		g.Assign(rp)
 		response, err := rp.SetUseLatestDelegateMinipool(minipool, setting)
 		if err != nil {
 			fmt.Printf("Could not update the auto-upgrade setting for minipool %s: %s.\n", minipool.Hex(), err)

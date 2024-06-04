@@ -107,8 +107,8 @@ func recoverRplFromLot(c *cli.Context) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -121,6 +121,7 @@ func recoverRplFromLot(c *cli.Context) error {
 
 	// Claim RPL from lots
 	for _, lot := range selectedLots {
+		g.Assign(rp)
 		response, err := rp.RecoverUnclaimedRPLFromLot(lot.Details.Index)
 		if err != nil {
 			fmt.Printf("Could not recover unclaimed RPL from lot %d: %s.\n", lot.Details.Index, err)

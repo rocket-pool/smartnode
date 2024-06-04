@@ -18,14 +18,34 @@ const colorReset string = "\033[0m"
 const colorYellow string = "\033[33m"
 const colorBlue string = "\033[36m"
 
+type Gas struct {
+	maxFeeGwei         float64
+	maxPriorityFeeGwei float64
+	gasLimit           uint64
+}
+
 func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) error {
+	g, err := GetMaxFeeAndLimit(gasInfo, rp, headless)
+	if err != nil {
+		return err
+	}
+	g.Assign(rp)
+	return nil
+}
+
+func (g *Gas) Assign(rp *rpsvc.Client) {
+	rp.AssignGasSettings(g.maxFeeGwei, g.maxPriorityFeeGwei, g.gasLimit)
+	return
+}
+
+func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) (Gas, error) {
 
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
+		return Gas{}, fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
 	}
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
+		return Gas{}, fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
 	}
 
 	// Get the current settings from the CLI arguments
@@ -69,7 +89,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 		if headless {
 			maxFeeWei, err := GetHeadlessMaxFeeWei()
 			if err != nil {
-				return err
+				return Gas{}, err
 			}
 			maxFeeGwei = eth.WeiToGwei(maxFeeWei)
 		} else {
@@ -87,7 +107,7 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 					// Print the Etherscan data and ask for an amount
 					maxFeeGwei = handleEtherscanGasPrices(etherscanData, gasInfo, maxPriorityFeeGwei, gasLimit)
 				} else {
-					return fmt.Errorf("Error getting gas price suggestions: %w", err)
+					return Gas{}, fmt.Errorf("Error getting gas price suggestions: %w", err)
 				}
 			}
 		}
@@ -100,9 +120,8 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 	}
 
 	if maxPriorityFeeGwei > maxFeeGwei {
-		return fmt.Errorf("Priority fee cannot be greater than max fee.")
+		return Gas{}, fmt.Errorf("Priority fee cannot be greater than max fee.")
 	}
-
 	// Verify the node has enough ETH to use this max fee
 	maxFee := eth.GweiToWei(maxFeeGwei)
 	ethRequired := big.NewInt(0)
@@ -115,11 +134,9 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 	if err != nil {
 		fmt.Printf("%sWARNING: couldn't check the ETH balance of the node (%s)\nPlease ensure your node wallet has enough ETH to pay for this transaction.%s\n\n", colorYellow, err.Error(), colorReset)
 	} else if response.Balance.Cmp(ethRequired) < 0 {
-		return fmt.Errorf("Your node has %.6f ETH in its wallet, which is not enough to pay for this transaction with a max fee of %.4f gwei; you require at least %.6f more ETH.", eth.WeiToEth(response.Balance), maxFeeGwei, eth.WeiToEth(big.NewInt(0).Sub(ethRequired, response.Balance)))
+		return Gas{}, fmt.Errorf("Your node has %.6f ETH in its wallet, which is not enough to pay for this transaction with a max fee of %.4f gwei; you require at least %.6f more ETH.", eth.WeiToEth(response.Balance), maxFeeGwei, eth.WeiToEth(big.NewInt(0).Sub(ethRequired, response.Balance)))
 	}
-
-	rp.AssignGasSettings(maxFeeGwei, maxPriorityFeeGwei, gasLimit)
-	return nil
+	return Gas{maxFeeGwei, maxPriorityFeeGwei, gasLimit}, nil
 
 }
 
@@ -128,15 +145,15 @@ func GetHeadlessMaxFeeWei() (*big.Int, error) {
 	etherchainData, err := etherchain.GetGasPrices()
 	if err == nil {
 		return etherchainData.RapidWei, nil
+	} else {
+		fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
+		etherscanData, err := etherscan.GetGasPrices()
+		if err == nil {
+			return eth.GweiToWei(etherscanData.FastGwei), nil
+		} else {
+			return nil, fmt.Errorf("Error getting gas price suggestions: %w", err)
+		}
 	}
-
-	fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
-	etherscanData, err := etherscan.GetGasPrices()
-	if err == nil {
-		return eth.GweiToWei(etherscanData.FastGwei), nil
-	}
-
-	return nil, fmt.Errorf("Error getting gas price suggestions: %w", err)
 }
 
 func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {
@@ -219,7 +236,7 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 
 		desiredPriceFloat, err := strconv.ParseFloat(desiredPrice, 64)
 		if err != nil {
-			fmt.Printf("Not a valid gas price (%s), try again.\n", err.Error())
+			fmt.Println("Not a valid gas price (%s), try again.", err.Error())
 			continue
 		}
 		if desiredPriceFloat <= 0 {
@@ -297,7 +314,7 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 
 		desiredPriceFloat, err := strconv.ParseFloat(desiredPrice, 64)
 		if err != nil {
-			fmt.Printf("Not a valid gas price (%s), try again.\n", err.Error())
+			fmt.Println("Not a valid gas price (%s), try again.", err.Error())
 			continue
 		}
 		if desiredPriceFloat <= 0 {
