@@ -103,8 +103,8 @@ func dissolveMinipools(c *cli.Context) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Get max fees
-	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Assign max fees
+	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -117,7 +117,6 @@ func dissolveMinipools(c *cli.Context) error {
 
 	// Dissolve and close minipools
 	for _, minipool := range selectedMinipools {
-		g.Assign(rp)
 		response, err := rp.DissolveMinipool(minipool.Address)
 		if err != nil {
 			fmt.Printf("Could not dissolve minipool %s: %s.\n", minipool.Address.Hex(), err)
