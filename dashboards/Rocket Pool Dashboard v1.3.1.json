@@ -2899,7 +2899,7 @@
         "type": "prometheus",
         "uid": "${DS_PROMETHEUS}"
       },
-      "description": "This is how much ETH is currently available for distribution in each of your minipool contracts (on the execution layer). Note that if any of them have a refund, this shows the total balance **minus** that refund amount - in other words, it shows whatever's left over after your refund.",
+      "description": "This is how much ETH is currently available for distribution in all of your minipool contracts (on the execution layer). Note that if any of them have a refund, this shows the total balance **minus** that refund amount - in other words, it shows whatever's left over after your refund.",
       "fieldConfig": {
         "defaults": {
           "color": {
