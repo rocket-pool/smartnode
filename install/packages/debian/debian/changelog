@@ -1,3 +1,10 @@
+rocketpool (2.0.0~b3) UNRELEASED; urgency=medium
+
+  * Fixed the `minipool close` issue.
+  * Fixed the client mode logic. 
+
+ -- Rocket Pool <dev@rocketpool.net>  Wed, 05 Jun 2024 12:36:02 +0000
+
 rocketpool (2.0.0~b2) unstable; urgency=medium
 
   * Fixed voting on Protocol DAO proposals.
