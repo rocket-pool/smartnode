@@ -441,7 +441,7 @@ func createDefaultRelays() []config.MevRelay {
 		{
 			ID:          config.MevRelayID_TitanGlobal,
 			Name:        "Titan Global (non-filtering)",
-			Description: "Select this to enable the \"non-filtering\" relay from Titan.",
+			Description: "Titan Relay is a neutral, Rust-based MEV-Boost Relay optimized for low latency throughput, geographical distribution, and robustness. Select this to enable the \"non-filtering\" relay from Titan.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@global.titanrelay.xyz",
 				config.Network_Devnet:  "",
@@ -453,7 +453,7 @@ func createDefaultRelays() []config.MevRelay {
 		{
 			ID:          config.MevRelayID_TitanRegional,
 			Name:        "Titan Regional (filtering)",
-			Description: "Select this to enable the \"filtering\" relay from Titan.",
+			Description: "Titan Relay is a neutral, Rust-based MEV-Boost Relay optimized for low latency throughput, geographical distribution, and robustness. Select this to enable the \"filtering\" relay from Titan.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
 				config.Network_Devnet:  "",
