@@ -427,3 +427,31 @@ type PDAOStatusResponse struct {
 	TotalDelegatedVp        *big.Int       `json:"totalDelegateVp"`
 	SumVotingPower          *big.Int       `json:"sumVotingPower"`
 }
+
+type PDAOCanSetSnapshotAddressResponse struct {
+	Status            string             `json:"status"`
+	Error             string             `json:"error"`
+	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
+	VotingInitialized bool               `json:"votingInitialized"`
+	NodeToSigner      common.Address     `json:"nodeToSigner"`
+}
+
+type PDAOSetSnapshotAddressResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type PDAOCanClearSnapshotAddressResponse struct {
+	Status            string             `json:"status"`
+	Error             string             `json:"error"`
+	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
+	VotingInitialized bool               `json:"votingInitialized"`
+	NodeToSigner      common.Address     `json:"nodeToSigner"`
+}
+
+type PDAOClearSnapshotAddressResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}

@@ -33,26 +33,28 @@ const (
 
 // Service instances & initializers
 var (
-	cfg                *config.RocketPoolConfig
-	passwordManager    *passwords.PasswordManager
-	nodeWallet         *wallet.Wallet
-	ecManager          *ExecutionClientManager
-	bcManager          *BeaconClientManager
-	rocketPool         *rocketpool.RocketPool
-	snapshotDelegation *contracts.SnapshotDelegation
-	beaconClient       beacon.Client
-	docker             *client.Client
+	cfg                  *config.RocketPoolConfig
+	passwordManager      *passwords.PasswordManager
+	nodeWallet           *wallet.Wallet
+	ecManager            *ExecutionClientManager
+	bcManager            *BeaconClientManager
+	rocketPool           *rocketpool.RocketPool
+	snapshotDelegation   *contracts.SnapshotDelegation
+	rocketSignerRegistry *contracts.RocketSignerRegistry
+	beaconClient         beacon.Client
+	docker               *client.Client
 
-	initCfg                sync.Once
-	initPasswordManager    sync.Once
-	initNodeWallet         sync.Once
-	initECManager          sync.Once
-	initBCManager          sync.Once
-	initRocketPool         sync.Once
-	initOneInchOracle      sync.Once
-	initSnapshotDelegation sync.Once
-	initBeaconClient       sync.Once
-	initDocker             sync.Once
+	initCfg                  sync.Once
+	initPasswordManager      sync.Once
+	initNodeWallet           sync.Once
+	initECManager            sync.Once
+	initBCManager            sync.Once
+	initRocketPool           sync.Once
+	initOneInchOracle        sync.Once
+	initSnapshotDelegation   sync.Once
+	initRocketSignerRegistry sync.Once
+	initBeaconClient         sync.Once
+	initDocker               sync.Once
 )
 
 //
@@ -109,6 +111,18 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 	}
 
 	return getRocketPool(cfg, ec)
+}
+
+func GetRocketSignerRegistry(c *cli.Context) (*contracts.RocketSignerRegistry, error) {
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := getEthClient(c, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return getRocketSignerRegistry(cfg, ec)
 }
 
 func GetSnapshotDelegation(c *cli.Context) (*contracts.SnapshotDelegation, error) {
@@ -229,6 +243,17 @@ func getRocketPool(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClie
 		rocketPool, err = rocketpool.NewRocketPool(client, common.HexToAddress(cfg.Smartnode.GetStorageAddress()))
 	})
 	return rocketPool, err
+}
+
+func getRocketSignerRegistry(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*contracts.RocketSignerRegistry, error) {
+	var err error
+	initRocketSignerRegistry.Do(func() {
+		address := cfg.Smartnode.GetRocketSignerRegistryAddress()
+		if address != "" {
+			rocketSignerRegistry, err = contracts.NewRocketSignerRegistry(common.HexToAddress(address), client)
+		}
+	})
+	return rocketSignerRegistry, err
 }
 
 func getSnapshotDelegation(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*contracts.SnapshotDelegation, error) {
