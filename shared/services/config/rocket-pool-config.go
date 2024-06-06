@@ -19,7 +19,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	addontypes "github.com/rocket-pool/smartnode/shared/types/addons"
 	"github.com/rocket-pool/smartnode/shared/types/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"gopkg.in/yaml.v2"
 )
 
@@ -1458,10 +1457,6 @@ func (cfg *RocketPoolConfig) Validate() []string {
 		errors = append(errors, "You are using a locally-managed Execution client and an externally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	} else if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_External && cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local {
 		errors = append(errors, "You are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
-	}
-
-	if cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient) == cfgtypes.ExecutionClient_Reth && cfg.Smartnode.Network.Value.(cfgtypes.Network) == cfgtypes.Network_Mainnet {
-		errors = append(errors, "The Reth client is currently an alpha release and not to be used on Mainnet")
 	}
 
 	// Ensure there's a MEV-boost URL
