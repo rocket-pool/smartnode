@@ -19,7 +19,7 @@ type ClientStatus struct {
 	IsWorking    bool    `json:"isWorking"`
 	IsSynced     bool    `json:"isSynced"`
 	SyncProgress float64 `json:"syncProgress"`
-	ChainId      uint    `json:"chainId"`
+	NetworkId    uint    `json:"networkId"`
 	Error        string  `json:"error"`
 }
 
