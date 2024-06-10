@@ -112,8 +112,8 @@ func claimBonds(c *cli.Context) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -126,6 +126,7 @@ func claimBonds(c *cli.Context) error {
 
 	// Claim bonds from proposals
 	for _, bond := range selectedClaims {
+		g.Assign(rp)
 		indices := getClaimIndicesForBond(bond)
 		response, err := rp.PDAOClaimBonds(bond.IsProposer, bond.ProposalID, indices)
 		if err != nil {

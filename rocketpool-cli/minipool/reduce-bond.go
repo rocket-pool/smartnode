@@ -179,8 +179,8 @@ func beginReduceBondAmount(c *cli.Context) error {
 		return nil
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -193,6 +193,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 
 	// Begin bond reduction
 	for _, minipool := range selectedMinipools {
+		g.Assign(rp)
 		response, err := rp.BeginReduceBondAmount(minipool.Address, newBondAmount)
 		if err != nil {
 			fmt.Printf("Could not begin bond reduction for minipool %s: %s.\n", minipool.Address.Hex(), err.Error())
@@ -318,8 +319,8 @@ func reduceBondAmount(c *cli.Context) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -332,6 +333,7 @@ func reduceBondAmount(c *cli.Context) error {
 
 	// Begin bond reduction
 	for _, minipool := range selectedMinipools {
+		g.Assign(rp)
 		response, err := rp.ReduceBondAmount(minipool.Address)
 		if err != nil {
 			fmt.Printf("Could not reduce bond for minipool %s: %s.\n", minipool.Address.Hex(), err.Error())

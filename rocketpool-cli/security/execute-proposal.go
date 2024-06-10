@@ -118,8 +118,8 @@ func executeProposal(c *cli.Context) error {
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	// Get max fees
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -132,6 +132,7 @@ func executeProposal(c *cli.Context) error {
 
 	// Execute proposals
 	for _, proposal := range selectedProposals {
+		g.Assign(rp)
 		response, err := rp.SecurityExecuteProposal(proposal.ID)
 		if err != nil {
 			fmt.Printf("Could not execute proposal %d: %s.\n", proposal.ID, err)
