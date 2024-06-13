@@ -319,6 +319,6 @@ type ProtocolDAOStatusResponse struct {
 	NodeRPLLocked           *big.Int       `json:"nodeRPLLocked"`
 	AccountAddress          common.Address `json:"accountAddress"`
 	AccountAddressFormatted string         `json:"accountAddressFormatted"`
-	TotalDelegatedVp        *big.Int       `json:"totalDelegateVp"`
+	TotalDelegatedVp        *big.Int       `json:"totalDelegatedVp"`
 	SumVotingPower          *big.Int       `json:"sumVotingPower"`
 }
