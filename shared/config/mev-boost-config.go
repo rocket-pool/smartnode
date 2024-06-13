@@ -176,6 +176,8 @@ func NewMevBoostConfig(parent *SmartNodeConfig) *MevBoostConfig {
 		EdenRelay:               generateRelayParameter(ids.MevBoostEdenID, relayMap[MevRelayID_Eden]),
 		UltrasoundRelay:         generateRelayParameter(ids.MevBoostUltrasoundID, relayMap[MevRelayID_Ultrasound]),
 		AestusRelay:             generateRelayParameter(ids.MevBoostAestusID, relayMap[MevRelayID_Aestus]),
+		TitanGlobalRelay:        generateRelayParameter(ids.MevBoostTitanGlobalID, relayMap[MevRelayID_TitanGlobal]),
+		TitanRegionalRelay:      generateRelayParameter(ids.MevBoostTitanRegionalID, relayMap[MevRelayID_TitanRegional]),
 
 		Port: config.Parameter[uint16]{
 			ParameterCommon: &config.ParameterCommon{

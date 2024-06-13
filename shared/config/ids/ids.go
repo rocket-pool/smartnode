@@ -59,6 +59,8 @@ const (
 	MevBoostEdenID                 string = "edenEnabled"
 	MevBoostUltrasoundID           string = "ultrasoundEnabled"
 	MevBoostAestusID               string = "aestusEnabled"
+	MevBoostTitanGlobalID          string = "titanGlobalEnabled"
+	MevBoostTitanRegionalID        string = "titanRegionalEnabled"
 
 	// Native
 	NativeValidatorRestartCommandID string = "nativeValidatorRestartCommand"

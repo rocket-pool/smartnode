@@ -491,6 +491,8 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 		newMevBoostConfig[ids.MevBoostEdenID] = legacyMevBoostConfig["edenEnabled"]
 		newMevBoostConfig[ids.MevBoostUltrasoundID] = legacyMevBoostConfig["ultrasoundEnabled"]
 		newMevBoostConfig[ids.MevBoostAestusID] = legacyMevBoostConfig["aestusEnabled"]
+		newMevBoostConfig[ids.MevBoostTitanGlobalID] = legacyMevBoostConfig["titanGlobalEnabled"]
+		newMevBoostConfig[ids.MevBoostTitanRegionalID] = legacyMevBoostConfig["titanRegionalEnabled"]
 		newMevBoostConfig[nmc_ids.PortID] = legacyMevBoostConfig["port"]
 		newMevBoostConfig[nmc_ids.OpenPortID] = legacyMevBoostConfig["openRpcPort"]
 		newMevBoostConfig[nmc_ids.ContainerTagID] = legacyMevBoostConfig["containerTag"]

@@ -33,8 +33,8 @@ const (
 	MevRelayID_Eden               MevRelayID = "eden"
 	MevRelayID_Ultrasound         MevRelayID = "ultrasound"
 	MevRelayID_Aestus             MevRelayID = "aestus"
-	MevRelayID_TitanGlobal        MevRelayID = "titalGlobal"
-	MevRelayID_TitanRegional      MevRelayID = "titalRegional"
+	MevRelayID_TitanGlobal        MevRelayID = "titanGlobal"
+	MevRelayID_TitanRegional      MevRelayID = "titanRegional"
 )
 
 // Enum to describe MEV-Boost relay selection mode
