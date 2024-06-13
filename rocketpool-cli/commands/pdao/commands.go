@@ -126,7 +126,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Subcommands: []*cli.Command{
 			{
 				Name:    "settings",
-				Aliases: []string{"s"},
+				Aliases: []string{"st"},
 				Usage:   "Show all of the current Protocol DAO settings and values",
 				Action: func(c *cli.Context) error {
 					// Run
