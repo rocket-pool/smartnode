@@ -130,7 +130,7 @@ func (c *nodeSendContext) PrepareData(data *api.NodeSendData, opts *bind.Transac
 	}
 
 	// Check the balance
-	data.InsufficientBalance = (data.Balance.Cmp(common.Big0) == 0)
+	data.InsufficientBalance = (data.Balance.Cmp(c.amount) == -1)
 	data.CanSend = !(data.InsufficientBalance)
 
 	// Get the TX Info
