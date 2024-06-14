@@ -5,6 +5,7 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/v2/types"
+	"github.com/rocket-pool/rocketpool-go/v2/utils/strings"
 	"github.com/urfave/cli/v2"
 
 	ncli "github.com/rocket-pool/node-manager-core/cli/utils"
@@ -36,6 +37,10 @@ func executeProposals(c *cli.Context) error {
 	// Get executable proposals
 	executableProposals := []api.ProtocolDaoProposalDetails{}
 	for _, proposal := range proposals.Data.Proposals {
+		if len(proposal.Message) > 200 {
+			proposal.Message = proposal.Message[:200]
+		}
+		proposal.Message = strings.Sanitize(proposal.Message)
 		if proposal.State == types.ProtocolDaoProposalState_Succeeded {
 			executableProposals = append(executableProposals, proposal)
 		}
