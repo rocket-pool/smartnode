@@ -30,7 +30,7 @@ func exportWallet(c *cli.Context) error {
 		// Check if stdout is interactive
 		stat, err := os.Stdout.Stat()
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "An error occured while determining whether or not the output is a tty: %v\n"+
+			fmt.Fprintf(os.Stderr, "An error occurred while determining whether or not the output is a tty: %v\n"+
 				"Use \"rocketpool --secure-session wallet export\" to bypass.\n", err)
 			os.Exit(1)
 		}
