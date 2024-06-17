@@ -2,14 +2,11 @@ package config
 
 import (
 	"github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/sys"
 )
 
 const (
 	lighthouseTagPortableTest string = "sigp/lighthouse:v5.2.0"
 	lighthouseTagPortableProd string = "sigp/lighthouse:v5.2.0"
-	lighthouseTagModernTest   string = "sigp/lighthouse:v5.2.0-modern"
-	lighthouseTagModernProd   string = "sigp/lighthouse:v5.2.0-modern"
 	defaultLhMaxPeers         uint16 = 100
 )
 
@@ -68,9 +65,9 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 			Description: "The tag name of the Lighthouse container you want to use from Docker Hub.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: getLighthouseTagProd(),
-				config.Network_Devnet:  getLighthouseTagTest(),
-				config.Network_Holesky: getLighthouseTagTest(),
+				config.Network_Mainnet: lighthouseTagPortableProd,
+				config.Network_Devnet:  lighthouseTagPortableTest,
+				config.Network_Holesky: lighthouseTagPortableTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
@@ -135,22 +132,4 @@ func (cfg *LighthouseConfig) GetName() string {
 // The the title for the config
 func (cfg *LighthouseConfig) GetConfigTitle() string {
 	return cfg.Title
-}
-
-// Get the appropriate LH default tag for production
-func getLighthouseTagProd() string {
-	missingFeatures := sys.GetMissingModernCpuFeatures()
-	if len(missingFeatures) > 0 {
-		return lighthouseTagPortableProd
-	}
-	return lighthouseTagModernProd
-}
-
-// Get the appropriate LH default tag for testnets
-func getLighthouseTagTest() string {
-	missingFeatures := sys.GetMissingModernCpuFeatures()
-	if len(missingFeatures) > 0 {
-		return lighthouseTagPortableTest
-	}
-	return lighthouseTagModernTest
 }
