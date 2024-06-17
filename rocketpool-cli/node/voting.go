@@ -68,7 +68,7 @@ func nodeSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	}
 
 	// Log & return
-	fmt.Printf("The node's voting delegate was successfuly set to %s.\n", addressString)
+	fmt.Printf("The node's voting delegate was successfully set to %s.\n", addressString)
 	return nil
 
 }

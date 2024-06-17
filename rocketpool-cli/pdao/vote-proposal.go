@@ -142,7 +142,7 @@ func voteOnProposal(c *cli.Context) error {
 			return err
 		}
 	} else {
-		// Check if proposal can be overriden on
+		// Check if proposal can be overridden on
 		actionString = "override the Phase 1 vote"
 		actionPast = "overrode the Phase 1 vote with a vote for"
 		canVote, err = rp.PDAOCanOverrideVote(selectedProposal.ID, voteDirection)
