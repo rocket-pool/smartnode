@@ -1047,16 +1047,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "can-set-snapshot-address",
+				Name:      "can-set-signalling-address",
 				Usage:     "Checks if snapshot address can be set.",
-				UsageText: "rocketpool api pdao can-set-snapshot-address snapshot-address signature",
+				UsageText: "rocketpool api pdao can-set-signalling-address signalling-address signature",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					snapshotAddress, err := cliutils.ValidateAddress("snapshot-address", c.Args().Get(0))
+					snapshotAddress, err := cliutils.ValidateAddress("signalling-address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -1073,16 +1073,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "set-snapshot-address",
+				Name:      "set-signalling-address",
 				Usage:     "Set the snapshot delegate address for the node",
-				UsageText: "rocketpool api pdao set-snapshot-address snapshot-address signature",
+				UsageText: "rocketpool api pdao set-signalling-address signalling-address signature",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					snapshotAddress, err := cliutils.ValidateAddress("snapshot-address", c.Args().Get(0))
+					snapshotAddress, err := cliutils.ValidateAddress("signalling-address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -1098,9 +1098,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "can-clear-snapshot-address",
+				Name:      "can-clear-signalling-address",
 				Usage:     "Checks if snapshot address can be cleared.",
-				UsageText: "rocketpool api pdao can-clear-snapshot-address",
+				UsageText: "rocketpool api pdao can-clear-signalling-address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -1114,9 +1114,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "clear-snapshot-address",
+				Name:      "clear-signalling-address",
 				Usage:     "Clear the snapshot delegate address for the node",
-				UsageText: "rocketpool api pdao clear-snapshot-address",
+				UsageText: "rocketpool api pdao clear-signalling-address",
 				Action: func(c *cli.Context) error {
 
 					// Validate args

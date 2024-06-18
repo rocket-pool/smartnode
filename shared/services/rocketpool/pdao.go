@@ -687,66 +687,66 @@ func (c *Client) InitializeVoting(delegateAddress common.Address) (api.PDAOIniti
 	return response, nil
 }
 
-// CanSetSnapshotAddress fetches gas info and if a node can set a snapshot address
-func (c *Client) CanSetSnapshotAddress(snapshotAddress common.Address, signature string) (api.PDAOCanSetSnapshotAddressResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-set-snapshot-address %s %s", snapshotAddress.Hex(), signature))
+// CanSetSignallingAddress fetches gas info and if a node can set the signalling address
+func (c *Client) CanSetSignallingAddress(snapshotAddress common.Address, signature string) (api.PDAOCanSetSignallingAddressResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-set-signalling-address %s %s", snapshotAddress.Hex(), signature))
 	if err != nil {
-		return api.PDAOCanSetSnapshotAddressResponse{}, fmt.Errorf("could not call can-set-snapshot-address: %w", err)
+		return api.PDAOCanSetSignallingAddressResponse{}, fmt.Errorf("could not call can-set-signalling-address: %w", err)
 	}
-	var response api.PDAOCanSetSnapshotAddressResponse
+	var response api.PDAOCanSetSignallingAddressResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOCanSetSnapshotAddressResponse{}, fmt.Errorf("could not decode can-set-snapshot-address response: %w", err)
+		return api.PDAOCanSetSignallingAddressResponse{}, fmt.Errorf("could not decode can-set-signalling-address response: %w", err)
 	}
 	if response.Error != "" {
-		return api.PDAOCanSetSnapshotAddressResponse{}, fmt.Errorf("error after requesting can-set-snapshot-address: %s", response.Error)
+		return api.PDAOCanSetSignallingAddressResponse{}, fmt.Errorf("error after requesting can-set-signalling-address: %s", response.Error)
 	}
 	return response, nil
 }
 
-// SetSnapshotAddress sets the node's snapshot address
-func (c *Client) SetSnapshotAddress(snapshotAddress common.Address, signature string) (api.PDAOSetSnapshotAddressResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao set-snapshot-address %s %s", snapshotAddress.Hex(), signature))
+// SetSignallingAddress sets the node's signalling address
+func (c *Client) SetSignallingAddress(signallingAddress common.Address, signature string) (api.PDAOSetSignallingAddressResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao set-signalling-address %s %s", signallingAddress.Hex(), signature))
 	if err != nil {
-		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("could not call set-snapshot-address: %w", err)
+		return api.PDAOSetSignallingAddressResponse{}, fmt.Errorf("could not call set-signalling-address: %w", err)
 	}
-	var response api.PDAOSetSnapshotAddressResponse
+	var response api.PDAOSetSignallingAddressResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("could not decode set-snapshot-address response: %w", err)
+		return api.PDAOSetSignallingAddressResponse{}, fmt.Errorf("could not decode set-signalling-address response: %w", err)
 	}
 	if response.Error != "" {
-		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("error after requesting set-snapshot-address: %s", response.Error)
+		return api.PDAOSetSignallingAddressResponse{}, fmt.Errorf("error after requesting set-signalling-address: %s", response.Error)
 	}
 	return response, nil
 }
 
 // CanClearSnapshotAddress fetches gas info and if a node can clear a snapshot address
-func (c *Client) CanClearSnapshotAddress() (api.PDAOCanClearSnapshotAddressResponse, error) {
-	responseBytes, err := c.callAPI("pdao can-clear-snapshot-address")
+func (c *Client) CanClearSnapshotAddress() (api.PDAOCanClearSignallingAddressResponse, error) {
+	responseBytes, err := c.callAPI("pdao can-clear-signalling-address")
 	if err != nil {
-		return api.PDAOCanClearSnapshotAddressResponse{}, fmt.Errorf("could not call can-clear-snapshot-address: %w", err)
+		return api.PDAOCanClearSignallingAddressResponse{}, fmt.Errorf("could not call can-clear-signalling-address: %w", err)
 	}
-	var response api.PDAOCanClearSnapshotAddressResponse
+	var response api.PDAOCanClearSignallingAddressResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOCanClearSnapshotAddressResponse{}, fmt.Errorf("could not decode can-clear-snapshot-address response: %w", err)
+		return api.PDAOCanClearSignallingAddressResponse{}, fmt.Errorf("could not decode can-clear-signalling-address response: %w", err)
 	}
 	if response.Error != "" {
-		return api.PDAOCanClearSnapshotAddressResponse{}, fmt.Errorf("error after requesting can-clear-snapshot-address: %s", response.Error)
+		return api.PDAOCanClearSignallingAddressResponse{}, fmt.Errorf("error after requesting can-clear-signalling-address: %s", response.Error)
 	}
 	return response, nil
 }
 
 // ClearSnapshotAddress sets the node's snapshot address
-func (c *Client) ClearSnapshotAddress() (api.PDAOSetSnapshotAddressResponse, error) {
-	responseBytes, err := c.callAPI("pdao clear-snapshot-address")
+func (c *Client) ClearSnapshotAddress() (api.PDAOSetSignallingAddressResponse, error) {
+	responseBytes, err := c.callAPI("pdao clear-signalling-address")
 	if err != nil {
-		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("could not call clear-snapshot-address: %w", err)
+		return api.PDAOSetSignallingAddressResponse{}, fmt.Errorf("could not call clear-signalling-address: %w", err)
 	}
-	var response api.PDAOSetSnapshotAddressResponse
+	var response api.PDAOSetSignallingAddressResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("could not decode clear-snapshot-address response: %w", err)
+		return api.PDAOSetSignallingAddressResponse{}, fmt.Errorf("could not decode clear-signalling-address response: %w", err)
 	}
 	if response.Error != "" {
-		return api.PDAOSetSnapshotAddressResponse{}, fmt.Errorf("error after requesting clear-snapshot-address: %s", response.Error)
+		return api.PDAOSetSignallingAddressResponse{}, fmt.Errorf("error after requesting clear-signalling-address: %s", response.Error)
 	}
 	return response, nil
 }

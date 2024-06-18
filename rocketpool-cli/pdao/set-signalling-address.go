@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) error {
+func setSignallingAddress(c *cli.Context, signallingAddress common.Address, signature string) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -29,14 +29,14 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 		return nil
 	}
 
-	// Get the gas estimation and check if snapshot address can be set
-	resp, err := rp.CanSetSnapshotAddress(snapshotAddress, signature)
+	// Get the gas estimation and check if signalling address can be set
+	resp, err := rp.CanSetSignallingAddress(signallingAddress, signature)
 	if err != nil {
-		return fmt.Errorf("error calling can-set-snapshot-address: %w", err)
+		return fmt.Errorf("error calling can-set-signalling-address: %w", err)
 	}
 
 	// Return if there is no signer
-	if resp.NodeToSigner == snapshotAddress {
+	if resp.NodeToSigner == signallingAddress {
 		return fmt.Errorf("Could not set snapshot address, signer address already in use.")
 	}
 
@@ -47,26 +47,26 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to set the snapshot address?")) {
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to set the signalling address?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
-	// Set Snapshot Address
-	response, err := rp.SetSnapshotAddress(snapshotAddress, signature)
+	// Set Signalling Address
+	response, err := rp.SetSignallingAddress(signallingAddress, signature)
 	if err != nil {
-		return fmt.Errorf("error calling set-snapshot-address: %w", err)
+		return fmt.Errorf("error calling set-signalling-address: %w", err)
 	}
 
-	fmt.Printf("Setting snapshot address...\n")
+	fmt.Printf("Setting signalling address...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-		return fmt.Errorf("error setting snapshot address: %w", err)
+		return fmt.Errorf("error setting signalling address: %w", err)
 	}
 
 	// Log & Return
 	// fmt.Println("The node's snapshot address was successfully set.")
-	fmt.Printf("The node's snapshot address was successfully set to %s\n", snapshotAddress.String())
+	fmt.Printf("The node's signalling address was successfully set to %s\n", signallingAddress.String())
 	return nil
 }
 
@@ -92,7 +92,7 @@ func clearSnapshotAddress(c *cli.Context) error {
 	// Get the gas estimation and check if snapshot address can be set
 	resp, err := rp.CanClearSnapshotAddress()
 	if err != nil {
-		return fmt.Errorf("error calling can-clear-set-snapshot-address: %w", err)
+		return fmt.Errorf("error calling can-clear-set-signalling-address: %w", err)
 	}
 
 	// Return if there is no signer
@@ -115,7 +115,7 @@ func clearSnapshotAddress(c *cli.Context) error {
 	// Clear Snapshot Address
 	response, err := rp.ClearSnapshotAddress()
 	if err != nil {
-		return fmt.Errorf("error calling clear-snapshot-address: %w", err)
+		return fmt.Errorf("error calling clear-signalling-address: %w", err)
 	}
 
 	fmt.Printf("Clearing snapshot address...\n")

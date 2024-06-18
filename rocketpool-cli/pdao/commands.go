@@ -80,10 +80,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "set-snapshot-address",
+				Name:      "set-signalling-address",
 				Aliases:   []string{"ssa"},
 				Usage:     "Set the address you want to use to represent your node on Snapshot",
-				UsageText: "rocketpool pdao set-snapshot-address snapshot-address signature",
+				UsageText: "rocketpool pdao set-signalling-address signalling-address signature",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -96,7 +96,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					snapshotAddress, err := cliutils.ValidateAddress("snapshot-address", c.Args().Get(0))
+					snapshotAddress, err := cliutils.ValidateAddress("signalling-address", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -106,16 +106,16 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return setSnapshotAddress(c, snapshotAddress, signature)
+					return setSignallingAddress(c, snapshotAddress, signature)
 
 				},
 			},
 
 			{
-				Name:      "clear-snapshot-address",
+				Name:      "clear-signalling-address",
 				Aliases:   []string{"csa"},
 				Usage:     "Clear the node's snapshot address",
-				UsageText: "rocketpool pdao clear-snapshot-address snapshot-address signature",
+				UsageText: "rocketpool pdao clear-signalling-address signalling-address signature",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",

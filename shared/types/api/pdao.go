@@ -428,7 +428,7 @@ type PDAOStatusResponse struct {
 	SumVotingPower          *big.Int       `json:"sumVotingPower"`
 }
 
-type PDAOCanSetSnapshotAddressResponse struct {
+type PDAOCanSetSignallingAddressResponse struct {
 	Status            string             `json:"status"`
 	Error             string             `json:"error"`
 	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
@@ -436,13 +436,13 @@ type PDAOCanSetSnapshotAddressResponse struct {
 	NodeToSigner      common.Address     `json:"nodeToSigner"`
 }
 
-type PDAOSetSnapshotAddressResponse struct {
+type PDAOSetSignallingAddressResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
 
-type PDAOCanClearSnapshotAddressResponse struct {
+type PDAOCanClearSignallingAddressResponse struct {
 	Status            string             `json:"status"`
 	Error             string             `json:"error"`
 	GasInfo           rocketpool.GasInfo `json:"gasInfo"`

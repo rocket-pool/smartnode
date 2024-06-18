@@ -19,7 +19,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOCanSetSnapshotAddressResponse, error) {
+func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOCanSetSignallingAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -55,7 +55,7 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 	}
 
 	// Response
-	response := api.PDAOCanSetSnapshotAddressResponse{}
+	response := api.PDAOCanSetSignallingAddressResponse{}
 
 	response.VotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
 	if !response.VotingInitialized {
@@ -117,7 +117,7 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 	return &response, nil
 }
 
-func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOSetSnapshotAddressResponse, error) {
+func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOSetSignallingAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -140,7 +140,7 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 	}
 
 	// Response
-	response := api.PDAOSetSnapshotAddressResponse{}
+	response := api.PDAOSetSignallingAddressResponse{}
 
 	// Parse signature into vrs components, v to uint8 and v,s to [32]byte
 	sig, err := apiutils.ParseEIP712(signature)
@@ -171,7 +171,7 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 	return &response, nil
 }
 
-func canClearSnapshotAddress(c *cli.Context) (*api.PDAOCanClearSnapshotAddressResponse, error) {
+func canClearSnapshotAddress(c *cli.Context) (*api.PDAOCanClearSignallingAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -203,7 +203,7 @@ func canClearSnapshotAddress(c *cli.Context) (*api.PDAOCanClearSnapshotAddressRe
 		return nil, err
 	}
 
-	response := api.PDAOCanClearSnapshotAddressResponse{}
+	response := api.PDAOCanClearSignallingAddressResponse{}
 
 	// Get signer registry contract address
 	addressString := cfg.Smartnode.GetRocketSignerRegistryAddress()
