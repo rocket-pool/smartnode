@@ -128,7 +128,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, false, nil)
+		contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, nil)
 		if err != nil {
 			return fmt.Errorf("error getting network contracts: %w", err)
 		}

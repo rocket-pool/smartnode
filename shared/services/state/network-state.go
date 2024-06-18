@@ -100,11 +100,11 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, true, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, true)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
@@ -233,11 +233,11 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, true, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts, true)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(rp, contracts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network details: %w", err)
 	}
