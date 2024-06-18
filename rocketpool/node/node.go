@@ -169,7 +169,6 @@ func run(c *cli.Context) error {
 	lastTotalEffectiveStakeTime := time.Unix(0, 0)
 
 	// Run task loop
-	isHoustonDeployedMasterFlag := false
 	go func() {
 		// we assume clients are synced on startup so that we don't send unnecessary alerts
 		wasExecutionClientSynced := true
@@ -220,12 +219,6 @@ func run(c *cli.Context) error {
 			}
 			stateLocker.UpdateState(state, totalEffectiveStake)
 
-			// Check for Houston
-			if !isHoustonDeployedMasterFlag && state.IsHoustonDeployed {
-				printHoustonMessage(&updateLog)
-				isHoustonDeployedMasterFlag = true
-			}
-
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.run(state); err != nil {
 				errorLog.Println(err)
@@ -238,20 +231,18 @@ func run(c *cli.Context) error {
 			}
 			time.Sleep(taskCooldown)
 
-			if state.IsHoustonDeployed {
-				// Run the pDAO proposal defender
-				if err := defendPdaoProps.run(state); err != nil {
+			// Run the pDAO proposal defender
+			if err := defendPdaoProps.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the pDAO proposal verifier
+			if verifyPdaoProps != nil {
+				if err := verifyPdaoProps.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
-
-				// Run the pDAO proposal verifier
-				if verifyPdaoProps != nil {
-					if err := verifyPdaoProps.run(state); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-				}
 			}
 
 			// Run the minipool stake check

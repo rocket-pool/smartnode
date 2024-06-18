@@ -89,19 +89,12 @@ func getStatus(c *cli.Context) error {
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
 	}
-	if status.IsHoustonDeployed {
-		fmt.Printf(
-			"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new minipools.\n",
-			math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
-			math.RoundDown(eth.WeiToEth(status.EthOnBehalfBalance), 6),
-			math.RoundDown(eth.WeiToEth(status.UsableCreditAndEthOnBehalfBalance), 6),
-		)
-	} else {
-		fmt.Printf(
-			"The node has %.6f ETH in its credit balance, which can be used to make new minipools.\n",
-			math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
-		)
-	}
+	fmt.Printf(
+		"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new minipools.\n",
+		math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
+		math.RoundDown(eth.WeiToEth(status.EthOnBehalfBalance), 6),
+		math.RoundDown(eth.WeiToEth(status.UsableCreditAndEthOnBehalfBalance), 6),
+	)
 
 	// Registered node details
 	if status.Registered {
@@ -183,35 +176,33 @@ func getStatus(c *cli.Context) error {
 			fmt.Println("")
 		}
 
-		if status.IsHoustonDeployed {
-			// Onchain voting status
-			fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
-			if status.IsVotingInitialized {
-				fmt.Println("The node has been initialized for onchain voting.")
+		// Onchain voting status
+		fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
+		if status.IsVotingInitialized {
+			fmt.Println("The node has been initialized for onchain voting.")
 
-			} else {
-				fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
-			}
-
-			if status.OnchainVotingDelegate == blankAddress {
-				fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
-			} else if status.OnchainVotingDelegate == status.AccountAddress {
-				fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
-			} else {
-				fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, status.OnchainVotingDelegateFormatted, colorReset)
-			}
-			if status.IsRPLLockingAllowed {
-				fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
-				if status.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
-					fmt.Printf("The node currently has %.6f RPL locked.\n",
-						math.RoundDown(eth.WeiToEth(status.NodeRPLLocked), 6))
-				}
-
-			} else {
-				fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
-			}
-			fmt.Println("")
+		} else {
+			fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
 		}
+
+		if status.OnchainVotingDelegate == blankAddress {
+			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
+		} else if status.OnchainVotingDelegate == status.AccountAddress {
+			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
+		} else {
+			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, status.OnchainVotingDelegateFormatted, colorReset)
+		}
+		if status.IsRPLLockingAllowed {
+			fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
+			if status.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
+				fmt.Printf("The node currently has %.6f RPL locked.\n",
+					math.RoundDown(eth.WeiToEth(status.NodeRPLLocked), 6))
+			}
+
+		} else {
+			fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
+		}
+		fmt.Println("")
 
 		// Primary withdrawal address & balances
 		fmt.Printf("%s=== Primary Withdrawal Address ===%s\n", colorGreen, colorReset)
@@ -224,11 +215,7 @@ func getStatus(c *cli.Context) error {
 				math.RoundDown(eth.WeiToEth(status.PrimaryWithdrawalBalances.ETH), 6),
 				math.RoundDown(eth.WeiToEth(status.PrimaryWithdrawalBalances.RPL), 6))
 		} else {
-			if status.IsHoustonDeployed {
-				fmt.Printf("%sThe node's primary withdrawal address has not been changed, so ETH rewards and minipool withdrawals will be sent to the node itself.\n", colorYellow)
-			} else {
-				fmt.Printf("%sThe node's primary withdrawal address has not been changed, so all rewards and minipool withdrawals will be sent to the node itself.\n", colorYellow)
-			}
+			fmt.Printf("%sThe node's primary withdrawal address has not been changed, so ETH rewards and minipool withdrawals will be sent to the node itself.\n", colorYellow)
 			fmt.Printf("Consider changing this to a cold wallet address that you control using the `set-withdrawal-address` command.\n%s", colorReset)
 		}
 		fmt.Println("")
@@ -239,30 +226,27 @@ func getStatus(c *cli.Context) error {
 		}
 
 		// RPL withdrawal address & balances
-		if status.IsHoustonDeployed {
-			fmt.Printf("%s=== RPL Withdrawal Address ===%s\n", colorGreen, colorReset)
-			if !status.IsRPLWithdrawalAddressSet {
-				fmt.Printf("The node's RPL withdrawal address has not been set. All RPL rewards will be sent to the primary withdrawal address.\n")
-			} else if bytes.Equal(status.AccountAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
-				fmt.Printf("The node's RPL withdrawal address has been explicitly set to the node address itself (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
-			} else if bytes.Equal(status.PrimaryWithdrawalAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
-				fmt.Printf("The node's RPL withdrawal address has been explicitly set to the primary withdrawal address (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
-			} else {
-				fmt.Printf(
-					"The node's RPL withdrawal address %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
-					colorBlue,
-					status.RPLWithdrawalAddressFormatted,
-					colorReset,
-					math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.ETH), 6),
-					math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.RPL), 6))
-			}
+		fmt.Printf("%s=== RPL Withdrawal Address ===%s\n", colorGreen, colorReset)
+		if !status.IsRPLWithdrawalAddressSet {
+			fmt.Printf("The node's RPL withdrawal address has not been set. All RPL rewards will be sent to the primary withdrawal address.\n")
+		} else if bytes.Equal(status.AccountAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
+			fmt.Printf("The node's RPL withdrawal address has been explicitly set to the node address itself (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
+		} else if bytes.Equal(status.PrimaryWithdrawalAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
+			fmt.Printf("The node's RPL withdrawal address has been explicitly set to the primary withdrawal address (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
+		} else {
+			fmt.Printf(
+				"The node's RPL withdrawal address %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
+				colorBlue,
+				status.RPLWithdrawalAddressFormatted,
+				colorReset,
+				math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.ETH), 6),
+				math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.RPL), 6))
+		}
+		fmt.Println("")
+		if status.PendingRPLWithdrawalAddress.Hex() != blankAddress.Hex() {
+			fmt.Printf("%sThe node's RPL withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingRPLWithdrawalAddressFormatted)
+			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
 			fmt.Println("")
-			if status.PendingRPLWithdrawalAddress.Hex() != blankAddress.Hex() {
-				fmt.Printf("%sThe node's RPL withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingRPLWithdrawalAddressFormatted)
-				fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
-				fmt.Println("")
-			}
-
 		}
 
 		// Fee distributor details

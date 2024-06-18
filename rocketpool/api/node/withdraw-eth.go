@@ -9,7 +9,6 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -36,16 +35,6 @@ func canNodeWithdrawEth(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
-	}
-
-	// Check for Houston
-	isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-
-	if !isHoustonDeployed {
-		return nil, fmt.Errorf("can only withdraw ETH staked on the node after Houston")
 	}
 
 	// Data

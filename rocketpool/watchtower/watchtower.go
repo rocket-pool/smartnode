@@ -185,7 +185,6 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
-	isHoustonDeployedMasterFlag := false
 	go func() {
 		for {
 			// Randomize the next interval
@@ -246,12 +245,6 @@ func run(c *cli.Context) error {
 					continue
 				}
 
-				// Check for Houston
-				if !isHoustonDeployedMasterFlag && state.IsHoustonDeployed {
-					printHoustonMessage(&updateLog)
-					isHoustonDeployedMasterFlag = true
-				}
-
 				// Run the network balance submission check
 				if err := submitNetworkBalances.run(state); err != nil {
 					errorLog.Println(err)
@@ -284,13 +277,11 @@ func run(c *cli.Context) error {
 				}
 				time.Sleep(taskCooldown)
 
-				if state.IsHoustonDeployed {
-					// Run the finalize proposals check
-					if err := finalizePdaoProposals.run(state); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
+				// Run the finalize proposals check
+				if err := finalizePdaoProposals.run(state); err != nil {
+					errorLog.Println(err)
 				}
+				time.Sleep(taskCooldown)
 
 				// Run the minipool scrub check
 				if err := submitScrubMinipools.run(state); err != nil {

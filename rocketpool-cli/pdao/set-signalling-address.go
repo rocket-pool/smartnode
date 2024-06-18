@@ -19,16 +19,6 @@ func setSignallingAddress(c *cli.Context, signallingAddress common.Address, sign
 	}
 	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
 	// Get the gas estimation and check if signalling address can be set
 	resp, err := rp.CanSetSignallingAddress(signallingAddress, signature)
 	if err != nil {
@@ -78,16 +68,6 @@ func clearSnapshotAddress(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Get the gas estimation and check if snapshot address can be set
 	resp, err := rp.CanClearSnapshotAddress()

@@ -145,22 +145,6 @@ func (c *Client) DownloadRewardsFile(interval uint64) (api.DownloadRewardsFileRe
 	return response, nil
 }
 
-// Check if Houston has been deployed yet
-func (c *Client) IsHoustonDeployed() (api.IsHoustonDeployedResponse, error) {
-	responseBytes, err := c.callAPI("network is-houston-deployed")
-	if err != nil {
-		return api.IsHoustonDeployedResponse{}, fmt.Errorf("could not check if Houston is deployed: %w", err)
-	}
-	var response api.IsHoustonDeployedResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.IsHoustonDeployedResponse{}, fmt.Errorf("could not decode is-houston-deployed response: %w", err)
-	}
-	if response.Error != "" {
-		return api.IsHoustonDeployedResponse{}, fmt.Errorf("could not check if Houston is deployed: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Get the address of the latest minipool delegate contract
 func (c *Client) GetLatestDelegate() (api.GetLatestDelegateResponse, error) {
 	responseBytes, err := c.callAPI("network latest-delegate")
