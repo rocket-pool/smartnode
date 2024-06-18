@@ -468,7 +468,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		t.log.Println("Submitting RPL price...")
 
 		// Submit RPL price
-		if err := t.submitRplPrice(targetBlockNumber, uint64(submissionTimestamp), rplPrice, true); err != nil {
+		if err := t.submitRplPrice(targetBlockNumber, uint64(submissionTimestamp), rplPrice); err != nil {
 			t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
 			return
 		}
