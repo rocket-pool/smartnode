@@ -18,7 +18,6 @@ type NodeStatusResponse struct {
 	Status                                   string          `json:"status"`
 	Error                                    string          `json:"error"`
 	Warning                                  string          `json:"warning"`
-	IsHoustonDeployed                        bool            `json:"isHoustonDeployed"`
 	AccountAddress                           common.Address  `json:"accountAddress"`
 	AccountAddressFormatted                  string          `json:"accountAddressFormatted"`
 	PrimaryWithdrawalAddress                 common.Address  `json:"primaryWithdrawalAddress"`

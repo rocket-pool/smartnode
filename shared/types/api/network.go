@@ -82,12 +82,6 @@ type DownloadRewardsFileResponse struct {
 	Error  string `json:"error"`
 }
 
-type IsHoustonDeployedResponse struct {
-	Status            string `json:"status"`
-	Error             string `json:"error"`
-	IsHoustonDeployed bool   `json:"isHoustonDeployed"`
-}
-
 type GetLatestDelegateResponse struct {
 	Status  string         `json:"status"`
 	Error   string         `json:"error"`

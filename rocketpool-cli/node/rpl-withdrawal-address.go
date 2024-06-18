@@ -23,16 +23,6 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 	}
 	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
 	var withdrawalAddress common.Address
 	var withdrawalAddressString string
 	if strings.Contains(withdrawalAddressOrENS, ".") {
@@ -181,16 +171,6 @@ func confirmRPLWithdrawalAddress(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Check if the withdrawal address can be confirmed
 	canResponse, err := rp.CanConfirmNodeRPLWithdrawalAddress()

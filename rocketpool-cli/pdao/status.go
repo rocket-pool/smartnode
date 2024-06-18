@@ -27,16 +27,6 @@ func getStatus(c *cli.Context) error {
 	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
 	// Get PDAO status at the latest block
 	response, err := rp.PDAOStatus()
 	if err != nil {

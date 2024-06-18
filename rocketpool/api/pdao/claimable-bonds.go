@@ -58,7 +58,7 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 	// Set up multicall
 	mcAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 	bbAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-	contracts, err := state.NewNetworkContracts(rp, mcAddress, bbAddress, true, nil)
+	contracts, err := state.NewNetworkContracts(rp, mcAddress, bbAddress, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network contracts: %w", err)
 	}

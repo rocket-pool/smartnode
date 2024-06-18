@@ -45,16 +45,6 @@ func getProposals(c *cli.Context, stateFilter string) error {
 	}
 	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
 	// Get Protocol DAO proposals
 	allProposals, err := rp.PDAOProposals()
 	if err != nil {
@@ -119,16 +109,6 @@ func getProposal(c *cli.Context, id uint64) error {
 		return err
 	}
 	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Get protocol DAO proposals
 	allProposals, err := rp.PDAOProposals()

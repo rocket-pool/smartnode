@@ -24,16 +24,6 @@ func executeProposal(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
 	// Get protocol DAO proposals
 	proposals, err := rp.PDAOProposals()
 	if err != nil {

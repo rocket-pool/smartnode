@@ -7,14 +7,12 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	legacyNode "github.com/rocket-pool/rocketpool-go/legacy/v1.1.0/node"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -37,10 +35,6 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
 
 	// Response
 	response := api.CanNodeWithdrawRplResponse{}
@@ -49,12 +43,6 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
-	}
-
-	// Check for Houston
-	isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Houston has been deployed: %w", err)
 	}
 
 	// Data
@@ -113,55 +101,39 @@ func canNodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 		return err
 	})
 
-	if isHoustonDeployed {
-		// Check if the RPL withdrawal address is set
-		wg.Go(func() error {
-			var err error
-			isRPLWithdrawalAddressSet, err = node.GetNodeRPLWithdrawalAddressIsSet(rp, nodeAccount.Address, nil)
-			return err
-		})
+	// Check if the RPL withdrawal address is set
+	wg.Go(func() error {
+		var err error
+		isRPLWithdrawalAddressSet, err = node.GetNodeRPLWithdrawalAddressIsSet(rp, nodeAccount.Address, nil)
+		return err
+	})
 
-		// Get the RPL withdrawal address
-		wg.Go(func() error {
-			var err error
-			rplWithdrawalAddress, err = node.GetNodeRPLWithdrawalAddress(rp, nodeAccount.Address, nil)
-			return err
-		})
+	// Get the RPL withdrawal address
+	wg.Go(func() error {
+		var err error
+		rplWithdrawalAddress, err = node.GetNodeRPLWithdrawalAddress(rp, nodeAccount.Address, nil)
+		return err
+	})
 
-		// Get RPL locked on node
-		wg.Go(func() error {
-			var err error
-			nodeRplLocked, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
-			return err
-		})
+	// Get RPL locked on node
+	wg.Go(func() error {
+		var err error
+		nodeRplLocked, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+		return err
+	})
 
-		// Get gas estimate
-		wg.Go(func() error {
-			opts, err := w.GetNodeAccountTransactor()
-			if err != nil {
-				return err
-			}
-			gasInfo, err := node.EstimateWithdrawRPLGas(rp, nodeAccount.Address, amountWei, opts)
-			if err == nil {
-				response.GasInfo = gasInfo
-			}
+	// Get gas estimate
+	wg.Go(func() error {
+		opts, err := w.GetNodeAccountTransactor()
+		if err != nil {
 			return err
-		})
-	} else {
-		// Get gas estimate
-		legacyNodeStakingAddress := cfg.Smartnode.GetV110NodeStakingAddress()
-		wg.Go(func() error {
-			opts, err := w.GetNodeAccountTransactor()
-			if err != nil {
-				return err
-			}
-			gasInfo, err := legacyNode.EstimateWithdrawRPLGas(rp, amountWei, opts, &legacyNodeStakingAddress)
-			if err == nil {
-				response.GasInfo = gasInfo
-			}
-			return err
-		})
-	}
+		}
+		gasInfo, err := node.EstimateWithdrawRPLGas(rp, nodeAccount.Address, amountWei, opts)
+		if err == nil {
+			response.GasInfo = gasInfo
+		}
+		return err
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
@@ -204,16 +176,6 @@ func nodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.NodeWithdrawRplRe
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check for Houston
-	isHoustonDeployed, err := state.IsHoustonDeployed(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
 
 	// Response
 	response := api.NodeWithdrawRplResponse{}
@@ -230,18 +192,10 @@ func nodeWithdrawRpl(c *cli.Context, amountWei *big.Int) (*api.NodeWithdrawRplRe
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 	var hash common.Hash
-	if isHoustonDeployed {
-		// Withdraw RPL
-		hash, err = node.WithdrawRPL(rp, nodeAccount.Address, amountWei, opts)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		legacyNodeStakingAddress := cfg.Smartnode.GetV110NodeStakingAddress()
-		hash, err = legacyNode.WithdrawRPL(rp, amountWei, opts, &legacyNodeStakingAddress)
-		if err != nil {
-			return nil, err
-		}
+	// Withdraw RPL
+	hash, err = node.WithdrawRPL(rp, nodeAccount.Address, amountWei, opts)
+	if err != nil {
+		return nil, err
 	}
 	response.TxHash = hash
 
