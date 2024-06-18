@@ -67,7 +67,7 @@ type NetworkDetails struct {
 }
 
 // Create a snapshot of all of the network's details
-func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, isHoustonDeployed bool) (*NetworkDetails, error) {
+func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (*NetworkDetails, error) {
 	opts := &bind.CallOpts{
 		BlockNumber: contracts.ElBlockNumber,
 	}
@@ -83,13 +83,11 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	var effectiveQueueCapacity *big.Int
 	var totalQueueLength *big.Int
 	var pricesBlock *big.Int
-	var latestReportablePricesBlock *big.Int
 	var pricesSubmissionFrequency *big.Int
 	var ethUtilizationRate *big.Int
 	var rETHExchangeRate *big.Int
 	var nodeFee *big.Int
 	var balancesBlock *big.Int
-	var latestReportableBalancesBlock *big.Int
 	var balancesSubmissionFrequency *big.Int
 	var minipoolLaunchTimeout *big.Int
 	var promotionScrubPeriodSeconds *big.Int
@@ -135,14 +133,8 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	contracts.Multicaller.AddCall(contracts.RocketDepositPool, &details.DepositPoolUserBalance, "getUserBalance")
 
 	// Houston
-	if isHoustonDeployed {
-		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &pricesSubmissionFrequency, "getSubmitPricesFrequency")
-		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &balancesSubmissionFrequency, "getSubmitBalancesFrequency")
-	} else {
-		// getLatestReportableBlock was deprecated on Houston
-		contracts.Multicaller.AddCall(contracts.RocketNetworkPrices, &latestReportablePricesBlock, "getLatestReportableBlock")
-		contracts.Multicaller.AddCall(contracts.RocketNetworkBalances, &latestReportableBalancesBlock, "getLatestReportableBlock")
-	}
+	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &pricesSubmissionFrequency, "getSubmitPricesFrequency")
+	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &balancesSubmissionFrequency, "getSubmitBalancesFrequency")
 
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
@@ -161,13 +153,9 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	}
 	details.QueueLength = totalQueueLength
 	details.PricesBlock = pricesBlock.Uint64()
-	if !isHoustonDeployed {
-		details.LatestReportablePricesBlock = latestReportablePricesBlock.Uint64()
-		details.LatestReportableBalancesBlock = latestReportableBalancesBlock.Uint64()
-	} else {
-		details.PricesSubmissionFrequency = pricesSubmissionFrequency.Uint64()
-		details.BalancesSubmissionFrequency = balancesSubmissionFrequency.Uint64()
-	}
+
+	details.PricesSubmissionFrequency = pricesSubmissionFrequency.Uint64()
+	details.BalancesSubmissionFrequency = balancesSubmissionFrequency.Uint64()
 	details.ETHUtilizationRate = eth.WeiToEth(ethUtilizationRate)
 	details.RETHExchangeRate = eth.WeiToEth(rETHExchangeRate)
 	details.NodeFee = eth.WeiToEth(nodeFee)
