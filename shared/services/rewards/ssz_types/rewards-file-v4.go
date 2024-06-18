@@ -320,6 +320,15 @@ type NetworkReward struct {
 	SmoothingPoolEth big.Uint256 `ssz-size:"32" json:"smoothingPoolEth"`
 }
 
+func NewNetworkReward(network Layer) *NetworkReward {
+	return &NetworkReward{
+		Network:          network,
+		CollateralRpl:    big.NewUint256(0),
+		OracleDaoRpl:     big.NewUint256(0),
+		SmoothingPoolEth: big.NewUint256(0),
+	}
+}
+
 // NetworkRewards should implement sort.Interface to make it easier to sort.
 func (n NetworkRewards) Len() int {
 	return len(n)
@@ -349,6 +358,16 @@ type NodeReward struct {
 	SmoothingPoolEth big.Uint256 `ssz-size:"32" json:"smoothingPoolEth"`
 	// Merkle proof for the node claim, sorted with the Merkle root last
 	MerkleProof MerkleProof `ssz:"-" json:"merkleProof"`
+}
+
+func NewNodeReward(network Layer, address Address) *NodeReward {
+	return &NodeReward{
+		Address:          address,
+		Network:          network,
+		CollateralRpl:    big.NewUint256(0),
+		OracleDaoRpl:     big.NewUint256(0),
+		SmoothingPoolEth: big.NewUint256(0),
+	}
 }
 
 // NodeRewards should implement sort.Interface to make it easier to sort.
