@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v0.2.0-beta.8"
-	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v0.2.0-beta.8"
+	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v0.2.0-beta.9"
+	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v0.2.0-beta.9"
 	rethEventLogInterval int    = 1000
 	rethStopSignal       string = "SIGTERM"
 )
@@ -33,6 +33,9 @@ type RethConfig struct {
 
 	// Max number of P2P peers to connect to
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
+
+	// The archive mode flag
+	ArchiveMode config.Parameter `yaml:"archiveMode,omitempty"`
 
 	// The Docker Hub tag for Reth
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
@@ -77,6 +80,17 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 			Default:            map[config.Network]interface{}{config.Network_All: calculateRethPeers()},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		ArchiveMode: config.Parameter{
+			ID:                 "archiveMode",
+			Name:               "Enable Archive Mode",
+			Description:        "When enabled, Reth will run in \"archive\" mode which means it can recreate the state of the chain for a previous block. This is required for manually generating the Merkle rewards tree.\n\nIf you are sure you will never be manually generating a tree, you can disable archive mode.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
 
@@ -142,6 +156,7 @@ func (cfg *RethConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.CacheSize,
 		&cfg.MaxPeers,
+		&cfg.ArchiveMode,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,
 	}

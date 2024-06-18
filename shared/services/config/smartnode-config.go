@@ -568,6 +568,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		previousRewardsPoolAddresses: map[config.Network][]common.Address{
 			config.Network_Mainnet: {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
+				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
 			},
 			config.Network_Devnet: {
 				common.HexToAddress("0x4d581a552490fb6fce5F978e66560C8b7E481818"),
