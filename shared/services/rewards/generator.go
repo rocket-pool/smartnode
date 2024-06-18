@@ -111,7 +111,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	if rollingRecord == nil {
 		v9_generator = newTreeGeneratorImpl_v9(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
 	} else {
-		v9_generator = newTreeGeneratorImpl_v9_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.snapshotEnd.ConsensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+		v9_generator = newTreeGeneratorImpl_v9_rolling(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
 	}
 
 	// v8
