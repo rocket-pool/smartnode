@@ -28,6 +28,7 @@ type treeGeneratorImpl_v9_rolling struct {
 	networkState         *state.NetworkState
 	rewardsFile          *RewardsFile_v3
 	elSnapshotHeader     *types.Header
+	snapshotEnd          *SnapshotEnd
 	log                  *log.ColorLogger
 	logPrefix            string
 	rp                   *rocketpool.RocketPool
@@ -50,17 +51,13 @@ type treeGeneratorImpl_v9_rolling struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v9_rolling(log *log.ColorLogger, logPrefix string, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v9_rolling {
+func newTreeGeneratorImpl_v9_rolling(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v9_rolling {
 	return &treeGeneratorImpl_v9_rolling{
 		rewardsFile: &RewardsFile_v3{
 			RewardsFileHeader: &RewardsFileHeader{
 				RewardsFileVersion: 3,
 				RulesetVersion:     9,
 				Index:              index,
-				StartTime:          startTime.UTC(),
-				EndTime:            endTime.UTC(),
-				ConsensusEndBlock:  consensusBlock,
-				ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
 				IntervalsPassed:    intervalsPassed,
 				TotalRewards: &TotalRewards{
 					ProtocolDaoRpl:               NewQuotedBigInt(0),
@@ -75,15 +72,12 @@ func newTreeGeneratorImpl_v9_rolling(log *log.ColorLogger, logPrefix string, ind
 			NodeRewards: map[common.Address]*NodeRewardsInfo_v2{},
 			MinipoolPerformanceFile: MinipoolPerformanceFile_v2{
 				Index:               index,
-				StartTime:           startTime.UTC(),
-				EndTime:             endTime.UTC(),
-				ConsensusEndBlock:   consensusBlock,
-				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
 			},
 		},
 		validatorIndexMap:   map[string]*MinipoolInfo{},
 		elSnapshotHeader:    elSnapshotHeader,
+		snapshotEnd:         snapshotEnd,
 		log:                 log,
 		logPrefix:           logPrefix,
 		networkState:        state,
@@ -593,8 +587,7 @@ func (r *treeGeneratorImpl_v9_rolling) calculateEthRewards(checkBeaconPerformanc
 		return nil
 	}
 
-	// Get the EL block for the start of this interval
-	startElBlockHeader, err := r.getStartBlocksForInterval()
+	startElBlockHeader, err := r.getBlocksAndTimesForInterval()
 	if err != nil {
 		return err
 	}
@@ -770,16 +763,17 @@ func (r *treeGeneratorImpl_v9_rolling) validateNetwork(network uint64) (bool, er
 }
 
 // Gets the EL header for the given interval's start block
-func (r *treeGeneratorImpl_v9_rolling) getStartBlocksForInterval() (*types.Header, error) {
+func (r *treeGeneratorImpl_v9_rolling) getBlocksAndTimesForInterval() (*types.Header, error) {
+
 	// Get the Beacon block for the start slot of the record
 	r.rewardsFile.ConsensusStartBlock = r.rollingRecord.StartSlot
 	r.rewardsFile.MinipoolPerformanceFile.ConsensusStartBlock = r.rollingRecord.StartSlot
 	beaconBlock, exists, err := r.bc.GetBeaconBlock(fmt.Sprint(r.rollingRecord.StartSlot))
 	if err != nil {
-		return nil, fmt.Errorf("error verifying block from previous interval: %w", err)
+		return nil, fmt.Errorf("error verifying block from interval start: %w", err)
 	}
 	if !exists {
-		return nil, fmt.Errorf("couldn't retrieve CL block from previous interval (slot %d); this likely means you checkpoint sync'd your Beacon Node and it has not backfilled to the previous interval yet so it cannot be used for tree generation", r.rollingRecord.StartSlot)
+		return nil, fmt.Errorf("couldn't retrieve CL block from interval start (slot %d); this likely means you checkpoint sync'd your Beacon Node and it has not backfilled to the previous interval yet so it cannot be used for tree generation", r.rollingRecord.StartSlot)
 	}
 
 	// Get the EL block for that Beacon block
@@ -790,6 +784,24 @@ func (r *treeGeneratorImpl_v9_rolling) getStartBlocksForInterval() (*types.Heade
 	if err != nil {
 		return nil, fmt.Errorf("error getting EL header for block %d: %w", elBlockNumber, err)
 	}
+
+	r.rewardsFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
+	r.rewardsFile.MinipoolPerformanceFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
+
+	r.rewardsFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
+	r.rewardsFile.MinipoolPerformanceFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
+
+	// rollingRecord.StartSlot is the first non-missing slot, so it isn't suitable for startTime, but can be used for startBlock
+	// it can safely be assumed to be in the same epoch, due to the implementation of GetStartSlotForInterval.
+	// Calculate the time of the first slot in that epoch.
+	startTime := r.beaconConfig.GetSlotTime((r.rollingRecord.StartSlot / r.beaconConfig.SlotsPerEpoch) * r.beaconConfig.SlotsPerEpoch)
+
+	r.rewardsFile.StartTime = startTime
+	r.rewardsFile.MinipoolPerformanceFile.StartTime = startTime
+
+	endTime := r.beaconConfig.GetSlotTime(r.snapshotEnd.Slot)
+	r.rewardsFile.EndTime = endTime
+	r.rewardsFile.MinipoolPerformanceFile.EndTime = endTime
 
 	return startElHeader, nil
 }
