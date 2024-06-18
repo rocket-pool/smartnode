@@ -114,7 +114,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "clear-signalling-address",
 				Aliases:   []string{"csa"},
-				Usage:     "Clear the node's snapshot address",
+				Usage:     "Clear the node's signalling address",
 				UsageText: "rocketpool pdao clear-signalling-address signalling-address signature",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
