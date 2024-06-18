@@ -23,16 +23,6 @@ func nodeWithdrawEth(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-
-	if !houston.IsHoustonDeployed {
-		return fmt.Errorf("This command cannot be used until Houston has been deployed.")
-	}
-
 	// Get withdrawal amount
 	var amountWei *big.Int
 	if c.String("amount") == "max" {

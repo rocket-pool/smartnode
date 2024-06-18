@@ -18,16 +18,6 @@ func finalizeProposal(c *cli.Context, proposalID uint64) error {
 	}
 	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
 	// Check the status
 	canResponse, err := rp.PDAOCanFinalizeProposal(proposalID)
 	if err != nil {

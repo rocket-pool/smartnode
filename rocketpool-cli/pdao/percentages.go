@@ -18,16 +18,6 @@ func getRewardsPercentages(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
-
 	// Get all PDAO settings
 	response, err := rp.PDAOGetRewardsPercentages()
 	if err != nil {
@@ -48,16 +38,6 @@ func proposeRewardsPercentages(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
-
-	// Check for Houston
-	houston, err := rp.IsHoustonDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston has been deployed: %w", err)
-	}
-	if !houston.IsHoustonDeployed {
-		fmt.Println("This command cannot be used until Houston has been deployed.")
-		return nil
-	}
 
 	// Check for the raw flag
 	rawEnabled := c.Bool("raw")
