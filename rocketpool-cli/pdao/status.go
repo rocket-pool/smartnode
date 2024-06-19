@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/strings"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -30,6 +31,18 @@ func getStatus(c *cli.Context) error {
 
 	// Get wallet status
 	walletStatus, err := rp.WalletStatus()
+	if err != nil {
+		return err
+	}
+
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
+	// Print what network we're on
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
 	}
