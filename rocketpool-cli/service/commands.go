@@ -435,24 +435,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "check-cpu-features",
-				Aliases:   []string{"ccf"},
-				Usage:     "Checks if your CPU supports all of the features required by the \"modern\" version of certain client images. If not, it prints what features are missing.",
-				UsageText: "rocketpool service check-cpu-features",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run command
-					return checkCpuFeatures()
-
-				},
-			},
-
-			{
 				Name:      "get-config-yaml",
 				Usage:     "Generate YAML that shows the current configuration schema, including all of the parameters and their descriptions",
 				UsageText: "rocketpool service get-config-yaml",
