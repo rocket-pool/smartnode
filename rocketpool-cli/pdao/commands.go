@@ -130,7 +130,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return clearSnapshotAddress(c)
+					return clearSignallingAddress(c)
 
 				},
 			},

@@ -27,7 +27,7 @@ func setSignallingAddress(c *cli.Context, signallingAddress common.Address, sign
 
 	// Return if there is no signer
 	if resp.NodeToSigner == signallingAddress {
-		return fmt.Errorf("Could not set snapshot address, signer address already in use.")
+		return fmt.Errorf("Could not set signalling address, signer address already in use.")
 	}
 
 	// Assign max fees
@@ -55,12 +55,11 @@ func setSignallingAddress(c *cli.Context, signallingAddress common.Address, sign
 	}
 
 	// Log & Return
-	// fmt.Println("The node's snapshot address was successfully set.")
 	fmt.Printf("The node's signalling address was successfully set to %s\n", signallingAddress.String())
 	return nil
 }
 
-func clearSnapshotAddress(c *cli.Context) error {
+func clearSignallingAddress(c *cli.Context) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -69,15 +68,15 @@ func clearSnapshotAddress(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Get the gas estimation and check if snapshot address can be set
-	resp, err := rp.CanClearSnapshotAddress()
+	// Get the gas estimation and check if signalling address can be set
+	resp, err := rp.CanClearSignallingAddress()
 	if err != nil {
 		return fmt.Errorf("error calling can-clear-set-signalling-address: %w", err)
 	}
 
 	// Return if there is no signer
 	if resp.NodeToSigner == (common.Address{}) {
-		return fmt.Errorf("Could not clear snapshot address, no signer set.")
+		return fmt.Errorf("Could not clear signalling address, no signer set.")
 	}
 
 	// Assign max fees
@@ -87,25 +86,25 @@ func clearSnapshotAddress(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to clear the snapshot address?")) {
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to clear the signalling address?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
-	// Clear Snapshot Address
-	response, err := rp.ClearSnapshotAddress()
+	// Clear signalling Address
+	response, err := rp.ClearSignallingAddress()
 	if err != nil {
 		return fmt.Errorf("error calling clear-signalling-address: %w", err)
 	}
 
-	fmt.Printf("Clearing snapshot address...\n")
+	fmt.Printf("Clearing signalling address...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-		return fmt.Errorf("error clearing snapshot address: %w", err)
+		return fmt.Errorf("error clearing signalling address: %w", err)
 	}
 
 	// Log & return
-	fmt.Println("The node's snapshot address was sucessfully cleared.")
+	fmt.Println("The node's signalling address was sucessfully cleared.")
 	return nil
 
 }

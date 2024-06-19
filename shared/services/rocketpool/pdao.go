@@ -688,8 +688,8 @@ func (c *Client) InitializeVoting(delegateAddress common.Address) (api.PDAOIniti
 }
 
 // CanSetSignallingAddress fetches gas info and if a node can set the signalling address
-func (c *Client) CanSetSignallingAddress(snapshotAddress common.Address, signature string) (api.PDAOCanSetSignallingAddressResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-set-signalling-address %s %s", snapshotAddress.Hex(), signature))
+func (c *Client) CanSetSignallingAddress(signallingAddress common.Address, signature string) (api.PDAOCanSetSignallingAddressResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-set-signalling-address %s %s", signallingAddress.Hex(), signature))
 	if err != nil {
 		return api.PDAOCanSetSignallingAddressResponse{}, fmt.Errorf("could not call can-set-signalling-address: %w", err)
 	}
@@ -719,8 +719,8 @@ func (c *Client) SetSignallingAddress(signallingAddress common.Address, signatur
 	return response, nil
 }
 
-// CanClearSnapshotAddress fetches gas info and if a node can clear a snapshot address
-func (c *Client) CanClearSnapshotAddress() (api.PDAOCanClearSignallingAddressResponse, error) {
+// CanClearSignallingAddress fetches gas info and if a node can clear a signalling address
+func (c *Client) CanClearSignallingAddress() (api.PDAOCanClearSignallingAddressResponse, error) {
 	responseBytes, err := c.callAPI("pdao can-clear-signalling-address")
 	if err != nil {
 		return api.PDAOCanClearSignallingAddressResponse{}, fmt.Errorf("could not call can-clear-signalling-address: %w", err)
@@ -735,8 +735,8 @@ func (c *Client) CanClearSnapshotAddress() (api.PDAOCanClearSignallingAddressRes
 	return response, nil
 }
 
-// ClearSnapshotAddress sets the node's snapshot address
-func (c *Client) ClearSnapshotAddress() (api.PDAOSetSignallingAddressResponse, error) {
+// ClearSignallingAddress sets the node's signalling address
+func (c *Client) ClearSignallingAddress() (api.PDAOSetSignallingAddressResponse, error) {
 	responseBytes, err := c.callAPI("pdao clear-signalling-address")
 	if err != nil {
 		return api.PDAOSetSignallingAddressResponse{}, fmt.Errorf("could not call clear-signalling-address: %w", err)

@@ -450,7 +450,7 @@ type PDAOCanClearSignallingAddressResponse struct {
 	NodeToSigner      common.Address     `json:"nodeToSigner"`
 }
 
-type PDAOClearSnapshotAddressResponse struct {
+type PDAOClearSignallingAddressResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
