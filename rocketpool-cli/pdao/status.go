@@ -78,10 +78,9 @@ func getStatus(c *cli.Context) error {
 	// Onchain Voting Status
 	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
 	if response.IsVotingInitialized {
-		fmt.Printf("The node has %s%s%s been initialized for onchain voting.", colorBlue, response.AccountAddressFormatted, colorReset)
-
+		fmt.Printf("The node has %s%s%s been initialized for onchain voting.\n", colorBlue, response.AccountAddressFormatted, colorReset)
 	} else {
-		fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
+		fmt.Printf("The node %s%s%s has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.\n", colorBlue, response.AccountAddressFormatted, colorReset)
 	}
 
 	if response.OnchainVotingDelegate == blankAddress {
@@ -93,10 +92,13 @@ func getStatus(c *cli.Context) error {
 	}
 	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
 
-	fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.TotalDelegatedVp))
+	if response.IsVotingInitialized != false {
+		fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.TotalDelegatedVp))
+	} else {
+		fmt.Print("The node must initialize onchain voting to be eligible to recieve delegated voting power.\n")
+	}
 
 	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(response.SumVotingPower))
-
 	fmt.Println("")
 
 	// Claimable Bonds Status:
@@ -109,7 +111,7 @@ func getStatus(c *cli.Context) error {
 		}
 
 	} else {
-		fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges. Use 'rocketpool node  allow-rpl-locking, to allow RPL locking.\n")
+		fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges. Use 'rocketpool node allow-rpl-locking, to allow RPL locking.\n")
 	}
 	if len(claimableBonds) == 0 {
 		fmt.Println("You do not have any unlockable bonds or claimable rewards.")

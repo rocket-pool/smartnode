@@ -49,7 +49,6 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	// Response
 	response := api.PDAOStatusResponse{}
 	response.NodeRPLLocked = big.NewInt(0)
@@ -164,11 +163,17 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	totalDelegatedVP, _, _, err := propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
-	if err != nil {
-		return nil, err
+
+	// Get the delegated voting power if voting is initialized
+	if response.IsVotingInitialized {
+		totalDelegatedVP, _, _, err := propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
+		if err != nil {
+			return nil, err
+		}
+		response.TotalDelegatedVp = totalDelegatedVP
+	} else {
+		response.TotalDelegatedVp = nil
 	}
-	response.TotalDelegatedVp = totalDelegatedVP
 
 	// Get the local tree
 	votingTree, err := propMgr.GetNetworkTree(response.BlockNumber, nil)
