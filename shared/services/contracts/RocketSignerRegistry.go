@@ -31,7 +31,7 @@ var (
 
 // RocketSignerRegistryMetaData contains all meta data concerning the RocketSignerRegistry contract.
 var RocketSignerRegistryMetaData = &bind.MetaData{
-	ABI: "[{\"type\":\"function\",\"name\":\"clearSigningDelegate\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"nodeToSigner\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setSigningDelegate\",\"inputs\":[{\"name\":\"_signer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_v\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"_r\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"_s\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"signerToNode\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"SigningDelegateSet\",\"inputs\":[{\"name\":\"nodeAddress\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"signerAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"StringsInsufficientHexLength\",\"inputs\":[{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"length\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]",
+	ABI: "[{\"type\":\"function\",\"name\":\"clearSigner\",\"inputs\":[],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"nodeToSigner\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"function\",\"name\":\"setSigner\",\"inputs\":[{\"name\":\"_signer\",\"type\":\"address\",\"internalType\":\"address\"},{\"name\":\"_v\",\"type\":\"uint8\",\"internalType\":\"uint8\"},{\"name\":\"_r\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"},{\"name\":\"_s\",\"type\":\"bytes32\",\"internalType\":\"bytes32\"}],\"outputs\":[],\"stateMutability\":\"nonpayable\"},{\"type\":\"function\",\"name\":\"signerToNode\",\"inputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"outputs\":[{\"name\":\"\",\"type\":\"address\",\"internalType\":\"address\"}],\"stateMutability\":\"view\"},{\"type\":\"event\",\"name\":\"SignerSet\",\"inputs\":[{\"name\":\"nodeAddress\",\"type\":\"address\",\"indexed\":true,\"internalType\":\"address\"},{\"name\":\"signerAddress\",\"type\":\"address\",\"indexed\":false,\"internalType\":\"address\"}],\"anonymous\":false},{\"type\":\"error\",\"name\":\"StringsInsufficientHexLength\",\"inputs\":[{\"name\":\"value\",\"type\":\"uint256\",\"internalType\":\"uint256\"},{\"name\":\"length\",\"type\":\"uint256\",\"internalType\":\"uint256\"}]}]",
 }
 
 // RocketSignerRegistryABI is the input ABI used to generate the binding from.
@@ -242,51 +242,51 @@ func (_RocketSignerRegistry *RocketSignerRegistryCallerSession) SignerToNode(arg
 	return _RocketSignerRegistry.Contract.SignerToNode(&_RocketSignerRegistry.CallOpts, arg0)
 }
 
-// ClearSigningDelegate is a paid mutator transaction binding the contract method 0xbdab4704.
+// ClearSigner is a paid mutator transaction binding the contract method 0xf8d30eb4.
 //
-// Solidity: function clearSigningDelegate() returns()
-func (_RocketSignerRegistry *RocketSignerRegistryTransactor) ClearSigningDelegate(opts *bind.TransactOpts) (*types.Transaction, error) {
-	return _RocketSignerRegistry.contract.Transact(opts, "clearSigningDelegate")
+// Solidity: function clearSigner() returns()
+func (_RocketSignerRegistry *RocketSignerRegistryTransactor) ClearSigner(opts *bind.TransactOpts) (*types.Transaction, error) {
+	return _RocketSignerRegistry.contract.Transact(opts, "clearSigner")
 }
 
-// ClearSigningDelegate is a paid mutator transaction binding the contract method 0xbdab4704.
+// ClearSigner is a paid mutator transaction binding the contract method 0xf8d30eb4.
 //
-// Solidity: function clearSigningDelegate() returns()
-func (_RocketSignerRegistry *RocketSignerRegistrySession) ClearSigningDelegate() (*types.Transaction, error) {
-	return _RocketSignerRegistry.Contract.ClearSigningDelegate(&_RocketSignerRegistry.TransactOpts)
+// Solidity: function clearSigner() returns()
+func (_RocketSignerRegistry *RocketSignerRegistrySession) ClearSigner() (*types.Transaction, error) {
+	return _RocketSignerRegistry.Contract.ClearSigner(&_RocketSignerRegistry.TransactOpts)
 }
 
-// ClearSigningDelegate is a paid mutator transaction binding the contract method 0xbdab4704.
+// ClearSigner is a paid mutator transaction binding the contract method 0xf8d30eb4.
 //
-// Solidity: function clearSigningDelegate() returns()
-func (_RocketSignerRegistry *RocketSignerRegistryTransactorSession) ClearSigningDelegate() (*types.Transaction, error) {
-	return _RocketSignerRegistry.Contract.ClearSigningDelegate(&_RocketSignerRegistry.TransactOpts)
+// Solidity: function clearSigner() returns()
+func (_RocketSignerRegistry *RocketSignerRegistryTransactorSession) ClearSigner() (*types.Transaction, error) {
+	return _RocketSignerRegistry.Contract.ClearSigner(&_RocketSignerRegistry.TransactOpts)
 }
 
-// SetSigningDelegate is a paid mutator transaction binding the contract method 0x9bc23cc8.
+// SetSigner is a paid mutator transaction binding the contract method 0xba5b9f36.
 //
-// Solidity: function setSigningDelegate(address _signer, uint8 _v, bytes32 _r, bytes32 _s) returns()
-func (_RocketSignerRegistry *RocketSignerRegistryTransactor) SetSigningDelegate(opts *bind.TransactOpts, _signer common.Address, _v uint8, _r [32]byte, _s [32]byte) (*types.Transaction, error) {
-	return _RocketSignerRegistry.contract.Transact(opts, "setSigningDelegate", _signer, _v, _r, _s)
+// Solidity: function setSigner(address _signer, uint8 _v, bytes32 _r, bytes32 _s) returns()
+func (_RocketSignerRegistry *RocketSignerRegistryTransactor) SetSigner(opts *bind.TransactOpts, _signer common.Address, _v uint8, _r [32]byte, _s [32]byte) (*types.Transaction, error) {
+	return _RocketSignerRegistry.contract.Transact(opts, "setSigner", _signer, _v, _r, _s)
 }
 
-// SetSigningDelegate is a paid mutator transaction binding the contract method 0x9bc23cc8.
+// SetSigner is a paid mutator transaction binding the contract method 0xba5b9f36.
 //
-// Solidity: function setSigningDelegate(address _signer, uint8 _v, bytes32 _r, bytes32 _s) returns()
-func (_RocketSignerRegistry *RocketSignerRegistrySession) SetSigningDelegate(_signer common.Address, _v uint8, _r [32]byte, _s [32]byte) (*types.Transaction, error) {
-	return _RocketSignerRegistry.Contract.SetSigningDelegate(&_RocketSignerRegistry.TransactOpts, _signer, _v, _r, _s)
+// Solidity: function setSigner(address _signer, uint8 _v, bytes32 _r, bytes32 _s) returns()
+func (_RocketSignerRegistry *RocketSignerRegistrySession) SetSigner(_signer common.Address, _v uint8, _r [32]byte, _s [32]byte) (*types.Transaction, error) {
+	return _RocketSignerRegistry.Contract.SetSigner(&_RocketSignerRegistry.TransactOpts, _signer, _v, _r, _s)
 }
 
-// SetSigningDelegate is a paid mutator transaction binding the contract method 0x9bc23cc8.
+// SetSigner is a paid mutator transaction binding the contract method 0xba5b9f36.
 //
-// Solidity: function setSigningDelegate(address _signer, uint8 _v, bytes32 _r, bytes32 _s) returns()
-func (_RocketSignerRegistry *RocketSignerRegistryTransactorSession) SetSigningDelegate(_signer common.Address, _v uint8, _r [32]byte, _s [32]byte) (*types.Transaction, error) {
-	return _RocketSignerRegistry.Contract.SetSigningDelegate(&_RocketSignerRegistry.TransactOpts, _signer, _v, _r, _s)
+// Solidity: function setSigner(address _signer, uint8 _v, bytes32 _r, bytes32 _s) returns()
+func (_RocketSignerRegistry *RocketSignerRegistryTransactorSession) SetSigner(_signer common.Address, _v uint8, _r [32]byte, _s [32]byte) (*types.Transaction, error) {
+	return _RocketSignerRegistry.Contract.SetSigner(&_RocketSignerRegistry.TransactOpts, _signer, _v, _r, _s)
 }
 
-// RocketSignerRegistrySigningDelegateSetIterator is returned from FilterSigningDelegateSet and is used to iterate over the raw logs and unpacked data for SigningDelegateSet events raised by the RocketSignerRegistry contract.
-type RocketSignerRegistrySigningDelegateSetIterator struct {
-	Event *RocketSignerRegistrySigningDelegateSet // Event containing the contract specifics and raw log
+// RocketSignerRegistrySignerSetIterator is returned from FilterSignerSet and is used to iterate over the raw logs and unpacked data for SignerSet events raised by the RocketSignerRegistry contract.
+type RocketSignerRegistrySignerSetIterator struct {
+	Event *RocketSignerRegistrySignerSet // Event containing the contract specifics and raw log
 
 	contract *bind.BoundContract // Generic contract to use for unpacking event data
 	event    string              // Event name to use for unpacking event data
@@ -300,7 +300,7 @@ type RocketSignerRegistrySigningDelegateSetIterator struct {
 // Next advances the iterator to the subsequent event, returning whether there
 // are any more events found. In case of a retrieval or parsing error, false is
 // returned and Error() can be queried for the exact failure.
-func (it *RocketSignerRegistrySigningDelegateSetIterator) Next() bool {
+func (it *RocketSignerRegistrySignerSetIterator) Next() bool {
 	// If the iterator failed, stop iterating
 	if it.fail != nil {
 		return false
@@ -309,7 +309,7 @@ func (it *RocketSignerRegistrySigningDelegateSetIterator) Next() bool {
 	if it.done {
 		select {
 		case log := <-it.logs:
-			it.Event = new(RocketSignerRegistrySigningDelegateSet)
+			it.Event = new(RocketSignerRegistrySignerSet)
 			if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 				it.fail = err
 				return false
@@ -324,7 +324,7 @@ func (it *RocketSignerRegistrySigningDelegateSetIterator) Next() bool {
 	// Iterator still in progress, wait for either a data or an error event
 	select {
 	case log := <-it.logs:
-		it.Event = new(RocketSignerRegistrySigningDelegateSet)
+		it.Event = new(RocketSignerRegistrySignerSet)
 		if err := it.contract.UnpackLog(it.Event, it.event, log); err != nil {
 			it.fail = err
 			return false
@@ -340,52 +340,52 @@ func (it *RocketSignerRegistrySigningDelegateSetIterator) Next() bool {
 }
 
 // Error returns any retrieval or parsing error occurred during filtering.
-func (it *RocketSignerRegistrySigningDelegateSetIterator) Error() error {
+func (it *RocketSignerRegistrySignerSetIterator) Error() error {
 	return it.fail
 }
 
 // Close terminates the iteration process, releasing any pending underlying
 // resources.
-func (it *RocketSignerRegistrySigningDelegateSetIterator) Close() error {
+func (it *RocketSignerRegistrySignerSetIterator) Close() error {
 	it.sub.Unsubscribe()
 	return nil
 }
 
-// RocketSignerRegistrySigningDelegateSet represents a SigningDelegateSet event raised by the RocketSignerRegistry contract.
-type RocketSignerRegistrySigningDelegateSet struct {
+// RocketSignerRegistrySignerSet represents a SignerSet event raised by the RocketSignerRegistry contract.
+type RocketSignerRegistrySignerSet struct {
 	NodeAddress   common.Address
 	SignerAddress common.Address
 	Raw           types.Log // Blockchain specific contextual infos
 }
 
-// FilterSigningDelegateSet is a free log retrieval operation binding the contract event 0x3eecd8071b083c5b1ad587e0fd950d9d1caa005eb25ba8c7ac3061ebac0fae8f.
+// FilterSignerSet is a free log retrieval operation binding the contract event 0xb0604c365feafa080c833b6f6814d321a7561528e696ac2a112c2a0231b0ed35.
 //
-// Solidity: event SigningDelegateSet(address indexed nodeAddress, address signerAddress)
-func (_RocketSignerRegistry *RocketSignerRegistryFilterer) FilterSigningDelegateSet(opts *bind.FilterOpts, nodeAddress []common.Address) (*RocketSignerRegistrySigningDelegateSetIterator, error) {
+// Solidity: event SignerSet(address indexed nodeAddress, address signerAddress)
+func (_RocketSignerRegistry *RocketSignerRegistryFilterer) FilterSignerSet(opts *bind.FilterOpts, nodeAddress []common.Address) (*RocketSignerRegistrySignerSetIterator, error) {
 
 	var nodeAddressRule []interface{}
 	for _, nodeAddressItem := range nodeAddress {
 		nodeAddressRule = append(nodeAddressRule, nodeAddressItem)
 	}
 
-	logs, sub, err := _RocketSignerRegistry.contract.FilterLogs(opts, "SigningDelegateSet", nodeAddressRule)
+	logs, sub, err := _RocketSignerRegistry.contract.FilterLogs(opts, "SignerSet", nodeAddressRule)
 	if err != nil {
 		return nil, err
 	}
-	return &RocketSignerRegistrySigningDelegateSetIterator{contract: _RocketSignerRegistry.contract, event: "SigningDelegateSet", logs: logs, sub: sub}, nil
+	return &RocketSignerRegistrySignerSetIterator{contract: _RocketSignerRegistry.contract, event: "SignerSet", logs: logs, sub: sub}, nil
 }
 
-// WatchSigningDelegateSet is a free log subscription operation binding the contract event 0x3eecd8071b083c5b1ad587e0fd950d9d1caa005eb25ba8c7ac3061ebac0fae8f.
+// WatchSignerSet is a free log subscription operation binding the contract event 0xb0604c365feafa080c833b6f6814d321a7561528e696ac2a112c2a0231b0ed35.
 //
-// Solidity: event SigningDelegateSet(address indexed nodeAddress, address signerAddress)
-func (_RocketSignerRegistry *RocketSignerRegistryFilterer) WatchSigningDelegateSet(opts *bind.WatchOpts, sink chan<- *RocketSignerRegistrySigningDelegateSet, nodeAddress []common.Address) (event.Subscription, error) {
+// Solidity: event SignerSet(address indexed nodeAddress, address signerAddress)
+func (_RocketSignerRegistry *RocketSignerRegistryFilterer) WatchSignerSet(opts *bind.WatchOpts, sink chan<- *RocketSignerRegistrySignerSet, nodeAddress []common.Address) (event.Subscription, error) {
 
 	var nodeAddressRule []interface{}
 	for _, nodeAddressItem := range nodeAddress {
 		nodeAddressRule = append(nodeAddressRule, nodeAddressItem)
 	}
 
-	logs, sub, err := _RocketSignerRegistry.contract.WatchLogs(opts, "SigningDelegateSet", nodeAddressRule)
+	logs, sub, err := _RocketSignerRegistry.contract.WatchLogs(opts, "SignerSet", nodeAddressRule)
 	if err != nil {
 		return nil, err
 	}
@@ -395,8 +395,8 @@ func (_RocketSignerRegistry *RocketSignerRegistryFilterer) WatchSigningDelegateS
 			select {
 			case log := <-logs:
 				// New log arrived, parse the event and forward to the user
-				event := new(RocketSignerRegistrySigningDelegateSet)
-				if err := _RocketSignerRegistry.contract.UnpackLog(event, "SigningDelegateSet", log); err != nil {
+				event := new(RocketSignerRegistrySignerSet)
+				if err := _RocketSignerRegistry.contract.UnpackLog(event, "SignerSet", log); err != nil {
 					return err
 				}
 				event.Raw = log
@@ -417,12 +417,12 @@ func (_RocketSignerRegistry *RocketSignerRegistryFilterer) WatchSigningDelegateS
 	}), nil
 }
 
-// ParseSigningDelegateSet is a log parse operation binding the contract event 0x3eecd8071b083c5b1ad587e0fd950d9d1caa005eb25ba8c7ac3061ebac0fae8f.
+// ParseSignerSet is a log parse operation binding the contract event 0xb0604c365feafa080c833b6f6814d321a7561528e696ac2a112c2a0231b0ed35.
 //
-// Solidity: event SigningDelegateSet(address indexed nodeAddress, address signerAddress)
-func (_RocketSignerRegistry *RocketSignerRegistryFilterer) ParseSigningDelegateSet(log types.Log) (*RocketSignerRegistrySigningDelegateSet, error) {
-	event := new(RocketSignerRegistrySigningDelegateSet)
-	if err := _RocketSignerRegistry.contract.UnpackLog(event, "SigningDelegateSet", log); err != nil {
+// Solidity: event SignerSet(address indexed nodeAddress, address signerAddress)
+func (_RocketSignerRegistry *RocketSignerRegistryFilterer) ParseSignerSet(log types.Log) (*RocketSignerRegistrySignerSet, error) {
+	event := new(RocketSignerRegistrySignerSet)
+	if err := _RocketSignerRegistry.contract.UnpackLog(event, "SignerSet", log); err != nil {
 		return nil, err
 	}
 	event.Raw = log

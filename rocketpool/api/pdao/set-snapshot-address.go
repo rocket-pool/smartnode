@@ -19,7 +19,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOCanSetSignallingAddressResponse, error) {
+func canSetSignallingAddress(c *cli.Context, signallingAddress common.Address, signature string) (*api.PDAOCanSetSignallingAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -59,7 +59,7 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 
 	response.VotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
 	if !response.VotingInitialized {
-		return nil, fmt.Errorf("Voting must be initialized to set a snapshot address. Use 'rocketpool pdao initialize-voting' to initialize voting first.")
+		return nil, fmt.Errorf("Voting must be initialized to set a signalling address. Use 'rocketpool pdao initialize-voting' to initialize voting first.")
 	}
 
 	// Get signer registry contract address
@@ -84,7 +84,7 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 
 	// Return if there is no signer
 	response.NodeToSigner = nodeToSigner
-	if nodeToSigner == snapshotAddress {
+	if nodeToSigner == signallingAddress {
 		return &response, nil
 	}
 
@@ -107,7 +107,7 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 	}
 
 	// Get the gas info
-	gasInfo, err := contract.GetTransactionGasInfo(opts, "setSigningDelegate", snapshotAddress, sig.V, sig.R, sig.S)
+	gasInfo, err := contract.GetTransactionGasInfo(opts, "setSigner", signallingAddress, sig.V, sig.R, sig.S)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +117,7 @@ func canSetSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signa
 	return &response, nil
 }
 
-func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signature string) (*api.PDAOSetSignallingAddressResponse, error) {
+func setSignallingAddress(c *cli.Context, signallingAddress common.Address, signature string) (*api.PDAOSetSignallingAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -160,10 +160,10 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Call SetSigningDelegate on RocketSignerRegistry
-	tx, err := reg.SetSigningDelegate(opts, snapshotAddress, sig.V, sig.R, sig.S)
+	// Call SetSigner on RocketSignerRegistry
+	tx, err := reg.SetSigner(opts, signallingAddress, sig.V, sig.R, sig.S)
 	if err != nil {
-		return nil, fmt.Errorf("Error setting snapshot address: %w", err)
+		return nil, fmt.Errorf("Error setting signalling address: %w", err)
 	}
 	response.TxHash = tx.Hash()
 
@@ -171,7 +171,7 @@ func setSnapshotAddress(c *cli.Context, snapshotAddress common.Address, signatur
 	return &response, nil
 }
 
-func canClearSnapshotAddress(c *cli.Context) (*api.PDAOCanClearSignallingAddressResponse, error) {
+func canClearSignallingAddress(c *cli.Context) (*api.PDAOCanClearSignallingAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -244,7 +244,7 @@ func canClearSnapshotAddress(c *cli.Context) (*api.PDAOCanClearSignallingAddress
 	}
 
 	// Get the gas info
-	gasInfo, err := contract.GetTransactionGasInfo(opts, "clearSigningDelegate")
+	gasInfo, err := contract.GetTransactionGasInfo(opts, "clearSigner")
 	if err != nil {
 		return nil, err
 	}
@@ -253,7 +253,7 @@ func canClearSnapshotAddress(c *cli.Context) (*api.PDAOCanClearSignallingAddress
 	return &response, nil
 }
 
-func clearSnapshotAddress(c *cli.Context) (*api.PDAOClearSnapshotAddressResponse, error) {
+func clearSignallingAddress(c *cli.Context) (*api.PDAOClearSignallingAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -274,7 +274,7 @@ func clearSnapshotAddress(c *cli.Context) (*api.PDAOClearSnapshotAddressResponse
 		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
 	}
 
-	response := api.PDAOClearSnapshotAddressResponse{}
+	response := api.PDAOClearSignallingAddressResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -288,10 +288,10 @@ func clearSnapshotAddress(c *cli.Context) (*api.PDAOClearSnapshotAddressResponse
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Clear the snapshot address
-	tx, err := reg.ClearSigningDelegate(opts)
+	// Clear the signalling address
+	tx, err := reg.ClearSigner(opts)
 	if err != nil {
-		return nil, fmt.Errorf("Error clearing the snapshot address: %w", err)
+		return nil, fmt.Errorf("Error clearing the signalling address: %w", err)
 	}
 	response.TxHash = tx.Hash()
 
