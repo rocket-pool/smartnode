@@ -1,6 +1,7 @@
 package pdao
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -26,6 +27,17 @@ func getStatus(c *cli.Context) error {
 	// Get RP client
 	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
+
+	// Get wallet status
+	walletStatus, err := rp.WalletStatus()
+	if err != nil {
+		return err
+	}
+
+	// rp.PDAOStatus() will fail with an error, but we can short-circuit it here.
+	if !walletStatus.WalletInitialized {
+		return errors.New("The node wallet is not initialized.")
+	}
 
 	// Get PDAO status at the latest block
 	response, err := rp.PDAOStatus()
