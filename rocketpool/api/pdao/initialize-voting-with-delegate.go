@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeInitializeVoting(c *cli.Context, delegateAddress common.Address) (*api.PDAOCanInitializeVotingResponse, error) {
+func canNodeInitializeVotingWithDelegate(c *cli.Context, delegateAddress common.Address) (*api.PDAOCanInitializeVotingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -60,7 +60,7 @@ func canNodeInitializeVoting(c *cli.Context, delegateAddress common.Address) (*a
 	return &response, nil
 }
 
-func nodeInitializeVoting(c *cli.Context, delegateAddress common.Address) (*api.PDAOInitializeVotingResponse, error) {
+func nodeInitializeVotingWithDelegate(c *cli.Context, delegateAddress common.Address) (*api.PDAOInitializeVotingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

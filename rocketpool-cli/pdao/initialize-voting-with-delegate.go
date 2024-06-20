@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func initializeVoting(c *cli.Context) error {
+func initializeVotingWithDelegate(c *cli.Context) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {

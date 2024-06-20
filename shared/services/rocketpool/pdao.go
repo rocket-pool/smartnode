@@ -687,6 +687,38 @@ func (c *Client) InitializeVoting(delegateAddress common.Address) (api.PDAOIniti
 	return response, nil
 }
 
+// // CanInitializeVoting fetches whether the node's is initialized for on-chain voting
+// func (c *Client) CanInitializeVotingWithDelegate(delegateAddress common.Address) (api.PDAOCanInitializeVotingResponse, error) {
+// 	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-initialize-voting-with-delegate %s", delegateAddress.Hex()))
+// 	if err != nil {
+// 		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("could not call can-initialize-voting-with-delegate: %w", err)
+// 	}
+// 	var response api.PDAOCanInitializeVotingResponse
+// 	if err := json.Unmarshal(responseBytes, &response); err != nil {
+// 		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("could not decode can-initialize-voting-with-delegate response: %w", err)
+// 	}
+// 	if response.Error != "" {
+// 		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("error after requesting can-initialize-voting-with-delegate: %s", response.Error)
+// 	}
+// 	return response, nil
+// }
+
+// InitializeVoting unlocks the node's voting power
+func (c *Client) InitializeVotingWithDelegate(delegateAddress common.Address) (api.PDAOInitializeVotingWithDelegateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao initialize-voting-with-delegate %s", delegateAddress.Hex()))
+	if err != nil {
+		return api.PDAOInitializeVotingWithDelegateResponse{}, fmt.Errorf("could not call initialize-voting-with-delegate: %w", err)
+	}
+	var response api.PDAOInitializeVotingWithDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOInitializeVotingWithDelegateResponse{}, fmt.Errorf("could not decode initialize-voting-with-delegate response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOInitializeVotingWithDelegateResponse{}, fmt.Errorf("error after requesting initialize-voting-with-delegate: %s", response.Error)
+	}
+	return response, nil
+}
+
 // CanSetSignallingAddress fetches gas info and if a node can set the signalling address
 func (c *Client) CanSetSignallingAddress(signallingAddress common.Address, signature string) (api.PDAOCanSetSignallingAddressResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-set-signalling-address %s %s", signallingAddress.Hex(), signature))
