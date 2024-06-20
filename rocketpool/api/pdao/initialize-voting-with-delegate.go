@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/rocketpool-go/network"
@@ -11,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeInitializeVoting(c *cli.Context) (*api.PDAOCanInitializeVotingResponse, error) {
+func canNodeInitializeVotingWithDelegate(c *cli.Context, delegateAddress common.Address) (*api.PDAOCanInitializeVotingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -37,6 +38,9 @@ func canNodeInitializeVoting(c *cli.Context) (*api.PDAOCanInitializeVotingRespon
 	response := api.PDAOCanInitializeVotingResponse{}
 
 	isInitialized, err := network.GetVotingInitialized(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
 	if isInitialized {
 		return nil, fmt.Errorf("voting already initialized")
 	}
@@ -47,7 +51,7 @@ func canNodeInitializeVoting(c *cli.Context) (*api.PDAOCanInitializeVotingRespon
 		return nil, err
 	}
 
-	gasInfo, err := network.EstimateInitializeVotingGas(rp, opts)
+	gasInfo, err := network.EstimateInitializeVotingWithDelegateGas(rp, delegateAddress, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
 	}
@@ -56,7 +60,7 @@ func canNodeInitializeVoting(c *cli.Context) (*api.PDAOCanInitializeVotingRespon
 	return &response, nil
 }
 
-func nodeInitializeVoting(c *cli.Context) (*api.PDAOInitializeVotingResponse, error) {
+func nodeInitializeVotingWithDelegate(c *cli.Context, delegateAddress common.Address) (*api.PDAOInitializeVotingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -82,6 +86,9 @@ func nodeInitializeVoting(c *cli.Context) (*api.PDAOInitializeVotingResponse, er
 	response := api.PDAOInitializeVotingResponse{}
 
 	isInitialized, err := network.GetVotingInitialized(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
 	if isInitialized {
 		return nil, fmt.Errorf("voting already initialized")
 	}
@@ -98,7 +105,7 @@ func nodeInitializeVoting(c *cli.Context) (*api.PDAOInitializeVotingResponse, er
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	hash, err := network.InitializeVoting(rp, opts)
+	hash, err := network.InitializeVotingWithDelegate(rp, delegateAddress, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Error initializing voting: %w", err)
 	}
