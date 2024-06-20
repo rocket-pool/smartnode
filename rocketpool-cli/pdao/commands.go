@@ -67,10 +67,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "initialize-voting",
+				Aliases:   []string{"iv"},
+				Usage:     "Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)",
+				UsageText: "rocketpool pdao initialize-voting",
+				Action: func(c *cli.Context) error {
+
+					// Run
+					return initializeVoting(c)
+
+				},
+			},
+			{
 				Name:      "initialize-voting-with-delegate",
 				Aliases:   []string{"ivd"},
 				Usage:     "Unlocks a node operator's voting power and sets the delegate (saves some gas by initializing and setting the delegate in one transaction)",
-				UsageText: "rocketpool pdao initialize-voting",
+				UsageText: "rocketpool pdao initialize-voting-with-delegate",
 				Action: func(c *cli.Context) error {
 
 					// Run
@@ -78,7 +90,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
-
 			{
 				Name:      "set-signalling-address",
 				Aliases:   []string{"ssa"},

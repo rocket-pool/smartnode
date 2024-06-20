@@ -968,44 +968,42 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "can-initialize-voting",
+				Aliases:   []string{"civ"},
+				Usage:     "Checks if voting can be initialized.",
+				UsageText: "rocketpool api pdao can-initialize-voting delegate-address",
+				Action: func(c *cli.Context) error {
 
-			// {
-			// 	Name:      "can-initialize-voting",
-			// 	Aliases:   []string{"civ"},
-			// 	Usage:     "Checks if voting can be initialized.",
-			// 	UsageText: "rocketpool api pdao can-initialize-voting delegate-address",
-			// 	Action: func(c *cli.Context) error {
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-			// 		// Validate args
-			// 		if err := cliutils.ValidateArgCount(c, 0); err != nil {
-			// 			return err
-			// 		}
+					// Run
+					api.PrintResponse(canNodeInitializeVoting(c))
+					return nil
 
-			// 		// Run
-			// 		api.PrintResponse(canNodeInitializeVoting(c))
-			// 		return nil
+				},
+			},
+			{
+				Name:      "initialize-voting",
+				Aliases:   []string{"iv"},
+				Usage:     "Initialize voting.",
+				UsageText: "rocketpool api pdao initialize-voting delegate-address",
+				Action: func(c *cli.Context) error {
 
-			// 	},
-			// },
-			// {
-			// 	Name:      "initialize-voting",
-			// 	Aliases:   []string{"iv"},
-			// 	Usage:     "Initialize voting.",
-			// 	UsageText: "rocketpool api pdao initialize-voting delegate-address",
-			// 	Action: func(c *cli.Context) error {
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
 
-			// 		// Validate args
-			// 		if err := cliutils.ValidateArgCount(c, 0); err != nil {
-			// 			return err
-			// 		}
+					// Run
+					api.PrintResponse(nodeInitializeVoting(c))
+					return nil
 
-			// 		// Run
-			// 		api.PrintResponse(nodeInitializeVoting(c))
-			// 		return nil
-
-			// 	},
-			// },
-
+				},
+			},
 			{
 				Name:      "estimate-set-voting-delegate-gas",
 				Usage:     "Estimate the gas required to set an on-chain voting delegate",

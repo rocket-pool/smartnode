@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func initializeVotingWithDelegate(c *cli.Context) error {
+func initializeVoting(c *cli.Context) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -17,17 +17,7 @@ func initializeVotingWithDelegate(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Get the address
-	delegateAddressString := c.String("address")
-	if delegateAddressString == "" {
-		delegateAddressString = cliutils.Prompt("Please enter the delegate's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
-	}
-	delegateAddress, err := cliutils.ValidateAddress("delegateAddress", delegateAddressString)
-	if err != nil {
-		return err
-	}
-
-	resp, err := rp.CanInitializeVotingWithDelegate(delegateAddress)
+	resp, err := rp.CanInitializeVoting()
 	if err != nil {
 		return fmt.Errorf("error calling get-voting-initialized: %w", err)
 	}
@@ -50,7 +40,7 @@ func initializeVotingWithDelegate(c *cli.Context) error {
 	}
 
 	// Initialize voting
-	response, err := rp.InitializeVotingWithDelegate(delegateAddress)
+	response, err := rp.InitializeVoting()
 	if err != nil {
 		return fmt.Errorf("error calling initialize-voting: %w", err)
 	}
