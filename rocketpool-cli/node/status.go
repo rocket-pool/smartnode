@@ -289,11 +289,12 @@ func getStatus(c *cli.Context) error {
 		fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.")
 		fmt.Println()
 		fmt.Printf(
-			"The node has a total stake of %.6f RPL and an effective stake of %.6f RPL.\n",
-			math.RoundDown(eth.WeiToEth(status.RplStake), 6),
-			math.RoundDown(eth.WeiToEth(status.EffectiveRplStake), 6))
+			"The node has a total stake of %.6f RPL.\n",
+			math.RoundDown(eth.WeiToEth(status.RplStake), 6))
 		if status.BorrowedCollateralRatio > 0 {
 			rplTooLow := (status.RplStake.Cmp(status.MinimumRplStake) < 0)
+			rplTotalStake := math.RoundDown(eth.WeiToEth(status.RplStake), 6)
+			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6)
 			if rplTooLow {
 				fmt.Printf(
 					"This is currently %s%.2f%% of its borrowed ETH%s and %.2f%% of its bonded ETH.\n",
@@ -306,7 +307,11 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf(
 				"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
 			fmt.Printf(
-				"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of %.6f RPL (150%% of bonded ETH). Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+				"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of 150%% of bonded ETH. Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n")
+			if rplTotalStake > rplWithdrawalLimit {
+				fmt.Printf(
+					"You can now withdraw down to %.6f RPL (60%% of bonded ETH).\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6))
+			}
 			if rplTooLow {
 				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
 			}
