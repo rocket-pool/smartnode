@@ -192,9 +192,9 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 			Description: "The tag name of the Lighthouse container you want to use from Docker Hub. This will be used for the Validator Client that Rocket Pool manages with your minipool keys.",
 			Type:        config.ParameterType_String,
 			Default: map[config.Network]interface{}{
-				config.Network_Mainnet: getLighthouseTagProd(),
-				config.Network_Devnet:  getLighthouseTagTest(),
-				config.Network_Holesky: getLighthouseTagTest(),
+				config.Network_Mainnet: lighthouseTagPortableProd,
+				config.Network_Devnet:  lighthouseTagPortableTest,
+				config.Network_Holesky: lighthouseTagPortableTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
