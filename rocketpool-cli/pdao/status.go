@@ -117,10 +117,10 @@ func getStatus(c *cli.Context) error {
 	}
 	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
 
-	if response.IsVotingInitialized != false {
+	if response.IsNodeRegistered != false {
 		fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.TotalDelegatedVp))
 	} else {
-		fmt.Print("The node must initialize onchain voting to be eligible to recieve delegated voting power.\n")
+		fmt.Print("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power.\n")
 	}
 
 	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(response.SumVotingPower))
