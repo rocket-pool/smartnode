@@ -11,7 +11,7 @@ import (
 
 func initializeVotingPrompt(c *cli.Context) error {
 
-	if cliutils.Confirm(fmt.Sprintf("Would you like to initialize voting with a delegate?")) {
+	if cliutils.Confirm(fmt.Sprintf("Would you like to specify a delegate that can vote on your behalf on Protocol DAO proposals??")) {
 		return initializeVotingWithDelegate(c)
 	} else {
 		return initializeVoting(c)
