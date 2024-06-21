@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	tekuTagTest         string = "consensys/teku:24.4.0"
-	tekuTagProd         string = "consensys/teku:24.4.0"
+	tekuTagTest         string = "consensys/teku:24.6.1"
+	tekuTagProd         string = "consensys/teku:24.6.1"
 	defaultTekuMaxPeers uint16 = 100
 )
 
