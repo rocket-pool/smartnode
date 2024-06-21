@@ -439,6 +439,7 @@ type PDAOStatusResponse struct {
 	AccountAddressFormatted string         `json:"accountAddressFormatted"`
 	TotalDelegatedVp        *big.Int       `json:"totalDelegateVp"`
 	SumVotingPower          *big.Int       `json:"sumVotingPower"`
+	IsNodeRegistered        bool           `json:"isNodeRegistered"`
 }
 
 type PDAOCanSetSignallingAddressResponse struct {
