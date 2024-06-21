@@ -44,10 +44,7 @@ func closeMinipools(c *cli.Context) error {
 		return nil
 	}
 
-	if !details.IsVotingInitialized {
-		fmt.Println("Minipools should not be closed until your node has initialized voting power. \nPlease run `rocketpool pdao initialize-voting` first, then return here to close your minipools.")
-	}
-
+	hasOnly16ETHMps := true
 	closableMinipools := []api.MinipoolCloseDetails{}
 	versionTooLowMinipools := []api.MinipoolCloseDetails{}
 	balanceLessThanRefundMinipools := []api.MinipoolCloseDetails{}
@@ -76,6 +73,14 @@ func closeMinipools(c *cli.Context) error {
 				unwithdrawnMinipools = append(unwithdrawnMinipools, mp)
 			}
 		}
+		if eth.WeiToEth(mp.DepositBalance) != 16 {
+			hasOnly16ETHMps = false
+		}
+	}
+
+	// TODO: remove after contract changes
+	if !details.IsVotingInitialized && hasOnly16ETHMps {
+		fmt.Println("Your node only has 16 ETH minipools and, as a temporary measure, minipools should not be closed until your node has initialized voting power. \nPlease run `rocketpool pdao initialize-voting` first, then return here to close your minipools.")
 	}
 
 	// Print ineligible ones
