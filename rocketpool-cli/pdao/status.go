@@ -71,13 +71,15 @@ func getStatus(c *cli.Context) error {
 	}
 	claimableBonds := claimableBondsResponse.ClaimableBonds
 
-	// Snapshot voting status
-	fmt.Printf("%s=== Snapshot Voting ===%s\n", colorGreen, colorReset)
+	fmt.Printf(response.SnapshotVotingDelegateFormatted)
+
+	// Signalling Status
+	fmt.Printf("%s=== Signalling on Snapshot ===%s\n", colorGreen, colorReset)
 	blankAddress := common.Address{}
-	if response.SnapshotVotingDelegate == blankAddress {
-		fmt.Println("The node does not currently have a voting delegate set, which means it can only vote directly on Snapshot proposals (using a hardware wallet with the node mnemonic loaded).\nRun `rocketpool n sv <address>` to vote from a different wallet or have a delegate represent you. (See https://delegates.rocketpool.net for options)")
+	if response.SignallingAddress == blankAddress {
+		fmt.Println("The node does not currently have a snapshot signalling address set")
 	} else {
-		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, response.SnapshotVotingDelegateFormatted, colorReset)
+		fmt.Printf("The node can vote directly or override their delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, response.SignallingAddressAddressFormatted, colorReset)
 	}
 
 	if response.SnapshotResponse.Error != "" {

@@ -83,7 +83,9 @@ type NodeStatusResponse struct {
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
-	Alerts []NodeAlert `json:"alerts"`
+	Alerts                            []NodeAlert    `json:"alerts"`
+	SignallingAddress                 common.Address `json:"signallingAddress"`
+	SignallingAddressAddressFormatted string         `json:"signallingAddressAddressFormatted"`
 }
 
 type NodeAlert struct {

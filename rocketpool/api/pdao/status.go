@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
 	"github.com/wealdtech/go-ens/v3"
@@ -20,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
@@ -49,6 +51,14 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	reg, err := services.GetRocketSignerRegistry(c)
+	if err != nil {
+		return nil, err
+	}
+	if reg == nil {
+		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
+	}
+
 	// Response
 	response := api.PDAOStatusResponse{}
 	response.NodeRPLLocked = big.NewInt(0)
@@ -64,6 +74,16 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	// Sync
 	var wg errgroup.Group
 	var blockNumber uint64
+
+	// Get the node's signalling address
+	wg.Go(func() error {
+		var err error
+		response.SignallingAddress, err = reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
+		if err == nil {
+			response.SignallingAddressAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
+		}
+		return err
+	})
 
 	// Get the node onchain voting delegate
 	wg.Go(func() error {
