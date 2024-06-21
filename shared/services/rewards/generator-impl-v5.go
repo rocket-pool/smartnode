@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
@@ -51,6 +52,7 @@ type treeGeneratorImpl_v5 struct {
 	totalAttestationScore  *big.Int
 	successfulAttestations uint64
 	zero                   *big.Int
+	invalidNetworkNodes    map[common.Address]uint64
 }
 
 // Create a new tree generator
@@ -59,15 +61,14 @@ func newTreeGeneratorImpl_v5(log *log.ColorLogger, logPrefix string, index uint6
 		zero: big.NewInt(0),
 		rewardsFile: &RewardsFile_v1{
 			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion:  1,
-				RulesetVersion:      5,
-				Index:               index,
-				StartTime:           startTime.UTC(),
-				EndTime:             endTime.UTC(),
-				ConsensusEndBlock:   consensusBlock,
-				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				IntervalsPassed:     intervalsPassed,
-				InvalidNetworkNodes: map[common.Address]uint64{},
+				RewardsFileVersion: 1,
+				RulesetVersion:     5,
+				Index:              index,
+				StartTime:          startTime.UTC(),
+				EndTime:            endTime.UTC(),
+				ConsensusEndBlock:  consensusBlock,
+				ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
+				IntervalsPassed:    intervalsPassed,
 				TotalRewards: &TotalRewards{
 					ProtocolDaoRpl:               NewQuotedBigInt(0),
 					TotalCollateralRpl:           NewQuotedBigInt(0),
@@ -95,6 +96,7 @@ func newTreeGeneratorImpl_v5(log *log.ColorLogger, logPrefix string, index uint6
 		logPrefix:             logPrefix,
 		totalAttestationScore: big.NewInt(0),
 		networkState:          state,
+		invalidNetworkNodes:   map[common.Address]uint64{},
 	}
 }
 
@@ -103,7 +105,7 @@ func (r *treeGeneratorImpl_v5) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (IRewardsFile, error) {
+func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -150,7 +152,7 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.updateNetworksAndTotals()
 
 	// Generate the Merkle Tree
-	err = r.rewardsFile.generateMerkleTree()
+	err = r.rewardsFile.GenerateMerkleTree()
 	if err != nil {
 		return nil, fmt.Errorf("Error generating Merkle tree: %w", err)
 	}
@@ -162,7 +164,11 @@ func (r *treeGeneratorImpl_v5) generateTree(rp *rocketpool.RocketPool, cfg *conf
 		})
 	}
 
-	return r.rewardsFile, nil
+	return &GenerateTreeResult{
+		RewardsFile:             r.rewardsFile,
+		InvalidNetworkNodes:     r.invalidNetworkNodes,
+		MinipoolPerformanceFile: &r.rewardsFile.MinipoolPerformanceFile,
+	}, nil
 
 }
 
@@ -276,7 +282,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeDetails.NodeAddress] = network
+					r.invalidNetworkNodes[nodeDetails.NodeAddress] = network
 					network = 0
 				}
 
@@ -369,7 +375,7 @@ func (r *treeGeneratorImpl_v5) calculateRplRewards() error {
 				return err
 			}
 			if !validNetwork {
-				r.rewardsFile.InvalidNetworkNodes[address] = network
+				r.invalidNetworkNodes[address] = network
 				network = 0
 			}
 
@@ -537,7 +543,7 @@ func (r *treeGeneratorImpl_v5) calculateEthRewards(checkBeaconPerformance bool) 
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeInfo.Address] = network
+					r.invalidNetworkNodes[nodeInfo.Address] = network
 					network = 0
 				}
 
@@ -1107,4 +1113,8 @@ func (r *treeGeneratorImpl_v5) getMinipoolBondAndNodeFee(details *rpstate.Native
 	}
 
 	return currentBond, currentFee
+}
+
+func (r *treeGeneratorImpl_v5) saveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveJSONArtifacts(r.cfg.Smartnode, treeResult, nodeTrusted)
 }

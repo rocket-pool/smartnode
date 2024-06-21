@@ -11,20 +11,21 @@ import (
 	"github.com/wealdtech/go-merkletree"
 )
 
-type rewardsFileVersion uint64
-
 const (
-	rewardsFileVersionUnknown = iota
+	rewardsFileVersionUnknown uint64 = iota
 	rewardsFileVersionOne
 	rewardsFileVersionTwo
 	rewardsFileVersionThree
 	rewardsFileVersionMax = iota - 1
+
+	minRewardsFileVersionSSZ = rewardsFileVersionThree
 )
 
 // Interface for version-agnostic minipool performance
 type IMinipoolPerformanceFile interface {
 	// Serialize a minipool performance file into bytes
 	Serialize() ([]byte, error)
+	SerializeSSZ() ([]byte, error)
 
 	// Serialize a minipool performance file into bytes designed for human readability
 	SerializeHuman() ([]byte, error)
@@ -44,28 +45,47 @@ type IMinipoolPerformanceFile interface {
 type IRewardsFile interface {
 	// Serialize a rewards file into bytes
 	Serialize() ([]byte, error)
+	SerializeSSZ() ([]byte, error)
 
 	// Deserialize a rewards file from bytes
 	Deserialize([]byte) error
 
-	// Get the rewards file's header
-	GetHeader() *RewardsFileHeader
+	// Getters for general interval info
+	GetRewardsFileVersion() uint64
+	GetIndex() uint64
+	GetTotalNodeWeight() *big.Int
+	GetMerkleRoot() string
+	GetIntervalsPassed() uint64
+	GetTotalProtocolDaoRpl() *big.Int
+	GetTotalOracleDaoRpl() *big.Int
+	GetTotalCollateralRpl() *big.Int
+	GetTotalNodeOperatorSmoothingPoolEth() *big.Int
+	GetTotalPoolStakerSmoothingPoolEth() *big.Int
+	GetExecutionEndBlock() uint64
+	GetConsensusEndBlock() uint64
 
 	// Get all of the node addresses with rewards in this file
 	// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
 	GetNodeAddresses() []common.Address
 
-	// Get info about a node's rewards
-	GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool)
+	// Getters for into about specific node's rewards
+	HasRewardsFor(common.Address) bool
+	GetNodeCollateralRpl(common.Address) *big.Int
+	GetNodeOracleDaoRpl(common.Address) *big.Int
+	GetNodeSmoothingPoolEth(common.Address) *big.Int
+	GetMerkleProof(common.Address) ([]common.Hash, error)
 
-	// Gets the minipool performance file corresponding to this rewards file
-	GetMinipoolPerformanceFile() IMinipoolPerformanceFile
+	// Getters for network info
+	HasRewardsForNetwork(network uint64) bool
+	GetNetworkCollateralRpl(network uint64) *big.Int
+	GetNetworkOracleDaoRpl(network uint64) *big.Int
+	GetNetworkSmoothingPoolEth(network uint64) *big.Int
 
 	// Sets the CID of the minipool performance file corresponding to this rewards file
 	SetMinipoolPerformanceFileCID(cid string)
 
 	// Generate the Merkle Tree and its root from the rewards file's proofs
-	generateMerkleTree() error
+	GenerateMerkleTree() error
 }
 
 // Rewards per network
@@ -95,24 +115,15 @@ type ISmoothingPoolMinipoolPerformance interface {
 	GetEthEarned() *big.Int
 }
 
-// Interface for version-agnostic node operator rewards
-type INodeRewardsInfo interface {
-	GetRewardNetwork() uint64
-	GetCollateralRpl() *QuotedBigInt
-	GetOracleDaoRpl() *QuotedBigInt
-	GetSmoothingPoolEth() *QuotedBigInt
-	GetMerkleProof() ([]common.Hash, error)
-}
-
 // Small struct to test version information for rewards files during deserialization
 type VersionHeader struct {
-	RewardsFileVersion rewardsFileVersion `json:"rewardsFileVersion,omitempty"`
+	RewardsFileVersion uint64 `json:"rewardsFileVersion,omitempty"`
 }
 
 // General version-agnostic information about a rewards file
 type RewardsFileHeader struct {
 	// Serialized fields
-	RewardsFileVersion         rewardsFileVersion             `json:"rewardsFileVersion"`
+	RewardsFileVersion         uint64                         `json:"rewardsFileVersion"`
 	RulesetVersion             uint64                         `json:"rulesetVersion,omitempty"`
 	Index                      uint64                         `json:"index"`
 	Network                    string                         `json:"network"`
@@ -129,8 +140,7 @@ type RewardsFileHeader struct {
 	NetworkRewards             map[uint64]*NetworkRewardsInfo `json:"networkRewards"`
 
 	// Non-serialized fields
-	MerkleTree          *merkletree.MerkleTree    `json:"-"`
-	InvalidNetworkNodes map[common.Address]uint64 `json:"-"`
+	MerkleTree *merkletree.MerkleTree `json:"-"`
 }
 
 // Information about an interval
@@ -149,7 +159,7 @@ type IntervalInfo struct {
 	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`
 	MerkleProof            []common.Hash `json:"merkleProof"`
 
-	TotalNodeWeight *QuotedBigInt `json:"-"`
+	TotalNodeWeight *big.Int `json:"-"`
 }
 
 type MinipoolInfo struct {
@@ -275,7 +285,7 @@ func (versionHeader *VersionHeader) deserializeMinipoolPerformanceFile(bytes []b
 		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	case rewardsFileVersionThree:
-		file := &MinipoolPerformanceFile_v3{}
+		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	}
 

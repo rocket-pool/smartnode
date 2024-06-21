@@ -101,7 +101,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.MerkleRoot = merkleRootCanon
 
 	// Check if the tree file exists
-	info.TreeFilePath = cfg.Smartnode.GetRewardsTreePath(interval, true)
+	info.TreeFilePath = cfg.Smartnode.GetRewardsTreePath(interval, true, config.RewardsExtensionJSON)
 	_, err = os.Stat(info.TreeFilePath)
 	if os.IsNotExist(err) {
 		info.TreeFileExists = false
@@ -119,10 +119,10 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 
 	proofWrapper := localRewardsFile.Impl()
 
-	info.TotalNodeWeight = proofWrapper.GetHeader().TotalRewards.TotalNodeWeight
+	info.TotalNodeWeight = proofWrapper.GetTotalNodeWeight()
 
 	// Make sure the Merkle root has the expected value
-	merkleRootFromFile := common.HexToHash(proofWrapper.GetHeader().MerkleRoot)
+	merkleRootFromFile := common.HexToHash(proofWrapper.GetMerkleRoot())
 	if merkleRootCanon != merkleRootFromFile {
 		info.MerkleRootValid = false
 		return
@@ -130,21 +130,23 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.MerkleRootValid = true
 
 	// Get the rewards from it
-	rewards, exists := proofWrapper.GetNodeRewardsInfo(nodeAddress)
-	info.NodeExists = exists
-	if exists {
-		info.CollateralRplAmount = rewards.GetCollateralRpl()
-		info.ODaoRplAmount = rewards.GetOracleDaoRpl()
-		info.SmoothingPoolEthAmount = rewards.GetSmoothingPoolEth()
-
-		var proof []common.Hash
-		proof, err = rewards.GetMerkleProof()
-		if err != nil {
-			err = fmt.Errorf("error deserializing merkle proof for %s, node %s: %w", info.TreeFilePath, nodeAddress.Hex(), err)
-			return
-		}
-		info.MerkleProof = proof
+	info.NodeExists = proofWrapper.HasRewardsFor(nodeAddress)
+	if !info.NodeExists {
+		return
 	}
+	info.CollateralRplAmount = &QuotedBigInt{*proofWrapper.GetNodeCollateralRpl(nodeAddress)}
+	info.ODaoRplAmount = &QuotedBigInt{*proofWrapper.GetNodeOracleDaoRpl(nodeAddress)}
+	info.SmoothingPoolEthAmount = &QuotedBigInt{*proofWrapper.GetNodeSmoothingPoolEth(nodeAddress)}
+
+	proof, err := proofWrapper.GetMerkleProof(nodeAddress)
+	if proof == nil {
+		err = fmt.Errorf("error deserializing merkle proof for %s, node %s: no proof for this node found", info.TreeFilePath, nodeAddress.Hex())
+		return
+	}
+	if err != nil {
+		err = fmt.Errorf("error deserializing merkle proof for %s, node %s: %w", info.TreeFilePath, nodeAddress.Hex(), err)
+	}
+	info.MerkleProof = proof
 
 	return
 }
@@ -249,7 +251,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 	expectedCid := i.CID
 	expectedRoot := i.MerkleRoot
 	// Determine file name and path
-	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon))
+	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon, config.RewardsExtensionJSON))
 	if err != nil {
 		return fmt.Errorf("error expanding rewards tree path: %w", err)
 	}
@@ -316,16 +318,13 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 			}
 
 			// Get the original merkle root
-			downloadedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
-
-			// Clear the merkle root so we have a safer comparison after calculating it again
-			deserializedRewardsFile.GetHeader().MerkleRoot = ""
+			downloadedRoot := deserializedRewardsFile.GetMerkleRoot()
 
 			// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
-			deserializedRewardsFile.generateMerkleTree()
+			deserializedRewardsFile.GenerateMerkleTree()
 
 			// Get the resulting merkle root
-			calculatedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
+			calculatedRoot := deserializedRewardsFile.GetMerkleRoot()
 
 			// Compare the merkle roots to see if the original is correct
 			if !strings.EqualFold(downloadedRoot, calculatedRoot) {
@@ -342,7 +341,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 				deserializedRewardsFile,
 				rewardsTreePath,
 			)
-			err = localRewardsFile.Write()
+			_, err = localRewardsFile.Write()
 			if err != nil {
 				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 			}

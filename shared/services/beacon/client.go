@@ -17,16 +17,6 @@ type SyncStatus struct {
 	Syncing  bool
 	Progress float64
 }
-type Eth2Config struct {
-	GenesisForkVersion           []byte
-	GenesisValidatorsRoot        []byte
-	GenesisEpoch                 uint64
-	GenesisTime                  uint64
-	SecondsPerSlot               uint64
-	SlotsPerEpoch                uint64
-	SecondsPerEpoch              uint64
-	EpochsPerSyncCommitteePeriod uint64
-}
 type Eth2DepositContract struct {
 	ChainID uint64
 	Address common.Address

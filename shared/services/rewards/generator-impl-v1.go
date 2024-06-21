@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -48,6 +49,7 @@ type treeGeneratorImpl_v1 struct {
 	epsilon              *big.Int
 	intervalSeconds      *big.Int
 	beaconConfig         beacon.Eth2Config
+	invalidNetworkNodes  map[common.Address]uint64
 }
 
 // Get the version of the ruleset used by this generator
@@ -60,15 +62,14 @@ func newTreeGeneratorImpl_v1(log *log.ColorLogger, logPrefix string, index uint6
 	return &treeGeneratorImpl_v1{
 		rewardsFile: &RewardsFile_v1{
 			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion:  1,
-				RulesetVersion:      1,
-				Index:               index,
-				StartTime:           startTime.UTC(),
-				EndTime:             endTime.UTC(),
-				ConsensusEndBlock:   consensusBlock,
-				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				IntervalsPassed:     intervalsPassed,
-				InvalidNetworkNodes: map[common.Address]uint64{},
+				RewardsFileVersion: 1,
+				RulesetVersion:     1,
+				Index:              index,
+				StartTime:          startTime.UTC(),
+				EndTime:            endTime.UTC(),
+				ConsensusEndBlock:  consensusBlock,
+				ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
+				IntervalsPassed:    intervalsPassed,
 				TotalRewards: &TotalRewards{
 					ProtocolDaoRpl:               NewQuotedBigInt(0),
 					TotalCollateralRpl:           NewQuotedBigInt(0),
@@ -89,13 +90,14 @@ func newTreeGeneratorImpl_v1(log *log.ColorLogger, logPrefix string, index uint6
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v1{},
 			},
 		},
-		elSnapshotHeader: elSnapshotHeader,
-		log:              log,
-		logPrefix:        logPrefix,
+		elSnapshotHeader:    elSnapshotHeader,
+		log:                 log,
+		logPrefix:           logPrefix,
+		invalidNetworkNodes: map[common.Address]uint64{},
 	}
 }
 
-func (r *treeGeneratorImpl_v1) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (IRewardsFile, error) {
+func (r *treeGeneratorImpl_v1) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -145,7 +147,7 @@ func (r *treeGeneratorImpl_v1) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.updateNetworksAndTotals()
 
 	// Generate the Merkle Tree
-	err = r.rewardsFile.generateMerkleTree()
+	err = r.rewardsFile.GenerateMerkleTree()
 	if err != nil {
 		return nil, fmt.Errorf("Error generating Merkle tree: %w", err)
 	}
@@ -157,7 +159,11 @@ func (r *treeGeneratorImpl_v1) generateTree(rp *rocketpool.RocketPool, cfg *conf
 		})
 	}
 
-	return r.rewardsFile, nil
+	return &GenerateTreeResult{
+		RewardsFile:             r.rewardsFile,
+		InvalidNetworkNodes:     r.invalidNetworkNodes,
+		MinipoolPerformanceFile: &r.rewardsFile.MinipoolPerformanceFile,
+	}, nil
 
 }
 
@@ -324,7 +330,7 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[address] = network
+					r.invalidNetworkNodes[address] = network
 					network = 0
 				}
 
@@ -422,7 +428,7 @@ func (r *treeGeneratorImpl_v1) calculateRplRewards() error {
 				return err
 			}
 			if !validNetwork {
-				r.rewardsFile.InvalidNetworkNodes[address] = network
+				r.invalidNetworkNodes[address] = network
 				network = 0
 			}
 
@@ -583,7 +589,7 @@ func (r *treeGeneratorImpl_v1) calculateEthRewards(checkBeaconPerformance bool) 
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeInfo.Address] = network
+					r.invalidNetworkNodes[nodeInfo.Address] = network
 					network = 0
 				}
 
@@ -963,7 +969,6 @@ func (r *treeGeneratorImpl_v1) getSmoothingPoolNodeDetails() error {
 		if iterationEndIndex > nodeCount {
 			iterationEndIndex = nodeCount
 		}
-
 		if nodesDone >= 100 {
 			timeTaken := time.Since(startTime)
 			r.log.Printlnf("%s On Node %d of %d (%.2f%%)... (%s so far)", r.logPrefix, iterationStartIndex, nodeCount, float64(iterationStartIndex)/float64(nodeCount)*100.0, timeTaken)
@@ -1138,4 +1143,8 @@ func (r *treeGeneratorImpl_v1) getStartBlocksForInterval(previousIntervalEvent r
 	}
 
 	return startElHeader, nil
+}
+
+func (r *treeGeneratorImpl_v1) saveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveJSONArtifacts(r.cfg.Smartnode, treeResult, nodeTrusted)
 }
