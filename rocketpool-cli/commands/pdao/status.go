@@ -44,7 +44,7 @@ func getStatus(c *cli.Context) error {
 	// Get protocol DAO proposals
 	claimableBondsResponse, err := rp.Api.PDao.GetClaimableBonds()
 	if err != nil {
-		fmt.Errorf("error checking for claimable bonds: %w", err)
+		return fmt.Errorf("error checking for claimable bonds: %w", err)
 	}
 	claimableBonds := claimableBondsResponse.Data.ClaimableBonds
 
