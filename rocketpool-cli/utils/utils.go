@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
+	utilsstrings "github.com/rocket-pool/rocketpool-go/v2/utils/strings"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
 	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
@@ -219,4 +220,11 @@ func ParseFloat(c *cli.Context, name string, value string, isFraction bool) (*bi
 		return nil, nil
 	}
 	return trueVal, nil
+}
+
+func TruncateAndSanitize(str string, size int) string {
+	if len(str) > size {
+		str = fmt.Sprintf("%s...", str[:size])
+	}
+	return utilsstrings.Sanitize(str)
 }

@@ -38,7 +38,7 @@ func executeProposals(c *cli.Context) error {
 	executableProposals := []api.ProtocolDaoProposalDetails{}
 	for _, proposal := range proposals.Data.Proposals {
 		if len(proposal.Message) > 200 {
-			proposal.Message = proposal.Message[:200]
+			proposal.Message = fmt.Sprintf("%s...", proposal.Message[:197])
 		}
 		proposal.Message = strings.Sanitize(proposal.Message)
 		if proposal.State == types.ProtocolDaoProposalState_Succeeded {

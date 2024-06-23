@@ -8,13 +8,13 @@ import (
 	"time"
 
 	"github.com/rocket-pool/node-manager-core/eth"
+	utilsmath "github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/rocketpool-go/v2/types"
-	"github.com/urfave/cli/v2"
-
-	utilsMath "github.com/rocket-pool/node-manager-core/utils/math"
-	utilsStrings "github.com/rocket-pool/rocketpool-go/v2/utils/strings"
+	utilsstrings "github.com/rocket-pool/rocketpool-go/v2/utils/strings"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	cliutils "github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
+	"github.com/urfave/cli/v2"
 )
 
 var proposalsListStatesFlag *cli.StringFlag = &cli.StringFlag{
@@ -88,10 +88,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 		// Proposals
 		for _, proposal := range proposals {
-			if len(proposal.Message) > 200 {
-				proposal.Message = proposal.Message[:200]
-			}
-			proposal.Message = utilsStrings.Sanitize(proposal.Message)
+			proposal.Message = cliutils.TruncateAndSanitize(proposal.Message, 200)
 			fmt.Printf("%d: %s - Proposed by: %s\n", proposal.ID, proposal.Message, proposal.ProposerAddress)
 		}
 
@@ -133,7 +130,7 @@ func getProposal(c *cli.Context, id uint64) error {
 		return nil
 	}
 
-	proposal.Message = utilsStrings.Sanitize(proposal.Message)
+	proposal.Message = utilsstrings.Sanitize(proposal.Message)
 
 	// Main details
 	fmt.Printf("Proposal ID:            %d\n", proposal.ID)
@@ -166,14 +163,14 @@ func getProposal(c *cli.Context, id uint64) error {
 	}
 
 	// Vote details
-	votingPowerFor := utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerFor), 2)
-	votingPowerRequired := utilsMath.RoundUp(eth.WeiToEth(proposal.VotingPowerRequired), 2)
-	votingPowerToVeto := utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerToVeto), 2)
-	vetoQuorum := utilsMath.RoundUp(eth.WeiToEth(proposal.VetoQuorum), 2)
+	votingPowerFor := utilsmath.RoundDown(eth.WeiToEth(proposal.VotingPowerFor), 2)
+	votingPowerRequired := utilsmath.RoundUp(eth.WeiToEth(proposal.VotingPowerRequired), 2)
+	votingPowerToVeto := utilsmath.RoundDown(eth.WeiToEth(proposal.VotingPowerToVeto), 2)
+	vetoQuorum := utilsmath.RoundUp(eth.WeiToEth(proposal.VetoQuorum), 2)
 	fmt.Printf("Voting power for:       %.2f / %.2f (%.2f%%)\n", votingPowerFor, votingPowerRequired, votingPowerFor/votingPowerRequired*100)
-	fmt.Printf("Voting power against:   %.2f\n", utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerAgainst), 2))
+	fmt.Printf("Voting power against:   %.2f\n", utilsmath.RoundDown(eth.WeiToEth(proposal.VotingPowerAgainst), 2))
 	fmt.Printf("   Against with veto:   %.2f / %2.f (%.2f%%)\n", votingPowerToVeto, vetoQuorum, votingPowerToVeto/vetoQuorum*100)
-	fmt.Printf("Voting power abstained: %.2f\n", utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerAbstained), 2))
+	fmt.Printf("Voting power abstained: %.2f\n", utilsmath.RoundDown(eth.WeiToEth(proposal.VotingPowerAbstained), 2))
 	if proposal.NodeVoteDirection != types.VoteDirection_NoVote {
 		fmt.Printf("Node has voted:         %s\n", types.VoteDirections[proposal.NodeVoteDirection])
 	} else {

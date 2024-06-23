@@ -20,6 +20,8 @@ var proposalStatesFlag *cli.StringFlag = &cli.StringFlag{
 	Usage:   "Comma separated list of states to filter ('pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', or 'expired')",
 }
 
+const daoNodeTrustedProposals = "rocketDAONodeTrustedProposals"
+
 func filterProposalState(state string, stateFilter string) bool {
 	// Easy out
 	if stateFilter == "" {
@@ -136,7 +138,7 @@ func getProposal(c *cli.Context, id uint64) error {
 	var proposal *api.OracleDaoProposalDetails
 
 	for i, p := range allProposals.Data.Proposals {
-		if p.ID == id && p.DAO == "rocketDAONodeTrustedProposals" {
+		if p.ID == id && p.DAO == daoNodeTrustedProposals {
 			proposal = &allProposals.Data.Proposals[i]
 
 			break

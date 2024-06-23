@@ -21,6 +21,8 @@ var proposalsListStatesFlag *cli.StringFlag = &cli.StringFlag{
 	Value:   "",
 }
 
+const daoSecurityProposals = "rocketDAOSecurityProposals"
+
 func filterProposalState(state string, stateFilter string) bool {
 	// Easy out
 	if stateFilter == "" {
@@ -137,7 +139,7 @@ func getProposal(c *cli.Context, id uint64) error {
 	var proposal *api.SecurityProposalDetails
 
 	for i, p := range allProposals.Data.Proposals {
-		if p.ID == id && p.DAO == "rocketDAOSecurityProposals" {
+		if p.ID == id && p.DAO == daoSecurityProposals {
 			proposal = &allProposals.Data.Proposals[i]
 			break
 		}

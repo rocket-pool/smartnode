@@ -10,8 +10,8 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	utilsMath "github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/rocketpool-go/v2/types"
-	"github.com/rocket-pool/rocketpool-go/v2/utils/strings"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -61,14 +61,6 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("Unable to fetch latest voting information from snapshot.org: %s\n", response.Data.SnapshotResponse.Error)
 	} else {
 		voteCount := 0
-		// for _, activeProposal := range response.Data.SnapshotResponse.ActiveSnapshotProposals {
-		// 	for _, votedProposal := range response.Data.SnapshotResponse.ActiveSnapshotProposals {
-		// 		if votedProposal.Proposal.Id == activeProposal.Id {
-		// 			voteCount++
-		// 			break
-		// 		}
-		// 	}
-		// }
 		if len(response.Data.SnapshotResponse.ActiveSnapshotProposals) == 0 {
 			fmt.Print("Rocket Pool has no Snapshot governance proposals being voted on.\n")
 		} else {
@@ -172,10 +164,7 @@ func getStatus(c *cli.Context) error {
 
 		// Proposals
 		for _, proposal := range proposals {
-			if len(proposal.Message) > 200 {
-				proposal.Message = proposal.Message[:200]
-			}
-			proposal.Message = strings.Sanitize(proposal.Message)
+			proposal.Message = utils.TruncateAndSanitize(proposal.Message, 200)
 			fmt.Printf("%d: %s - Proposed by: %s\n", proposal.ID, proposal.Message, proposal.ProposerAddress)
 		}
 
