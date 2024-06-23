@@ -310,7 +310,7 @@ func getStatus(c *cli.Context) error {
 				"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of 150%% of bonded ETH. Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n")
 			if rplTotalStake > rplWithdrawalLimit {
 				fmt.Printf(
-					"You can now withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6), (status.MaximumStakeFraction)*100)
+					"You can now withdraw down to %.6f RPL (%.0f%% of bonded eth).\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6), (status.MaximumStakeFraction)*100)
 			}
 			if rplTooLow {
 				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
