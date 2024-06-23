@@ -74,19 +74,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Run
-					return initializeVoting(c)
-
-				},
-			},
-			{
-				Name:      "initialize-voting-with-delegate",
-				Aliases:   []string{"ivd"},
-				Usage:     "Unlocks a node operator's voting power and sets the delegate (saves some gas by initializing and setting the delegate in one transaction)",
-				UsageText: "rocketpool pdao initialize-voting-with-delegate",
-				Action: func(c *cli.Context) error {
-
-					// Run
-					return initializeVotingWithDelegate(c)
+					return initializeVotingPrompt(c)
 
 				},
 			},

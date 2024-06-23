@@ -9,7 +9,18 @@ import (
 	"github.com/urfave/cli"
 )
 
+func initializeVotingPrompt(c *cli.Context) error {
+
+	if cliutils.Confirm(fmt.Sprintf("Would you like to specify a delegate that can vote on your behalf on Protocol DAO proposals??")) {
+		return initializeVotingWithDelegate(c)
+	} else {
+		return initializeVoting(c)
+	}
+	return nil
+}
+
 func initializeVoting(c *cli.Context) error {
+
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
