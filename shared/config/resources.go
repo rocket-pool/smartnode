@@ -156,7 +156,7 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"),
 		},
-		PreviousProtocolDaoVerifierAddresses: []common.Address{},
+		PreviousProtocolDaoVerifierAddresses: nil,
 		OptimismPriceMessengerAddress:        nil,
 		PolygonPriceMessengerAddress:         nil,
 		ArbitrumPriceMessengerAddress:        nil,
@@ -191,7 +191,7 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0x4d581a552490fb6fce5F978e66560C8b7E481818"),
 		},
-		PreviousProtocolDaoVerifierAddresses: []common.Address{},
+		PreviousProtocolDaoVerifierAddresses: nil,
 		OptimismPriceMessengerAddress:        nil,
 		PolygonPriceMessengerAddress:         nil,
 		ArbitrumPriceMessengerAddress:        nil,
