@@ -59,6 +59,9 @@ func closeMinipools(c *cli.Context) error {
 			// Ignore minipools that are currently in prelaunch
 			continue
 		}
+		if eth.WeiToEth(mp.DepositBalance) != 16 {
+			hasOnly16ETHMps = false
+		}
 		if mp.CanClose {
 			closableMinipools = append(closableMinipools, mp)
 		} else {
@@ -72,9 +75,6 @@ func closeMinipools(c *cli.Context) error {
 				mp.BeaconState != beacon.ValidatorState_WithdrawalDone {
 				unwithdrawnMinipools = append(unwithdrawnMinipools, mp)
 			}
-		}
-		if eth.WeiToEth(mp.DepositBalance) != 16 {
-			hasOnly16ETHMps = false
 		}
 	}
 
