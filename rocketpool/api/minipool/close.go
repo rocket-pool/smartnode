@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -54,6 +55,14 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 		return nil, fmt.Errorf("error checking if the node's fee distributor is initialized: %w", err)
 	}
 	if !response.IsFeeDistributorInitialized {
+		return &response, nil
+	}
+
+	response.IsVotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if the node has initialized voting: %w", err)
+	}
+	if !response.IsVotingInitialized {
 		return &response, nil
 	}
 
@@ -202,6 +211,15 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		if err != nil {
 			return fmt.Errorf("error getting user deposit balance of minipool %s: %w", minipoolAddress.Hex(), err)
 		}
+		return nil
+	})
+	wg1.Go(func() error {
+		var err error
+		nodeDetails, err := mp.GetNodeDetails(nil)
+		if err != nil {
+			return fmt.Errorf("error getting minipool details %s: %w", minipoolAddress.Hex(), err)
+		}
+		details.DepositBalance = nodeDetails.DepositBalance
 		return nil
 	})
 
