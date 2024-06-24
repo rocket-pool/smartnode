@@ -121,7 +121,7 @@ func getStatus(c *cli.Context) error {
 	}
 	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
 
-	if response.IsNodeRegistered != false {
+	if response.IsNodeRegistered {
 		fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.TotalDelegatedVp))
 	} else {
 		fmt.Print("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power.\n")
@@ -156,6 +156,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Println("The node has PDAO proposal checking duties enabled. It will periodically check for proposals to challenge.")
 	} else {
 		fmt.Printf("The node does not have PDAO proposal checking duties enabled (See %s to learn more about this duty).", challengeLink)
+		fmt.Println("")
 	}
 	fmt.Println("")
 
