@@ -154,7 +154,7 @@ func getStatus(c *cli.Context) error {
 		if status.SignallingAddress == blankAddress {
 			fmt.Printf("The node does not currently have a snapshot signalling address set.\nTo learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
 		} else {
-			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, status.SignallingAddressAddressFormatted, colorReset)
+			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, status.SignallingAddressFormatted, colorReset)
 		}
 
 		if status.SnapshotResponse.Error != "" {

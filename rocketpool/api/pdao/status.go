@@ -80,7 +80,7 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 		var err error
 		response.SignallingAddress, err = reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
 		if err == nil {
-			response.SignallingAddressAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
+			response.SignallingAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
 		}
 		return err
 	})
