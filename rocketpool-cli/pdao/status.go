@@ -18,9 +18,11 @@ import (
 )
 
 const (
-	colorBlue  string = "\033[36m"
-	colorReset string = "\033[0m"
-	colorGreen string = "\033[32m"
+	colorBlue             string = "\033[36m"
+	colorReset            string = "\033[0m"
+	colorGreen            string = "\033[32m"
+	signallingAddressLink string = "https://docs.rocketpool.net/guides/houston/participate#setting-your-snapshot-signalling-address"
+	challengeLink         string = "https://docs.rocketpool.net/guides/houston/pdao#challenge-process"
 )
 
 func getStatus(c *cli.Context) error {
@@ -71,13 +73,15 @@ func getStatus(c *cli.Context) error {
 	}
 	claimableBonds := claimableBondsResponse.ClaimableBonds
 
-	// Snapshot voting status
-	fmt.Printf("%s=== Snapshot Voting ===%s\n", colorGreen, colorReset)
+	fmt.Printf(response.SnapshotVotingDelegateFormatted)
+
+	// Signalling Status
+	fmt.Printf("%s=== Signalling on Snapshot ===%s\n", colorGreen, colorReset)
 	blankAddress := common.Address{}
-	if response.SnapshotVotingDelegate == blankAddress {
-		fmt.Println("The node does not currently have a voting delegate set, which means it can only vote directly on Snapshot proposals (using a hardware wallet with the node mnemonic loaded).\nRun `rocketpool n sv <address>` to vote from a different wallet or have a delegate represent you. (See https://delegates.rocketpool.net for options)")
+	if response.SignallingAddress == blankAddress {
+		fmt.Printf("The node does not currently have a snapshot signalling address set.\nTo learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
 	} else {
-		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, response.SnapshotVotingDelegateFormatted, colorReset)
+		fmt.Printf("The node can vote directly or override their delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, response.SignallingAddressFormatted, colorReset)
 	}
 
 	if response.SnapshotResponse.Error != "" {
@@ -151,7 +155,7 @@ func getStatus(c *cli.Context) error {
 	if response.VerifyEnabled {
 		fmt.Println("The node has PDAO proposal checking duties enabled. It will periodically check for proposals to challenge.")
 	} else {
-		fmt.Println("The node does not have PDAO proposal checking duties enabled (See https://docs.rocketpool.net/guides/houston/pdao#challenge-process to learn more about this duty).")
+		fmt.Printf("The node does not have PDAO proposal checking duties enabled (See %s to learn more about this duty).", challengeLink)
 	}
 	fmt.Println("")
 

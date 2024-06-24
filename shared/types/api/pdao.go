@@ -433,13 +433,15 @@ type PDAOStatusResponse struct {
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
-	IsRPLLockingAllowed     bool           `json:"isRPLLockingAllowed"`
-	NodeRPLLocked           *big.Int       `json:"nodeRPLLocked"`
-	AccountAddress          common.Address `json:"accountAddress"`
-	AccountAddressFormatted string         `json:"accountAddressFormatted"`
-	TotalDelegatedVp        *big.Int       `json:"totalDelegateVp"`
-	SumVotingPower          *big.Int       `json:"sumVotingPower"`
-	IsNodeRegistered        bool           `json:"isNodeRegistered"`
+	IsRPLLockingAllowed        bool           `json:"isRPLLockingAllowed"`
+	NodeRPLLocked              *big.Int       `json:"nodeRPLLocked"`
+	AccountAddress             common.Address `json:"accountAddress"`
+	AccountAddressFormatted    string         `json:"accountAddressFormatted"`
+	TotalDelegatedVp           *big.Int       `json:"totalDelegateVp"`
+	SumVotingPower             *big.Int       `json:"sumVotingPower"`
+	IsNodeRegistered           bool           `json:"isNodeRegistered"`
+	SignallingAddress          common.Address `json:"signallingAddress"`
+	SignallingAddressFormatted string         `json:"SignallingAddressFormatted"`
 }
 
 type PDAOCanSetSignallingAddressResponse struct {
