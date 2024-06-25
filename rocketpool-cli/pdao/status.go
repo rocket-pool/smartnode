@@ -73,8 +73,6 @@ func getStatus(c *cli.Context) error {
 	}
 	claimableBonds := claimableBondsResponse.ClaimableBonds
 
-	fmt.Printf(response.SnapshotVotingDelegateFormatted)
-
 	// Signalling Status
 	fmt.Printf("%s=== Signalling on Snapshot ===%s\n", colorGreen, colorReset)
 	blankAddress := common.Address{}
@@ -107,7 +105,7 @@ func getStatus(c *cli.Context) error {
 	// Onchain Voting Status
 	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
 	if response.IsVotingInitialized {
-		fmt.Printf("The node has %s%s%s been initialized for onchain voting.\n", colorBlue, response.AccountAddressFormatted, colorReset)
+		fmt.Printf("The node %s%s%s has been initialized for onchain voting.\n", colorBlue, response.AccountAddressFormatted, colorReset)
 	} else {
 		fmt.Printf("The node %s%s%s has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.\n", colorBlue, response.AccountAddressFormatted, colorReset)
 	}
