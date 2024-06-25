@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v0.2.0-beta.9"
-	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v0.2.0-beta.9"
+	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v1.0.0-rc.2"
+	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v1.0.0-rc.2"
 	rethEventLogInterval int    = 1000
 	rethStopSignal       string = "SIGTERM"
 )
