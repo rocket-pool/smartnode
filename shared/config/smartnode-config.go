@@ -659,9 +659,6 @@ func (cfg *SmartNodeConfig) Validate() []string {
 		if cfg.LocalBeaconClient.BeaconNode.Value == config.BeaconNode_Unknown {
 			errors = append(errors, "You do not have a Beacon Node specified. Please select a client before continuing.")
 		}
-		if cfg.LocalExecutionClient.ExecutionClient.Value == config.ExecutionClient_Reth && cfg.Network.Value == config.Network_Mainnet {
-			errors = append(errors, "The Reth client is currently an alpha release and not to be used on Mainnet")
-		}
 	} else {
 		if cfg.ExternalExecutionClient.ExecutionClient.Value == config.ExecutionClient_Unknown {
 			errors = append(errors, "You do not have an Execution Client specified. Please select a client before continuing.")
@@ -701,10 +698,10 @@ func (cfg *SmartNodeConfig) Validate() []string {
 		}
 
 		if cfg.Addons.RescueNode.Username.Value == "" {
-			errors = append(errors, "Resuce Node requires a username.")
+			errors = append(errors, "Rescue Node requires a username.")
 		}
 		if cfg.Addons.RescueNode.Password.Value == "" {
-			errors = append(errors, "Resuce Node requires a password.")
+			errors = append(errors, "Rescue Node requires a password.")
 		}
 	}
 
