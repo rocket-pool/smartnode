@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
+	utilsstrings "github.com/rocket-pool/rocketpool-go/v2/utils/strings"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
 	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
@@ -65,6 +66,18 @@ func PrintMultiTransactionNonceWarning() {
 
 // Implementation of PrintTransactionHash and PrintTransactionHashNoCancel
 func printTransactionHashImpl(rp *client.Client, hash common.Hash, finalMessage string) {
+
+	_, isNew, err := rp.LoadConfig()
+	if err != nil {
+		fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err)
+		return
+	}
+
+	if isNew {
+		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
+		return
+	}
+
 	txWatchUrl := getTxWatchUrl(rp)
 	hashString := hash.String()
 	fmt.Printf("Transaction has been submitted with hash %s.\n", hashString)
@@ -160,16 +173,16 @@ func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress
 // Prints what network you're currently on
 func PrintNetwork(currentNetwork config.Network, isNew bool) error {
 	if isNew {
-		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	switch currentNetwork {
 	case config.Network_Mainnet:
-		fmt.Printf("Your Smartnode is currently using the %sEthereum Mainnet.%s\n\n", terminal.ColorGreen, terminal.ColorReset)
+		fmt.Printf("Your Smart Node is currently using the %sEthereum Mainnet.%s\n\n", terminal.ColorGreen, terminal.ColorReset)
 	case snCfg.Network_Devnet:
-		fmt.Printf("Your Smartnode is currently using the %sHolesky Development Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
+		fmt.Printf("Your Smart Node is currently using the %sHolesky Development Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 	case config.Network_Holesky:
-		fmt.Printf("Your Smartnode is currently using the %sHolesky Test Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
+		fmt.Printf("Your Smart Node is currently using the %sHolesky Test Network.%s\n\n", terminal.ColorYellow, terminal.ColorReset)
 	default:
 		fmt.Printf("%sYou are on an unexpected network [%v].%s\n\n", terminal.ColorYellow, currentNetwork, terminal.ColorReset)
 	}
@@ -207,4 +220,11 @@ func ParseFloat(c *cli.Context, name string, value string, isFraction bool) (*bi
 		return nil, nil
 	}
 	return trueVal, nil
+}
+
+func TruncateAndSanitize(str string, size int) string {
+	if len(str) > size {
+		str = fmt.Sprintf("%s...", str[:size])
+	}
+	return utilsstrings.Sanitize(str)
 }

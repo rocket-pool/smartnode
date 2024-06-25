@@ -355,7 +355,7 @@ func (o *GetAlertsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Reg
 	return nil
 }
 
-// bindParamGetAlerts binds the parameter filter
+// bindParamFilter binds the parameter filter
 func (o *GetAlertsParams) bindParamFilter(formats strfmt.Registry) []string {
 	filterIR := o.Filter
 

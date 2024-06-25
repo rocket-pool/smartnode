@@ -126,7 +126,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Subcommands: []*cli.Command{
 			{
 				Name:    "settings",
-				Aliases: []string{"s"},
+				Aliases: []string{"st"},
 				Usage:   "Show all of the current Protocol DAO settings and values",
 				Action: func(c *cli.Context) error {
 					// Run
@@ -135,12 +135,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:    "voting-power",
-				Aliases: []string{"vp"},
-				Usage:   "Shows the voting power of your node at the latest block",
+				Name:    "status",
+				Aliases: []string{"s"},
+				Usage:   "Get the pDAO status",
 				Action: func(c *cli.Context) error {
 					// Run
-					return getVotePower(c)
+					return getStatus(c)
 				},
 			},
 

@@ -112,6 +112,7 @@ func (c *protocolDaoProposalsContext) PrepareData(data *api.ProtocolDaoProposals
 			VotingPowerAgainst:   prop.VotingPowerAgainst.Raw(),
 			VotingPowerAbstained: prop.VotingPowerAbstained.Raw(),
 			VotingPowerToVeto:    prop.VotingPowerToVeto.Raw(),
+			VetoQuorum:           prop.VetoQuorum.Raw(),
 			IsDestroyed:          prop.IsDestroyed.Get(),
 			IsFinalized:          prop.IsFinalized.Get(),
 			IsExecuted:           prop.IsExecuted.Get(),

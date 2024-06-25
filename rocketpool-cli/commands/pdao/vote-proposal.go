@@ -121,8 +121,8 @@ func voteOnProposal(c *cli.Context) error {
 		response, err = rp.Api.PDao.VoteOnProposal(selectedProposal.ID, voteDirection)
 	} else {
 		// Check if proposal can be overriden on
-		actionString = "override your delegate's vote"
-		actionPast = "overrode delegate with a vote for"
+		actionString = "override the Phase 1 vote"
+		actionPast = "overrode the Phase 1 vote with a vote for"
 		response, err = rp.Api.PDao.OverrideVoteOnProposal(selectedProposal.ID, voteDirection)
 	}
 	if err != nil {

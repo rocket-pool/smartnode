@@ -3,7 +3,9 @@ package pdao
 import (
 	"fmt"
 
+	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
 	"github.com/urfave/cli/v2"
 )
@@ -15,8 +17,18 @@ func initializeVoting(c *cli.Context) error {
 		return err
 	}
 
+	// Get the address
+	delegateAddressString := c.String("address")
+	if delegateAddressString == "" {
+		delegateAddressString = utils.Prompt("Please enter the delegate's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
+	}
+	delegateAddress, err := input.ValidateAddress("delegateAddress", delegateAddressString)
+	if err != nil {
+		return err
+	}
+
 	// Get the TX
-	response, err := rp.Api.PDao.InitializeVoting()
+	response, err := rp.Api.PDao.InitializeVoting(delegateAddress)
 	if err != nil {
 		return err
 	}

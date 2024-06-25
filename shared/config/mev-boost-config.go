@@ -54,6 +54,12 @@ type MevBoostConfig struct {
 	// Aestus relay
 	AestusRelay config.Parameter[bool]
 
+	// TitanGlobal relay
+	TitanGlobalRelay config.Parameter[bool]
+
+	// TitanRegional relay
+	TitanRegionalRelay config.Parameter[bool]
+
 	// The RPC port
 	Port config.Parameter[uint16]
 
@@ -170,6 +176,8 @@ func NewMevBoostConfig(parent *SmartNodeConfig) *MevBoostConfig {
 		EdenRelay:               generateRelayParameter(ids.MevBoostEdenID, relayMap[MevRelayID_Eden]),
 		UltrasoundRelay:         generateRelayParameter(ids.MevBoostUltrasoundID, relayMap[MevRelayID_Ultrasound]),
 		AestusRelay:             generateRelayParameter(ids.MevBoostAestusID, relayMap[MevRelayID_Aestus]),
+		TitanGlobalRelay:        generateRelayParameter(ids.MevBoostTitanGlobalID, relayMap[MevRelayID_TitanGlobal]),
+		TitanRegionalRelay:      generateRelayParameter(ids.MevBoostTitanRegionalID, relayMap[MevRelayID_TitanRegional]),
 
 		Port: config.Parameter[uint16]{
 			ParameterCommon: &config.ParameterCommon{
@@ -266,6 +274,8 @@ func (cfg *MevBoostConfig) GetParameters() []config.IParameter {
 		&cfg.EdenRelay,
 		&cfg.UltrasoundRelay,
 		&cfg.AestusRelay,
+		&cfg.TitanGlobalRelay,
+		&cfg.TitanRegionalRelay,
 		&cfg.Port,
 		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,
@@ -458,6 +468,28 @@ func createDefaultRelays() []MevRelay {
 				config.Network_Mainnet: "https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live?id=rocketpool",
 			},
 			Regulated: false,
+		},
+
+		// Titan Global
+		{
+			ID:          MevRelayID_TitanGlobal,
+			Name:        "Titan Global (non-filtering)",
+			Description: "Select this to enable the \"non-filtering\" relay from Titan.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@global.titanrelay.xyz",
+			},
+			Regulated: false,
+		},
+
+		// Titan Regional
+		{
+			ID:          MevRelayID_TitanRegional,
+			Name:        "Titan Regional (filtering)",
+			Description: "Select this to enable the \"filtering\" relay from Titan.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
+			},
+			Regulated: true,
 		},
 	}
 
