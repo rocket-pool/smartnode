@@ -9,6 +9,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/alessio/shellescape"
 	externalip "github.com/glendc/go-external-ip"
@@ -134,7 +135,8 @@ type RocketPoolConfig struct {
 // * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
 func getExternalIP() (net.IP, error) {
 	// Try IPv4 first
-	ip4Consensus := externalip.DefaultConsensus(nil, nil)
+	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
+	ip4Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
 	ip4Consensus.UseIPProtocol(4)
 	if ip, err := ip4Consensus.ExternalIP(); err == nil {
 		return ip, nil
