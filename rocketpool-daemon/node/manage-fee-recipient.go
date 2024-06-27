@@ -47,7 +47,7 @@ func NewManageFeeRecipient(ctx context.Context, sp *services.ServiceProvider, lo
 		alerter: alerting.NewAlerter(sp.GetConfig(), logger),
 		cfg:     sp.GetConfig(),
 		bc:      sp.GetBeaconClient(),
-		d:       sp.GetDocker(),
+		d:       sp.GetDocker().(*client.Client),
 	}
 }
 

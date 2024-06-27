@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -46,7 +47,7 @@ func (c *serviceRestartVcContext) PrepareData(data *types.SuccessData, opts *bin
 	bc := sp.GetBeaconClient()
 	d := sp.GetDocker()
 
-	err := validator.StopValidator(c.handler.ctx, cfg, bc, d, true)
+	err := validator.StopValidator(c.handler.ctx, cfg, bc, d.(*client.Client), true)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error restarting validator client: %w", err)
 	}
