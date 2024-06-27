@@ -85,9 +85,10 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 	for i, mp := range mps {
 		mpCommon := mp.Common()
 		mpDetails := api.MinipoolRescueDissolvedDetails{
-			Address:       mpCommon.Address,
-			MinipoolState: mpCommon.Status.Formatted(),
-			IsFinalized:   mpCommon.IsFinalised.Get(),
+			Address:         mpCommon.Address,
+			MinipoolState:   mpCommon.Status.Formatted(),
+			IsFinalized:     mpCommon.IsFinalised.Get(),
+			MinipoolVersion: mpCommon.Version,
 		}
 
 		if mpDetails.MinipoolState != rptypes.MinipoolStatus_Dissolved || mpDetails.IsFinalized {
