@@ -73,7 +73,7 @@ func NewDistributeMinipools(sp *services.ServiceProvider, logger *log.Logger) *D
 		w:                   sp.GetWallet(),
 		rp:                  sp.GetRocketPool(),
 		bc:                  sp.GetBeaconClient(),
-		d:                   sp.GetDocker(),
+		d:                   sp.GetDocker().(*client.Client),
 		gasThreshold:        gasThreshold,
 		distributeThreshold: distributeThreshold,
 		maxFee:              maxFee,

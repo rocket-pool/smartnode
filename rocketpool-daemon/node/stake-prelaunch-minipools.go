@@ -60,7 +60,7 @@ func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger *log.Logger
 		vMgr:           sp.GetValidatorManager(),
 		rp:             sp.GetRocketPool(),
 		bc:             sp.GetBeaconClient(),
-		d:              sp.GetDocker(),
+		d:              sp.GetDocker().(*client.Client),
 		gasThreshold:   cfg.AutoTxGasThreshold.Value,
 		maxFee:         maxFee,
 		maxPriorityFee: maxPriorityFee,
