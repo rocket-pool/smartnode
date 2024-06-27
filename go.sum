@@ -120,8 +120,8 @@ github.com/dustin/go-humanize v1.0.1 h1:GzkhY7T5VNhEkwH0PVJgjz+fX1rhBrR7pRT3mDkp
 github.com/dustin/go-humanize v1.0.1/go.mod h1:Mu1zIs6XwVuF/gI1OepvI0qD18qycQx+mFykh5fBlto=
 github.com/ethereum/c-kzg-4844 v1.0.1 h1:pGixCbGizcVKSwoV70ge48+PrbB+iSKs2rjgfE4yJmQ=
 github.com/ethereum/c-kzg-4844 v1.0.1/go.mod h1:VewdlzQmpT5QSrVhbBuGoCdFJkpaJlO1aQputP83wc0=
-github.com/ethereum/go-ethereum v1.14.0 h1:xRWC5NlB6g1x7vNy4HDBLuqVNbtLrc7v8S6+Uxim1LU=
-github.com/ethereum/go-ethereum v1.14.0/go.mod h1:1STrq471D0BQbCX9He0hUj4bHxX2k6mt5nOQJhDNOJ8=
+github.com/ethereum/go-ethereum v1.14.3 h1:5zvnAqLtnCZrU9uod1JCvHWJbPMURzYFHfc2eHz4PHA=
+github.com/ethereum/go-ethereum v1.14.3/go.mod h1:1STrq471D0BQbCX9He0hUj4bHxX2k6mt5nOQJhDNOJ8=
 github.com/fatih/color v1.16.0 h1:zmkK9Ngbjj+K0yRhTVONQh1p/HknKYSlNT+vZCzyokM=
 github.com/fatih/color v1.16.0/go.mod h1:fL2Sau1YI5c0pdGEVCbKQbLXB6edEj1ZgiY4NijnWvE=
 github.com/felixge/httpsnoop v1.0.4 h1:NFTV2Zj1bL4mc9sqWACXbQFVBBg2W3GPvqp8/ESS2Wg=
@@ -483,10 +483,8 @@ github.com/rocket-pool/batch-query v1.0.0 h1:5HejmT1n1fIdLIqUhTNwbkG2PGOPl3IVjCp
 github.com/rocket-pool/batch-query v1.0.0/go.mod h1:d1CmxShzk0fioJ4yX0eFGhz2an1odnW/LZ2cp3eDGIQ=
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd h1:p9KuetSKB9nte9I/MkkiM3pwKFVQgqxxPTQ0y56Ff6s=
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd/go.mod h1:UE9fof8P7iESVtLn1K9CTSkNRYVFHZHlf96RKbU33kA=
-github.com/rocket-pool/node-manager-core v0.3.1-0.20240506214639-c2883a64174b h1:A7M1/kjtPsV5MXZm/iD+bNtWdq35OaBLA5AMRfRtKX8=
-github.com/rocket-pool/node-manager-core v0.3.1-0.20240506214639-c2883a64174b/go.mod h1:f/w3jnzi3ipXet7acZ0pQhGbolU/g3IDVrqXcNWuHw4=
-github.com/rocket-pool/rocketpool-go/v2 v2.0.0-b1 h1:eIABhMJ2yMY1+bRAgVFlZkQuE6SILD3O/pbXsFqFlY0=
-github.com/rocket-pool/rocketpool-go/v2 v2.0.0-b1/go.mod h1:RFw2LxrDX8wO+ShLXR/mM9ZaIech1WvqKmFv4eJTlXI=
+github.com/rocket-pool/node-manager-core v0.5.0 h1:98PnHb67mgOKTHMQlRql5KINYM+5NGYV3n4GYChZuec=
+github.com/rocket-pool/node-manager-core v0.5.0/go.mod h1:Clii5aca9PvR4HoAlUs8dh2OsJbDDnJ4yL5EaQE1gSo=
 github.com/rocket-pool/rocketpool-go/v2 v2.0.0-b2 h1:UeDoy/ZbYJ+/Dg+zwo9E+fQlPn0vQUu3XP3XszwtmPA=
 github.com/rocket-pool/rocketpool-go/v2 v2.0.0-b2/go.mod h1:pcY43H/m5pjr7zacrsKVaXnXfKKi1UV08VDPUwxbJkc=
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=

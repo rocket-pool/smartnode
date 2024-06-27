@@ -386,7 +386,7 @@ func (c *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// get the execution client sync status:
 	wg.Go(func() error {
-		syncStatus := ec.CheckStatus(c.ctx)
+		syncStatus := ec.CheckStatus(c.ctx, true)
 		// note this metric is emitted asynchronously, while others in this file tend to be emitted at the end of the outer function (mostly due to dependencies between metrics). See https://github.com/rocket-pool/smartnode/issues/186
 		channel <- prometheus.MustNewConstMetric(
 			c.clientSyncProgress, prometheus.GaugeValue, syncStatus.PrimaryClientStatus.SyncProgress, "execution")
