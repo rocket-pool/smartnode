@@ -145,9 +145,31 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		return fmt.Errorf("Can't get the latest block time: %w", err)
 	}
 	latestBlockTimestamp := int64(latestEth1Block.Time)
+	var targetBlockNumber uint64
+	var submissionTimestamp int64
+	// If consensus was reached within ~6 hours still try to submit as a liveness check
+	if latestEth1Block.Number.Uint64()-lastSubmissionBlock < 1800 {
+		// use the latest submission block/timestamp
+		submissionBlock, err := t.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(lastSubmissionBlock)))
+		if err != nil {
+			return fmt.Errorf("can't get the block from the last submission, %w", err)
+		}
 
-	// Calculate the next submission timestamp
-	submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+		submissionTimestamp = int64(submissionBlock.Time)
+	} else {
+		// Calculate the next submission timestamp
+		submissionTimestamp, err = utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+		if err != nil {
+			return err
+		}
+	}
+
+	if targetBlockNumber < lastSubmissionBlock {
+		// No submission needed: target block older than the last submission
+		return nil
+	}
+
+	targetBlockHeader, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(targetBlockNumber)))
 	if err != nil {
 		return err
 	}
@@ -168,18 +190,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-
-	targetBlockNumber := targetBlock.ExecutionBlockNumber
-
-	if targetBlockNumber <= lastSubmissionBlock {
-		// No submission needed: target block older or equal to the last submission
-		return nil
-	}
-
-	targetBlockHeader, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(targetBlockNumber)))
-	if err != nil {
-		return err
-	}
+	targetBlockNumber = targetBlock.ExecutionBlockNumber
 
 	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
 

@@ -374,41 +374,54 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	// Get the time of the latest block
 	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
-		return fmt.Errorf("Can't get the latest block time: %w", err)
+		return fmt.Errorf("can't get the latest block time: %w", err)
 	}
 	latestBlockTimestamp := int64(latestEth1Block.Time)
 
-	// Calculate the next submission timestamp
-	submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
-	if err != nil {
-		return err
+	var targetBlockNumber uint64
+	var submissionTimestamp int64
+	// If consensus was reached within ~6 hours still try to submit as a liveness check
+	if latestEth1Block.Number.Uint64()-lastSubmissionBlock < 1800 {
+		// use the latest submission block/timestamp
+		submissionBlock, err := t.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(lastSubmissionBlock)))
+		if err != nil {
+			return fmt.Errorf("can't get the block from the last submission, %w", err)
+		}
+
+		submissionTimestamp = int64(submissionBlock.Time)
+		targetBlockNumber = lastSubmissionBlock
+	} else {
+		// Calculate the next submission timestamp
+		submissionTimestamp, err = utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+		if err != nil {
+			return err
+		}
+		// Get the Beacon slot corresponding to this time
+		genesisTime := (int64(eth2Config.GenesisTime))
+		timeSinceGenesis := submissionTimestamp - genesisTime
+		slotNumber := uint64(timeSinceGenesis) / eth2Config.SecondsPerSlot
+
+		// Search for the last existing EL block, going back up to 32 slots if the block is not found.
+		targetBlock, err := utils.FindLastBlockWithExecutionPayload(t.bc, slotNumber)
+		if err != nil {
+			return err
+		}
+		targetBlockNumber = targetBlock.ExecutionBlockNumber
+		// Check if the targetEpoch is finalized yet
+		targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
+		beaconHead, err := t.bc.GetBeaconHead()
+		if err != nil {
+			return err
+		}
+		finalizedEpoch := beaconHead.FinalizedEpoch
+		if targetEpoch > finalizedEpoch {
+			t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", targetBlockNumber, targetEpoch, finalizedEpoch)
+			return nil
+		}
 	}
 
-	// Get the Beacon slot corresponding to this time
-	genesisTime := (int64(eth2Config.GenesisTime))
-	timeSinceGenesis := submissionTimestamp - genesisTime
-	slotNumber := uint64(timeSinceGenesis) / eth2Config.SecondsPerSlot
-
-	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	targetBlock, err := utils.FindLastBlockWithExecutionPayload(t.bc, slotNumber)
-	if err != nil {
-		return err
-	}
-	targetBlockNumber := targetBlock.ExecutionBlockNumber
-	if targetBlockNumber <= lastSubmissionBlock {
-		// No submission needed: target block older or equal to the last submission
-		return nil
-	}
-
-	// Check if the targetEpoch is finalized yet
-	targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
-	beaconHead, err := t.bc.GetBeaconHead()
-	if err != nil {
-		return err
-	}
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	if targetEpoch > finalizedEpoch {
-		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", targetBlockNumber, targetEpoch, finalizedEpoch)
+	if targetBlockNumber < lastSubmissionBlock {
+		// No submission needed: target block older than the last submission
 		return nil
 	}
 
