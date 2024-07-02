@@ -145,24 +145,30 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		return fmt.Errorf("Can't get the latest block time: %w", err)
 	}
 	latestBlockTimestamp := int64(latestEth1Block.Time)
-	var targetBlockNumber uint64
-	var submissionTimestamp int64
-	// If consensus was reached within ~6 hours still try to submit as a liveness check
-	if latestEth1Block.Number.Uint64()-lastSubmissionBlock < 1800 {
-		// use the latest submission block/timestamp
-		submissionBlock, err := t.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(lastSubmissionBlock)))
-		if err != nil {
-			return fmt.Errorf("can't get the block from the last submission, %w", err)
-		}
-
-		submissionTimestamp = int64(submissionBlock.Time)
-	} else {
-		// Calculate the next submission timestamp
-		submissionTimestamp, err = utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
-		if err != nil {
-			return err
-		}
+	// Calculate the next submission timestamp
+	submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+	if err != nil {
+		return err
 	}
+
+	// Convert the submission timestamp to time.Time
+	nextSubmissionTime := time.Unix(submissionTimestamp, 0)
+
+	// Get the Beacon block corresponding to this time
+	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
+	timeSinceGenesis := nextSubmissionTime.Sub(genesisTime)
+	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
+
+	// Log
+	t.log.Println("Checking for network balance checkpoint...")
+
+	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
+	targetBlock, err := utils.FindLastBlockWithExecutionPayload(t.bc, slotNumber)
+	if err != nil {
+		return err
+	}
+
+	targetBlockNumber := targetBlock.ExecutionBlockNumber
 
 	if targetBlockNumber < lastSubmissionBlock {
 		// No submission needed: target block older than the last submission
@@ -173,24 +179,6 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-
-	// Convert the submission timestamp to time.Time
-	nextSubmissionTime := time.Unix(submissionTimestamp, 0)
-
-	// Log
-	t.log.Println("Checking for network balance checkpoint...")
-
-	// Get the Beacon block corresponding to this time
-	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-	timeSinceGenesis := nextSubmissionTime.Sub(genesisTime)
-	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
-
-	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	targetBlock, err := utils.FindLastBlockWithExecutionPayload(t.bc, slotNumber)
-	if err != nil {
-		return err
-	}
-	targetBlockNumber = targetBlock.ExecutionBlockNumber
 
 	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
 
