@@ -203,19 +203,8 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		wg.Go(func() error {
 			var err error
 			r := &response.SnapshotResponse
-			if cfg.Smartnode.GetSnapshotDelegationAddress() != "" {
-				idHash := cfg.Smartnode.GetVotingSnapshotID()
-				response.SnapshotVotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
-				if err != nil {
-					r.Error = err.Error()
-					return nil
-				}
-				blankAddress := common.Address{}
-				if response.SnapshotVotingDelegate != blankAddress {
-					response.SnapshotVotingDelegateFormatted = formatResolvedAddress(c, response.SnapshotVotingDelegate)
-				}
-
-				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SnapshotVotingDelegate)
+			if cfg.Smartnode.GetRocketSignerRegistryAddress() != "" {
+				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SignallingAddress)
 				if err != nil {
 					r.Error = err.Error()
 					return nil

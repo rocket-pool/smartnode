@@ -418,17 +418,15 @@ type PDAOInitializeVotingResponse struct {
 }
 
 type PDAOStatusResponse struct {
-	Status                          string         `json:"status"`
-	Error                           string         `json:"error"`
-	VotingPower                     *big.Int       `json:"votingPower"`
-	OnchainVotingDelegate           common.Address `json:"onchainVotingDelegate"`
-	OnchainVotingDelegateFormatted  string         `json:"onchainVotingDelegateFormatted"`
-	BlockNumber                     uint32         `json:"blockNumber"`
-	VerifyEnabled                   bool           `json:"verifyEnabled"`
-	IsVotingInitialized             bool           `json:"isVotingInitialized"`
-	SnapshotVotingDelegate          common.Address `json:"snapshotVotingDelegate"`
-	SnapshotVotingDelegateFormatted string         `json:"snapshotVotingDelegateFormatted"`
-	SnapshotResponse                struct {
+	Status                         string         `json:"status"`
+	Error                          string         `json:"error"`
+	VotingPower                    *big.Int       `json:"votingPower"`
+	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
+	BlockNumber                    uint32         `json:"blockNumber"`
+	VerifyEnabled                  bool           `json:"verifyEnabled"`
+	IsVotingInitialized            bool           `json:"isVotingInitialized"`
+	SnapshotResponse               struct {
 		Error                   string                 `json:"error"`
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
