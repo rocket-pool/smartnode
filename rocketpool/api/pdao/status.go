@@ -43,10 +43,6 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	s, err := services.GetSnapshotDelegation(c)
-	if err != nil {
-		return nil, err
-	}
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
@@ -74,16 +70,6 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	// Sync
 	var wg errgroup.Group
 	var blockNumber uint64
-
-	// Get the node's signalling address
-	wg.Go(func() error {
-		var err error
-		response.SignallingAddress, err = reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
-		if err == nil {
-			response.SignallingAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
-		}
-		return err
-	})
 
 	// Get the node onchain voting delegate
 	wg.Go(func() error {
@@ -144,14 +130,23 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	})
 
 	// Get active and past votes from Snapshot, but treat errors as non-Fatal
-	if s != nil {
+	if reg != nil {
 		wg.Go(func() error {
 			var err error
 			r := &response.SnapshotResponse
 			if cfg.Smartnode.GetRocketSignerRegistryAddress() != "" {
+				response.SignallingAddress, err = reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
+				if err != nil {
+					r.Error = "test"
+					return nil
+				}
+				blankAddress := common.Address{}
+				if response.SignallingAddress != blankAddress {
+					response.SignallingAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
+				}
 				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SignallingAddress)
 				if err != nil {
-					r.Error = err.Error()
+					r.Error = "test1"
 					return nil
 				}
 				r.ProposalVotes = votedProposals.Data.Votes

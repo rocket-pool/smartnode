@@ -562,7 +562,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		snapshotApiDomain: map[config.Network]string{
 			config.Network_Mainnet: "hub.snapshot.org",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Holesky: "hub.snapshot.org",
 		},
 
 		previousRewardsPoolAddresses: map[config.Network][]common.Address{
