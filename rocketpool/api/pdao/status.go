@@ -137,7 +137,7 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 			if cfg.Smartnode.GetRocketSignerRegistryAddress() != "" {
 				response.SignallingAddress, err = reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
 				if err != nil {
-					r.Error = "test"
+					r.Error = err.Error()
 					return nil
 				}
 				blankAddress := common.Address{}
@@ -146,7 +146,7 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 				}
 				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SignallingAddress)
 				if err != nil {
-					r.Error = "test1"
+					r.Error = err.Error()
 					return nil
 				}
 				r.ProposalVotes = votedProposals.Data.Votes
