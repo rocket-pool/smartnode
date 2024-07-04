@@ -56,10 +56,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	s, err := services.GetSnapshotDelegation(c)
-	if err != nil {
-		return nil, err
-	}
 	reg, err := services.GetRocketSignerRegistry(c)
 	if err != nil {
 		return nil, err
@@ -133,16 +129,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	// Get the node's signalling address
-	wg.Go(func() error {
-		var err error
-		response.SignallingAddress, err = reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
-		if err == nil {
-			response.SignallingAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
-		}
-		return err
-	})
-
 	// Get the node onchain voting delegate
 	wg.Go(func() error {
 		var err error
@@ -199,23 +185,21 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	})
 
 	// Get active and past votes from Snapshot, but treat errors as non-Fatal
-	if s != nil {
+	if reg != nil {
 		wg.Go(func() error {
 			var err error
 			r := &response.SnapshotResponse
-			if cfg.Smartnode.GetSnapshotDelegationAddress() != "" {
-				idHash := cfg.Smartnode.GetVotingSnapshotID()
-				response.SnapshotVotingDelegate, err = s.Delegation(nil, nodeAccount.Address, idHash)
+			if cfg.Smartnode.GetRocketSignerRegistryAddress() != "" {
+				response.SignallingAddress, err = reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
 				if err != nil {
 					r.Error = err.Error()
 					return nil
 				}
 				blankAddress := common.Address{}
-				if response.SnapshotVotingDelegate != blankAddress {
-					response.SnapshotVotingDelegateFormatted = formatResolvedAddress(c, response.SnapshotVotingDelegate)
+				if response.SignallingAddress != blankAddress {
+					response.SignallingAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
 				}
-
-				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SnapshotVotingDelegate)
+				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SignallingAddress)
 				if err != nil {
 					r.Error = err.Error()
 					return nil
