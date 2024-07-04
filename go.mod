@@ -26,14 +26,13 @@ require (
 	github.com/ipfs/go-cid v0.4.1
 	github.com/ipfs/go-datastore v0.6.0
 	github.com/klauspost/compress v1.17.6
-	github.com/klauspost/cpuid/v2 v2.2.7
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/pbnjay/memory v0.0.0-20210728143218-7b4eea64cf58
 	github.com/prometheus/client_golang v1.18.0
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20210809151128-385d8c5e3fb7
 	github.com/prysmaticlabs/prysm/v5 v5.0.3
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854
-	github.com/rocket-pool/rocketpool-go v1.8.3-0.20240618173422-783b8668f5b4
+	github.com/rocket-pool/rocketpool-go v1.8.4-0.20240704232530-a1f7c637454f
 	github.com/sethvargo/go-password v0.2.0
 	github.com/shirou/gopsutil/v3 v3.23.1
 	github.com/tyler-smith/go-bip39 v1.1.0
@@ -103,6 +102,7 @@ require (
 	github.com/ipld/go-ipld-prime v0.20.0 // indirect
 	github.com/jbenet/goprocess v0.1.4 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/libp2p/go-buffer-pool v0.1.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
