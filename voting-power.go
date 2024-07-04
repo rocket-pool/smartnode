@@ -47,12 +47,11 @@ func getNodeVotingPower(s *state.NetworkState, ethProvided *big.Int, nodeStake *
 		votingRpl = nodeStake
 	}
 
-	// Now take the square root and divide by 2
+	// Now take the square root
 	// Because the units are in wei, we need to multiply votingRpl by 1 Eth before square rooting.
 	votingPower := big.NewInt(0)
 	votingPower.Mul(votingRpl, oneEth)
 	votingPower.Sqrt(votingPower)
-	votingPower.Rsh(votingPower, 1)
 	return votingPower
 
 }
