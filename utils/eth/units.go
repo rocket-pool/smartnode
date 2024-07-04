@@ -13,6 +13,9 @@ const (
 
 // Convert wei to eth
 func WeiToEth(wei *big.Int) float64 {
+	if wei == nil {
+		return 0
+	}
 	var weiFloat big.Float
 	var eth big.Float
 	weiFloat.SetInt(wei)
