@@ -1,9 +1,14 @@
 package utils
 
 import (
+	"context"
 	"fmt"
+	"math/big"
 	"strconv"
+	"time"
 
+	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
@@ -47,6 +52,54 @@ func FindLastBlockWithExecutionPayload(bc beacon.Client, slotNumber uint64) (bea
 		}
 	}
 	return beaconBlock, nil
+}
+
+func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2Config, bc beacon.Client, ec rocketpool.ExecutionClient, lastSubmissionBlock uint64, referenceTimestamp int64, submissionIntervalInSeconds int64) (uint64, time.Time, *types.Header, error) {
+	// Get the time of the latest block
+	latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
+	if err != nil {
+		return 0, time.Time{}, nil, fmt.Errorf("can't get the latest block time: %w", err)
+	}
+	latestBlockTimestamp := int64(latestEth1Block.Time)
+	// Calculate the next submission timestamp
+	submissionTimestamp, err := FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+	if err != nil {
+		return 0, time.Time{}, nil, err
+	}
+
+	// Convert the submission timestamp to time.Time
+	nextSubmissionTime := time.Unix(submissionTimestamp, 0)
+
+	// Get the Beacon block corresponding to this time
+	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
+	timeSinceGenesis := nextSubmissionTime.Sub(genesisTime)
+	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
+
+	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
+	targetBlock, err := FindLastBlockWithExecutionPayload(bc, slotNumber)
+	if err != nil {
+		return 0, time.Time{}, nil, err
+	}
+
+	targetBlockNumber := targetBlock.ExecutionBlockNumber
+
+	targetBlockHeader, err := ec.HeaderByNumber(context.Background(), big.NewInt(int64(targetBlockNumber)))
+	if err != nil {
+		return 0, time.Time{}, nil, err
+	}
+	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
+
+	// Check if the required epoch is finalized yet
+	beaconHead, err := bc.GetBeaconHead()
+	if err != nil {
+		return 0, time.Time{}, nil, err
+	}
+	finalizedEpoch := beaconHead.FinalizedEpoch
+	if requiredEpoch > finalizedEpoch {
+		return 0, time.Time{}, nil, fmt.Errorf("balances must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", targetBlockNumber, requiredEpoch, finalizedEpoch)
+	}
+
+	return slotNumber, nextSubmissionTime, targetBlockHeader, nil
 }
 
 func FindNextSubmissionTimestamp(latestBlockTimestamp int64, referenceTimestamp int64, submissionIntervalInSeconds int64) (int64, error) {
