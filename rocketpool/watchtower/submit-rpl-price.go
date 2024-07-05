@@ -241,11 +241,11 @@ type poolObserveResponse struct {
 // Submit RPL price task
 type submitRplPrice struct {
 	c         *cli.Context
-	log       log.ColorLogger
-	errLog    log.ColorLogger
+	log       *log.ColorLogger
+	errLog    *log.ColorLogger
 	cfg       *config.RocketPoolConfig
-	ec        rocketpool.ExecutionClient
 	w         *wallet.Wallet
+	ec        rocketpool.ExecutionClient
 	rp        *rocketpool.RocketPool
 	bc        beacon.Client
 	lock      *sync.Mutex
@@ -281,8 +281,8 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.C
 	lock := &sync.Mutex{}
 	return &submitRplPrice{
 		c:      c,
-		log:    logger,
-		errLog: errorLogger,
+		log:    &logger,
+		errLog: &errorLogger,
 		cfg:    cfg,
 		ec:     ec,
 		w:      w,
@@ -371,44 +371,14 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	submissionIntervalInSeconds := int64(state.NetworkDetails.PricesSubmissionFrequency)
 	eth2Config := state.BeaconConfig
 
-	// Get the time of the latest block
-	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return fmt.Errorf("Can't get the latest block time: %w", err)
-	}
-	latestBlockTimestamp := int64(latestEth1Block.Time)
-
-	// Calculate the next submission timestamp
-	submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+	_, nextSubmissionTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
 	if err != nil {
 		return err
 	}
+	targetBlockNumber := targetBlockHeader.Number.Uint64()
 
-	// Get the Beacon slot corresponding to this time
-	genesisTime := (int64(eth2Config.GenesisTime))
-	timeSinceGenesis := submissionTimestamp - genesisTime
-	slotNumber := uint64(timeSinceGenesis) / eth2Config.SecondsPerSlot
-
-	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	targetBlock, err := utils.FindLastBlockWithExecutionPayload(t.bc, slotNumber)
-	if err != nil {
-		return err
-	}
-	targetBlockNumber := targetBlock.ExecutionBlockNumber
-	if targetBlockNumber <= lastSubmissionBlock {
-		// No submission needed: target block older or equal to the last submission
-		return nil
-	}
-
-	// Check if the targetEpoch is finalized yet
-	targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
-	beaconHead, err := t.bc.GetBeaconHead()
-	if err != nil {
-		return err
-	}
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	if targetEpoch > finalizedEpoch {
-		t.log.Printlnf("Prices must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", targetBlockNumber, targetEpoch, finalizedEpoch)
+	if targetBlockNumber < lastSubmissionBlock {
+		// No submission needed: target block older than the last submission
 		return nil
 	}
 
@@ -441,8 +411,10 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		// Log
 		t.log.Printlnf("RPL price: %.6f ETH", mathutils.RoundDown(eth.WeiToEth(rplPrice), 6))
 
+		submissionTimestamp := uint64(nextSubmissionTime.Unix())
+
 		// Check if we have reported these specific values before
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, targetBlockNumber, uint64(submissionTimestamp), rplPrice)
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, targetBlockNumber, submissionTimestamp, rplPrice)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -455,7 +427,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		}
 
 		// We haven't submitted these values, check if we've submitted any for this block so we can log it
-		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, targetBlockNumber, uint64(submissionTimestamp))
+		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAccount.Address, targetBlockNumber, submissionTimestamp)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -468,7 +440,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		t.log.Println("Submitting RPL price...")
 
 		// Submit RPL price
-		if err := t.submitRplPrice(targetBlockNumber, uint64(submissionTimestamp), rplPrice); err != nil {
+		if err := t.submitRplPrice(targetBlockNumber, submissionTimestamp, rplPrice); err != nil {
 			t.handleError(fmt.Errorf("%s could not submit RPL price: %w", logPrefix, err))
 			return
 		}
@@ -612,7 +584,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 		return nil
 	}
 
@@ -629,7 +601,7 @@ func (t *submitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
 		return err
 	}
@@ -751,7 +723,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 
 		// Print the gas info
 		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
@@ -769,7 +741,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -891,7 +863,7 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 
 		// Print the gas info
 		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
@@ -909,7 +881,7 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -1054,7 +1026,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 
 		// Print the gas info
 		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
@@ -1072,7 +1044,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -1212,7 +1184,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 		}
 
 		// Print the gas info
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
@@ -1230,7 +1202,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -1352,7 +1324,7 @@ func (t *submitRplPrice) submitBasePrice() error {
 
 		// Print the gas info
 		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
@@ -1370,7 +1342,7 @@ func (t *submitRplPrice) submitBasePrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}
@@ -1517,7 +1489,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 
 		// Print the gas info
 		maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
-		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
+		if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
 			return nil
 		}
 
@@ -1535,7 +1507,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		}
 
 		// Print TX info and wait for it to be included in a block
-		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
+		err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, t.log)
 		if err != nil {
 			return err
 		}

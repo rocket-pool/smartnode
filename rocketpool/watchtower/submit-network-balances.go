@@ -1,7 +1,6 @@
 package watchtower
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"strings"
@@ -139,58 +138,16 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	submissionIntervalInSeconds := int64(state.NetworkDetails.PricesSubmissionFrequency)
 	eth2Config := state.BeaconConfig
 
-	// Get the time of the latest block
-	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return fmt.Errorf("Can't get the latest block time: %w", err)
-	}
-	latestBlockTimestamp := int64(latestEth1Block.Time)
-
-	// Calculate the next submission timestamp
-	submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
-	if err != nil {
-		return err
-	}
-
-	// Convert the submission timestamp to time.Time
-	nextSubmissionTime := time.Unix(submissionTimestamp, 0)
-
 	// Log
 	t.log.Println("Checking for network balance checkpoint...")
-
-	// Get the Beacon block corresponding to this time
-	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-	timeSinceGenesis := nextSubmissionTime.Sub(genesisTime)
-	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
-
-	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	targetBlock, err := utils.FindLastBlockWithExecutionPayload(t.bc, slotNumber)
+	slotNumber, nextSubmissionTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
 	if err != nil {
 		return err
 	}
+	targetBlockNumber := targetBlockHeader.Number.Uint64()
 
-	targetBlockNumber := targetBlock.ExecutionBlockNumber
-
-	if targetBlockNumber <= lastSubmissionBlock {
-		// No submission needed: target block older or equal to the last submission
-		return nil
-	}
-
-	targetBlockHeader, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(targetBlockNumber)))
-	if err != nil {
-		return err
-	}
-
-	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
-
-	// Check if the required epoch is finalized yet
-	beaconHead, err := t.bc.GetBeaconHead()
-	if err != nil {
-		return err
-	}
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	if requiredEpoch > finalizedEpoch {
-		t.log.Printlnf("Balances must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", targetBlockNumber, requiredEpoch, finalizedEpoch)
+	if targetBlockNumber < lastSubmissionBlock {
+		// No submission needed: target block older than the last submission
 		return nil
 	}
 
