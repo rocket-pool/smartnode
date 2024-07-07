@@ -16,7 +16,6 @@ func initializeVotingPrompt(c *cli.Context) error {
 	} else {
 		return initializeVoting(c)
 	}
-	return nil
 }
 
 func initializeVoting(c *cli.Context) error {
