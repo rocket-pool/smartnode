@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/urfave/cli"
@@ -34,11 +35,6 @@ func getActiveDAOProposals(c *cli.Context) error {
 
 	// Get active DAO proposals
 	snapshotProposalsResponse, err := rp.GetActiveDAOProposals()
-	if err != nil {
-		return err
-	}
-
-	currentVotingDelegate, err := rp.GetCurrentVotingDelegate()
 	if err != nil {
 		return err
 	}
@@ -140,14 +136,33 @@ func getActiveDAOProposals(c *cli.Context) error {
 		}
 
 	}
-	// On-chain Voting status
-	fmt.Println()
-	fmt.Printf("%s=== DAO On-chain Voting ===%s\n", colorGreen, colorReset)
-	if currentVotingDelegate.VotingDelegate == blankAddress {
-		fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool on-chain governance proposals.")
-	} else {
-		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool on-chain governance proposals.\n", colorBlue, currentVotingDelegate.VotingDelegate.Hex(), colorReset)
-	}
 	fmt.Println("")
+
+	// Onchain Voting Status
+	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
+	if snapshotProposalsResponse.IsVotingInitialized {
+		fmt.Printf("The node %s%s%s has been initialized for onchain voting.\n", colorBlue, snapshotProposalsResponse.AccountAddressFormatted, colorReset)
+	} else {
+		fmt.Printf("The node %s%s%s has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.\n", colorBlue, snapshotProposalsResponse.AccountAddressFormatted, colorReset)
+	}
+
+	if snapshotProposalsResponse.OnchainVotingDelegate == blankAddress {
+		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
+	} else if snapshotProposalsResponse.OnchainVotingDelegate == snapshotProposalsResponse.AccountAddress {
+		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
+	} else {
+		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, snapshotProposalsResponse.OnchainVotingDelegateFormatted, colorReset)
+	}
+	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(snapshotProposalsResponse.VotingPower))
+
+	if snapshotProposalsResponse.IsNodeRegistered {
+		fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(snapshotProposalsResponse.TotalDelegatedVp))
+	} else {
+		fmt.Print("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power.\n")
+	}
+
+	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(snapshotProposalsResponse.SumVotingPower))
+	fmt.Println("")
+
 	return nil
 }
