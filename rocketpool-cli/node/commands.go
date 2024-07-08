@@ -642,54 +642,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "set-voting-delegate",
-				Aliases:   []string{"sv"},
-				Usage:     "Set the address you want to use when voting on Rocket Pool Snapshot governance proposals, or the address you want to delegate your voting power to.",
-				UsageText: "rocketpool node set-voting-delegate address",
-				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm delegate setting",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					delegate := c.Args().Get(0)
-
-					// Run
-					return nodeSetVotingDelegate(c, delegate)
-
-				},
-			},
-			{
-				Name:      "clear-voting-delegate",
-				Aliases:   []string{"cv"},
-				Usage:     "Remove the address you've set for voting on Rocket Pool governance proposals.",
-				UsageText: "rocketpool node clear-voting-delegate",
-				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm delegate clearing",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					return nodeClearVotingDelegate(c)
-
-				},
-			},
-
-			{
 				Name:      "initialize-fee-distributor",
 				Aliases:   []string{"z"},
 				Usage:     "Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge",

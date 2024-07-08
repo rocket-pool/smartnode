@@ -22,6 +22,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/alerting/alertmanager/models"
@@ -199,14 +200,14 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 				if response.SignallingAddress != blankAddress {
 					response.SignallingAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
 				}
-				votedProposals, err := GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SignallingAddress)
+				votedProposals, err := pdao.GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SignallingAddress)
 				if err != nil {
 					r.Error = err.Error()
 					return nil
 				}
 				r.ProposalVotes = votedProposals.Data.Votes
 			}
-			snapshotResponse, err := GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
+			snapshotResponse, err := pdao.GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
 			if err != nil {
 				r.Error = err.Error()
 				return nil
