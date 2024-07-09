@@ -136,7 +136,7 @@ func getActiveDAOProposals(c *cli.Context) error {
 		}
 
 	}
-	fmt.Println("")
+	fmt.Println()
 
 	// Onchain Voting Status
 	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
@@ -162,7 +162,7 @@ func getActiveDAOProposals(c *cli.Context) error {
 	}
 
 	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(snapshotProposalsResponse.SumVotingPower))
-	fmt.Println("")
+	fmt.Println()
 
 	return nil
 }
