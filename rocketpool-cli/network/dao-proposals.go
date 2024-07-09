@@ -136,7 +136,7 @@ func getActiveDAOProposals(c *cli.Context) error {
 		}
 
 	}
-	fmt.Println("")
+	fmt.Println()
 
 	// Onchain Voting Status
 	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
