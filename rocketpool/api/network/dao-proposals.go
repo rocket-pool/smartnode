@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -11,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/urfave/cli"
 	"github.com/wealdtech/go-ens/v3"
 	"golang.org/x/sync/errgroup"
@@ -37,6 +39,14 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
+	}
+
+	reg, err := services.GetRocketSignerRegistry(c)
+	if err != nil {
+		return nil, err
+	}
+	if reg == nil {
+		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
 	}
 
 	response := api.NetworkDAOProposalsResponse{}
@@ -86,6 +96,38 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 		response.IsNodeRegistered, err = node.GetNodeExists(rp, nodeAccount.Address, nil)
 		return err
 	})
+
+	// Get active and past votes from Snapshot, but treat errors as non-Fatal
+	if reg != nil {
+		wg.Go(func() error {
+			var err error
+			r := &response.SnapshotResponse
+			if cfg.Smartnode.GetRocketSignerRegistryAddress() != "" {
+				response.SignallingAddress, err = reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
+				if err != nil {
+					r.Error = err.Error()
+					return nil
+				}
+				blankAddress := common.Address{}
+				if response.SignallingAddress != blankAddress {
+					response.SignallingAddressFormatted = formatResolvedAddress(c, response.SignallingAddress)
+				}
+				votedProposals, err := pdao.GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.SignallingAddress)
+				if err != nil {
+					r.Error = err.Error()
+					return nil
+				}
+				r.ProposalVotes = votedProposals.Data.Votes
+			}
+			snapshotResponse, err := pdao.GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
+			if err != nil {
+				r.Error = err.Error()
+				return nil
+			}
+			r.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
+			return nil
+		})
+	}
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {

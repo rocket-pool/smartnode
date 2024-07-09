@@ -40,12 +40,12 @@ func getActiveDAOProposals(c *cli.Context) error {
 	}
 
 	// Voting status
-	fmt.Printf("%s=== DAO Snapshot Voting ===%s\n", colorGreen, colorReset)
+	fmt.Printf("%s=== Snapshot Voting ===%s\n", colorGreen, colorReset)
 	blankAddress := common.Address{}
-	if snapshotProposalsResponse.VotingDelegate == blankAddress {
-		fmt.Println("The node does not currently have a voting delegate set, and will not be able to vote on Rocket Pool Snapshot governance proposals.")
+	if snapshotProposalsResponse.SignallingAddress == blankAddress {
+		fmt.Printf("The node does not currently have a snapshot signalling address set.\nTo learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
 	} else {
-		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, snapshotProposalsResponse.VotingDelegate.Hex(), colorReset)
+		fmt.Printf("The node can vote directly or override their signalling address of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, snapshotProposalsResponse.SignallingAddressFormatted, colorReset)
 	}
 
 	voteCount := 0

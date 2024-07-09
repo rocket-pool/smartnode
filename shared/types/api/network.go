@@ -84,6 +84,13 @@ type NetworkDAOProposalsResponse struct {
 	IsNodeRegistered               bool                   `json:"isNodeRegistered"`
 	OnchainVotingDelegate          common.Address         `json:"onchainVotingDelegate"`
 	OnchainVotingDelegateFormatted string                 `json:"onchainVotingDelegateFormatted"`
+	SnapshotResponse               struct {
+		Error                   string                 `json:"error"`
+		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
+		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
+	} `json:"snapshotResponse"`
+	SignallingAddress          common.Address `json:"signallingAddress"`
+	SignallingAddressFormatted string         `json:"SignallingAddressFormatted"`
 }
 
 type DownloadRewardsFileResponse struct {
