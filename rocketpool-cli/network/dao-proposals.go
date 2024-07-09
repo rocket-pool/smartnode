@@ -159,7 +159,7 @@ func getActiveDAOProposals(c *cli.Context) error {
 	if snapshotProposalsResponse.IsNodeRegistered {
 		fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(snapshotProposalsResponse.TotalDelegatedVp))
 	} else {
-		fmt.Print("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power.\n")
+		fmt.Println("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power.")
 	}
 
 	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(snapshotProposalsResponse.SumVotingPower))
