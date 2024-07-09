@@ -162,7 +162,7 @@ func getActiveDAOProposals(c *cli.Context) error {
 	}
 
 	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(snapshotProposalsResponse.SumVotingPower))
-	fmt.Println("")
+	fmt.Println()
 
 	return nil
 }
