@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/rocketpool/api/node"
+	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"golang.org/x/sync/errgroup"
 )
@@ -118,7 +118,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the number of votes on Snapshot proposals
 	wg.Go(func() error {
 		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
-			votedProposals, err := node.GetSnapshotVotedProposals(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), collector.nodeAddress, collector.delegateAddress)
+			votedProposals, err := pdao.GetSnapshotVotedProposals(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), collector.nodeAddress, collector.delegateAddress)
 			if err != nil {
 				return fmt.Errorf("Error getting Snapshot voted proposals: %w", err)
 			}
@@ -145,7 +145,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the number of live Snapshot proposals
 	wg.Go(func() error {
 		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
-			proposals, err := node.GetSnapshotProposals(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), "")
+			proposals, err := pdao.GetSnapshotProposals(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), "")
 			if err != nil {
 				return fmt.Errorf("Error getting Snapshot voted proposals: %w", err)
 			}
@@ -168,7 +168,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	wg.Go(func() error {
 		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
 
-			votingPowerResponse, err := node.GetSnapshotVotingPower(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), collector.nodeAddress)
+			votingPowerResponse, err := pdao.GetSnapshotVotingPower(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), collector.nodeAddress)
 			if err != nil {
 				return fmt.Errorf("Error getting Snapshot voted proposals for node address: %w", err)
 			}
@@ -181,7 +181,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the delegate's voting power
 	wg.Go(func() error {
 		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
-			votingPowerResponse, err := node.GetSnapshotVotingPower(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), collector.delegateAddress)
+			votingPowerResponse, err := pdao.GetSnapshotVotingPower(collector.cfg.Smartnode.GetSnapshotApiDomain(), collector.cfg.Smartnode.GetSnapshotID(), collector.delegateAddress)
 			if err != nil {
 				return fmt.Errorf("Error getting Snapshot voted proposals for delegate address: %w", err)
 			}

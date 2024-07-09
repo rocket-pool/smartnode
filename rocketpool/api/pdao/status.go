@@ -311,3 +311,39 @@ func getHttpClientWithTimeout() *http.Client {
 		Timeout: time.Second * 5,
 	}
 }
+
+func GetSnapshotVotingPower(apiDomain string, space string, nodeAddress common.Address) (*api.SnapshotVotingPower, error) {
+	client := getHttpClientWithTimeout()
+	query := fmt.Sprintf(`query Vp{
+		vp(
+			space: "%s",
+			voter: "%s",
+		) {
+			vp
+		}
+	}
+	`, space, nodeAddress)
+	url := fmt.Sprintf("https://%s/graphql?operationName=Vp&query=%s", apiDomain, url.PathEscape(query))
+	resp, err := client.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	// Check the response code
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("request failed with code %d", resp.StatusCode)
+	}
+
+	// Get response
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+	var votingPower api.SnapshotVotingPower
+	if err := json.Unmarshal(body, &votingPower); err != nil {
+		return nil, fmt.Errorf("could not decode snapshot response: %w", err)
+
+	}
+
+	return &votingPower, nil
+}
