@@ -40,7 +40,6 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 	if err != nil {
 		return nil, err
 	}
-
 	reg, err := services.GetRocketSignerRegistry(c)
 	if err != nil {
 		return nil, err
@@ -160,20 +159,6 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 		return nil, err
 	}
 	response.SumVotingPower = votingTree.Nodes[0].Sum
-
-	// Get snapshot proposals
-	snapshotResponse, err := pdao.GetSnapshotProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), "active")
-	if err != nil {
-		return nil, err
-	}
-
-	// Get voted proposals
-	votedProposals, err := pdao.GetSnapshotVotedProposals(cfg.Smartnode.GetSnapshotApiDomain(), cfg.Smartnode.GetSnapshotID(), nodeAccount.Address, response.VotingDelegate)
-	if err != nil {
-		return nil, err
-	}
-	response.ProposalVotes = votedProposals.Data.Votes
-	response.ActiveSnapshotProposals = snapshotResponse.Data.Proposals
 
 	// Get voting power
 	response.VotingPower, err = network.GetVotingPower(rp, nodeAccount.Address, response.BlockNumber, nil)

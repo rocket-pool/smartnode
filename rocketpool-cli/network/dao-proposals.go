@@ -50,21 +50,21 @@ func getActiveDAOProposals(c *cli.Context) error {
 	}
 
 	voteCount := 0
-	for _, activeProposal := range snapshotProposalsResponse.ActiveSnapshotProposals {
-		for _, votedProposal := range snapshotProposalsResponse.ProposalVotes {
+	for _, activeProposal := range snapshotProposalsResponse.SnapshotResponse.ActiveSnapshotProposals {
+		for _, votedProposal := range snapshotProposalsResponse.SnapshotResponse.ProposalVotes {
 			if votedProposal.Proposal.Id == activeProposal.Id {
 				voteCount++
 				break
 			}
 		}
 	}
-	if len(snapshotProposalsResponse.ActiveSnapshotProposals) == 0 {
+	if len(snapshotProposalsResponse.SnapshotResponse.ActiveSnapshotProposals) == 0 {
 		fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
 	} else {
-		fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those.\n", len(snapshotProposalsResponse.ActiveSnapshotProposals), voteCount)
+		fmt.Printf("Rocket Pool has %d governance proposal(s) being voted on. You have voted on %d of those.\n", len(snapshotProposalsResponse.SnapshotResponse.ActiveSnapshotProposals), voteCount)
 	}
 
-	for _, proposal := range snapshotProposalsResponse.ActiveSnapshotProposals {
+	for _, proposal := range snapshotProposalsResponse.SnapshotResponse.ActiveSnapshotProposals {
 		fmt.Printf("\nTitle: %s\n", proposal.Title)
 		currentTimestamp := time.Now().Unix()
 		if currentTimestamp < proposal.Start {
@@ -82,7 +82,7 @@ func getActiveDAOProposals(c *cli.Context) error {
 			}
 			fmt.Printf("Quorum: %.2f of %.2f needed %s\n", proposal.ScoresTotal, proposal.Quorum, quorumResult)
 			voted := false
-			for _, proposalVote := range snapshotProposalsResponse.ProposalVotes {
+			for _, proposalVote := range snapshotProposalsResponse.SnapshotResponse.ProposalVotes {
 				if proposalVote.Proposal.Id == proposal.Id {
 					voter := "Your DELEGATE"
 					if proposalVote.Voter == snapshotProposalsResponse.AccountAddress {

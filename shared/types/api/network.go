@@ -69,21 +69,19 @@ type NetworkGenerateRewardsTreeResponse struct {
 }
 
 type NetworkDAOProposalsResponse struct {
-	Status                         string                 `json:"status"`
-	Error                          string                 `json:"error"`
-	AccountAddress                 common.Address         `json:"accountAddress"`
-	AccountAddressFormatted        string                 `json:"accountAddressFormatted"`
-	TotalDelegatedVp               *big.Int               `json:"totalDelegateVp"`
-	SumVotingPower                 *big.Int               `json:"sumVotingPower"`
-	VotingDelegate                 common.Address         `json:"votingDelegate"`
-	ActiveSnapshotProposals        []SnapshotProposal     `json:"activeSnapshotProposals"`
-	ProposalVotes                  []SnapshotProposalVote `json:"proposalVotes"`
-	IsVotingInitialized            bool                   `json:"isVotingInitialized"`
-	VotingPower                    *big.Int               `json:"votingPower"`
-	BlockNumber                    uint32                 `json:"blockNumber"`
-	IsNodeRegistered               bool                   `json:"isNodeRegistered"`
-	OnchainVotingDelegate          common.Address         `json:"onchainVotingDelegate"`
-	OnchainVotingDelegateFormatted string                 `json:"onchainVotingDelegateFormatted"`
+	Status                         string         `json:"status"`
+	Error                          string         `json:"error"`
+	AccountAddress                 common.Address `json:"accountAddress"`
+	AccountAddressFormatted        string         `json:"accountAddressFormatted"`
+	TotalDelegatedVp               *big.Int       `json:"totalDelegateVp"`
+	SumVotingPower                 *big.Int       `json:"sumVotingPower"`
+	VotingDelegate                 common.Address `json:"votingDelegate"`
+	IsVotingInitialized            bool           `json:"isVotingInitialized"`
+	VotingPower                    *big.Int       `json:"votingPower"`
+	BlockNumber                    uint32         `json:"blockNumber"`
+	IsNodeRegistered               bool           `json:"isNodeRegistered"`
+	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
 	SnapshotResponse               struct {
 		Error                   string                 `json:"error"`
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
