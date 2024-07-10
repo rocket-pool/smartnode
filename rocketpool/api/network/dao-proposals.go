@@ -3,6 +3,7 @@ package network
 import (
 	"context"
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -150,7 +151,7 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 		}
 		response.TotalDelegatedVp = totalDelegatedVP
 	} else {
-		response.TotalDelegatedVp = nil
+		response.TotalDelegatedVp = big.NewInt(0)
 	}
 
 	// Get the local tree
