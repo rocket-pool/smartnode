@@ -116,7 +116,7 @@ func getStatus(c *cli.Context) error {
 	} else if response.OnchainVotingDelegate == response.AccountAddress {
 		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
 	} else {
-		fmt.Printf("The node has a signalling address of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, response.OnchainVotingDelegateFormatted, colorReset)
+		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, response.OnchainVotingDelegateFormatted, colorReset)
 	}
 	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(response.VotingPower))
 
