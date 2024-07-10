@@ -134,7 +134,6 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 		return nil, err
 	}
 
-	// Cast to uint32
 	response.BlockNumber = uint32(blockNumber)
 
 	// Get the proposal artifacts
