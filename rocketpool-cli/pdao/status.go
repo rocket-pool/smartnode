@@ -86,15 +86,8 @@ func getStatus(c *cli.Context) error {
 	if response.SnapshotResponse.Error != "" {
 		fmt.Printf("Unable to fetch latest voting information from snapshot.org: %s\n", response.SnapshotResponse.Error)
 	} else {
-		voteCount := 0
-		for _, activeProposal := range response.SnapshotResponse.ActiveSnapshotProposals {
-			for _, votedProposal := range response.SnapshotResponse.ProposalVotes {
-				if votedProposal.Proposal.Id == activeProposal.Id {
-					voteCount++
-					break
-				}
-			}
-		}
+		voteCount := response.SnapshotResponse.VoteCount()
+
 		if len(response.SnapshotResponse.ActiveSnapshotProposals) == 0 {
 			fmt.Print("Rocket Pool has no Snapshot governance proposals being voted on.\n")
 		} else {

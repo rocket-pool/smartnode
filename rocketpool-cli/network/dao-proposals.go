@@ -49,15 +49,8 @@ func getActiveDAOProposals(c *cli.Context) error {
 		fmt.Println()
 	}
 
-	voteCount := 0
-	for _, activeProposal := range snapshotProposalsResponse.SnapshotResponse.ActiveSnapshotProposals {
-		for _, votedProposal := range snapshotProposalsResponse.SnapshotResponse.ProposalVotes {
-			if votedProposal.Proposal.Id == activeProposal.Id {
-				voteCount++
-				break
-			}
-		}
-	}
+	voteCount := snapshotProposalsResponse.SnapshotResponse.VoteCount()
+
 	if len(snapshotProposalsResponse.SnapshotResponse.ActiveSnapshotProposals) == 0 {
 		fmt.Print("Rocket Pool has no governance proposals being voted on.\n")
 	} else {
