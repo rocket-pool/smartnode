@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"fmt"
+	"math/big"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,6 +14,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/proposals"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
@@ -48,66 +50,85 @@ type protocolDaoGetStatusContext struct {
 	handler *ProtocolDaoHandler
 	cfg     *config.SmartNodeConfig
 	rp      *rocketpool.RocketPool
+	ec      eth.IExecutionClient
 	bc      beacon.IBeaconClient
 
-	propMgr *proposals.ProposalManager
+	node             *node.Node
+	propMgr          *proposals.ProposalManager
+	totalDelegatedVP *big.Int
+	blockNumber      uint64
 }
 
-func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
-	rp := sp.GetRocketPool()
-	ec := sp.GetEthClient()
+	c.rp = sp.GetRocketPool()
+	c.ec = sp.GetEthClient()
 	c.cfg = sp.GetConfig()
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
-	ctx := c.handler.ctx
-
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
+	err := sp.RequireNodeAddress()
+	if err != nil {
+		return types.ResponseStatus_AddressNotPresent, err
+	}
 	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
 	}
 
 	// Bindings
-	node, err := node.NewNode(rp, nodeAddress)
+	c.node, err = node.NewNode(c.rp, nodeAddress)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
-	c.propMgr, err = proposals.NewProposalManager(ctx, c.handler.logger.Logger, c.cfg, c.rp, c.bc)
+	c.propMgr, err = proposals.NewProposalManager(c.handler.ctx, c.handler.logger.Logger, c.cfg, c.rp, c.bc)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal manager: %w", err)
 	}
-
 	// Get the latest block
-	blockNumber, err := ec.BlockNumber(c.handler.ctx)
+	c.blockNumber, err = c.ec.BlockNumber(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block number: %w", err)
 	}
-	data.BlockNumber = uint32(blockNumber)
 
-	totalDelegatedVP, _, _, err := c.propMgr.GetArtifactsForVoting(uint32(blockNumber), nodeAddress)
+	c.totalDelegatedVP, _, _, err = c.propMgr.GetArtifactsForVoting(uint32(c.blockNumber), nodeAddress)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", nodeAddress.Hex(), blockNumber, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", nodeAddress.Hex(), c.blockNumber, err)
 	}
-	data.TotalDelegatedVp = totalDelegatedVP
 
-	votingTree, err := c.propMgr.GetNetworkTree(uint32(blockNumber), nil)
+	return types.ResponseStatus_Success, nil
+}
+
+func (c *protocolDaoGetStatusContext) GetState(mc *batch.MultiCaller) {
+	eth.AddQueryablesToMulticall(mc,
+		// Node
+		c.node.Exists,
+		c.node.IsVotingInitialized,
+	)
+}
+
+func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+
+	data.BlockNumber = uint32(c.blockNumber)
+	data.TotalDelegatedVp = c.totalDelegatedVP
+
+	votingTree, err := c.propMgr.GetNetworkTree(uint32(c.blockNumber), nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting network tree")
 	}
 	data.SumVotingPower = votingTree.Nodes[0].Sum
 
 	// Get the voting power and delegate at that block
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		node.GetVotingPowerAtBlock(mc, &data.VotingPower, data.BlockNumber)
-		node.GetVotingDelegateAtBlock(mc, &data.OnchainVotingDelegate, data.BlockNumber)
+	err = c.rp.Query(func(mc *batch.MultiCaller) error {
+		c.node.GetVotingPowerAtBlock(mc, &data.VotingPower, data.BlockNumber)
+		c.node.GetVotingDelegateAtBlock(mc, &data.OnchainVotingDelegate, data.BlockNumber)
 		return nil
 	}, nil)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error getting voting info for block %d: %w", blockNumber, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting voting info for block %d: %w", c.blockNumber, err)
 	}
-	data.OnchainVotingDelegateFormatted = utils.GetFormattedAddress(ec, data.OnchainVotingDelegate)
+	data.OnchainVotingDelegateFormatted = utils.GetFormattedAddress(c.ec, data.OnchainVotingDelegate)
 	return types.ResponseStatus_Success, nil
 }
