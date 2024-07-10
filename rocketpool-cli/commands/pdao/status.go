@@ -16,9 +16,10 @@ import (
 )
 
 const (
-	colorBlue  string = "\033[36m"
-	colorReset string = "\033[0m"
-	colorGreen string = "\033[32m"
+	colorBlue             string = "\033[36m"
+	colorReset            string = "\033[0m"
+	colorGreen            string = "\033[32m"
+	signallingAddressLink string = "https://docs.rocketpool.net/guides/houston/participate#setting-your-snapshot-signalling-address"
 )
 
 func getStatus(c *cli.Context) error {
@@ -48,34 +49,36 @@ func getStatus(c *cli.Context) error {
 	}
 	claimableBonds := claimableBondsResponse.Data.ClaimableBonds
 
-	// Snapshot voting status
-	fmt.Printf("%s=== Snapshot Voting ===%s\n", colorGreen, colorReset)
+	// Signalling Status
+	fmt.Printf("%s=== Signalling on Snapshot ===%s\n", colorGreen, colorReset)
 	blankAddress := common.Address{}
-	if response.Data.SnapshotVotingDelegate == blankAddress {
-		fmt.Println("The node does not currently have a voting delegate set, which means it can only vote directly on Snapshot proposals (using a hardware wallet with the node mnemonic loaded).\nRun `rocketpool n sv <address>` to vote from a different wallet or have a delegate represent you. (See https://delegates.rocketpool.net for options)")
+	if response.Data.signallingAddress == blankAddress {
+		fmt.Printf("The node does not currently have a snapshot signalling address set.\nTo learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
 	} else {
-		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, response.Data.SnapshotVotingDelegateFormatted, colorReset)
+		fmt.Printf("The node has a signalling address of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, response.SignallingAddressFormatted, colorReset)
 	}
 
 	if response.Data.SnapshotResponse.Error != "" {
 		fmt.Printf("Unable to fetch latest voting information from snapshot.org: %s\n", response.Data.SnapshotResponse.Error)
 	} else {
 		voteCount := 0
+		//todo calculate voteCount
 		if len(response.Data.SnapshotResponse.ActiveSnapshotProposals) == 0 {
-			fmt.Print("Rocket Pool has no Snapshot governance proposals being voted on.\n")
+			fmt.Printf("Rocket Pool has no Snapshot governance proposals being voted on.")
 		} else {
 			fmt.Printf("Rocket Pool has %d Snapshot governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(response.Data.SnapshotResponse.ActiveSnapshotProposals), voteCount)
 		}
-		fmt.Println("")
+		fmt.Println()
 	}
 
 	// Onchain Voting Status
 	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
 	if response.Data.IsVotingInitialized {
-		fmt.Println("The node has been initialized for onchain voting.")
-
+		fmt.Printf("The node %s%s%s has been initialized for onchain voting.", colorBlue, response.Data.AccountAddressFormatted, colorReset)
+		fmt.Println()
 	} else {
-		fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
+		fmt.Printf("The node %s%s%s has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.", colorBlue, response.Data.AccountAddressFormatted, colorReset)
+		fmt.Println()
 	}
 
 	if response.Data.OnchainVotingDelegate == blankAddress {
@@ -83,25 +86,29 @@ func getStatus(c *cli.Context) error {
 	} else if response.Data.OnchainVotingDelegate == response.Data.AccountAddress {
 		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
 	} else {
-		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, response.Data.OnchainVotingDelegateFormatted, colorReset)
+		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.", colorBlue, response.Data.OnchainVotingDelegateFormatted, colorReset)
+		fmt.Println()
 	}
 	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(response.Data.VotingPower))
-
-	fmt.Printf("Total voting power delegated to the node: %.10f\n", eth.WeiToEth(response.Data.TotalDelegatedVp))
-
+	if response.Data.IsNodeRegistered {
+		fmt.Printf("Total voting power delegated to the node: %.10f", eth.WeiToEth(response.Data.TotalDelegatedVp))
+		fmt.Println()
+	} else {
+		fmt.Print("The node must register uising 'rocketpool node register' to be eligible to receive delegated voting power")
+	}
 	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(response.Data.SumVotingPower))
-
 	fmt.Println("")
 
 	// Claimable Bonds Status:
-	fmt.Printf("%s=== Claimable RPL Bonds ===%s\n", colorGreen, colorReset)
+	fmt.Printf("%s=== Claimable RPL Bonds ===%s", colorGreen, colorReset)
+	fmt.Println()
 	if response.Data.IsRPLLockingAllowed {
-		fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
+		fmt.Println("The node is allowed to lock RPL to create governance proposals/challenges.")
 		if response.Data.NodeRPLLocked.Cmp(big.NewInt(0)) != 0 {
-			fmt.Printf("The node currently has %.6f RPL locked.\n",
+			fmt.Printf("The node currently has %.6f RPL locked.",
 				utilsMath.RoundDown(eth.WeiToEth(response.Data.NodeRPLLocked), 6))
+			fmt.Println()
 		}
-
 	} else {
 		fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges. Use 'rocketpool node  allow-rpl-locking, to allow RPL locking.\n")
 	}
