@@ -45,7 +45,7 @@ func getActiveDAOProposals(c *cli.Context) error {
 	if snapshotProposalsResponse.SignallingAddress == blankAddress {
 		fmt.Printf("The node does not currently have a snapshot signalling address set.\nTo learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
 	} else {
-		fmt.Printf("The node has a signalling address of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.", colorBlue, snapshotProposalsResponse.SignallingAddressFormatted, colorReset)
+		fmt.Printf("The node has a signalling address of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.", colorBlue, snapshotProposalsResponse.SignallingAddressFormatted, colorReset)
 		fmt.Println()
 	}
 
