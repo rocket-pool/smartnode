@@ -301,17 +301,17 @@ type ProtocolDaoCurrentVotingDelegateData struct {
 }
 
 type ProtocolDAOStatusResponse struct {
-	Status                          string         `json:"status"`
-	Error                           string         `json:"error"`
-	VotingPower                     *big.Int       `json:"votingPower"`
-	OnchainVotingDelegate           common.Address `json:"onchainVotingDelegate"`
-	OnchainVotingDelegateFormatted  string         `json:"onchainVotingDelegateFormatted"`
-	BlockNumber                     uint32         `json:"blockNumber"`
-	VerifyEnabled                   bool           `json:"verifyEnabled"`
-	IsVotingInitialized             bool           `json:"isVotingInitialized"`
-	SnapshotVotingDelegate          common.Address `json:"snapshotVotingDelegate"`
-	SnapshotVotingDelegateFormatted string         `json:"snapshotVotingDelegateFormatted"`
-	SnapshotResponse                struct {
+	Status                         string         `json:"status"`
+	Error                          string         `json:"error"`
+	VotingPower                    *big.Int       `json:"votingPower"`
+	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
+	BlockNumber                    uint32         `json:"blockNumber"`
+	VerifyEnabled                  bool           `json:"verifyEnabled"`
+	IsVotingInitialized            bool           `json:"isVotingInitialized"`
+	SignallingAddress              common.Address `json:"signallingAddress"`
+	SignallingAddressFormatted     string         `json:"signallingAddressFormatted"`
+	SnapshotResponse               struct {
 		Error                   string                          `json:"error"`
 		ActiveSnapshotProposals []*sharedtypes.SnapshotProposal `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
@@ -321,4 +321,5 @@ type ProtocolDAOStatusResponse struct {
 	AccountAddressFormatted string         `json:"accountAddressFormatted"`
 	TotalDelegatedVp        *big.Int       `json:"totalDelegatedVp"`
 	SumVotingPower          *big.Int       `json:"sumVotingPower"`
+	IsNodeRegistered        bool           `json:"isNodeRegistered"`
 }

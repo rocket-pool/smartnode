@@ -66,23 +66,23 @@ func NewRocketSignerRegistry(address common.Address, client eth.IExecutionClient
 // =============
 
 // Get the delegate for the provided address
-func (c *RocketSignerRegistry) NodeToSigner(mc *batch.MultiCaller, out *common.Address, address common.Address, id common.Hash) {
-	eth.AddCallToMulticaller(mc, c.contract, out, "nodeToSigner", address, id)
+func (c *RocketSignerRegistry) NodeToSigner(mc *batch.MultiCaller, out *common.Address, address common.Address) {
+	eth.AddCallToMulticaller(mc, c.contract, out, "nodeToSigner", address)
 }
-func (c *RocketSignerRegistry) SignerToNode(mc *batch.MultiCaller, out *common.Address, address common.Address, id common.Hash) {
-	eth.AddCallToMulticaller(mc, c.contract, out, "signerToNode", address, id)
+func (c *RocketSignerRegistry) SignerToNode(mc *batch.MultiCaller, out *common.Address, address common.Address) {
+	eth.AddCallToMulticaller(mc, c.contract, out, "signerToNode", address)
 }
 
 // ====================
 // === Transactions ===
 // ====================
 
-// Get info for setting the snapshot delegate
-func (c *SnapshotDelegation) SetSigner(id common.Hash, delegate common.Address, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return c.txMgr.CreateTransactionInfo(c.contract, "setSigner", opts, id, delegate)
+// Get info for setting the signalling address
+func (c *SnapshotDelegation) SetSigner(id common.Hash, signer common.Address, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
+	return c.txMgr.CreateTransactionInfo(c.contract, "setSigner", opts, signer)
 }
 
-// Get info for clearing the snapshot delegate
+// Get info for clearing the signalling address
 func (c *SnapshotDelegation) clearSigner(id common.Hash, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return c.txMgr.CreateTransactionInfo(c.contract, "clearSigner", opts, id)
+	return c.txMgr.CreateTransactionInfo(c.contract, "clearSigner", opts)
 }
