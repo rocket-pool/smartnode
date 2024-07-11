@@ -5,7 +5,7 @@ import (
 )
 
 // Constants
-const prometheusTag string = "prom/prometheus:v2.53.0"
+const prometheusTag string = "prom/prometheus:v2.53.1"
 
 // Defaults
 const defaultPrometheusPort uint16 = 9091
