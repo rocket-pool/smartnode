@@ -35,7 +35,7 @@ func (f *txWaitContextFactory) Create(args url.Values) (*txWaitContext, error) {
 
 func (f *txWaitContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*txWaitContext, types.SuccessData](
-		router, "wait", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "wait", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

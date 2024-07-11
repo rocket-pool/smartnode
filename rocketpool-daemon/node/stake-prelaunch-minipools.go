@@ -31,10 +31,11 @@ import (
 
 // Stake prelaunch minipools task
 type StakePrelaunchMinipools struct {
-	sp             *services.ServiceProvider
+	sp             services.ISmartNodeServiceProvider
 	logger         *slog.Logger
 	alerter        *alerting.Alerter
 	cfg            *config.SmartNodeConfig
+	res            *config.RocketPoolResources
 	w              *wallet.Wallet
 	vMgr           *validator.ValidatorManager
 	rp             *rocketpool.RocketPool
@@ -47,7 +48,7 @@ type StakePrelaunchMinipools struct {
 }
 
 // Create stake prelaunch minipools task
-func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger *log.Logger) *StakePrelaunchMinipools {
+func NewStakePrelaunchMinipools(sp services.ISmartNodeServiceProvider, logger *log.Logger) *StakePrelaunchMinipools {
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Prelaunch Stake"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
@@ -56,6 +57,7 @@ func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger *log.Logger
 		logger:         log,
 		alerter:        alerting.NewAlerter(cfg, logger),
 		cfg:            sp.GetConfig(),
+		res:            sp.GetResources(),
 		w:              sp.GetWallet(),
 		vMgr:           sp.GetValidatorManager(),
 		rp:             sp.GetRocketPool(),
@@ -191,8 +193,7 @@ func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinip
 	}
 
 	// Get validator deposit data
-	rs := t.cfg.GetNetworkResources()
-	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, rs.EthNetworkName)
+	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, t.res.GenesisForkVersion, depositAmount, t.res.EthNetworkName)
 	if err != nil {
 		return nil, err
 	}
@@ -274,7 +275,7 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.logger, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.res, t.rp, t.logger, submissions, callbacks, opts)
 	if err != nil {
 		return false, err
 	}

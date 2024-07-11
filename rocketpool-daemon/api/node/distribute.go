@@ -35,7 +35,7 @@ func (f *nodeDistributeContextFactory) Create(args url.Values) (*nodeDistributeC
 
 func (f *nodeDistributeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeDistributeContext, api.NodeDistributeData](
-		router, "distribute", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "distribute", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

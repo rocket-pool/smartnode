@@ -34,7 +34,7 @@ func (f *networkProposalContextFactory) Create(args url.Values) (*networkProposa
 
 func (f *networkProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkProposalContext, api.NetworkDaoProposalsData](
-		router, "dao-proposals", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "dao-proposals", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -50,6 +50,7 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, 
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 	snapshot := sp.GetSnapshotDelegation()
 
@@ -75,7 +76,7 @@ func (c *networkProposalContext) PrepareData(data *api.NetworkDaoProposalsData, 
 	}
 
 	// Get snapshot proposals
-	snapshotResponse, err := voting.GetSnapshotProposals(cfg, data.AccountAddress, data.VotingDelegate, true)
+	snapshotResponse, err := voting.GetSnapshotProposals(cfg, res, data.AccountAddress, data.VotingDelegate, true)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting snapshot proposals: %w", err)
 	}

@@ -44,7 +44,7 @@ func (f *nodeRewardsContextFactory) Create(args url.Values) (*nodeRewardsContext
 
 func (f *nodeRewardsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeRewardsContext, api.NodeRewardsData](
-		router, "rewards", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "rewards", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -59,6 +59,7 @@ type nodeRewardsContext struct {
 func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	rp := sp.GetRocketPool()
 	ec := sp.GetEthClient()
 	bc := sp.GetBeaconClient()
@@ -96,7 +97,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 	}
 
 	// This thing is so complex it's easier to just get the state snapshot and go from there
-	stateMgr, err := state.NewNetworkStateManager(ctx, rp, cfg, ec, bc, c.handler.logger.Logger)
+	stateMgr, err := state.NewNetworkStateManager(ctx, rp, cfg, res, ec, bc, c.handler.logger.Logger)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating network state manager: %w", err)
 	}
@@ -137,7 +138,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 		return types.ResponseStatus_Error, fmt.Errorf("error getting rewards claim status for node %s: %w", nodeAddress.Hex(), err)
 	}
 	for _, claimed := range claimStatus.Claimed {
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, claimed, nil)
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, res, nodeAddress, claimed, nil)
 		if err != nil {
 			return types.ResponseStatus_Error, err
 		}
@@ -149,7 +150,7 @@ func (c *nodeRewardsContext) PrepareData(data *api.NodeRewardsData, opts *bind.T
 		claimedEthRewards.Add(claimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
 	}
 	for _, unclaimed := range claimStatus.Unclaimed {
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, unclaimed, nil)
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, res, nodeAddress, unclaimed, nil)
 		if err != nil {
 			return types.ResponseStatus_Error, err
 		}

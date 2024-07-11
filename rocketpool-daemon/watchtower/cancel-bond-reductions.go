@@ -33,9 +33,10 @@ const (
 
 type CancelBondReductions struct {
 	ctx       context.Context
-	sp        *services.ServiceProvider
+	sp        services.ISmartNodeServiceProvider
 	logger    *slog.Logger
 	cfg       *config.SmartNodeConfig
+	res       *config.RocketPoolResources
 	w         *wallet.Wallet
 	rp        *rocketpool.RocketPool
 	ec        eth.IExecutionClient
@@ -46,13 +47,14 @@ type CancelBondReductions struct {
 }
 
 // Create cancel bond reductions task
-func NewCancelBondReductions(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, coll *collectors.BondReductionCollector) *CancelBondReductions {
+func NewCancelBondReductions(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger, coll *collectors.BondReductionCollector) *CancelBondReductions {
 	lock := &sync.Mutex{}
 	return &CancelBondReductions{
 		ctx:       ctx,
 		sp:        sp,
 		logger:    logger.With(slog.String(keys.TaskKey, "Bond Reduction")),
 		cfg:       sp.GetConfig(),
+		res:       sp.GetResources(),
 		w:         sp.GetWallet(),
 		rp:        sp.GetRocketPool(),
 		ec:        sp.GetEthClient(),
@@ -234,7 +236,7 @@ func (t *CancelBondReductions) cancelBondReduction(state *state.NetworkState, ad
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		mpLogger.Error("Error waiting for cancel transaction", log.Err(err))
 		return

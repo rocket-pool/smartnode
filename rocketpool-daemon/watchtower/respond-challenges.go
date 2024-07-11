@@ -21,18 +21,20 @@ import (
 
 // Respond to challenges task
 type RespondChallenges struct {
-	sp     *services.ServiceProvider
+	sp     services.ISmartNodeServiceProvider
 	cfg    *config.SmartNodeConfig
+	res    *config.RocketPoolResources
 	w      *wallet.Wallet
 	rp     *rocketpool.RocketPool
 	logger *slog.Logger
 }
 
 // Create respond to challenges task
-func NewRespondChallenges(sp *services.ServiceProvider, logger *log.Logger, m *state.NetworkStateManager) *RespondChallenges {
+func NewRespondChallenges(sp services.ISmartNodeServiceProvider, logger *log.Logger, m *state.NetworkStateManager) *RespondChallenges {
 	return &RespondChallenges{
 		sp:     sp,
 		cfg:    sp.GetConfig(),
+		res:    sp.GetResources(),
 		w:      sp.GetWallet(),
 		rp:     sp.GetRocketPool(),
 		logger: logger.With(slog.String(keys.TaskKey, "Respond to Challenges")),
@@ -95,7 +97,7 @@ func (t *RespondChallenges) Run() error {
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}

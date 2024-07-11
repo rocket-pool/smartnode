@@ -22,19 +22,21 @@ import (
 
 // Finalize PDAO proposals task
 type FinalizePdaoProposals struct {
-	sp     *services.ServiceProvider
+	sp     services.ISmartNodeServiceProvider
 	logger *slog.Logger
 	cfg    *config.SmartNodeConfig
+	res    *config.RocketPoolResources
 	w      *wallet.Wallet
 	ec     eth.IExecutionClient
 	rp     *rocketpool.RocketPool
 }
 
 // Create finalize PDAO proposals task task
-func NewFinalizePdaoProposals(sp *services.ServiceProvider, logger *log.Logger) *FinalizePdaoProposals {
+func NewFinalizePdaoProposals(sp services.ISmartNodeServiceProvider, logger *log.Logger) *FinalizePdaoProposals {
 	return &FinalizePdaoProposals{
 		sp:     sp,
 		cfg:    sp.GetConfig(),
+		res:    sp.GetResources(),
 		w:      sp.GetWallet(),
 		ec:     sp.GetEthClient(),
 		rp:     sp.GetRocketPool(),
@@ -117,7 +119,7 @@ func (t *FinalizePdaoProposals) finalizeProposal(propID uint64) error {
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, propLogger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, propLogger, txInfo, opts)
 	if err != nil {
 		return err
 	}

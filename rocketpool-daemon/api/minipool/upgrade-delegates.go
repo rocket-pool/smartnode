@@ -34,7 +34,7 @@ func (f *minipoolUpgradeDelegatesContextFactory) Create(args url.Values) (*minip
 
 func (f *minipoolUpgradeDelegatesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolUpgradeDelegatesContext, types.BatchTxInfoData](
-		router, "delegate/upgrade", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "delegate/upgrade", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

@@ -42,7 +42,7 @@ func (f *protocolDaoGetClaimableBondsContextFactory) Create(args url.Values) (*p
 
 func (f *protocolDaoGetClaimableBondsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoGetClaimableBondsContext, api.ProtocolDaoGetClaimableBondsData](
-		router, "get-claimable-bonds", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "get-claimable-bonds", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -54,6 +54,7 @@ type protocolDaoGetClaimableBondsContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
 	cfg         *config.SmartNodeConfig
+	res         *config.RocketPoolResources
 	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
@@ -64,6 +65,7 @@ func (c *protocolDaoGetClaimableBondsContext) Initialize() (types.ResponseStatus
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.bc = sp.GetBeaconClient()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
@@ -136,8 +138,7 @@ func (c *protocolDaoGetClaimableBondsContext) PrepareData(data *api.ProtocolDaoG
 			blockSpan := uint64(prop.ChallengeWindow.Formatted().Seconds()) / beaconCfg.SecondsPerSlot // The max possible number of blocks in the challenge window
 			endBlock := big.NewInt(0).Add(startBlock, big.NewInt(int64(blockSpan)))
 
-			resources := c.cfg.GetRocketPoolResources()
-			challengeEvents, err := c.pdaoMgr.GetChallengeSubmittedEvents([]uint64{prop.ID}, intervalSize, startBlock, endBlock, resources.PreviousProtocolDaoVerifierAddresses, nil)
+			challengeEvents, err := c.pdaoMgr.GetChallengeSubmittedEvents([]uint64{prop.ID}, intervalSize, startBlock, endBlock, c.res.PreviousProtocolDaoVerifierAddresses, nil)
 			if err != nil {
 				return types.ResponseStatus_Error, fmt.Errorf("error scanning for proposal %d's ChallengeSubmitted events: %w", prop.ID, err)
 			}

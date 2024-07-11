@@ -47,7 +47,7 @@ func (f *txBatchSubmitTxsContextFactory) Create(body api.BatchSubmitTxsBody) (*t
 
 func (f *txBatchSubmitTxsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessPost[*txBatchSubmitTxsContext, api.BatchSubmitTxsBody, api.BatchTxData](
-		router, "batch-submit-txs", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "batch-submit-txs", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

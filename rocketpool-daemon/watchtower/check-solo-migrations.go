@@ -36,9 +36,10 @@ const (
 
 type CheckSoloMigrations struct {
 	ctx       context.Context
-	sp        *services.ServiceProvider
+	sp        services.ISmartNodeServiceProvider
 	logger    *slog.Logger
 	cfg       *config.SmartNodeConfig
+	res       *config.RocketPoolResources
 	w         *wallet.Wallet
 	rp        *rocketpool.RocketPool
 	ec        eth.IExecutionClient
@@ -50,13 +51,14 @@ type CheckSoloMigrations struct {
 }
 
 // Create check solo migrations task
-func NewCheckSoloMigrations(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, coll *collectors.SoloMigrationCollector) *CheckSoloMigrations {
+func NewCheckSoloMigrations(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger, coll *collectors.SoloMigrationCollector) *CheckSoloMigrations {
 	lock := &sync.Mutex{}
 	return &CheckSoloMigrations{
 		ctx:       ctx,
 		sp:        sp,
 		logger:    logger.With(slog.String(keys.TaskKey, "Solo Migration")),
 		cfg:       sp.GetConfig(),
+		res:       sp.GetResources(),
 		w:         sp.GetWallet(),
 		rp:        sp.GetRocketPool(),
 		ec:        sp.GetEthClient(),
@@ -271,7 +273,7 @@ func (t *CheckSoloMigrations) scrubVacantMinipool(state *state.NetworkState, add
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, mpLogger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, mpLogger, txInfo, opts)
 	if err != nil {
 		mpLogger.Error("Error waiting for scrub transaction", log.Err(err))
 		return

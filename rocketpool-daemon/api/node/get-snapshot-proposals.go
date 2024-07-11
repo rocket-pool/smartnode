@@ -37,7 +37,7 @@ func (f *nodeGetSnapshotProposalsContextFactory) Create(args url.Values) (*nodeG
 
 func (f *nodeGetSnapshotProposalsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeGetSnapshotProposalsContext, api.NodeGetSnapshotProposalsData](
-		router, "get-snapshot-proposals", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "get-snapshot-proposals", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -54,6 +54,7 @@ type nodeGetSnapshotProposalsContext struct {
 func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotProposalsData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	rp := sp.GetRocketPool()
 	snapshot := sp.GetSnapshotDelegation()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
@@ -77,6 +78,6 @@ func (c *nodeGetSnapshotProposalsContext) PrepareData(data *api.NodeGetSnapshotP
 		return types.ResponseStatus_Error, fmt.Errorf("error getting snapshot delegate: %w", err)
 	}
 
-	data.Proposals, err = voting.GetSnapshotProposals(cfg, nodeAddress, delegate, c.activeOnly)
+	data.Proposals, err = voting.GetSnapshotProposals(cfg, res, nodeAddress, delegate, c.activeOnly)
 	return types.ResponseStatus_Success, err
 }

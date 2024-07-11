@@ -39,7 +39,7 @@ func (f *securityProposeSettingContextFactory) Create(args url.Values) (*securit
 
 func (f *securityProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*securityProposeSettingContext, api.SecurityProposeSettingData](
-		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

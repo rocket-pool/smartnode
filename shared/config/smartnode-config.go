@@ -78,7 +78,6 @@ type SmartNodeConfig struct {
 	Version             string
 	rocketPoolDirectory string
 	IsNativeMode        bool
-	resources           *RocketPoolResources
 }
 
 // Load configuration settings from a file
@@ -568,7 +567,6 @@ func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
 		return fmt.Errorf("expected a native toggle parameter named [%s] but it was not found", ids.IsNativeKey)
 	}
 	cfg.IsNativeMode, _ = strconv.ParseBool(isNativeMode.(string))
-	cfg.updateResources()
 
 	return nil
 }
@@ -584,7 +582,6 @@ func (cfg *SmartNodeConfig) ChangeNetwork(newNetwork config.Network) {
 
 	// Run the changes
 	config.ChangeNetwork(cfg, oldNetwork, newNetwork)
-	cfg.updateResources()
 }
 
 // Create a copy of this configuration.
@@ -592,7 +589,6 @@ func (cfg *SmartNodeConfig) CreateCopy() *SmartNodeConfig {
 	network := cfg.Network.Value
 	copy := NewSmartNodeConfig(cfg.rocketPoolDirectory, cfg.IsNativeMode)
 	config.Clone(cfg, copy, network)
-	copy.updateResources()
 	copy.Version = cfg.Version
 	return copy
 }
@@ -741,12 +737,6 @@ func (cfg *SmartNodeConfig) Validate() []string {
 func (cfg *SmartNodeConfig) applyAllDefaults() {
 	network := cfg.Network.Value
 	config.ApplyDefaults(cfg, network)
-	cfg.updateResources()
-}
-
-// Update the config's resource cache
-func (cfg *SmartNodeConfig) updateResources() {
-	cfg.resources = newRocketPoolResources(cfg.Network.Value)
 }
 
 // Get the list of options for networks to run on

@@ -97,7 +97,7 @@ type RocketPoolResources struct {
 }
 
 // Creates a new resource collection for the given network
-func newRocketPoolResources(network config.Network) *RocketPoolResources {
+func NewRocketPoolResources(network config.Network) *RocketPoolResources {
 	// Mainnet
 	mainnetResources := &RocketPoolResources{
 		NetworkResources:               config.NewResources(config.Network_Mainnet),

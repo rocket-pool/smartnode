@@ -30,7 +30,7 @@ const (
 // Manage fee recipient task
 type ManageFeeRecipient struct {
 	ctx     context.Context
-	sp      *services.ServiceProvider
+	sp      services.ISmartNodeServiceProvider
 	cfg     *config.SmartNodeConfig
 	logger  *slog.Logger
 	alerter *alerting.Alerter
@@ -39,7 +39,7 @@ type ManageFeeRecipient struct {
 }
 
 // Create manage fee recipient task
-func NewManageFeeRecipient(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *ManageFeeRecipient {
+func NewManageFeeRecipient(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger) *ManageFeeRecipient {
 	return &ManageFeeRecipient{
 		ctx:     ctx,
 		sp:      sp,

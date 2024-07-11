@@ -30,7 +30,7 @@ func (f *securityProposeLeaveContextFactory) Create(args url.Values) (*securityP
 
 func (f *securityProposeLeaveContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*securityProposeLeaveContext, types.TxInfoData](
-		router, "propose-leave", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "propose-leave", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

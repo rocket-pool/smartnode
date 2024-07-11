@@ -25,7 +25,7 @@ type RplCollector struct {
 	checkpointTime *prometheus.Desc
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -35,7 +35,7 @@ type RplCollector struct {
 }
 
 // Create a new RplCollector instance
-func NewRplCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *RplCollector {
+func NewRplCollector(logger *log.Logger, sp services.ISmartNodeServiceProvider, stateLocker *StateLocker) *RplCollector {
 	subsystem := "rpl"
 	sublogger := logger.With(slog.String(keys.TaskKey, "RPL Collector"))
 	return &RplCollector{

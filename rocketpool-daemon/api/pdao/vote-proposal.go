@@ -46,7 +46,7 @@ func (f *protocolDaoVoteOnProposalContextFactory) Create(args url.Values) (*prot
 
 func (f *protocolDaoVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoVoteOnProposalContext, api.ProtocolDaoVoteOnProposalData](
-		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -57,6 +57,7 @@ func (f *protocolDaoVoteOnProposalContextFactory) RegisterRoute(router *mux.Rout
 type protocolDaoVoteOnProposalContext struct {
 	handler     *ProtocolDaoHandler
 	cfg         *config.SmartNodeConfig
+	res         *config.RocketPoolResources
 	rp          *rocketpool.RocketPool
 	bc          beacon.IBeaconClient
 	nodeAddress common.Address
@@ -73,6 +74,7 @@ type protocolDaoVoteOnProposalContext struct {
 func (c *protocolDaoVoteOnProposalContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	ctx := c.handler.ctx
@@ -97,7 +99,7 @@ func (c *protocolDaoVoteOnProposalContext) Initialize() (types.ResponseStatus, e
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal binding: %w", err)
 	}
-	c.propMgr, err = proposals.NewProposalManager(ctx, c.handler.logger.Logger, c.cfg, c.rp, c.bc)
+	c.propMgr, err = proposals.NewProposalManager(ctx, c.handler.logger.Logger, c.cfg, c.res, c.rp, c.bc)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal manager: %w", err)
 	}

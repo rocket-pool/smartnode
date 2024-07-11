@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"context"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -27,15 +26,15 @@ type minipoolCloseDetailsContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolCloseDetailsContextFactory) Create(args url.Values) (*minipoolCloseDetailsContext, error) {
-	c := &minipoolCloseDetailsContext{
-		handler: f.handler,
+func (f *minipoolCloseDetailsContextFactory) Create(args url.Values) (*MinipoolCloseDetailsContext, error) {
+	c := &MinipoolCloseDetailsContext{
+		Handler: f.handler,
 	}
 	return c, nil
 }
 
 func (f *minipoolCloseDetailsContextFactory) RegisterRoute(router *mux.Router) {
-	RegisterMinipoolRoute[*minipoolCloseDetailsContext, api.MinipoolCloseDetailsData](
+	RegisterMinipoolRoute[*MinipoolCloseDetailsContext, api.MinipoolCloseDetailsData](
 		router, "close/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
@@ -44,29 +43,30 @@ func (f *minipoolCloseDetailsContextFactory) RegisterRoute(router *mux.Router) {
 // === Context ===
 // ===============
 
-type minipoolCloseDetailsContext struct {
-	handler *MinipoolHandler
-	rp      *rocketpool.RocketPool
-	bc      beacon.IBeaconClient
+type MinipoolCloseDetailsContext struct {
+	Handler *MinipoolHandler
+
+	rp *rocketpool.RocketPool
+	bc beacon.IBeaconClient
 }
 
-func (c *minipoolCloseDetailsContext) Initialize() (types.ResponseStatus, error) {
-	sp := c.handler.serviceProvider
+func (c *MinipoolCloseDetailsContext) Initialize() (types.ResponseStatus, error) {
+	sp := c.Handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	return types.ResponseStatus_Success, nil
 }
 
-func (c *minipoolCloseDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (c *MinipoolCloseDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
 	node.IsFeeDistributorInitialized.AddToQuery(mc)
 }
 
-func (c *minipoolCloseDetailsContext) CheckState(node *node.Node, response *api.MinipoolCloseDetailsData) bool {
+func (c *MinipoolCloseDetailsContext) CheckState(node *node.Node, response *api.MinipoolCloseDetailsData) bool {
 	response.IsFeeDistributorInitialized = node.IsFeeDistributorInitialized.Get()
 	return response.IsFeeDistributorInitialized
 }
 
-func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+func (c *MinipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpCommon := mp.Common()
 	eth.AddQueryablesToMulticall(mc,
 		mpCommon.NodeAddress,
@@ -82,15 +82,11 @@ func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, 
 	}
 }
 
-func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
-	ctx := c.handler.ctx
-	return MinipoolClose_GetDetails(ctx, c.rp, c.bc, addresses, mps, data)
-}
+func (c *MinipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
+	ctx := c.Handler.ctx
 
-// Gets the details of minipools that can be closed
-func MinipoolClose_GetDetails(ctx context.Context, rp *rocketpool.RocketPool, bc beacon.IBeaconClient, addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
 	// Get the current ETH balances of each minipool
-	balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
+	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool balances: %w", err)
 	}
@@ -98,11 +94,11 @@ func MinipoolClose_GetDetails(ctx context.Context, rp *rocketpool.RocketPool, bc
 	// Get the closure details
 	details := make([]api.MinipoolCloseDetails, len(addresses))
 	for i, mp := range mps {
-		details[i] = getMinipoolCloseDetails(rp, mp, balances[i])
+		details[i] = getMinipoolCloseDetails(c.rp, mp, balances[i])
 	}
 
 	// Get the node shares
-	err = rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
+	err = c.rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
 		if !details[i].CanClose {
 			return nil
 		}
@@ -129,7 +125,7 @@ func MinipoolClose_GetDetails(ctx context.Context, rp *rocketpool.RocketPool, bc
 		pubkeyMap[mp.Address] = pubkey
 		pubkeys = append(pubkeys, pubkey)
 	}
-	statusMap, err := bc.GetValidatorStatuses(ctx, pubkeys, nil)
+	statusMap, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting beacon status of minipools: %w", err)
 	}

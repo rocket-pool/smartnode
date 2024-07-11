@@ -38,7 +38,7 @@ func (f *networkRewardsFileContextFactory) Create(args url.Values) (*networkRewa
 
 func (f *networkRewardsFileContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkRewardsFileContext, api.NetworkRewardsFileData](
-		router, "rewards-file-info", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "rewards-file-info", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

@@ -39,7 +39,7 @@ func (f *minipoolStakeContextFactory) Create(args url.Values) (*minipoolStakeCon
 
 func (f *minipoolStakeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolStakeContext, types.BatchTxInfoData](
-		router, "stake", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "stake", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -56,7 +56,7 @@ func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bi
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	vMgr := sp.GetValidatorManager()
-	rs := sp.GetNetworkResources()
+	rs := sp.GetResources()
 
 	// Requirements
 	status, err := sp.RequireNodeRegistered(c.handler.ctx)

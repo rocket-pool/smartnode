@@ -41,9 +41,10 @@ const (
 // Submit network balances task
 type SubmitNetworkBalances struct {
 	ctx              context.Context
-	sp               *services.ServiceProvider
+	sp               services.ISmartNodeServiceProvider
 	logger           *slog.Logger
 	cfg              *config.SmartNodeConfig
+	res              *config.RocketPoolResources
 	w                *wallet.Wallet
 	ec               eth.IExecutionClient
 	rp               *rocketpool.RocketPool
@@ -72,13 +73,14 @@ type minipoolBalanceDetails struct {
 }
 
 // Create submit network balances task
-func NewSubmitNetworkBalances(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *SubmitNetworkBalances {
+func NewSubmitNetworkBalances(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger) *SubmitNetworkBalances {
 	lock := &sync.Mutex{}
 	return &SubmitNetworkBalances{
 		ctx:              ctx,
 		sp:               sp,
 		logger:           logger.With(slog.String(keys.TaskKey, "Balance Report")),
 		cfg:              sp.GetConfig(),
+		res:              sp.GetResources(),
 		w:                sp.GetWallet(),
 		ec:               sp.GetEthClient(),
 		rp:               sp.GetRocketPool(),
@@ -252,13 +254,13 @@ func (t *SubmitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 // Get the network balances at a specific block
 func (t *SubmitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, elBlock *big.Int, beaconBlock uint64, slotTime time.Time) (networkBalances, error) {
 	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.logger, elBlock)
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.res, t.logger, elBlock)
 	if err != nil {
 		return networkBalances{}, err
 	}
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(t.ctx, client, t.cfg, client.Client, t.bc, t.logger)
+	mgr, err := state.NewNetworkStateManager(t.ctx, client, t.cfg, t.res, client.Client, t.bc, t.logger)
 	if err != nil {
 		return networkBalances{}, fmt.Errorf("error creating network state manager for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
 	}
@@ -315,7 +317,7 @@ func (t *SubmitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 		// Approximate the staker's share of the smoothing pool balance
 		// NOTE: this will use the "vanilla" variant of treegen, without rolling records, to retain parity with other Oracle DAO nodes that aren't using rolling records
-		treegen, err := rprewards.NewTreeGenerator(t.logger, client, t.cfg, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed), state, nil)
+		treegen, err := rprewards.NewTreeGenerator(t.logger, client, t.cfg, t.res, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed), state, nil)
 		if err != nil {
 			return fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
 		}
@@ -490,7 +492,7 @@ func (t *SubmitNetworkBalances) submitBalances(balances networkBalances, isHoust
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return fmt.Errorf("error waiting for transaction: %w", err)
 	}

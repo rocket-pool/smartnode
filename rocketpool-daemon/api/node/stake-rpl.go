@@ -41,7 +41,7 @@ func (f *nodeStakeRplContextFactory) Create(args url.Values) (*nodeStakeRplConte
 
 func (f *nodeStakeRplContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeStakeRplContext, api.NodeStakeRplData](
-		router, "stake-rpl", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "stake-rpl", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

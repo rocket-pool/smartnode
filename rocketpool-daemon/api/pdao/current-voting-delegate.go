@@ -33,7 +33,7 @@ func (f *protocolDaoCurrentVotingDelegateContextFactory) Create(args url.Values)
 
 func (f *protocolDaoCurrentVotingDelegateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoCurrentVotingDelegateContext, api.ProtocolDaoCurrentVotingDelegateData](
-		router, "voting-delegate", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "voting-delegate", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

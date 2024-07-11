@@ -43,7 +43,7 @@ func (f *nodeSendContextFactory) Create(args url.Values) (*nodeSendContext, erro
 
 func (f *nodeSendContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeSendContext, api.NodeSendData](
-		router, "send", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "send", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

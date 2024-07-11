@@ -42,7 +42,7 @@ func (f *protocolDaoDefeatProposalContextFactory) Create(args url.Values) (*prot
 
 func (f *protocolDaoDefeatProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoDefeatProposalContext, api.ProtocolDaoDefeatProposalData](
-		router, "proposal/defeat", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "proposal/defeat", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

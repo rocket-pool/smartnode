@@ -26,9 +26,10 @@ const MinipoolStatusBatchSize = 20
 
 // Dissolve timed out minipools task
 type DissolveTimedOutMinipools struct {
-	sp     *services.ServiceProvider
+	sp     services.ISmartNodeServiceProvider
 	logger *slog.Logger
 	cfg    *config.SmartNodeConfig
+	res    *config.RocketPoolResources
 	w      *wallet.Wallet
 	rp     *rocketpool.RocketPool
 	ec     eth.IExecutionClient
@@ -36,10 +37,11 @@ type DissolveTimedOutMinipools struct {
 }
 
 // Create dissolve timed out minipools task
-func NewDissolveTimedOutMinipools(sp *services.ServiceProvider, logger *log.Logger) *DissolveTimedOutMinipools {
+func NewDissolveTimedOutMinipools(sp services.ISmartNodeServiceProvider, logger *log.Logger) *DissolveTimedOutMinipools {
 	return &DissolveTimedOutMinipools{
 		sp:     sp,
 		cfg:    sp.GetConfig(),
+		res:    sp.GetResources(),
 		w:      sp.GetWallet(),
 		rp:     sp.GetRocketPool(),
 		ec:     sp.GetEthClient(),
@@ -141,7 +143,7 @@ func (t *DissolveTimedOutMinipools) dissolveMinipool(mp minipool.IMinipool) erro
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, mpLogger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, mpLogger, txInfo, opts)
 	if err != nil {
 		return err
 	}

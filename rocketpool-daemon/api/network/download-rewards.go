@@ -33,7 +33,7 @@ func (f *networkDownloadRewardsContextFactory) Create(args url.Values) (*network
 
 func (f *networkDownloadRewardsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkDownloadRewardsContext, types.SuccessData](
-		router, "download-rewards-file", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "download-rewards-file", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -51,6 +51,7 @@ func (c *networkDownloadRewardsContext) PrepareData(data *types.SuccessData, opt
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
@@ -60,7 +61,7 @@ func (c *networkDownloadRewardsContext) PrepareData(data *types.SuccessData, opt
 	}
 
 	// Get the event info for the interval
-	intervalInfo, err := rewards.GetIntervalInfo(rp, cfg, nodeAddress, c.interval, nil)
+	intervalInfo, err := rewards.GetIntervalInfo(rp, cfg, res, nodeAddress, c.interval, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting interval %d info: %w", c.interval, err)
 	}

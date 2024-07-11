@@ -18,6 +18,7 @@ import (
 
 type NetworkStateManager struct {
 	cfg          *config.SmartNodeConfig
+	res          *config.RocketPoolResources
 	rp           *rocketpool.RocketPool
 	ec           eth.IExecutionClient
 	bc           beacon.IBeaconClient
@@ -29,19 +30,17 @@ type NetworkStateManager struct {
 }
 
 // Create a new manager for the network state
-func NewNetworkStateManager(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger) (*NetworkStateManager, error) {
-	// Make a resource list
-	resources := cfg.GetNetworkResources()
-
+func NewNetworkStateManager(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger) (*NetworkStateManager, error) {
 	// Create the manager
 	m := &NetworkStateManager{
 		cfg:     cfg,
+		res:     res,
 		rp:      rp,
 		ec:      ec,
 		bc:      bc,
 		logger:  logger,
 		Network: cfg.Network.Value,
-		ChainID: resources.ChainID,
+		ChainID: res.ChainID,
 	}
 
 	// Get the Beacon config info
@@ -139,7 +138,7 @@ func (m *NetworkStateManager) GetLatestProposedBeaconBlock(context context.Conte
 
 // Get the state of the network at the provided Beacon slot
 func (m *NetworkStateManager) getState(context context.Context, slotNumber uint64) (*NetworkState, error) {
-	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.logger, slotNumber, m.BeaconConfig, context)
+	state, err := CreateNetworkState(m.cfg, m.res, m.rp, m.ec, m.bc, m.logger, slotNumber, m.BeaconConfig, context)
 	if err != nil {
 		return nil, err
 	}
@@ -148,7 +147,7 @@ func (m *NetworkStateManager) getState(context context.Context, slotNumber uint6
 
 // Get the state of the network for a specific node only at the provided Beacon slot
 func (m *NetworkStateManager) getStateForNode(context context.Context, nodeAddress common.Address, slotNumber uint64, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
-	state, totalEffectiveStake, err := CreateNetworkStateForNode(m.cfg, m.rp, m.ec, m.bc, m.logger, slotNumber, m.BeaconConfig, nodeAddress, calculateTotalEffectiveStake, context)
+	state, totalEffectiveStake, err := CreateNetworkStateForNode(m.cfg, m.res, m.rp, m.ec, m.bc, m.logger, slotNumber, m.BeaconConfig, nodeAddress, calculateTotalEffectiveStake, context)
 	if err != nil {
 		return nil, nil, err
 	}

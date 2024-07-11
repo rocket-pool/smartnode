@@ -24,7 +24,7 @@ type OdaoCollector struct {
 	latestReportableBlock *prometheus.Desc
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -34,7 +34,7 @@ type OdaoCollector struct {
 }
 
 // Create a new OdaoCollector instance
-func NewOdaoCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *OdaoCollector {
+func NewOdaoCollector(logger *log.Logger, sp services.ISmartNodeServiceProvider, stateLocker *StateLocker) *OdaoCollector {
 	subsystem := "odao"
 	sublogger := logger.With(slog.String(keys.TaskKey, "ODAO Collector"))
 	return &OdaoCollector{

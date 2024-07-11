@@ -16,7 +16,7 @@ type SmoothingPoolCollector struct {
 	ethBalanceOnSmoothingPool *prometheus.Desc
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -26,7 +26,7 @@ type SmoothingPoolCollector struct {
 }
 
 // Create a new SmoothingPoolCollector instance
-func NewSmoothingPoolCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *SmoothingPoolCollector {
+func NewSmoothingPoolCollector(logger *log.Logger, sp services.ISmartNodeServiceProvider, stateLocker *StateLocker) *SmoothingPoolCollector {
 	subsystem := "smoothing_pool"
 	sublogger := logger.With(slog.String(keys.TaskKey, "SP Collector"))
 	return &SmoothingPoolCollector{

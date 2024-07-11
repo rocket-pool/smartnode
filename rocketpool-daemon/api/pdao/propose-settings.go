@@ -44,7 +44,7 @@ func (f *protocolDaoProposeSettingContextFactory) Create(args url.Values) (*prot
 
 func (f *protocolDaoProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeSettingContext, api.ProtocolDaoProposeSettingData](
-		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -56,6 +56,7 @@ type protocolDaoProposeSettingContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
 	cfg         *config.SmartNodeConfig
+	res         *config.RocketPoolResources
 	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
@@ -70,6 +71,7 @@ func (c *protocolDaoProposeSettingContext) Initialize() (types.ResponseStatus, e
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.bc = sp.GetBeaconClient()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
@@ -146,7 +148,7 @@ func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.Se
 			if err != nil {
 				return false, nil, fmt.Errorf("error parsing value '%s' as bool: %w", c.valueString, err), nil
 			}
-			blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.bc)
+			blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.res, c.bc)
 			if err != nil {
 				return false, nil, fmt.Errorf("error creating pollard for proposal creation: %w", err), nil
 			}
@@ -163,7 +165,7 @@ func (c *protocolDaoProposeSettingContext) createProposalTx(category protocol.Se
 			if err != nil {
 				return false, nil, fmt.Errorf("error parsing value '%s' as *big.Int: %w", c.valueString, err), nil
 			}
-			blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.bc)
+			blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.res, c.bc)
 			if err != nil {
 				return false, nil, fmt.Errorf("error creating pollard for proposal creation: %w", err), nil
 			}

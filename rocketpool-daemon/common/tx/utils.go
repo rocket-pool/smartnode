@@ -19,14 +19,13 @@ import (
 const TimeoutSafetyFactor time.Duration = 2
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *slog.Logger, txInfo *eth.TransactionInfo, opts *bind.TransactOpts) error {
+func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, logger *slog.Logger, txInfo *eth.TransactionInfo, opts *bind.TransactOpts) error {
 	tx, err := rp.ExecuteTransaction(txInfo, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transaction: %w", err)
 	}
 
-	resources := cfg.GetRocketPoolResources()
-	txWatchUrl := resources.TxWatchUrl
+	txWatchUrl := res.TxWatchUrl
 	hashString := tx.Hash().String()
 	logger.Info("Transaction has been submitted.", slog.String(keys.HashKey, hashString))
 	if txWatchUrl != "" {
@@ -45,7 +44,7 @@ func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, rp *rocketpool.Rock
 }
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, logger *slog.Logger, submissions []*eth.TransactionSubmission, callbacks []func(err error), opts *bind.TransactOpts) error {
+func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, logger *slog.Logger, submissions []*eth.TransactionSubmission, callbacks []func(err error), opts *bind.TransactOpts) error {
 	txs, err := rp.BatchExecuteTransactions(submissions, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transactions: %w", err)
@@ -59,8 +58,7 @@ func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, rp *rocketpool
 		}
 	}
 
-	resources := cfg.GetRocketPoolResources()
-	txWatchUrl := resources.TxWatchUrl
+	txWatchUrl := res.TxWatchUrl
 	if txWatchUrl != "" {
 		logger.Info("Transactions have been submitted. You may follow them progress by visiting:")
 		for _, tx := range txs {

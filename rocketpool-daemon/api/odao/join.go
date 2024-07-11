@@ -38,7 +38,7 @@ func (f *oracleDaoJoinContextFactory) Create(args url.Values) (*oracleDaoJoinCon
 
 func (f *oracleDaoJoinContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoJoinContext, api.OracleDaoJoinData](
-		router, "join", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "join", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

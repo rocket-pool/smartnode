@@ -44,7 +44,7 @@ func (f *protocolDaoProposeInviteToSecurityCouncilContextFactory) Create(args ur
 
 func (f *protocolDaoProposeInviteToSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeInviteToSecurityCouncilContext, api.ProtocolDaoProposeInviteToSecurityCouncilData](
-		router, "security/invite", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "security/invite", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -56,6 +56,7 @@ type protocolDaoProposeInviteToSecurityCouncilContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
 	cfg         *config.SmartNodeConfig
+	res         *config.RocketPoolResources
 	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
@@ -70,6 +71,7 @@ func (c *protocolDaoProposeInviteToSecurityCouncilContext) Initialize() (types.R
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.bc = sp.GetBeaconClient()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
@@ -118,7 +120,7 @@ func (c *protocolDaoProposeInviteToSecurityCouncilContext) PrepareData(data *api
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.res, c.bc)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}

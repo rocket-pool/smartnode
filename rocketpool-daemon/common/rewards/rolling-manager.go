@@ -41,6 +41,7 @@ type RollingRecordManager struct {
 
 	logger          *slog.Logger
 	cfg             *config.SmartNodeConfig
+	res             *config.RocketPoolResources
 	rp              *rocketpool.RocketPool
 	bc              beacon.IBeaconClient
 	mgr             *state.NetworkStateManager
@@ -55,7 +56,7 @@ type RollingRecordManager struct {
 }
 
 // Creates a new manager for rolling records.
-func NewRollingRecordManager(logger *slog.Logger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, bc beacon.IBeaconClient, mgr *state.NetworkStateManager, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
+func NewRollingRecordManager(logger *slog.Logger, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, bc beacon.IBeaconClient, mgr *state.NetworkStateManager, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
 	// Get the Beacon genesis time
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 
@@ -94,6 +95,7 @@ func NewRollingRecordManager(logger *slog.Logger, cfg *config.SmartNodeConfig, r
 
 		logger:               sublogger,
 		cfg:                  cfg,
+		res:                  res,
 		rp:                   rp,
 		bc:                   bc,
 		mgr:                  mgr,
@@ -619,8 +621,7 @@ func (r *RollingRecordManager) createNewRecord(context context.Context, state *s
 	currentIndex := rewardsPool.RewardIndex.Formatted()
 
 	// Get the last rewards event and starting epoch
-	resources := r.cfg.GetRocketPoolResources()
-	found, event, err := rewardsPool.GetRewardsEvent(r.rp, currentIndex-1, resources.PreviousRewardsPoolAddresses, nil)
+	found, event, err := rewardsPool.GetRewardsEvent(r.rp, currentIndex-1, r.res.PreviousRewardsPoolAddresses, nil)
 	if err != nil {
 		return fmt.Errorf("error getting event for rewards interval %d: %w", currentIndex-1, err)
 	}

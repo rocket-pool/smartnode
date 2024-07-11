@@ -37,7 +37,7 @@ func (f *auctionStatusContextFactory) Create(args url.Values) (*auctionStatusCon
 
 func (f *auctionStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionStatusContext, api.AuctionStatusData](
-		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

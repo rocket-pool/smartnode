@@ -13,11 +13,11 @@ import (
 type NetworkHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewNetworkHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *NetworkHandler {
+func NewNetworkHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *NetworkHandler {
 	h := &NetworkHandler{
 		logger:          logger,
 		ctx:             ctx,

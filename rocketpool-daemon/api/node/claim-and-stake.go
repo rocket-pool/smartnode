@@ -43,7 +43,7 @@ func (f *nodeClaimAndStakeContextFactory) Create(args url.Values) (*nodeClaimAnd
 
 func (f *nodeClaimAndStakeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeClaimAndStakeContext, types.TxInfoData](
-		router, "claim-and-stake", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "claim-and-stake", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -62,6 +62,7 @@ func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bin
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
@@ -83,7 +84,7 @@ func (c *nodeClaimAndStakeContext) PrepareData(data *types.TxInfoData, opts *bin
 
 	// Populate the interval info for each one
 	for _, index := range c.indices {
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, index.Uint64(), nil)
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, res, nodeAddress, index.Uint64(), nil)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error getting interval info for interval %d: %w", index, err)
 		}

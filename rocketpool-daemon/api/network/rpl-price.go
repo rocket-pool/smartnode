@@ -35,7 +35,7 @@ func (f *networkPriceContextFactory) Create(args url.Values) (*networkPriceConte
 
 func (f *networkPriceContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkPriceContext, api.NetworkRplPriceData](
-		router, "rpl-price", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "rpl-price", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

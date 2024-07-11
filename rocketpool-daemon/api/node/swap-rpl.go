@@ -40,7 +40,7 @@ func (f *nodeSwapRplContextFactory) Create(args url.Values) (*nodeSwapRplContext
 
 func (f *nodeSwapRplContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSwapRplContext, api.NodeSwapRplData](
-		router, "swap-rpl", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "swap-rpl", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

@@ -55,7 +55,7 @@ func (f *nodeStatusContextFactory) Create(args url.Values) (*nodeStatusContext, 
 
 func (f *nodeStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeStatusContext, api.NodeStatusData](
-		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -66,6 +66,7 @@ func (f *nodeStatusContextFactory) RegisterRoute(router *mux.Router) {
 type nodeStatusContext struct {
 	handler  *NodeHandler
 	cfg      *config.SmartNodeConfig
+	res      *config.RocketPoolResources
 	rp       *rocketpool.RocketPool
 	ec       eth.IExecutionClient
 	bc       beacon.IBeaconClient
@@ -89,6 +90,7 @@ type nodeStatusContext struct {
 func (c *nodeStatusContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.rp = sp.GetRocketPool()
 	c.ec = sp.GetEthClient()
 	c.bc = sp.GetBeaconClient()
@@ -268,7 +270,7 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 		if data.SnapshotVotingDelegate != emptyAddress {
 			data.SnapshotVotingDelegateFormatted = utils.GetFormattedAddress(c.ec, data.SnapshotVotingDelegate)
 		}
-		props, err := voting.GetSnapshotProposals(c.cfg, c.node.Address, c.delegate, true)
+		props, err := voting.GetSnapshotProposals(c.cfg, c.res, c.node.Address, c.delegate, true)
 		if err != nil {
 			data.SnapshotResponse.Error = fmt.Sprintf("error getting snapshot proposals: %s", err.Error())
 		} else {

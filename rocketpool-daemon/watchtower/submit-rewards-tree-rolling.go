@@ -39,9 +39,10 @@ import (
 // Process balances and rewards task
 type SubmitRewardsTree_Rolling struct {
 	ctx         context.Context
-	sp          *services.ServiceProvider
+	sp          services.ISmartNodeServiceProvider
 	logger      *slog.Logger
 	cfg         *config.SmartNodeConfig
+	res         *config.RocketPoolResources
 	w           *wallet.Wallet
 	ec          eth.IExecutionClient
 	rp          *rocketpool.RocketPool
@@ -56,9 +57,10 @@ type SubmitRewardsTree_Rolling struct {
 }
 
 // Create submit rewards tree with rolling record support
-func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, stateMgr *state.NetworkStateManager) (*SubmitRewardsTree_Rolling, error) {
+func NewSubmitRewardsTree_Rolling(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger, stateMgr *state.NetworkStateManager) (*SubmitRewardsTree_Rolling, error) {
 	// Get services
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	rp := sp.GetRocketPool()
 	bc := sp.GetBeaconClient()
 	rewardsPool, err := rewards.NewRewardsPool(rp)
@@ -86,8 +88,7 @@ func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvi
 	}
 
 	// Get the previous RocketRewardsPool addresses
-	rs := cfg.GetRocketPoolResources()
-	prevAddresses := rs.PreviousRewardsPoolAddresses
+	prevAddresses := res.PreviousRewardsPoolAddresses
 
 	// Get the last rewards event and starting epoch
 	found, event, err := rewardsPool.GetRewardsEvent(rp, currentIndex-1, prevAddresses, nil)
@@ -111,6 +112,7 @@ func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvi
 		sp:          sp,
 		logger:      logger.With(),
 		cfg:         cfg,
+		res:         res,
 		w:           sp.GetWallet(),
 		ec:          sp.GetEthClient(),
 		rp:          sp.GetRocketPool(),
@@ -122,7 +124,7 @@ func NewSubmitRewardsTree_Rolling(ctx context.Context, sp *services.ServiceProvi
 	}
 
 	// Make a new rolling manager
-	recordMgr, err := rprewards.NewRollingRecordManager(task.logger, cfg, rp, bc, stateMgr, startSlot, beaconCfg, currentIndex)
+	recordMgr, err := rprewards.NewRollingRecordManager(task.logger, cfg, res, rp, bc, stateMgr, startSlot, beaconCfg, currentIndex)
 	if err != nil {
 		return nil, fmt.Errorf("error creating rolling record manager: %w", err)
 	}
@@ -259,14 +261,14 @@ func (t *SubmitRewardsTree_Rolling) Run(headState *state.NetworkState) error {
 
 			// Get an appropriate client that has access to the target state - this is required if the state gets pruned by the local EC and the
 			// archive EC is required
-			client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.logger, big.NewInt(0).SetUint64(elBlockNumber))
+			client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.res, t.logger, big.NewInt(0).SetUint64(elBlockNumber))
 			if err != nil {
 				t.handleError(fmt.Errorf("error getting best API client during rewards submission: %w", err))
 				return
 			}
 
 			// Generate the rewards state
-			stateMgr, err := state.NewNetworkStateManager(t.ctx, client, t.cfg, client.Client, t.bc, t.logger)
+			stateMgr, err := state.NewNetworkStateManager(t.ctx, client, t.cfg, t.res, client.Client, t.bc, t.logger)
 			if err != nil {
 				t.handleError(fmt.Errorf("error creating state manager for rewards slot: %w", err))
 				return
@@ -509,7 +511,7 @@ func (t *SubmitRewardsTree_Rolling) generateTree(rp *rocketpool.RocketPool, stat
 	t.logger.Info("Rewards checkpoint has passed, starting Merkle tree generation in the background.", slog.Uint64(keys.IntervalKey, currentIndex), slog.Uint64(keys.SlotKey, snapshotBeaconBlock), slog.Uint64(keys.BlockKey, elBlockIndex), slog.Time(keys.StartKey, startTime), slog.Time(keys.EndKey, endTime))
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(t.logger, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, t.recordMgr.Record)
+	treegen, err := rprewards.NewTreeGenerator(t.logger, rp, t.cfg, t.res, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, t.recordMgr.Record)
 	if err != nil {
 		return fmt.Errorf("error creating Merkle tree generator: %w", err)
 	}
@@ -654,7 +656,7 @@ func (t *SubmitRewardsTree_Rolling) submitRewardsSnapshot(index *big.Int, consen
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}

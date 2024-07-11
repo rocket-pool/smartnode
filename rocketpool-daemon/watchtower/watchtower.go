@@ -27,7 +27,7 @@ type TaskManager struct {
 	// Services
 	logger *log.Logger
 	ctx    context.Context
-	sp     *services.ServiceProvider
+	sp     services.ISmartNodeServiceProvider
 	cfg    *config.SmartNodeConfig
 	rp     *rocketpool.RocketPool
 	bc     beacon.IBeaconClient
@@ -56,7 +56,7 @@ type TaskManager struct {
 }
 
 func NewTaskManager(
-	sp *services.ServiceProvider,
+	sp services.ISmartNodeServiceProvider,
 	stateMgr *state.NetworkStateManager,
 	scrubCollector *collectors.ScrubCollector,
 	bondReductionCollector *collectors.BondReductionCollector,

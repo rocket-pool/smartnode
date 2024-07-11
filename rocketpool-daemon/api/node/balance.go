@@ -28,7 +28,7 @@ func (f *nodeBalanceContextFactory) Create(args url.Values) (*nodeBalanceContext
 
 func (f *nodeBalanceContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeBalanceContext, api.NodeBalanceData](
-		router, "balance", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "balance", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

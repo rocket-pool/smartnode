@@ -33,7 +33,7 @@ func (f *networkTimezoneContextFactory) Create(args url.Values) (*networkTimezon
 
 func (f *networkTimezoneContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkTimezoneContext, api.NetworkTimezonesData](
-		router, "timezone-map", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "timezone-map", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

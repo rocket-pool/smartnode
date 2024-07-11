@@ -16,18 +16,20 @@ import (
 
 // Manage download rewards trees task
 type DownloadRewardsTrees struct {
-	sp     *services.ServiceProvider
+	sp     services.ISmartNodeServiceProvider
 	logger *slog.Logger
 	cfg    *config.SmartNodeConfig
+	res    *config.RocketPoolResources
 	rp     *rocketpool.RocketPool
 }
 
 // Create manage fee recipient task
-func NewDownloadRewardsTrees(sp *services.ServiceProvider, logger *log.Logger) *DownloadRewardsTrees {
+func NewDownloadRewardsTrees(sp services.ISmartNodeServiceProvider, logger *log.Logger) *DownloadRewardsTrees {
 	return &DownloadRewardsTrees{
 		sp:     sp,
 		logger: logger.With(slog.String(keys.TaskKey, "Rewards Tree Download")),
 		cfg:    sp.GetConfig(),
+		res:    sp.GetResources(),
 		rp:     sp.GetRocketPool(),
 	}
 }
@@ -67,7 +69,7 @@ func (t *DownloadRewardsTrees) Run(state *state.NetworkState) error {
 	// Download missing intervals
 	for _, missingInterval := range missingIntervals {
 		t.logger.Info("Downloading file... ", slog.Uint64(keys.IntervalKey, missingInterval))
-		intervalInfo, err := rprewards.GetIntervalInfo(t.rp, t.cfg, nodeAddress, missingInterval, nil)
+		intervalInfo, err := rprewards.GetIntervalInfo(t.rp, t.cfg, t.res, nodeAddress, missingInterval, nil)
 		if err != nil {
 			return fmt.Errorf("error getting interval %d info: %w", missingInterval, err)
 		}

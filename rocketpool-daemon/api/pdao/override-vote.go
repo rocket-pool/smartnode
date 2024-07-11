@@ -45,7 +45,7 @@ func (f *protocolDaoOverrideVoteOnProposalContextFactory) Create(args url.Values
 
 func (f *protocolDaoOverrideVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoOverrideVoteOnProposalContext, api.ProtocolDaoVoteOnProposalData](
-		router, "proposal/override-vote", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "proposal/override-vote", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

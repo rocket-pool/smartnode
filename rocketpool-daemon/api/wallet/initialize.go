@@ -40,7 +40,7 @@ func (f *walletInitializeContextFactory) Create(args url.Values) (*walletInitial
 
 func (f *walletInitializeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletInitializeContext, api.WalletInitializeData](
-		router, "initialize", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "initialize", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

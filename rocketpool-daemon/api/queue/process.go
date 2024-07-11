@@ -34,7 +34,7 @@ func (f *queueProcessContextFactory) Create(args url.Values) (*queueProcessConte
 
 func (f *queueProcessContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*queueProcessContext, api.QueueProcessData](
-		router, "process", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "process", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

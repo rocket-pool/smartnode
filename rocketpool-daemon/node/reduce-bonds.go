@@ -35,10 +35,11 @@ const (
 
 // Reduce bonds task
 type ReduceBonds struct {
-	sp             *services.ServiceProvider
+	sp             services.ISmartNodeServiceProvider
 	logger         *slog.Logger
 	alerter        *alerting.Alerter
 	cfg            *config.SmartNodeConfig
+	res            *config.RocketPoolResources
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
 	mpMgr          *minipool.MinipoolManager
@@ -48,7 +49,7 @@ type ReduceBonds struct {
 }
 
 // Create reduce bonds task
-func NewReduceBonds(sp *services.ServiceProvider, logger *log.Logger) *ReduceBonds {
+func NewReduceBonds(sp services.ISmartNodeServiceProvider, logger *log.Logger) *ReduceBonds {
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Reduce Bonds"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
@@ -63,6 +64,7 @@ func NewReduceBonds(sp *services.ServiceProvider, logger *log.Logger) *ReduceBon
 		logger:         log,
 		alerter:        alerting.NewAlerter(cfg, logger),
 		cfg:            cfg,
+		res:            sp.GetResources(),
 		w:              sp.GetWallet(),
 		rp:             sp.GetRocketPool(),
 		gasThreshold:   gasThreshold,
@@ -230,7 +232,7 @@ func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, err
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return false, err
 	}
@@ -371,7 +373,7 @@ func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, mini
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.logger, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.res, t.rp, t.logger, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}

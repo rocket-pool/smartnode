@@ -40,7 +40,7 @@ func (f *protocolDaoInitializeVotingContextFactory) Create(args url.Values) (*pr
 
 func (f *protocolDaoInitializeVotingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoInitializeVotingContext, api.ProtocolDaoInitializeVotingData](
-		router, "initialize-voting", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "initialize-voting", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

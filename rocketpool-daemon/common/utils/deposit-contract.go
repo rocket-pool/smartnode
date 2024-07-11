@@ -17,10 +17,9 @@ type DepositContractInfo struct {
 	BeaconDepositContract common.Address
 }
 
-func GetDepositContractInfo(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (*DepositContractInfo, error) {
+func GetDepositContractInfo(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient) (*DepositContractInfo, error) {
 	info := &DepositContractInfo{}
-	resources := cfg.GetRocketPoolResources()
-	info.RPNetwork = uint64(resources.ChainID)
+	info.RPNetwork = uint64(res.ChainID)
 
 	// Get the deposit contract address Rocket Pool will deposit to
 	rpDepositContract, err := rp.GetContract(rocketpool.ContractName_CasperDeposit)

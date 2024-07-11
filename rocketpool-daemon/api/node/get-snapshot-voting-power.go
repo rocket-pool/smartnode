@@ -29,7 +29,7 @@ func (f *nodeGetSnapshotVotingPowerContextFactory) Create(args url.Values) (*nod
 
 func (f *nodeGetSnapshotVotingPowerContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeGetSnapshotVotingPowerContext, api.NodeGetSnapshotVotingPowerData](
-		router, "get-snapshot-voting-power", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "get-snapshot-voting-power", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -44,6 +44,7 @@ type nodeGetSnapshotVotingPowerContext struct {
 func (c *nodeGetSnapshotVotingPowerContext) PrepareData(data *api.NodeGetSnapshotVotingPowerData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
 	// Requirements
@@ -56,7 +57,7 @@ func (c *nodeGetSnapshotVotingPowerContext) PrepareData(data *api.NodeGetSnapsho
 		return types.ResponseStatus_InvalidChainState, err
 	}
 
-	data.VotingPower, err = voting.GetSnapshotVotingPower(cfg, nodeAddress)
+	data.VotingPower, err = voting.GetSnapshotVotingPower(cfg, res, nodeAddress)
 	if err != nil {
 		return types.ResponseStatus_Error, err
 	}

@@ -40,9 +40,10 @@ import (
 // Submit rewards Merkle Tree task
 type SubmitRewardsTree_Stateless struct {
 	ctx         context.Context
-	sp          *services.ServiceProvider
+	sp          services.ISmartNodeServiceProvider
 	logger      *slog.Logger
 	cfg         *config.SmartNodeConfig
+	res         *config.RocketPoolResources
 	w           *wallet.Wallet
 	rp          *rocketpool.RocketPool
 	ec          eth.IExecutionClient
@@ -54,13 +55,14 @@ type SubmitRewardsTree_Stateless struct {
 }
 
 // Create submit rewards Merkle Tree task
-func NewSubmitRewardsTree_Stateless(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, m *state.NetworkStateManager) *SubmitRewardsTree_Stateless {
+func NewSubmitRewardsTree_Stateless(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger, m *state.NetworkStateManager) *SubmitRewardsTree_Stateless {
 	lock := &sync.Mutex{}
 	return &SubmitRewardsTree_Stateless{
 		ctx:       ctx,
 		sp:        sp,
 		logger:    logger.With(slog.String(keys.TaskKey, "Merkle Tree")),
 		cfg:       sp.GetConfig(),
+		res:       sp.GetResources(),
 		w:         sp.GetWallet(),
 		rp:        sp.GetRocketPool(),
 		ec:        sp.GetEthClient(),
@@ -270,7 +272,7 @@ func (t *SubmitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 		t.lock.Unlock()
 
 		// Get an appropriate client
-		client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.logger, snapshotElBlockHeader.Number)
+		client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.res, t.logger, snapshotElBlockHeader.Number)
 		if err != nil {
 			t.handleError(err)
 			return
@@ -297,7 +299,7 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	t.logger.Info("Rewards checkpoint has passed, starting Merkle tree generation in the background.", slog.Uint64(keys.IntervalKey, currentIndex), slog.Uint64(keys.SlotKey, snapshotBeaconBlock), slog.Uint64(keys.BlockKey, elBlockIndex), slog.Time(keys.StartKey, startTime), slog.Time(keys.EndKey, endTime))
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(t.ctx, rp, t.cfg, rp.Client, t.bc, t.logger)
+	mgr, err := state.NewNetworkStateManager(t.ctx, rp, t.cfg, t.res, rp.Client, t.bc, t.logger)
 	if err != nil {
 		return fmt.Errorf("error creating network state manager for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
 	}
@@ -309,7 +311,7 @@ func (t *SubmitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(t.logger, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, nil)
+	treegen, err := rprewards.NewTreeGenerator(t.logger, rp, t.cfg, t.res, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, nil)
 	if err != nil {
 		return fmt.Errorf("error creating Merkle tree generator: %w", err)
 	}
@@ -458,7 +460,7 @@ func (t *SubmitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}

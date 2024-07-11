@@ -12,9 +12,9 @@ import (
 )
 
 // Constructs a pollard for the latest finalized block and saves it to disk
-func createPollard(context context.Context, logger *slog.Logger, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (uint32, []types.VotingTreeNode, error) {
+func createPollard(context context.Context, logger *slog.Logger, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient) (uint32, []types.VotingTreeNode, error) {
 	// Create a proposal manager
-	propMgr, err := proposals.NewProposalManager(context, logger, cfg, rp, bc)
+	propMgr, err := proposals.NewProposalManager(context, logger, cfg, res, rp, bc)
 	if err != nil {
 		return 0, nil, err
 	}

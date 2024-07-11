@@ -12,11 +12,11 @@ import (
 type ServiceHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewServiceHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *ServiceHandler {
+func NewServiceHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *ServiceHandler {
 	h := &ServiceHandler{
 		logger:          logger,
 		ctx:             ctx,

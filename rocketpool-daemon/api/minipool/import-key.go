@@ -45,7 +45,7 @@ func (f *minipoolImportKeyContextFactory) Create(args url.Values) (*minipoolImpo
 
 func (f *minipoolImportKeyContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*minipoolImportKeyContext, types.SuccessData](
-		router, "import-key", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "import-key", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

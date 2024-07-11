@@ -44,7 +44,7 @@ func (f *protocolDaoProposeRewardsPercentagesContextFactory) Create(args url.Val
 
 func (f *protocolDaoProposeRewardsPercentagesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeRewardsPercentagesContext, api.ProtocolDaoGeneralProposeData](
-		router, "rewards-percentages/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "rewards-percentages/propose", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -56,6 +56,7 @@ type protocolDaoProposeRewardsPercentagesContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
 	cfg         *config.SmartNodeConfig
+	res         *config.RocketPoolResources
 	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
@@ -70,6 +71,7 @@ func (c *protocolDaoProposeRewardsPercentagesContext) Initialize() (types.Respon
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.bc = sp.GetBeaconClient()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
@@ -121,7 +123,7 @@ func (c *protocolDaoProposeRewardsPercentagesContext) PrepareData(data *api.Prot
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.res, c.bc)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}

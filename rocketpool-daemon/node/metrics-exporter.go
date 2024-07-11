@@ -19,7 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )
 
-func runMetricsServer(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger, stateLocker *collectors.StateLocker, wg *sync.WaitGroup,
+func runMetricsServer(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger, stateLocker *collectors.StateLocker, wg *sync.WaitGroup,
 	scrubCollector *wc.ScrubCollector, bondReductionCollector *wc.BondReductionCollector, soloMigrationCollector *wc.SoloMigrationCollector) *http.Server {
 	// Get services
 	cfg := sp.GetConfig()

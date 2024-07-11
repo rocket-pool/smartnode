@@ -48,7 +48,7 @@ services:
       - BITFLY_NODE_METRICS_ENDPOINT={{.Metrics.BitflyNodeMetrics.Endpoint}}
       - BITFLY_NODE_METRICS_MACHINE_NAME={{.Metrics.BitflyNodeMetrics.MachineName}}
       - MEV_BOOST_URL={{.MevBoostUrl}}
-      - RETH_ADDRESS={{.GetRocketPoolResources.RethAddress.Hex}}
+      - RETH_ADDRESS={{.GetResources.RethAddress.Hex}}
       {{- /* Client-specific values */}}
       {{- if eq .LocalBeaconClient.BeaconNode.String "teku"}}
       - TEKU_JVM_HEAP_SIZE={{.LocalBeaconClient.Teku.JvmHeapSize}}

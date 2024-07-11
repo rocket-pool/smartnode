@@ -34,7 +34,7 @@ func (f *networkDepositInfoContextFactory) Create(args url.Values) (*networkDepo
 
 func (f *networkDepositInfoContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkDepositInfoContext, api.NetworkDepositContractInfoData](
-		router, "deposit-contract-info", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "deposit-contract-info", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -51,6 +51,7 @@ func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContract
 	sp := c.handler.serviceProvider
 	rp := sp.GetRocketPool()
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	bc := sp.GetBeaconClient()
 	ctx := c.handler.ctx
 
@@ -70,7 +71,7 @@ func (c *networkDepositInfoContext) PrepareData(data *api.NetworkDepositContract
 	}
 
 	// Get the deposit contract info
-	info, err := rputils.GetDepositContractInfo(ctx, rp, cfg, bc)
+	info, err := rputils.GetDepositContractInfo(ctx, rp, cfg, res, bc)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting deposit contract info: %w", err)
 	}

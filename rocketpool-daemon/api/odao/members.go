@@ -32,7 +32,7 @@ func (f *oracleDaoMembersContextFactory) Create(args url.Values) (*oracleDaoMemb
 
 func (f *oracleDaoMembersContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoMembersContext, api.OracleDaoMembersData](
-		router, "members", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "members", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

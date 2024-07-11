@@ -36,6 +36,7 @@ type treeGeneratorImpl_v8 struct {
 	logger                 *slog.Logger
 	rp                     *rocketpool.RocketPool
 	cfg                    *config.SmartNodeConfig
+	res                    *config.RocketPoolResources
 	bc                     beacon.IBeaconClient
 	opts                   *bind.CallOpts
 	nodeDetails            []*NodeSmoothingDetails
@@ -103,12 +104,13 @@ func (r *treeGeneratorImpl_v8) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v8) generateTree(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (sharedtypes.IRewardsFile, error) {
+func (r *treeGeneratorImpl_v8) generateTree(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient) (sharedtypes.IRewardsFile, error) {
 	r.logger.Info("Started rewards tree generation.", slog.Uint64(keys.RulesetKey, r.rewardsFile.RulesetVersion))
 
 	// Provision some struct params
 	r.rp = rp
 	r.cfg = cfg
+	r.res = res
 	r.bc = bc
 	r.validNetworkCache = map[uint64]bool{
 		0: true,
@@ -174,11 +176,12 @@ func (r *treeGeneratorImpl_v8) generateTree(context context.Context, rp *rocketp
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v8) approximateStakerShareOfSmoothingPool(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, bc beacon.IBeaconClient) (*big.Int, error) {
+func (r *treeGeneratorImpl_v8) approximateStakerShareOfSmoothingPool(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient) (*big.Int, error) {
 	r.logger.Info("Approximating rewards tree.", slog.Uint64(keys.RulesetKey, r.rewardsFile.RulesetVersion))
 
 	r.rp = rp
 	r.cfg = cfg
+	r.res = res
 	r.bc = bc
 	r.validNetworkCache = map[uint64]bool{
 		0: true,
@@ -524,7 +527,7 @@ func (r *treeGeneratorImpl_v8) calculateEthRewards(context context.Context, chec
 
 	// Get the start time of this interval based on the event from the previous one
 	//previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts) // This is immutable so querying at the head is fine and mitigates issues around calls for pruned EL state
-	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, nil)
+	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.res, r.rewardsFile.Index-1, nil)
 	if err != nil {
 		return err
 	}

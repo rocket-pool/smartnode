@@ -43,7 +43,7 @@ func (f *oracleDaoProposeInviteContextFactory) Create(args url.Values) (*oracleD
 
 func (f *oracleDaoProposeInviteContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoProposeInviteContext, api.OracleDaoProposeInviteData](
-		router, "propose-invite", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "propose-invite", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

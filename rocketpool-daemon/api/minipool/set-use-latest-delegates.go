@@ -35,7 +35,7 @@ func (f *minipoolSetUseLatestDelegatesContextFactory) Create(args url.Values) (*
 
 func (f *minipoolSetUseLatestDelegatesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolSetUseLatestDelegatesContext, types.BatchTxInfoData](
-		router, "delegate/set-use-latest", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "delegate/set-use-latest", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

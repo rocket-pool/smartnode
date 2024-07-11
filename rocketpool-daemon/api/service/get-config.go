@@ -27,7 +27,7 @@ func (f *serviceGetConfigContextFactory) Create(args url.Values) (*serviceGetCon
 
 func (f *serviceGetConfigContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*serviceGetConfigContext, api.ServiceGetConfigData](
-		router, "get-config", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "get-config", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

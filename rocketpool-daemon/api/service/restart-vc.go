@@ -29,7 +29,7 @@ func (f *serviceRestartVcContextFactory) Create(args url.Values) (*serviceRestar
 
 func (f *serviceRestartVcContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*serviceRestartVcContext, types.SuccessData](
-		router, "restart-vc", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "restart-vc", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

@@ -35,7 +35,7 @@ func (f *protocolDaoSetVotingDelegateContextFactory) Create(args url.Values) (*p
 
 func (f *protocolDaoSetVotingDelegateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*protocolDaoSetSnapshotDelegateContext, types.TxInfoData](
-		router, "voting-delegate/set", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "voting-delegate/set", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

@@ -39,7 +39,7 @@ func (f *walletTestRecoverContextFactory) Create(args url.Values) (*walletTestRe
 
 func (f *walletTestRecoverContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletTestRecoverContext, api.WalletRecoverData](
-		router, "test-recover", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "test-recover", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -57,7 +57,7 @@ type walletTestRecoverContext struct {
 
 func (c *walletTestRecoverContext) PrepareData(data *api.WalletRecoverData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
-	rs := sp.GetNetworkResources()
+	rs := sp.GetResources()
 	vMgr := sp.GetValidatorManager()
 
 	if !c.skipValidatorKeyRecovery {

@@ -44,7 +44,7 @@ func (f *auctionClaimContextFactory) Create(args url.Values) (*auctionClaimConte
 
 func (f *auctionClaimContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionClaimContext, types.DataBatch[api.AuctionClaimFromLotData]](
-		router, "lots/claim", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "lots/claim", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

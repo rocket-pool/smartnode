@@ -42,9 +42,10 @@ const (
 // Submit RPL price task
 type SubmitRplPrice struct {
 	ctx              context.Context
-	sp               *services.ServiceProvider
+	sp               services.ISmartNodeServiceProvider
 	logger           *slog.Logger
 	cfg              *config.SmartNodeConfig
+	res              *config.RocketPoolResources
 	ec               eth.IExecutionClient
 	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
@@ -55,13 +56,14 @@ type SubmitRplPrice struct {
 }
 
 // Create submit RPL price task
-func NewSubmitRplPrice(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *SubmitRplPrice {
+func NewSubmitRplPrice(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger) *SubmitRplPrice {
 	lock := &sync.Mutex{}
 	return &SubmitRplPrice{
 		ctx:              ctx,
 		sp:               sp,
 		logger:           logger.With(slog.String(keys.TaskKey, "Price Report")),
 		cfg:              sp.GetConfig(),
+		res:              sp.GetResources(),
 		ec:               sp.GetEthClient(),
 		w:                sp.GetWallet(),
 		rp:               sp.GetRocketPool(),
@@ -215,14 +217,14 @@ func (t *SubmitRplPrice) getRplTwap(blockNumber uint64) (*big.Int, error) {
 		BlockNumber: big.NewInt(int64(blockNumber)),
 	}
 
-	rs := t.cfg.GetRocketPoolResources()
+	rs := t.sp.GetResources()
 	poolAddress := rs.RplTwapPoolAddress
 	if poolAddress == nil {
 		return nil, fmt.Errorf("RPL TWAP pool contract not deployed on this network")
 	}
 
 	// Get a client with the block number available
-	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.logger, opts.BlockNumber)
+	client, err := eth1.GetBestApiClient(t.rp, t.cfg, t.res, t.logger, opts.BlockNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -304,7 +306,7 @@ func (t *SubmitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
@@ -320,56 +322,56 @@ func (t *SubmitRplPrice) submitRplPrice(blockNumber uint64, slotTimestamp uint64
 func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 	// Get services
 	cfg := t.sp.GetConfig()
+	res := t.sp.GetResources()
 	rp := t.sp.GetRocketPool()
 	ec := t.sp.GetEthClient()
 	txMgr := t.sp.GetTransactionManager()
-	rs := cfg.GetRocketPoolResources()
 
 	// Create bindings
 	errs := []error{}
-	optimismMessengerAddress := rs.OptimismPriceMessengerAddress
+	optimismMessengerAddress := res.OptimismPriceMessengerAddress
 	var optimismMessenger *contracts.OptimismMessenger
 	if optimismMessengerAddress != nil {
 		var err error
 		optimismMessenger, err = contracts.NewOptimismMessenger(*optimismMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	polygonMessengerAddress := rs.PolygonPriceMessengerAddress
+	polygonMessengerAddress := res.PolygonPriceMessengerAddress
 	var polygonMessenger *contracts.PolygonMessenger
 	if polygonMessengerAddress != nil {
 		var err error
 		polygonMessenger, err = contracts.NewPolygonMessenger(*polygonMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	arbitrumMessengerAddress := rs.ArbitrumPriceMessengerAddress
+	arbitrumMessengerAddress := res.ArbitrumPriceMessengerAddress
 	var arbitrumMessenger *contracts.ArbitrumMessenger
 	if arbitrumMessengerAddress != nil {
 		var err error
 		arbitrumMessenger, err = contracts.NewArbitrumMessenger(*arbitrumMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	arbitrumMessengerV2Address := rs.ArbitrumPriceMessengerAddressV2
+	arbitrumMessengerV2Address := res.ArbitrumPriceMessengerAddressV2
 	var arbitrumMessengerV2 *contracts.ArbitrumMessenger
 	if arbitrumMessengerV2Address != nil {
 		var err error
 		arbitrumMessengerV2, err = contracts.NewArbitrumMessenger(*arbitrumMessengerV2Address, ec, txMgr)
 		errs = append(errs, err)
 	}
-	zksyncEraMessengerAddress := rs.ZkSyncEraPriceMessengerAddress
+	zksyncEraMessengerAddress := res.ZkSyncEraPriceMessengerAddress
 	var zkSyncEraMessenger *contracts.ZkSyncEraMessenger
 	if zksyncEraMessengerAddress != nil {
 		var err error
 		zkSyncEraMessenger, err = contracts.NewZkSyncEraMessenger(*zksyncEraMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	baseMessengerAddress := rs.BasePriceMessengerAddress
+	baseMessengerAddress := res.BasePriceMessengerAddress
 	var baseMessenger *contracts.OptimismMessenger // Base uses the same contract as Optimism
 	if baseMessengerAddress != nil {
 		var err error
 		baseMessenger, err = contracts.NewOptimismMessenger(*baseMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 	}
-	scrollMessengerAddress := rs.ScrollPriceMessengerAddress
+	scrollMessengerAddress := res.ScrollPriceMessengerAddress
 	var scrollMessenger *contracts.ScrollMessenger
 	var scrollEstimator *contracts.ScrollFeeEstimator
 	if scrollMessengerAddress != nil {
@@ -377,7 +379,7 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 		scrollMessenger, err = contracts.NewScrollMessenger(*scrollMessengerAddress, ec, txMgr)
 		errs = append(errs, err)
 
-		scrollEstimator, err = contracts.NewScrollFeeEstimator(*rs.ScrollFeeEstimatorAddress, ec)
+		scrollEstimator, err = contracts.NewScrollFeeEstimator(*res.ScrollFeeEstimatorAddress, ec)
 		errs = append(errs, err)
 	}
 	if err := errors.Join(errs...); err != nil {
@@ -459,25 +461,25 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 	if index == indexToSubmit {
 		errs := []error{}
 		if optimismStale {
-			errs = append(errs, t.updateOptimism(cfg, rp, optimismMessenger, blockNumber, opts))
+			errs = append(errs, t.updateOptimism(cfg, res, rp, optimismMessenger, blockNumber, opts))
 		}
 		if polygonStale {
-			errs = append(errs, t.updatePolygon(cfg, rp, polygonMessenger, blockNumber, opts))
+			errs = append(errs, t.updatePolygon(cfg, res, rp, polygonMessenger, blockNumber, opts))
 		}
 		if arbitrumStale {
-			errs = append(errs, t.updateArbitrum(cfg, rp, arbitrumMessenger, "V1", blockNumber, opts))
+			errs = append(errs, t.updateArbitrum(cfg, res, rp, arbitrumMessenger, "V1", blockNumber, opts))
 		}
 		if arbitrumV2Stale {
-			errs = append(errs, t.updateArbitrum(cfg, rp, arbitrumMessengerV2, "V2", blockNumber, opts))
+			errs = append(errs, t.updateArbitrum(cfg, res, rp, arbitrumMessengerV2, "V2", blockNumber, opts))
 		}
 		if zkSyncEraStale {
-			errs = append(errs, t.updateZkSyncEra(cfg, rp, zkSyncEraMessenger, blockNumber, opts))
+			errs = append(errs, t.updateZkSyncEra(cfg, res, rp, zkSyncEraMessenger, blockNumber, opts))
 		}
 		if baseStale {
-			errs = append(errs, t.updateBase(cfg, rp, baseMessenger, blockNumber, opts))
+			errs = append(errs, t.updateBase(cfg, res, rp, baseMessenger, blockNumber, opts))
 		}
 		if scrollStale {
-			errs = append(errs, t.updateScroll(cfg, rp, ec, scrollMessenger, scrollEstimator, blockNumber, opts))
+			errs = append(errs, t.updateScroll(cfg, res, rp, ec, scrollMessenger, scrollEstimator, blockNumber, opts))
 		}
 		return errors.Join(errs...)
 	}
@@ -485,7 +487,7 @@ func (t *SubmitRplPrice) updateL2Prices(state *state.NetworkState) error {
 }
 
 // Submit a price update to Optimism
-func (t *SubmitRplPrice) updateOptimism(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, optimismMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateOptimism(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, optimismMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.logger.Info("Submitting rate to Optimism...")
 	txInfo, err := optimismMessenger.SubmitRate(opts)
 	if err != nil {
@@ -507,7 +509,7 @@ func (t *SubmitRplPrice) updateOptimism(cfg *config.SmartNodeConfig, rp *rocketp
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, res, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
@@ -518,7 +520,7 @@ func (t *SubmitRplPrice) updateOptimism(cfg *config.SmartNodeConfig, rp *rocketp
 }
 
 // Submit a price update to Polygon
-func (t *SubmitRplPrice) updatePolygon(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, polygonmMessenger *contracts.PolygonMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updatePolygon(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, polygonmMessenger *contracts.PolygonMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.logger.Info("Submitting rate to Polygon...")
 	txInfo, err := polygonmMessenger.SubmitRate(opts)
 	if err != nil {
@@ -540,7 +542,7 @@ func (t *SubmitRplPrice) updatePolygon(cfg *config.SmartNodeConfig, rp *rocketpo
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, res, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
@@ -551,7 +553,7 @@ func (t *SubmitRplPrice) updatePolygon(cfg *config.SmartNodeConfig, rp *rocketpo
 }
 
 // Submit a price update to Arbitrum
-func (t *SubmitRplPrice) updateArbitrum(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, arbitrumMessenger *contracts.ArbitrumMessenger, version string, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateArbitrum(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, arbitrumMessenger *contracts.ArbitrumMessenger, version string, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.logger.Info("Submitting rate to Arbitrum...")
 
 	// Get the current network recommended max fee
@@ -600,7 +602,7 @@ func (t *SubmitRplPrice) updateArbitrum(cfg *config.SmartNodeConfig, rp *rocketp
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, res, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
@@ -611,7 +613,7 @@ func (t *SubmitRplPrice) updateArbitrum(cfg *config.SmartNodeConfig, rp *rocketp
 }
 
 // Submit a price update to zkSync Era
-func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, zkSyncEraMessenger *contracts.ZkSyncEraMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, zkSyncEraMessenger *contracts.ZkSyncEraMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.logger.Info("Submitting rate to zkSync Era...")
 	// Constants for zkSync Era
 	l1GasPerPubdataByte := big.NewInt(17)
@@ -652,7 +654,7 @@ func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.SmartNodeConfig, rp *rocket
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, res, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
@@ -663,7 +665,7 @@ func (t *SubmitRplPrice) updateZkSyncEra(cfg *config.SmartNodeConfig, rp *rocket
 }
 
 // Submit a price update to Base
-func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, baseMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, baseMessenger *contracts.OptimismMessenger, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.logger.Info("Submitting rate to Base...")
 	txInfo, err := baseMessenger.SubmitRate(opts)
 	if err != nil {
@@ -685,7 +687,7 @@ func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, rp *rocketpool.
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, res, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}
@@ -696,7 +698,7 @@ func (t *SubmitRplPrice) updateBase(cfg *config.SmartNodeConfig, rp *rocketpool.
 }
 
 // Submit a price update to Scroll
-func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, ec eth.IExecutionClient, scrollMessenger *contracts.ScrollMessenger, scrollEstimator *contracts.ScrollFeeEstimator, blockNumber uint64, opts *bind.TransactOpts) error {
+func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, ec eth.IExecutionClient, scrollMessenger *contracts.ScrollMessenger, scrollEstimator *contracts.ScrollFeeEstimator, blockNumber uint64, opts *bind.TransactOpts) error {
 	t.logger.Info("Submitting rate to Scroll...")
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(cfg))
 
@@ -734,7 +736,7 @@ func (t *SubmitRplPrice) updateScroll(cfg *config.SmartNodeConfig, rp *rocketpoo
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(cfg, rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(cfg, res, rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}

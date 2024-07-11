@@ -53,7 +53,7 @@ func (f *nodeDepositContextFactory) Create(args url.Values) (*nodeDepositContext
 
 func (f *nodeDepositContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeDepositContext, api.NodeDepositData](
-		router, "deposit", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "deposit", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -64,6 +64,7 @@ func (f *nodeDepositContextFactory) RegisterRoute(router *mux.Router) {
 type nodeDepositContext struct {
 	handler *NodeHandler
 	cfg     *config.SmartNodeConfig
+	res     *config.RocketPoolResources
 	rp      *rocketpool.RocketPool
 	bc      beacon.IBeaconClient
 	w       *nodewallet.Wallet
@@ -82,6 +83,7 @@ type nodeDepositContext struct {
 func (c *nodeDepositContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	c.w = sp.GetWallet()
@@ -135,7 +137,8 @@ func (c *nodeDepositContext) GetState(mc *batch.MultiCaller) {
 
 func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	ctx := c.handler.ctx
-	rs := c.cfg.GetNetworkResources()
+	sp := c.handler.serviceProvider
+	rs := sp.GetResources()
 
 	// Initial population
 	data.CreditBalance = c.node.UsableCreditAndDonatedBalance.Get()
@@ -196,7 +199,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	}
 
 	// Make sure ETH2 is on the correct chain
-	depositContractInfo, err := rputils.GetDepositContractInfo(ctx, c.rp, c.cfg, c.bc)
+	depositContractInfo, err := rputils.GetDepositContractInfo(ctx, c.rp, c.cfg, c.res, c.bc)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 	}

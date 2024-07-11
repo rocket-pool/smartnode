@@ -42,7 +42,7 @@ func (f *securityVoteOnProposalContextFactory) Create(args url.Values) (*securit
 
 func (f *securityVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityVoteOnProposalContext, api.SecurityVoteOnProposalData](
-		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

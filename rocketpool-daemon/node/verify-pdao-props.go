@@ -40,9 +40,10 @@ type defeat struct {
 
 type VerifyPdaoProps struct {
 	ctx                 context.Context
-	sp                  *services.ServiceProvider
+	sp                  services.ISmartNodeServiceProvider
 	logger              *slog.Logger
 	cfg                 *config.SmartNodeConfig
+	res                 *config.RocketPoolResources
 	w                   *wallet.Wallet
 	rp                  *rocketpool.RocketPool
 	bc                  beacon.IBeaconClient
@@ -60,7 +61,7 @@ type VerifyPdaoProps struct {
 	intervalSize *big.Int
 }
 
-func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *VerifyPdaoProps {
+func NewVerifyPdaoProps(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger) *VerifyPdaoProps {
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Verify PDAO Proposals"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
@@ -69,6 +70,7 @@ func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logge
 		sp:                  sp,
 		logger:              log,
 		cfg:                 cfg,
+		res:                 sp.GetResources(),
 		w:                   sp.GetWallet(),
 		rp:                  sp.GetRocketPool(),
 		bc:                  sp.GetBeaconClient(),
@@ -86,7 +88,7 @@ func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logge
 func (t *VerifyPdaoProps) Run(state *state.NetworkState) error {
 	// Bindings
 	t.nodeAddress, _ = t.w.GetAddress()
-	propMgr, err := proposals.NewProposalManager(t.ctx, t.logger, t.cfg, t.rp, t.bc)
+	propMgr, err := proposals.NewProposalManager(t.ctx, t.logger, t.cfg, t.res, t.rp, t.bc)
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager: %w", err)
 	}
@@ -238,7 +240,7 @@ func (t *VerifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 	}
 
 	// Get and cache all root submissions for the proposals
-	rs := t.cfg.GetRocketPoolResources()
+	rs := t.sp.GetResources()
 	rootSubmissionEvents, err := t.pdaoMgr.GetRootSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, rs.PreviousProtocolDaoVerifierAddresses, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error scanning for RootSubmitted events: %w", err)
@@ -418,7 +420,7 @@ func (t *VerifyPdaoProps) submitTxs(submissions []*eth.TransactionSubmission) er
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.logger, submissions, nil, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.res, t.rp, t.logger, submissions, nil, opts)
 	if err != nil {
 		return err
 	}

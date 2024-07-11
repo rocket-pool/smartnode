@@ -32,7 +32,7 @@ type BeaconCollector struct {
 	ctx context.Context
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -42,7 +42,7 @@ type BeaconCollector struct {
 }
 
 // Create a new BeaconCollector instance
-func NewBeaconCollector(logger *log.Logger, ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *BeaconCollector {
+func NewBeaconCollector(logger *log.Logger, ctx context.Context, sp services.ISmartNodeServiceProvider, stateLocker *StateLocker) *BeaconCollector {
 	subsystem := "beacon"
 	sublogger := logger.With(slog.String(keys.TaskKey, "Beacon Collector"))
 	return &BeaconCollector{

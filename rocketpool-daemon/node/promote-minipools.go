@@ -27,10 +27,11 @@ import (
 
 // Promote minipools task
 type PromoteMinipools struct {
-	sp             *services.ServiceProvider
+	sp             services.ISmartNodeServiceProvider
 	logger         *slog.Logger
 	alerter        *alerting.Alerter
 	cfg            *config.SmartNodeConfig
+	res            *config.RocketPoolResources
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
 	mpMgr          *minipool.MinipoolManager
@@ -40,7 +41,7 @@ type PromoteMinipools struct {
 }
 
 // Create promote minipools task
-func NewPromoteMinipools(sp *services.ServiceProvider, logger *log.Logger) *PromoteMinipools {
+func NewPromoteMinipools(sp services.ISmartNodeServiceProvider, logger *log.Logger) *PromoteMinipools {
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Promote Minipools"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
@@ -49,6 +50,7 @@ func NewPromoteMinipools(sp *services.ServiceProvider, logger *log.Logger) *Prom
 		logger:         log,
 		alerter:        alerting.NewAlerter(cfg, logger),
 		cfg:            cfg,
+		res:            sp.GetResources(),
 		w:              sp.GetWallet(),
 		rp:             sp.GetRocketPool(),
 		gasThreshold:   cfg.AutoTxGasThreshold.Value,
@@ -219,7 +221,7 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.logger, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.res, t.rp, t.logger, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}

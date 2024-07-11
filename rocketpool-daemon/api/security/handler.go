@@ -13,11 +13,11 @@ import (
 type SecurityCouncilHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewSecurityCouncilHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *SecurityCouncilHandler {
+func NewSecurityCouncilHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *SecurityCouncilHandler {
 	h := &SecurityCouncilHandler{
 		logger:          logger,
 		ctx:             ctx,

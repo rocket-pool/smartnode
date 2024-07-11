@@ -39,7 +39,7 @@ func (f *nodeSetSmoothingPoolRegistrationStatusContextFactory) Create(args url.V
 
 func (f *nodeSetSmoothingPoolRegistrationStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetSmoothingPoolRegistrationStatusContext, api.NodeSetSmoothingPoolRegistrationStatusData](
-		router, "set-smoothing-pool-registration-state", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "set-smoothing-pool-registration-state", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

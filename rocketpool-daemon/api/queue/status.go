@@ -34,7 +34,7 @@ func (f *queueStatusContextFactory) Create(args url.Values) (*queueStatusContext
 
 func (f *queueStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*queueStatusContext, api.QueueStatusData](
-		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

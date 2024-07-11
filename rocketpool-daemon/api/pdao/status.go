@@ -36,7 +36,7 @@ func (f *protocolDaoGetStatusContextFactory) Create(args url.Values) (*protocolD
 
 func (f *protocolDaoGetStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*protocolDaoGetStatusContext, api.ProtocolDAOStatusResponse](
-		router, "get-status", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "get-status", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -47,6 +47,7 @@ func (f *protocolDaoGetStatusContextFactory) RegisterRoute(router *mux.Router) {
 type protocolDaoGetStatusContext struct {
 	handler *ProtocolDaoHandler
 	cfg     *config.SmartNodeConfig
+	res     *config.RocketPoolResources
 	rp      *rocketpool.RocketPool
 	bc      beacon.IBeaconClient
 
@@ -58,6 +59,7 @@ func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusRes
 	rp := sp.GetRocketPool()
 	ec := sp.GetEthClient()
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	ctx := c.handler.ctx
@@ -75,7 +77,7 @@ func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusRes
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
 	}
-	c.propMgr, err = proposals.NewProposalManager(ctx, c.handler.logger.Logger, c.cfg, c.rp, c.bc)
+	c.propMgr, err = proposals.NewProposalManager(ctx, c.handler.logger.Logger, c.cfg, c.res, c.rp, c.bc)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal manager: %w", err)
 	}

@@ -40,7 +40,7 @@ func (f *networkStatsContextFactory) Create(args url.Values) (*networkStatsConte
 
 func (f *networkStatsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkStatsContext, api.NetworkStatsData](
-		router, "stats", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "stats", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

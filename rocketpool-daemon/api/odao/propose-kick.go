@@ -43,7 +43,7 @@ func (f *oracleDaoProposeKickContextFactory) Create(args url.Values) (*oracleDao
 
 func (f *oracleDaoProposeKickContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoProposeKickContext, api.OracleDaoProposeKickData](
-		router, "propose-kick", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "propose-kick", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

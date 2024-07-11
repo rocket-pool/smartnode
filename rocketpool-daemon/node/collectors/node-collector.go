@@ -94,7 +94,7 @@ type NodeCollector struct {
 	ctx context.Context
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -116,7 +116,7 @@ type NodeCollector struct {
 }
 
 // Create a new NodeCollector instance
-func NewNodeCollector(logger *log.Logger, ctx context.Context, sp *services.ServiceProvider, stateLocker *StateLocker) *NodeCollector {
+func NewNodeCollector(logger *log.Logger, ctx context.Context, sp services.ISmartNodeServiceProvider, stateLocker *StateLocker) *NodeCollector {
 	subsystem := "node"
 	sublogger := logger.With(slog.String(keys.TaskKey, "Node Collector"))
 	return &NodeCollector{
@@ -243,6 +243,7 @@ func (c *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get services
 	rp := c.sp.GetRocketPool()
 	cfg := c.sp.GetConfig()
+	res := c.sp.GetResources()
 	ec := c.sp.GetEthClient()
 	bc := c.sp.GetBeaconClient()
 	nodeAddress, hasNodeAddress := c.sp.GetWallet().GetAddress()
@@ -306,7 +307,7 @@ func (c *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			previousRewardIndex = previousRewardIndex - 1
 		}
 
-		previousInterval, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, previousRewardIndex, nil)
+		previousInterval, err := rprewards.GetIntervalInfo(rp, cfg, res, nodeAddress, previousRewardIndex, nil)
 		if err != nil {
 			return err
 		}
@@ -321,7 +322,7 @@ func (c *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		for _, claimedInterval := range status.Claimed {
 			_, exists := c.handledIntervals[claimedInterval]
 			if !exists {
-				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, claimedInterval, nil)
+				intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, res, nodeAddress, claimedInterval, nil)
 				if err != nil {
 					return err
 				}
@@ -336,7 +337,7 @@ func (c *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		}
 		// Get the unclaimed rewards
 		for _, unclaimedInterval := range status.Unclaimed {
-			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, unclaimedInterval, nil)
+			intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, res, nodeAddress, unclaimedInterval, nil)
 			if err != nil {
 				return err
 			}

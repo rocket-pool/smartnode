@@ -39,7 +39,7 @@ func (f *nodeGetRewardsInfoContextFactory) Create(args url.Values) (*nodeGetRewa
 
 func (f *nodeGetRewardsInfoContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeGetRewardsInfoContext, api.NodeGetRewardsInfoData](
-		router, "get-rewards-info", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "get-rewards-info", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -50,6 +50,7 @@ func (f *nodeGetRewardsInfoContextFactory) RegisterRoute(router *mux.Router) {
 type nodeGetRewardsInfoContext struct {
 	handler *NodeHandler
 	cfg     *config.SmartNodeConfig
+	res     *config.RocketPoolResources
 	rp      *rocketpool.RocketPool
 
 	node        *node.Node
@@ -61,6 +62,7 @@ type nodeGetRewardsInfoContext struct {
 func (c *nodeGetRewardsInfoContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.rp = sp.GetRocketPool()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
 
@@ -119,7 +121,7 @@ func (c *nodeGetRewardsInfoContext) PrepareData(data *api.NodeGetRewardsInfoData
 
 	// Get the info for each unclaimed interval
 	for _, unclaimedInterval := range claimStatus.Unclaimed {
-		intervalInfo, err := rprewards.GetIntervalInfo(c.rp, c.cfg, c.node.Address, unclaimedInterval, nil)
+		intervalInfo, err := rprewards.GetIntervalInfo(c.rp, c.cfg, c.res, c.node.Address, unclaimedInterval, nil)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error getting interval %d info: %w", unclaimedInterval, err)
 		}

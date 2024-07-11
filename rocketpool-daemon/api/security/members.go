@@ -35,7 +35,7 @@ func (f *securityMembersContextFactory) Create(args url.Values) (*securityMember
 
 func (f *securityMembersContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityMembersContext, api.SecurityMembersData](
-		router, "members", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "members", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

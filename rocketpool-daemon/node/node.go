@@ -55,9 +55,11 @@ type TaskLoop struct {
 	logger            *log.Logger
 	alerter           *alerting.Alerter
 	ctx               context.Context
-	sp                *services.ServiceProvider
+	sp                services.ISmartNodeServiceProvider
 	wg                *sync.WaitGroup
 	cfg               *config.SmartNodeConfig
+	res               *config.RocketPoolResources
+	rs                *config.RocketPoolResources
 	rp                *rocketpool.RocketPool
 	ec                eth.IExecutionClient
 	bc                beacon.IBeaconClient
@@ -88,7 +90,7 @@ type TaskLoop struct {
 	secondsDelta                float64
 }
 
-func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
+func NewTaskLoop(sp services.ISmartNodeServiceProvider, wg *sync.WaitGroup) *TaskLoop {
 	logger := sp.GetTasksLogger()
 	ctx := logger.CreateContextWithLogger(sp.GetBaseContext())
 	t := &TaskLoop{
@@ -98,6 +100,8 @@ func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
 		ctx:                         ctx,
 		wg:                          wg,
 		cfg:                         sp.GetConfig(),
+		res:                         sp.GetResources(),
+		rs:                          sp.GetResources(),
 		rp:                          sp.GetRocketPool(),
 		ec:                          sp.GetEthClient(),
 		bc:                          sp.GetBeaconClient(),
@@ -140,7 +144,7 @@ func (t *TaskLoop) Run() error {
 	}
 
 	// Handle the initial fee recipient file deployment
-	err := deployDefaultFeeRecipientFile(t.cfg)
+	err := deployDefaultFeeRecipientFile(t.cfg, t.rs)
 	if err != nil {
 		return err
 	}
@@ -248,7 +252,7 @@ func (t *TaskLoop) waitUntilReady() waitUntilReadyResult {
 
 	// Create the network state manager
 	if t.stateMgr == nil {
-		t.stateMgr, err = state.NewNetworkStateManager(t.ctx, t.rp, t.cfg, t.ec, t.bc, t.logger.Logger)
+		t.stateMgr, err = state.NewNetworkStateManager(t.ctx, t.rp, t.cfg, t.res, t.ec, t.bc, t.logger.Logger)
 		if err != nil {
 			t.logger.Error("Error creating network state manager", log.Err(err))
 			return t.sleepAndReturnReadyResult()
@@ -405,7 +409,7 @@ func (t *TaskLoop) runTasks() bool {
 }
 
 // Copy the default fee recipient file into the proper location
-func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig) error {
+func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig, rs *config.RocketPoolResources) error {
 	feeRecipientPath := cfg.GetFeeRecipientFilePath()
 	_, err := os.Stat(feeRecipientPath)
 	if os.IsNotExist(err) {
@@ -417,7 +421,6 @@ func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig) error {
 		}
 
 		// Create the file
-		rs := cfg.GetRocketPoolResources()
 		var defaultFeeRecipientFileContents string
 		if cfg.IsNativeMode {
 			// Native mode needs an environment variable definition

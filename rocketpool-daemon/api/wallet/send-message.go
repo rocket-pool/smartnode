@@ -35,7 +35,7 @@ func (f *walletSendMessageContextFactory) Create(args url.Values) (*walletSendMe
 
 func (f *walletSendMessageContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletSendMessageContext, types.TxInfoData](
-		router, "send-message", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "send-message", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

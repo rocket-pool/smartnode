@@ -35,7 +35,7 @@ func (f *minipoolReduceBondContextFactory) Create(args url.Values) (*minipoolRed
 
 func (f *minipoolReduceBondContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolReduceBondContext, types.BatchTxInfoData](
-		router, "reduce-bond", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "reduce-bond", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

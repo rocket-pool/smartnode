@@ -43,7 +43,7 @@ func (f *minipoolExitContextFactory) Create(args url.Values) (*minipoolExitConte
 
 func (f *minipoolExitContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*minipoolExitContext, types.SuccessData](
-		router, "exit", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "exit", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

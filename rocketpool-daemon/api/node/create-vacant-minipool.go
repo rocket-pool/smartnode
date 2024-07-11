@@ -49,7 +49,7 @@ func (f *nodeCreateVacantMinipoolContextFactory) Create(args url.Values) (*nodeC
 
 func (f *nodeCreateVacantMinipoolContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeCreateVacantMinipoolContext, api.NodeCreateVacantMinipoolData](
-		router, "create-vacant-minipool", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "create-vacant-minipool", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -60,6 +60,7 @@ func (f *nodeCreateVacantMinipoolContextFactory) RegisterRoute(router *mux.Route
 type nodeCreateVacantMinipoolContext struct {
 	handler *NodeHandler
 	cfg     *config.SmartNodeConfig
+	res     *config.RocketPoolResources
 	rp      *rocketpool.RocketPool
 	bc      beacon.IBeaconClient
 
@@ -76,6 +77,7 @@ type nodeCreateVacantMinipoolContext struct {
 func (c *nodeCreateVacantMinipoolContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
@@ -162,7 +164,7 @@ func (c *nodeCreateVacantMinipoolContext) PrepareData(data *api.NodeCreateVacant
 		return types.ResponseStatus_Success, nil
 	}
 	// Make sure the BN is on the correct chain
-	depositContractInfo, err := rputils.GetDepositContractInfo(ctx, c.rp, c.cfg, c.bc)
+	depositContractInfo, err := rputils.GetDepositContractInfo(ctx, c.rp, c.cfg, c.res, c.bc)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error verifying the EL and BC are on the same chain: %w", err)
 	}

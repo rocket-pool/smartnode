@@ -42,9 +42,10 @@ const MinScrubSafetyTime = time.Duration(0) * time.Hour
 
 // Submit scrub minipools task
 type SubmitScrubMinipools struct {
-	sp        *services.ServiceProvider
+	sp        services.ISmartNodeServiceProvider
 	logger    *slog.Logger
 	cfg       *config.SmartNodeConfig
+	res       *config.RocketPoolResources
 	w         *wallet.Wallet
 	rp        *rocketpool.RocketPool
 	ec        eth.IExecutionClient
@@ -85,12 +86,13 @@ type minipoolDetails struct {
 }
 
 // Create submit scrub minipools task
-func NewSubmitScrubMinipools(sp *services.ServiceProvider, logger *log.Logger, coll *collectors.ScrubCollector) *SubmitScrubMinipools {
+func NewSubmitScrubMinipools(sp services.ISmartNodeServiceProvider, logger *log.Logger, coll *collectors.ScrubCollector) *SubmitScrubMinipools {
 	lock := &sync.Mutex{}
 	return &SubmitScrubMinipools{
 		sp:        sp,
 		logger:    logger.With(slog.String(keys.TaskKey, "Minipool Scrub")),
 		cfg:       sp.GetConfig(),
+		res:       sp.GetResources(),
 		w:         sp.GetWallet(),
 		rp:        sp.GetRocketPool(),
 		ec:        sp.GetEthClient(),
@@ -520,7 +522,7 @@ func (t *SubmitScrubMinipools) submitVoteScrubMinipool(mp minipool.IMinipool) er
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}

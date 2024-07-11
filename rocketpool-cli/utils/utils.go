@@ -101,7 +101,7 @@ func getTxWatchUrl(rp *client.Client) string {
 		return ""
 	}
 
-	rs := cfg.GetNetworkResources()
+	rs := snCfg.NewRocketPoolResources(cfg.Network.Value)
 	return rs.TxWatchUrl
 }
 

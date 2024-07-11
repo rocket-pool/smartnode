@@ -47,7 +47,7 @@ func (f *protocolDaoProposeKickMultiFromSecurityCouncilContextFactory) Create(ar
 
 func (f *protocolDaoProposeKickMultiFromSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeKickMultiFromSecurityCouncilContext, api.ProtocolDaoProposeKickMultiFromSecurityCouncilData](
-		router, "security/kick-multi", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "security/kick-multi", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -59,6 +59,7 @@ type protocolDaoProposeKickMultiFromSecurityCouncilContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
 	cfg         *config.SmartNodeConfig
+	res         *config.RocketPoolResources
 	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
@@ -72,6 +73,7 @@ func (c *protocolDaoProposeKickMultiFromSecurityCouncilContext) Initialize() (ty
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
@@ -127,7 +129,7 @@ func (c *protocolDaoProposeKickMultiFromSecurityCouncilContext) PrepareData(data
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.res, c.bc)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}

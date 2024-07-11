@@ -13,11 +13,11 @@ import (
 type TxHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewTxHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *TxHandler {
+func NewTxHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *TxHandler {
 	h := &TxHandler{
 		logger:          logger,
 		ctx:             ctx,

@@ -1,12 +1,15 @@
 package services
 
 import (
+	"context"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"sync"
 
 	"github.com/hashicorp/go-version"
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/node-manager-core/node/services"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
@@ -17,12 +20,122 @@ import (
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
+// ==================
+// === Interfaces ===
+// ==================
+
+// Provides access to the Rocket Pool binding and a contract address refreshing method
+type IRocketPoolProvider interface {
+	// Gets the Rocket Pool binding
+	GetRocketPool() *rocketpool.RocketPool
+
+	// Refreshes the Rocket Pool contracts if they've been updated on-chain since they were last loaded by the daemon
+	RefreshRocketPoolContracts() error
+}
+
+// Provides the Smart Node's configuration
+type ISmartNodeConfigProvider interface {
+	// Gets the Smart Node's configuration
+	GetConfig() *config.SmartNodeConfig
+
+	// Gets the Smart Node's list of resources
+	GetResources() *config.RocketPoolResources
+}
+
+// Provides the Smart Node's validator manager
+type IValidatorManagerProvider interface {
+	// Gets the Smart Node's validator manager
+	GetValidatorManager() *validator.ValidatorManager
+}
+
+// Provides a binding for Snapshot's delegation contract
+type ISnapshotDelegationProvider interface {
+	// Gets the Snapshot delegation binding
+	GetSnapshotDelegation() *contracts.SnapshotDelegation
+}
+
+// Provides access to the Smart Node's loggers
+type ILoggerProvider interface {
+	services.ILoggerProvider
+
+	// Gets the Smart Node's watchtower logger
+	GetWatchtowerLogger() *log.Logger
+}
+
+// Provides methods for requiring or waiting for various conditions to be met
+type IRequirementsProvider interface {
+	// Require that the Rocket Pool contracts are loaded
+	RequireRocketPoolContracts(ctx context.Context) (types.ResponseStatus, error)
+
+	// Require that the Ethereum client is synced
+	RequireEthClientSynced(ctx context.Context) error
+
+	// Require that the Beacon chain client is synced
+	RequireBeaconClientSynced(ctx context.Context) error
+
+	// Require the Smart Node has a node address set
+	RequireNodeAddress() error
+
+	// Require the Smart Node has a wallet that's loaded and ready for transactions
+	RequireWalletReady() error
+
+	// Require the node has been registered with the Rocket Pool contracts
+	RequireNodeRegistered(ctx context.Context) (types.ResponseStatus, error)
+
+	// Require the selected network has a binding for the Snapshot delegation contract
+	RequireSnapshot() error
+
+	// Require the node is a member of the Oracle DAO
+	RequireOnOracleDao(ctx context.Context) (types.ResponseStatus, error)
+
+	// Require the node is a member of the Security Council
+	RequireOnSecurityCouncil(ctx context.Context) (types.ResponseStatus, error)
+
+	// Wait for the Ethereum client to be synced
+	WaitEthClientSynced(ctx context.Context, verbose bool) error
+
+	// Wait for the Beacon chain client to be synced
+	WaitBeaconClientSynced(ctx context.Context, verbose bool) error
+
+	// Wait for the node to have a node address set
+	WaitNodeAddress(ctx context.Context, verbose bool) error
+
+	// Wait for the node to have a wallet loaded and ready for transactions
+	WaitWalletReady(ctx context.Context, verbose bool) error
+
+	// Wait for the node to be registered with the Rocket Pool contracts
+	WaitNodeRegistered(ctx context.Context, verbose bool) error
+}
+
+// Provides access to all the services used by the Smart Node
+type ISmartNodeServiceProvider interface {
+	IRocketPoolProvider
+	ISmartNodeConfigProvider
+	IValidatorManagerProvider
+	ISnapshotDelegationProvider
+	ILoggerProvider
+	IRequirementsProvider
+
+	// Forwarded from the base provider
+	services.IEthClientProvider
+	services.IBeaconClientProvider
+	services.IDockerProvider
+	services.IWalletProvider
+	services.IContextProvider
+	io.Closer
+}
+
+// =======================
+// === ServiceProvider ===
+// =======================
+
 // A container for all of the various services used by the Smartnode
-type ServiceProvider struct {
+type SmartNodeServiceProvider struct {
 	services.IServiceProvider
 
 	// Services
 	cfg                *config.SmartNodeConfig
+	resources          *config.RocketPoolResources
 	rocketPool         *rocketpool.RocketPool
 	validatorManager   *validator.ValidatorManager
 	snapshotDelegation *contracts.SnapshotDelegation
@@ -35,7 +148,7 @@ type ServiceProvider struct {
 }
 
 // Creates a new ServiceProvider instance
-func NewServiceProvider(userDir string) (*ServiceProvider, error) {
+func NewServiceProvider(userDir string) (ISmartNodeServiceProvider, error) {
 	// Config
 	cfgPath := filepath.Join(userDir, config.ConfigFilename)
 	cfg, err := client.LoadConfigFromFile(os.ExpandEnv(cfgPath))
@@ -46,8 +159,11 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		return nil, fmt.Errorf("smart node config settings file [%s] not found", cfgPath)
 	}
 
+	// Make the resources
+	resources := config.NewRocketPoolResources(cfg.Network.Value)
+
 	// Make the core provider
-	sp, err := services.NewServiceProvider(cfg, config.ClientTimeout)
+	sp, err := services.NewServiceProvider(cfg, resources.NetworkResources, config.ClientTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating core service provider: %w", err)
 	}
@@ -70,11 +186,11 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 		}
 	}
 
-	return CreateServiceProviderFromComponents(cfg, sp)
+	return CreateServiceProviderFromComponents(cfg, resources, sp)
 }
 
 // Creates a ServiceProvider instance from a core service provider and Smart Node config
-func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp services.IServiceProvider) (*ServiceProvider, error) {
+func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, resources *config.RocketPoolResources, sp services.IServiceProvider) (ISmartNodeServiceProvider, error) {
 	// Make the watchtower log
 	loggerOpts := cfg.GetLoggerOptions()
 	watchtowerLogger, err := log.NewLogger(cfg.GetWatchtowerLogFilePath(), loggerOpts)
@@ -84,7 +200,6 @@ func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp service
 
 	// Rocket Pool
 	ecManager := sp.GetEthClient()
-	resources := cfg.GetRocketPoolResources()
 	rp, err := rocketpool.NewRocketPool(
 		ecManager,
 		resources.StorageAddress,
@@ -112,10 +227,11 @@ func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp service
 
 	// Create the provider
 	defaultVersion, _ := version.NewSemver("0.0.0")
-	provider := &ServiceProvider{
+	provider := &SmartNodeServiceProvider{
 		userDir:               cfg.RocketPoolDirectory(),
 		IServiceProvider:      sp,
 		cfg:                   cfg,
+		resources:             resources,
 		rocketPool:            rp,
 		validatorManager:      vMgr,
 		snapshotDelegation:    snapshotDelegation,
@@ -130,35 +246,31 @@ func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp service
 // === Getters ===
 // ===============
 
-func (p *ServiceProvider) GetServiceProvider() services.IServiceProvider {
-	return p.IServiceProvider
-}
-
-func (p *ServiceProvider) GetUserDir() string {
-	return p.userDir
-}
-
-func (p *ServiceProvider) GetConfig() *config.SmartNodeConfig {
+func (p *SmartNodeServiceProvider) GetConfig() *config.SmartNodeConfig {
 	return p.cfg
 }
 
-func (p *ServiceProvider) GetRocketPool() *rocketpool.RocketPool {
+func (p *SmartNodeServiceProvider) GetResources() *config.RocketPoolResources {
+	return p.resources
+}
+
+func (p *SmartNodeServiceProvider) GetRocketPool() *rocketpool.RocketPool {
 	return p.rocketPool
 }
 
-func (p *ServiceProvider) GetValidatorManager() *validator.ValidatorManager {
+func (p *SmartNodeServiceProvider) GetValidatorManager() *validator.ValidatorManager {
 	return p.validatorManager
 }
 
-func (p *ServiceProvider) GetSnapshotDelegation() *contracts.SnapshotDelegation {
+func (p *SmartNodeServiceProvider) GetSnapshotDelegation() *contracts.SnapshotDelegation {
 	return p.snapshotDelegation
 }
 
-func (p *ServiceProvider) GetWatchtowerLogger() *log.Logger {
+func (p *SmartNodeServiceProvider) GetWatchtowerLogger() *log.Logger {
 	return p.watchtowerLog
 }
 
-func (p *ServiceProvider) Close() error {
+func (p *SmartNodeServiceProvider) Close() error {
 	p.watchtowerLog.Close()
 	return p.IServiceProvider.Close()
 }
@@ -168,7 +280,7 @@ func (p *ServiceProvider) Close() error {
 // =============
 
 // Refresh the Rocket Pool contracts if they've been updated since they were last loaded
-func (p *ServiceProvider) RefreshRocketPoolContracts() error {
+func (p *SmartNodeServiceProvider) RefreshRocketPoolContracts() error {
 	p.refreshLock.Lock()
 	defer p.refreshLock.Unlock()
 

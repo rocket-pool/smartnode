@@ -28,7 +28,7 @@ func (f *walletStatusFactory) Create(args url.Values) (*walletStatusContext, err
 
 func (f *walletStatusFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletStatusContext, api.WalletStatusData](
-		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

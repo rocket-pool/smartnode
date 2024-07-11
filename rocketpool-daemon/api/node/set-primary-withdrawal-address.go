@@ -39,7 +39,7 @@ func (f *nodeSetPrimaryWithdrawalAddressContextFactory) Create(args url.Values) 
 
 func (f *nodeSetPrimaryWithdrawalAddressContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetPrimaryWithdrawalAddressContext, api.NodeSetPrimaryWithdrawalAddressData](
-		router, "primary-withdrawal-address/set", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "primary-withdrawal-address/set", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

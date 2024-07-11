@@ -28,7 +28,7 @@ type ProposalManager struct {
 	bc     beacon.IBeaconClient
 }
 
-func NewProposalManager(context context.Context, logger *slog.Logger, cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, bc beacon.IBeaconClient) (*ProposalManager, error) {
+func NewProposalManager(context context.Context, logger *slog.Logger, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, bc beacon.IBeaconClient) (*ProposalManager, error) {
 	viSnapshotMgr, err := NewVotingInfoSnapshotManager(logger, cfg, rp)
 	if err != nil {
 		return nil, fmt.Errorf("error creating voting info manager: %w", err)
@@ -44,7 +44,7 @@ func NewProposalManager(context context.Context, logger *slog.Logger, cfg *confi
 		return nil, fmt.Errorf("error creating node tree manager: %w", err)
 	}
 
-	stateMgr, err := state.NewNetworkStateManager(context, rp, cfg, rp.Client, bc, logger)
+	stateMgr, err := state.NewNetworkStateManager(context, rp, cfg, res, rp.Client, bc, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network state manager: %w", err)
 	}

@@ -32,9 +32,10 @@ import (
 // Generate rewards Merkle Tree task
 type GenerateRewardsTree struct {
 	ctx       context.Context
-	sp        *services.ServiceProvider
+	sp        services.ISmartNodeServiceProvider
 	logger    *slog.Logger
 	cfg       *config.SmartNodeConfig
+	res       *config.RocketPoolResources
 	rp        *rocketpool.RocketPool
 	ec        eth.IExecutionClient
 	bc        beacon.IBeaconClient
@@ -43,13 +44,14 @@ type GenerateRewardsTree struct {
 }
 
 // Create generate rewards Merkle Tree task
-func NewGenerateRewardsTree(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *GenerateRewardsTree {
+func NewGenerateRewardsTree(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger) *GenerateRewardsTree {
 	lock := &sync.Mutex{}
 	return &GenerateRewardsTree{
 		ctx:       ctx,
 		sp:        sp,
 		logger:    logger.With(slog.String(keys.TaskKey, "Generate Rewards Tree")),
 		cfg:       sp.GetConfig(),
+		res:       sp.GetResources(),
 		rp:        sp.GetRocketPool(),
 		ec:        sp.GetEthClient(),
 		bc:        sp.GetBeaconClient(),
@@ -121,7 +123,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	logger.Info("Starting generation of Merkle rewards tree.")
 
 	// Find the event for this interval
-	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, t.cfg, index, nil)
+	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, t.cfg, t.res, index, nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("Error getting event: %w", err), logger)
 		return
@@ -138,7 +140,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	var stateManager *state.NetworkStateManager
 
 	// Try getting the rETH address as a canary to see if the block is available
-	rs := t.cfg.GetRocketPoolResources()
+	rs := t.sp.GetResources()
 	client := t.rp
 	opts := &bind.CallOpts{
 		BlockNumber: elBlockHeader.Number,
@@ -150,7 +152,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 	}, opts)
 	if err == nil {
 		// Create the state manager with using the primary or fallback (not necessarily archive) EC
-		stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, t.rp.Client, t.bc, logger)
+		stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, t.res, t.rp.Client, t.bc, logger)
 		if err != nil {
 			t.handleError(fmt.Errorf("error creating new NetworkStateManager with Archive EC: %w", err), logger)
 			return
@@ -189,7 +191,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 					return
 				}
 				// Create the state manager with the archive EC
-				stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, ec, t.bc, logger)
+				stateManager, err = state.NewNetworkStateManager(t.ctx, client, t.cfg, t.res, ec, t.bc, logger)
 				if err != nil {
 					t.handleError(fmt.Errorf("error creating new NetworkStateManager with Archive EC: %w", err), logger)
 					return
@@ -224,7 +226,7 @@ func (t *GenerateRewardsTree) generateRewardsTree(index uint64) {
 func (t *GenerateRewardsTree) generateRewardsTreeImpl(logger *slog.Logger, rp *rocketpool.RocketPool, index uint64, rewardsEvent rewards.RewardsEvent, elBlockHeader *types.Header, state *state.NetworkState) {
 	// Generate the rewards file
 	start := time.Now()
-	treegen, err := rprewards.NewTreeGenerator(t.logger, rp, t.cfg, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state, nil)
+	treegen, err := rprewards.NewTreeGenerator(t.logger, rp, t.cfg, t.res, t.bc, index, rewardsEvent.IntervalStartTime, rewardsEvent.IntervalEndTime, rewardsEvent.ConsensusBlock.Uint64(), elBlockHeader, rewardsEvent.IntervalsPassed.Uint64(), state, nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("Error creating Merkle tree generator: %w", err), logger)
 		return

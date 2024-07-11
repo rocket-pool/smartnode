@@ -38,7 +38,7 @@ func (f *nodeSetRplLockingAllowedContextFactory) Create(args url.Values) (*nodeS
 
 func (f *nodeSetRplLockingAllowedContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeSetRplLockingAllowedContext, api.NodeSetRplLockingAllowedData](
-		router, "set-rpl-locking-allowed", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "set-rpl-locking-allowed", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

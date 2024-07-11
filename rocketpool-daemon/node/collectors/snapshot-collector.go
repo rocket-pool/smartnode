@@ -40,7 +40,7 @@ type SnapshotCollector struct {
 	delegateVotingPower *prometheus.Desc
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -58,7 +58,7 @@ type SnapshotCollector struct {
 }
 
 // Create a new SnapshotCollector instance
-func NewSnapshotCollector(logger *log.Logger, sp *services.ServiceProvider) *SnapshotCollector {
+func NewSnapshotCollector(logger *log.Logger, sp services.ISmartNodeServiceProvider) *SnapshotCollector {
 	subsystem := "snapshot"
 	sublogger := logger.With(slog.String(keys.TaskKey, "Snapshot Collector"))
 	return &SnapshotCollector{
@@ -114,6 +114,7 @@ func (c *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		// Services
 		rp := c.sp.GetRocketPool()
 		cfg := c.sp.GetConfig()
+		res := c.sp.GetResources()
 		snapshotID := cfg.GetVotingSnapshotID()
 		nodeAddress, hasNodeAddress := c.sp.GetWallet().GetAddress()
 		if !hasNodeAddress {
@@ -136,7 +137,7 @@ func (c *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 
 		// Get the number of Snapshot proposals and votes
 		wg.Go(func() error {
-			proposals, err := voting.GetSnapshotProposals(cfg, nodeAddress, delegateAddress, false)
+			proposals, err := voting.GetSnapshotProposals(cfg, res, nodeAddress, delegateAddress, false)
 			if err != nil {
 				return fmt.Errorf("error getting Snapshot proposals: %w", err)
 			}
@@ -165,7 +166,7 @@ func (c *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 
 		// Get the node's voting power
 		wg.Go(func() error {
-			votingPower, err := voting.GetSnapshotVotingPower(cfg, nodeAddress)
+			votingPower, err := voting.GetSnapshotVotingPower(cfg, res, nodeAddress)
 			if err != nil {
 				return fmt.Errorf("Error getting Snapshot voted proposals for node address: %w", err)
 			}
@@ -175,7 +176,7 @@ func (c *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 
 		// Get the delegate's voting power
 		wg.Go(func() error {
-			delegateVotingPower, err := voting.GetSnapshotVotingPower(cfg, delegateAddress)
+			delegateVotingPower, err := voting.GetSnapshotVotingPower(cfg, res, delegateAddress)
 			if err != nil {
 				return fmt.Errorf("Error getting Snapshot voted proposals for delegate address: %w", err)
 			}

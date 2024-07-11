@@ -38,7 +38,7 @@ func (f *walletTestSearchAndRecoverContextFactory) Create(args url.Values) (*wal
 
 func (f *walletTestSearchAndRecoverContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletTestSearchAndRecoverContext, api.WalletSearchAndRecoverData](
-		router, "test-search-and-recover", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "test-search-and-recover", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -55,7 +55,7 @@ type walletTestSearchAndRecoverContext struct {
 
 func (c *walletTestSearchAndRecoverContext) PrepareData(data *api.WalletSearchAndRecoverData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
-	rs := sp.GetNetworkResources()
+	rs := sp.GetResources()
 	vMgr := sp.GetValidatorManager()
 
 	if !c.skipValidatorKeyRecovery {

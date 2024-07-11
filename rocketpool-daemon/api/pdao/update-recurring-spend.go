@@ -47,7 +47,7 @@ func (f *protocolDaoProposeRecurringSpendUpdateContextFactory) Create(args url.V
 
 func (f *protocolDaoProposeRecurringSpendUpdateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeRecurringSpendUpdateContext, api.ProtocolDaoProposeRecurringSpendUpdateData](
-		router, "recurring-spend-update", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "recurring-spend-update", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -59,6 +59,7 @@ type protocolDaoProposeRecurringSpendUpdateContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
 	cfg         *config.SmartNodeConfig
+	res         *config.RocketPoolResources
 	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 
@@ -76,6 +77,7 @@ func (c *protocolDaoProposeRecurringSpendUpdateContext) Initialize() (types.Resp
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.cfg = sp.GetConfig()
+	c.res = sp.GetResources()
 	c.bc = sp.GetBeaconClient()
 	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 
@@ -120,7 +122,7 @@ func (c *protocolDaoProposeRecurringSpendUpdateContext) PrepareData(data *api.Pr
 
 	// Get the tx
 	if data.CanPropose && opts != nil {
-		blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.bc)
+		blockNumber, pollard, err := createPollard(ctx, c.handler.logger.Logger, c.rp, c.cfg, c.res, c.bc)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error creating pollard for proposal creation: %w", err)
 		}

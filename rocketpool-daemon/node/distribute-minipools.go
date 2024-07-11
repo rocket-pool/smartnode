@@ -27,10 +27,11 @@ import (
 
 // Distribute minipools task
 type DistributeMinipools struct {
-	sp                  *services.ServiceProvider
+	sp                  services.ISmartNodeServiceProvider
 	logger              *slog.Logger
 	alerter             *alerting.Alerter
 	cfg                 *config.SmartNodeConfig
+	res                 *config.RocketPoolResources
 	w                   *wallet.Wallet
 	rp                  *rocketpool.RocketPool
 	bc                  beacon.IBeaconClient
@@ -44,8 +45,9 @@ type DistributeMinipools struct {
 }
 
 // Create distribute minipools task
-func NewDistributeMinipools(sp *services.ServiceProvider, logger *log.Logger) *DistributeMinipools {
+func NewDistributeMinipools(sp services.ISmartNodeServiceProvider, logger *log.Logger) *DistributeMinipools {
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	log := logger.With(slog.String(keys.TaskKey, "Distribute Minipools"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	gasThreshold := cfg.AutoTxGasThreshold.Value
@@ -70,6 +72,7 @@ func NewDistributeMinipools(sp *services.ServiceProvider, logger *log.Logger) *D
 		logger:              log,
 		alerter:             alerting.NewAlerter(cfg, logger),
 		cfg:                 cfg,
+		res:                 res,
 		w:                   sp.GetWallet(),
 		rp:                  sp.GetRocketPool(),
 		bc:                  sp.GetBeaconClient(),
@@ -225,7 +228,7 @@ func (t *DistributeMinipools) distributeMinipools(submissions []*eth.Transaction
 	}
 
 	// Print TX info and wait for them to be included in a block
-	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.rp, t.logger, submissions, callbacks, opts)
+	err = tx.PrintAndWaitForTransactionBatch(t.cfg, t.res, t.rp, t.logger, submissions, callbacks, opts)
 	if err != nil {
 		return err
 	}

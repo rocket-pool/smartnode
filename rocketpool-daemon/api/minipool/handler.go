@@ -13,11 +13,11 @@ import (
 type MinipoolHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewMinipoolHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *MinipoolHandler {
+func NewMinipoolHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *MinipoolHandler {
 	h := &MinipoolHandler{
 		logger:          logger,
 		ctx:             ctx,

@@ -40,7 +40,7 @@ func (f *protocolDaoFinalizeProposalContextFactory) Create(args url.Values) (*pr
 
 func (f *protocolDaoFinalizeProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoFinalizeProposalContext, api.ProtocolDaoFinalizeProposalData](
-		router, "proposal/finalize", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "proposal/finalize", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

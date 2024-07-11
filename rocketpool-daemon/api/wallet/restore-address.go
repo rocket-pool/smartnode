@@ -27,7 +27,7 @@ func (f *walletRestoreAddressContextFactory) Create(args url.Values) (*walletRes
 
 func (f *walletRestoreAddressContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletRestoreAddressContext, types.SuccessData](
-		router, "restore-address", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
+		router, "restore-address", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

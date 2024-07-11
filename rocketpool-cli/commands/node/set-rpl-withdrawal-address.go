@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
+	snconfig "github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 const (
@@ -141,7 +142,7 @@ func setRplWithdrawalAddress(c *cli.Context, withdrawalAddressOrEns string) erro
 		stakeUrl := ""
 		config, _, err := rp.LoadConfig()
 		if err == nil {
-			rs := config.GetRocketPoolResources()
+			rs := snconfig.NewRocketPoolResources(config.Network.Value)
 			stakeUrl = rs.StakeUrl
 		}
 		if stakeUrl != "" {
