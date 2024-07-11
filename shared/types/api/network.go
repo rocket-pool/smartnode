@@ -68,13 +68,42 @@ type NetworkGenerateRewardsTreeResponse struct {
 	Error  string `json:"error"`
 }
 
-type NetworkDAOProposalsResponse struct {
-	Status                  string                 `json:"status"`
+type SnapshotResponseStruct struct {
 	Error                   string                 `json:"error"`
-	AccountAddress          common.Address         `json:"accountAddress"`
-	VotingDelegate          common.Address         `json:"votingDelegate"`
-	ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
+	ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
+}
+
+type NetworkDAOProposalsResponse struct {
+	Status                         string                 `json:"status"`
+	Error                          string                 `json:"error"`
+	AccountAddress                 common.Address         `json:"accountAddress"`
+	AccountAddressFormatted        string                 `json:"accountAddressFormatted"`
+	TotalDelegatedVp               *big.Int               `json:"totalDelegateVp"`
+	SumVotingPower                 *big.Int               `json:"sumVotingPower"`
+	VotingDelegate                 common.Address         `json:"votingDelegate"`
+	IsVotingInitialized            bool                   `json:"isVotingInitialized"`
+	VotingPower                    *big.Int               `json:"votingPower"`
+	BlockNumber                    uint32                 `json:"blockNumber"`
+	IsNodeRegistered               bool                   `json:"isNodeRegistered"`
+	OnchainVotingDelegate          common.Address         `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted string                 `json:"onchainVotingDelegateFormatted"`
+	SnapshotResponse               SnapshotResponseStruct `json:"snapshotResponse"`
+	SignallingAddress              common.Address         `json:"signallingAddress"`
+	SignallingAddressFormatted     string                 `json:"SignallingAddressFormatted"`
+}
+
+func (s *SnapshotResponseStruct) VoteCount() uint {
+	voteCount := uint(0)
+	for _, activeProposal := range s.ActiveSnapshotProposals {
+		for _, votedProposal := range s.ProposalVotes {
+			if votedProposal.Proposal.Id == activeProposal.Id {
+				voteCount++
+				break
+			}
+		}
+	}
+	return voteCount
 }
 
 type DownloadRewardsFileResponse struct {
