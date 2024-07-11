@@ -43,7 +43,7 @@ func (f *minipoolChangeCredsContextFactory) Create(args url.Values) (*minipoolCh
 
 func (f *minipoolChangeCredsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*minipoolChangeCredsContext, types.SuccessData](
-		router, "change-withdrawal-creds", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "change-withdrawal-creds", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

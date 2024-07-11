@@ -37,7 +37,7 @@ func (f *securityLeaveContextFactory) Create(args url.Values) (*securityLeaveCon
 
 func (f *securityLeaveContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityLeaveContext, api.SecurityLeaveData](
-		router, "leave", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "leave", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

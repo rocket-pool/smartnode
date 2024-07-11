@@ -35,7 +35,7 @@ func (f *minipoolPromoteContextFactory) Create(args url.Values) (*minipoolPromot
 
 func (f *minipoolPromoteContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolPromoteContext, types.BatchTxInfoData](
-		router, "promote", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "promote", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

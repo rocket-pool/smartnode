@@ -44,7 +44,7 @@ func (f *protocolDaoProposeSettingContextFactory) Create(args url.Values) (*prot
 
 func (f *protocolDaoProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeSettingContext, api.ProtocolDaoProposeSettingData](
-		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

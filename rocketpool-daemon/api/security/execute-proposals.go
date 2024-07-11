@@ -44,7 +44,7 @@ func (f *securityExecuteProposalsContextFactory) Create(args url.Values) (*secur
 
 func (f *securityExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityExecuteProposalsContext, types.DataBatch[api.SecurityExecuteProposalData]](
-		router, "proposal/execute", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/execute", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

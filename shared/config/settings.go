@@ -33,7 +33,8 @@ const (
 	MevBoostStartScript string = "start-mev-boost.sh"
 
 	// HTTP
-	ClientTimeout time.Duration = 1 * time.Minute
+	ClientTimeout     time.Duration = 1 * time.Minute
+	ExternalIPTimeout time.Duration = 3 * time.Second
 
 	// Volumes
 	ExecutionClientDataVolume string = "eth1clientdata"

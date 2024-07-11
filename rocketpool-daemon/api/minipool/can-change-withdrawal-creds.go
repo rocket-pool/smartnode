@@ -46,7 +46,7 @@ func (f *minipoolCanChangeCredsContextFactory) Create(args url.Values) (*minipoo
 
 func (f *minipoolCanChangeCredsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*minipoolCanChangeCredsContext, api.MinipoolCanChangeWithdrawalCredentialsData](
-		router, "change-withdrawal-creds/verify", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "change-withdrawal-creds/verify", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

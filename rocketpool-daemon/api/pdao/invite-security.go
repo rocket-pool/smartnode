@@ -44,7 +44,7 @@ func (f *protocolDaoProposeInviteToSecurityCouncilContextFactory) Create(args ur
 
 func (f *protocolDaoProposeInviteToSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeInviteToSecurityCouncilContext, api.ProtocolDaoProposeInviteToSecurityCouncilData](
-		router, "security/invite", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "security/invite", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

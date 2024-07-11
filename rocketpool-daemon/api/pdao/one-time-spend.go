@@ -44,7 +44,7 @@ func (f *protocolDaoProposeOneTimeSpendContextFactory) Create(args url.Values) (
 
 func (f *protocolDaoProposeOneTimeSpendContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeOneTimeSpendContext, api.ProtocolDaoGeneralProposeData](
-		router, "one-time-spend", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "one-time-spend", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

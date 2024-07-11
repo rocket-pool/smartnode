@@ -34,7 +34,7 @@ func (f *minipoolRefundContextFactory) Create(args url.Values) (*minipoolRefundC
 
 func (f *minipoolRefundContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolRefundContext, types.BatchTxInfoData](
-		router, "refund", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "refund", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

@@ -34,7 +34,7 @@ func (f *networkFeeContextFactory) Create(args url.Values) (*networkFeeContext, 
 
 func (f *networkFeeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*networkFeeContext, api.NetworkNodeFeeData](
-		router, "node-fee", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "node-fee", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

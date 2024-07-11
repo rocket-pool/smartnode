@@ -35,7 +35,7 @@ func (f *walletCreateValidatorKeyContextFactory) Create(args url.Values) (*walle
 
 func (f *walletCreateValidatorKeyContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletCreateValidatorKeyContext, types.SuccessData](
-		router, "create-validator-key", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "create-validator-key", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

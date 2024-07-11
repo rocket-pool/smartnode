@@ -44,7 +44,7 @@ func (f *oracleDaoExecuteProposalsContextFactory) Create(args url.Values) (*orac
 
 func (f *oracleDaoExecuteProposalsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoExecuteProposalsContext, types.DataBatch[api.OracleDaoExecuteProposalData]](
-		router, "proposal/execute", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/execute", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

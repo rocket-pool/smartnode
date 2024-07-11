@@ -53,7 +53,7 @@ func (f *nodeDepositContextFactory) Create(args url.Values) (*nodeDepositContext
 
 func (f *nodeDepositContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeDepositContext, api.NodeDepositData](
-		router, "deposit", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "deposit", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

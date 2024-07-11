@@ -34,7 +34,7 @@ func (f *networkDepositInfoContextFactory) Create(args url.Values) (*networkDepo
 
 func (f *networkDepositInfoContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkDepositInfoContext, api.NetworkDepositContractInfoData](
-		router, "deposit-contract-info", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "deposit-contract-info", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

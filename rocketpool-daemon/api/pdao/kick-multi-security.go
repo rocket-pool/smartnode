@@ -47,7 +47,7 @@ func (f *protocolDaoProposeKickMultiFromSecurityCouncilContextFactory) Create(ar
 
 func (f *protocolDaoProposeKickMultiFromSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeKickMultiFromSecurityCouncilContext, api.ProtocolDaoProposeKickMultiFromSecurityCouncilData](
-		router, "security/kick-multi", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "security/kick-multi", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

@@ -55,7 +55,7 @@ func (f *nodeStatusContextFactory) Create(args url.Values) (*nodeStatusContext, 
 
 func (f *nodeStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeStatusContext, api.NodeStatusData](
-		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

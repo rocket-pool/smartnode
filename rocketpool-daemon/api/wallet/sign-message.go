@@ -35,7 +35,7 @@ func (f *walletSignMessageContextFactory) Create(args url.Values) (*walletSignMe
 
 func (f *walletSignMessageContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletSignMessageContext, api.WalletSignMessageData](
-		router, "sign-message", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "sign-message", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

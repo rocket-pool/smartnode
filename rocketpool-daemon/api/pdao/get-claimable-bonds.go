@@ -42,7 +42,7 @@ func (f *protocolDaoGetClaimableBondsContextFactory) Create(args url.Values) (*p
 
 func (f *protocolDaoGetClaimableBondsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoGetClaimableBondsContext, api.ProtocolDaoGetClaimableBondsData](
-		router, "get-claimable-bonds", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "get-claimable-bonds", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

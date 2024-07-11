@@ -30,7 +30,7 @@ func (f *walletExportEthKeyContextFactory) Create(args url.Values) (*walletExpor
 
 func (f *walletExportEthKeyContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletExportEthKeyContext, api.WalletExportEthKeyData](
-		router, "export-eth-key", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "export-eth-key", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

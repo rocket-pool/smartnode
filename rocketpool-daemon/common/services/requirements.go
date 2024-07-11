@@ -50,20 +50,20 @@ var (
 // === Requirements ===
 // ====================
 
-func (sp *ServiceProvider) RequireRocketPoolContracts(ctx context.Context) (types.ResponseStatus, error) {
-	err := sp.RequireEthClientSynced(ctx)
+func (p *ServiceProvider) RequireRocketPoolContracts(ctx context.Context) (types.ResponseStatus, error) {
+	err := p.RequireEthClientSynced(ctx)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
-	err = sp.RefreshRocketPoolContracts()
+	err = p.RefreshRocketPoolContracts()
 	if err != nil {
 		return types.ResponseStatus_Error, err
 	}
 	return types.ResponseStatus_Success, nil
 }
 
-func (sp *ServiceProvider) RequireEthClientSynced(ctx context.Context) error {
-	synced, _, err := sp.checkExecutionClientStatus(ctx)
+func (p *ServiceProvider) RequireEthClientSynced(ctx context.Context) error {
+	synced, _, err := p.checkExecutionClientStatus(ctx)
 	if err != nil {
 		return err
 	}
@@ -73,8 +73,8 @@ func (sp *ServiceProvider) RequireEthClientSynced(ctx context.Context) error {
 	return errors.New("The Execution client is currently syncing. Please try again later.")
 }
 
-func (sp *ServiceProvider) RequireBeaconClientSynced(ctx context.Context) error {
-	synced, err := sp.checkBeaconClientStatus(ctx)
+func (p *ServiceProvider) RequireBeaconClientSynced(ctx context.Context) error {
+	synced, err := p.checkBeaconClientStatus(ctx)
 	if err != nil {
 		return err
 	}
@@ -85,19 +85,19 @@ func (sp *ServiceProvider) RequireBeaconClientSynced(ctx context.Context) error 
 }
 
 // Wait for the Executon client to sync; timeout of 0 indicates no timeout
-func (sp *ServiceProvider) WaitEthClientSynced(ctx context.Context, verbose bool) error {
-	_, err := sp.waitEthClientSynced(ctx, verbose)
+func (p *ServiceProvider) WaitEthClientSynced(ctx context.Context, verbose bool) error {
+	_, err := p.waitEthClientSynced(ctx, verbose)
 	return err
 }
 
 // Wait for the Beacon client to sync; timeout of 0 indicates no timeout
-func (sp *ServiceProvider) WaitBeaconClientSynced(ctx context.Context, verbose bool) error {
-	_, err := sp.waitBeaconClientSynced(ctx, verbose)
+func (p *ServiceProvider) WaitBeaconClientSynced(ctx context.Context, verbose bool) error {
+	_, err := p.waitBeaconClientSynced(ctx, verbose)
 	return err
 }
 
-func (sp *ServiceProvider) RequireNodeAddress() error {
-	status, err := sp.GetWallet().GetStatus()
+func (p *ServiceProvider) RequireNodeAddress() error {
+	status, err := p.GetWallet().GetStatus()
 	if err != nil {
 		return err
 	}
@@ -107,22 +107,22 @@ func (sp *ServiceProvider) RequireNodeAddress() error {
 	return nil
 }
 
-func (sp *ServiceProvider) RequireWalletReady() error {
-	status, err := sp.GetWallet().GetStatus()
+func (p *ServiceProvider) RequireWalletReady() error {
+	status, err := p.GetWallet().GetStatus()
 	if err != nil {
 		return err
 	}
 	return utils.CheckIfWalletReady(status)
 }
 
-func (sp *ServiceProvider) RequireNodeRegistered(ctx context.Context) (types.ResponseStatus, error) {
-	if err := sp.RequireNodeAddress(); err != nil {
+func (p *ServiceProvider) RequireNodeRegistered(ctx context.Context) (types.ResponseStatus, error) {
+	if err := p.RequireNodeAddress(); err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	if status, err := sp.RequireRocketPoolContracts(ctx); err != nil {
+	if status, err := p.RequireRocketPoolContracts(ctx); err != nil {
 		return status, err
 	}
-	nodeRegistered, err := sp.getNodeRegistered()
+	nodeRegistered, err := p.getNodeRegistered()
 	if err != nil {
 		return types.ResponseStatus_Error, err
 	}
@@ -132,22 +132,22 @@ func (sp *ServiceProvider) RequireNodeRegistered(ctx context.Context) (types.Res
 	return types.ResponseStatus_Success, nil
 }
 
-func (sp *ServiceProvider) RequireSnapshot() error {
-	if sp.snapshotDelegation == nil {
-		network := string(sp.cfg.Network.Value)
+func (p *ServiceProvider) RequireSnapshot() error {
+	if p.snapshotDelegation == nil {
+		network := string(p.cfg.Network.Value)
 		return fmt.Errorf("Snapshot voting is not available on the %s network.", network)
 	}
 	return nil
 }
 
-func (sp *ServiceProvider) RequireOnOracleDao(ctx context.Context) (types.ResponseStatus, error) {
-	if err := sp.RequireNodeAddress(); err != nil {
+func (p *ServiceProvider) RequireOnOracleDao(ctx context.Context) (types.ResponseStatus, error) {
+	if err := p.RequireNodeAddress(); err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	if status, err := sp.RequireRocketPoolContracts(ctx); err != nil {
+	if status, err := p.RequireRocketPoolContracts(ctx); err != nil {
 		return status, err
 	}
-	nodeTrusted, err := sp.isMemberOfOracleDao()
+	nodeTrusted, err := p.isMemberOfOracleDao()
 	if err != nil {
 		return types.ResponseStatus_Error, err
 	}
@@ -157,14 +157,14 @@ func (sp *ServiceProvider) RequireOnOracleDao(ctx context.Context) (types.Respon
 	return types.ResponseStatus_Success, nil
 }
 
-func (sp *ServiceProvider) RequireOnSecurityCouncil(ctx context.Context) (types.ResponseStatus, error) {
-	if err := sp.RequireNodeAddress(); err != nil {
+func (p *ServiceProvider) RequireOnSecurityCouncil(ctx context.Context) (types.ResponseStatus, error) {
+	if err := p.RequireNodeAddress(); err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	if status, err := sp.RequireRocketPoolContracts(ctx); err != nil {
+	if status, err := p.RequireRocketPoolContracts(ctx); err != nil {
 		return status, err
 	}
-	nodeTrusted, err := sp.isMemberOfSecurityCouncil()
+	nodeTrusted, err := p.isMemberOfSecurityCouncil()
 	if err != nil {
 		return types.ResponseStatus_Error, err
 	}
@@ -178,7 +178,7 @@ func (sp *ServiceProvider) RequireOnSecurityCouncil(ctx context.Context) (types.
 // === Service Synchronization ===
 // ===============================
 
-func (sp *ServiceProvider) WaitNodeAddress(ctx context.Context, verbose bool) error {
+func (p *ServiceProvider) WaitNodeAddress(ctx context.Context, verbose bool) error {
 	// Get the logger
 	logger, exists := log.FromContext(ctx)
 	if !exists {
@@ -186,7 +186,7 @@ func (sp *ServiceProvider) WaitNodeAddress(ctx context.Context, verbose bool) er
 	}
 
 	for {
-		status, err := sp.GetWallet().GetStatus()
+		status, err := p.GetWallet().GetStatus()
 		if err != nil {
 			return err
 		}
@@ -207,7 +207,7 @@ func (sp *ServiceProvider) WaitNodeAddress(ctx context.Context, verbose bool) er
 	}
 }
 
-func (sp *ServiceProvider) WaitWalletReady(ctx context.Context, verbose bool) error {
+func (p *ServiceProvider) WaitWalletReady(ctx context.Context, verbose bool) error {
 	// Get the logger
 	logger, exists := log.FromContext(ctx)
 	if !exists {
@@ -215,7 +215,7 @@ func (sp *ServiceProvider) WaitWalletReady(ctx context.Context, verbose bool) er
 	}
 
 	for {
-		status, err := sp.GetWallet().GetStatus()
+		status, err := p.GetWallet().GetStatus()
 		if err != nil {
 			return err
 		}
@@ -249,7 +249,7 @@ func (sp *ServiceProvider) WaitWalletReady(ctx context.Context, verbose bool) er
 }
 
 // Wait until the node has been registered with the Rocket Pool network
-func (sp *ServiceProvider) WaitNodeRegistered(ctx context.Context, verbose bool) error {
+func (p *ServiceProvider) WaitNodeRegistered(ctx context.Context, verbose bool) error {
 	// Get the logger
 	logger, exists := log.FromContext(ctx)
 	if !exists {
@@ -258,7 +258,7 @@ func (sp *ServiceProvider) WaitNodeRegistered(ctx context.Context, verbose bool)
 
 	contractRefreshTime := time.Now()
 	for {
-		nodeRegistered, err := sp.getNodeRegistered()
+		nodeRegistered, err := p.getNodeRegistered()
 		if err != nil {
 			return err
 		}
@@ -274,7 +274,7 @@ func (sp *ServiceProvider) WaitNodeRegistered(ctx context.Context, verbose bool)
 
 		// Refresh the contracts if needed to make sure we're polling the latest ones
 		if time.Since(contractRefreshTime) > contractRefreshInterval {
-			if err := sp.RefreshRocketPoolContracts(); err != nil {
+			if err := p.RefreshRocketPoolContracts(); err != nil {
 				return fmt.Errorf("error refreshing contract bindings: %w", err)
 			}
 			contractRefreshTime = time.Now()
@@ -287,9 +287,9 @@ func (sp *ServiceProvider) WaitNodeRegistered(ctx context.Context, verbose bool)
 // ===============
 
 // Check if the node is registered
-func (sp *ServiceProvider) getNodeRegistered() (bool, error) {
-	rp := sp.rocketPool
-	address, _ := sp.GetWallet().GetAddress()
+func (p *ServiceProvider) getNodeRegistered() (bool, error) {
+	rp := p.rocketPool
+	address, _ := p.GetWallet().GetAddress()
 
 	// Create a node binding
 	node, err := node.NewNode(rp, address)
@@ -306,9 +306,9 @@ func (sp *ServiceProvider) getNodeRegistered() (bool, error) {
 }
 
 // Check if the node is a member of the oracle DAO
-func (sp *ServiceProvider) isMemberOfOracleDao() (bool, error) {
-	rp := sp.rocketPool
-	address, _ := sp.GetWallet().GetAddress()
+func (p *ServiceProvider) isMemberOfOracleDao() (bool, error) {
+	rp := p.rocketPool
+	address, _ := p.GetWallet().GetAddress()
 
 	// Create the bindings
 	node, err := node.NewNode(rp, address)
@@ -329,9 +329,9 @@ func (sp *ServiceProvider) isMemberOfOracleDao() (bool, error) {
 }
 
 // Check if the node is a member of the security council
-func (sp *ServiceProvider) isMemberOfSecurityCouncil() (bool, error) {
-	rp := sp.rocketPool
-	address, _ := sp.GetWallet().GetAddress()
+func (p *ServiceProvider) isMemberOfSecurityCouncil() (bool, error) {
+	rp := p.rocketPool
+	address, _ := p.GetWallet().GetAddress()
 
 	// Create the bindings
 	node, err := node.NewNode(rp, address)
@@ -353,9 +353,9 @@ func (sp *ServiceProvider) isMemberOfSecurityCouncil() (bool, error) {
 
 // Check if the primary and fallback Execution clients are synced
 // TODO: Move this into ec-manager and stop exposing the primary and fallback directly...
-func (sp *ServiceProvider) checkExecutionClientStatus(ctx context.Context) (bool, eth.IExecutionClient, error) {
+func (p *ServiceProvider) checkExecutionClientStatus(ctx context.Context) (bool, eth.IExecutionClient, error) {
 	// Check the EC status
-	ecMgr := sp.GetEthClient()
+	ecMgr := p.GetEthClient()
 	mgrStatus := ecMgr.CheckStatus(ctx, true)
 	if ecMgr.IsPrimaryReady() {
 		return true, nil, nil
@@ -400,9 +400,9 @@ func (sp *ServiceProvider) checkExecutionClientStatus(ctx context.Context) (bool
 }
 
 // Check if the primary and fallback Beacon clients are synced
-func (sp *ServiceProvider) checkBeaconClientStatus(ctx context.Context) (bool, error) {
+func (p *ServiceProvider) checkBeaconClientStatus(ctx context.Context) (bool, error) {
 	// Check the BC status
-	bcMgr := sp.GetBeaconClient()
+	bcMgr := p.GetBeaconClient()
 	mgrStatus := bcMgr.CheckStatus(ctx, true)
 	if bcMgr.IsPrimaryReady() {
 		return true, nil
@@ -447,12 +447,12 @@ func (sp *ServiceProvider) checkBeaconClientStatus(ctx context.Context) (bool, e
 }
 
 // Wait for the primary or fallback Execution client to be synced
-func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool) (bool, error) {
+func (p *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool) (bool, error) {
 	// Prevent multiple waiting goroutines from requesting sync progress
 	ethClientSyncLock.Lock()
 	defer ethClientSyncLock.Unlock()
 
-	synced, clientToCheck, err := sp.checkExecutionClientStatus(ctx)
+	synced, clientToCheck, err := p.checkExecutionClientStatus(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -473,7 +473,7 @@ func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool
 	}
 
 	// Make an alerter
-	alerter := alerting.NewAlerter(sp.GetConfig(), logger)
+	alerter := alerting.NewAlerter(p.GetConfig(), logger)
 
 	// Wait for sync
 	for {
@@ -481,7 +481,7 @@ func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool
 		if time.Since(ecRefreshTime) > ethClientStatusRefreshInterval {
 			logger.Info("Refreshing primary / fallback execution client status...")
 			ecRefreshTime = time.Now()
-			synced, clientToCheck, err = sp.checkExecutionClientStatus(ctx)
+			synced, clientToCheck, err = p.checkExecutionClientStatus(ctx)
 			if err != nil {
 				return false, err
 			}
@@ -529,12 +529,12 @@ func (sp *ServiceProvider) waitEthClientSynced(ctx context.Context, verbose bool
 }
 
 // Wait for the primary or fallback Beacon client to be synced
-func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose bool) (bool, error) {
+func (p *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose bool) (bool, error) {
 	// Prevent multiple waiting goroutines from requesting sync progress
 	beaconClientSyncLock.Lock()
 	defer beaconClientSyncLock.Unlock()
 
-	synced, err := sp.checkBeaconClientStatus(ctx)
+	synced, err := p.checkBeaconClientStatus(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -555,7 +555,7 @@ func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose b
 	}
 
 	// Make an alerter
-	alerter := alerting.NewAlerter(sp.GetConfig(), logger)
+	alerter := alerting.NewAlerter(p.GetConfig(), logger)
 
 	// Wait for sync
 	for {
@@ -563,7 +563,7 @@ func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose b
 		if time.Since(bcRefreshTime) > ethClientStatusRefreshInterval {
 			logger.Info("Refreshing primary / fallback Beacon Node status...")
 			bcRefreshTime = time.Now()
-			synced, err = sp.checkBeaconClientStatus(ctx)
+			synced, err = p.checkBeaconClientStatus(ctx)
 			if err != nil {
 				return false, err
 			}
@@ -574,7 +574,7 @@ func (sp *ServiceProvider) waitBeaconClientSynced(ctx context.Context, verbose b
 		}
 
 		// Get sync status
-		syncStatus, err := sp.GetBeaconClient().GetSyncStatus(ctx)
+		syncStatus, err := p.GetBeaconClient().GetSyncStatus(ctx)
 		if err != nil {
 			return false, err
 		}

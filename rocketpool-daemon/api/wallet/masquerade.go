@@ -33,7 +33,7 @@ func (f *walletMasqueradeContextFactory) Create(args url.Values) (*walletMasquer
 
 func (f *walletMasqueradeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletMasqueradeContext, types.SuccessData](
-		router, "masquerade", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "masquerade", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

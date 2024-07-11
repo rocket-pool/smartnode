@@ -19,7 +19,7 @@ import (
 
 // A container for all of the various services used by the Smartnode
 type ServiceProvider struct {
-	*services.ServiceProvider
+	services.IServiceProvider
 
 	// Services
 	cfg                *config.SmartNodeConfig
@@ -74,7 +74,7 @@ func NewServiceProvider(userDir string) (*ServiceProvider, error) {
 }
 
 // Creates a ServiceProvider instance from a core service provider and Smart Node config
-func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp *services.ServiceProvider) (*ServiceProvider, error) {
+func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp services.IServiceProvider) (*ServiceProvider, error) {
 	// Make the watchtower log
 	loggerOpts := cfg.GetLoggerOptions()
 	watchtowerLogger, err := log.NewLogger(cfg.GetWatchtowerLogFilePath(), loggerOpts)
@@ -114,7 +114,7 @@ func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp *servic
 	defaultVersion, _ := version.NewSemver("0.0.0")
 	provider := &ServiceProvider{
 		userDir:               cfg.RocketPoolDirectory(),
-		ServiceProvider:       sp,
+		IServiceProvider:      sp,
 		cfg:                   cfg,
 		rocketPool:            rp,
 		validatorManager:      vMgr,
@@ -130,8 +130,8 @@ func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp *servic
 // === Getters ===
 // ===============
 
-func (p *ServiceProvider) GetServiceProvider() *services.ServiceProvider {
-	return p.ServiceProvider
+func (p *ServiceProvider) GetServiceProvider() services.IServiceProvider {
+	return p.IServiceProvider
 }
 
 func (p *ServiceProvider) GetUserDir() string {
@@ -158,9 +158,9 @@ func (p *ServiceProvider) GetWatchtowerLogger() *log.Logger {
 	return p.watchtowerLog
 }
 
-func (p *ServiceProvider) Close() {
+func (p *ServiceProvider) Close() error {
 	p.watchtowerLog.Close()
-	p.ServiceProvider.Close()
+	return p.IServiceProvider.Close()
 }
 
 // =============

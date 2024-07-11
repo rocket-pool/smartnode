@@ -46,7 +46,7 @@ func (f *protocolDaoVoteOnProposalContextFactory) Create(args url.Values) (*prot
 
 func (f *protocolDaoVoteOnProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoVoteOnProposalContext, api.ProtocolDaoVoteOnProposalData](
-		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

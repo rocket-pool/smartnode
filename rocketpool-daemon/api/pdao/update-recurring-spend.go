@@ -47,7 +47,7 @@ func (f *protocolDaoProposeRecurringSpendUpdateContextFactory) Create(args url.V
 
 func (f *protocolDaoProposeRecurringSpendUpdateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeRecurringSpendUpdateContext, api.ProtocolDaoProposeRecurringSpendUpdateData](
-		router, "recurring-spend-update", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "recurring-spend-update", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

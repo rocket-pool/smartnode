@@ -29,7 +29,7 @@ func (f *nodeGetSnapshotVotingPowerContextFactory) Create(args url.Values) (*nod
 
 func (f *nodeGetSnapshotVotingPowerContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeGetSnapshotVotingPowerContext, api.NodeGetSnapshotVotingPowerData](
-		router, "get-snapshot-voting-power", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "get-snapshot-voting-power", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

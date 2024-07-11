@@ -39,7 +39,7 @@ func (f *securityProposalsContextFactory) Create(args url.Values) (*securityProp
 
 func (f *securityProposalsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityProposalsContext, api.SecurityProposalsData](
-		router, "proposals", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "proposals", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

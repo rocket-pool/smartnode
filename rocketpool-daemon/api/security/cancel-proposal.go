@@ -41,7 +41,7 @@ func (f *securityCancelProposalContextFactory) Create(args url.Values) (*securit
 
 func (f *securityCancelProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityCancelProposalContext, api.SecurityCancelProposalData](
-		router, "proposal/cancel", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/cancel", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

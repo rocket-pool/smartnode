@@ -28,7 +28,7 @@ func (f *serviceVersionContextFactory) Create(args url.Values) (*serviceVersionC
 
 func (f *serviceVersionContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*serviceVersionContext, api.ServiceVersionData](
-		router, "version", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "version", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

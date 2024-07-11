@@ -35,7 +35,7 @@ func (f *oracleDaoProposeLeaveContextFactory) Create(args url.Values) (*oracleDa
 
 func (f *oracleDaoProposeLeaveContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoProposeLeaveContext, api.OracleDaoProposeLeaveData](
-		router, "propose-leave", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "propose-leave", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

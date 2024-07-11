@@ -36,7 +36,7 @@ func (f *securityJoinContextFactory) Create(args url.Values) (*securityJoinConte
 
 func (f *securityJoinContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityJoinContext, api.SecurityJoinData](
-		router, "join", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "join", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

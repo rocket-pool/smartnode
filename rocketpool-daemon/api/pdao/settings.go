@@ -33,7 +33,7 @@ func (f *protocolDaoSettingsContextFactory) Create(args url.Values) (*protocolDa
 
 func (f *protocolDaoSettingsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoSettingsContext, api.ProtocolDaoSettingsData](
-		router, "settings", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "settings", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

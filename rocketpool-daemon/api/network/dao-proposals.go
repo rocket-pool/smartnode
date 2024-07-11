@@ -34,7 +34,7 @@ func (f *networkProposalContextFactory) Create(args url.Values) (*networkProposa
 
 func (f *networkProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkProposalContext, api.NetworkDaoProposalsData](
-		router, "dao-proposals", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "dao-proposals", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

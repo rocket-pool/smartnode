@@ -43,7 +43,7 @@ func (f *nodeClaimAndStakeContextFactory) Create(args url.Values) (*nodeClaimAnd
 
 func (f *nodeClaimAndStakeContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeClaimAndStakeContext, types.TxInfoData](
-		router, "claim-and-stake", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "claim-and-stake", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

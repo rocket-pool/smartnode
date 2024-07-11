@@ -49,7 +49,7 @@ func (f *nodeCreateVacantMinipoolContextFactory) Create(args url.Values) (*nodeC
 
 func (f *nodeCreateVacantMinipoolContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeCreateVacantMinipoolContext, api.NodeCreateVacantMinipoolData](
-		router, "create-vacant-minipool", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "create-vacant-minipool", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

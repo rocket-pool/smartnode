@@ -42,7 +42,7 @@ func (f *oracleDaoVoteContextFactory) Create(args url.Values) (*oracleDaoVoteCon
 
 func (f *oracleDaoVoteContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoVoteContext, api.OracleDaoVoteOnProposalData](
-		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/vote", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

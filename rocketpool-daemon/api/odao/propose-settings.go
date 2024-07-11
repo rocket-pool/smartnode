@@ -42,7 +42,7 @@ func (f *oracleDaoProposeSettingContextFactory) Create(args url.Values) (*oracle
 
 func (f *oracleDaoProposeSettingContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoProposeSettingContext, api.OracleDaoProposeSettingData](
-		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "setting/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

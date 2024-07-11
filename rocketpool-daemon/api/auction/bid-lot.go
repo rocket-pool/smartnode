@@ -41,7 +41,7 @@ func (f *auctionBidContextFactory) Create(args url.Values) (*auctionBidContext, 
 
 func (f *auctionBidContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionBidContext, api.AuctionBidOnLotData](
-		router, "lots/bid", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "lots/bid", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

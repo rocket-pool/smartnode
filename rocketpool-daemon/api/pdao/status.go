@@ -36,7 +36,7 @@ func (f *protocolDaoGetStatusContextFactory) Create(args url.Values) (*protocolD
 
 func (f *protocolDaoGetStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*protocolDaoGetStatusContext, api.ProtocolDAOStatusResponse](
-		router, "get-status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "get-status", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

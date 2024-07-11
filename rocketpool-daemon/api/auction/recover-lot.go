@@ -43,7 +43,7 @@ func (f *auctionRecoverContextFactory) Create(args url.Values) (*auctionRecoverC
 
 func (f *auctionRecoverContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*auctionRecoverContext, types.DataBatch[api.AuctionRecoverRplFromLotData]](
-		router, "lots/recover", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "lots/recover", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

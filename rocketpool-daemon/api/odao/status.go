@@ -37,7 +37,7 @@ func (f *oracleDaoStatusContextFactory) Create(args url.Values) (*oracleDaoStatu
 
 func (f *oracleDaoStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoStatusContext, api.OracleDaoStatusData](
-		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

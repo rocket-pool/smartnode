@@ -40,7 +40,7 @@ func (f *nodeWithdrawEthContextFactory) Create(args url.Values) (*nodeWithdrawEt
 
 func (f *nodeWithdrawEthContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*nodeWithdrawEthContext, api.NodeWithdrawEthData](
-		router, "withdraw-eth", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "withdraw-eth", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

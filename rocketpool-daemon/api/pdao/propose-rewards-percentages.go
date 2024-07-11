@@ -44,7 +44,7 @@ func (f *protocolDaoProposeRewardsPercentagesContextFactory) Create(args url.Val
 
 func (f *protocolDaoProposeRewardsPercentagesContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeRewardsPercentagesContext, api.ProtocolDaoGeneralProposeData](
-		router, "rewards-percentages/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "rewards-percentages/propose", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

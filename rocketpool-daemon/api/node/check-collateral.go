@@ -30,7 +30,7 @@ func (f *nodeCheckCollateralContextFactory) Create(args url.Values) (*nodeCheckC
 
 func (f *nodeCheckCollateralContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeCheckCollateralContext, api.NodeCheckCollateralData](
-		router, "check-collateral", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "check-collateral", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

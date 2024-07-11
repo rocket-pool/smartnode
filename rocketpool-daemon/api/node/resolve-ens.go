@@ -37,7 +37,7 @@ func (f *nodeResolveEnsContextFactory) Create(args url.Values) (*nodeResolveEnsC
 
 func (f *nodeResolveEnsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeResolveEnsContext, api.NodeResolveEnsData](
-		router, "resolve-ens", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "resolve-ens", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

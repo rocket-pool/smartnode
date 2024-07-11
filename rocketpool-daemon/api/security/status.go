@@ -44,7 +44,7 @@ func (f *securityStatusContextFactory) Create(args url.Values) (*securityStatusC
 
 func (f *securityStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*securityStatusContext, api.SecurityStatusData](
-		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "status", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

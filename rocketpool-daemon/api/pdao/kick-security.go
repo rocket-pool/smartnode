@@ -43,7 +43,7 @@ func (f *protocolDaoProposeKickFromSecurityCouncilContextFactory) Create(args ur
 
 func (f *protocolDaoProposeKickFromSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeKickFromSecurityCouncilContext, api.ProtocolDaoProposeKickFromSecurityCouncilData](
-		router, "security/kick", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "security/kick", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

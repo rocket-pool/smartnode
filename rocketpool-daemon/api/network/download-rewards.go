@@ -33,7 +33,7 @@ func (f *networkDownloadRewardsContextFactory) Create(args url.Values) (*network
 
 func (f *networkDownloadRewardsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*networkDownloadRewardsContext, types.SuccessData](
-		router, "download-rewards-file", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "download-rewards-file", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

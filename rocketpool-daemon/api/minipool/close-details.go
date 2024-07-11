@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -83,8 +84,13 @@ func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, 
 
 func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
 	ctx := c.handler.ctx
+	return MinipoolClose_GetDetails(ctx, c.rp, c.bc, addresses, mps, data)
+}
+
+// Gets the details of minipools that can be closed
+func MinipoolClose_GetDetails(ctx context.Context, rp *rocketpool.RocketPool, bc beacon.IBeaconClient, addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
 	// Get the current ETH balances of each minipool
-	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
+	balances, err := rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting minipool balances: %w", err)
 	}
@@ -92,11 +98,11 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 	// Get the closure details
 	details := make([]api.MinipoolCloseDetails, len(addresses))
 	for i, mp := range mps {
-		details[i] = getMinipoolCloseDetails(c.rp, mp, balances[i])
+		details[i] = getMinipoolCloseDetails(rp, mp, balances[i])
 	}
 
 	// Get the node shares
-	err = c.rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
+	err = rp.BatchQuery(len(addresses), minipoolCompleteShareBatchSize, func(mc *batch.MultiCaller, i int) error {
 		if !details[i].CanClose {
 			return nil
 		}
@@ -123,7 +129,7 @@ func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mp
 		pubkeyMap[mp.Address] = pubkey
 		pubkeys = append(pubkeys, pubkey)
 	}
-	statusMap, err := c.bc.GetValidatorStatuses(ctx, pubkeys, nil)
+	statusMap, err := bc.GetValidatorStatuses(ctx, pubkeys, nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting beacon status of minipools: %w", err)
 	}

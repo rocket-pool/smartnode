@@ -28,7 +28,7 @@ func (f *nodeClearSnapshotDelegateContextFactory) Create(args url.Values) (*node
 
 func (f *nodeClearSnapshotDelegateContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeClearSnapshotDelegateContext, types.TxInfoData](
-		router, "snapshot-delegate/clear", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "snapshot-delegate/clear", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

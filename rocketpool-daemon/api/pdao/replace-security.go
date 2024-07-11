@@ -45,7 +45,7 @@ func (f *protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory) Create(
 
 func (f *protocolDaoProposeReplaceMemberOfSecurityCouncilContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*protocolDaoProposeReplaceMemberOfSecurityCouncilContext, api.ProtocolDaoProposeReplaceMemberOfSecurityCouncilData](
-		router, "security/replace", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "security/replace", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

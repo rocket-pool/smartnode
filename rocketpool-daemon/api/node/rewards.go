@@ -44,7 +44,7 @@ func (f *nodeRewardsContextFactory) Create(args url.Values) (*nodeRewardsContext
 
 func (f *nodeRewardsContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*nodeRewardsContext, api.NodeRewardsData](
-		router, "rewards", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "rewards", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 

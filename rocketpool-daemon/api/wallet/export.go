@@ -29,7 +29,7 @@ func (f *walletExportContextFactory) Create(args url.Values) (*walletExportConte
 
 func (f *walletExportContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*walletExportContext, api.WalletExportData](
-		router, "export", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "export", f, f.handler.logger.Logger, f.handler.serviceProvider.IServiceProvider,
 	)
 }
 
