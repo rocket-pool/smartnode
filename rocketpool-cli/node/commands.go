@@ -652,7 +652,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					fmt.Println("(DEPRECATED) Use `rocketpool pdao set-signalling-address` instead.")
-					fmt.Println("For more information please refer to the Governance article on Medium (https://medium.com/rocket-pool/rocket-pool-protocol-dao-governance-a3c3e92904e0).")
+					fmt.Println("For more information, please refer to the Governance article on Medium (https://medium.com/rocket-pool/rocket-pool-protocol-dao-governance-a3c3e92904e0).")
 					return nil
 
 				},
@@ -667,7 +667,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					fmt.Println("(DEPRECATED) Use `rocketpool pdao clear-signalling-address` instead.")
-					fmt.Println("For more information please refer to the Governance article on Medium (https://medium.com/rocket-pool/rocket-pool-protocol-dao-governance-a3c3e92904e0).")
+					fmt.Println("For more information, please refer to the Governance article on Medium (https://medium.com/rocket-pool/rocket-pool-protocol-dao-governance-a3c3e92904e0).")
 					return nil
 				},
 			},
