@@ -1,0 +1,14 @@
+# Taken from https://github.com/marketplace/actions/block-fixup-commit-merge?version=v2.0.0
+# Updated to use newer ubuntu and checkout action
+name: Git Checks
+
+on: [pull_request]
+
+jobs:
+  block-fixup:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Block Fixup Commit Merge
+      uses: 13rac1/block-fixup-merge-action@v2.0.0
