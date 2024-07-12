@@ -61,9 +61,9 @@ func (c *MinipoolCloseDetailsContext) GetState(node *node.Node, mc *batch.MultiC
 	node.IsFeeDistributorInitialized.AddToQuery(mc)
 }
 
-func (c *MinipoolCloseDetailsContext) CheckState(node *node.Node, response *api.MinipoolCloseDetailsData) bool {
-	response.IsFeeDistributorInitialized = node.IsFeeDistributorInitialized.Get()
-	return response.IsFeeDistributorInitialized
+func (c *MinipoolCloseDetailsContext) CheckState(node *node.Node, data *api.MinipoolCloseDetailsData) bool {
+	data.IsFeeDistributorInitialized = node.IsFeeDistributorInitialized.Get()
+	return data.IsFeeDistributorInitialized
 }
 
 func (c *MinipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
