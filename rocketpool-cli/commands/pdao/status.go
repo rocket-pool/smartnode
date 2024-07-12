@@ -50,6 +50,15 @@ func getStatus(c *cli.Context) error {
 	claimableBonds := claimableBondsResponse.Data.ClaimableBonds
 
 	fmt.Printf("block number: %d\n", response.Data.BlockNumber)
+	fmt.Printf("Voting initialized: %t\n", response.Data.IsVotingInitialized)
+	fmt.Printf("Node Registered: %t\n", response.Data.IsNodeRegistered)
+	fmt.Printf("Voting power %d\n", response.Data.VotingPower)
+	fmt.Printf("Delegated voting power %d\n", response.Data.TotalDelegatedVp)
+	fmt.Printf("On chain delegate formatted: %s\n", response.Data.OnchainVotingDelegateFormatted)
+	fmt.Printf("Account Address formatted: %s\n", response.Data.AccountAddressFormatted)
+	fmt.Printf("Signalling Address formatted %s\n", response.Data.SignallingAddressFormatted)
+	fmt.Printf("Is RPL locking allowed %t\n", response.Data.IsRPLLockingAllowed)
+
 	// Signalling Status
 	fmt.Printf("%s=== Signalling on Snapshot ===%s\n", colorGreen, colorReset)
 	blankAddress := common.Address{}
@@ -66,6 +75,7 @@ func getStatus(c *cli.Context) error {
 		//todo calculate voteCount
 		if len(response.Data.SnapshotResponse.ActiveSnapshotProposals) == 0 {
 			fmt.Printf("Rocket Pool has no Snapshot governance proposals being voted on.")
+			fmt.Println()
 		} else {
 			fmt.Printf("Rocket Pool has %d Snapshot governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(response.Data.SnapshotResponse.ActiveSnapshotProposals), voteCount)
 		}
@@ -95,7 +105,8 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("Total voting power delegated to the node: %.10f", eth.WeiToEth(response.Data.TotalDelegatedVp))
 		fmt.Println()
 	} else {
-		fmt.Print("The node must register uising 'rocketpool node register' to be eligible to receive delegated voting power")
+		fmt.Print("The node must register using 'rocketpool node register' to be eligible to receive delegated voting power")
+		fmt.Println()
 	}
 	fmt.Printf("Network total initialized voting power: %.10f\n", eth.WeiToEth(response.Data.SumVotingPower))
 	fmt.Println("")

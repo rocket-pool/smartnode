@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/contracts"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/proposals"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
@@ -81,6 +82,8 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	status, err := sp.RequireNodeRegistered(c.handler.ctx)
 	if err != nil {
 		return status, err
+	} else {
+		c.isNodeRegistered = true
 	}
 
 	// Bindings
@@ -99,9 +102,8 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	}
 	c.totalDelegatedVP, _, _, err = c.propMgr.GetArtifactsForVoting(uint32(c.blockNumber), nodeAddress)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", nodeAddress.Hex(), blockNumber, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", nodeAddress.Hex(), c.blockNumber, err)
 	}
-
 	c.votingTree, err = c.propMgr.GetNetworkTree(uint32(c.blockNumber), nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting network tree")
@@ -116,33 +118,39 @@ func (c *protocolDaoGetStatusContext) GetState(mc *batch.MultiCaller) {
 		// Node
 		c.node.Exists,
 		c.node.IsVotingInitialized,
+		c.node.IsRplLockingAllowed,
+		c.node.RplLocked,
 	)
 
-	// Snapshot Registry
-	if c.registry != nil {
-		c.registry.NodeToSigner(mc, &c.signallingAddress, c.node.Address)
-	}
+	// // Snapshot Registry
+	// if c.registry != nil {
+	// 	c.registry.NodeToSigner(mc, &c.signallingAddress, c.node.Address)
+	// }
 }
 
 func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 
 	data.BlockNumber = uint32(c.blockNumber)
-	// data.TotalDelegatedVp = c.totalDelegatedVP
-	// data.IsNodeRegistered = c.isNodeRegistered
+	data.IsNodeRegistered = c.isNodeRegistered
 	// data.SignallingAddress = c.signallingAddress
 	data.AccountAddress = c.node.Address
+	data.AccountAddressFormatted = utils.GetFormattedAddress(c.ec, data.AccountAddress)
 	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
-	// data.SumVotingPower = c.votingTree.Nodes[0].Sum
+	data.SumVotingPower = c.votingTree.Nodes[0].Sum
+	data.TotalDelegatedVp = c.totalDelegatedVP
+	data.IsRPLLockingAllowed = c.node.IsRplLockingAllowed.Get()
+	data.NodeRPLLocked = c.node.RplLocked.Get()
+	data.VerifyEnabled = c.cfg.VerifyProposals.Value
 
-	// Get the voting power and delegate at that block
-	// var err = c.rp.Query(func(mc *batch.MultiCaller) error {
-	// 	c.node.GetVotingPowerAtBlock(mc, &data.VotingPower, data.BlockNumber)
-	// 	c.node.GetVotingDelegateAtBlock(mc, &data.OnchainVotingDelegate, data.BlockNumber)
-	// 	return nil
-	// }, nil)
-	// if err != nil {
-	// 	return types.ResponseStatus_Error, fmt.Errorf("error getting voting info for block %d: %w", c.blockNumber, err)
-	// }
-	// data.OnchainVotingDelegateFormatted = utils.GetFormattedAddress(c.ec, data.OnchainVotingDelegate)
+	//Get the voting power and delegate at that block
+	var err = c.rp.Query(func(mc *batch.MultiCaller) error {
+		c.node.GetVotingPowerAtBlock(mc, &data.VotingPower, data.BlockNumber)
+		c.node.GetVotingDelegateAtBlock(mc, &data.OnchainVotingDelegate, data.BlockNumber)
+		return nil
+	}, nil)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("error getting voting info for block %d: %w", c.blockNumber, err)
+	}
+	data.OnchainVotingDelegateFormatted = utils.GetFormattedAddress(c.ec, data.OnchainVotingDelegate)
 	return types.ResponseStatus_Success, nil
 }
