@@ -61,6 +61,8 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 	serviceProvider *services.ServiceProvider,
 ) {
 	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
+		var err error
+
 		// Log
 		args := r.URL.Query()
 		logger.Info("New request", slog.String(log.MethodKey, r.Method), slog.String(log.PathKey, r.URL.Path))
@@ -68,20 +70,29 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 
 		// Check the method
 		if r.Method != http.MethodGet {
-			server.HandleInvalidMethod(logger.Logger, w)
+			err = server.HandleInvalidMethod(logger.Logger, w)
+			if err != nil {
+				logger.Warn("Error while writing invalid message http response", log.Err(err))
+			}
 			return
 		}
 
 		// Create the handler and deal with any input validation errors
 		mpContext, err := factory.Create(args)
 		if err != nil {
-			server.HandleInputError(logger.Logger, w, err)
+			err = server.HandleInputError(logger.Logger, w, err)
+			if err != nil {
+				logger.Warn("Error while writing invalid request http response", log.Err(err))
+			}
 			return
 		}
 
 		// Run the context's processing routine
 		status, response, err := runMinipoolRoute[DataType](ctx, mpContext, serviceProvider)
-		server.HandleResponse(logger.Logger, w, status, response, err)
+		err = server.HandleResponse(logger.Logger, w, status, response, err)
+		if err != nil {
+			logger.Warn("Error while writing http response", log.Err(err))
+		}
 	})
 }
 
