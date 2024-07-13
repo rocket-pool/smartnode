@@ -78,11 +78,11 @@ func (c *RocketSignerRegistry) SignerToNode(mc *batch.MultiCaller, out *common.A
 // ====================
 
 // Get info for setting the signalling address
-func (c *SnapshotDelegation) SetSigner(id common.Hash, signer common.Address, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
-	return c.txMgr.CreateTransactionInfo(c.contract, "setSigner", opts, signer)
+func (c *SnapshotDelegation) SetSigner(id common.Hash, _signer common.Address, opts *bind.TransactOpts, _v uint8, _r [32]byte, _s [32]byte) (*eth.TransactionInfo, error) {
+	return c.txMgr.CreateTransactionInfo(c.contract, "setSigner", opts, _signer, _v, _r, _s)
 }
 
 // Get info for clearing the signalling address
-func (c *SnapshotDelegation) clearSigner(id common.Hash, opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
+func (c *SnapshotDelegation) clearSigner(opts *bind.TransactOpts) (*eth.TransactionInfo, error) {
 	return c.txMgr.CreateTransactionInfo(c.contract, "clearSigner", opts)
 }

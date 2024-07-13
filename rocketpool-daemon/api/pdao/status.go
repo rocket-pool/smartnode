@@ -72,7 +72,6 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	c.ec = sp.GetEthClient()
 	c.bc = sp.GetBeaconClient()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
-	c.registry = sp.GetRocketSignerRegistry()
 
 	// Requirements
 	err := sp.RequireNodeAddress()
@@ -85,6 +84,10 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	} else {
 		c.isNodeRegistered = true
 	}
+	c.registry = sp.GetRocketSignerRegistry()
+	if c.registry == nil {
+		return types.ResponseStatus_ResourceNotFound, err
+	}
 
 	// Bindings
 	c.node, err = node.NewNode(c.rp, nodeAddress)
@@ -95,7 +98,6 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal manager: %w", err)
 	}
-	// Get the latest block
 	c.blockNumber, err = c.ec.BlockNumber(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block number: %w", err)
@@ -108,6 +110,7 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting network tree")
 	}
+	// todo add https://github.com/rocket-pool/smartnode/blob/master/rocketpool/api/pdao/status.go#L132
 
 	return types.ResponseStatus_Success, nil
 
@@ -122,10 +125,10 @@ func (c *protocolDaoGetStatusContext) GetState(mc *batch.MultiCaller) {
 		c.node.RplLocked,
 	)
 
-	// // Snapshot Registry
-	// if c.registry != nil {
-	// 	c.registry.NodeToSigner(mc, &c.signallingAddress, c.node.Address)
-	// }
+	// Snapshot Registry
+	if c.registry != nil {
+		c.registry.NodeToSigner(mc, &c.signallingAddress, c.node.Address)
+	}
 }
 
 func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
