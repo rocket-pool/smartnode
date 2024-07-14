@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
+	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -52,6 +53,7 @@ type treeGeneratorImpl_v2 struct {
 	epsilon              *big.Int
 	intervalSeconds      *big.Int
 	beaconConfig         beacon.Eth2Config
+	invalidNetworkNodes  map[common.Address]uint64
 }
 
 // Create a new tree generator
@@ -59,15 +61,14 @@ func newTreeGeneratorImpl_v2(log *log.ColorLogger, logPrefix string, index uint6
 	return &treeGeneratorImpl_v2{
 		rewardsFile: &RewardsFile_v1{
 			RewardsFileHeader: &RewardsFileHeader{
-				RewardsFileVersion:  1,
-				RulesetVersion:      2,
-				Index:               index,
-				StartTime:           startTime.UTC(),
-				EndTime:             endTime.UTC(),
-				ConsensusEndBlock:   consensusBlock,
-				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				IntervalsPassed:     intervalsPassed,
-				InvalidNetworkNodes: map[common.Address]uint64{},
+				RewardsFileVersion: 1,
+				RulesetVersion:     2,
+				Index:              index,
+				StartTime:          startTime.UTC(),
+				EndTime:            endTime.UTC(),
+				ConsensusEndBlock:  consensusBlock,
+				ExecutionEndBlock:  elSnapshotHeader.Number.Uint64(),
+				IntervalsPassed:    intervalsPassed,
 				TotalRewards: &TotalRewards{
 					ProtocolDaoRpl:               NewQuotedBigInt(0),
 					TotalCollateralRpl:           NewQuotedBigInt(0),
@@ -88,9 +89,10 @@ func newTreeGeneratorImpl_v2(log *log.ColorLogger, logPrefix string, index uint6
 				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v1{},
 			},
 		},
-		elSnapshotHeader: elSnapshotHeader,
-		log:              log,
-		logPrefix:        logPrefix,
+		elSnapshotHeader:    elSnapshotHeader,
+		log:                 log,
+		logPrefix:           logPrefix,
+		invalidNetworkNodes: map[common.Address]uint64{},
 	}
 }
 
@@ -99,7 +101,7 @@ func (r *treeGeneratorImpl_v2) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v2) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (IRewardsFile, error) {
+func (r *treeGeneratorImpl_v2) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -149,7 +151,7 @@ func (r *treeGeneratorImpl_v2) generateTree(rp *rocketpool.RocketPool, cfg *conf
 	r.updateNetworksAndTotals()
 
 	// Generate the Merkle Tree
-	err = r.rewardsFile.generateMerkleTree()
+	err = r.rewardsFile.GenerateMerkleTree()
 	if err != nil {
 		return nil, fmt.Errorf("Error generating Merkle tree: %w", err)
 	}
@@ -161,7 +163,11 @@ func (r *treeGeneratorImpl_v2) generateTree(rp *rocketpool.RocketPool, cfg *conf
 		})
 	}
 
-	return r.rewardsFile, nil
+	return &GenerateTreeResult{
+		RewardsFile:             r.rewardsFile,
+		InvalidNetworkNodes:     r.invalidNetworkNodes,
+		MinipoolPerformanceFile: &r.rewardsFile.MinipoolPerformanceFile,
+	}, nil
 
 }
 
@@ -328,7 +334,7 @@ func (r *treeGeneratorImpl_v2) calculateRplRewards() error {
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[address] = network
+					r.invalidNetworkNodes[address] = network
 					network = 0
 				}
 
@@ -426,7 +432,7 @@ func (r *treeGeneratorImpl_v2) calculateRplRewards() error {
 				return err
 			}
 			if !validNetwork {
-				r.rewardsFile.InvalidNetworkNodes[address] = network
+				r.invalidNetworkNodes[address] = network
 				network = 0
 			}
 
@@ -589,7 +595,7 @@ func (r *treeGeneratorImpl_v2) calculateEthRewards(checkBeaconPerformance bool) 
 					return err
 				}
 				if !validNetwork {
-					r.rewardsFile.InvalidNetworkNodes[nodeInfo.Address] = network
+					r.invalidNetworkNodes[nodeInfo.Address] = network
 					network = 0
 				}
 
@@ -1232,4 +1238,8 @@ func (r *treeGeneratorImpl_v2) getStartBlocksForInterval(previousIntervalEvent r
 	}
 
 	return startElHeader, nil
+}
+
+func (r *treeGeneratorImpl_v2) saveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveJSONArtifacts(r.cfg.Smartnode, treeResult, nodeTrusted)
 }
