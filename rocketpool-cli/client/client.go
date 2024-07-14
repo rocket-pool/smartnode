@@ -9,7 +9,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/rocket-pool/node-manager-core/log"
 	"github.com/rocket-pool/smartnode/v2/client"
-	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/context"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/settings"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/urfave/cli/v2"
 )
@@ -30,7 +30,7 @@ const (
 // Rocket Pool client
 type Client struct {
 	Api      *client.ApiClient
-	Context  *context.SmartNodeSettings
+	Context  *settings.SmartNodeSettings
 	Logger   *slog.Logger
 	docker   *docker.Client
 	cfg      *config.SmartNodeConfig
@@ -39,7 +39,7 @@ type Client struct {
 
 // Create new Rocket Pool client from CLI context
 func NewClientFromCtx(c *cli.Context) (*Client, error) {
-	snSettings := context.GetSmartNodeSettings(c)
+	snSettings := settings.GetSmartNodeSettings(c)
 	logger := log.NewTerminalLogger(snSettings.DebugEnabled, terminalLogColor)
 
 	// Create the tracer if required

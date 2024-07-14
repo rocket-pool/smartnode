@@ -16,8 +16,8 @@ import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/security"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/service"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/wallet"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/settings"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/context"
 	"github.com/rocket-pool/smartnode/v2/shared"
 )
 
@@ -79,7 +79,7 @@ ______           _        _    ______           _
 	}
 
 	// Set global smart node flags
-	app.Flags = context.AppendSmartNodeSettingsFlags(app.Flags)
+	app.Flags = settings.AppendSmartNodeSettingsFlags(app.Flags)
 
 	// Set utility flags
 	app.Flags = utils.AppendFlags(app.Flags)
@@ -96,7 +96,7 @@ ______           _        _    ______           _
 	service.RegisterCommands(app, "service", []string{"s"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
-	var snSettings *context.SmartNodeSettings
+	var snSettings *settings.SmartNodeSettings
 	app.Before = func(c *cli.Context) error {
 		// Check user ID
 		if os.Getuid() == 0 && !c.Bool(allowRootFlag.Name) {
@@ -106,7 +106,7 @@ ______           _        _    ______           _
 		}
 
 		var err error
-		snSettings, err = context.NewSmartNodeSettings(c)
+		snSettings, err = settings.NewSmartNodeSettings(c)
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
