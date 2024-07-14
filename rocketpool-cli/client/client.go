@@ -30,7 +30,7 @@ const (
 // Rocket Pool client
 type Client struct {
 	Api      *client.ApiClient
-	Context  *context.SmartNodeContext
+	Context  *context.SmartNodeSettings
 	Logger   *slog.Logger
 	docker   *docker.Client
 	cfg      *config.SmartNodeConfig
@@ -39,14 +39,14 @@ type Client struct {
 
 // Create new Rocket Pool client from CLI context
 func NewClientFromCtx(c *cli.Context) (*Client, error) {
-	snCtx := context.GetSmartNodeContext(c)
-	logger := log.NewTerminalLogger(snCtx.DebugEnabled, terminalLogColor)
+	snSettings := context.GetSmartNodeSettings(c)
+	logger := log.NewTerminalLogger(snSettings.DebugEnabled, terminalLogColor)
 
 	// Create the tracer if required
 	var tracer *httptrace.ClientTrace
-	if snCtx.HttpTraceFile != nil {
+	if snSettings.HttpTraceFile != nil {
 		var err error
-		tracer, err = createTracer(snCtx.HttpTraceFile, logger.Logger)
+		tracer, err = createTracer(snSettings.HttpTraceFile, logger.Logger)
 		if err != nil {
 			logger.Error("Error creating HTTP trace", log.Err(err))
 		}
@@ -54,12 +54,12 @@ func NewClientFromCtx(c *cli.Context) (*Client, error) {
 
 	// Make the client
 	rpClient := &Client{
-		Context: snCtx,
+		Context: snSettings,
 		Logger:  logger.Logger,
 	}
 
 	// Get the API URL
-	url := snCtx.ApiUrl
+	url := snSettings.ApiUrl
 	if url == nil {
 		// Load the config to get the API port
 		cfg, _, err := rpClient.LoadConfig()

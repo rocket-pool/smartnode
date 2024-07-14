@@ -13,7 +13,7 @@ const (
 )
 
 // Context for global settings
-type SmartNodeContext struct {
+type SmartNodeSettings struct {
 	// The path to the configuration file
 	ConfigPath string
 
@@ -42,12 +42,12 @@ type SmartNodeContext struct {
 	HttpTraceFile *os.File
 }
 
-// Add the Smart Node context into a CLI context
-func SetSmartnodeContext(c *cli.Context, sn *SmartNodeContext) {
+// Add the Smart Node settings into a CLI context
+func SetSmartNodeSettings(c *cli.Context, sn *SmartNodeSettings) {
 	c.App.Metadata[contextMetadataName] = sn
 }
 
-// Get the Smart Node context from a CLI context
-func GetSmartNodeContext(c *cli.Context) *SmartNodeContext {
-	return c.App.Metadata[contextMetadataName].(*SmartNodeContext)
+// Get the Smart Node settings from a CLI context
+func GetSmartNodeSettings(c *cli.Context) *SmartNodeSettings {
+	return c.App.Metadata[contextMetadataName].(*SmartNodeSettings)
 }

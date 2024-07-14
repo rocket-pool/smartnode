@@ -161,7 +161,7 @@ ______           _        _    ______           _
 	service.RegisterCommands(app, "service", []string{"s"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
-	var snCtx *context.SmartNodeContext
+	var snSettings *context.SmartNodeSettings
 	app.Before = func(c *cli.Context) error {
 		// Check user ID
 		if os.Getuid() == 0 && !c.Bool(allowRootFlag.Name) {
@@ -171,7 +171,7 @@ ______           _        _    ______           _
 		}
 
 		var err error
-		snCtx, err = validateFlags(c)
+		snSettings, err = validateFlags(c)
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
@@ -180,8 +180,8 @@ ______           _        _    ______           _
 	}
 
 	// Run application
-	if snCtx != nil && snCtx.HttpTraceFile != nil {
-		defer snCtx.HttpTraceFile.Close()
+	if snSettings != nil && snSettings.HttpTraceFile != nil {
+		defer snSettings.HttpTraceFile.Close()
 	}
 	fmt.Println()
 	if err := app.Run(os.Args); err != nil {
@@ -206,8 +206,8 @@ func setDefaultPaths() {
 }
 
 // Validate the global flags
-func validateFlags(c *cli.Context) (*context.SmartNodeContext, error) {
-	snCtx := &context.SmartNodeContext{
+func validateFlags(c *cli.Context) (*context.SmartNodeSettings, error) {
+	snSettings := &context.SmartNodeSettings{
 		MaxFee:         c.Float64(maxFeeFlag.Name),
 		MaxPriorityFee: c.Float64(maxPriorityFeeFlag.Name),
 		DebugEnabled:   c.Bool(debugFlag.Name),
@@ -215,10 +215,10 @@ func validateFlags(c *cli.Context) (*context.SmartNodeContext, error) {
 	}
 
 	// If set, validate custom nonce
-	snCtx.Nonce = big.NewInt(0)
+	snSettings.Nonce = big.NewInt(0)
 	if c.IsSet(nonceFlag.Name) {
 		customNonce := c.Uint64(nonceFlag.Name)
-		snCtx.Nonce.SetUint64(customNonce)
+		snSettings.Nonce.SetUint64(customNonce)
 	}
 
 	// Make sure the config directory exists
@@ -227,32 +227,32 @@ func validateFlags(c *cli.Context) (*context.SmartNodeContext, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
 	}
-	snCtx.ConfigPath = path
+	snSettings.ConfigPath = path
 
 	// Grab the daemon socket path; don't error out if it doesn't exist yet because this might be a new installation that hasn't configured and started it yet
 	nativeMode := c.Bool(nativeFlag.Name)
-	snCtx.NativeMode = nativeMode
+	snSettings.NativeMode = nativeMode
 
 	// Get the API URL
 	address := c.String(apiAddressFlag.Name)
 	if address != "" {
 		baseUrl, err := url.Parse(address)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing API address [%s]: %w", snCtx.ApiUrl, err)
+			return nil, fmt.Errorf("error parsing API address [%s]: %w", snSettings.ApiUrl, err)
 		}
-		snCtx.ApiUrl = baseUrl.JoinPath(config.SmartNodeApiClientRoute)
+		snSettings.ApiUrl = baseUrl.JoinPath(config.SmartNodeApiClientRoute)
 	}
 
 	// Get the HTTP trace flag
 	httpTracePath := c.String(httpTracePathFlag.Name)
 	if httpTracePath != "" {
-		snCtx.HttpTraceFile, err = os.OpenFile(httpTracePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, traceMode)
+		snSettings.HttpTraceFile, err = os.OpenFile(httpTracePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, traceMode)
 		if err != nil {
 			return nil, fmt.Errorf("error opening HTTP trace file [%s]: %w", httpTracePath, err)
 		}
 	}
 
 	// TODO: more here
-	context.SetSmartnodeContext(c, snCtx)
-	return snCtx, nil
+	context.SetSmartNodeSettings(c, snSettings)
+	return snSettings, nil
 }
