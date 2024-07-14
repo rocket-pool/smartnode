@@ -12,8 +12,8 @@ import (
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/v2/types"
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/state"
-	"github.com/rocket-pool/smartnode/v2/shared"
 	"github.com/rocket-pool/smartnode/v2/shared/keys"
 	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
 	"golang.org/x/sync/errgroup"
@@ -51,7 +51,7 @@ func NewRollingRecord(logger *slog.Logger, bc beacon.IBeaconClient, startSlot ui
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
 		RewardsInterval:   rewardsInterval,
 		Ruleset:           ruleset,
-		SmartnodeVersion:  shared.RocketPoolVersion,
+		SmartnodeVersion:  assets.RocketPoolVersion(),
 
 		bc:           bc,
 		beaconConfig: beaconConfig,

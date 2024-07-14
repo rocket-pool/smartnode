@@ -6,6 +6,7 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/auction"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/minipool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/network"
@@ -18,7 +19,6 @@ import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/wallet"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/settings"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
-	"github.com/rocket-pool/smartnode/v2/shared"
 )
 
 // allowRootFlag is the only one this file deals with- simply so it can exit early.
@@ -32,24 +32,31 @@ var (
 
 // Run
 func main() {
-	// Add logo to application help template
-	cli.AppHelpTemplate = fmt.Sprintf(`
-______           _        _    ______           _ 
-| ___ \         | |      | |   | ___ \         | |
-| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
-|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
-| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
-\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|
+	app := newCliApp()
+	run(app, os.Args)
+}
 
-%s`, cli.AppHelpTemplate)
+func run(app *cli.App, args []string) {
+	// Run application
+	fmt.Println()
+	if err := app.Run(args); err != nil {
+		utils.PrettyPrintError(err)
+		os.Exit(1)
+	}
+	fmt.Println()
+}
 
+func newCliApp() *cli.App {
 	// Initialise application
 	app := cli.NewApp()
+
+	// Add logo to application help template
+	app.CustomAppHelpTemplate = fmt.Sprintf("%s\n%s", assets.Logo(), cli.AppHelpTemplate)
 
 	// Set application info
 	app.Name = "rocketpool"
 	app.Usage = "Smart Node CLI for Rocket Pool"
-	app.Version = shared.RocketPoolVersion
+	app.Version = assets.RocketPoolVersion()
 	app.Authors = []*cli.Author{
 		{
 			Name:  "David Rugendyke",
@@ -114,14 +121,13 @@ ______           _        _    ______           _
 		return nil
 	}
 
-	// Run application
-	if snSettings != nil && snSettings.HttpTraceFile != nil {
-		defer snSettings.HttpTraceFile.Close()
+	app.After = func(c *cli.Context) error {
+		// Close http tracer if any was created
+		snSettings = settings.GetSmartNodeSettings(c)
+		if snSettings != nil && snSettings.HttpTraceFile != nil {
+			snSettings.HttpTraceFile.Close()
+		}
+		return nil
 	}
-	fmt.Println()
-	if err := app.Run(os.Args); err != nil {
-		utils.PrettyPrintError(err)
-		os.Exit(1)
-	}
-	fmt.Println()
+	return app
 }

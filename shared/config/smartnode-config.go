@@ -10,7 +10,7 @@ import (
 
 	"github.com/alessio/shellescape"
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/shared/config/ids"
 	"github.com/rocket-pool/smartnode/v2/shared/config/migration"
 	"gopkg.in/yaml.v3"
@@ -19,11 +19,6 @@ import (
 // =========================
 // === Smart Node Config ===
 // =========================
-
-const (
-	// Tags
-	smartnodeTag string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
-)
 
 // The master configuration struct
 type SmartNodeConfig struct {
@@ -121,7 +116,7 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 	cfg := &SmartNodeConfig{
 		rocketPoolDirectory: rpDir,
 		IsNativeMode:        isNativeMode,
-		Version:             shared.RocketPoolVersion,
+		Version:             assets.RocketPoolVersion(),
 
 		Network: config.Parameter[config.Network]{
 			ParameterCommon: &config.ParameterCommon{
@@ -522,7 +517,7 @@ func (cfg *SmartNodeConfig) Serialize() map[string]any {
 	masterMap := map[string]any{}
 
 	snMap := config.Serialize(cfg)
-	masterMap[ids.VersionID] = fmt.Sprintf("v%s", shared.RocketPoolVersion)
+	masterMap[ids.VersionID] = fmt.Sprintf("v%s", assets.RocketPoolVersion())
 	masterMap[ids.IsNativeKey] = strconv.FormatBool(cfg.IsNativeMode)
 	masterMap[ids.SmartNodeID] = snMap
 	return masterMap
@@ -534,7 +529,7 @@ func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
 	// Upgrade the config to the latest version
 	masterMap, err = migration.UpdateConfig(masterMap)
 	if err != nil {
-		return fmt.Errorf("error upgrading configuration to v%s: %w", shared.RocketPoolVersion, err)
+		return fmt.Errorf("error upgrading configuration to v%s: %w", assets.RocketPoolVersion(), err)
 	}
 
 	// Get the network
@@ -772,7 +767,7 @@ func getNetworkOptions() []*config.ParameterOption[config.Network] {
 		},
 	}
 
-	if strings.HasSuffix(shared.RocketPoolVersion, "-dev") {
+	if strings.HasSuffix(assets.RocketPoolVersion(), "-dev") {
 		options = append(options, &config.ParameterOption[config.Network]{
 			ParameterOptionCommon: &config.ParameterOptionCommon{
 				Name:        "Devnet",

@@ -3,10 +3,10 @@ package service
 import (
 	"fmt"
 
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/v2/shared"
 	"github.com/urfave/cli/v2"
 )
 
@@ -20,7 +20,7 @@ var (
 		Name:    "version",
 		Aliases: []string{"v"},
 		Usage:   "The update tracker package version to install",
-		Value:   fmt.Sprintf("v%s", shared.RocketPoolVersion),
+		Value:   fmt.Sprintf("v%s", assets.RocketPoolVersion()),
 	}
 )
 

@@ -6,7 +6,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/assets"
 	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
@@ -52,7 +52,7 @@ func NewMainDisplay(app *tview.Application, previousConfig *snCfg.SmartNodeConfi
 	grid.SetBackgroundColor(NonInteractiveBackgroundColor)
 
 	grid.SetBorder(true).
-		SetTitle(fmt.Sprintf(" Rocket Pool Smartnode %s Configuration ", shared.RocketPoolVersion)).
+		SetTitle(fmt.Sprintf(" Rocket Pool Smartnode %s Configuration ", assets.RocketPoolVersion())).
 		SetBorderColor(tcell.ColorOrange).
 		SetTitleColor(tcell.ColorOrange).
 		SetBackgroundColor(NonInteractiveBackgroundColor)

@@ -7,11 +7,11 @@ import (
 
 	"github.com/rivo/tview"
 	nmc_config "github.com/rocket-pool/node-manager-core/config"
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	cliconfig "github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/service/config"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/v2/shared"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/urfave/cli/v2"
 )
@@ -40,7 +40,7 @@ func configureService(c *cli.Context) error {
 
 	// Check if this is an update
 	oldVersion := strings.TrimPrefix(cfg.Version, "v")
-	currentVersion := strings.TrimPrefix(shared.RocketPoolVersion, "v")
+	currentVersion := strings.TrimPrefix(assets.RocketPoolVersion(), "v")
 	isUpdate := c.Bool(installUpdateDefaultsFlag.Name) || (oldVersion != currentVersion)
 
 	// For upgrades, move the config to the old one and create a new upgraded copy

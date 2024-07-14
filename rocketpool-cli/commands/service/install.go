@@ -3,10 +3,10 @@ package service
 import (
 	"fmt"
 
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/v2/shared"
 	"github.com/urfave/cli/v2"
 )
 
@@ -30,7 +30,7 @@ var (
 		Name:    "version",
 		Aliases: []string{"v"},
 		Usage:   "The smart node package version to install",
-		Value:   fmt.Sprintf("v%s", shared.RocketPoolVersion),
+		Value:   fmt.Sprintf("v%s", assets.RocketPoolVersion()),
 	}
 	installUpdateDefaultsFlag *cli.BoolFlag = &cli.BoolFlag{
 		Name:    "update-defaults",
@@ -102,8 +102,8 @@ func installService(c *cli.Context) error {
 // TODO: get this from an external source and don't hardcode it into the CLI
 func printPatchNotes() {
 	fmt.Println()
-	fmt.Println(shared.Logo)
-	fmt.Printf("%s=== Smart Node v%s ===%s\n\n", terminal.ColorGreen, shared.RocketPoolVersion, terminal.ColorReset)
+	fmt.Println(assets.Logo())
+	fmt.Printf("%s=== Smart Node v%s ===%s\n\n", terminal.ColorGreen, assets.RocketPoolVersion(), terminal.ColorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
 	fmt.Printf("%s=== Welcome to the v2.0 Beta! ===%s\n", terminal.ColorGreen, terminal.ColorReset)

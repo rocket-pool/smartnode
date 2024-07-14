@@ -7,7 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
-	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -41,6 +41,6 @@ type serviceVersionContext struct {
 }
 
 func (c *serviceVersionContext) PrepareData(data *api.ServiceVersionData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-	data.Version = shared.RocketPoolVersion
+	data.Version = assets.RocketPoolVersion()
 	return types.ResponseStatus_Success, nil
 }

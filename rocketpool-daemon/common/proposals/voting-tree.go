@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/rocketpool-go/v2/types"
-	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/assets"
 )
 
 type VotingTree struct {
@@ -63,7 +63,7 @@ func CreateTreeFromLeaves(blockNumber uint32, network config.Network, leaves []*
 	}
 
 	return &VotingTree{
-		SmartnodeVersion: shared.RocketPoolVersion,
+		SmartnodeVersion: assets.RocketPoolVersion(),
 		BlockNumber:      blockNumber,
 		Network:          network,
 		Nodes:            nodes,
