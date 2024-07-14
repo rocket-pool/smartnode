@@ -38,12 +38,18 @@ func main() {
 
 func run(app *cli.App, args []string) {
 	// Run application
-	fmt.Println()
+	_, err := app.Writer.Write([]byte("\n"))
+	if err != nil {
+		panic(err)
+	}
 	if err := app.Run(args); err != nil {
 		utils.PrettyPrintError(err)
 		os.Exit(1)
 	}
-	fmt.Println()
+	_, err = app.Writer.Write([]byte("\n"))
+	if err != nil {
+		panic(err)
+	}
 }
 
 func newCliApp() *cli.App {
