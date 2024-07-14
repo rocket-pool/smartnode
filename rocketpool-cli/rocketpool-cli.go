@@ -2,13 +2,8 @@ package main
 
 import (
 	"fmt"
-	"math/big"
-	"net/url"
 	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/auction"
@@ -24,66 +19,14 @@ import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/context"
 	"github.com/rocket-pool/smartnode/v2/shared"
-	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
-const (
-	defaultConfigFolder string      = ".rocketpool"
-	traceMode           os.FileMode = 0644
-)
-
-// Flags
+// allowRootFlag is the only one this file deals with- simply so it can exit early.
 var (
 	allowRootFlag *cli.BoolFlag = &cli.BoolFlag{
 		Name:    "allow-root",
 		Aliases: []string{"r"},
 		Usage:   "Allow rocketpool to be run as the root user",
-	}
-	configPathFlag *cli.StringFlag = &cli.StringFlag{
-		Name:    "config-path",
-		Aliases: []string{"c"},
-		Usage:   "Directory to install and save all of Rocket Pool's configuration and data to",
-	}
-	nativeFlag *cli.BoolFlag = &cli.BoolFlag{
-		Name:    "native-mode",
-		Aliases: []string{"n"},
-		Usage:   "Set this if you're running the Smart Node in Native Mode (where you manage your own Node process and don't use Docker for automatic management)",
-	}
-	maxFeeFlag *cli.Float64Flag = &cli.Float64Flag{
-		Name:    "max-fee",
-		Aliases: []string{"f"},
-		Usage:   "The max fee (including the priority fee) you want a transaction to cost, in gwei. Use 0 to set it automatically based on network conditions.",
-		Value:   0,
-	}
-	maxPriorityFeeFlag *cli.Float64Flag = &cli.Float64Flag{
-		Name:    "max-priority-fee",
-		Aliases: []string{"i"},
-		Usage:   "The max priority fee you want a transaction to use, in gwei. Use 0 to set it automatically.",
-		Value:   0,
-	}
-	nonceFlag *cli.Uint64Flag = &cli.Uint64Flag{
-		Name:  "nonce",
-		Usage: "Use this flag to explicitly specify the nonce that the next transaction should use, so it can override an existing 'stuck' transaction. If running a command that sends multiple transactions, the first will be given this nonce and the rest will be incremented sequentially.",
-		Value: 0,
-	}
-	debugFlag *cli.BoolFlag = &cli.BoolFlag{
-		Name:  "debug",
-		Usage: "Enable debug printing of API commands",
-	}
-	secureSessionFlag *cli.BoolFlag = &cli.BoolFlag{
-		Name:    "secure-session",
-		Aliases: []string{"s"},
-		Usage:   "Some commands may print sensitive information to your terminal. Use this flag when nobody can see your screen to allow sensitive data to be printed without prompting",
-	}
-	apiAddressFlag *cli.StringFlag = &cli.StringFlag{
-		Name:    "api-address",
-		Aliases: []string{"a"},
-		Usage:   "The address of the Smart Node API server to connect to. If left blank it will default to 'localhost' at the port specified in the service configuration.",
-	}
-	httpTracePathFlag *cli.StringFlag = &cli.StringFlag{
-		Name:    "http-trace-path",
-		Aliases: []string{"htp"},
-		Usage:   "The path to save HTTP trace logs to. Leave blank to disable HTTP tracing",
 	}
 )
 
@@ -130,24 +73,16 @@ ______           _        _    ______           _
 	// Initialize app metadata
 	app.Metadata = make(map[string]interface{})
 
-	// Set application flags
+	// Set allowedRootFlag
 	app.Flags = []cli.Flag{
 		allowRootFlag,
-		configPathFlag,
-		nativeFlag,
-		apiAddressFlag,
-		maxFeeFlag,
-		maxPriorityFeeFlag,
-		nonceFlag,
-		utils.PrintTxDataFlag,
-		utils.SignTxOnlyFlag,
-		debugFlag,
-		httpTracePathFlag,
-		secureSessionFlag,
 	}
 
-	// Set default paths for flags before parsing the provided values
-	setDefaultPaths()
+	// Set global smart node flags
+	app.Flags = context.AppendSmartNodeSettingsFlags(app.Flags)
+
+	// Set utility flags
+	app.Flags = utils.AppendFlags(app.Flags)
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
@@ -171,7 +106,7 @@ ______           _        _    ______           _
 		}
 
 		var err error
-		snSettings, err = validateFlags(c)
+		snSettings, err = context.NewSmartNodeSettings(c)
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)
@@ -189,70 +124,4 @@ ______           _        _    ______           _
 		os.Exit(1)
 	}
 	fmt.Println()
-}
-
-// Set the default paths for various flags
-func setDefaultPaths() {
-	// Get the home directory
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		fmt.Printf("Cannot get user's home directory: %s\n", err.Error())
-		os.Exit(1)
-	}
-
-	// Default config folder path
-	defaultConfigPath := filepath.Join(homeDir, defaultConfigFolder)
-	configPathFlag.Value = defaultConfigPath
-}
-
-// Validate the global flags
-func validateFlags(c *cli.Context) (*context.SmartNodeSettings, error) {
-	snSettings := &context.SmartNodeSettings{
-		MaxFee:         c.Float64(maxFeeFlag.Name),
-		MaxPriorityFee: c.Float64(maxPriorityFeeFlag.Name),
-		DebugEnabled:   c.Bool(debugFlag.Name),
-		SecureSession:  c.Bool(secureSessionFlag.Name),
-	}
-
-	// If set, validate custom nonce
-	snSettings.Nonce = big.NewInt(0)
-	if c.IsSet(nonceFlag.Name) {
-		customNonce := c.Uint64(nonceFlag.Name)
-		snSettings.Nonce.SetUint64(customNonce)
-	}
-
-	// Make sure the config directory exists
-	configPath := c.String(configPathFlag.Name)
-	path, err := homedir.Expand(strings.TrimSpace(configPath))
-	if err != nil {
-		return nil, fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
-	}
-	snSettings.ConfigPath = path
-
-	// Grab the daemon socket path; don't error out if it doesn't exist yet because this might be a new installation that hasn't configured and started it yet
-	nativeMode := c.Bool(nativeFlag.Name)
-	snSettings.NativeMode = nativeMode
-
-	// Get the API URL
-	address := c.String(apiAddressFlag.Name)
-	if address != "" {
-		baseUrl, err := url.Parse(address)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing API address [%s]: %w", snSettings.ApiUrl, err)
-		}
-		snSettings.ApiUrl = baseUrl.JoinPath(config.SmartNodeApiClientRoute)
-	}
-
-	// Get the HTTP trace flag
-	httpTracePath := c.String(httpTracePathFlag.Name)
-	if httpTracePath != "" {
-		snSettings.HttpTraceFile, err = os.OpenFile(httpTracePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, traceMode)
-		if err != nil {
-			return nil, fmt.Errorf("error opening HTTP trace file [%s]: %w", httpTracePath, err)
-		}
-	}
-
-	// TODO: more here
-	context.SetSmartNodeSettings(c, snSettings)
-	return snSettings, nil
 }

@@ -35,6 +35,10 @@ var (
 	}
 )
 
+func AppendFlags(flags []cli.Flag) []cli.Flag {
+	return append(flags, PrintTxDataFlag, SignTxOnlyFlag)
+}
+
 func InstantiateFlag[FlagType cli.Flag](prototype FlagType, description string) cli.Flag {
 	switch typedProto := any(prototype).(type) {
 	case *cli.BoolFlag:
