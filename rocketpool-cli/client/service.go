@@ -19,6 +19,11 @@ import (
 )
 
 const (
+	installerName              string = "install.sh"
+	updateTrackerInstallerName string = "install-update-tracker.sh"
+	installerURL               string = "https://github.com/rocket-pool/smartnode/releases/download/%s/" + installerName
+	updateTrackerURL           string = "https://github.com/rocket-pool/smartnode/releases/download/%s/" + updateTrackerInstallerName
+
 	debugColor         color.Attribute = color.FgYellow
 	nethermindAdminUrl string          = "http://127.0.0.1:7434"
 )
@@ -140,12 +145,12 @@ func (c *Client) InstallService(verbose bool, noDeps bool, version string, path 
 		flags = append(flags, "-d")
 	}
 
-	return c.downloadAndRun(InstallerName, InstallerURL, verbose, version, useLocalInstaller, flags)
+	return c.downloadAndRun(installerName, installerURL, verbose, version, useLocalInstaller, flags)
 }
 
 // Install the update tracker
 func (c *Client) InstallUpdateTracker(verbose bool, version string, useLocalInstaller bool) error {
-	return c.downloadAndRun(UpdateTrackerInstallerName, UpdateTrackerURL, verbose, version, useLocalInstaller, nil)
+	return c.downloadAndRun(updateTrackerInstallerName, updateTrackerURL, verbose, version, useLocalInstaller, nil)
 }
 
 // Start the Rocket Pool service
