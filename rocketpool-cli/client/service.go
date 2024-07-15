@@ -23,47 +23,48 @@ const (
 	nethermindAdminUrl string          = "http://127.0.0.1:7434"
 )
 
-// Install the Rocket Pool service
-func (c *Client) InstallService(verbose bool, noDeps bool, version string, path string, useLocalInstaller bool) error {
-	// Get installation script flags
+func (c *Client) downloadAndRun(
+	name string,
+	url string,
+	verbose bool,
+	version string,
+	useLocalInstaller bool,
+	extraFlags []string,
+) error {
+	var script []byte
+
 	flags := []string{
 		"-v", shellescape.Quote(version),
 	}
-	if path != "" {
-		flags = append(flags, fmt.Sprintf("-p %s", shellescape.Quote(path)))
-	}
-	if noDeps {
-		flags = append(flags, "-d")
-	}
+	flags = append(flags, extraFlags...)
 
-	var script []byte
 	if useLocalInstaller {
 		// Make sure it exists
-		_, err := os.Stat(InstallerName)
+		_, err := os.Stat(name)
 		if errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("local install script [%s] does not exist", InstallerName)
+			return fmt.Errorf("local script [%s] does not exist", name)
 		}
 		if err != nil {
-			return fmt.Errorf("error checking install script [%s]: %w", InstallerName, err)
+			return fmt.Errorf("error checking script [%s]: %w", name, err)
 		}
 
 		// Read it
-		script, err = os.ReadFile(InstallerName)
+		script, err = os.ReadFile(name)
 		if err != nil {
-			return fmt.Errorf("error reading local install script [%s]: %w", InstallerName, err)
+			return fmt.Errorf("error reading local script [%s]: %w", name, err)
 		}
 
 		// Set the "local mode" flag
 		flags = append(flags, "-l")
 	} else {
 		// Download the installation script
-		resp, err := http.Get(fmt.Sprintf(InstallerURL, version))
+		resp, err := http.Get(fmt.Sprintf(url, version))
 		if err != nil {
 			return err
 		}
 		defer resp.Body.Close()
 		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("unexpected http status downloading installation script: %d", resp.StatusCode)
+			return fmt.Errorf("unexpected http status downloading %s script: %d", name, resp.StatusCode)
 		}
 
 		// Sanity check that the script octet length matches content-length
@@ -128,103 +129,23 @@ func (c *Client) InstallService(verbose bool, noDeps bool, version string, path 
 	return nil
 }
 
+// Install the Rocket Pool service
+func (c *Client) InstallService(verbose bool, noDeps bool, version string, path string, useLocalInstaller bool) error {
+	// Get installation script flags
+	flags := []string{}
+	if path != "" {
+		flags = append(flags, fmt.Sprintf("-p %s", shellescape.Quote(path)))
+	}
+	if noDeps {
+		flags = append(flags, "-d")
+	}
+
+	return c.downloadAndRun(InstallerName, InstallerURL, verbose, version, useLocalInstaller, flags)
+}
+
 // Install the update tracker
 func (c *Client) InstallUpdateTracker(verbose bool, version string, useLocalInstaller bool) error {
-	// Get installation script flags
-	flags := []string{
-		"-v", shellescape.Quote(version),
-	}
-
-	var script []byte
-	if useLocalInstaller {
-		// Make sure it exists
-		_, err := os.Stat(UpdateTrackerInstallerName)
-		if errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("local update tracker install script [%s] does not exist", UpdateTrackerInstallerName)
-		}
-		if err != nil {
-			return fmt.Errorf("error checking update tracker install script [%s]: %w", UpdateTrackerInstallerName, err)
-		}
-
-		// Read it
-		script, err = os.ReadFile(UpdateTrackerInstallerName)
-		if err != nil {
-			return fmt.Errorf("error reading local update tracker install script [%s]: %w", UpdateTrackerInstallerName, err)
-		}
-
-		// Set the "local mode" flag
-		flags = append(flags, "-l")
-	} else {
-		// Download the update tracker script
-		resp, err := http.Get(fmt.Sprintf(UpdateTrackerURL, version))
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("unexpected http status downloading update tracker installer script: %d", resp.StatusCode)
-		}
-
-		// Sanity check that the script octet length matches content-length
-		script, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
-			return fmt.Errorf("downloaded script length %d did not match content-length header %s", len(script), resp.Header.Get("content-length"))
-		}
-	}
-
-	// Get the escalation command
-	escalationCmd, err := c.getEscalationCommand()
-	if err != nil {
-		return fmt.Errorf("error getting escalation command: %w", err)
-	}
-
-	// Initialize installation command
-	cmd := c.newCommand(fmt.Sprintf("%s sh -s -- %s", escalationCmd, strings.Join(flags, " ")))
-
-	// Pass the script to sh via its stdin fd
-	cmd.SetStdin(bytes.NewReader(script))
-
-	// Get command output pipes
-	cmdOut, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	cmdErr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	// Print progress from stdout
-	go (func() {
-		scanner := bufio.NewScanner(cmdOut)
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-	})()
-
-	// Read command & error output from stderr; render in verbose mode
-	var errMessage string
-	go (func() {
-		c := color.New(debugColor)
-		scanner := bufio.NewScanner(cmdErr)
-		for scanner.Scan() {
-			errMessage = scanner.Text()
-			if verbose {
-				_, _ = c.Println(scanner.Text())
-			}
-		}
-	})()
-
-	// Run command and return error output
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("could not install Rocket Pool update tracker: %s", errMessage)
-	}
-	return nil
+	return c.downloadAndRun(UpdateTrackerInstallerName, UpdateTrackerURL, verbose, version, useLocalInstaller, nil)
 }
 
 // Start the Rocket Pool service
