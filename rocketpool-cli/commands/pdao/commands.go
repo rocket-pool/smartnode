@@ -175,8 +175,18 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 					// Validate args
 					utils.ValidateArgCount(c, 2)
-					signallingAddress := c.Args().Get(0)
-					signature := c.Args().Get(1)
+
+					signallingAddress, err := input.ValidateAddress("signalling-address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					// leaving this out until https://github.com/rocket-pool/node-manager-core/pull/17 is merged
+					// signature, err := input.ValidateSignature("signature", c.Args().Get(1))
+					signature := c.Args().Get(0)
+					if err != nil {
+						return err
+					}
+
 					// Run
 					return setSignallingAddress(c, signallingAddress, signature)
 				},

@@ -220,3 +220,17 @@ func (r *PDaoRequester) GetCurrentVotingDelegate() (*types.ApiResponse[api.Proto
 func (r *PDaoRequester) GetStatus() (*types.ApiResponse[api.ProtocolDAOStatusResponse], error) {
 	return client.SendGetRequest[api.ProtocolDAOStatusResponse](r, "get-status", "GetStatus", nil)
 }
+
+// Set the signalling address for the node
+func (r *PDaoRequester) SetSignallingAddress(signallingAddress common.Address, signature string) (*types.ApiResponse[types.TxInfoData], error) {
+	args := map[string]string{
+		"signallingAddress": signallingAddress.Hex(),
+		"signature":         string(signature),
+	}
+	return client.SendGetRequest[types.TxInfoData](r, "set-signalling-address", "SetSignallingAddress", args)
+}
+
+// Set the signalling address for the node
+func (r *PDaoRequester) ClearSignallingAddress() (*types.ApiResponse[types.TxInfoData], error) {
+	return client.SendGetRequest[types.TxInfoData](r, "clear-signalling-address", "ClearSignallingAddress", nil)
+}

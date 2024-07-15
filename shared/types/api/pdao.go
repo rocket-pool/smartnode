@@ -323,3 +323,11 @@ type ProtocolDAOStatusResponse struct {
 	SumVotingPower          *big.Int       `json:"sumVotingPower"`
 	IsNodeRegistered        bool           `json:"isNodeRegistered"`
 }
+
+type ProtocolDAOSetSignallingAddressResponse struct {
+	Error string `json:"error"`
+}
+
+type ProtocolDAOClearSignallingAddressResponse struct {
+	Error string `json:"error"`
+}
