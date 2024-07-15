@@ -99,19 +99,9 @@ func getSyncProgress(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if depositContractInfo.Data.RPNetwork != depositContractInfo.Data.BeaconNetwork ||
-		depositContractInfo.Data.RPDepositContract != depositContractInfo.Data.BeaconDepositContract {
-		utils.PrintDepositMismatchError(
-			depositContractInfo.Data.RPNetwork,
-			depositContractInfo.Data.BeaconNetwork,
-			depositContractInfo.Data.RPDepositContract,
-			depositContractInfo.Data.BeaconDepositContract)
-		return nil
-	} else {
-		fmt.Println("Your Beacon Node is on the correct network.")
-		fmt.Println()
-	}
 
-	// Return
+	// Print any mismatch between client networks
+	depositContractInfo.Data.PrintMismatch()
+
 	return nil
 }

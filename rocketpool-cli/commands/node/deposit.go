@@ -33,18 +33,9 @@ func nodeDeposit(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if depositContractInfo.Data.RPNetwork != depositContractInfo.Data.BeaconNetwork ||
-		depositContractInfo.Data.RPDepositContract != depositContractInfo.Data.BeaconDepositContract {
-		utils.PrintDepositMismatchError(
-			depositContractInfo.Data.RPNetwork,
-			depositContractInfo.Data.BeaconNetwork,
-			depositContractInfo.Data.RPDepositContract,
-			depositContractInfo.Data.BeaconDepositContract)
+	if depositContractInfo.Data.PrintMismatch() {
 		return nil
 	}
-
-	fmt.Println("Your Beacon Node is on the correct network.")
-	fmt.Println()
 
 	// Check if the fee distributor has been initialized
 	feeDistributorResponse, err := rp.Api.Node.InitializeFeeDistributor()
