@@ -6,6 +6,7 @@ import (
 	"math/big"
 	"strconv"
 
+	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
@@ -18,39 +19,59 @@ import (
 
 // Config
 const (
-	DefaultMaxNodeFeeSlippage float64 = 0.01 // 1% below current network fee
+	amountFlag                string  = "amount"
+	maxSlippageFlag           string  = "max-slippage"
+	saltFlag                  string  = "salt"
+	defaultMaxNodeFeeSlippage float64 = 0.01 // 1% below current network fee
 )
 
-func nodeDeposit(c *cli.Context) error {
-	// Get RP client
-	rp, err := client.NewClientFromCtx(c)
-	if err != nil {
-		return err
-	}
+type deposit struct {
+	amountWei  *big.Int
+	minNodeFee float64
+	salt       *big.Int
+}
+
+// Common deposit flow.
+// If soloConversionPubkey is passed, this is treated as a vacant minipool
+func newDepositPrompts(c *cli.Context, rp *client.Client, soloConversionPubkey *beacon.ValidatorPubkey) (*deposit, error) {
 
 	// Make sure Beacon is on the correct chain
 	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo(true)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if depositContractInfo.Data.PrintMismatch() {
-		return nil
+		return nil, nil
 	}
 
 	// Check if the fee distributor has been initialized
 	feeDistributorResponse, err := rp.Api.Node.InitializeFeeDistributor()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if !feeDistributorResponse.Data.IsInitialized {
 		fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
-		return nil
+		return nil, nil
 	}
 
 	// Post a warning about fee distribution
 	if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", terminal.ColorYellow, terminal.ColorReset))) {
 		fmt.Println("Cancelled.")
-		return nil
+		return nil, nil
+	}
+
+	if soloConversionPubkey != nil {
+		// Print a notification about the pubkey
+		fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n", soloConversionPubkey.Hex())
+		fmt.Println()
+		fmt.Println("Please thoroughly read our documentation at https://docs.rocketpool.net/guides/atlas/solo-staker-migration.html to learn about the process and its implications.")
+		fmt.Println()
+		fmt.Println("1. First, we'll create the new minipool.")
+		fmt.Println("2. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator.")
+		fmt.Println("3. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.")
+		fmt.Println()
+		fmt.Printf("%sNOTE: If you intend to use the credit balance to create additional validators, you will need to have enough RPL staked to support them.%s\n", terminal.ColorYellow, terminal.ColorReset)
+		fmt.Println()
 	}
 
 	// Get deposit amount
@@ -59,7 +80,7 @@ func nodeDeposit(c *cli.Context) error {
 		// Parse amount
 		depositAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
 		if err != nil {
-			return fmt.Errorf("invalid deposit amount '%s': %w", c.String(amountFlag), err)
+			return nil, fmt.Errorf("invalid deposit amount '%s': %w", c.String(amountFlag), err)
 		}
 		amount = depositAmount
 	} else {
@@ -70,7 +91,12 @@ func nodeDeposit(c *cli.Context) error {
 		}
 
 		// Prompt for amount
-		selected, _ := utils.Select("Please choose an amount of ETH to deposit:", amountOptions)
+		var selected int
+		if soloConversionPubkey != nil {
+			selected, _ = utils.Select("Please choose an amount of ETH you want to use as your deposit for the new minipool (this will become your share of the balance, and the remainder will become the pool stakers' share):", amountOptions)
+		} else {
+			selected, _ = utils.Select("Please choose an amount of ETH to deposit:", amountOptions)
+		}
 		switch selected {
 		case 0:
 			amount = 8
@@ -84,14 +110,14 @@ func nodeDeposit(c *cli.Context) error {
 	// Get network node fees
 	nodeFeeResponse, err := rp.Api.Network.NodeFee()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// Get minimum node fee
 	var minNodeFee float64
 	if c.String(maxSlippageFlag) == "auto" {
 		// Use default max slippage
-		minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.NodeFee) - DefaultMaxNodeFeeSlippage
+		minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.NodeFee) - defaultMaxNodeFeeSlippage
 		if minNodeFee < eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee) {
 			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		}
@@ -99,7 +125,7 @@ func nodeDeposit(c *cli.Context) error {
 		// Parse max slippage
 		maxNodeFeeSlippagePerc, err := strconv.ParseFloat(c.String(maxSlippageFlag), 64)
 		if err != nil {
-			return fmt.Errorf("invalid maximum commission rate slippage '%s': %w", c.String(maxSlippageFlag), err)
+			return nil, fmt.Errorf("invalid maximum commission rate slippage '%s': %w", c.String(maxSlippageFlag), err)
 		}
 		maxNodeFeeSlippage := maxNodeFeeSlippagePerc / 100
 
@@ -110,7 +136,7 @@ func nodeDeposit(c *cli.Context) error {
 		}
 	} else {
 		// Prompt for min node fee
-		if nodeFeeResponse.Data.MinNodeFee.Cmp(nodeFeeResponse.Data.MaxNodeFee) == 0 {
+		if nodeFeeResponse.Data.MinNodeFee == nodeFeeResponse.Data.MaxNodeFee {
 			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)*100)
 			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		} else {
@@ -124,19 +150,45 @@ func nodeDeposit(c *cli.Context) error {
 		var success bool
 		salt, success = big.NewInt(0).SetString(c.String(saltFlag), 0)
 		if !success {
-			return fmt.Errorf("invalid minipool salt: %s", c.String(saltFlag))
+			return nil, fmt.Errorf("invalid minipool salt: %s", c.String(saltFlag))
 		}
 	} else {
 		buffer := make([]byte, 32)
 		_, err = rand.Read(buffer)
 		if err != nil {
-			return fmt.Errorf("error generating random salt: %w", err)
+			return nil, fmt.Errorf("error generating random salt: %w", err)
 		}
 		salt = big.NewInt(0).SetBytes(buffer)
 	}
 
+	return &deposit{
+		salt:       salt,
+		minNodeFee: minNodeFee,
+		amountWei:  amountWei,
+	}, nil
+}
+
+func nodeDeposit(c *cli.Context) error {
+	// Get RP client
+	rp, err := client.NewClientFromCtx(c)
+	if err != nil {
+		return err
+	}
+
+	d, err := newDepositPrompts(c, rp, nil)
+	if err != nil {
+		return err
+	}
+	if d == nil {
+		return nil
+	}
+
+	minNodeFee := d.minNodeFee
+	amountWei := d.amountWei
+	amount := eth.WeiToEth(amountWei)
+
 	// Build the TX
-	response, err := rp.Api.Node.Deposit(amountWei, minNodeFee, salt)
+	response, err := rp.Api.Node.Deposit(amountWei, minNodeFee, d.salt)
 	if err != nil {
 		return err
 	}
@@ -192,25 +244,34 @@ func nodeDeposit(c *cli.Context) error {
 
 	// Print salt and minipool address info
 	if c.String(saltFlag) != "" {
-		fmt.Printf("Using custom salt %s, your minipool address will be %s.\n\n", c.String("salt"), response.Data.MinipoolAddress.Hex())
+		fmt.Printf("Using custom salt %s, your minipool address will be %s.\n\n", c.String(saltFlag), response.Data.MinipoolAddress.Hex())
 	}
 
 	// Check to see if eth2 is synced
 	syncResponse, err := rp.Api.Service.ClientStatus()
 	if err != nil {
-		fmt.Printf("%s**WARNING**: Can't verify the sync status of your consensus client.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n"+
-			"Reason: %s\n%s", terminal.ColorRed, err, terminal.ColorReset)
+		fmt.Print(terminal.ColorRed)
+		fmt.Println("**WARNING**: Can't verify the sync status of your consensus client.")
+		fmt.Println("YOU WILL LOSE ETH if your minipool is activated before it is fully synced.")
+		fmt.Printf("Reason: %v\n", err)
+		fmt.Print(terminal.ColorReset)
 	} else {
 		if syncResponse.Data.BcManagerStatus.PrimaryClientStatus.IsSynced {
-			fmt.Printf("Your consensus client is synced, you may safely create a minipool.\n")
+			fmt.Println("Your consensus client is synced, you may safely create a minipool.")
 		} else if syncResponse.Data.BcManagerStatus.FallbackEnabled {
 			if syncResponse.Data.BcManagerStatus.FallbackClientStatus.IsSynced {
-				fmt.Printf("Your fallback consensus client is synced, you may safely create a minipool.\n")
+				fmt.Println("Your fallback consensus client is synced, you may safely create a minipool.")
 			} else {
-				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYOU WILL LOSE ETH if your minipool is activated before they are fully synced.\n%s", terminal.ColorRed, terminal.ColorReset)
+				fmt.Print(terminal.ColorRed)
+				fmt.Println("**WARNING**: neither your primary nor fallback consensus clients are fully synced.")
+				fmt.Println("YOU WILL LOSE ETH if your minipool is activated before they are fully synced.")
+				fmt.Print(terminal.ColorReset)
 			}
 		} else {
-			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYOU WILL LOSE ETH if your minipool is activated before it is fully synced.\n%s", terminal.ColorRed, terminal.ColorReset)
+			fmt.Print(terminal.ColorRed)
+			fmt.Println("**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.")
+			fmt.Println("YOU WILL LOSE ETH if your minipool is activated before it is fully synced.")
+			fmt.Print(terminal.ColorReset)
 		}
 	}
 

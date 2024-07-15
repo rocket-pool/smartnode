@@ -1,10 +1,7 @@
 package node
 
 import (
-	"crypto/rand"
 	"fmt"
-	"math/big"
-	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/beacon"
@@ -29,117 +26,20 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 		return err
 	}
 
-	// Make sure Beacon is on the correct chain
-	depositContractInfo, err := rp.Api.Network.GetDepositContractInfo(true)
+	d, err := newDepositPrompts(c, rp, &pubkey)
 	if err != nil {
 		return err
 	}
-	if depositContractInfo.Data.PrintMismatch() {
+	if d == nil {
 		return nil
 	}
 
-	// Check if the fee distributor has been initialized
-	feeDistributorResponse, err := rp.Api.Node.InitializeFeeDistributor()
-	if err != nil {
-		return err
-	}
-	if !feeDistributorResponse.Data.IsInitialized {
-		fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
-		return nil
-	}
-
-	// Post a warning about fee distribution
-	if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", terminal.ColorYellow, terminal.ColorReset))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Print a notification about the pubkey
-	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at https://docs.rocketpool.net/guides/atlas/solo-staker-migration.html to learn about the process and its implications.\n\n1. First, we'll create the new minipool.\n2. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator.\n3. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n%sNOTE: If you intend to use the credit balance to create additional validators, you will need to have enough RPL staked to support them.%s\n\n", pubkey.Hex(), terminal.ColorYellow, terminal.ColorReset)
-
-	// Get deposit amount
-	var amount float64
-	if c.String(amountFlag) != "" {
-		// Parse amount
-		depositAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
-		if err != nil {
-			return fmt.Errorf("invalid deposit amount '%s': %w", c.String(amountFlag), err)
-		}
-		amount = depositAmount
-	} else {
-		// Get deposit amount options
-		amountOptions := []string{
-			"8 ETH",
-			"16 ETH",
-		}
-
-		// Prompt for amount
-		selected, _ := utils.Select("Please choose an amount of ETH you want to use as your deposit for the new minipool (this will become your share of the balance, and the remainder will become the pool stakers' share):", amountOptions)
-		switch selected {
-		case 0:
-			amount = 8
-		case 1:
-			amount = 16
-		}
-	}
-	amountWei := eth.EthToWei(amount)
-
-	// Get network node fees
-	nodeFeeResponse, err := rp.Api.Network.NodeFee()
-	if err != nil {
-		return err
-	}
-
-	// Get minimum node fee
-	var minNodeFee float64
-	if c.String("max-slippage") == "auto" {
-		// Use default max slippage
-		minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.NodeFee) - DefaultMaxNodeFeeSlippage
-		if minNodeFee < eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee) {
-			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
-		}
-	} else if c.String("max-slippage") != "" {
-		// Parse max slippage
-		maxNodeFeeSlippagePerc, err := strconv.ParseFloat(c.String("max-slippage"), 64)
-		if err != nil {
-			return fmt.Errorf("invalid maximum commission rate slippage '%s': %w", c.String("max-slippage"), err)
-		}
-		maxNodeFeeSlippage := maxNodeFeeSlippagePerc / 100
-
-		// Calculate min node fee
-		minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.NodeFee) - maxNodeFeeSlippage
-		if minNodeFee < eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee) {
-			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
-		}
-	} else {
-		// Prompt for min node fee
-		if nodeFeeResponse.Data.MinNodeFee == nodeFeeResponse.Data.MaxNodeFee {
-			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)*100)
-			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
-		} else {
-			minNodeFee = promptMinNodeFee(eth.WeiToEth(nodeFeeResponse.Data.NodeFee), eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee))
-		}
-	}
-
-	// Get minipool salt
-	var salt *big.Int
-	if c.String(saltFlag) != "" {
-		var success bool
-		salt, success = big.NewInt(0).SetString(c.String(saltFlag), 0)
-		if !success {
-			return fmt.Errorf("invalid minipool salt: %s", c.String(saltFlag))
-		}
-	} else {
-		buffer := make([]byte, 32)
-		_, err = rand.Read(buffer)
-		if err != nil {
-			return fmt.Errorf("error generating random salt: %w", err)
-		}
-		salt = big.NewInt(0).SetBytes(buffer)
-	}
+	minNodeFee := d.minNodeFee
+	amountWei := d.amountWei
+	amount := eth.WeiToEth(amountWei)
 
 	// Build the TX
-	response, err := rp.Api.Node.CreateVacantMinipool(amountWei, minNodeFee, salt, pubkey)
+	response, err := rp.Api.Node.CreateVacantMinipool(amountWei, minNodeFee, d.salt, pubkey)
 	if err != nil {
 		return err
 	}
@@ -168,20 +68,25 @@ func createVacantMinipool(c *cli.Context, pubkey beacon.ValidatorPubkey) error {
 	syncResponse, err := rp.Api.Service.ClientStatus()
 	if err != nil {
 		return fmt.Errorf("error checking if your clients are in sync: %w", err)
-	} else {
-		if syncResponse.Data.BcManagerStatus.PrimaryClientStatus.IsSynced {
-			fmt.Printf("Your consensus client is synced, you may safely create a minipool.\n")
-		} else if syncResponse.Data.BcManagerStatus.FallbackEnabled {
-			if syncResponse.Data.BcManagerStatus.FallbackClientStatus.IsSynced {
-				fmt.Printf("Your fallback consensus client is synced, you may safely create a minipool.\n")
-			} else {
-				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYou cannot migrate until they've finished syncing.\n%s", terminal.ColorRed, terminal.ColorReset)
-				return nil
-			}
+	}
+	if syncResponse.Data.BcManagerStatus.PrimaryClientStatus.IsSynced {
+		fmt.Println("Your consensus client is synced, you may safely create a minipool.")
+	} else if syncResponse.Data.BcManagerStatus.FallbackEnabled {
+		if syncResponse.Data.BcManagerStatus.FallbackClientStatus.IsSynced {
+			fmt.Println("Your fallback consensus client is synced, you may safely create a minipool.")
 		} else {
-			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYou cannot migrate until you have a synced consensus client.\n%s", terminal.ColorRed, terminal.ColorReset)
+			fmt.Print(terminal.ColorRed)
+			fmt.Println("**WARNING**: neither your primary nor fallback consensus clients are fully synced.")
+			fmt.Println("You cannot migrate until they've finished syncing.")
+			fmt.Print(terminal.ColorReset)
 			return nil
 		}
+	} else {
+		fmt.Print(terminal.ColorRed)
+		fmt.Println("**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.")
+		fmt.Println("You cannot migrate until you have a synced consensus client.")
+		fmt.Print(terminal.ColorReset)
+		return nil
 	}
 
 	// Run the TX
