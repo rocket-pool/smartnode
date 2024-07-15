@@ -301,27 +301,51 @@ type ProtocolDaoCurrentVotingDelegateData struct {
 }
 
 type ProtocolDAOStatusResponse struct {
-	Status                         string         `json:"status"`
-	Error                          string         `json:"error"`
-	VotingPower                    *big.Int       `json:"votingPower"`
-	OnchainVotingDelegate          common.Address `json:"onchainVotingDelegate"`
-	OnchainVotingDelegateFormatted string         `json:"onchainVotingDelegateFormatted"`
-	BlockNumber                    uint32         `json:"blockNumber"`
-	VerifyEnabled                  bool           `json:"verifyEnabled"`
-	IsVotingInitialized            bool           `json:"isVotingInitialized"`
-	SignallingAddress              common.Address `json:"signallingAddress"`
-	SignallingAddressFormatted     string         `json:"signallingAddressFormatted"`
-	SnapshotResponse               struct {
-		Error                   string                          `json:"error"`
-		ActiveSnapshotProposals []*sharedtypes.SnapshotProposal `json:"activeSnapshotProposals"`
-	} `json:"snapshotResponse"`
-	IsRPLLockingAllowed     bool           `json:"isRPLLockingAllowed"`
-	NodeRPLLocked           *big.Int       `json:"nodeRPLLocked"`
-	AccountAddress          common.Address `json:"accountAddress"`
-	AccountAddressFormatted string         `json:"accountAddressFormatted"`
-	TotalDelegatedVp        *big.Int       `json:"totalDelegatedVp"`
-	SumVotingPower          *big.Int       `json:"sumVotingPower"`
-	IsNodeRegistered        bool           `json:"isNodeRegistered"`
+	Status                         string                 `json:"status"`
+	Error                          string                 `json:"error"`
+	VotingPower                    *big.Int               `json:"votingPower"`
+	OnchainVotingDelegate          common.Address         `json:"onchainVotingDelegate"`
+	OnchainVotingDelegateFormatted string                 `json:"onchainVotingDelegateFormatted"`
+	BlockNumber                    uint32                 `json:"blockNumber"`
+	VerifyEnabled                  bool                   `json:"verifyEnabled"`
+	IsVotingInitialized            bool                   `json:"isVotingInitialized"`
+	SignallingAddress              common.Address         `json:"signallingAddress"`
+	SignallingAddressFormatted     string                 `json:"signallingAddressFormatted"`
+	SnapshotResponse               SnapshotResponseStruct `json:"snapshotResponse"`
+	IsRPLLockingAllowed            bool                   `json:"isRPLLockingAllowed"`
+	NodeRPLLocked                  *big.Int               `json:"nodeRPLLocked"`
+	AccountAddress                 common.Address         `json:"accountAddress"`
+	AccountAddressFormatted        string                 `json:"accountAddressFormatted"`
+	TotalDelegatedVp               *big.Int               `json:"totalDelegatedVp"`
+	SumVotingPower                 *big.Int               `json:"sumVotingPower"`
+	IsNodeRegistered               bool                   `json:"isNodeRegistered"`
+}
+
+type snapshotProposalVote struct {
+	Choice   interface{}    `json:"choice"`
+	Voter    common.Address `json:"voter"`
+	Proposal struct {
+		Id    string `json:"id"`
+		State string `json:"state"`
+	} `json:"proposal"`
+}
+type SnapshotResponseStruct struct {
+	Error                   string                          `json:"error"`
+	ProposalVotes           []snapshotProposalVote          `json:"proposalVotes"`
+	ActiveSnapshotProposals []*sharedtypes.SnapshotProposal `json:"activeSnapshotProposals"`
+}
+
+func (s *SnapshotResponseStruct) VoteCount() uint {
+	voteCount := uint(0)
+	for _, activeProposal := range s.ActiveSnapshotProposals {
+		for _, votedProposal := range s.ProposalVotes {
+			if votedProposal.Proposal.Id == activeProposal.Id {
+				voteCount++
+				break
+			}
+		}
+	}
+	return voteCount
 }
 
 type ProtocolDAOSetSignallingAddressResponse struct {
