@@ -135,7 +135,8 @@ func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusRes
 
 	data.BlockNumber = uint32(c.blockNumber)
 	data.IsNodeRegistered = c.isNodeRegistered
-	// data.SignallingAddress = c.signallingAddress
+	data.SignallingAddress = c.signallingAddress
+	data.SignallingAddressFormatted = utils.GetFormattedAddress(c.ec, data.SignallingAddress)
 	data.AccountAddress = c.node.Address
 	data.AccountAddressFormatted = utils.GetFormattedAddress(c.ec, data.AccountAddress)
 	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()

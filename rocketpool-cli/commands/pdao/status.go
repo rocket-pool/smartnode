@@ -121,7 +121,7 @@ func getStatus(c *cli.Context) error {
 			fmt.Println()
 		}
 	} else {
-		fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges. Use 'rocketpool node  allow-rpl-locking, to allow RPL locking.\n")
+		fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges. Use 'rocketpool node allow-rpl-locking, to allow RPL locking.\n")
 	}
 	if len(claimableBonds) == 0 {
 		fmt.Println("You do not have any unlockable bonds or claimable rewards.")

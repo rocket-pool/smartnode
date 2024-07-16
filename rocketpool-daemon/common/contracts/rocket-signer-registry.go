@@ -38,11 +38,11 @@ type RocketSignerRegistry struct {
 func NewRocketSignerRegistry(address common.Address, client eth.IExecutionClient, txMgr *eth.TransactionManager) (*RocketSignerRegistry, error) {
 	// Parse the ABI
 	var err error
-	snapshotOnce.Do(func() {
+	rocketSignerRegistryOnce.Do(func() {
 		var parsedAbi abi.ABI
 		parsedAbi, err = abi.JSON(strings.NewReader(rocketSignerRegistryAbiString))
 		if err == nil {
-			snapshotAbi = parsedAbi
+			rocketSignerRegistryAbi = parsedAbi
 		}
 	})
 	if err != nil {
