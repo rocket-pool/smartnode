@@ -216,6 +216,9 @@ func (m *ProposalManager) GetArtifactsForVoting(blockNumber uint32, nodeAddress 
 
 	// Get the artifacts
 	totalDelegatedVp := nodeTree.Nodes[0].Sum
+	if totalDelegatedVp == nil {
+		totalDelegatedVp = big.NewInt(0)
+	}
 	treeIndex := getTreeNodeIndexFromRPNodeIndex(snapshot, nodeIndex)
 	proofPtrs := networkTree.generateMerkleProof(treeIndex)
 

@@ -1,6 +1,8 @@
 package node
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli/v2"
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
@@ -515,33 +517,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "set-voting-delegate",
 				Aliases:   []string{"sv"},
-				Usage:     "Set the address you want to use when voting on Rocket Pool Snapshot governance proposals, or the address you want to delegate your voting power to.",
+				Usage:     "(DEPRECATED) Use `rocketpool pdao set-signalling-address` instead",
 				ArgsUsage: "address",
-				Flags: []cli.Flag{
-					cliutils.YesFlag,
-				},
 				Action: func(c *cli.Context) error {
-					// Validate args
-					utils.ValidateArgCount(c, 1)
-					delegate := c.Args().Get(0)
 
 					// Run
-					return nodeSetVotingDelegate(c, delegate)
+					fmt.Println("(DEPRECATED) Use `rocketpool pdao set-signalling-address` instead.")
+					fmt.Println("For more information, please refer to the Governance article on Medium (https://medium.com/rocket-pool/rocket-pool-protocol-dao-governance-a3c3e92904e0).")
+					return nil
 				},
 			},
 			{
 				Name:    "clear-voting-delegate",
 				Aliases: []string{"cv"},
-				Usage:   "Remove the address you've set for voting on Rocket Pool governance proposals.",
-				Flags: []cli.Flag{
-					cliutils.YesFlag,
-				},
+				Usage:   "(DEPRECATED) Use `rocketpool pdao clear-signalling-address` instead",
 				Action: func(c *cli.Context) error {
-					// Validate args
-					utils.ValidateArgCount(c, 0)
 
 					// Run
-					return nodeClearVotingDelegate(c)
+					fmt.Println("(DEPRECATED) Use `rocketpool pdao clear-signalling-address` instead.")
+					fmt.Println("For more information, please refer to the Governance article on Medium (https://medium.com/rocket-pool/rocket-pool-protocol-dao-governance-a3c3e92904e0).")
+					return nil
 				},
 			},
 

@@ -107,53 +107,14 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	submissionIntervalInSeconds := int64(state.NetworkDetails.PricesSubmissionFrequency)
 	eth2Config := state.BeaconConfig
 
-	// Get the time of the latest block
-	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return fmt.Errorf("Can't get the latest block time: %w", err)
-	}
-	latestBlockTimestamp := int64(latestEth1Block.Time)
-
-	// Calculate the next submission timestamp
-	submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+	slotNumber, nextSubmissionTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.ctx, t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
 	if err != nil {
 		return err
 	}
 
-	// Convert the submission timestamp to time.Time
-	nextSubmissionTime := time.Unix(submissionTimestamp, 0)
-
-	// Get the Beacon block corresponding to this time
-	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
-	timeSinceGenesis := nextSubmissionTime.Sub(genesisTime)
-	slotNumber := uint64(timeSinceGenesis.Seconds()) / eth2Config.SecondsPerSlot
-
-	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	targetBlock, err := utils.FindLastBlockWithExecutionPayload(t.ctx, t.bc, slotNumber)
-	if err != nil {
-		return err
-	}
-
-	targetBlockNumber := targetBlock.ExecutionBlockNumber
-	if targetBlockNumber <= lastSubmissionBlock {
+	targetBlockNumber := targetBlockHeader.Number.Uint64()
+	if targetBlockNumber < lastSubmissionBlock {
 		// No submission needed: target block older or equal to the last submission
-		return nil
-	}
-
-	targetBlockHeader, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(targetBlockNumber)))
-	if err != nil {
-		return err
-	}
-
-	// Check if the required epoch is finalized yet
-	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
-	beaconHead, err := t.bc.GetBeaconHead(t.ctx)
-	if err != nil {
-		return err
-	}
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	if requiredEpoch > finalizedEpoch {
-		t.logger.Info("Balance report is due, waiting for target epoch to finalize.", slog.Uint64(keys.BlockKey, targetBlockNumber), slog.Uint64(keys.TargetEpochKey, requiredEpoch), slog.Uint64(keys.FinalizedEpochKey, finalizedEpoch))
 		return nil
 	}
 

@@ -94,44 +94,16 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 	submissionIntervalInSeconds := int64(state.NetworkDetails.PricesSubmissionFrequency)
 	eth2Config := state.BeaconConfig
 
-	// Get the time of the latest block
-	latestEth1Block, err := t.rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return fmt.Errorf("Can't get the latest block time: %w", err)
-	}
-	latestBlockTimestamp := int64(latestEth1Block.Time)
-
-	// Calculate the next submission timestamp
-	submissionTimestamp, err := utils.FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
+	_, nextSubmissionTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.ctx, t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
 	if err != nil {
 		return err
 	}
 
-	// Get the Beacon slot corresponding to this time
-	genesisTime := (int64(eth2Config.GenesisTime))
-	timeSinceGenesis := submissionTimestamp - genesisTime
-	slotNumber := uint64(timeSinceGenesis) / eth2Config.SecondsPerSlot
+	submissionTimestamp := uint64(nextSubmissionTime.Unix())
 
-	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
-	targetBlock, err := utils.FindLastBlockWithExecutionPayload(t.ctx, t.bc, slotNumber)
-	if err != nil {
-		return err
-	}
-	targetBlockNumber := targetBlock.ExecutionBlockNumber
-	if targetBlockNumber <= lastSubmissionBlock {
+	targetBlockNumber := targetBlockHeader.Number.Uint64()
+	if targetBlockNumber < lastSubmissionBlock {
 		// No submission needed: target block older or equal to the last submission
-		return nil
-	}
-
-	// Check if the required epoch is finalized yet
-	targetEpoch := slotNumber / eth2Config.SlotsPerEpoch
-	beaconHead, err := t.bc.GetBeaconHead(t.ctx)
-	if err != nil {
-		return err
-	}
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	if targetEpoch > finalizedEpoch {
-		t.logger.Info("Prices must be reported, waiting until target Epoch is finalized.", slog.Uint64(keys.BlockKey, targetBlockNumber), slog.Uint64(keys.TargetEpochKey, targetEpoch), slog.Uint64(keys.FinalizedEpochKey, finalizedEpoch))
 		return nil
 	}
 
@@ -163,7 +135,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 		t.logger.Info("Retrieved RPL price", slog.Uint64(keys.BlockKey, targetBlockNumber), slog.Float64(keys.PriceKey, math.RoundDown(eth.WeiToEth(rplPrice), 6)))
 
 		// Check if we have reported these specific values before
-		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAddress, targetBlockNumber, uint64(submissionTimestamp), rplPrice, true)
+		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockPrices(nodeAddress, targetBlockNumber, submissionTimestamp, rplPrice, true)
 		if err != nil {
 			t.handleError(err)
 			return
@@ -176,7 +148,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 		}
 
 		// We haven't submitted these values, check if we've submitted any for this block so we can log it
-		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAddress, targetBlockNumber, uint64(submissionTimestamp), true)
+		hasSubmitted, err := t.hasSubmittedBlockPrices(nodeAddress, targetBlockNumber, submissionTimestamp, true)
 		if err != nil {
 			t.handleError(err)
 			return
@@ -189,7 +161,7 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 		t.logger.Info("Submitting RPL price...")
 
 		// Submit RPL price
-		if err := t.submitRplPrice(targetBlockNumber, uint64(submissionTimestamp), rplPrice, true); err != nil {
+		if err := t.submitRplPrice(targetBlockNumber, submissionTimestamp, rplPrice, true); err != nil {
 			t.handleError(fmt.Errorf("error submitting RPL price: %w", err))
 			return
 		}

@@ -88,8 +88,6 @@ The following commands are available via the Smartnode client:
   - `rocketpool node deposit, d` - Make a deposit and create a minipool
   - `rocketpool node create-vacant-minipool, cvm` - Create an empty minipool, which can be used to migrate an existing solo staking validator as part of the 0x00 to 0x01 withdrawal credentials upgrade
   - `rocketpool node send, n` - Send ETH or tokens from the node account to an address. ENS names supported. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).
-  - `rocketpool node set-voting-delegate, sv` - Set the address you want to use when voting on Rocket Pool governance proposals on Snapshot, or the address you want to delegate your voting power to.
-  - `rocketpool node clear-voting-delegate, cv` - Remove the address you've set for voting on Rocket Pool governance proposals.
   - `rocketpool node initialize-fee-distributor, z` - Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge
   - `rocketpool node distribute-fees, b` - Distribute the priority fee and MEV rewards from your fee distributor to your withdrawal address and the rETH contract (based on your node's average commission)
   - `rocketpool node join-smoothing-pool, js` - Opt your node into the Smoothing Pool
