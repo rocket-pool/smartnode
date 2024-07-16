@@ -47,6 +47,7 @@ func NewProtocolDaoHandler(logger *log.Logger, ctx context.Context, serviceProvi
 		&protocolDaoSetVotingDelegateContextFactory{h},
 		&protocolDaoCurrentVotingDelegateContextFactory{h},
 		&protocolDaoGetStatusContextFactory{h},
+		&protocolDaoClearSignallingAddressFactory{h},
 	}
 	return h
 }

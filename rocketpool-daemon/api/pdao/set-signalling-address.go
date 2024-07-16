@@ -27,7 +27,7 @@ func (f *protocolDaoSetSignallingAddressFactory) Create(args url.Values) (*proto
 }
 
 func (f *protocolDaoSetSignallingAddressFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*protocolDaoSetSignallingAddressContext, api.ProtocolDAOSetSignallingAddressResponse](
+	server.RegisterSingleStageRoute[*protocolDaoSetSignallingAddressContext, api.ProtocolDaoSetSignallingAddressResponse](
 		router, "set-signalling-address", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
@@ -47,6 +47,6 @@ func (c *protocolDaoSetSignallingAddressContext) Initialize() (types.ResponseSta
 func (c *protocolDaoSetSignallingAddressContext) GetState(mc *batch.MultiCaller) {
 }
 
-func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *api.ProtocolDAOSetSignallingAddressResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *api.ProtocolDaoSetSignallingAddressResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	return types.ResponseStatus_Success, nil
 }

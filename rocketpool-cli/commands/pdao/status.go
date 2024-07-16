@@ -49,6 +49,8 @@ func getStatus(c *cli.Context) error {
 	}
 	claimableBonds := claimableBondsResponse.Data.ClaimableBonds
 
+	// Test Strings
+	fmt.Printf("Resp %v\n", response)
 	fmt.Printf("block number: %d\n", response.Data.BlockNumber)
 	fmt.Printf("Voting initialized: %t\n", response.Data.IsVotingInitialized)
 	fmt.Printf("Node Registered: %t\n", response.Data.IsNodeRegistered)

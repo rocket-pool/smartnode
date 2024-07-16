@@ -217,8 +217,8 @@ func (r *PDaoRequester) GetCurrentVotingDelegate() (*types.ApiResponse[api.Proto
 }
 
 // Get the pDAO status
-func (r *PDaoRequester) GetStatus() (*types.ApiResponse[api.ProtocolDAOStatusResponse], error) {
-	return client.SendGetRequest[api.ProtocolDAOStatusResponse](r, "get-status", "GetStatus", nil)
+func (r *PDaoRequester) GetStatus() (*types.ApiResponse[api.ProtocolDaoStatusResponse], error) {
+	return client.SendGetRequest[api.ProtocolDaoStatusResponse](r, "get-status", "GetStatus", nil)
 }
 
 // Set the signalling address for the node

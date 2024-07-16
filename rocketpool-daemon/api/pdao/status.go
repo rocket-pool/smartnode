@@ -39,7 +39,7 @@ func (f *protocolDaoGetStatusContextFactory) Create(args url.Values) (*protocolD
 }
 
 func (f *protocolDaoGetStatusContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterSingleStageRoute[*protocolDaoGetStatusContext, api.ProtocolDAOStatusResponse](
+	server.RegisterSingleStageRoute[*protocolDaoGetStatusContext, api.ProtocolDaoStatusResponse](
 		router, "get-status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
@@ -131,7 +131,7 @@ func (c *protocolDaoGetStatusContext) GetState(mc *batch.MultiCaller) {
 	}
 }
 
-func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDaoStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 
 	data.BlockNumber = uint32(c.blockNumber)
 	data.IsNodeRegistered = c.isNodeRegistered

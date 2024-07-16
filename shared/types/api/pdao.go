@@ -300,7 +300,7 @@ type ProtocolDaoCurrentVotingDelegateData struct {
 	VotingDelegate common.Address `json:"votingDelegate"`
 }
 
-type ProtocolDAOStatusResponse struct {
+type ProtocolDaoStatusResponse struct {
 	Status                         string                 `json:"status"`
 	Error                          string                 `json:"error"`
 	VotingPower                    *big.Int               `json:"votingPower"`
@@ -348,10 +348,12 @@ func (s *SnapshotResponseStruct) VoteCount() uint {
 	return voteCount
 }
 
-type ProtocolDAOSetSignallingAddressResponse struct {
+type ProtocolDaoSetSignallingAddressResponse struct {
 	Error string `json:"error"`
 }
 
-type ProtocolDAOClearSignallingAddressResponse struct {
-	Error string `json:"error"`
-}
+// type ProtocolDaoClearSignallingAddressResponse struct {
+// 	Error    string               `json:"error"`
+// 	CanClear bool                 `json:"canClear"`
+// 	TxInfo   *eth.TransactionInfo `json:"txInfo"`
+// }
