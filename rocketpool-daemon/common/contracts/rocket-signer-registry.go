@@ -58,6 +58,7 @@ func NewRocketSignerRegistry(address common.Address, client eth.IExecutionClient
 
 	return &RocketSignerRegistry{
 		contract: contract,
+		txMgr:    txMgr,
 	}, nil
 }
 
@@ -78,7 +79,7 @@ func (c *RocketSignerRegistry) SignerToNode(mc *batch.MultiCaller, out *common.A
 // ====================
 
 // Get info for setting the signalling address
-func (c *RocketSignerRegistry) SetSigner(id common.Hash, _signer common.Address, opts *bind.TransactOpts, _v uint8, _r [32]byte, _s [32]byte) (*eth.TransactionInfo, error) {
+func (c *RocketSignerRegistry) SetSigner(_signer common.Address, opts *bind.TransactOpts, _v uint8, _r [32]byte, _s [32]byte) (*eth.TransactionInfo, error) {
 	return c.txMgr.CreateTransactionInfo(c.contract, "setSigner", opts, _signer, _v, _r, _s)
 }
 

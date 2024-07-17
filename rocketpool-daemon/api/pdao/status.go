@@ -72,6 +72,7 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	c.ec = sp.GetEthClient()
 	c.bc = sp.GetBeaconClient()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
+	network := c.cfg.GetNetworkResources().Network
 
 	// Requirements
 	err := sp.RequireNodeAddress()
@@ -86,7 +87,7 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	}
 	c.registry = sp.GetRocketSignerRegistry()
 	if c.registry == nil {
-		return types.ResponseStatus_ResourceNotFound, err
+		return types.ResponseStatus_ResourceNotFound, fmt.Errorf("Network [%v] does not have a signer registry contract.", network)
 	}
 
 	// Bindings
