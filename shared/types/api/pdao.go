@@ -347,13 +347,3 @@ func (s *SnapshotResponseStruct) VoteCount() uint {
 	}
 	return voteCount
 }
-
-type ProtocolDaoSetSignallingAddressResponse struct {
-	Error string `json:"error"`
-}
-
-// type ProtocolDaoClearSignallingAddressResponse struct {
-// 	Error    string               `json:"error"`
-// 	CanClear bool                 `json:"canClear"`
-// 	TxInfo   *eth.TransactionInfo `json:"txInfo"`
-// }
