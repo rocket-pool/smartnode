@@ -74,11 +74,11 @@ func (c *protocolDaoClearSignallingAddressContext) PrepareData(data *types.TxInf
 	// Return if there if no signalling address is set
 	if c.signallingAddress == (common.Address{}) {
 		return types.ResponseStatus_Error, fmt.Errorf("No signalling address set")
-	} else {
-		data.TxInfo, err = registry.ClearSigner(opts)
-		if err != nil {
-			return types.ResponseStatus_Error, fmt.Errorf("Error getting the TX info for ClearSigner: %w", err)
-		}
+	}
+	data.TxInfo, err = registry.ClearSigner(opts)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("Error getting the TX info for ClearSigner: %w", err)
+
 	}
 	return types.ResponseStatus_Success, nil
 }

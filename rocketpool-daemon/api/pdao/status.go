@@ -2,7 +2,6 @@ package pdao
 
 import (
 	"fmt"
-	"math/big"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -59,9 +58,7 @@ type protocolDaoGetStatusContext struct {
 	node              *node.Node
 	nodeAddress       common.Address
 	propMgr           *proposals.ProposalManager
-	totalDelegatedVP  *big.Int
 	blockNumber       uint64
-	isNodeRegistered  bool
 	signallingAddress common.Address
 	votingTree        *proposals.NetworkVotingTree
 }
@@ -125,13 +122,14 @@ func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDaoStatusRes
 	var err error
 
 	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
-	if data.IsVotingInitialized {
+
+	if !data.IsVotingInitialized {
+		data.TotalDelegatedVp = nil
+	} else {
 		data.TotalDelegatedVp, _, _, err = c.propMgr.GetArtifactsForVoting(uint32(c.blockNumber), c.nodeAddress)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", c.nodeAddress.Hex(), c.blockNumber, err)
 		}
-	} else {
-		data.TotalDelegatedVp = nil
 	}
 
 	data.IsNodeRegistered = c.node.Exists.Get()
