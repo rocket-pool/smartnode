@@ -24,7 +24,7 @@ func setSignallingAddress(c *cli.Context, signallingAddress common.Address, sign
 
 	validated, err := tx.HandleTx(c, rp, response.Data.TxInfo,
 		"Are you sure you want to set your signalling address?",
-		"setting signalling",
+		"setting signalling address",
 		"Setting signalling address...",
 	)
 	if err != nil {
