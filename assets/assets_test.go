@@ -1,6 +1,9 @@
 package assets
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestLogo(t *testing.T) {
 	logo := Logo()
@@ -70,4 +73,50 @@ func TestEmptyVersionPanics(t *testing.T) {
 	versionJSON = []byte("{}")
 	_ = RocketPoolVersion()
 
+}
+
+func TestPrintPatchNotes(t *testing.T) {
+	// Reset v singleton
+	v = &version{"test"}
+	notes, err := GetPatchNotes()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log("Rendered patch notes: ", notes)
+
+	// Make sure there are no template directives unpopulated
+	if strings.Contains(notes, "{{") || strings.Contains(notes, "}}") {
+		t.Fatal("encountered unexpanded template directive")
+	}
+
+	if !strings.Contains(notes, Logo()) {
+		t.Fatal("expected logo in patch notes")
+	}
+
+	if !strings.Contains(notes, "test patch notes") {
+		t.Fatal("expected template body in patch notes")
+	}
+}
+
+// This tests ensures each version has a patchnotes template
+func TestPrintCurrentPatchNotes(t *testing.T) {
+	// Reset v singleton
+	v = nil
+
+	notes, err := GetPatchNotes()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log("Rendered patch notes: ", notes)
+
+	// Make sure there are no template directives unpopulated
+	if strings.Contains(notes, "{{") || strings.Contains(notes, "}}") {
+		t.Fatal("encountered unexpanded template directive")
+	}
+
+	if !strings.Contains(notes, Logo()) {
+		t.Fatal("expected logo in patch notes")
+	}
 }

@@ -77,7 +77,13 @@ func installService(c *cli.Context) error {
 	fmt.Println("")
 	fmt.Println("The Rocket Pool Smart Node service was successfully installed!")
 
-	printPatchNotes()
+	patchNotes, err := assets.GetPatchNotes()
+	if err != nil {
+		fmt.Println("Couldn't get patch notes: this version of Smart Node may not have any.")
+		fmt.Printf("Error: %v\n", err)
+	} else {
+		fmt.Print(patchNotes)
+	}
 
 	// Reload the config after installation
 	_, isNew, err := rp.LoadConfig()
@@ -96,23 +102,4 @@ func installService(c *cli.Context) error {
 	}
 
 	return nil
-}
-
-// Print the latest patch notes for this release
-// TODO: get this from an external source and don't hardcode it into the CLI
-func printPatchNotes() {
-	fmt.Println()
-	fmt.Println(assets.Logo())
-	fmt.Printf("%s=== Smart Node v%s ===%s\n\n", terminal.ColorGreen, assets.RocketPoolVersion(), terminal.ColorReset)
-	fmt.Printf("Changes you should be aware of before starting:\n\n")
-
-	fmt.Printf("%s=== Welcome to the v2.0 Beta! ===%s\n", terminal.ColorGreen, terminal.ColorReset)
-	fmt.Println("Welcome to Smart Node v2! This is a completely redesigned Smart Node from the ground up, taking advantage of years of lessons learned and user feedback. The list of features and changes is far too long to list here, but here are some highlights:")
-	fmt.Println("- Support for installing and updating via Debian's `apt` package manager (other package managers coming soon!)")
-	fmt.Println("- Support for printing transaction data or signed transactions without submitting them to the network")
-	fmt.Println("- Passwordless mode: an opt-in feature that will no longer save your node wallet's password to disk")
-	fmt.Println("- Overhauled Smart Node service with an HTTP API, support for batching Ethereum queries and transactions together, a new logging system, and consolidation of the api / node / watchtower containers into one")
-	fmt.Println("- And much more!")
-	fmt.Println()
-	fmt.Println("To learn all about what's changed in Smart Node v2 and how to use it, take a look at our guide: https://github.com/rocket-pool/smartnode/blob/v2/v2.md")
 }
