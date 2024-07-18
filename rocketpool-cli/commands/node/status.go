@@ -67,9 +67,9 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
-	// rp.NodeStatus() will fail with an error, but we can short-circuit it here.
+	// rp.Api.Node.Status() will fail with an error, but we can short-circuit it here.
 	if !walletStatus.Address.HasAddress {
-		return errors.New("No node address is loaded.")
+		return errors.New("Node Wallet is not initialized.")
 	}
 
 	// Get node status

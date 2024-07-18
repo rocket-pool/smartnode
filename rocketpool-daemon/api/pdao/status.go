@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"fmt"
+	"math/big"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -124,7 +125,7 @@ func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDaoStatusRes
 	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
 
 	if !data.IsVotingInitialized {
-		data.TotalDelegatedVp = nil
+		data.TotalDelegatedVp = big.NewInt(0)
 	} else {
 		data.TotalDelegatedVp, _, _, err = c.propMgr.GetArtifactsForVoting(uint32(c.blockNumber), c.nodeAddress)
 		if err != nil {
