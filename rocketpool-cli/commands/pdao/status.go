@@ -1,6 +1,7 @@
 package pdao
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -32,6 +33,29 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("error loading configuration: %w", err)
+	}
+
+	// Get wallet status
+	statusResponse, err := rp.Api.Wallet.Status()
+	if err != nil {
+		return err
+	}
+	walletStatus := statusResponse.Data.WalletStatus
+
+	// Print what network we're on
+	err = utils.PrintNetwork(cfg.Network.Value, isNew)
+	if err != nil {
+		return err
+	}
+	// rp.rp.Api.PDao.GetStatus() will fail with an error, but we can short-circuit it here.
+	if !walletStatus.Address.HasAddress {
+		return errors.New("No node address is loaded.")
+	}
+
 	// Get PDAO status at the latest block
 	response, err := rp.Api.PDao.GetStatus()
 	if err != nil {
@@ -45,11 +69,14 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Get protocol DAO proposals
-	claimableBondsResponse, err := rp.Api.PDao.GetClaimableBonds()
-	if err != nil {
-		return fmt.Errorf("error checking for claimable bonds: %w", err)
+	var claimableBonds []api.BondClaimResult
+	if response.Data.IsNodeRegistered {
+		claimableBondsResponse, err := rp.Api.PDao.GetClaimableBonds()
+		if err != nil {
+			return fmt.Errorf("error checking for claimable bonds: %w", err)
+		}
+		claimableBonds = claimableBondsResponse.Data.ClaimableBonds
 	}
-	claimableBonds := claimableBondsResponse.Data.ClaimableBonds
 
 	// Signalling Status
 	fmt.Printf("%s=== Signalling on Snapshot ===%s\n", colorGreen, colorReset)
@@ -103,7 +130,7 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("The node currently has %.6f RPL locked.\n", utilsMath.RoundDown(eth.WeiToEth(response.Data.NodeRPLLocked), 6))
 		}
 	} else {
-		fmt.Println("The node is NOT allowed to lock RPL to create governance proposals/challenges. Use 'rocketpool node allow-rpl-locking, to allow RPL locking.")
+		fmt.Println("The node is NOT allowed to lock RPL to create governance proposals/challenges. Use 'rocketpool node allow-rpl-locking` to allow RPL locking.")
 	}
 	if len(claimableBonds) == 0 {
 		fmt.Println("The node does not have any unlockable bonds or claimable rewards.")

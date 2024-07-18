@@ -57,6 +57,7 @@ type protocolDaoGetStatusContext struct {
 	registry *contracts.RocketSignerRegistry
 
 	node              *node.Node
+	nodeAddress       common.Address
 	propMgr           *proposals.ProposalManager
 	totalDelegatedVP  *big.Int
 	blockNumber       uint64
@@ -71,7 +72,7 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	c.rp = sp.GetRocketPool()
 	c.ec = sp.GetEthClient()
 	c.bc = sp.GetBeaconClient()
-	nodeAddress, _ := sp.GetWallet().GetAddress()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 	network := c.cfg.GetNetworkResources().Network
 
 	// Requirements
@@ -79,21 +80,15 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	if err != nil {
 		return types.ResponseStatus_AddressNotPresent, err
 	}
-	status, err := sp.RequireNodeRegistered(c.handler.ctx)
-	if err != nil {
-		return status, err
-	} else {
-		c.isNodeRegistered = true
-	}
 	c.registry = sp.GetRocketSignerRegistry()
 	if c.registry == nil {
 		return types.ResponseStatus_ResourceNotFound, fmt.Errorf("Network [%v] does not have a signer registry contract.", network)
 	}
 
 	// Bindings
-	c.node, err = node.NewNode(c.rp, nodeAddress)
+	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
 	}
 	c.propMgr, err = proposals.NewProposalManager(c.handler.ctx, c.handler.logger.Logger, c.cfg, c.rp, c.bc)
 	if err != nil {
@@ -103,15 +98,11 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block number: %w", err)
 	}
-	c.totalDelegatedVP, _, _, err = c.propMgr.GetArtifactsForVoting(uint32(c.blockNumber), nodeAddress)
-	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", nodeAddress.Hex(), c.blockNumber, err)
-	}
 	c.votingTree, err = c.propMgr.GetNetworkTree(uint32(c.blockNumber), nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting network tree")
 	}
-	// todo add https://github.com/rocket-pool/smartnode/blob/master/rocketpool/api/pdao/status.go#L132
+	//TODO add https://github.com/rocket-pool/smartnode/blob/master/rocketpool/api/pdao/status.go#L132
 
 	return types.ResponseStatus_Success, nil
 
@@ -125,30 +116,38 @@ func (c *protocolDaoGetStatusContext) GetState(mc *batch.MultiCaller) {
 		c.node.IsRplLockingAllowed,
 		c.node.RplLocked,
 	)
-
 	// Snapshot Registry
-	if c.registry != nil {
-		c.registry.NodeToSigner(mc, &c.signallingAddress, c.node.Address)
-	}
+	c.registry.NodeToSigner(mc, &c.signallingAddress, c.node.Address)
 }
 
 func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDaoStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 
+	var err error
+
+	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
+	if data.IsVotingInitialized {
+		data.TotalDelegatedVp, _, _, err = c.propMgr.GetArtifactsForVoting(uint32(c.blockNumber), c.nodeAddress)
+		if err != nil {
+			return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", c.nodeAddress.Hex(), c.blockNumber, err)
+		}
+	} else {
+		data.TotalDelegatedVp = nil
+	}
+
+	data.IsNodeRegistered = c.node.Exists.Get()
 	data.BlockNumber = uint32(c.blockNumber)
-	data.IsNodeRegistered = c.isNodeRegistered
 	data.SignallingAddress = c.signallingAddress
 	data.SignallingAddressFormatted = utils.GetFormattedAddress(c.ec, data.SignallingAddress)
 	data.AccountAddress = c.node.Address
 	data.AccountAddressFormatted = utils.GetFormattedAddress(c.ec, data.AccountAddress)
 	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
 	data.SumVotingPower = c.votingTree.Nodes[0].Sum
-	data.TotalDelegatedVp = c.totalDelegatedVP
 	data.IsRPLLockingAllowed = c.node.IsRplLockingAllowed.Get()
 	data.NodeRPLLocked = c.node.RplLocked.Get()
 	data.VerifyEnabled = c.cfg.VerifyProposals.Value
 
 	//Get the voting power and delegate at that block
-	var err = c.rp.Query(func(mc *batch.MultiCaller) error {
+	err = c.rp.Query(func(mc *batch.MultiCaller) error {
 		c.node.GetVotingPowerAtBlock(mc, &data.VotingPower, data.BlockNumber)
 		c.node.GetVotingDelegateAtBlock(mc, &data.OnchainVotingDelegate, data.BlockNumber)
 		return nil
