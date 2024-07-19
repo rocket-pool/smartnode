@@ -381,8 +381,8 @@ func createDefaultRelays() []config.MevRelay {
 		// bloXroute Max Profit
 		{
 			ID:          config.MevRelayID_BloxrouteMaxProfit,
-			Name:        "bloXroute 1 (formerly Max Profit)",
-			Description: "Select this to enable the relay from bloXroute formerly known as \"max profit\". (Both bloXroute relays propagate the same transactions...)",
+			Name:        "bloXroute Max Profit",
+			Description: "Select this to enable the relay from bloXroute (formerly) known as \"Max Profit\". (Both bloXroute relays propagate the same transactions...)",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com?id=rocketpool",
 				config.Network_Devnet:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.goerli.blxrbdn.com?id=rocketpool",
@@ -393,8 +393,8 @@ func createDefaultRelays() []config.MevRelay {
 		// bloXroute Regulated
 		{
 			ID:          config.MevRelayID_BloxrouteRegulated,
-			Name:        "bloXroute 2 (formerly Regulated)",
-			Description: "Select this to enable the relay from bloXroute formerly known as \"Regulated\". (Both bloXroute relays propagate the same transactions...)",
+			Name:        "bloXroute Regulated",
+			Description: "Select this to enable the relay from bloXroute (formerly) known as \"Regulated\". (Both bloXroute relays propagate the same transactions...)",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com?id=rocketpool",
 			},
