@@ -16,7 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/node"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/contracts"
-	"github.com/rocket-pool/smartnode/v2/shared/utils"
+	"github.com/rocket-pool/smartnode/v2/shared/eip712"
 )
 
 // ===============
@@ -33,8 +33,6 @@ func (f *protocolDaoSetSignallingAddressFactory) Create(args url.Values) (*proto
 	}
 	inputErrs := []error{
 		server.ValidateArg("signallingAddress", args, input.ValidateAddress, &c.signallingAddress),
-		// leaving this out until ValidateArg() is added to NMC
-		// server.ValidateArg("signature", args, input.ValidateSignature, &c.signature),
 		server.GetStringFromVars("signature", args, &c.signature),
 	}
 	return c, errors.Join(inputErrs...)
@@ -108,12 +106,17 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 		return types.ResponseStatus_Error, fmt.Errorf("Voting must be initialized to set a signalling address. Use 'rocketpool pdao initialize-voting' to initialize voting first")
 	}
 
-	sig, err := utils.ParseEIP712(c.signature)
+	signatureSanitized, err := eip712.SanitizeEIP712String(c.signature)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("Error splitting EIP-712 signature")
+		return types.ResponseStatus_Error, fmt.Errorf("Error sanitizing signature input")
 	}
 
-	data.TxInfo, err = c.registry.SetSigner(c.signallingAddress, opts, sig.V, sig.R, sig.S)
+	components, err := eip712.ParseEIP712Components(signatureSanitized)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("Error parsing EIP-712 components")
+	}
+
+	data.TxInfo, err = c.registry.SetSigner(c.signallingAddress, opts, components.V, components.R, components.S)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("Error getting the TX info for SetSigner: %w", err)
 	}
