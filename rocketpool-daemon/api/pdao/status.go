@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/contracts"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/proposals"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
@@ -100,7 +101,6 @@ func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting network tree")
 	}
-	//TODO add https://github.com/rocket-pool/smartnode/blob/master/rocketpool/api/pdao/status.go#L132
 
 	return types.ResponseStatus_Success, nil
 
@@ -135,8 +135,6 @@ func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDaoStatusRes
 
 	data.IsNodeRegistered = c.node.Exists.Get()
 	data.BlockNumber = uint32(c.blockNumber)
-	data.SignallingAddress = c.signallingAddress
-	data.SignallingAddressFormatted = utils.GetFormattedAddress(c.ec, data.SignallingAddress)
 	data.AccountAddress = c.node.Address
 	data.AccountAddressFormatted = utils.GetFormattedAddress(c.ec, data.AccountAddress)
 	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
@@ -145,7 +143,7 @@ func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDaoStatusRes
 	data.NodeRPLLocked = c.node.RplLocked.Get()
 	data.VerifyEnabled = c.cfg.VerifyProposals.Value
 
-	//Get the voting power and delegate at that block
+	// Get the voting power and delegate at that block
 	err = c.rp.Query(func(mc *batch.MultiCaller) error {
 		c.node.GetVotingPowerAtBlock(mc, &data.VotingPower, data.BlockNumber)
 		c.node.GetVotingDelegateAtBlock(mc, &data.OnchainVotingDelegate, data.BlockNumber)
@@ -155,5 +153,19 @@ func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDaoStatusRes
 		return types.ResponseStatus_Error, fmt.Errorf("error getting voting info for block %d: %w", c.blockNumber, err)
 	}
 	data.OnchainVotingDelegateFormatted = utils.GetFormattedAddress(c.ec, data.OnchainVotingDelegate)
+
+	// Get the signalling address and active snapshot proposals
+	emptyAddress := common.Address{}
+	data.SignallingAddress = c.signallingAddress
+	if data.SignallingAddress != emptyAddress {
+		data.SignallingAddressFormatted = utils.GetFormattedAddress(c.ec, c.signallingAddress)
+	}
+	props, err := voting.GetSnapshotProposals(c.cfg, c.node.Address, c.signallingAddress, true)
+	if err != nil {
+		data.SnapshotResponse.Error = fmt.Sprintf("error getting snapshot proposals: %s", err.Error())
+	} else {
+		data.SnapshotResponse.ActiveSnapshotProposals = props
+	}
+
 	return types.ResponseStatus_Success, nil
 }
