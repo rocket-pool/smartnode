@@ -3,6 +3,7 @@ package test
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -24,7 +25,6 @@ type CLITest struct {
 
 	commands uint
 	server   *httptest.Server
-
 	response any
 }
 
@@ -32,6 +32,7 @@ type CLITest struct {
 type CLITestResult struct {
 	Error         error // Error returned by "run" if any
 	HTTPTraceFile *os.File
+	Stdout        string
 }
 
 func NewCLITest(t *testing.T) *CLITest {
@@ -128,6 +129,27 @@ func (cliTest *CLITest) Run(cmd ...string) *CLITestResult {
 		return nil
 	}
 
+	// Capture stdout
+	oldStdout := os.Stdout
+	// First make a pipe
+	pipeReader, pipeWriter, err := os.Pipe()
+	if err != nil {
+		cliTest.t.Fatal(err)
+		return nil
+	}
+	// We can close the reader at the end, but the writer we want to close manually
+	defer pipeReader.Close()
+
+	// Use the writer side of the pipe as stdout
+	os.Stdout = pipeWriter
+	// Make a teereader for the reader side of the pipe that forwards to actual stdout
+	// this way, as we read the output, it is also printed normally
+	testReader := io.TeeReader(pipeReader, oldStdout)
+	// Reset when finished
+	defer func() {
+		os.Stdout = oldStdout
+	}()
+
 	// Prepend http trace path
 	cmd = append([]string{"--http-trace-path", httpTraceFilePath}, cmd...)
 	// Prepend config location
@@ -138,12 +160,24 @@ func (cliTest *CLITest) Run(cmd ...string) *CLITestResult {
 	cmd = append([]string{"rocketpool-test"}, cmd...)
 	cliTest.t.Logf("Running command %s\n", strings.Join(cmd, " "))
 
-	defer func() {
-		cliTest.response = nil
-	}()
+	// Run the command
+	runErr := cliTest.App.Run(cmd)
+	// Clear the expected response after we run the command
+	cliTest.response = nil
+
+	// Close the stdout writer so ReadAll can finish
+	pipeWriter.Close()
+
+	// Read all the captured output
+	testOutput, err := io.ReadAll(testReader)
+	if err != nil {
+		cliTest.t.Fatal(err)
+		return nil
+	}
 
 	return &CLITestResult{
-		Error:         cliTest.App.Run(cmd),
+		Error:         runErr,
 		HTTPTraceFile: httpTraceFile,
+		Stdout:        string(testOutput),
 	}
 }

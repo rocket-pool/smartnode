@@ -1,11 +1,12 @@
 package minipool
 
 import (
-	"io"
 	"strings"
 	"testing"
 
+	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/test"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
 type minipoolTest struct {
@@ -20,24 +21,20 @@ func newMinipoolTest(t *testing.T) *minipoolTest {
 	return out
 }
 
-func TestMinipoolStatus(t *testing.T) {
+func TestMinipoolStatusNoMinipools(t *testing.T) {
 	cliTest := newMinipoolTest(t)
-	result := cliTest.Run("minipool", "status")
-	if result.Error == nil {
-		t.Fatal("running 'minipool status' without a mock response should produce an error")
+	result := cliTest.RepliesWith(
+		types.ApiResponse[api.MinipoolStatusData]{
+			Data: &api.MinipoolStatusData{},
+		},
+	).Run("minipool", "status")
+	if result.Error != nil {
+		t.Fatal(result.Error)
 	}
 
-	errorstr := result.Error.Error()
-	if !strings.Contains(errorstr, "no response defined, call CLITest.RepliesWith") {
-		t.Fatalf("rocketpool-cli should return expected errors when no mock response was provided, got %s", errorstr)
-	}
-
-	httpTrace, err := io.ReadAll(result.HTTPTraceFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if !strings.Contains(string(httpTrace), "GotFirstResponseByte") {
-		t.Fatalf("test should have successfully traced http request to mock, instead got: %s", string(httpTrace))
+	// Cli output should mention no minipools available
+	expectedResponse := "The node does not have any minipools yet."
+	if !strings.Contains(result.Stdout, expectedResponse) {
+		t.Fatalf(`expected message "%s", got "%s"`, expectedResponse, result.Stdout)
 	}
 }
