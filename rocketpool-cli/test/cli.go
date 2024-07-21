@@ -1,7 +1,10 @@
 package test
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,6 +23,9 @@ type CLITest struct {
 	App     *cli.App
 
 	commands uint
+	server   *httptest.Server
+
+	response any
 }
 
 // CLITestResult contains artifacts of running a cli command
@@ -36,6 +42,13 @@ func NewCLITest(t *testing.T) *CLITest {
 	out.TestDir = t.TempDir()
 	t.Logf("CLI Test using %s as .rocketpool\n", out.TestDir)
 
+	// Set up the mock daemon http server
+	out.server = httptest.NewServer(out)
+	t.Cleanup(func() {
+		out.server.Close()
+	})
+
+	// Set up the urfav/cli.App
 	out.App = cli.NewApp()
 	out.App.Name = "rocketpool-test"
 	// Add global flags
@@ -50,6 +63,7 @@ func NewCLITest(t *testing.T) *CLITest {
 			t.Fatal(err)
 			return err
 		}
+
 		return nil
 	}
 	out.App.After = func(c *cli.Context) error {
@@ -61,6 +75,39 @@ func NewCLITest(t *testing.T) *CLITest {
 	}
 
 	return out
+}
+
+func (cliTest *CLITest) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if cliTest.response == nil {
+		w.WriteHeader(http.StatusBadGateway)
+		_, err := w.Write([]byte(`{"error": "no response defined, call CLITest.RepliesWith before CLITest.Run"}`))
+		if err != nil {
+			cliTest.t.Fatal(err)
+		}
+		return
+	}
+	body, err := json.Marshal(cliTest.response)
+	if err != nil {
+		w.WriteHeader(http.StatusBadGateway)
+		if err != nil {
+			cliTest.t.Fatal(err)
+		}
+		_, err = w.Write([]byte(err.Error()))
+		if err != nil {
+			cliTest.t.Fatal(err)
+		}
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(body)
+	if err != nil {
+		cliTest.t.Fatal(err)
+	}
+}
+
+func (cliTest *CLITest) RepliesWith(response any) *CLITest {
+	cliTest.response = response
+	return cliTest
 }
 
 func (cliTest *CLITest) Run(cmd ...string) *CLITestResult {
@@ -85,9 +132,16 @@ func (cliTest *CLITest) Run(cmd ...string) *CLITestResult {
 	cmd = append([]string{"--http-trace-path", httpTraceFilePath}, cmd...)
 	// Prepend config location
 	cmd = append([]string{"--config-path", cliTest.TestDir}, cmd...)
+	// Prepend mock http server
+	cmd = append([]string{"--api-address", cliTest.server.URL}, cmd...)
 	// Prepend expected test app name
 	cmd = append([]string{"rocketpool-test"}, cmd...)
 	cliTest.t.Logf("Running command %s\n", strings.Join(cmd, " "))
+
+	defer func() {
+		cliTest.response = nil
+	}()
+
 	return &CLITestResult{
 		Error:         cliTest.App.Run(cmd),
 		HTTPTraceFile: httpTraceFile,

@@ -1,6 +1,7 @@
 package minipool
 
 import (
+	"io"
 	"strings"
 	"testing"
 
@@ -27,7 +28,16 @@ func TestMinipoolStatus(t *testing.T) {
 	}
 
 	errorstr := result.Error.Error()
-	if !strings.Contains(errorstr, "connect: connection refused") {
-		t.Fatalf("rocketpool-cli should return dial errors when unable to contact the api, got %s", errorstr)
+	if !strings.Contains(errorstr, "no response defined, call CLITest.RepliesWith") {
+		t.Fatalf("rocketpool-cli should return expected errors when no mock response was provided, got %s", errorstr)
+	}
+
+	httpTrace, err := io.ReadAll(result.HTTPTraceFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !strings.Contains(string(httpTrace), "GotFirstResponseByte") {
+		t.Fatalf("test should have successfully traced http request to mock, instead got: %s", string(httpTrace))
 	}
 }
