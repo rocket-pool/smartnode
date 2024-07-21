@@ -5,7 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/rocket-pool/node-manager-core/api/types"
+	apitypes "github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/rocketpool-go/v2/types"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/test"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
@@ -25,7 +26,7 @@ func newMinipoolTest(t *testing.T) *minipoolTest {
 func TestMinipoolStatusNoMinipools(t *testing.T) {
 	cliTest := newMinipoolTest(t)
 	result := cliTest.RepliesWith(
-		types.ApiResponse[api.MinipoolStatusData]{
+		apitypes.ApiResponse[api.MinipoolStatusData]{
 			Data: &api.MinipoolStatusData{},
 		},
 	).Run("minipool", "status")
@@ -64,7 +65,7 @@ func newMinipoolDetails() *api.MinipoolDetails {
 
 func TestMinipoolStatusOnlyFinalized(t *testing.T) {
 	cliTest := newMinipoolTest(t)
-	response := types.ApiResponse[api.MinipoolStatusData]{
+	response := apitypes.ApiResponse[api.MinipoolStatusData]{
 		Data: &api.MinipoolStatusData{
 			Minipools: []api.MinipoolDetails{},
 		},
@@ -81,6 +82,56 @@ func TestMinipoolStatusOnlyFinalized(t *testing.T) {
 	}
 
 	expectedResponse := "All of this node's minipools have been finalized."
+	if !strings.Contains(result.Stdout, expectedResponse) {
+		t.Fatalf(`expected message "%s", got "%s"`, expectedResponse, result.Stdout)
+	}
+}
+
+func TestMinipoolStatusMixedStatus(t *testing.T) {
+	cliTest := newMinipoolTest(t)
+	response := apitypes.ApiResponse[api.MinipoolStatusData]{
+		Data: &api.MinipoolStatusData{
+			Minipools: []api.MinipoolDetails{},
+		},
+	}
+	// 1 finalized
+	minipool1 := newMinipoolDetails()
+	minipool1.Finalised = true
+	// 2 initialized
+	response.Data.Minipools = append(response.Data.Minipools, *minipool1)
+	minipool2 := newMinipoolDetails()
+	response.Data.Minipools = append(response.Data.Minipools, *minipool2)
+	minipool3 := newMinipoolDetails()
+	response.Data.Minipools = append(response.Data.Minipools, *minipool3)
+	// 1 staking
+	minipool4 := newMinipoolDetails()
+	minipool4.Status.Status = types.MinipoolStatus_Staking
+	response.Data.Minipools = append(response.Data.Minipools, *minipool4)
+	// 1 prelaunch
+	minipool5 := newMinipoolDetails()
+	minipool5.Status.Status = types.MinipoolStatus_Prelaunch
+	response.Data.Minipools = append(response.Data.Minipools, *minipool5)
+	result := cliTest.RepliesWith(response).Run("minipool", "status")
+	if result.Error != nil {
+		t.Fatal(result.Error)
+	}
+
+	expectedResponse := "2 Initialized minipool(s)"
+	if !strings.Contains(result.Stdout, expectedResponse) {
+		t.Fatalf(`expected message "%s", got "%s"`, expectedResponse, result.Stdout)
+	}
+
+	expectedResponse = "1 finalized minipool(s) (hidden)"
+	if !strings.Contains(result.Stdout, expectedResponse) {
+		t.Fatalf(`expected message "%s", got "%s"`, expectedResponse, result.Stdout)
+	}
+
+	expectedResponse = "1 Staking minipool(s)"
+	if !strings.Contains(result.Stdout, expectedResponse) {
+		t.Fatalf(`expected message "%s", got "%s"`, expectedResponse, result.Stdout)
+	}
+
+	expectedResponse = "1 Prelaunch minipool(s)"
 	if !strings.Contains(result.Stdout, expectedResponse) {
 		t.Fatalf(`expected message "%s", got "%s"`, expectedResponse, result.Stdout)
 	}
