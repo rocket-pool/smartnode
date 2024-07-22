@@ -100,7 +100,7 @@ func (c *protocolDaoSetSignallingAddressContext) GetState(mc *batch.MultiCaller)
 
 func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 
-	message, err := constructMessage(strings.ToLower(c.nodeAddress.Hex()))
+	message := constructMessage(strings.ToLower(c.nodeAddress.Hex()))
 
 	if c.signallingAddress == c.nodeToSigner {
 		return types.ResponseStatus_Error, fmt.Errorf("Signer address already in use")
@@ -111,7 +111,7 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 	}
 
 	eip712Components := new(eip712.EIP712Components)
-	err = eip712Components.Decode(c.signature)
+	err := eip712Components.Decode(c.signature)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("Error decoding signature: %w", err)
 	}
@@ -129,7 +129,7 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 	return types.ResponseStatus_Success, nil
 }
 
-func constructMessage(nodeAddress string) ([]byte, error) {
+func constructMessage(nodeAddress string) []byte {
 	message := fmt.Sprintf("%s may delegate to me for Rocket Pool governance", nodeAddress)
-	return []byte(message), nil
+	return []byte(message)
 }
