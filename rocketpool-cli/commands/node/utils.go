@@ -25,9 +25,6 @@ import (
 )
 
 const (
-	amountFlag      string = "amount"
-	maxSlippageFlag string = "max-slippage"
-	saltFlag        string = "salt"
 
 	// IPInfo API
 	IPInfoURL = "https://ipinfo.io/json/"
@@ -279,14 +276,14 @@ func promptTimezone() string {
 func promptMinNodeFee(networkCurrentNodeFee, networkMinNodeFee float64) float64 {
 
 	// Get suggested min node fee
-	suggestedMinNodeFee := networkCurrentNodeFee - DefaultMaxNodeFeeSlippage
+	suggestedMinNodeFee := networkCurrentNodeFee - defaultMaxNodeFeeSlippage
 	if suggestedMinNodeFee < networkMinNodeFee {
 		suggestedMinNodeFee = networkMinNodeFee
 	}
 
 	// Prompt for suggested max slippage
 	fmt.Printf("The current network node commission rate that your minipool should receive is %f%%.\n", networkCurrentNodeFee*100)
-	fmt.Printf("The suggested maximum commission rate slippage for your deposit transaction is %f%%.\n", DefaultMaxNodeFeeSlippage*100)
+	fmt.Printf("The suggested maximum commission rate slippage for your deposit transaction is %f%%.\n", defaultMaxNodeFeeSlippage*100)
 	fmt.Printf("This will result in your minipool receiving a minimum possible commission rate of %f%%.\n", suggestedMinNodeFee*100)
 	if utils.Confirm("Do you want to use the suggested maximum commission rate slippage?") {
 		return suggestedMinNodeFee

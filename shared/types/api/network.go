@@ -1,9 +1,11 @@
 package api
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
 	sharedtypes "github.com/rocket-pool/smartnode/v2/shared/types"
 )
 
@@ -72,4 +74,31 @@ type NetworkDepositContractInfoData struct {
 	BeaconDepositContract common.Address `json:"beaconDepositContract"`
 	BeaconNetwork         uint64         `json:"beaconNetwork"`
 	SufficientSync        bool           `json:"sufficientSync"`
+}
+
+func (ndcid *NetworkDepositContractInfoData) Mismatched() bool {
+	return ndcid.RPNetwork != ndcid.BeaconNetwork ||
+		ndcid.RPDepositContract != ndcid.BeaconDepositContract
+}
+
+func (ndcid *NetworkDepositContractInfoData) PrintMismatch() bool {
+	if !ndcid.Mismatched() {
+		fmt.Println("Your Beacon Node is on the correct network.")
+		fmt.Println()
+		return false
+	}
+	fmt.Printf("%s***ALERT***\n", terminal.ColorRed)
+	fmt.Println("YOUR ETH2 CLIENT IS NOT CONNECTED TO THE SAME NETWORK THAT ROCKET POOL IS USING!")
+	fmt.Println("This is likely because your ETH2 client is using the wrong configuration.")
+	fmt.Println("For the safety of your funds, Rocket Pool will not let you deposit your ETH until this is resolved.")
+	fmt.Println()
+	fmt.Println("To fix it if you are in Docker mode:")
+	fmt.Println("\t1. Run 'rocketpool service install -d' to get the latest configuration")
+	fmt.Println("\t2. Run 'rocketpool service stop' and 'rocketpool service start' to apply the configuration.")
+	fmt.Println("If you are using Hybrid or Native mode, please correct the network flags in your ETH2 launch script.")
+	fmt.Println()
+	fmt.Println("Details:")
+	fmt.Printf("\tRocket Pool expects deposit contract %s on chain %d.\n", ndcid.RPDepositContract.Hex(), ndcid.RPNetwork)
+	fmt.Printf("\tYour Beacon client is using deposit contract %s on chain %d.%s\n", ndcid.BeaconDepositContract.Hex(), ndcid.BeaconNetwork, terminal.ColorReset)
+	return true
 }

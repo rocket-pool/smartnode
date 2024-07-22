@@ -78,18 +78,6 @@ func NewReviewPage(md *mainDisplay, oldConfig *snCfg.SmartNodeConfig, newConfig 
 	// Create the layout
 	width := 86
 
-	// Create the main text view
-	descriptionText := "Please review your changes below.\nScroll through them using the arrow keys, and press Enter when you're ready to save them."
-	lines := tview.WordWrap(descriptionText, width-4)
-	textViewHeight := len(lines) + 1
-	textView := tview.NewTextView().
-		SetText(descriptionText).
-		SetTextAlign(tview.AlignCenter).
-		SetWordWrap(true).
-		SetTextColor(tview.Styles.PrimaryTextColor)
-	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
-	textView.SetBorderPadding(0, 0, 1, 1)
-
 	var buttonGrid *tview.Flex
 
 	if len(errors) > 0 {
@@ -127,6 +115,30 @@ func NewReviewPage(md *mainDisplay, oldConfig *snCfg.SmartNodeConfig, newConfig 
 			AddItem(tview.NewBox().
 				SetBackgroundColor(tview.Styles.ContrastBackgroundColor), 0, 1, false)
 	}
+
+	return reviewPage(md, md.settingsHome.homePage, width, changeBox, buttonGrid, changedSettings)
+}
+
+func reviewPage(
+	md *mainDisplay,
+	homePage *page,
+	width int,
+	changeBox tview.Primitive,
+	buttonGrid tview.Primitive,
+	changedSettings []*config.ChangedSection,
+) *ReviewPage {
+
+	// Create the main text view
+	descriptionText := "Please review your changes below.\nScroll through them using the arrow keys, and press Enter when you're ready to save them."
+	lines := tview.WordWrap(descriptionText, width-4)
+	textViewHeight := len(lines) + 1
+	textView := tview.NewTextView().
+		SetText(descriptionText).
+		SetTextAlign(tview.AlignCenter).
+		SetWordWrap(true).
+		SetTextColor(tview.Styles.PrimaryTextColor)
+	textView.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
+	textView.SetBorderPadding(0, 0, 1, 1)
 
 	// Row spacers with the correct background color
 	spacer1 := tview.NewBox().

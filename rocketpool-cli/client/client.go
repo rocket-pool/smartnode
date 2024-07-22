@@ -16,11 +16,6 @@ import (
 
 // Config
 const (
-	InstallerName              string = "install.sh"
-	UpdateTrackerInstallerName string = "install-update-tracker.sh"
-	InstallerURL               string = "https://github.com/rocket-pool/smartnode/releases/download/%s/" + InstallerName
-	UpdateTrackerURL           string = "https://github.com/rocket-pool/smartnode/releases/download/%s/" + UpdateTrackerInstallerName
-
 	SettingsFile       string = "user-settings.yml"
 	BackupSettingsFile string = "user-settings-backup.yml"
 
