@@ -60,3 +60,4 @@ jobs:
         with:
           coverage-artifact-name: "code-coverage"
           coverage-file-name: "cover.out"
+          root-package: "github.com/rocket-pool/smartnode/v2"
