@@ -73,7 +73,7 @@ func (c *minipoolCloseContext) GetMinipoolDetails(mc *batch.MultiCaller, mp mini
 }
 
 func (c *minipoolCloseContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *types.BatchTxInfoData) (types.ResponseStatus, error) {
-	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, addresses, data, c.CreateTx, "close")
+	return prepareMinipoolBatchTxData(c.handler.ctx, c.handler.serviceProvider, c.minipoolAddresses, data, c.CreateTx, "close")
 }
 
 func (c *minipoolCloseContext) CreateTx(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error) {
