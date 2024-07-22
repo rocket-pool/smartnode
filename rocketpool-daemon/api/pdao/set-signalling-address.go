@@ -106,17 +106,13 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 		return types.ResponseStatus_Error, fmt.Errorf("Voting must be initialized to set a signalling address. Use 'rocketpool pdao initialize-voting' to initialize voting first")
 	}
 
-	signatureSanitized, err := eip712.SanitizeEIP712String(c.signature)
+	eip712Components := new(eip712.EIP712Components)
+	err := eip712Components.Decode(c.signature)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("Error sanitizing signature input")
+		return types.ResponseStatus_Error, fmt.Errorf("Error decoding signature: %w", err)
 	}
 
-	components, err := eip712.ParseEIP712Components(signatureSanitized)
-	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("Error parsing EIP-712 components")
-	}
-
-	data.TxInfo, err = c.registry.SetSigner(c.signallingAddress, opts, components.V, components.R, components.S)
+	data.TxInfo, err = c.registry.SetSigner(c.signallingAddress, opts, eip712Components.V, eip712Components.R, eip712Components.S)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("Error getting the TX info for SetSigner: %w", err)
 	}
