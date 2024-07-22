@@ -16,7 +16,7 @@ const EIP712Length = 65
 
 // Pretty print for EIP712Components
 func (e EIP712Components) String() {
-	fmt.Printf("EIP712 Components:\n")
+	fmt.Println("EIP712 Components:")
 	fmt.Printf("R: %x\n", e.R)
 	fmt.Printf("S: %x\n", e.S)
 	fmt.Printf("V: %d\n", e.V)
