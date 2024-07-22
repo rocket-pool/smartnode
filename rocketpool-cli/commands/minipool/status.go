@@ -70,7 +70,8 @@ func getStatus(c *cli.Context) error {
 
 	// Return if all minipools are finalized and they are hidden
 	if len(status.Data.Minipools) == len(finalisedMinipools) && !c.Bool(statusIncludeFinalizedFlag) {
-		fmt.Println("All of this node's minipools have been finalized.\nTo show finalized minipools, re-run this command with the `-f` flag.")
+		fmt.Println("All of this node's minipools have been finalized.")
+		fmt.Println("To show finalized minipools, re-run this command with the `-f` flag.")
 		return nil
 	}
 
@@ -85,7 +86,7 @@ func getStatus(c *cli.Context) error {
 		if statusName == "Withdrawable" {
 			fmt.Println("(Withdrawal may not be available until after withdrawal delay)")
 		}
-		fmt.Println("")
+		fmt.Println()
 
 		// Minipools
 		for _, minipool := range minipools {
@@ -94,13 +95,13 @@ func getStatus(c *cli.Context) error {
 			}
 		}
 
-		fmt.Println("")
+		fmt.Println()
 	}
 
 	// Handle finalized minipools
 	if c.Bool(statusIncludeFinalizedFlag) {
 		fmt.Printf("%d finalized minipool(s):\n", len(finalisedMinipools))
-		fmt.Println("")
+		fmt.Println()
 
 		// Minipools
 		for _, minipool := range finalisedMinipools {
@@ -108,10 +109,10 @@ func getStatus(c *cli.Context) error {
 		}
 	} else {
 		fmt.Printf("%d finalized minipool(s) (hidden)\n", len(finalisedMinipools))
-		fmt.Println("")
+		fmt.Println()
 	}
 
-	fmt.Println("")
+	fmt.Println()
 
 	// Print actionable minipool details
 	if len(refundableMinipools) > 0 {
@@ -119,14 +120,14 @@ func getStatus(c *cli.Context) error {
 		for _, minipool := range refundableMinipools {
 			fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.RefundBalance), 6))
 		}
-		fmt.Println("")
+		fmt.Println()
 	}
 	if len(closeableMinipools) > 0 {
 		fmt.Printf("%d dissolved minipool(s) can be closed once Beacon Chain withdrawals are enabled:\n", len(closeableMinipools))
 		for _, minipool := range closeableMinipools {
 			fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balances.Eth), 6))
 		}
-		fmt.Println("")
+		fmt.Println()
 	}
 
 	// Return
@@ -209,6 +210,5 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 		fmt.Printf("%s*Minipool can be upgraded to delegate %s!%s\n", terminal.ColorYellow, latestDelegate.Hex(), terminal.ColorReset)
 	}
 
-	fmt.Printf("\n")
-
+	fmt.Println()
 }
