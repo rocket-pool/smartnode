@@ -65,7 +65,7 @@ type NetworkState struct {
 }
 
 // Creates a snapshot of the entire Rocket Pool network state, on both the Execution and Consensus layers
-func CreateNetworkState(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger, slotNumber uint64, beaconConfig beacon.Eth2Config, context context.Context) (*NetworkState, error) {
+func CreateNetworkState(cfg *config.SmartNodeConfig, res *config.MergedResources, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger, slotNumber uint64, beaconConfig beacon.Eth2Config, context context.Context) (*NetworkState, error) {
 	// Get the relevant network contracts
 	multicallerAddress := res.MulticallAddress
 	balanceBatcherAddress := res.BalanceBatcherAddress
@@ -193,7 +193,7 @@ func CreateNetworkState(cfg *config.SmartNodeConfig, res *config.RocketPoolResou
 
 // Creates a snapshot of the Rocket Pool network, but only for a single node
 // Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
-func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool, context context.Context) (*NetworkState, *big.Int, error) {
+func CreateNetworkStateForNode(cfg *config.SmartNodeConfig, res *config.MergedResources, rp *rocketpool.RocketPool, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool, context context.Context) (*NetworkState, *big.Int, error) {
 	steps := 6
 	if calculateTotalEffectiveStake {
 		steps++

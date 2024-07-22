@@ -17,7 +17,7 @@ import (
 )
 
 // Determines if the primary EC can be used for historical queries, or if the Archive EC is required
-func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.SmartNodeConfig, resources *config.RocketPoolResources, logger *slog.Logger, blockNumber *big.Int) (*rocketpool.RocketPool, error) {
+func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.SmartNodeConfig, resources *config.MergedResources, logger *slog.Logger, blockNumber *big.Int) (*rocketpool.RocketPool, error) {
 	client := primary
 
 	// Try getting the rETH address as a canary to see if the block is available

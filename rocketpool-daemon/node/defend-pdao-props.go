@@ -35,11 +35,10 @@ type DefendPdaoProps struct {
 	sp               services.ISmartNodeServiceProvider
 	logger           *slog.Logger
 	cfg              *config.SmartNodeConfig
-	res              *config.RocketPoolResources
+	res              *config.MergedResources
 	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
 	bc               beacon.IBeaconClient
-	rs               *config.RocketPoolResources
 	gasThreshold     float64
 	maxFee           *big.Int
 	maxPriorityFee   *big.Int
@@ -67,7 +66,6 @@ func NewDefendPdaoProps(ctx context.Context, sp services.ISmartNodeServiceProvid
 		w:                sp.GetWallet(),
 		rp:               sp.GetRocketPool(),
 		bc:               sp.GetBeaconClient(),
-		rs:               sp.GetResources(),
 		gasThreshold:     cfg.AutoTxGasThreshold.Value,
 		maxFee:           maxFee,
 		maxPriorityFee:   maxPriorityFee,
@@ -169,7 +167,7 @@ func (t *DefendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 	}
 
 	// Get any challenges issued for the proposals
-	challengeEvents, err := t.pdaoMgr.GetChallengeSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, t.rs.PreviousProtocolDaoVerifierAddresses, opts)
+	challengeEvents, err := t.pdaoMgr.GetChallengeSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, t.res.PreviousProtocolDaoVerifierAddresses, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error scanning for ChallengeSubmitted events: %w", err)
 	}

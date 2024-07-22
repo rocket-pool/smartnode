@@ -126,7 +126,6 @@ func newCliApp() *cli.App {
 		}
 		return nil
 	}
-
 	app.After = func(c *cli.Context) error {
 		// Close http tracer if any was created
 		snSettings = settings.GetSmartNodeSettings(c)

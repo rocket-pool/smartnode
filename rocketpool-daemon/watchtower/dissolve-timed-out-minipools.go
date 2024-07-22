@@ -29,7 +29,7 @@ type DissolveTimedOutMinipools struct {
 	sp     services.ISmartNodeServiceProvider
 	logger *slog.Logger
 	cfg    *config.SmartNodeConfig
-	res    *config.RocketPoolResources
+	res    *config.MergedResources
 	w      *wallet.Wallet
 	rp     *rocketpool.RocketPool
 	ec     eth.IExecutionClient

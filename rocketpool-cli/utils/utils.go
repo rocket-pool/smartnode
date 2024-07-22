@@ -92,17 +92,21 @@ func printTransactionHashImpl(rp *client.Client, hash common.Hash, finalMessage 
 func getTxWatchUrl(rp *client.Client) string {
 	cfg, isNew, err := rp.LoadConfig()
 	if err != nil {
-		fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err)
+		fmt.Printf("Warning: couldn't read config file so the transaction URL will be unavailable (%s).\n", err.Error())
 		return ""
 	}
 
 	if isNew {
-		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		fmt.Print("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 		return ""
 	}
 
-	rs := snCfg.NewRocketPoolResources(cfg.Network.Value)
-	return rs.TxWatchUrl
+	res, err := cfg.GetResources()
+	if err != nil {
+		fmt.Printf("Warning: couldn't read resources from config file so the transaction URL will be unavailable (%s).\n", err.Error())
+		return ""
+	}
+	return res.TxWatchUrl
 }
 
 // Convert a Unix datetime to a string, or `---` if it's zero

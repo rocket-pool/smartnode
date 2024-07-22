@@ -23,7 +23,7 @@ import (
 type RespondChallenges struct {
 	sp     services.ISmartNodeServiceProvider
 	cfg    *config.SmartNodeConfig
-	res    *config.RocketPoolResources
+	res    *config.MergedResources
 	w      *wallet.Wallet
 	rp     *rocketpool.RocketPool
 	logger *slog.Logger

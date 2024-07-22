@@ -60,7 +60,7 @@ type protocolDaoProposeRecurringSpendContext struct {
 	handler     *ProtocolDaoHandler
 	rp          *rocketpool.RocketPool
 	cfg         *config.SmartNodeConfig
-	res         *config.RocketPoolResources
+	res         *config.MergedResources
 	bc          beacon.IBeaconClient
 	nodeAddress common.Address
 

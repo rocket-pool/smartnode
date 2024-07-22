@@ -53,7 +53,7 @@ type TreeGenerator struct {
 	logger               *slog.Logger
 	rp                   *rocketpool.RocketPool
 	cfg                  *config.SmartNodeConfig
-	res                  *config.RocketPoolResources
+	res                  *config.MergedResources
 	bc                   beacon.IBeaconClient
 	index                uint64
 	startTime            time.Time
@@ -66,12 +66,12 @@ type TreeGenerator struct {
 }
 
 type treeGeneratorImpl interface {
-	generateTree(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient) (sharedtypes.IRewardsFile, error)
-	approximateStakerShareOfSmoothingPool(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient) (*big.Int, error)
+	generateTree(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.MergedResources, bc beacon.IBeaconClient) (sharedtypes.IRewardsFile, error)
+	approximateStakerShareOfSmoothingPool(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.MergedResources, bc beacon.IBeaconClient) (*big.Int, error)
 	getRulesetVersion() uint64
 }
 
-func NewTreeGenerator(logger *slog.Logger, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
+func NewTreeGenerator(logger *slog.Logger, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.MergedResources, bc beacon.IBeaconClient, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
 	t := &TreeGenerator{
 		logger:           logger,
 		rp:               rp,

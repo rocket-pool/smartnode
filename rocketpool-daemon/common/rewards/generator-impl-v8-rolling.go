@@ -33,7 +33,7 @@ type treeGeneratorImpl_v8_rolling struct {
 	logger               *slog.Logger
 	rp                   *rocketpool.RocketPool
 	cfg                  *config.SmartNodeConfig
-	res                  *config.RocketPoolResources
+	res                  *config.MergedResources
 	bc                   beacon.IBeaconClient
 	opts                 *bind.CallOpts
 	smoothingPoolBalance *big.Int
@@ -97,7 +97,7 @@ func (r *treeGeneratorImpl_v8_rolling) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v8_rolling) generateTree(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient) (sharedtypes.IRewardsFile, error) {
+func (r *treeGeneratorImpl_v8_rolling) generateTree(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.MergedResources, bc beacon.IBeaconClient) (sharedtypes.IRewardsFile, error) {
 	r.logger.Info("Started rewards tree generation.", slog.Uint64(keys.RulesetKey, r.rewardsFile.RulesetVersion))
 
 	// Provision some struct params
@@ -168,7 +168,7 @@ func (r *treeGeneratorImpl_v8_rolling) generateTree(context context.Context, rp 
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v8_rolling) approximateStakerShareOfSmoothingPool(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient) (*big.Int, error) {
+func (r *treeGeneratorImpl_v8_rolling) approximateStakerShareOfSmoothingPool(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.MergedResources, bc beacon.IBeaconClient) (*big.Int, error) {
 	r.logger.Info("Approximating rewards tree.", slog.Uint64(keys.RulesetKey, r.rewardsFile.RulesetVersion))
 
 	r.rp = rp

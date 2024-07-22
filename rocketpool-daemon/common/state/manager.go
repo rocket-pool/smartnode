@@ -18,7 +18,7 @@ import (
 
 type NetworkStateManager struct {
 	cfg          *config.SmartNodeConfig
-	res          *config.RocketPoolResources
+	res          *config.MergedResources
 	rp           *rocketpool.RocketPool
 	ec           eth.IExecutionClient
 	bc           beacon.IBeaconClient
@@ -30,7 +30,7 @@ type NetworkStateManager struct {
 }
 
 // Create a new manager for the network state
-func NewNetworkStateManager(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger) (*NetworkStateManager, error) {
+func NewNetworkStateManager(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.MergedResources, ec eth.IExecutionClient, bc beacon.IBeaconClient, logger *slog.Logger) (*NetworkStateManager, error) {
 	// Create the manager
 	m := &NetworkStateManager{
 		cfg:     cfg,

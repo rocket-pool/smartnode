@@ -41,7 +41,7 @@ type RollingRecordManager struct {
 
 	logger          *slog.Logger
 	cfg             *config.SmartNodeConfig
-	res             *config.RocketPoolResources
+	res             *config.MergedResources
 	rp              *rocketpool.RocketPool
 	bc              beacon.IBeaconClient
 	mgr             *state.NetworkStateManager
@@ -56,7 +56,7 @@ type RollingRecordManager struct {
 }
 
 // Creates a new manager for rolling records.
-func NewRollingRecordManager(logger *slog.Logger, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, bc beacon.IBeaconClient, mgr *state.NetworkStateManager, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
+func NewRollingRecordManager(logger *slog.Logger, cfg *config.SmartNodeConfig, res *config.MergedResources, rp *rocketpool.RocketPool, bc beacon.IBeaconClient, mgr *state.NetworkStateManager, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
 	// Get the Beacon genesis time
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 

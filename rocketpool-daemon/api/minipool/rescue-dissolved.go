@@ -60,7 +60,7 @@ type minipoolRescueDissolvedContext struct {
 	w                 *wallet.Wallet
 	vMgr              *validator.ValidatorManager
 	bc                beacon.IBeaconClient
-	rs                *config.RocketPoolResources
+	res               *config.MergedResources
 
 	mpMgr *minipool.MinipoolManager
 }
@@ -76,7 +76,7 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData
 	c.vMgr = sp.GetValidatorManager()
 	c.w = sp.GetWallet()
 	c.bc = sp.GetBeaconClient()
-	c.rs = sp.GetResources()
+	c.res = sp.GetResources()
 
 	// Requirements
 	status, err := sp.RequireNodeRegistered(c.handler.ctx)
@@ -140,7 +140,7 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 
 	// Get validator deposit data
 	amountGwei := big.NewInt(0).Div(amount, big.NewInt(1e9)).Uint64()
-	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, c.rs.GenesisForkVersion, amountGwei, c.rs.EthNetworkName)
+	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, c.res.GenesisForkVersion, amountGwei, c.res.EthNetworkName)
 	if err != nil {
 		return nil, err
 	}

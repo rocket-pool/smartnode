@@ -44,7 +44,7 @@ type SubmitNetworkBalances struct {
 	sp               services.ISmartNodeServiceProvider
 	logger           *slog.Logger
 	cfg              *config.SmartNodeConfig
-	res              *config.RocketPoolResources
+	res              *config.MergedResources
 	w                *wallet.Wallet
 	ec               eth.IExecutionClient
 	rp               *rocketpool.RocketPool

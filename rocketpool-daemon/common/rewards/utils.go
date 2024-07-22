@@ -95,7 +95,7 @@ func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address, curre
 }
 
 // Gets the information for an interval including the file status, the validity, and the node's rewards
-func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, resources *config.RocketPoolResources, nodeAddress common.Address, interval uint64, opts *bind.CallOpts) (info sharedtypes.IntervalInfo, err error) {
+func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, resources *config.MergedResources, nodeAddress common.Address, interval uint64, opts *bind.CallOpts) (info sharedtypes.IntervalInfo, err error) {
 	info.Index = interval
 	var event rewards.RewardsEvent
 
@@ -161,7 +161,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res
 }
 
 // Get the event for a rewards snapshot
-func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, resources *config.RocketPoolResources, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
+func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, resources *config.MergedResources, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
 	rewardsPool, err := rewards.NewRewardsPool(rp)
 	if err != nil {
 		return rewards.RewardsEvent{}, fmt.Errorf("error getting rewards pool binding: %w", err)

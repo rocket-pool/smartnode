@@ -50,7 +50,7 @@ func (f *nodeGetRewardsInfoContextFactory) RegisterRoute(router *mux.Router) {
 type nodeGetRewardsInfoContext struct {
 	handler *NodeHandler
 	cfg     *config.SmartNodeConfig
-	res     *config.RocketPoolResources
+	res     *config.MergedResources
 	rp      *rocketpool.RocketPool
 
 	node        *node.Node

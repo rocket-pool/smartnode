@@ -17,7 +17,7 @@ type DepositContractInfo struct {
 	BeaconDepositContract common.Address
 }
 
-func GetDepositContractInfo(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, bc beacon.IBeaconClient) (*DepositContractInfo, error) {
+func GetDepositContractInfo(context context.Context, rp *rocketpool.RocketPool, cfg *config.SmartNodeConfig, res *config.MergedResources, bc beacon.IBeaconClient) (*DepositContractInfo, error) {
 	info := &DepositContractInfo{}
 	info.RPNetwork = uint64(res.ChainID)
 

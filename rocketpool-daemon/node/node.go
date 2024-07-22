@@ -58,8 +58,7 @@ type TaskLoop struct {
 	sp                services.ISmartNodeServiceProvider
 	wg                *sync.WaitGroup
 	cfg               *config.SmartNodeConfig
-	res               *config.RocketPoolResources
-	rs                *config.RocketPoolResources
+	res               *config.MergedResources
 	rp                *rocketpool.RocketPool
 	ec                eth.IExecutionClient
 	bc                beacon.IBeaconClient
@@ -101,7 +100,6 @@ func NewTaskLoop(sp services.ISmartNodeServiceProvider, wg *sync.WaitGroup) *Tas
 		wg:                          wg,
 		cfg:                         sp.GetConfig(),
 		res:                         sp.GetResources(),
-		rs:                          sp.GetResources(),
 		rp:                          sp.GetRocketPool(),
 		ec:                          sp.GetEthClient(),
 		bc:                          sp.GetBeaconClient(),
@@ -144,7 +142,7 @@ func (t *TaskLoop) Run() error {
 	}
 
 	// Handle the initial fee recipient file deployment
-	err := deployDefaultFeeRecipientFile(t.cfg, t.rs)
+	err := deployDefaultFeeRecipientFile(t.cfg, t.res)
 	if err != nil {
 		return err
 	}
@@ -409,7 +407,7 @@ func (t *TaskLoop) runTasks() bool {
 }
 
 // Copy the default fee recipient file into the proper location
-func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig, rs *config.RocketPoolResources) error {
+func deployDefaultFeeRecipientFile(cfg *config.SmartNodeConfig, rs *config.MergedResources) error {
 	feeRecipientPath := cfg.GetFeeRecipientFilePath()
 	_, err := os.Stat(feeRecipientPath)
 	if os.IsNotExist(err) {

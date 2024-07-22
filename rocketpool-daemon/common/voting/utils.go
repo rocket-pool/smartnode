@@ -113,7 +113,7 @@ type snapshotProposalsResponse struct {
 // === Utils ===
 // =============
 
-func GetSnapshotVotingPower(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, address common.Address) (float64, error) {
+func GetSnapshotVotingPower(cfg *config.SmartNodeConfig, res *config.MergedResources, address common.Address) (float64, error) {
 	client := getHttpClientWithTimeout()
 	apiDomain := res.SnapshotApiDomain
 	id := config.SnapshotID
@@ -148,7 +148,7 @@ func GetSnapshotVotingPower(cfg *config.SmartNodeConfig, res *config.RocketPoolR
 	return vp, nil
 }
 
-func GetSnapshotProposals(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, address common.Address, delegate common.Address, activeOnly bool) ([]*sharedtypes.SnapshotProposal, error) {
+func GetSnapshotProposals(cfg *config.SmartNodeConfig, res *config.MergedResources, address common.Address, delegate common.Address, activeOnly bool) ([]*sharedtypes.SnapshotProposal, error) {
 	client := getHttpClientWithTimeout()
 	apiDomain := res.SnapshotApiDomain
 	id := config.SnapshotID

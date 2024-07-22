@@ -19,7 +19,7 @@ import (
 const TimeoutSafetyFactor time.Duration = 2
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, logger *slog.Logger, txInfo *eth.TransactionInfo, opts *bind.TransactOpts) error {
+func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, res *config.MergedResources, rp *rocketpool.RocketPool, logger *slog.Logger, txInfo *eth.TransactionInfo, opts *bind.TransactOpts) error {
 	tx, err := rp.ExecuteTransaction(txInfo, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transaction: %w", err)
@@ -44,7 +44,7 @@ func PrintAndWaitForTransaction(cfg *config.SmartNodeConfig, res *config.RocketP
 }
 
 // Prints a TX's details to the logger and waits for it to validated.
-func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, logger *slog.Logger, submissions []*eth.TransactionSubmission, callbacks []func(err error), opts *bind.TransactOpts) error {
+func PrintAndWaitForTransactionBatch(cfg *config.SmartNodeConfig, res *config.MergedResources, rp *rocketpool.RocketPool, logger *slog.Logger, submissions []*eth.TransactionSubmission, callbacks []func(err error), opts *bind.TransactOpts) error {
 	txs, err := rp.BatchExecuteTransactions(submissions, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting transactions: %w", err)

@@ -28,7 +28,7 @@ type ProposalManager struct {
 	bc     beacon.IBeaconClient
 }
 
-func NewProposalManager(context context.Context, logger *slog.Logger, cfg *config.SmartNodeConfig, res *config.RocketPoolResources, rp *rocketpool.RocketPool, bc beacon.IBeaconClient) (*ProposalManager, error) {
+func NewProposalManager(context context.Context, logger *slog.Logger, cfg *config.SmartNodeConfig, res *config.MergedResources, rp *rocketpool.RocketPool, bc beacon.IBeaconClient) (*ProposalManager, error) {
 	viSnapshotMgr, err := NewVotingInfoSnapshotManager(logger, cfg, rp)
 	if err != nil {
 		return nil, fmt.Errorf("error creating voting info manager: %w", err)

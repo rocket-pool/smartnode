@@ -35,7 +35,7 @@ type GenerateRewardsTree struct {
 	sp        services.ISmartNodeServiceProvider
 	logger    *slog.Logger
 	cfg       *config.SmartNodeConfig
-	res       *config.RocketPoolResources
+	res       *config.MergedResources
 	rp        *rocketpool.RocketPool
 	ec        eth.IExecutionClient
 	bc        beacon.IBeaconClient

@@ -47,7 +47,7 @@ func (f *protocolDaoGetStatusContextFactory) RegisterRoute(router *mux.Router) {
 type protocolDaoGetStatusContext struct {
 	handler *ProtocolDaoHandler
 	cfg     *config.SmartNodeConfig
-	res     *config.RocketPoolResources
+	res     *config.MergedResources
 	rp      *rocketpool.RocketPool
 	bc      beacon.IBeaconClient
 

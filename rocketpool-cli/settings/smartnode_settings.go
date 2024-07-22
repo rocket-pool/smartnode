@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
@@ -16,6 +17,15 @@ import (
 const (
 	traceMode           os.FileMode = 0644
 	defaultConfigFolder string      = ".rocketpool"
+
+	// System dir path for Linux
+	linuxSystemDir string = "/usr/share/rocketpool"
+
+	// Subfolders under the system dir
+	scriptsDir        string = "scripts"
+	templatesDir      string = "templates"
+	overrideSourceDir string = "override"
+	networksDir       string = "networks"
 )
 
 var (
@@ -99,6 +109,18 @@ type SmartNodeSettings struct {
 
 	// The HTTP trace file if tracing is enabled
 	HttpTraceFile *os.File
+
+	// The system path for Smart Node scripts used in the Docker containers
+	ScriptsDir string
+
+	// The system path for Smart Node templates
+	TemplatesDir string
+
+	// The system path for the source files to put in the user's override directory
+	OverrideSourceDir string
+
+	// The system path for built-in network settings and resource definitions
+	NetworksDir string
 }
 
 // Get the Smart Node settings from a CLI context
@@ -169,6 +191,19 @@ func NewSmartNodeSettings(c *cli.Context) (*SmartNodeSettings, error) {
 			return nil, fmt.Errorf("error opening HTTP trace file [%s]: %w", httpTracePath, err)
 		}
 	}
+
+	var systemDir string
+	switch runtime.GOOS {
+	// This is where to add different paths for different OS's like macOS
+	default:
+		// By default just use the Linux path
+		systemDir = linuxSystemDir
+	}
+
+	snSettings.ScriptsDir = filepath.Join(systemDir, scriptsDir)
+	snSettings.TemplatesDir = filepath.Join(systemDir, templatesDir)
+	snSettings.OverrideSourceDir = filepath.Join(systemDir, overrideSourceDir)
+	snSettings.NetworksDir = filepath.Join(systemDir, networksDir)
 
 	c.App.Metadata[contextMetadataName] = snSettings
 

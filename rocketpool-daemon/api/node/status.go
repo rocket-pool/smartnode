@@ -66,7 +66,7 @@ func (f *nodeStatusContextFactory) RegisterRoute(router *mux.Router) {
 type nodeStatusContext struct {
 	handler  *NodeHandler
 	cfg      *config.SmartNodeConfig
-	res      *config.RocketPoolResources
+	res      *config.MergedResources
 	rp       *rocketpool.RocketPool
 	ec       eth.IExecutionClient
 	bc       beacon.IBeaconClient

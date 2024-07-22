@@ -31,7 +31,7 @@ type DistributeMinipools struct {
 	logger              *slog.Logger
 	alerter             *alerting.Alerter
 	cfg                 *config.SmartNodeConfig
-	res                 *config.RocketPoolResources
+	res                 *config.MergedResources
 	w                   *wallet.Wallet
 	rp                  *rocketpool.RocketPool
 	bc                  beacon.IBeaconClient

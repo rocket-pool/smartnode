@@ -39,7 +39,7 @@ type ISmartNodeConfigProvider interface {
 	GetConfig() *config.SmartNodeConfig
 
 	// Gets the Smart Node's list of resources
-	GetResources() *config.RocketPoolResources
+	GetResources() *config.MergedResources
 }
 
 // Provides the Smart Node's validator manager
@@ -135,7 +135,7 @@ type SmartNodeServiceProvider struct {
 
 	// Services
 	cfg                *config.SmartNodeConfig
-	resources          *config.RocketPoolResources
+	resources          *config.MergedResources
 	rocketPool         *rocketpool.RocketPool
 	validatorManager   *validator.ValidatorManager
 	snapshotDelegation *contracts.SnapshotDelegation
@@ -148,10 +148,16 @@ type SmartNodeServiceProvider struct {
 }
 
 // Creates a new ServiceProvider instance
-func NewServiceProvider(userDir string) (ISmartNodeServiceProvider, error) {
+func NewServiceProvider(userDir string, resourcesDir string) (ISmartNodeServiceProvider, error) {
+	// Load the network settings
+	settingsList, err := config.LoadSettingsFiles(resourcesDir)
+	if err != nil {
+		return nil, fmt.Errorf("error loading network settings: %w", err)
+	}
+
 	// Config
 	cfgPath := filepath.Join(userDir, config.ConfigFilename)
-	cfg, err := client.LoadConfigFromFile(os.ExpandEnv(cfgPath))
+	cfg, err := client.LoadConfigFromFile(os.ExpandEnv(cfgPath), settingsList)
 	if err != nil {
 		return nil, fmt.Errorf("error loading Smart Node config: %w", err)
 	}
@@ -159,11 +165,23 @@ func NewServiceProvider(userDir string) (ISmartNodeServiceProvider, error) {
 		return nil, fmt.Errorf("smart node config settings file [%s] not found", cfgPath)
 	}
 
-	// Make the resources
-	resources := config.NewRocketPoolResources(cfg.Network.Value)
+	// Get the resources from the selected network
+	var selectedResources *config.MergedResources
+	for _, network := range settingsList {
+		if network.Key == cfg.Network.Value {
+			selectedResources = &config.MergedResources{
+				NetworkResources:   network.NetworkResources,
+				SmartNodeResources: network.SmartNodeResources,
+			}
+			break
+		}
+	}
+	if selectedResources == nil {
+		return nil, fmt.Errorf("no resources found for selected network [%s]", cfg.Network.Value)
+	}
 
 	// Make the core provider
-	sp, err := services.NewServiceProvider(cfg, resources.NetworkResources, config.ClientTimeout)
+	sp, err := services.NewServiceProvider(cfg, selectedResources.NetworkResources, config.ClientTimeout)
 	if err != nil {
 		return nil, fmt.Errorf("error creating core service provider: %w", err)
 	}
@@ -186,11 +204,11 @@ func NewServiceProvider(userDir string) (ISmartNodeServiceProvider, error) {
 		}
 	}
 
-	return CreateServiceProviderFromComponents(cfg, resources, sp)
+	return CreateServiceProviderFromComponents(cfg, selectedResources, sp)
 }
 
 // Creates a ServiceProvider instance from a core service provider and Smart Node config
-func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, resources *config.RocketPoolResources, sp services.IServiceProvider) (ISmartNodeServiceProvider, error) {
+func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, resources *config.MergedResources, sp services.IServiceProvider) (ISmartNodeServiceProvider, error) {
 	// Make the watchtower log
 	loggerOpts := cfg.GetLoggerOptions()
 	watchtowerLogger, err := log.NewLogger(cfg.GetWatchtowerLogFilePath(), loggerOpts)
@@ -250,7 +268,7 @@ func (p *SmartNodeServiceProvider) GetConfig() *config.SmartNodeConfig {
 	return p.cfg
 }
 
-func (p *SmartNodeServiceProvider) GetResources() *config.RocketPoolResources {
+func (p *SmartNodeServiceProvider) GetResources() *config.MergedResources {
 	return p.resources
 }
 

@@ -19,7 +19,7 @@ type DownloadRewardsTrees struct {
 	sp     services.ISmartNodeServiceProvider
 	logger *slog.Logger
 	cfg    *config.SmartNodeConfig
-	res    *config.RocketPoolResources
+	res    *config.MergedResources
 	rp     *rocketpool.RocketPool
 }
 

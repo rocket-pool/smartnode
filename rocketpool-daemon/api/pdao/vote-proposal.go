@@ -57,7 +57,7 @@ func (f *protocolDaoVoteOnProposalContextFactory) RegisterRoute(router *mux.Rout
 type protocolDaoVoteOnProposalContext struct {
 	handler     *ProtocolDaoHandler
 	cfg         *config.SmartNodeConfig
-	res         *config.RocketPoolResources
+	res         *config.MergedResources
 	rp          *rocketpool.RocketPool
 	bc          beacon.IBeaconClient
 	nodeAddress common.Address

@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/alessio/shellescape"
 	"github.com/rocket-pool/node-manager-core/config"
@@ -76,12 +76,14 @@ type SmartNodeConfig struct {
 
 	// Internal fields
 	Version             string
-	rocketPoolDirectory string
 	IsNativeMode        bool
+	rocketPoolDirectory string
+	ethNetworkName      string
+	networkSettings     []*SmartNodeSettings
 }
 
 // Load configuration settings from a file
-func LoadFromFile(path string) (*SmartNodeConfig, error) {
+func LoadFromFile(path string, networks []*SmartNodeSettings) (*SmartNodeConfig, error) {
 	// Return nil if the file doesn't exist
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
@@ -101,7 +103,10 @@ func LoadFromFile(path string) (*SmartNodeConfig, error) {
 	}
 
 	// Deserialize it into a config object
-	cfg := NewSmartNodeConfig(filepath.Dir(path), false)
+	cfg, err := NewSmartNodeConfig(filepath.Dir(path), false, networks)
+	if err != nil {
+		return nil, fmt.Errorf("could not create Smart Node config: %w", err)
+	}
 	err = cfg.Deserialize(settings)
 	if err != nil {
 		return nil, fmt.Errorf("could not deserialize settings file: %w", err)
@@ -111,9 +116,10 @@ func LoadFromFile(path string) (*SmartNodeConfig, error) {
 }
 
 // Creates a new Smart Node configuration instance
-func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
+func NewSmartNodeConfig(rpDir string, isNativeMode bool, networks []*SmartNodeSettings) (*SmartNodeConfig, error) {
 	cfg := &SmartNodeConfig{
 		rocketPoolDirectory: rpDir,
+		networkSettings:     networks,
 		IsNativeMode:        isNativeMode,
 		Version:             assets.RocketPoolVersion(),
 
@@ -126,7 +132,7 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 				CanBeBlank:         false,
 				OverwriteOnUpgrade: false,
 			},
-			Options: getNetworkOptions(),
+			Options: getNetworkOptions(networks),
 			Default: map[config.Network]config.Network{
 				config.Network_All: config.Network_Mainnet,
 			},
@@ -455,11 +461,22 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 	cfg.MevBoost = NewMevBoostConfig(cfg)
 	cfg.Addons = NewAddonsConfig()
 
-	// Apply the default values for mainnet
+	// Provision the defaults for each network
 	cfg.Network.Value = config.Network_Mainnet
+	for _, network := range networks {
+		err := config.SetDefaultsForNetworks(cfg, network.DefaultConfigSettings, network.Key)
+		if err != nil {
+			return nil, fmt.Errorf("could not set defaults for network %s: %w", network.Key, err)
+		}
+		if network.Key == cfg.Network.Value {
+			cfg.ethNetworkName = network.NetworkResources.EthNetworkName
+		}
+	}
+
+	// Apply the default values for mainnet
 	cfg.applyAllDefaults()
 
-	return cfg
+	return cfg, nil
 }
 
 // Get the title for this config
@@ -519,6 +536,7 @@ func (cfg *SmartNodeConfig) Serialize() map[string]any {
 	masterMap[ids.VersionID] = fmt.Sprintf("v%s", assets.RocketPoolVersion())
 	masterMap[ids.IsNativeKey] = strconv.FormatBool(cfg.IsNativeMode)
 	masterMap[ids.SmartNodeID] = snMap
+	masterMap[ids.EthNetworkNameID] = cfg.ethNetworkName
 	return masterMap
 }
 
@@ -567,6 +585,10 @@ func (cfg *SmartNodeConfig) Deserialize(masterMap map[string]any) error {
 		return fmt.Errorf("expected a native toggle parameter named [%s] but it was not found", ids.IsNativeKey)
 	}
 	cfg.IsNativeMode, _ = strconv.ParseBool(isNativeMode.(string))
+	ethNetworkName, exists := masterMap[ids.EthNetworkNameID]
+	if exists {
+		cfg.ethNetworkName = ethNetworkName.(string)
+	}
 
 	return nil
 }
@@ -580,6 +602,14 @@ func (cfg *SmartNodeConfig) ChangeNetwork(newNetwork config.Network) {
 	}
 	cfg.Network.Value = newNetwork
 
+	// Change the Eth network name
+	for _, settings := range cfg.networkSettings {
+		if settings.Key == newNetwork {
+			cfg.ethNetworkName = settings.NetworkResources.EthNetworkName
+			break
+		}
+	}
+
 	// Run the changes
 	config.ChangeNetwork(cfg, oldNetwork, newNetwork)
 }
@@ -587,9 +617,10 @@ func (cfg *SmartNodeConfig) ChangeNetwork(newNetwork config.Network) {
 // Create a copy of this configuration.
 func (cfg *SmartNodeConfig) CreateCopy() *SmartNodeConfig {
 	network := cfg.Network.Value
-	copy := NewSmartNodeConfig(cfg.rocketPoolDirectory, cfg.IsNativeMode)
+	copy, _ := NewSmartNodeConfig(cfg.rocketPoolDirectory, cfg.IsNativeMode, cfg.networkSettings)
 	config.Clone(cfg, copy, network)
 	copy.Version = cfg.Version
+	copy.ethNetworkName = cfg.ethNetworkName
 	return copy
 }
 
@@ -729,9 +760,33 @@ func (cfg *SmartNodeConfig) Validate() []string {
 	return errors
 }
 
+// Gets the resources for the selected network
+func (cfg *SmartNodeConfig) GetResources() (*MergedResources, error) {
+	selectedNetwork := cfg.Network.Value
+	for _, network := range cfg.networkSettings {
+		if network.Key == selectedNetwork {
+			return &MergedResources{
+				NetworkResources:   network.NetworkResources,
+				SmartNodeResources: network.SmartNodeResources,
+			}, nil
+		}
+	}
+	return nil, fmt.Errorf("could not find network resources for selected network %s", selectedNetwork)
+}
+
 // =====================
 // === Field Helpers ===
 // =====================
+
+// Get the Eth network name of the selected network
+func (cfg *SmartNodeConfig) GetEthNetworkName() string {
+	return cfg.ethNetworkName
+}
+
+// Get all loaded network settings
+func (cfg *SmartNodeConfig) GetNetworkSettings() []*SmartNodeSettings {
+	return cfg.networkSettings
+}
 
 // Applies all of the defaults to all of the settings that have them defined
 func (cfg *SmartNodeConfig) applyAllDefaults() {
@@ -740,32 +795,43 @@ func (cfg *SmartNodeConfig) applyAllDefaults() {
 }
 
 // Get the list of options for networks to run on
-func getNetworkOptions() []*config.ParameterOption[config.Network] {
-	options := []*config.ParameterOption[config.Network]{
-		{
-			ParameterOptionCommon: &config.ParameterOptionCommon{
-				Name:        "Ethereum Mainnet",
-				Description: "This is the real Ethereum main network, using real ETH and real RPL to make real validators.",
-			},
-			Value: config.Network_Mainnet,
-		}, {
-			ParameterOptionCommon: &config.ParameterOptionCommon{
-				Name:        "Holesky Testnet",
-				Description: "This is the Holešky (Holešovice) test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smart Node in a free, safe environment before moving to Mainnet.",
-			},
-			Value: config.Network_Holesky,
-		},
-	}
-
-	if strings.HasSuffix(assets.RocketPoolVersion(), "-dev") {
+func getNetworkOptions(networks []*SmartNodeSettings) []*config.ParameterOption[config.Network] {
+	// Create the options
+	options := []*config.ParameterOption[config.Network]{}
+	for _, network := range networks {
 		options = append(options, &config.ParameterOption[config.Network]{
 			ParameterOptionCommon: &config.ParameterOptionCommon{
-				Name:        "Devnet",
-				Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.",
+				Name:        network.Name,
+				Description: network.Description,
 			},
-			Value: Network_Devnet,
+			Value: network.Key,
 		})
 	}
+
+	// Sort the options so mainnet comes first and holesky comes second
+	sort.SliceStable(options, func(i, j int) bool {
+		firstOption := options[i]
+		secondOption := options[j]
+
+		// Mainnet comes first
+		if firstOption.Value == config.Network_Mainnet {
+			return true
+		}
+		if secondOption.Value == config.Network_Mainnet {
+			return false
+		}
+
+		// Holesky comes second
+		if firstOption.Value == config.Network_Holesky {
+			return true
+		}
+		if secondOption.Value == config.Network_Holesky {
+			return false
+		}
+
+		// The rest doesn't matter so just sort it alphabetically
+		return firstOption.Value < secondOption.Value
+	})
 
 	return options
 }

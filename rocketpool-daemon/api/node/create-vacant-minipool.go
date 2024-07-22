@@ -60,7 +60,7 @@ func (f *nodeCreateVacantMinipoolContextFactory) RegisterRoute(router *mux.Route
 type nodeCreateVacantMinipoolContext struct {
 	handler *NodeHandler
 	cfg     *config.SmartNodeConfig
-	res     *config.RocketPoolResources
+	res     *config.MergedResources
 	rp      *rocketpool.RocketPool
 	bc      beacon.IBeaconClient
 

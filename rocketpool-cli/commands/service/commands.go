@@ -113,7 +113,7 @@ func createFlagsFromConfigParams(prefix string, section config.IConfigSection, c
 // Register commands
 func RegisterCommands(app *cli.App, name string, aliases []string) {
 	// Create config flags from parameters
-	cfgTemplate := snCfg.NewSmartNodeConfig("", false)
+	cfgTemplate, _ := snCfg.NewSmartNodeConfig("", false, []*snCfg.SmartNodeSettings{})
 	network := cfgTemplate.Network.Value
 	configFlags := createFlagsFromConfigParams("", cfgTemplate, []cli.Flag{
 		installUpdateDefaultsFlag,
