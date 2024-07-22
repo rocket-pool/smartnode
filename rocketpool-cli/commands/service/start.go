@@ -9,11 +9,11 @@ import (
 
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/node-manager-core/wallet"
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	cliwallet "github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/wallet"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
-	"github.com/rocket-pool/smartnode/v2/shared"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/urfave/cli/v2"
 )
@@ -43,7 +43,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Check if this is a new install
 	oldVersion := strings.TrimPrefix(cfg.Version, "v")
-	currentVersion := strings.TrimPrefix(shared.RocketPoolVersion, "v")
+	currentVersion := strings.TrimPrefix(assets.RocketPoolVersion(), "v")
 	isUpdate := oldVersion != currentVersion
 	if isUpdate && !ignoreConfigSuggestion {
 		if c.Bool("yes") || utils.Confirm("Smart Node upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {

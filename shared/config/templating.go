@@ -9,7 +9,7 @@ import (
 	"github.com/rocket-pool/node-manager-core/config"
 	gww "github.com/rocket-pool/smartnode/v2/addons/graffiti_wall_writer"
 	rn "github.com/rocket-pool/smartnode/v2/addons/rescue_node"
-	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/assets"
 )
 
 // =================
@@ -165,7 +165,7 @@ func (cfg *SmartNodeConfig) AutoTxGasThresholdInt() uint64 {
 // ===============
 
 func (cfg *SmartNodeConfig) GetSmartNodeContainerTag() string {
-	return smartnodeTag
+	return "rocketpool/smartnode:v" + assets.RocketPoolVersion()
 }
 
 // ========================
@@ -410,7 +410,7 @@ func (cfg *SmartNodeConfig) CustomGraffiti() string {
 func (cfg *SmartNodeConfig) GraffitiPrefix() string {
 	// Graffiti
 	identifier := ""
-	versionString := fmt.Sprintf("v%s", shared.RocketPoolVersion)
+	versionString := fmt.Sprintf("v%s", assets.RocketPoolVersion())
 	if len(versionString) < 8 {
 		ecInitial := strings.ToUpper(string(cfg.GetSelectedExecutionClient())[:1])
 

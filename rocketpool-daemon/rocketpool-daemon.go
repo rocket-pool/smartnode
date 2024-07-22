@@ -12,10 +12,10 @@ import (
 
 	"github.com/urfave/cli/v2"
 
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/api"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/node"
-	"github.com/rocket-pool/smartnode/v2/shared"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
@@ -27,7 +27,7 @@ func main() {
 	// Set application info
 	app.Name = "rocketpool"
 	app.Usage = "Rocket Pool service"
-	app.Version = shared.RocketPoolVersion
+	app.Version = assets.RocketPoolVersion()
 	app.Authors = []*cli.Author{
 		{
 			Name:  "David Rugendyke",

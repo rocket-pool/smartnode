@@ -7,7 +7,7 @@ import (
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
 	"github.com/rocket-pool/node-manager-core/config"
-	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/assets"
 	snCfg "github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
@@ -49,7 +49,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *snCfg.SmartNodeConfig, newConfig 
 		// Add changed containers if this is an update
 		if md.isUpdate {
 			totalAffectedContainers[config.ContainerID_Daemon] = true
-			builder.WriteString(fmt.Sprintf("Updated to Smart Node v%s (will affect several containers)\n\n", shared.RocketPoolVersion))
+			builder.WriteString(fmt.Sprintf("Updated to Smart Node v%s (will affect several containers)\n\n", assets.RocketPoolVersion()))
 		}
 
 		// Get the map of changed settings by section name

@@ -16,7 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/node"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/v2/types"
-	"github.com/rocket-pool/smartnode/v2/shared"
+	"github.com/rocket-pool/smartnode/v2/assets"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/rocket-pool/smartnode/v2/shared/keys"
 )
@@ -138,7 +138,7 @@ func (m *VotingInfoSnapshotManager) CreateVotingInfoSnapshot(blockNumber uint32)
 	}
 
 	return &VotingInfoSnapshot{
-		SmartnodeVersion: shared.RocketPoolVersion,
+		SmartnodeVersion: assets.RocketPoolVersion(),
 		Network:          m.cfg.Network.Value,
 		BlockNumber:      blockNumber,
 		Info:             infos,
