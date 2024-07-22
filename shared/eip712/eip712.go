@@ -3,7 +3,10 @@ package eip712
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type EIP712Components struct {
@@ -51,4 +54,39 @@ func (e *EIP712Components) Encode() string {
 	encodedBytes[64] = e.V
 
 	return hexutil.Encode(encodedBytes)
+}
+
+// Validate recovers the address of a signer from a message and signature and
+// compares the recovered signer address to the expected signer address
+func (e *EIP712Components) Validate(msg []byte, expectedSigner common.Address) error {
+
+	hash := accounts.TextHash(msg)
+
+	// Convert the EIP712Components to a signature
+	sig := make([]byte, 65)
+	copy(sig[0:32], e.R[:])
+	copy(sig[32:64], e.S[:])
+	sig[64] = e.V
+
+	// V (Recovery ID) must by 27 or 28, so we subtract 27 from 0 or 1 to get the recovery ID.
+	sig[crypto.RecoveryIDOffset] -= 27
+
+	// Recover the public key from the signature
+	pubKey, err := crypto.SigToPub(hash, sig)
+	if err != nil {
+		return fmt.Errorf("error recovering public key: %v", err)
+	}
+
+	// Restore V to its original value
+	sig[crypto.RecoveryIDOffset] += 27
+
+	// Derive the address from the public key
+	recoveredAddr := crypto.PubkeyToAddress(*pubKey)
+
+	// Compare the recovered address with the expected address
+	if recoveredAddr != expectedSigner {
+		return fmt.Errorf("signature does not match the expected signer: got %s, expected %s", recoveredAddr.Hex(), expectedSigner.Hex())
+	}
+
+	return nil
 }

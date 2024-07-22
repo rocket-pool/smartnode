@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -54,6 +55,7 @@ type protocolDaoSetSignallingAddressContext struct {
 	registry *contracts.RocketSignerRegistry
 
 	node              *node.Node
+	nodeAddress       common.Address
 	signallingAddress common.Address
 	nodeToSigner      common.Address
 	signature         string
@@ -62,7 +64,7 @@ type protocolDaoSetSignallingAddressContext struct {
 func (c *protocolDaoSetSignallingAddressContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	c.rp = sp.GetRocketPool()
-	nodeAddress, _ := sp.GetWallet().GetAddress()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
 	cfg := sp.GetConfig()
 	network := cfg.GetNetworkResources().Network
 
@@ -77,9 +79,9 @@ func (c *protocolDaoSetSignallingAddressContext) Initialize() (types.ResponseSta
 	}
 
 	// Binding
-	c.node, err = node.NewNode(c.rp, nodeAddress)
+	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("Error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("Error creating node %s binding: %w", c.nodeAddress.Hex(), err)
 	}
 
 	return types.ResponseStatus_Success, nil
@@ -98,6 +100,8 @@ func (c *protocolDaoSetSignallingAddressContext) GetState(mc *batch.MultiCaller)
 
 func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 
+	message, err := constructMessage(strings.ToLower(c.nodeAddress.Hex()))
+
 	if c.signallingAddress == c.nodeToSigner {
 		return types.ResponseStatus_Error, fmt.Errorf("Signer address already in use")
 	}
@@ -107,9 +111,14 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 	}
 
 	eip712Components := new(eip712.EIP712Components)
-	err := eip712Components.Decode(c.signature)
+	err = eip712Components.Decode(c.signature)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("Error decoding signature: %w", err)
+	}
+
+	err = eip712Components.Validate(message, c.signallingAddress)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("Error validating signature: %w", err)
 	}
 
 	data.TxInfo, err = c.registry.SetSigner(c.signallingAddress, opts, eip712Components.V, eip712Components.R, eip712Components.S)
@@ -118,4 +127,9 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 	}
 
 	return types.ResponseStatus_Success, nil
+}
+
+func constructMessage(nodeAddress string) ([]byte, error) {
+	message := fmt.Sprintf("%s may delegate to me for Rocket Pool governance", nodeAddress)
+	return []byte(message), nil
 }
