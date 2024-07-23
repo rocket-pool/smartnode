@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -31,24 +32,32 @@ func (e *EIP712Components) String() string {
 		// MarshalText should never return an error
 		panic(err)
 	}
-	return fmt.Sprintf("%x", out)
-
+	return string(out)
 }
 
-// UnmarshalText verifies the length of a decoded EIP-712 signature and assigns the appropriate bytes to R/S/V
+// UnmarshalText expects an EIP-712 signature as a []byte, decodes the signature, verifies the length,
+// then assigns the appropriate bytes to R/S/V
 func (e *EIP712Components) UnmarshalText(inp []byte) error {
-	if len(inp) != EIP712Length {
-		return fmt.Errorf("error decoding EIP-712 signature string: invalid length %d bytes (expected %d bytes)", len(inp), EIP712Length)
+	// Cast to string then decode
+	signatureString := string(inp)
+	decodedSignature, err := hexutil.Decode(signatureString)
+	if err != nil {
+		return fmt.Errorf("Failed to decode hex string: %w", err)
 	}
 
-	copy(e.R[:], inp[0:32])
-	copy(e.S[:], inp[32:64])
-	e.V = inp[64]
+	if len(decodedSignature) != EIP712Length {
+		return fmt.Errorf("Failed to unmarshal EIP-712 signature string: invalid length %d bytes (expected %d bytes)", len(decodedSignature), EIP712Length)
+	}
+
+	copy(e.R[:], decodedSignature[0:32])
+	copy(e.S[:], decodedSignature[32:64])
+	e.V = decodedSignature[64]
 
 	return nil
 }
 
-// MarshalText initializes an empty byte slice, copies fields R/S/V into signatureBytes then returns it
+// MarshalText initializes an empty byte slice, copies fields R/S/V into signatureBytes,
+// then returns the encoded signature as a []byte
 func (e *EIP712Components) MarshalText() ([]byte, error) {
 	signatureBytes := make([]byte, EIP712Length)
 
@@ -56,7 +65,9 @@ func (e *EIP712Components) MarshalText() ([]byte, error) {
 	copy(signatureBytes[32:64], e.S[:])
 	signatureBytes[64] = e.V
 
-	return signatureBytes, nil
+	encodedSignature := hexutil.Encode(signatureBytes)
+
+	return []byte(encodedSignature), nil
 }
 
 // Validate recovers the address of a signer from a message and signature then

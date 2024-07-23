@@ -8,7 +8,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -110,13 +109,8 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 		return types.ResponseStatus_Error, fmt.Errorf("Voting must be initialized to set a signalling address. Use 'rocketpool pdao initialize-voting' to initialize voting first")
 	}
 
-	decodedSignature, err := hexutil.Decode(c.signature)
-	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("Failed to decode hex string: %w", err)
-	}
-
 	eip712Components := new(eip712.EIP712Components)
-	err = eip712Components.UnmarshalText(decodedSignature)
+	err := eip712Components.UnmarshalText([]byte(c.signature))
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("Failed to unmarshal signature: %w", err)
 	}
