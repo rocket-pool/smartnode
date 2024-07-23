@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
-func TestDecodeAndEncode(t *testing.T) {
+func TestUnmarshalAndMarshal(t *testing.T) {
 	signature := "0xba283b21f7168e53b082ad552d974591abe0f4db5b7032374abbcdcf09e0eadc2c0530ff4ac1d63e19c1ceca2d14b374c86b6c84f46bbd57747b48c21388c4e71c"
 	eip712Components := new(EIP712Components)
 
@@ -20,12 +20,12 @@ func TestDecodeAndEncode(t *testing.T) {
 
 	err = eip712Components.UnmarshalText(decoded)
 	if err != nil {
-		t.Fatalf("Failed to unmarshall signature: %v", err)
+		t.Fatalf("Failed to unmarshal signature: %v", err)
 	}
 
 	decoded, err = eip712Components.MarshalText()
 	if err != nil {
-		t.Fatalf("Failed to marshall signature: %v", err)
+		t.Fatalf("Failed to marshal signature: %v", err)
 	}
 
 	// Convert the encoded byte slice back to a hex string
@@ -37,7 +37,7 @@ func TestDecodeAndEncode(t *testing.T) {
 
 }
 
-func TestDecodeInvalid712Hex(t *testing.T) {
+func TestUnmarshalInvalid712Hex(t *testing.T) {
 	invalidSignature := "0xinvalidsignature"
 	eip712Components := new(EIP712Components)
 
@@ -47,7 +47,7 @@ func TestDecodeInvalid712Hex(t *testing.T) {
 	}
 }
 
-func TestDecodeEmptySignature(t *testing.T) {
+func TestUnmarshalEmptySignature(t *testing.T) {
 	emptySignature := ""
 	eip712Components := new(EIP712Components)
 
@@ -57,7 +57,7 @@ func TestDecodeEmptySignature(t *testing.T) {
 	}
 }
 
-func TestDecodeInvalidLength(t *testing.T) {
+func TestUnmarshalInvalidLength(t *testing.T) {
 	// Create a hex-encoded signature with an invalid length (not 65 bytes)
 	invalidLengthSignature := "0xba283b21f7168e53b082ad552d974591abe0f4db5b7032374abbcdcf09e0eadc" // 64 characters (32 bytes)
 	eip712Components := new(EIP712Components)
