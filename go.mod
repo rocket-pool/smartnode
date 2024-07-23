@@ -1,8 +1,6 @@
 module github.com/rocket-pool/smartnode/v2
 
-go 1.21
-
-toolchain go1.21.1
+go 1.22.0
 
 require (
 	github.com/alessio/shellescape v1.4.2
