@@ -19,6 +19,8 @@ services:
     command:
       - --user-dir
       - "{{.RocketPoolDirectory}}"
+      - --settings-folder
+      - "/usr/share/rocketpool/networks"
       - --ip
       - "0.0.0.0" # Open to all Docker traffic
       - --port

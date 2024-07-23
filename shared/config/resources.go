@@ -127,88 +127,88 @@ type SmartNodeSettings struct {
 // A collection of network-specific resources and getters for them
 type SmartNodeResources struct {
 	// The URL to use for staking rETH
-	StakeUrl string
+	StakeUrl string `yaml:"stakeUrl" json:"stakeUrl"`
 
 	// The contract address of RocketStorage
-	StorageAddress common.Address
+	StorageAddress common.Address `yaml:"storageAddress" json:"storageAddress"`
 
 	// The contract address of rETH
-	RethAddress common.Address
+	RethAddress common.Address `yaml:"rethAddress" json:"rethAddress"`
 
 	// The contract address of the RPL token
-	RplTokenAddress common.Address
+	RplTokenAddress common.Address `yaml:"rplTokenAddress" json:"rplTokenAddress"`
 
 	// The contract address of rocketRewardsPool from v1.0.0
-	V1_0_0_RewardsPoolAddress *common.Address
+	V1_0_0_RewardsPoolAddress *common.Address `yaml:"v1_0_0_RewardsPoolAddress" json:"v1_0_0_RewardsPoolAddress"`
 
 	// The contract address of rocketClaimNode from v1.0.0
-	V1_0_0_ClaimNodeAddress *common.Address
+	V1_0_0_ClaimNodeAddress *common.Address `yaml:"v1_0_0_ClaimNodeAddress" json:"v1_0_0_ClaimNodeAddress"`
 
 	// The contract address of rocketClaimTrustedNode from v1.0.0
-	V1_0_0_ClaimTrustedNodeAddress *common.Address
+	V1_0_0_ClaimTrustedNodeAddress *common.Address `yaml:"v1_0_0_ClaimTrustedNodeAddress" json:"v1_0_0_ClaimTrustedNodeAddress"`
 
 	// The contract address of rocketMinipoolManager from v1.0.0
-	V1_0_0_MinipoolManagerAddress *common.Address
+	V1_0_0_MinipoolManagerAddress *common.Address `yaml:"v1_0_0_MinipoolManagerAddress" json:"v1_0_0_MinipoolManagerAddress"`
 
 	// The contract address of rocketNetworkPrices from v1.1.0
-	V1_1_0_NetworkPricesAddress *common.Address
+	V1_1_0_NetworkPricesAddress *common.Address `yaml:"v1_1_0_NetworkPricesAddress" json:"v1_1_0_NetworkPricesAddress"`
 
 	// The contract address of rocketNodeStaking from v1.1.0
-	V1_1_0_NodeStakingAddress *common.Address
+	V1_1_0_NodeStakingAddress *common.Address `yaml:"v1_1_0_NodeStakingAddress" json:"v1_1_0_NodeStakingAddress"`
 
 	// The contract address of rocketNodeDeposit from v1.1.0
-	V1_1_0_NodeDepositAddress *common.Address
+	V1_1_0_NodeDepositAddress *common.Address `yaml:"v1_1_0_NodeDepositAddress" json:"v1_1_0_NodeDepositAddress"`
 
 	// The contract address of rocketMinipoolQueue from v1.1.0
-	V1_1_0_MinipoolQueueAddress *common.Address
+	V1_1_0_MinipoolQueueAddress *common.Address `yaml:"v1_1_0_MinipoolQueueAddress" json:"v1_1_0_MinipoolQueueAddress"`
 
 	// The contract address of rocketMinipoolFactory from v1.1.0
-	V1_1_0_MinipoolFactoryAddress *common.Address
+	V1_1_0_MinipoolFactoryAddress *common.Address `yaml:"v1_1_0_MinipoolFactoryAddress" json:"v1_1_0_MinipoolFactoryAddress"`
 
 	// The contract address of rocketNetworkPrices from v1.2.0
-	V1_2_0_NetworkPricesAddress *common.Address
+	V1_2_0_NetworkPricesAddress *common.Address `yaml:"v1_2_0_NetworkPricesAddress" json:"v1_2_0_NetworkPricesAddress"`
 
 	// The contract address of rocketNetworkBalances from v1.2.0
-	V1_2_0_NetworkBalancesAddress *common.Address
+	V1_2_0_NetworkBalancesAddress *common.Address `yaml:"v1_2_0_NetworkBalancesAddress" json:"v1_2_0_NetworkBalancesAddress"`
 
 	// The contract address for Snapshot delegation
-	SnapshotDelegationAddress *common.Address
+	SnapshotDelegationAddress *common.Address `yaml:"snapshotDelegationAddress" json:"snapshotDelegationAddress"`
 
 	// The Snapshot API domain
-	SnapshotApiDomain string
+	SnapshotApiDomain string `yaml:"snapshotApiDomain" json:"snapshotApiDomain"`
 
 	// Addresses for RocketRewardsPool that have been upgraded during development
-	PreviousRewardsPoolAddresses []common.Address
+	PreviousRewardsPoolAddresses []common.Address `yaml:"previousRewardsPoolAddresses" json:"previousRewardsPoolAddresses"`
 
 	// Addresses for RocketDAOProtocolVerifier that have been upgraded during development
-	PreviousProtocolDaoVerifierAddresses []common.Address
+	PreviousProtocolDaoVerifierAddresses []common.Address `yaml:"previousProtocolDaoVerifierAddresses" json:"previousProtocolDaoVerifierAddresses"`
 
 	// The RocketOvmPriceMessenger Optimism address for each network
-	OptimismPriceMessengerAddress *common.Address
+	OptimismPriceMessengerAddress *common.Address `yaml:"optimismPriceMessengerAddress" json:"optimismPriceMessengerAddress"`
 
 	// The RocketPolygonPriceMessenger Polygon address for each network
-	PolygonPriceMessengerAddress *common.Address
+	PolygonPriceMessengerAddress *common.Address `yaml:"polygonPriceMessengerAddress" json:"polygonPriceMessengerAddress"`
 
 	// The RocketArbitumPriceMessenger Arbitrum address for each network
-	ArbitrumPriceMessengerAddress *common.Address
+	ArbitrumPriceMessengerAddress *common.Address `yaml:"arbitrumPriceMessengerAddress" json:"arbitrumPriceMessengerAddress"`
 
 	// The RocketArbitumPriceMessengerV2 Arbitrum address for each network
-	ArbitrumPriceMessengerAddressV2 *common.Address
+	ArbitrumPriceMessengerAddressV2 *common.Address `yaml:"arbitrumPriceMessengerAddressV2" json:"arbitrumPriceMessengerAddressV2"`
 
 	// The RocketZkSyncPriceMessenger zkSyncEra address for each network
-	ZkSyncEraPriceMessengerAddress *common.Address
+	ZkSyncEraPriceMessengerAddress *common.Address `yaml:"zkSyncEraPriceMessengerAddress" json:"zkSyncEraPriceMessengerAddress"`
 
 	// The RocketBasePriceMessenger Base address for each network
-	BasePriceMessengerAddress *common.Address
+	BasePriceMessengerAddress *common.Address `yaml:"basePriceMessengerAddress" json:"basePriceMessengerAddress"`
 
 	// The RocketScrollPriceMessenger Scroll address for each network
-	ScrollPriceMessengerAddress *common.Address
+	ScrollPriceMessengerAddress *common.Address `yaml:"scrollPriceMessengerAddress" json:"scrollPriceMessengerAddress"`
 
 	// The Scroll L2 message fee estimator address for each network
-	ScrollFeeEstimatorAddress *common.Address
+	ScrollFeeEstimatorAddress *common.Address `yaml:"scrollFeeEstimatorAddress" json:"scrollFeeEstimatorAddress"`
 
 	// The UniswapV3 pool address for each network (used for RPL price TWAP info)
-	RplTwapPoolAddress *common.Address
+	RplTwapPoolAddress *common.Address `yaml:"rplTwapPoolAddress" json:"rplTwapPoolAddress"`
 }
 
 // An aggregated collection of resources for the selected network, including Rocket Pool resources

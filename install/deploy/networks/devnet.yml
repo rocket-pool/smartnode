@@ -1,0 +1,41 @@
+key: devnet
+name: Devnet
+description: This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.
+networkResources:
+  ethNetworkName: holesky
+  chainID: 17000
+  genesisForkVersion: 0x01017000
+  multicallAddress: 0x0540b786f03c9491f3a2ab4b0e3ae4ecd4f63ce7
+  balanceBatcherAddress: 0xfAa2e7C84eD801dd9D27Ac1ed957274530796140
+  txWatchUrl: https://holesky.etherscan.io/tx
+  flashbotsProtectUrl: https://rpc-holesky.flashbots.net/
+smartNodeResources:
+		stakeUrl:                       "TBD"
+		storageAddress:                 0xf04de123993761Bb9F08c9C39112b0E0b0eccE50
+		rethAddress:                    0x4be7161080b5d890500194cee2c40B1428002Bd3
+		rplTokenAddress:                0x59A1a7AebCbF103B3C4f85261fbaC166117E1979
+		v1_0_0_RewardsPoolAddress:      null
+		v1_0_0_ClaimNodeAddress:        null
+		v1_0_0_ClaimTrustedNodeAddress: null
+		v1_0_0_MinipoolManagerAddress:  null
+		v1_1_0_NetworkPricesAddress:    null
+		v1_1_0_NodeStakingAddress:      null
+		v1_1_0_NodeDepositAddress:      null
+		v1_1_0_MinipoolQueueAddress:    null
+		v1_1_0_MinipoolFactoryAddress:  null
+		v1_2_0_NetworkPricesAddress:    0xBba3FBCD4Bdbfc79118B1B31218602E5A71B426c
+		v1_2_0_NetworkBalancesAddress:  0xBe8Dc8CA5f339c196Aef634DfcDFbA61E30DC743
+		snapshotDelegationAddress:      null
+		snapshotApiDomain:              ""
+		previousRewardsPoolAddresses:
+		  - 0x4d581a552490fb6fce5F978e66560C8b7E481818
+		PreviousProtocolDaoVerifierAddresses: []
+		OptimismPriceMessengerAddress:        null
+		PolygonPriceMessengerAddress:         null
+		ArbitrumPriceMessengerAddress:        null
+		ArbitrumPriceMessengerAddressV2:      null
+		ZkSyncEraPriceMessengerAddress:       null
+		BasePriceMessengerAddress:            null
+		ScrollPriceMessengerAddress:          null
+		ScrollFeeEstimatorAddress:            null
+		RplTwapPoolAddress:                   0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d

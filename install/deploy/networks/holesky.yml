@@ -1,0 +1,41 @@
+key: holesky
+name: Holesky Testnet
+description: This is the Holešky (Holešovice) test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smart Node in a free, safe environment before moving to Mainnet.
+networkResources:
+  ethNetworkName: holesky
+  chainID: 17000
+  genesisForkVersion: 0x01017000
+  multicallAddress: 0x0540b786f03c9491f3a2ab4b0e3ae4ecd4f63ce7
+  balanceBatcherAddress: 0xfAa2e7C84eD801dd9D27Ac1ed957274530796140
+  txWatchUrl: https://holesky.etherscan.io/tx
+  flashbotsProtectUrl: https://rpc-holesky.flashbots.net/
+smartNodeResources:
+		stakeUrl:                       "https://testnet.rocketpool.net"
+		storageAddress:                 0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1
+		rethAddress:                    0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1
+		rplTokenAddress:                0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0
+		v1_0_0_RewardsPoolAddress:      null
+		v1_0_0_ClaimNodeAddress:        null
+		v1_0_0_ClaimTrustedNodeAddress: null
+		v1_0_0_MinipoolManagerAddress:  null
+		v1_1_0_NetworkPricesAddress:    null
+		v1_1_0_NodeStakingAddress:      null
+		v1_1_0_NodeDepositAddress:      null
+		v1_1_0_MinipoolQueueAddress:    null
+		v1_1_0_MinipoolFactoryAddress:  null
+		v1_2_0_NetworkPricesAddress:    0x029d946F28F93399a5b0D09c879FC8c94E596AEb
+		v1_2_0_NetworkBalancesAddress:  0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8
+		snapshotDelegationAddress:      null
+		snapshotApiDomain:              ""
+		previousRewardsPoolAddresses:
+		  - 0x4a625C617a44E60F74E3fe3bf6d6333b63766e91
+		PreviousProtocolDaoVerifierAddresses: []
+		OptimismPriceMessengerAddress:        null
+		PolygonPriceMessengerAddress:         null
+		ArbitrumPriceMessengerAddress:        null
+		ArbitrumPriceMessengerAddressV2:      null
+		ZkSyncEraPriceMessengerAddress:       null
+		BasePriceMessengerAddress:            null
+		ScrollPriceMessengerAddress:          null
+		ScrollFeeEstimatorAddress:            null
+		RplTwapPoolAddress:                   0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d
