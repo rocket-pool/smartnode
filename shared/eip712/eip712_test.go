@@ -3,6 +3,8 @@ package eip712
 import (
 	"fmt"
 	"testing"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 func TestDecodeAndEncode(t *testing.T) {
@@ -10,18 +12,26 @@ func TestDecodeAndEncode(t *testing.T) {
 	eip712Components := new(EIP712Components)
 
 	// Decode string
-	err := eip712Components.Decode(signature)
+	decoded, err := hexutil.Decode(signature)
+	if err != nil {
+		t.Fatalf("Failed to decode hex string: %v", err)
+	}
+
+	err = eip712Components.UnmarshallText(decoded)
 	if err != nil {
 		t.Fatalf("Failed to decode signature: %v", err)
 	}
 
-	eip712Components.String()
+	decoded, err = eip712Components.MarshallText()
+	if err != nil {
+		t.Fatalf("Failed to encode signature: %v", err)
+	}
 
-	// Encode eip712Components back to a string
-	encodedSig := eip712Components.Encode()
+	// Convert the encoded byte slice back to a hex string
+	encodedHexSig := hexutil.Encode(decoded)
 
-	if encodedSig != signature {
-		t.Fatalf("Expected %s but got %s", signature, encodedSig)
+	if encodedHexSig != signature {
+		t.Fatalf("Expected %s but got %s", signature, decoded)
 	}
 
 }
@@ -30,7 +40,7 @@ func TestDecodeInvalid712Hex(t *testing.T) {
 	invalidSignature := "0xinvalidsignature"
 	eip712Components := new(EIP712Components)
 
-	err := eip712Components.Decode(invalidSignature)
+	err := eip712Components.UnmarshallText([]byte(invalidSignature))
 	if err == nil {
 		t.Fatal("Expected error for invalid signature but got none")
 	}
@@ -40,7 +50,7 @@ func TestDecodeEmptySignature(t *testing.T) {
 	emptySignature := ""
 	eip712Components := new(EIP712Components)
 
-	err := eip712Components.Decode(emptySignature)
+	err := eip712Components.UnmarshallText([]byte(emptySignature))
 	if err == nil {
 		t.Fatal("Expected error for empty signature but got none")
 	}
@@ -51,7 +61,13 @@ func TestDecodeInvalidLength(t *testing.T) {
 	invalidLengthSignature := "0xba283b21f7168e53b082ad552d974591abe0f4db5b7032374abbcdcf09e0eadc" // 64 characters (32 bytes)
 	eip712Components := new(EIP712Components)
 
-	err := eip712Components.Decode(invalidLengthSignature)
+	// Decode string
+	decoded, err := hexutil.Decode(invalidLengthSignature)
+	if err != nil {
+		t.Fatalf("Failed to decode hex string: %v", err)
+	}
+
+	err = eip712Components.UnmarshallText(decoded)
 	if err == nil {
 		t.Fatal("Expected error for signature with invalid length but got none")
 	}

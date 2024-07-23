@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -92,6 +93,7 @@ func (c *protocolDaoSetSignallingAddressContext) GetState(mc *batch.MultiCaller)
 		c.node.Exists,
 		c.node.IsVotingInitialized,
 	)
+
 	// Check if the node already has a signer
 	if c.registry != nil {
 		c.registry.NodeToSigner(mc, &c.nodeToSigner, c.node.Address)
@@ -99,8 +101,6 @@ func (c *protocolDaoSetSignallingAddressContext) GetState(mc *batch.MultiCaller)
 }
 
 func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
-
-	message := constructMessage(strings.ToLower(c.nodeAddress.Hex()))
 
 	if c.signallingAddress == c.nodeToSigner {
 		return types.ResponseStatus_Error, fmt.Errorf("Signer address already in use")
@@ -110,17 +110,24 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 		return types.ResponseStatus_Error, fmt.Errorf("Voting must be initialized to set a signalling address. Use 'rocketpool pdao initialize-voting' to initialize voting first")
 	}
 
-	eip712Components := new(eip712.EIP712Components)
-	err := eip712Components.Decode(c.signature)
+	decodedSignature, err := hexutil.Decode(c.signature)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("Error decoding signature: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("Failed to decode hex string: %w", err)
 	}
 
+	eip712Components := new(eip712.EIP712Components)
+	err = eip712Components.UnmarshallText(decodedSignature)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("Error unmarshalling signature: %w", err)
+	}
+
+	message := constructMessage(strings.ToLower(c.nodeAddress.Hex()))
 	err = eip712Components.Validate(message, c.signallingAddress)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("Error validating signature: %w", err)
 	}
 
+	// Get the tx
 	data.TxInfo, err = c.registry.SetSigner(c.signallingAddress, opts, eip712Components.V, eip712Components.R, eip712Components.S)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("Error getting the TX info for SetSigner: %w", err)
