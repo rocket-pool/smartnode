@@ -24,8 +24,19 @@ func (e *EIP712Components) Print() {
 	fmt.Printf("V: %d\n", e.V)
 }
 
-// UnmarshallText verifies the length of a decoded EIP-712 signature and assigns the appropriate bytes to R/S/V
-func (e *EIP712Components) UnmarshallText(inp []byte) error {
+// String returns a hexadecimal string representation of EIP712Components
+func (e *EIP712Components) String() string {
+	out, err := e.MarshalText()
+	if err != nil {
+		// MarshalText should never return an error
+		panic(err)
+	}
+	return fmt.Sprintf("%x", out)
+
+}
+
+// UnmarshalText verifies the length of a decoded EIP-712 signature and assigns the appropriate bytes to R/S/V
+func (e *EIP712Components) UnmarshalText(inp []byte) error {
 	if len(inp) != EIP712Length {
 		return fmt.Errorf("error decoding EIP-712 signature string: invalid length %d bytes (expected %d bytes)", len(inp), EIP712Length)
 	}
@@ -37,8 +48,8 @@ func (e *EIP712Components) UnmarshallText(inp []byte) error {
 	return nil
 }
 
-// MarshallText initializes an empty byte slice, copies fields R/S/V into signatureBytes then returns it
-func (e *EIP712Components) MarshallText() ([]byte, error) {
+// MarshalText initializes an empty byte slice, copies fields R/S/V into signatureBytes then returns it
+func (e *EIP712Components) MarshalText() ([]byte, error) {
 	signatureBytes := make([]byte, EIP712Length)
 
 	copy(signatureBytes[0:32], e.R[:])
@@ -72,12 +83,12 @@ func (e *EIP712Components) Validate(msg []byte, expectedSigner common.Address) e
 	// Restore V to its original value
 	sig[crypto.RecoveryIDOffset] += 27
 
-	// Derive the address from the public key
-	recoveredAddr := crypto.PubkeyToAddress(*pubKey)
+	// Derive the signer address from the public key
+	recoveredSigner := crypto.PubkeyToAddress(*pubKey)
 
-	// Compare the recovered address with the expected address
-	if recoveredAddr != expectedSigner {
-		return fmt.Errorf("signature does not match the expected signer: got %s, expected %s", recoveredAddr.Hex(), expectedSigner.Hex())
+	// Compare the recovered signer address with the expected address
+	if recoveredSigner != expectedSigner {
+		return fmt.Errorf("signature does not match the expected signer: got %s, expected %s", recoveredSigner.Hex(), expectedSigner.Hex())
 	}
 
 	return nil

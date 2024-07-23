@@ -116,12 +116,12 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 	}
 
 	eip712Components := new(eip712.EIP712Components)
-	err = eip712Components.UnmarshallText(decodedSignature)
+	err = eip712Components.UnmarshalText(decodedSignature)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("Error unmarshalling signature: %w", err)
+		return types.ResponseStatus_Error, fmt.Errorf("Failed to unmarshal signature: %w", err)
 	}
 
-	message := constructMessage(strings.ToLower(c.nodeAddress.Hex()))
+	message := constructMessage(c.nodeAddress.Hex())
 	err = eip712Components.Validate(message, c.signallingAddress)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("Error validating signature: %w", err)
@@ -137,6 +137,7 @@ func (c *protocolDaoSetSignallingAddressContext) PrepareData(data *types.TxInfoD
 }
 
 func constructMessage(nodeAddress string) []byte {
+	nodeAddress = strings.ToLower(nodeAddress)
 	message := fmt.Sprintf("%s may delegate to me for Rocket Pool governance", nodeAddress)
 	return []byte(message)
 }
