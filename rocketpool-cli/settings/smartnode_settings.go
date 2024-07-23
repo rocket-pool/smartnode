@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
@@ -17,15 +16,6 @@ import (
 const (
 	traceMode           os.FileMode = 0644
 	defaultConfigFolder string      = ".rocketpool"
-
-	// System dir path for Linux
-	linuxSystemDir string = "/usr/share/rocketpool"
-
-	// Subfolders under the system dir
-	scriptsDir        string = "scripts"
-	templatesDir      string = "templates"
-	overrideSourceDir string = "override"
-	networksDir       string = "networks"
 )
 
 var (
@@ -83,6 +73,8 @@ const (
 
 // Context for global settings
 type SmartNodeSettings struct {
+	*SystemSettings
+
 	// The path to the configuration file
 	ConfigPath string
 
@@ -110,17 +102,8 @@ type SmartNodeSettings struct {
 	// The HTTP trace file if tracing is enabled
 	HttpTraceFile *os.File
 
-	// The system path for Smart Node scripts used in the Docker containers
-	ScriptsDir string
-
-	// The system path for Smart Node templates
-	TemplatesDir string
-
-	// The system path for the source files to put in the user's override directory
-	OverrideSourceDir string
-
-	// The system path for built-in network settings and resource definitions
-	NetworksDir string
+	// The list of networks options and corresponding settings
+	NetworkSettings []*config.SmartNodeSettings
 }
 
 // Get the Smart Node settings from a CLI context
@@ -145,13 +128,15 @@ func AppendSmartNodeSettingsFlags(flags []cli.Flag) []cli.Flag {
 	)
 }
 
-// Validate the global flags
-func NewSmartNodeSettings(c *cli.Context) (*SmartNodeSettings, error) {
+// Creates a new Smart Node settings instance
+func NewSmartNodeSettings(c *cli.Context, systemSettings *SystemSettings, networkSettings []*config.SmartNodeSettings) (*SmartNodeSettings, error) {
 	snSettings := &SmartNodeSettings{
-		MaxFee:         c.Float64(maxFeeFlag.Name),
-		MaxPriorityFee: c.Float64(maxPriorityFeeFlag.Name),
-		DebugEnabled:   c.Bool(debugFlag.Name),
-		SecureSession:  c.Bool(secureSessionFlag.Name),
+		SystemSettings:  systemSettings,
+		MaxFee:          c.Float64(maxFeeFlag.Name),
+		MaxPriorityFee:  c.Float64(maxPriorityFeeFlag.Name),
+		DebugEnabled:    c.Bool(debugFlag.Name),
+		SecureSession:   c.Bool(secureSessionFlag.Name),
+		NetworkSettings: networkSettings,
 	}
 
 	// If set, validate custom nonce
@@ -192,21 +177,7 @@ func NewSmartNodeSettings(c *cli.Context) (*SmartNodeSettings, error) {
 		}
 	}
 
-	var systemDir string
-	switch runtime.GOOS {
-	// This is where to add different paths for different OS's like macOS
-	default:
-		// By default just use the Linux path
-		systemDir = linuxSystemDir
-	}
-
-	snSettings.ScriptsDir = filepath.Join(systemDir, scriptsDir)
-	snSettings.TemplatesDir = filepath.Join(systemDir, templatesDir)
-	snSettings.OverrideSourceDir = filepath.Join(systemDir, overrideSourceDir)
-	snSettings.NetworksDir = filepath.Join(systemDir, networksDir)
-
 	c.App.Metadata[contextMetadataName] = snSettings
-
 	return snSettings, nil
 }
 

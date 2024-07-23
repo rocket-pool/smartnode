@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/wallet"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/settings"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 // allowRootFlag is the only one this file deals with- simply so it can exit early.
@@ -97,6 +98,14 @@ func newCliApp() *cli.App {
 	// Set utility flags
 	app.Flags = utils.AppendFlags(app.Flags)
 
+	// Load the network settings
+	systemSettings := settings.NewSystemSettings()
+	networkSettings, err := config.LoadSettingsFiles(systemSettings.NetworksDir)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error loading network settings from path [%s]: %s", systemSettings.NetworksDir, err.Error())
+		os.Exit(1)
+	}
+
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
@@ -106,7 +115,7 @@ func newCliApp() *cli.App {
 	pdao.RegisterCommands(app, "pdao", []string{"p"})
 	queue.RegisterCommands(app, "queue", []string{"q"})
 	security.RegisterCommands(app, "security", []string{"c"})
-	service.RegisterCommands(app, "service", []string{"s"})
+	service.RegisterCommands(app, "service", []string{"s"}, networkSettings)
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
 	var snSettings *settings.SmartNodeSettings
@@ -119,7 +128,7 @@ func newCliApp() *cli.App {
 		}
 
 		var err error
-		snSettings, err = settings.NewSmartNodeSettings(c)
+		snSettings, err = settings.NewSmartNodeSettings(c, systemSettings, networkSettings)
 		if err != nil {
 			fmt.Fprint(os.Stderr, err.Error())
 			os.Exit(1)

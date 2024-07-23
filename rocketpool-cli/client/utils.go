@@ -20,15 +20,6 @@ func SyncRatioToPercent(in float64) float64 {
 	return math.Min(99.99, in*100)
 }
 
-// Load the Smart Node settings from the network settings files on disk
-func LoadSmartNodeSettings(networksDir string) ([]*config.SmartNodeSettings, error) {
-	settings, err := config.LoadSettingsFiles(networksDir)
-	if err != nil {
-		return nil, fmt.Errorf("error loading Smart Node settings files from [%s]: %w", networksDir, err)
-	}
-	return settings, nil
-}
-
 // Loads a config without updating it if it exists
 func LoadConfigFromFile(path string, networks []*config.SmartNodeSettings) (*config.SmartNodeConfig, error) {
 	_, err := os.Stat(path)

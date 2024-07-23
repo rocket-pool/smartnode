@@ -10,32 +10,32 @@ networkResources:
   txWatchUrl: https://etherscan.io/tx
   flashbotsProtectUrl: https://rpc.flashbots.net/
 smartNodeResources:
-		stakeUrl:                       "https://stake.rocketpool.net"
-		storageAddress:                 0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46
-		rethAddress:                    0xae78736Cd615f374D3085123A210448E74Fc6393
-		rplTokenAddress:                0xD33526068D116cE69F19A9ee46F0bd304F21A51f
-		v1_0_0_RewardsPoolAddress:      0xA3a18348e6E2d3897B6f2671bb8c120e36554802
-		v1_0_0_ClaimNodeAddress:        0x899336A2a86053705E65dB61f52C686dcFaeF548
-		v1_0_0_ClaimTrustedNodeAddress: 0x6af730deB0463b432433318dC8002C0A4e9315e8
-		v1_0_0_MinipoolManagerAddress:  0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a
-		v1_1_0_NetworkPricesAddress:    0xd3f500F550F46e504A4D2153127B47e007e11166
-		v1_1_0_NodeStakingAddress:      0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2
-		v1_1_0_NodeDepositAddress:      0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0
-		v1_1_0_MinipoolQueueAddress:    0x5870dA524635D1310Dc0e6F256Ce331012C9C19E
-		v1_1_0_MinipoolFactoryAddress:  0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788
-		v1_2_0_NetworkPricesAddress:    0x751826b107672360b764327631cC5764515fFC37
-		v1_2_0_NetworkBalancesAddress:  0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4
-		snapshotDelegationAddress:      0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446
-		snapshotApiDomain:              "hub.snapshot.org"
-		previousRewardsPoolAddresses:
-		  - 0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1
-		PreviousProtocolDaoVerifierAddresses: []
-		OptimismPriceMessengerAddress:        0xdddcf2c25d50ec22e67218e873d46938650d03a7
-		PolygonPriceMessengerAddress:         0xb1029Ac2Be4e08516697093e2AFeC435057f3511
-		ArbitrumPriceMessengerAddress:        0x05330300f829AD3fC8f33838BC88CFC4093baD53
-		ArbitrumPriceMessengerAddressV2:      0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1
-		ZkSyncEraPriceMessengerAddress:       0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8
-		BasePriceMessengerAddress:            0x64A5856869C06B0188C84A5F83d712bbAc03517d
-		ScrollPriceMessengerAddress:          0x0f22dc9b9c03757d4676539203d7549c8f22c15c
-		ScrollFeeEstimatorAddress:            0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B
-		RplTwapPoolAddress:                   0xe42318ea3b998e8355a3da364eb9d48ec725eb45
+  stakeUrl:                       "https://stake.rocketpool.net"
+  storageAddress:                 0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46
+  rethAddress:                    0xae78736Cd615f374D3085123A210448E74Fc6393
+  rplTokenAddress:                0xD33526068D116cE69F19A9ee46F0bd304F21A51f
+  v1_0_0_RewardsPoolAddress:      0xA3a18348e6E2d3897B6f2671bb8c120e36554802
+  v1_0_0_ClaimNodeAddress:        0x899336A2a86053705E65dB61f52C686dcFaeF548
+  v1_0_0_ClaimTrustedNodeAddress: 0x6af730deB0463b432433318dC8002C0A4e9315e8
+  v1_0_0_MinipoolManagerAddress:  0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a
+  v1_1_0_NetworkPricesAddress:    0xd3f500F550F46e504A4D2153127B47e007e11166
+  v1_1_0_NodeStakingAddress:      0xA73ec45Fe405B5BFCdC0bF4cbc9014Bb32a01cd2
+  v1_1_0_NodeDepositAddress:      0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0
+  v1_1_0_MinipoolQueueAddress:    0x5870dA524635D1310Dc0e6F256Ce331012C9C19E
+  v1_1_0_MinipoolFactoryAddress:  0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788
+  v1_2_0_NetworkPricesAddress:    0x751826b107672360b764327631cC5764515fFC37
+  v1_2_0_NetworkBalancesAddress:  0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4
+  snapshotDelegationAddress:      0x469788fE6E9E9681C6ebF3bF78e7Fd26Fc015446
+  snapshotApiDomain:              "hub.snapshot.org"
+  previousRewardsPoolAddresses:
+    - 0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1
+  previousProtocolDaoVerifierAddresses: []
+  optimismPriceMessengerAddress:        0xdddcf2c25d50ec22e67218e873d46938650d03a7
+  polygonPriceMessengerAddress:         0xb1029Ac2Be4e08516697093e2AFeC435057f3511
+  arbitrumPriceMessengerAddress:        0x05330300f829AD3fC8f33838BC88CFC4093baD53
+  arbitrumPriceMessengerAddressV2:      0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1
+  zkSyncEraPriceMessengerAddress:       0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8
+  basePriceMessengerAddress:            0x64A5856869C06B0188C84A5F83d712bbAc03517d
+  scrollPriceMessengerAddress:          0x0f22dc9b9c03757d4676539203d7549c8f22c15c
+  scrollFeeEstimatorAddress:            0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B
+  rplTwapPoolAddress:                   0xe42318ea3b998e8355a3da364eb9d48ec725eb45
