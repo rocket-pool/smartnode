@@ -117,6 +117,11 @@ func LoadFromFile(path string, networks []*SmartNodeSettings) (*SmartNodeConfig,
 
 // Creates a new Smart Node configuration instance
 func NewSmartNodeConfig(rpDir string, isNativeMode bool, networks []*SmartNodeSettings) (*SmartNodeConfig, error) {
+	return NewSmartNodeConfigForNetwork(rpDir, isNativeMode, networks, config.Network_Mainnet)
+}
+
+// Creates a new Smart Node configuration instance for a specific network
+func NewSmartNodeConfigForNetwork(rpDir string, isNativeMode bool, networks []*SmartNodeSettings, selectedNetwork config.Network) (*SmartNodeConfig, error) {
 	cfg := &SmartNodeConfig{
 		rocketPoolDirectory: rpDir,
 		networkSettings:     networks,
@@ -462,18 +467,18 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool, networks []*SmartNodeSe
 	cfg.Addons = NewAddonsConfig()
 
 	// Provision the defaults for each network
-	cfg.Network.Value = config.Network_Mainnet
 	for _, network := range networks {
 		err := config.SetDefaultsForNetworks(cfg, network.DefaultConfigSettings, network.Key)
 		if err != nil {
 			return nil, fmt.Errorf("could not set defaults for network %s: %w", network.Key, err)
 		}
-		if network.Key == cfg.Network.Value {
+		if network.Key == selectedNetwork {
 			cfg.ethNetworkName = network.NetworkResources.EthNetworkName
 		}
 	}
 
-	// Apply the default values for mainnet
+	// Apply the default values for the network
+	cfg.Network.Value = selectedNetwork
 	cfg.applyAllDefaults()
 
 	return cfg, nil
