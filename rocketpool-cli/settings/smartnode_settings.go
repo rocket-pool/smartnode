@@ -73,6 +73,8 @@ const (
 
 // Context for global settings
 type SmartNodeSettings struct {
+	*SystemSettings
+
 	// The path to the configuration file
 	ConfigPath string
 
@@ -99,6 +101,9 @@ type SmartNodeSettings struct {
 
 	// The HTTP trace file if tracing is enabled
 	HttpTraceFile *os.File
+
+	// The list of networks options and corresponding settings
+	NetworkSettings []*config.SmartNodeSettings
 }
 
 // Get the Smart Node settings from a CLI context
@@ -123,13 +128,15 @@ func AppendSmartNodeSettingsFlags(flags []cli.Flag) []cli.Flag {
 	)
 }
 
-// Validate the global flags
-func NewSmartNodeSettings(c *cli.Context) (*SmartNodeSettings, error) {
+// Creates a new Smart Node settings instance
+func NewSmartNodeSettings(c *cli.Context, systemSettings *SystemSettings, networkSettings []*config.SmartNodeSettings) (*SmartNodeSettings, error) {
 	snSettings := &SmartNodeSettings{
-		MaxFee:         c.Float64(maxFeeFlag.Name),
-		MaxPriorityFee: c.Float64(maxPriorityFeeFlag.Name),
-		DebugEnabled:   c.Bool(debugFlag.Name),
-		SecureSession:  c.Bool(secureSessionFlag.Name),
+		SystemSettings:  systemSettings,
+		MaxFee:          c.Float64(maxFeeFlag.Name),
+		MaxPriorityFee:  c.Float64(maxPriorityFeeFlag.Name),
+		DebugEnabled:    c.Bool(debugFlag.Name),
+		SecureSession:   c.Bool(secureSessionFlag.Name),
+		NetworkSettings: networkSettings,
 	}
 
 	// If set, validate custom nonce
@@ -171,7 +178,6 @@ func NewSmartNodeSettings(c *cli.Context) (*SmartNodeSettings, error) {
 	}
 
 	c.App.Metadata[contextMetadataName] = snSettings
-
 	return snSettings, nil
 }
 

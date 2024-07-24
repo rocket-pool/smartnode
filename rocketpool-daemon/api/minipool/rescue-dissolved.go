@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	beacon "github.com/rocket-pool/node-manager-core/beacon"
-	"github.com/rocket-pool/node-manager-core/config"
 	"github.com/rocket-pool/node-manager-core/eth"
 	nmc_validator "github.com/rocket-pool/node-manager-core/node/validator"
 	"github.com/rocket-pool/node-manager-core/node/wallet"
@@ -21,6 +20,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/minipool"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
+	"github.com/rocket-pool/smartnode/v2/shared/config"
 )
 
 // ===============
@@ -44,7 +44,7 @@ func (f *minipoolRescueDissolvedContextFactory) Create(args url.Values) (*minipo
 
 func (f *minipoolRescueDissolvedContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*minipoolRescueDissolvedContext, types.BatchTxInfoData](
-		router, "rescue-dissolved", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "rescue-dissolved", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 
@@ -60,7 +60,7 @@ type minipoolRescueDissolvedContext struct {
 	w                 *wallet.Wallet
 	vMgr              *validator.ValidatorManager
 	bc                beacon.IBeaconClient
-	rs                *config.NetworkResources
+	res               *config.MergedResources
 
 	mpMgr *minipool.MinipoolManager
 }
@@ -76,7 +76,7 @@ func (c *minipoolRescueDissolvedContext) PrepareData(data *types.BatchTxInfoData
 	c.vMgr = sp.GetValidatorManager()
 	c.w = sp.GetWallet()
 	c.bc = sp.GetBeaconClient()
-	c.rs = sp.GetNetworkResources()
+	c.res = sp.GetResources()
 
 	// Requirements
 	status, err := sp.RequireNodeRegistered(c.handler.ctx)
@@ -140,7 +140,7 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 
 	// Get validator deposit data
 	amountGwei := big.NewInt(0).Div(amount, big.NewInt(1e9)).Uint64()
-	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, c.rs.GenesisForkVersion, amountGwei, c.rs.EthNetworkName)
+	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, c.res.GenesisForkVersion, amountGwei, c.res.EthNetworkName)
 	if err != nil {
 		return nil, err
 	}

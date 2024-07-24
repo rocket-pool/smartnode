@@ -32,13 +32,13 @@ type defendableProposal struct {
 
 type DefendPdaoProps struct {
 	ctx              context.Context
-	sp               *services.ServiceProvider
+	sp               services.ISmartNodeServiceProvider
 	logger           *slog.Logger
 	cfg              *config.SmartNodeConfig
+	res              *config.MergedResources
 	w                *wallet.Wallet
 	rp               *rocketpool.RocketPool
 	bc               beacon.IBeaconClient
-	rs               *config.RocketPoolResources
 	gasThreshold     float64
 	maxFee           *big.Int
 	maxPriorityFee   *big.Int
@@ -52,8 +52,9 @@ type DefendPdaoProps struct {
 	intervalSize *big.Int
 }
 
-func NewDefendPdaoProps(ctx context.Context, sp *services.ServiceProvider, logger *log.Logger) *DefendPdaoProps {
+func NewDefendPdaoProps(ctx context.Context, sp services.ISmartNodeServiceProvider, logger *log.Logger) *DefendPdaoProps {
 	cfg := sp.GetConfig()
+	res := sp.GetResources()
 	log := logger.With(slog.String(keys.TaskKey, "Defend PDAO Proposals"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
 	return &DefendPdaoProps{
@@ -61,10 +62,10 @@ func NewDefendPdaoProps(ctx context.Context, sp *services.ServiceProvider, logge
 		sp:               sp,
 		logger:           log,
 		cfg:              cfg,
+		res:              res,
 		w:                sp.GetWallet(),
 		rp:               sp.GetRocketPool(),
 		bc:               sp.GetBeaconClient(),
-		rs:               cfg.GetRocketPoolResources(),
 		gasThreshold:     cfg.AutoTxGasThreshold.Value,
 		maxFee:           maxFee,
 		maxPriorityFee:   maxPriorityFee,
@@ -78,7 +79,7 @@ func (t *DefendPdaoProps) Run(state *state.NetworkState) error {
 	t.nodeAddress, _ = t.w.GetAddress()
 
 	// Bindings
-	propMgr, err := proposals.NewProposalManager(t.ctx, t.logger, t.cfg, t.rp, t.bc)
+	propMgr, err := proposals.NewProposalManager(t.ctx, t.logger, t.cfg, t.res, t.rp, t.bc)
 	if err != nil {
 		return fmt.Errorf("error creating proposal manager: %w", err)
 	}
@@ -166,7 +167,7 @@ func (t *DefendPdaoProps) getDefendableProposals(state *state.NetworkState, opts
 	}
 
 	// Get any challenges issued for the proposals
-	challengeEvents, err := t.pdaoMgr.GetChallengeSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, t.rs.PreviousProtocolDaoVerifierAddresses, opts)
+	challengeEvents, err := t.pdaoMgr.GetChallengeSubmittedEvents(ids, t.intervalSize, startBlock, endBlock, t.res.PreviousProtocolDaoVerifierAddresses, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error scanning for ChallengeSubmitted events: %w", err)
 	}
@@ -244,7 +245,7 @@ func (t *DefendPdaoProps) defendProposal(prop defendableProposal) error {
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
-	err = tx.PrintAndWaitForTransaction(t.cfg, t.rp, t.logger, txInfo, opts)
+	err = tx.PrintAndWaitForTransaction(t.cfg, t.res, t.rp, t.logger, txInfo, opts)
 	if err != nil {
 		return err
 	}

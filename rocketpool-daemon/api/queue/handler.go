@@ -13,11 +13,11 @@ import (
 type QueueHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewQueueHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *QueueHandler {
+func NewQueueHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *QueueHandler {
 	h := &QueueHandler{
 		logger:          logger,
 		ctx:             ctx,

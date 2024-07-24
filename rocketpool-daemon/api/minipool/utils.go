@@ -18,7 +18,7 @@ const (
 )
 
 // Get transaction info for an operation on all of the provided minipools, using the common minipool API (for version-agnostic functions)
-func prepareMinipoolBatchTxData(ctx context.Context, sp *services.ServiceProvider, minipoolAddresses []common.Address, data *types.BatchTxInfoData, txCreator func(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error), txName string) (types.ResponseStatus, error) {
+func prepareMinipoolBatchTxData(ctx context.Context, sp services.ISmartNodeServiceProvider, minipoolAddresses []common.Address, data *types.BatchTxInfoData, txCreator func(mp minipool.IMinipool, opts *bind.TransactOpts) (types.ResponseStatus, *eth.TransactionInfo, error), txName string) (types.ResponseStatus, error) {
 	// Requirements
 	status, err := sp.RequireNodeRegistered(ctx)
 	if err != nil {

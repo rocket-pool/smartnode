@@ -125,8 +125,12 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 		stakeUrl := ""
 		config, _, err := rp.LoadConfig()
 		if err == nil {
-			rs := config.GetRocketPoolResources()
-			stakeUrl = rs.StakeUrl
+			res, err := config.GetResources()
+			if err != nil {
+				fmt.Printf("Warning: couldn't read resources from config file so the stake URL will be unavailable (%s).\n", err.Error())
+			} else {
+				stakeUrl = res.StakeUrl
+			}
 		}
 		if stakeUrl != "" {
 			fmt.Printf("The node's primary withdrawal address update to %s is now pending.\n"+

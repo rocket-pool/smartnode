@@ -21,13 +21,13 @@ func SyncRatioToPercent(in float64) float64 {
 }
 
 // Loads a config without updating it if it exists
-func LoadConfigFromFile(path string) (*config.SmartNodeConfig, error) {
+func LoadConfigFromFile(path string, networks []*config.SmartNodeSettings) (*config.SmartNodeConfig, error) {
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return nil, nil
 	}
 
-	cfg, err := config.LoadFromFile(path)
+	cfg, err := config.LoadFromFile(path, networks)
 	if err != nil {
 		return nil, err
 	}

@@ -2,9 +2,10 @@ package ids
 
 const (
 	// Root IDs
-	VersionID   string = "version"
-	IsNativeKey string = "isNative"
-	SmartNodeID string = "smartNode"
+	VersionID        string = "version"
+	IsNativeKey      string = "isNative"
+	SmartNodeID      string = "smartNode"
+	EthNetworkNameID string = "ethNetworkName"
 
 	// Smart Node parameter IDs
 	NetworkID                                  string = "network"

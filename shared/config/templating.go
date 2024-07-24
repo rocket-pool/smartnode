@@ -215,7 +215,7 @@ func (cfg *SmartNodeConfig) GetEcAdditionalFlags() (string, error) {
 // Used by text/template to format ec.yml
 func (cfg *SmartNodeConfig) GetExternalIP() string {
 	// Get the external IP address
-	ip, err := config.GetExternalIP()
+	ip, err := config.GetExternalIP(ExternalIPTimeout)
 	if err != nil {
 		fmt.Println("Warning: couldn't get external IP address; if you're using Nimbus or Besu, it may have trouble finding peers:")
 		fmt.Println(err.Error())

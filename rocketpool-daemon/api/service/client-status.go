@@ -28,7 +28,7 @@ func (f *serviceClientStatusContextFactory) Create(args url.Values) (*serviceCli
 
 func (f *serviceClientStatusContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterQuerylessGet[*serviceClientStatusContext, api.ServiceClientStatusData](
-		router, "client-status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "client-status", f, f.handler.logger.Logger, f.handler.serviceProvider,
 	)
 }
 

@@ -58,7 +58,7 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 	factory IMinipoolCallContextFactory[ContextType, DataType],
 	ctx context.Context,
 	logger *log.Logger,
-	serviceProvider *services.ServiceProvider,
+	serviceProvider services.ISmartNodeServiceProvider,
 ) {
 	router.HandleFunc(fmt.Sprintf("/%s", functionName), func(w http.ResponseWriter, r *http.Request) {
 		var err error
@@ -97,7 +97,7 @@ func RegisterMinipoolRoute[ContextType IMinipoolCallContext[DataType], DataType 
 }
 
 // Create a scaffolded generic minipool query, with caller-specific functionality where applicable
-func runMinipoolRoute[DataType any](ctx context.Context, mpContext IMinipoolCallContext[DataType], serviceProvider *services.ServiceProvider) (types.ResponseStatus, *types.ApiResponse[DataType], error) {
+func runMinipoolRoute[DataType any](ctx context.Context, mpContext IMinipoolCallContext[DataType], serviceProvider services.ISmartNodeServiceProvider) (types.ResponseStatus, *types.ApiResponse[DataType], error) {
 	// Get the services
 	w := serviceProvider.GetWallet()
 	q := serviceProvider.GetQueryManager()

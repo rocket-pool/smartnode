@@ -111,9 +111,9 @@ func createFlagsFromConfigParams(prefix string, section config.IConfigSection, c
 }
 
 // Register commands
-func RegisterCommands(app *cli.App, name string, aliases []string) {
+func RegisterCommands(app *cli.App, name string, aliases []string, networkSettings []*snCfg.SmartNodeSettings) {
 	// Create config flags from parameters
-	cfgTemplate := snCfg.NewSmartNodeConfig("", false)
+	cfgTemplate, _ := snCfg.NewSmartNodeConfig("", false, networkSettings)
 	network := cfgTemplate.Network.Value
 	configFlags := createFlagsFromConfigParams("", cfgTemplate, []cli.Flag{
 		installUpdateDefaultsFlag,

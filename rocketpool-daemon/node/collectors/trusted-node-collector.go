@@ -36,7 +36,7 @@ type TrustedNodeCollector struct {
 	pricesParticipation *prometheus.Desc
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -48,7 +48,7 @@ type TrustedNodeCollector struct {
 }
 
 // Create a new TrustedNodeCollector instance
-func NewTrustedNodeCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *TrustedNodeCollector {
+func NewTrustedNodeCollector(logger *log.Logger, sp services.ISmartNodeServiceProvider, stateLocker *StateLocker) *TrustedNodeCollector {
 	subsystem := "trusted_node"
 	sublogger := logger.With(slog.String(keys.TaskKey, "ODAO Stats Collector"))
 	return &TrustedNodeCollector{

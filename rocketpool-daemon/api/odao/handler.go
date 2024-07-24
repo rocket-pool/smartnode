@@ -13,11 +13,11 @@ import (
 type OracleDaoHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewOracleDaoHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *OracleDaoHandler {
+func NewOracleDaoHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *OracleDaoHandler {
 	h := &OracleDaoHandler{
 		logger:          logger,
 		ctx:             ctx,

@@ -13,11 +13,11 @@ import (
 type NodeHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewNodeHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *NodeHandler {
+func NewNodeHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *NodeHandler {
 	h := &NodeHandler{
 		logger:          logger,
 		ctx:             ctx,

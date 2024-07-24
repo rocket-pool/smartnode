@@ -8,14 +8,6 @@ import (
 	"github.com/rocket-pool/node-manager-core/log"
 )
 
-func (cfg *SmartNodeConfig) GetNetworkResources() *config.NetworkResources {
-	return cfg.GetRocketPoolResources().NetworkResources
-}
-
-func (cfg *SmartNodeConfig) GetRocketPoolResources() *RocketPoolResources {
-	return cfg.resources
-}
-
 func (cfg *SmartNodeConfig) GetVotingPath() string {
 	return filepath.Join(cfg.UserDataPath.Value, VotingFolder, string(cfg.Network.Value))
 }

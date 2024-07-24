@@ -31,7 +31,7 @@ type PerformanceCollector struct {
 	rethContractBalance *prometheus.Desc
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -41,7 +41,7 @@ type PerformanceCollector struct {
 }
 
 // Create a new PerformanceCollector instance
-func NewPerformanceCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *PerformanceCollector {
+func NewPerformanceCollector(logger *log.Logger, sp services.ISmartNodeServiceProvider, stateLocker *StateLocker) *PerformanceCollector {
 	subsystem := "performance"
 	sublogger := logger.With(slog.String(keys.TaskKey, "Performance Collector"))
 	return &PerformanceCollector{

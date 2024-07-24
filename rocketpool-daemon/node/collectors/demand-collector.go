@@ -30,7 +30,7 @@ type DemandCollector struct {
 	queueLength *prometheus.Desc
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -40,7 +40,7 @@ type DemandCollector struct {
 }
 
 // Create a new DemandCollector instance
-func NewDemandCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *DemandCollector {
+func NewDemandCollector(logger *log.Logger, sp services.ISmartNodeServiceProvider, stateLocker *StateLocker) *DemandCollector {
 	subsystem := "demand"
 	sublogger := logger.With(slog.String(keys.TaskKey, "Demand Collector"))
 	return &DemandCollector{

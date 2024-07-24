@@ -28,7 +28,7 @@ type SupplyCollector struct {
 	activeMinipools *prometheus.Desc
 
 	// The Smartnode service provider
-	sp *services.ServiceProvider
+	sp services.ISmartNodeServiceProvider
 
 	// The logger
 	logger *slog.Logger
@@ -38,7 +38,7 @@ type SupplyCollector struct {
 }
 
 // Create a new PerformanceCollector instance
-func NewSupplyCollector(logger *log.Logger, sp *services.ServiceProvider, stateLocker *StateLocker) *SupplyCollector {
+func NewSupplyCollector(logger *log.Logger, sp services.ISmartNodeServiceProvider, stateLocker *StateLocker) *SupplyCollector {
 	subsystem := "supply"
 	sublogger := logger.With(slog.String(keys.TaskKey, "Supply Collector"))
 	return &SupplyCollector{

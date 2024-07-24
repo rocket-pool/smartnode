@@ -13,11 +13,11 @@ import (
 type AuctionHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewAuctionHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *AuctionHandler {
+func NewAuctionHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *AuctionHandler {
 	h := &AuctionHandler{
 		logger:          logger,
 		ctx:             ctx,

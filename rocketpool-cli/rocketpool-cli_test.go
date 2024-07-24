@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
+	"github.com/prysmaticlabs/prysm/v5/testing/require"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/settings"
 	"github.com/urfave/cli/v2"
 )
@@ -33,6 +35,42 @@ func TestGlobalFlagsDefaults(t *testing.T) {
 		"auction",
 		"--help",
 	)
+
+	// Make a system path
+	systemPath := filepath.Join(tempPath, "rocketpool")
+	err := os.MkdirAll(systemPath, 0755)
+	require.NoError(t, err)
+
+	// Emulating a (partial) installation by deploying a networks folder
+	// Other installation files can be copied here later if necessary
+	networkSettingsPath := filepath.Join(systemPath, "networks")
+	err = os.MkdirAll(networkSettingsPath, 0755)
+	require.NoError(t, err)
+
+	// Copy the settings files
+	networksSource := filepath.Join("..", "install", "deploy", "networks")
+	entries, err := os.ReadDir(networksSource)
+	require.NoError(t, err)
+	for _, file := range entries {
+		fileName := file.Name()
+
+		sourceFile, err := os.Open(filepath.Join(networksSource, fileName))
+		require.NoError(t, err)
+		defer sourceFile.Close()
+
+		targetFile, err := os.Create(filepath.Join(networkSettingsPath, fileName))
+		require.NoError(t, err)
+		defer targetFile.Close()
+
+		_, err = io.Copy(targetFile, sourceFile)
+		require.NoError(t, err)
+		err = targetFile.Sync()
+		require.NoError(t, err)
+	}
+
+	// Set the install dir env var
+	err = os.Setenv(settings.TestSystemDirEnvVar, systemPath)
+	require.NoError(t, err)
 
 	app := newCliApp()
 

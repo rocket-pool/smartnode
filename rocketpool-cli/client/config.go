@@ -27,13 +27,13 @@ func (c *Client) LoadConfig() (*config.SmartNodeConfig, bool, error) {
 		return c.cfg, c.isNewCfg, nil
 	}
 
+	// Load the config
 	settingsFilePath := filepath.Join(c.Context.ConfigPath, SettingsFile)
 	expandedPath, err := homedir.Expand(settingsFilePath)
 	if err != nil {
 		return nil, false, fmt.Errorf("error expanding settings file path: %w", err)
 	}
-
-	cfg, err := LoadConfigFromFile(expandedPath)
+	cfg, err := LoadConfigFromFile(expandedPath, c.Context.NetworkSettings)
 	if err != nil {
 		return nil, false, err
 	}
@@ -45,7 +45,11 @@ func (c *Client) LoadConfig() (*config.SmartNodeConfig, bool, error) {
 	}
 
 	// Config wasn't loaded, but there was no error- we should create one.
-	c.cfg = config.NewSmartNodeConfig(c.Context.ConfigPath, c.Context.NativeMode)
+	cfg, err = config.NewSmartNodeConfig(c.Context.ConfigPath, c.Context.NativeMode, c.Context.NetworkSettings)
+	if err != nil {
+		return nil, false, fmt.Errorf("error creating new Smart Node config: %w", err)
+	}
+	c.cfg = cfg
 	c.isNewCfg = true
 	return c.cfg, true, nil
 }
@@ -58,7 +62,7 @@ func (c *Client) LoadBackupConfig() (*config.SmartNodeConfig, error) {
 		return nil, fmt.Errorf("error expanding backup settings file path: %w", err)
 	}
 
-	return LoadConfigFromFile(expandedPath)
+	return LoadConfigFromFile(expandedPath, c.Context.NetworkSettings)
 }
 
 // Save the config

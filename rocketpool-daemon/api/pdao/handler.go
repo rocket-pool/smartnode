@@ -13,11 +13,11 @@ import (
 type ProtocolDaoHandler struct {
 	logger          *log.Logger
 	ctx             context.Context
-	serviceProvider *services.ServiceProvider
+	serviceProvider services.ISmartNodeServiceProvider
 	factories       []server.IContextFactory
 }
 
-func NewProtocolDaoHandler(logger *log.Logger, ctx context.Context, serviceProvider *services.ServiceProvider) *ProtocolDaoHandler {
+func NewProtocolDaoHandler(logger *log.Logger, ctx context.Context, serviceProvider services.ISmartNodeServiceProvider) *ProtocolDaoHandler {
 	h := &ProtocolDaoHandler{
 		logger:          logger,
 		ctx:             ctx,

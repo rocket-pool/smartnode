@@ -26,15 +26,15 @@ type minipoolCloseDetailsContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolCloseDetailsContextFactory) Create(args url.Values) (*minipoolCloseDetailsContext, error) {
-	c := &minipoolCloseDetailsContext{
-		handler: f.handler,
+func (f *minipoolCloseDetailsContextFactory) Create(args url.Values) (*MinipoolCloseDetailsContext, error) {
+	c := &MinipoolCloseDetailsContext{
+		Handler: f.handler,
 	}
 	return c, nil
 }
 
 func (f *minipoolCloseDetailsContextFactory) RegisterRoute(router *mux.Router) {
-	RegisterMinipoolRoute[*minipoolCloseDetailsContext, api.MinipoolCloseDetailsData](
+	RegisterMinipoolRoute[*MinipoolCloseDetailsContext, api.MinipoolCloseDetailsData](
 		router, "close/details", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
@@ -43,29 +43,30 @@ func (f *minipoolCloseDetailsContextFactory) RegisterRoute(router *mux.Router) {
 // === Context ===
 // ===============
 
-type minipoolCloseDetailsContext struct {
-	handler *MinipoolHandler
-	rp      *rocketpool.RocketPool
-	bc      beacon.IBeaconClient
+type MinipoolCloseDetailsContext struct {
+	Handler *MinipoolHandler
+
+	rp *rocketpool.RocketPool
+	bc beacon.IBeaconClient
 }
 
-func (c *minipoolCloseDetailsContext) Initialize() (types.ResponseStatus, error) {
-	sp := c.handler.serviceProvider
+func (c *MinipoolCloseDetailsContext) Initialize() (types.ResponseStatus, error) {
+	sp := c.Handler.serviceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	return types.ResponseStatus_Success, nil
 }
 
-func (c *minipoolCloseDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (c *MinipoolCloseDetailsContext) GetState(node *node.Node, mc *batch.MultiCaller) {
 	node.IsFeeDistributorInitialized.AddToQuery(mc)
 }
 
-func (c *minipoolCloseDetailsContext) CheckState(node *node.Node, response *api.MinipoolCloseDetailsData) bool {
-	response.IsFeeDistributorInitialized = node.IsFeeDistributorInitialized.Get()
-	return response.IsFeeDistributorInitialized
+func (c *MinipoolCloseDetailsContext) CheckState(node *node.Node, data *api.MinipoolCloseDetailsData) bool {
+	data.IsFeeDistributorInitialized = node.IsFeeDistributorInitialized.Get()
+	return data.IsFeeDistributorInitialized
 }
 
-func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+func (c *MinipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	mpCommon := mp.Common()
 	eth.AddQueryablesToMulticall(mc,
 		mpCommon.NodeAddress,
@@ -81,8 +82,9 @@ func (c *minipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, 
 	}
 }
 
-func (c *minipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
-	ctx := c.handler.ctx
+func (c *MinipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
+	ctx := c.Handler.ctx
+
 	// Get the current ETH balances of each minipool
 	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)
 	if err != nil {
