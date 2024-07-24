@@ -2,9 +2,11 @@ package pdao
 
 import (
 	"fmt"
+	"math/big"
 	"net/url"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/rocketpool-go/v2/node"
@@ -13,8 +15,11 @@ import (
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
+	"github.com/rocket-pool/node-manager-core/eth"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/contracts"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/proposals"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/voting"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
@@ -35,7 +40,7 @@ func (f *protocolDaoGetStatusContextFactory) Create(args url.Values) (*protocolD
 }
 
 func (f *protocolDaoGetStatusContextFactory) RegisterRoute(router *mux.Router) {
-	server.RegisterQuerylessGet[*protocolDaoGetStatusContext, api.ProtocolDAOStatusResponse](
+	server.RegisterSingleStageRoute[*protocolDaoGetStatusContext, api.ProtocolDaoStatusResponse](
 		router, "get-status", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
@@ -45,69 +50,122 @@ func (f *protocolDaoGetStatusContextFactory) RegisterRoute(router *mux.Router) {
 // ===============
 
 type protocolDaoGetStatusContext struct {
-	handler *ProtocolDaoHandler
-	cfg     *config.SmartNodeConfig
-	rp      *rocketpool.RocketPool
-	bc      beacon.IBeaconClient
+	handler  *ProtocolDaoHandler
+	cfg      *config.SmartNodeConfig
+	rp       *rocketpool.RocketPool
+	ec       eth.IExecutionClient
+	bc       beacon.IBeaconClient
+	registry *contracts.RocketSignerRegistry
 
-	propMgr *proposals.ProposalManager
+	node              *node.Node
+	nodeAddress       common.Address
+	propMgr           *proposals.ProposalManager
+	blockNumber       uint64
+	signallingAddress common.Address
+	votingTree        *proposals.NetworkVotingTree
 }
 
-func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDAOStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+func (c *protocolDaoGetStatusContext) Initialize() (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
-	rp := sp.GetRocketPool()
-	ec := sp.GetEthClient()
 	c.cfg = sp.GetConfig()
 	c.rp = sp.GetRocketPool()
+	c.ec = sp.GetEthClient()
 	c.bc = sp.GetBeaconClient()
-	ctx := c.handler.ctx
-
-	nodeAddress, _ := sp.GetWallet().GetAddress()
+	c.nodeAddress, _ = sp.GetWallet().GetAddress()
+	network := c.cfg.GetNetworkResources().Network
 
 	// Requirements
-	status, err := sp.RequireNodeRegistered(c.handler.ctx)
+	err := sp.RequireNodeAddress()
 	if err != nil {
-		return status, err
+		return types.ResponseStatus_AddressNotPresent, err
+	}
+	c.registry = sp.GetRocketSignerRegistry()
+	if c.registry == nil {
+		return types.ResponseStatus_Error, fmt.Errorf("Network [%v] does not have a signer registry contract.", network)
 	}
 
 	// Bindings
-	node, err := node.NewNode(rp, nodeAddress)
+	c.node, err = node.NewNode(c.rp, c.nodeAddress)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", nodeAddress.Hex(), err)
+		return types.ResponseStatus_Error, fmt.Errorf("error creating node %s binding: %w", c.nodeAddress.Hex(), err)
 	}
-	c.propMgr, err = proposals.NewProposalManager(ctx, c.handler.logger.Logger, c.cfg, c.rp, c.bc)
+	c.propMgr, err = proposals.NewProposalManager(c.handler.ctx, c.handler.logger.Logger, c.cfg, c.rp, c.bc)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating proposal manager: %w", err)
 	}
-
-	// Get the latest block
-	blockNumber, err := ec.BlockNumber(c.handler.ctx)
+	c.blockNumber, err = c.ec.BlockNumber(c.handler.ctx)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting latest block number: %w", err)
 	}
-	data.BlockNumber = uint32(blockNumber)
-
-	totalDelegatedVP, _, _, err := c.propMgr.GetArtifactsForVoting(uint32(blockNumber), nodeAddress)
-	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", nodeAddress.Hex(), blockNumber, err)
-	}
-	data.TotalDelegatedVp = totalDelegatedVP
-
-	votingTree, err := c.propMgr.GetNetworkTree(uint32(blockNumber), nil)
+	c.votingTree, err = c.propMgr.GetNetworkTree(uint32(c.blockNumber), nil)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting network tree")
 	}
-	data.SumVotingPower = votingTree.Nodes[0].Sum
+
+	return types.ResponseStatus_Success, nil
+
+}
+
+func (c *protocolDaoGetStatusContext) GetState(mc *batch.MultiCaller) {
+	eth.AddQueryablesToMulticall(mc,
+		// Node
+		c.node.Exists,
+		c.node.IsVotingInitialized,
+		c.node.IsRplLockingAllowed,
+		c.node.RplLocked,
+	)
+	// Snapshot Registry
+	c.registry.NodeToSigner(mc, &c.signallingAddress, c.node.Address)
+}
+
+func (c *protocolDaoGetStatusContext) PrepareData(data *api.ProtocolDaoStatusResponse, opts *bind.TransactOpts) (types.ResponseStatus, error) {
+
+	var err error
+
+	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
+
+	if !data.IsVotingInitialized {
+		data.TotalDelegatedVp = big.NewInt(0)
+	} else {
+		data.TotalDelegatedVp, _, _, err = c.propMgr.GetArtifactsForVoting(uint32(c.blockNumber), c.nodeAddress)
+		if err != nil {
+			return types.ResponseStatus_Error, fmt.Errorf("error getting voting artifacts for node %s at block %d: %w", c.nodeAddress.Hex(), c.blockNumber, err)
+		}
+	}
+
+	data.IsNodeRegistered = c.node.Exists.Get()
+	data.BlockNumber = uint32(c.blockNumber)
+	data.AccountAddress = c.node.Address
+	data.AccountAddressFormatted = utils.GetFormattedAddress(c.ec, data.AccountAddress)
+	data.IsVotingInitialized = c.node.IsVotingInitialized.Get()
+	data.SumVotingPower = c.votingTree.Nodes[0].Sum
+	data.IsRPLLockingAllowed = c.node.IsRplLockingAllowed.Get()
+	data.NodeRPLLocked = c.node.RplLocked.Get()
+	data.VerifyEnabled = c.cfg.VerifyProposals.Value
 
 	// Get the voting power and delegate at that block
-	err = rp.Query(func(mc *batch.MultiCaller) error {
-		node.GetVotingPowerAtBlock(mc, &data.VotingPower, data.BlockNumber)
-		node.GetVotingDelegateAtBlock(mc, &data.OnchainVotingDelegate, data.BlockNumber)
+	err = c.rp.Query(func(mc *batch.MultiCaller) error {
+		c.node.GetVotingPowerAtBlock(mc, &data.VotingPower, data.BlockNumber)
+		c.node.GetVotingDelegateAtBlock(mc, &data.OnchainVotingDelegate, data.BlockNumber)
 		return nil
 	}, nil)
 	if err != nil {
-		return types.ResponseStatus_Error, fmt.Errorf("error getting voting info for block %d: %w", blockNumber, err)
+		return types.ResponseStatus_Error, fmt.Errorf("error getting voting info for block %d: %w", c.blockNumber, err)
 	}
-	data.OnchainVotingDelegateFormatted = utils.GetFormattedAddress(ec, data.OnchainVotingDelegate)
+	data.OnchainVotingDelegateFormatted = utils.GetFormattedAddress(c.ec, data.OnchainVotingDelegate)
+
+	// Get the signalling address and active snapshot proposals
+	emptyAddress := common.Address{}
+	data.SignallingAddress = c.signallingAddress
+	if data.SignallingAddress != emptyAddress {
+		data.SignallingAddressFormatted = utils.GetFormattedAddress(c.ec, c.signallingAddress)
+	}
+	props, err := voting.GetSnapshotProposals(c.cfg, c.node.Address, c.signallingAddress, true)
+	if err != nil {
+		data.SnapshotResponse.Error = fmt.Sprintf("error getting snapshot proposals: %s", err.Error())
+	} else {
+		data.SnapshotResponse.ActiveSnapshotProposals = props
+	}
+
 	return types.ResponseStatus_Success, nil
 }

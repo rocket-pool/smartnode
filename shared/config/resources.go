@@ -56,6 +56,9 @@ type RocketPoolResources struct {
 	// The contract address of rocketNetworkBalances from v1.2.0
 	V1_2_0_NetworkBalancesAddress *common.Address
 
+	// The contract Address for Rocket Signer Registry
+	RocketSignerRegistryAddress *common.Address
+
 	// The contract address for Snapshot delegation
 	SnapshotDelegationAddress *common.Address
 
@@ -121,6 +124,7 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 		},
+		RocketSignerRegistryAddress:          hexToAddressPtr("0xc1062617d10Ae99E09D941b60746182A87eAB38F"),
 		PreviousProtocolDaoVerifierAddresses: []common.Address{},
 		OptimismPriceMessengerAddress:        hexToAddressPtr("0xdddcf2c25d50ec22e67218e873d46938650d03a7"),
 		PolygonPriceMessengerAddress:         hexToAddressPtr("0xb1029Ac2Be4e08516697093e2AFeC435057f3511"),
@@ -156,6 +160,7 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"),
 		},
+		RocketSignerRegistryAddress:          hexToAddressPtr("0x657FDE6B4764E26A81A323dbb79791A11B90dD91"),
 		PreviousProtocolDaoVerifierAddresses: nil,
 		OptimismPriceMessengerAddress:        nil,
 		PolygonPriceMessengerAddress:         nil,

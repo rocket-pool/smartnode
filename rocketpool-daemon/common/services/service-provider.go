@@ -22,11 +22,12 @@ type ServiceProvider struct {
 	*services.ServiceProvider
 
 	// Services
-	cfg                *config.SmartNodeConfig
-	rocketPool         *rocketpool.RocketPool
-	validatorManager   *validator.ValidatorManager
-	snapshotDelegation *contracts.SnapshotDelegation
-	watchtowerLog      *log.Logger
+	cfg                  *config.SmartNodeConfig
+	rocketPool           *rocketpool.RocketPool
+	validatorManager     *validator.ValidatorManager
+	snapshotDelegation   *contracts.SnapshotDelegation
+	rocketSignerRegistry *contracts.RocketSignerRegistry
+	watchtowerLog        *log.Logger
 
 	// Internal use
 	loadedContractVersion *version.Version
@@ -109,6 +110,15 @@ func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp *servic
 			return nil, fmt.Errorf("error creating snapshot delegation binding: %w", err)
 		}
 	}
+	// Rocket Signer Registry
+	var rocketSignerRegistry *contracts.RocketSignerRegistry
+	registryAddress := resources.RocketSignerRegistryAddress
+	if registryAddress != nil {
+		rocketSignerRegistry, err = contracts.NewRocketSignerRegistry(*registryAddress, sp.GetEthClient(), sp.GetTransactionManager())
+		if err != nil {
+			return nil, fmt.Errorf("error creating rocket signer registry binding: %w", err)
+		}
+	}
 
 	// Create the provider
 	defaultVersion, _ := version.NewSemver("0.0.0")
@@ -119,6 +129,7 @@ func CreateServiceProviderFromComponents(cfg *config.SmartNodeConfig, sp *servic
 		rocketPool:            rp,
 		validatorManager:      vMgr,
 		snapshotDelegation:    snapshotDelegation,
+		rocketSignerRegistry:  rocketSignerRegistry,
 		watchtowerLog:         watchtowerLogger,
 		loadedContractVersion: defaultVersion,
 		refreshLock:           &sync.Mutex{},
@@ -152,6 +163,10 @@ func (p *ServiceProvider) GetValidatorManager() *validator.ValidatorManager {
 
 func (p *ServiceProvider) GetSnapshotDelegation() *contracts.SnapshotDelegation {
 	return p.snapshotDelegation
+}
+
+func (p *ServiceProvider) GetRocketSignerRegistry() *contracts.RocketSignerRegistry {
+	return p.rocketSignerRegistry
 }
 
 func (p *ServiceProvider) GetWatchtowerLogger() *log.Logger {
