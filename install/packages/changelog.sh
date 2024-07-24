@@ -2,12 +2,12 @@
 
 mark_for_release() {
     # Debian
-    docker run -it --rm -w /rocketpool -v ./debian:/rocketpool --entrypoint dch rocketpool/smartnode-deb-builder:v1.0.1 -r -M
+    docker run -it --rm -w /rocketpool -v ./debian:/rocketpool --entrypoint dch rocketpool/smartnode-deb-builder:v1.0.2 -r -M
 }
 
 update_changelog() {
     # Debian
-    docker run -it --rm -w /rocketpool -v ./debian:/rocketpool --entrypoint dch rocketpool/smartnode-deb-builder:v1.0.1 -M -v $VERSION
+    docker run -it --rm -w /rocketpool -v ./debian:/rocketpool --entrypoint dch rocketpool/smartnode-deb-builder:v1.0.2 -M -v $VERSION
 }
 
 # Print usage

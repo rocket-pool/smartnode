@@ -1,5 +1,5 @@
 # The builder for building the daemon
-FROM --platform=${BUILDPLATFORM} golang:1.21-bookworm AS builder
+FROM --platform=${BUILDPLATFORM} golang:1.22-bookworm AS builder
 ARG TARGETOS TARGETARCH BUILDPLATFORM
 COPY . /rocketpool
 ENV CGO_ENABLED=1

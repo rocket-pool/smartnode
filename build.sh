@@ -87,6 +87,14 @@ build_latest_docker_manifest() {
     fi
 }
 
+# Builds the deb package builder image
+build_deb_builder() {
+    echo -n "Building deb builder..."
+    docker buildx build --rm --platform=linux/amd64,linux/arm64 -t rocketpool/smartnode-deb-builder:$VERSION -f install/packages/debian/builder.dockerfile --push . || fail "Error building deb builder."
+    echo "done!"
+}
+
+
 
 # Print usage
 usage() {
@@ -99,6 +107,7 @@ usage() {
     echo $'\t-p\tBuild the Smart Node installer packages'
     echo $'\t-d\tBuild the Smart Node Daemon image'
     echo $'\t-l\tTag the Docker image as "latest"'
+    echo $'\t-b\tBuild the Debian Builder image'
     echo $'\t-u\tWhen passed with a build, upload the resulting image tags to Docker Hub'
     exit 0
 }
@@ -109,7 +118,7 @@ usage() {
 # =================
 
 # Parse arguments
-while getopts "actpdluv:" FLAG; do
+while getopts "actpdlubv:" FLAG; do
     case "$FLAG" in
         a) CLI=true DISTRO=true PACKAGES=true DAEMON=true ;;
         c) CLI=true ;;
@@ -118,6 +127,7 @@ while getopts "actpdluv:" FLAG; do
         d) DAEMON=true ;;
         l) LATEST_MANIFEST=true ;;
         u) UPLOAD=true ;;
+        b) DEB_BUILDER=true ;;
         v) VERSION="$OPTARG" ;;
         *) usage ;;
     esac
@@ -149,19 +159,14 @@ fi
 if [ "$LATEST_MANIFEST" = true ]; then
     build_latest_docker_manifest
 fi
+if [ "$DEB_BUILDER" = true ]; then
+    build_deb_builder
+fi
 
 
 # =======================
 # === Manual Routines ===
 # =======================
-
-# Builds the deb package builder image
-build_deb_builder() {
-    echo -n "Building deb builder..."
-    docker buildx build --rm --platform=linux/amd64,linux/arm64 -t rocketpool/smartnode-deb-builder:$VERSION -f install/packages/debian/builder.dockerfile --push . || fail "Error building deb builder."
-    echo "done!"
-}
-
 
 # Builds the prune provisioner image and pushes it to Docker Hub
 build_docker_prune_provision() {
