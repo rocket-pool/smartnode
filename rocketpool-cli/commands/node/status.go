@@ -104,7 +104,7 @@ func getStatus(c *cli.Context) error {
 		if status.Data.Trusted {
 			fmt.Println("The node is a member of the oracle DAO - it can vote on DAO proposals and perform watchtower duties.")
 		}
-		fmt.Println("")
+		fmt.Println()
 
 		// Penalties
 		fmt.Printf("%s=== Penalty Status ===%s\n", terminal.ColorGreen, terminal.ColorReset)
@@ -198,7 +198,7 @@ func getStatus(c *cli.Context) error {
 		} else {
 			fmt.Print("The node is NOT allowed to lock RPL to create governance proposals/challenges.\n")
 		}
-		fmt.Println("")
+		fmt.Println()
 
 		// Primary withdrawal address & balances
 		fmt.Printf("%s=== Primary Withdrawal Address ===%s\n", terminal.ColorGreen, terminal.ColorReset)
@@ -214,11 +214,11 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("%sThe node's primary withdrawal address has not been changed, so ETH rewards and minipool withdrawals will be sent to the node itself.\n", terminal.ColorYellow)
 			fmt.Printf("Consider changing this to a cold wallet address that you control using the `set-withdrawal-address` command.\n%s", terminal.ColorReset)
 		}
-		fmt.Println("")
+		fmt.Println()
 		if status.Data.PendingPrimaryWithdrawalAddress.Hex() != blankAddress.Hex() {
 			fmt.Printf("%sThe node's primary withdrawal address has a pending change to %s which has not been confirmed yet.\n", terminal.ColorYellow, status.Data.PendingPrimaryWithdrawalAddressFormatted)
 			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", terminal.ColorReset)
-			fmt.Println("")
+			fmt.Println()
 		}
 
 		// RPL withdrawal address & balances
@@ -238,7 +238,7 @@ func getStatus(c *cli.Context) error {
 				math.RoundDown(eth.WeiToEth(status.Data.RplWithdrawalBalances.Eth), 6),
 				math.RoundDown(eth.WeiToEth(status.Data.RplWithdrawalBalances.Rpl), 6))
 		}
-		fmt.Println("")
+		fmt.Println()
 		if status.Data.PendingRplWithdrawalAddress.Hex() != blankAddress.Hex() {
 			fmt.Printf("%sThe node's RPL withdrawal address has a pending change to %s which has not been confirmed yet.\n", terminal.ColorYellow, status.Data.PendingRplWithdrawalAddressFormatted)
 			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", terminal.ColorReset)
@@ -275,7 +275,8 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", terminal.ColorYellow, terminal.ColorReset)
 		}
 		if !status.Data.IsFeeDistributorInitialized {
-			fmt.Printf("\n%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n", terminal.ColorYellow, terminal.ColorReset)
+			fmt.Println()
+			fmt.Printf("%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n", terminal.ColorYellow, terminal.ColorReset)
 		}
 
 		fmt.Println()
@@ -290,6 +291,8 @@ func getStatus(c *cli.Context) error {
 			math.RoundDown(eth.WeiToEth(status.Data.EffectiveRplStake), 6))
 		if status.Data.BorrowedCollateralRatio > 0 {
 			rplTooLow := (status.Data.RplStake.Cmp(status.Data.MinimumRplStake) < 0)
+			rplTotalStake := math.RoundDown(eth.WeiToEth(status.Data.RplStake), 6)
+			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.Data.MaximumRplStake), 6)
 			if rplTooLow {
 				fmt.Printf(
 					"This is currently %s%.2f%% of its borrowed ETH%s and %.2f%% of its bonded ETH.\n",
@@ -303,6 +306,12 @@ func getStatus(c *cli.Context) error {
 				"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.Data.MinimumRplStake), 6))
 			fmt.Printf(
 				"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of %.6f RPL (150%% of bonded ETH). Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n", math.RoundDown(eth.WeiToEth(status.Data.MaximumRplStake), 6))
+			if rplTotalStake > rplWithdrawalLimit {
+				fmt.Printf(
+					"You can now withdraw down to %.6f RPL (%.0f%% of bonded eth)\n",
+					math.RoundDown(eth.WeiToEth(status.Data.MaximumRplStake), 6),
+					eth.WeiToEth(status.Data.MaximumStakeFraction)*100)
+			}
 			if rplTooLow {
 				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", terminal.ColorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.Data.MinimumRplStake, status.Data.RplStake)), 6), terminal.ColorReset)
 			}
