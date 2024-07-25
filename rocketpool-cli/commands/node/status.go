@@ -147,15 +147,15 @@ func getStatus(c *cli.Context) error {
 			fmt.Println()
 		}
 
-		// Snapshot voting status
-		fmt.Printf("%s=== DAO Voting ===%s\n", terminal.ColorGreen, terminal.ColorReset)
+		// Signalling Status
+		fmt.Printf("%s=== Signalling on Snapshot ===%s\n", terminal.ColorGreen, terminal.ColorReset)
 		blankAddress := common.Address{}
-		if status.Data.SnapshotVotingDelegate == blankAddress {
-			fmt.Println("The node does not currently have a voting delegate set, which means it can only vote directly on Snapshot proposals (using a hardware wallet with the node mnemonic loaded).\nRun `rocketpool n sv <address>` to vote from a different wallet or have a delegate represent you. (See https://delegates.rocketpool.net for options)")
+		if status.Data.SignallingAddress == blankAddress {
+			fmt.Println("The node does not currently have a snapshot signalling address set.")
+			fmt.Println("To learn more about snapshot signalling, please visit https://docs.rocketpool.net/guides/houston/participate#setting-your-snapshot-signalling-address/")
 		} else {
-			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", terminal.ColorBlue, status.Data.SnapshotVotingDelegateFormatted, terminal.ColorReset)
+			fmt.Printf("The node has a signalling address of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", terminal.ColorBlue, status.Data.SignallingAddressFormatted, terminal.ColorReset)
 		}
-
 		if status.Data.SnapshotResponse.Error != "" {
 			fmt.Printf("Unable to fetch latest voting information from snapshot.org: %s\n", status.Data.SnapshotResponse.Error)
 		} else {
@@ -167,12 +167,12 @@ func getStatus(c *cli.Context) error {
 				}
 			}
 			if len(status.Data.SnapshotResponse.ActiveSnapshotProposals) == 0 {
-				fmt.Print("Rocket Pool has no Snapshot governance proposals being voted on.\n")
+				fmt.Println("Rocket Pool has no Snapshot governance proposals being voted on.")
 			} else {
 				fmt.Printf("Rocket Pool has %d Snapshot governance proposal(s) being voted on. You have voted on %d of those. See details using 'rocketpool network dao-proposals'.\n", len(status.Data.SnapshotResponse.ActiveSnapshotProposals), voteCount)
 			}
-			fmt.Println("")
 		}
+		fmt.Println()
 
 		// Onchain voting status
 		fmt.Printf("%s=== Onchain Voting ===%s\n", terminal.ColorGreen, terminal.ColorReset)

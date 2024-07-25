@@ -100,7 +100,9 @@ type NodeStatusData struct {
 		Error                   string                          `json:"error"`
 		ActiveSnapshotProposals []*sharedtypes.SnapshotProposal `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
-	Alerts []NodeAlert `json:"alerts"`
+	Alerts                     []NodeAlert    `json:"alerts"`
+	SignallingAddress          common.Address `json:"signallingAddress"`
+	SignallingAddressFormatted string         `json:"signallingAddressFormatted"`
 }
 
 type NodeRegisterData struct {
