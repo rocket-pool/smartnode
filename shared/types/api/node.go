@@ -69,8 +69,6 @@ type NodeStatusData struct {
 	PendingMaximumRplStake            *big.Int       `json:"pendingMaximumRplStake"`
 	PendingBorrowedCollateralRatio    float64        `json:"pendingBorrowedCollateralRatio"`
 	PendingBondedCollateralRatio      float64        `json:"pendingBondedCollateralRatio"`
-	SnapshotVotingDelegate            common.Address `json:"votingDelegate"`
-	SnapshotVotingDelegateFormatted   string         `json:"votingDelegateFormatted"`
 	IsVotingInitialized               bool           `json:"isVotingInitialized"`
 	OnchainVotingDelegate             common.Address `json:"onchainVotingDelegate"`
 	OnchainVotingDelegateFormatted    string         `json:"onchainVotingDelegateFormatted"`
@@ -100,7 +98,9 @@ type NodeStatusData struct {
 		Error                   string                          `json:"error"`
 		ActiveSnapshotProposals []*sharedtypes.SnapshotProposal `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
-	Alerts []NodeAlert `json:"alerts"`
+	Alerts                     []NodeAlert    `json:"alerts"`
+	SignallingAddress          common.Address `json:"signallingAddress"`
+	SignallingAddressFormatted string         `json:"signallingAddressFormatted"`
 }
 
 type NodeRegisterData struct {

@@ -69,21 +69,21 @@ type nodeStatusContext struct {
 	rp       *rocketpool.RocketPool
 	ec       eth.IExecutionClient
 	bc       beacon.IBeaconClient
-	snapshot *contracts.SnapshotDelegation
+	registry *contracts.RocketSignerRegistry
 
-	node         *node.Node
-	networkMgr   *network.NetworkManager
-	mpMgr        *minipool.MinipoolManager
-	odaoMember   *oracle.OracleDaoMember
-	pSettings    *protocol.ProtocolDaoSettings
-	oSettings    *oracle.OracleDaoSettings
-	rpl          *tokens.TokenRpl
-	rplBalance   *big.Int
-	fsrpl        *tokens.TokenRplFixedSupply
-	fsrplBalance *big.Int
-	reth         *tokens.TokenReth
-	rethBalance  *big.Int
-	delegate     common.Address
+	node              *node.Node
+	networkMgr        *network.NetworkManager
+	mpMgr             *minipool.MinipoolManager
+	odaoMember        *oracle.OracleDaoMember
+	pSettings         *protocol.ProtocolDaoSettings
+	oSettings         *oracle.OracleDaoSettings
+	rpl               *tokens.TokenRpl
+	rplBalance        *big.Int
+	fsrpl             *tokens.TokenRplFixedSupply
+	fsrplBalance      *big.Int
+	reth              *tokens.TokenReth
+	rethBalance       *big.Int
+	signallingAddress common.Address
 }
 
 func (c *nodeStatusContext) Initialize() (types.ResponseStatus, error) {
@@ -92,8 +92,8 @@ func (c *nodeStatusContext) Initialize() (types.ResponseStatus, error) {
 	c.rp = sp.GetRocketPool()
 	c.ec = sp.GetEthClient()
 	c.bc = sp.GetBeaconClient()
-	c.snapshot = sp.GetSnapshotDelegation()
 	nodeAddress, _ := sp.GetWallet().GetAddress()
+	currentNetwork := c.cfg.GetNetworkResources().Network
 
 	// Requirements
 	err := sp.RequireNodeAddress()
@@ -103,6 +103,10 @@ func (c *nodeStatusContext) Initialize() (types.ResponseStatus, error) {
 	status, err := sp.RequireRocketPoolContracts(c.handler.ctx)
 	if err != nil {
 		return status, err
+	}
+	c.registry = sp.GetRocketSignerRegistry()
+	if c.registry == nil {
+		return types.ResponseStatus_Error, fmt.Errorf("Network [%v] does not have a signer registry contract.", currentNetwork)
 	}
 
 	// Bindings
@@ -190,10 +194,9 @@ func (c *nodeStatusContext) GetState(mc *batch.MultiCaller) {
 	c.fsrpl.BalanceOf(mc, &c.fsrplBalance, c.node.Address)
 	c.reth.BalanceOf(mc, &c.rethBalance, c.node.Address)
 
-	// Snapshot
-	if c.snapshot != nil {
-		c.snapshot.Delegation(mc, &c.delegate, c.node.Address, c.cfg.GetVotingSnapshotID())
-	}
+	// Snapshot Registry
+	c.registry.NodeToSigner(mc, &c.signallingAddress, c.node.Address)
+
 }
 
 func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
@@ -261,19 +264,17 @@ func (c *nodeStatusContext) PrepareData(data *api.NodeStatusData, opts *bind.Tra
 	data.EthMatchedLimit = collateral.EthMatchedLimit
 	data.PendingMatchAmount = collateral.PendingMatchAmount
 
-	// Snapshot
-	if c.snapshot != nil {
-		emptyAddress := common.Address{}
-		data.SnapshotVotingDelegate = c.delegate
-		if data.SnapshotVotingDelegate != emptyAddress {
-			data.SnapshotVotingDelegateFormatted = utils.GetFormattedAddress(c.ec, data.SnapshotVotingDelegate)
-		}
-		props, err := voting.GetSnapshotProposals(c.cfg, c.node.Address, c.delegate, true)
-		if err != nil {
-			data.SnapshotResponse.Error = fmt.Sprintf("error getting snapshot proposals: %s", err.Error())
-		} else {
-			data.SnapshotResponse.ActiveSnapshotProposals = props
-		}
+	// Get the signalling address and active snapshot proposals
+	emptyAddress := common.Address{}
+	data.SignallingAddress = c.signallingAddress
+	if data.SignallingAddress != emptyAddress {
+		data.SignallingAddressFormatted = utils.GetFormattedAddress(c.ec, c.signallingAddress)
+	}
+	props, err := voting.GetSnapshotProposals(c.cfg, c.node.Address, c.signallingAddress, true)
+	if err != nil {
+		data.SnapshotResponse.Error = fmt.Sprintf("error getting snapshot proposals: %s", err.Error())
+	} else {
+		data.SnapshotResponse.ActiveSnapshotProposals = props
 	}
 
 	// Fee recipient and smoothing pool
