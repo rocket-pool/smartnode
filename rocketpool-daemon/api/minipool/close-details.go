@@ -1,7 +1,9 @@
 package minipool
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"net/url"
 
@@ -15,6 +17,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/node"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/v2/types"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -28,7 +31,9 @@ type minipoolCloseDetailsContextFactory struct {
 
 func (f *minipoolCloseDetailsContextFactory) Create(args url.Values) (*MinipoolCloseDetailsContext, error) {
 	c := &MinipoolCloseDetailsContext{
-		Handler: f.handler,
+		ServiceProvider: f.handler.serviceProvider,
+		Logger:          f.handler.logger.Logger,
+		Context:         f.handler.ctx,
 	}
 	return c, nil
 }
@@ -44,14 +49,18 @@ func (f *minipoolCloseDetailsContextFactory) RegisterRoute(router *mux.Router) {
 // ===============
 
 type MinipoolCloseDetailsContext struct {
-	Handler *MinipoolHandler
+	// Dependencies
+	ServiceProvider services.ISmartNodeServiceProvider
+	Logger          *slog.Logger
+	Context         context.Context
 
+	// Services
 	rp *rocketpool.RocketPool
 	bc beacon.IBeaconClient
 }
 
 func (c *MinipoolCloseDetailsContext) Initialize() (types.ResponseStatus, error) {
-	sp := c.Handler.serviceProvider
+	sp := c.ServiceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 	return types.ResponseStatus_Success, nil
@@ -83,7 +92,7 @@ func (c *MinipoolCloseDetailsContext) GetMinipoolDetails(mc *batch.MultiCaller, 
 }
 
 func (c *MinipoolCloseDetailsContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolCloseDetailsData) (types.ResponseStatus, error) {
-	ctx := c.Handler.ctx
+	ctx := c.Context
 
 	// Get the current ETH balances of each minipool
 	balances, err := c.rp.BalanceBatcher.GetEthBalances(addresses, nil)

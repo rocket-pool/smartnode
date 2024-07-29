@@ -1,7 +1,9 @@
 package minipool
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"math/big"
 	"net/url"
 	"time"
@@ -14,7 +16,6 @@ import (
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/api/types"
 	"github.com/rocket-pool/node-manager-core/beacon"
-	rpbeacon "github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/rocketpool-go/v2/core"
 	"github.com/rocket-pool/rocketpool-go/v2/dao/oracle"
@@ -24,6 +25,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/v2/tokens"
 	rptypes "github.com/rocket-pool/rocketpool-go/v2/types"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/services"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
@@ -35,15 +37,17 @@ type minipoolStatusContextFactory struct {
 	handler *MinipoolHandler
 }
 
-func (f *minipoolStatusContextFactory) Create(args url.Values) (*minipoolStatusContext, error) {
-	c := &minipoolStatusContext{
-		handler: f.handler,
+func (f *minipoolStatusContextFactory) Create(args url.Values) (*MinipoolStatusContext, error) {
+	c := &MinipoolStatusContext{
+		ServiceProvider: f.handler.serviceProvider,
+		Logger:          f.handler.logger.Logger,
+		Context:         f.handler.ctx,
 	}
 	return c, nil
 }
 
 func (f *minipoolStatusContextFactory) RegisterRoute(router *mux.Router) {
-	RegisterMinipoolRoute[*minipoolStatusContext, api.MinipoolStatusData](
+	RegisterMinipoolRoute[*MinipoolStatusContext, api.MinipoolStatusData](
 		router, "status", f, f.handler.ctx, f.handler.logger, f.handler.serviceProvider,
 	)
 }
@@ -52,29 +56,35 @@ func (f *minipoolStatusContextFactory) RegisterRoute(router *mux.Router) {
 // === Context ===
 // ===============
 
-type minipoolStatusContext struct {
-	handler *MinipoolHandler
-	rp      *rocketpool.RocketPool
-	bc      beacon.IBeaconClient
+type MinipoolStatusContext struct {
+	// Dependencies
+	ServiceProvider services.ISmartNodeServiceProvider
+	Logger          *slog.Logger
+	Context         context.Context
 
-	delegate      *core.Contract
-	pSettings     *protocol.ProtocolDaoSettings
-	oSettings     *oracle.OracleDaoSettings
-	reth          *tokens.TokenReth
-	rpl           *tokens.TokenRpl
-	fsrpl         *tokens.TokenRplFixedSupply
+	// Services
+	rp        *rocketpool.RocketPool
+	bc        beacon.IBeaconClient
+	delegate  *core.Contract
+	pSettings *protocol.ProtocolDaoSettings
+	oSettings *oracle.OracleDaoSettings
+	reth      *tokens.TokenReth
+	rpl       *tokens.TokenRpl
+	fsrpl     *tokens.TokenRplFixedSupply
+
+	// On-chain data
 	rethBalances  []*big.Int
 	rplBalances   []*big.Int
 	fsrplBalances []*big.Int
 }
 
-func (c *minipoolStatusContext) Initialize() (types.ResponseStatus, error) {
-	sp := c.handler.serviceProvider
+func (c *MinipoolStatusContext) Initialize() (types.ResponseStatus, error) {
+	sp := c.ServiceProvider
 	c.rp = sp.GetRocketPool()
 	c.bc = sp.GetBeaconClient()
 
 	// Requirements
-	err := sp.RequireBeaconClientSynced(c.handler.ctx)
+	err := sp.RequireBeaconClientSynced(c.Context)
 	if err != nil {
 		return types.ResponseStatus_ClientsNotSynced, err
 	}
@@ -109,7 +119,7 @@ func (c *minipoolStatusContext) Initialize() (types.ResponseStatus, error) {
 	return types.ResponseStatus_Success, nil
 }
 
-func (c *minipoolStatusContext) GetState(node *node.Node, mc *batch.MultiCaller) {
+func (c *MinipoolStatusContext) GetState(node *node.Node, mc *batch.MultiCaller) {
 	eth.AddQueryablesToMulticall(mc,
 		c.pSettings.Minipool.LaunchTimeout,
 		c.oSettings.Minipool.ScrubPeriod,
@@ -117,7 +127,7 @@ func (c *minipoolStatusContext) GetState(node *node.Node, mc *batch.MultiCaller)
 	)
 }
 
-func (c *minipoolStatusContext) CheckState(node *node.Node, response *api.MinipoolStatusData) bool {
+func (c *MinipoolStatusContext) CheckState(node *node.Node, response *api.MinipoolStatusData) bool {
 	// Provision the token balance counts
 	minipoolCount := node.MinipoolCount.Formatted()
 	c.rethBalances = make([]*big.Int, minipoolCount)
@@ -126,7 +136,7 @@ func (c *minipoolStatusContext) CheckState(node *node.Node, response *api.Minipo
 	return true
 }
 
-func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
+func (c *MinipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp minipool.IMinipool, index int) {
 	address := mp.Common().Address
 	eth.QueryAllFields(mp, mc)
 	c.reth.BalanceOf(mc, &c.rethBalances[index], address)
@@ -134,8 +144,8 @@ func (c *minipoolStatusContext) GetMinipoolDetails(mc *batch.MultiCaller, mp min
 	c.fsrpl.BalanceOf(mc, &c.fsrplBalances[index], address)
 }
 
-func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStatusData) (types.ResponseStatus, error) {
-	ctx := c.handler.ctx
+func (c *MinipoolStatusContext) PrepareData(addresses []common.Address, mps []minipool.IMinipool, data *api.MinipoolStatusData) (types.ResponseStatus, error) {
+	ctx := c.Context
 	// Data
 	var wg1 errgroup.Group
 	var eth2Config beacon.Eth2Config
@@ -189,7 +199,7 @@ func (c *minipoolStatusContext) PrepareData(addresses []common.Address, mps []mi
 	promotionScrubPeriod := c.oSettings.Minipool.PromotionScrubPeriod.Formatted()
 
 	// Get the statuses on Beacon
-	pubkeys := make([]rpbeacon.ValidatorPubkey, 0, len(addresses))
+	pubkeys := make([]beacon.ValidatorPubkey, 0, len(addresses))
 	for _, mp := range mps {
 		mpCommon := mp.Common()
 		status := mpCommon.Status.Formatted()
