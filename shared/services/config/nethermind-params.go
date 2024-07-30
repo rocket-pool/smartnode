@@ -134,8 +134,8 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 		FullPruningMaxDegreeOfParallelism: config.Parameter{
 			ID:                 "fullPruningMaxDegreeOfParallelism",
 			Name:               "Full pruning parallelism",
-			Description:        "The number of threads allocated to concurrently by Nethermind to prune data.",
-			Type:               config.ParameterType_Uint,
+			Description:        "This option will be used to determine the number of threads allocated to concurrently by Nethermind to prune data.",
+			Type:               config.ParameterType_Int,
 			Default:            map[config.Network]interface{}{config.Network_All: 0},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
