@@ -43,6 +43,9 @@ type NethermindConfig struct {
 	// Nethermind's remaining disk space to trigger a pruning
 	FullPruningThresholdMb config.Parameter `yaml:"fullPruningThresholdMb,omitempty"`
 
+	// The number of parallel tasks/threads that can be used by pruning
+	FullPruningMaxDegreeOfParallelism config.Parameter `yaml:"fullPruningMaxDegreeOfParallelism,omitempty"`
+
 	// Additional modules to enable on the primary JSON RPC endpoint
 	AdditionalModules config.Parameter `yaml:"additionalModules,omitempty"`
 
@@ -123,6 +126,17 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Description:        "When the volume free space (in MB) hits this level, Nethermind will automatically start full pruning to reclaim disk space.",
 			Type:               config.ParameterType_Uint,
 			Default:            map[config.Network]interface{}{config.Network_Mainnet: uint64(375809), config.Network_Holesky: uint64(51200), config.Network_Devnet: uint64(51200)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		FullPruningMaxDegreeOfParallelism: config.Parameter{
+			ID:                 "fullPruningMaxDegreeOfParallelism",
+			Name:               "Full pruning parallelism",
+			Description:        "This option will be used to determine the number of threads allocated to concurrently by Nethermind to prune data.",
+			Type:               config.ParameterType_Int,
+			Default:            map[config.Network]interface{}{config.Network_All: 0},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -255,6 +269,7 @@ func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
 		&cfg.PruneMemSize,
 		&cfg.FullPruneMemoryBudget,
 		&cfg.FullPruningThresholdMb,
+		&cfg.FullPruningMaxDegreeOfParallelism,
 		&cfg.AdditionalModules,
 		&cfg.AdditionalUrls,
 		&cfg.ContainerTag,
