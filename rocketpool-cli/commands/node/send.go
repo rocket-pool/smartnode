@@ -4,15 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/urfave/cli/v2"
 
-	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/terminal"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
+	"github.com/rocket-pool/smartnode/v2/shared/ens"
 )
 
 func nodeSend(c *cli.Context, amount float64, token string, toAddressOrEns string) error {
@@ -26,23 +25,10 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrEns strin
 	amountWei := eth.EthToWei(amount)
 
 	// Get the recipient
-	var toAddress common.Address
-	var toAddressString string
-	if strings.Contains(toAddressOrEns, ".") {
-		response, err := rp.Api.Node.ResolveEns(common.Address{}, toAddressOrEns)
-		if err != nil {
-			return err
-		}
-		toAddress = response.Data.Address
-		toAddressString = fmt.Sprintf("%s (%s)", toAddressOrEns, toAddress.Hex())
-	} else {
-		var err error
-		toAddress, err = input.ValidateAddress("to address", toAddressOrEns)
-		if err != nil {
-			return err
-		}
-		toAddressString = toAddress.Hex()
-	}
+	addr := ens.NewAddressOrENSData()
+	addr.ResolveAddressOrEns(c, toAddressOrEns)
+	toAddress := addr.GetToAddress()
+	toAddressString := addr.GetToAddressString()
 
 	// Build the TX
 	response, err := rp.Api.Node.Send(amountWei, token, toAddress)
