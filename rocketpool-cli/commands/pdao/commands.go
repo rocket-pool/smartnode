@@ -160,7 +160,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:   "Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)",
 				Action: func(c *cli.Context) error {
 					// Run
-					return initializeVoting(c)
+					return initializeVotingPrompt(c)
 				},
 			},
 
