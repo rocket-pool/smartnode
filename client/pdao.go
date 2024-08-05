@@ -195,12 +195,17 @@ func (r *PDaoRequester) ProposeSetting(contractName rocketpool.ContractName, set
 	return client.SendGetRequest[api.ProtocolDaoProposeSettingData](r, "setting/propose", "ProposeSetting", args)
 }
 
-// Initialize voting so the node can vote on Protocol DAO proposals
-func (r *PDaoRequester) InitializeVoting(delegate common.Address) (*types.ApiResponse[api.ProtocolDaoInitializeVotingData], error) {
+// Initialize voting with delegate unlocks the node's voting power and sets the delegate in one transasction
+func (r *PDaoRequester) InitializeVotingWithDelegate(delegate common.Address) (*types.ApiResponse[api.ProtocolDaoInitializeVotingData], error) {
 	args := map[string]string{
 		"delegate": delegate.Hex(),
 	}
-	return client.SendGetRequest[api.ProtocolDaoInitializeVotingData](r, "initialize-voting", "InitializeVoting", args)
+	return client.SendGetRequest[api.ProtocolDaoInitializeVotingData](r, "initialize-voting-with-delegate", "InitializeVotingWithDelegate", args)
+}
+
+// Initialize voting so the node can vote on Protocol DAO proposals
+func (r *PDaoRequester) InitializeVoting() (*types.ApiResponse[api.ProtocolDaoInitializeVotingData], error) {
+	return client.SendGetRequest[api.ProtocolDaoInitializeVotingData](r, "initialize-voting", "InitializeVoting", nil)
 }
 
 // Set the delegate for voting on Protocol DAO proposals
