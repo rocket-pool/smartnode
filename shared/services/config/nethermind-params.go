@@ -136,7 +136,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Name:               "Full pruning parallelism",
 			Description:        "This option will be used to determine the number of threads allocated to concurrently by Nethermind to prune data.",
 			Type:               config.ParameterType_Int,
-			Default:            map[config.Network]interface{}{config.Network_All: 0},
+			Default:            map[config.Network]interface{}{config.Network_All: int64(0)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
