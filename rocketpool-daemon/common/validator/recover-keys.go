@@ -234,3 +234,352 @@ func (m *ValidatorManager) CheckForAndRecoverCustomMinipoolKeys(pubkeyMap map[be
 
 	return pubkeyMap, nil
 }
+
+func (m *ValidatorManager) RecoverMinipoolKeysWithPartial(
+	testOnly bool,
+	enablePartialRebuild bool,
+) ([]beacon.ValidatorPubkey, map[beacon.ValidatorPubkey]error, error) {
+	if err := m.checkWalletStatus(); err != nil {
+		return []beacon.ValidatorPubkey{}, map[beacon.ValidatorPubkey]error{}, err
+	}
+
+	rpNode, mpMgr, err := m.initializeBindings()
+	if err != nil {
+		return []beacon.ValidatorPubkey{}, map[beacon.ValidatorPubkey]error{}, err
+	}
+
+	recoverablePubkeys, pubkeyMap, err := m.getMinipools(rpNode, mpMgr)
+	if err != nil {
+		return []beacon.ValidatorPubkey{}, map[beacon.ValidatorPubkey]error{}, err
+	}
+
+	recoverableCustomPubkeys, unrecoverableCustomPubkeys := m.CheckForAndRecoverCustomMinipoolKeysWithPartial(pubkeyMap, testOnly, enablePartialRebuild)
+
+	// Update pubkeyMap to exclude successfully recovered custom keys
+	for pubkey := range recoverableCustomPubkeys {
+		if recoverableCustomPubkeys[pubkey] {
+			delete(pubkeyMap, pubkey)
+		}
+	}
+
+	// Recover conventionally generated keys
+	recoverablePubkeys, nonRecoverablePubkeys := m.recoverConventionalKeys(pubkeyMap, testOnly, enablePartialRebuild)
+
+	// Merge errors from conventional key recovery with those from custom key recovery if partial rebuild is disabled
+	if !enablePartialRebuild {
+		for pubkey, err := range nonRecoverablePubkeys {
+			unrecoverableCustomPubkeys[pubkey] = err
+		}
+		return recoverablePubkeys, unrecoverableCustomPubkeys, nil
+	}
+
+	return recoverablePubkeys, nonRecoverablePubkeys, nil
+}
+
+func (m *ValidatorManager) CheckForAndRecoverCustomMinipoolKeysWithPartial(
+	pubkeyMap map[beacon.ValidatorPubkey]bool,
+	testOnly bool,
+	enablePartialRebuild bool,
+) (map[beacon.ValidatorPubkey]bool, map[beacon.ValidatorPubkey]error) {
+	customKeyDir := m.cfg.GetCustomKeyPath()
+	info, err := os.Stat(customKeyDir)
+	if os.IsNotExist(err) || !info.IsDir() {
+		return pubkeyMap, nil
+	}
+
+	recoveredKeys := make(map[beacon.ValidatorPubkey]bool)
+	nonRecoverableKeys := make(map[beacon.ValidatorPubkey]error)
+
+	files, err := os.ReadDir(customKeyDir)
+	if err != nil {
+		for pubkey := range pubkeyMap {
+			nonRecoverableKeys[pubkey] = fmt.Errorf("error enumerating custom keystores: %w", err)
+		}
+		return pubkeyMap, nonRecoverableKeys
+	}
+
+	if err := eth2types.InitBLS(); err != nil {
+		for pubkey := range pubkeyMap {
+			nonRecoverableKeys[pubkey] = fmt.Errorf("error initializing BLS: %w", err)
+		}
+		return pubkeyMap, nonRecoverableKeys
+	}
+
+	var keysToStore []*api.ValidatorKeystore
+	var passwords map[string]string
+
+	if len(files) > 0 {
+		passwords, err = m.loadCustomKeyPasswords()
+		if err != nil {
+			for pubkey := range pubkeyMap {
+				nonRecoverableKeys[pubkey] = err
+			}
+			return pubkeyMap, nonRecoverableKeys
+		}
+
+		for _, file := range files {
+			keystore, err := m.readCustomKeystore(file)
+			if err != nil {
+				nonRecoverableKeys[beacon.ValidatorPubkey{}] = err
+				if !enablePartialRebuild {
+					return nil, nonRecoverableKeys
+				}
+				continue
+			}
+
+			if _, exists := pubkeyMap[keystore.Pubkey]; !exists {
+				continue
+			}
+
+			password, err := m.getCustomKeyPassword(keystore.Pubkey, passwords)
+			if err != nil {
+				nonRecoverableKeys[keystore.Pubkey] = err
+				if !enablePartialRebuild {
+					return nil, nonRecoverableKeys
+				}
+				continue
+			}
+
+			privateKey, err := m.decryptCustomKeystore(keystore, password)
+			if err != nil {
+				nonRecoverableKeys[keystore.Pubkey] = err
+				if !enablePartialRebuild {
+					return nil, nonRecoverableKeys
+				}
+				continue
+			}
+
+			reconstructedPubkey := beacon.ValidatorPubkey(privateKey.PublicKey().Marshal())
+			if reconstructedPubkey != keystore.Pubkey {
+				nonRecoverableKeys[keystore.Pubkey] = fmt.Errorf("private keystore file %s claims to be for validator %s but it's for validator %s", file.Name(), keystore.Pubkey.Hex(), reconstructedPubkey.Hex())
+				if !enablePartialRebuild {
+					return nil, nonRecoverableKeys
+				}
+				continue
+			}
+
+			if !testOnly {
+				if enablePartialRebuild {
+					// Store immediately for partial rebuild case
+					if err := m.StoreValidatorKey(&privateKey, keystore.Path); err != nil {
+						nonRecoverableKeys[reconstructedPubkey] = err
+						continue
+					}
+					recoveredKeys[reconstructedPubkey] = true
+					delete(pubkeyMap, reconstructedPubkey)
+				} else {
+					// Collect keys to store later
+					keysToStore = append(keysToStore, &keystore)
+					recoveredKeys[reconstructedPubkey] = true
+					delete(pubkeyMap, reconstructedPubkey)
+				}
+			} else {
+				recoveredKeys[reconstructedPubkey] = true
+				delete(pubkeyMap, reconstructedPubkey)
+			}
+		}
+	}
+
+	// Handle case where partial rebuild is disabled
+	if !enablePartialRebuild {
+		if len(pubkeyMap) == 0 {
+			for _, keystore := range keysToStore {
+				privateKey, err := m.decryptCustomKeystore(*keystore, passwords[keystore.Pubkey.Hex()])
+				if err != nil {
+					nonRecoverableKeys[keystore.Pubkey] = err
+					continue
+				}
+
+				if err := m.StoreValidatorKey(&privateKey, keystore.Path); err != nil {
+					nonRecoverableKeys[keystore.Pubkey] = err
+					continue
+				}
+			}
+		} else {
+			// Some keys were not recoverable
+			for pubkey := range pubkeyMap {
+				nonRecoverableKeys[pubkey] = fmt.Errorf("key not found or could not be recovered")
+			}
+		}
+	}
+
+	return recoveredKeys, nonRecoverableKeys
+}
+
+func (m *ValidatorManager) checkWalletStatus() error {
+	status, err := m.wallet.GetStatus()
+	if err != nil {
+		return err
+	}
+	if !wallet.IsWalletReady(status) {
+		return fmt.Errorf("wallet is not ready")
+	}
+	return nil
+}
+
+func (m *ValidatorManager) initializeBindings() (*node.Node, *minipool.MinipoolManager, error) {
+	status, err := m.wallet.GetStatus()
+	address := status.Wallet.WalletAddress
+	rpNode, err := node.NewNode(m.rp, address)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	mpMgr, err := minipool.NewMinipoolManager(m.rp)
+	if err != nil {
+		return nil, nil, err
+	}
+	return rpNode, mpMgr, nil
+}
+
+func (m *ValidatorManager) getMinipools(node *node.Node, mpMgr *minipool.MinipoolManager) ([]beacon.ValidatorPubkey, map[beacon.ValidatorPubkey]bool, error) {
+	err := m.queryMgr.Query(nil, nil, node.ValidatingMinipoolCount)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	addresses, err := node.GetValidatingMinipoolAddresses(node.ValidatingMinipoolCount.Formatted(), nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	mps, err := mpMgr.CreateMinipoolsFromAddresses(addresses, false, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pubkeyMap := map[beacon.ValidatorPubkey]bool{}
+	recoverablePubkeys := []beacon.ValidatorPubkey{}
+	zeroPubkey := beacon.ValidatorPubkey{}
+
+	err = m.queryMgr.BatchQuery(len(mps), pubkeyBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mps[i].Common().Pubkey.AddToQuery(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	for _, mp := range mps {
+		pubkey := mp.Common().Pubkey.Get()
+		if pubkey != zeroPubkey {
+			pubkeyMap[pubkey] = true
+			recoverablePubkeys = append(recoverablePubkeys, pubkey)
+		}
+	}
+
+	return recoverablePubkeys, pubkeyMap, nil
+}
+
+func (m *ValidatorManager) recoverConventionalKeys(pubkeyMap map[beacon.ValidatorPubkey]bool, testOnly bool, enablePartialRebuild bool) ([]beacon.ValidatorPubkey, map[beacon.ValidatorPubkey]error) {
+	recoverablePubkeys := []beacon.ValidatorPubkey{}
+	nonRecoverablePubkeys := map[beacon.ValidatorPubkey]error{}
+
+	bucketStart := uint64(0)
+	for {
+		if bucketStart >= bucketLimit {
+			break
+		}
+		bucketEnd := bucketStart + bucketSize
+		if bucketEnd > bucketLimit {
+			bucketEnd = bucketLimit
+		}
+
+		keys, err := m.GetValidatorKeys(bucketStart, bucketEnd-bucketStart)
+		if err != nil {
+			if !enablePartialRebuild {
+				return nil, map[beacon.ValidatorPubkey]error{beacon.ValidatorPubkey{}: err}
+			}
+			continue
+		}
+
+		for _, validatorKey := range keys {
+			if exists := pubkeyMap[validatorKey.PublicKey]; exists {
+				delete(pubkeyMap, validatorKey.PublicKey)
+				if !testOnly {
+					if err := m.SaveValidatorKey(validatorKey); err != nil {
+						nonRecoverablePubkeys[validatorKey.PublicKey] = err
+						if !enablePartialRebuild {
+							return recoverablePubkeys, nonRecoverablePubkeys
+						}
+					} else {
+						recoverablePubkeys = append(recoverablePubkeys, validatorKey.PublicKey)
+					}
+				}
+			}
+		}
+
+		if len(pubkeyMap) == 0 {
+			break
+		}
+
+		bucketStart = bucketEnd
+	}
+
+	for pubkey := range pubkeyMap {
+		nonRecoverablePubkeys[pubkey] = fmt.Errorf("key not found or could not be recovered")
+	}
+
+	return recoverablePubkeys, nonRecoverablePubkeys
+}
+
+func (m *ValidatorManager) loadCustomKeyPasswords() (map[string]string, error) {
+	passwordFile := m.cfg.GetCustomKeyPasswordFilePath()
+	fileBytes, err := os.ReadFile(passwordFile)
+	if err != nil {
+		return nil, fmt.Errorf("password file could not be loaded: %w", err)
+	}
+	passwords := map[string]string{}
+	err = yaml.Unmarshal(fileBytes, &passwords)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling custom keystore password file: %w", err)
+	}
+	return passwords, nil
+}
+
+func (m *ValidatorManager) readCustomKeystore(file os.DirEntry) (api.ValidatorKeystore, error) {
+	bytes, err := os.ReadFile(filepath.Join(m.cfg.GetCustomKeyPath(), file.Name()))
+	if err != nil {
+		return api.ValidatorKeystore{}, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
+	}
+	keystore := api.ValidatorKeystore{}
+	err = json.Unmarshal(bytes, &keystore)
+	if err != nil {
+		return api.ValidatorKeystore{}, fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
+	}
+	return keystore, nil
+}
+
+func (m *ValidatorManager) getCustomKeyPassword(pubkey beacon.ValidatorPubkey, passwords map[string]string) (string, error) {
+	formattedPubkey := strings.ToUpper(utils.RemovePrefix(pubkey.Hex()))
+	password, exists := passwords[formattedPubkey]
+	if !exists {
+		return "", fmt.Errorf("custom keystore for pubkey %s needs a password, but none was provided", pubkey.Hex())
+	}
+	return password, nil
+}
+
+func (m *ValidatorManager) decryptCustomKeystore(keystore api.ValidatorKeystore, password string) (eth2types.BLSPrivateKey, error) {
+	kdf, exists := keystore.Crypto["kdf"]
+	if !exists {
+		return eth2types.BLSPrivateKey{}, fmt.Errorf("error processing custom keystore: \"crypto\" didn't contain a subkey named \"kdf\"")
+	}
+	kdfMap := kdf.(map[string]interface{})
+	function, exists := kdfMap["function"]
+	if !exists {
+		return eth2types.BLSPrivateKey{}, fmt.Errorf("error processing custom keystore: \"crypto.kdf\" didn't contain a subkey named \"function\"")
+	}
+	functionString := function.(string)
+
+	encryptor := eth2ks.New(eth2ks.WithCipher(functionString))
+	decryptedKey, err := encryptor.Decrypt(keystore.Crypto, password)
+	if err != nil {
+		return eth2types.BLSPrivateKey{}, fmt.Errorf("error decrypting keystore: %w", err)
+	}
+	privateKey, err := eth2types.BLSPrivateKeyFromBytes(decryptedKey)
+	if err != nil {
+		return eth2types.BLSPrivateKey{}, fmt.Errorf("error recreating private key: %w", err)
+	}
+	return *privateKey, nil
+}
