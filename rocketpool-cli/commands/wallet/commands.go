@@ -94,6 +94,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:    "rebuild",
 				Aliases: []string{"b"},
 				Usage:   "Rebuild validator keystores from derived keys",
+				Flags: []cli.Flag{
+					enablePartialRebuild,
+				},
 				Action: func(c *cli.Context) error {
 					// Validate args
 					utils.ValidateArgCount(c, 0)

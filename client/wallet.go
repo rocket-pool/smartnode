@@ -82,8 +82,8 @@ func (r *WalletRequester) Masquerade(address common.Address) (*types.ApiResponse
 }
 
 // Rebuild the validator keys associated with the wallet
-func (r *WalletRequester) Rebuild() (*types.ApiResponse[api.WalletRebuildData], error) {
-	return client.SendGetRequest[api.WalletRebuildData](r, "rebuild", "Rebuild", nil)
+func (r *WalletRequester) Rebuild(enablePartialRebuild bool) (*types.ApiResponse[api.WalletRebuildData], error) {
+	return client.SendGetRequest[api.WalletRebuildData](r, "rebuild", "Rebuild", map[string]string{"enable-partial-rebuild": strconv.FormatBool(enablePartialRebuild)})
 }
 
 // Recover wallet

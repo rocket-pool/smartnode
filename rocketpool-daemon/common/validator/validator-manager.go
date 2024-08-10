@@ -3,21 +3,33 @@ package validator
 import (
 	"bytes"
 	"fmt"
-
+	"github.com/goccy/go-json"
+	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
 	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/node/validator"
-	"github.com/rocket-pool/node-manager-core/node/wallet"
+	walletnode "github.com/rocket-pool/node-manager-core/node/wallet"
+	walletcore "github.com/rocket-pool/node-manager-core/wallet"
+	"github.com/rocket-pool/rocketpool-go/v2/minipool"
+	"github.com/rocket-pool/rocketpool-go/v2/node"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/config"
+	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	types "github.com/wealdtech/go-eth2-types/v2"
+	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	"gopkg.in/yaml.v3"
+	"os"
+	"path/filepath"
 )
 
 // Config
 const (
 	MaxValidatorKeyRecoverAttempts uint64 = 1000
+	bucketSize                     uint64 = 20
+	bucketLimit                    uint64 = 2000
+	pubkeyBatchSize                int    = 500
 )
 
 // A validator private/public key pair
@@ -32,13 +44,13 @@ type ValidatorKey struct {
 type ValidatorManager struct {
 	cfg             *config.SmartNodeConfig
 	rp              *rocketpool.RocketPool
-	wallet          *wallet.Wallet
+	wallet          *walletnode.Wallet
 	queryMgr        *eth.QueryManager
 	keystoreManager *validator.ValidatorManager
 	nextAccount     uint64
 }
 
-func NewValidatorManager(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, walletImpl *wallet.Wallet, queryMgr *eth.QueryManager) (*ValidatorManager, error) {
+func NewValidatorManager(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, walletImpl *walletnode.Wallet, queryMgr *eth.QueryManager) (*ValidatorManager, error) {
 	// Make a validator manager
 	validatorManager := validator.NewValidatorManager(cfg.GetValidatorsFolderPath())
 
@@ -271,4 +283,140 @@ func (m *ValidatorManager) checkIfReady() error {
 		return err
 	}
 	return utils.CheckIfWalletReady(status)
+}
+
+func (m *ValidatorManager) GetWalletStatus() (walletcore.WalletStatus, error) {
+	status, err := m.wallet.GetStatus()
+	if err != nil {
+		return status, err
+	}
+	if !walletcore.IsWalletReady(status) {
+		return status, fmt.Errorf("wallet is not ready")
+	}
+	return status, nil
+}
+
+func (m *ValidatorManager) InitializeBindings(status walletcore.WalletStatus) (*node.Node, *minipool.MinipoolManager, error) {
+	address := status.Wallet.WalletAddress
+	rpNode, err := node.NewNode(m.rp, address)
+
+	if err != nil {
+		return nil, nil, err
+	}
+
+	mpMgr, err := minipool.NewMinipoolManager(m.rp)
+	if err != nil {
+		return nil, nil, err
+	}
+	return rpNode, mpMgr, nil
+}
+
+func (m *ValidatorManager) GetMinipools(node *node.Node, mpMgr *minipool.MinipoolManager) (map[beacon.ValidatorPubkey]bool, error) {
+	err := m.queryMgr.Query(nil, nil, node.ValidatingMinipoolCount)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node's validating minipool count: %w", err)
+	}
+
+	addresses, err := node.GetValidatingMinipoolAddresses(node.ValidatingMinipoolCount.Formatted(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node's validating minipool addresses: %w", err)
+	}
+
+	mps, err := mpMgr.CreateMinipoolsFromAddresses(addresses, false, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating bindings for node's validating minipools: %w", err)
+	}
+
+	publicKeySet := map[beacon.ValidatorPubkey]bool{}
+	zeroPublicKey := beacon.ValidatorPubkey{}
+
+	err = m.queryMgr.BatchQuery(len(mps), pubkeyBatchSize, func(mc *batch.MultiCaller, i int) error {
+		mps[i].Common().Pubkey.AddToQuery(mc)
+		return nil
+	}, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting node's validating minipool pubkeys: %w", err)
+	}
+
+	for _, mp := range mps {
+		publicKey := mp.Common().Pubkey.Get()
+		if publicKey != zeroPublicKey {
+			publicKeySet[publicKey] = true
+		}
+	}
+
+	return publicKeySet, nil
+}
+
+func (m *ValidatorManager) LoadCustomKeyPasswords() (map[string]string, error) {
+	passwordFile := m.cfg.GetCustomKeyPasswordFilePath()
+	fileBytes, err := os.ReadFile(passwordFile)
+	if err != nil {
+		return nil, fmt.Errorf("password file could not be loaded: %w", err)
+	}
+	passwords := map[string]string{}
+	err = yaml.Unmarshal(fileBytes, &passwords)
+	if err != nil {
+		return nil, fmt.Errorf("error unmarshalling custom keystore password file: %w", err)
+	}
+	return passwords, nil
+}
+
+func (m *ValidatorManager) ReadCustomKeystore(file os.DirEntry) (api.ValidatorKeystore, error) {
+	bytes, err := os.ReadFile(filepath.Join(m.cfg.GetCustomKeyPath(), file.Name()))
+	if err != nil {
+		return api.ValidatorKeystore{}, fmt.Errorf("error reading custom keystore %s: %w", file.Name(), err)
+	}
+	keystore := api.ValidatorKeystore{}
+	err = json.Unmarshal(bytes, &keystore)
+	if err != nil {
+		return api.ValidatorKeystore{}, fmt.Errorf("error deserializing custom keystore %s: %w", file.Name(), err)
+	}
+	return keystore, nil
+}
+
+func (m *ValidatorManager) DecryptCustomKeystore(keystore api.ValidatorKeystore, password string) (eth2types.BLSPrivateKey, error) {
+	kdf, exists := keystore.Crypto["kdf"]
+	if !exists {
+		return eth2types.BLSPrivateKey{}, fmt.Errorf("error processing custom keystore: \"crypto\" didn't contain a subkey named \"kdf\"")
+	}
+	kdfMap := kdf.(map[string]interface{})
+	function, exists := kdfMap["function"]
+	if !exists {
+		return eth2types.BLSPrivateKey{}, fmt.Errorf("error processing custom keystore: \"crypto.kdf\" didn't contain a subkey named \"function\"")
+	}
+	functionString := function.(string)
+
+	encryptor := eth2ks.New(eth2ks.WithCipher(functionString))
+	decryptedKey, err := encryptor.Decrypt(keystore.Crypto, password)
+	if err != nil {
+		return eth2types.BLSPrivateKey{}, fmt.Errorf("error decrypting keystore: %w", err)
+	}
+	privateKey, err := eth2types.BLSPrivateKeyFromBytes(decryptedKey)
+	if err != nil {
+		return eth2types.BLSPrivateKey{}, fmt.Errorf("error recreating private key: %w", err)
+	}
+	return *privateKey, nil
+}
+
+func (m *ValidatorManager) LoadFiles() ([]os.DirEntry, error) {
+	customKeyDir := m.cfg.GetCustomKeyPath()
+	info, err := os.Stat(customKeyDir)
+
+	if os.IsNotExist(err) || !info.IsDir() {
+		err := fmt.Errorf("error loading custom keystore location: %w", err)
+		return nil, err
+	}
+
+	keyFiles, err := os.ReadDir(customKeyDir)
+	if err != nil {
+		err := fmt.Errorf("error enumerating custom keystores: %w", err)
+		return nil, err
+	}
+
+	if err := eth2types.InitBLS(); err != nil {
+		err := fmt.Errorf("error initializing BLS: %w", err)
+		return nil, err
+	}
+	return keyFiles, nil
 }
