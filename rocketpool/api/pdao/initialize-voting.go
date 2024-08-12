@@ -49,7 +49,7 @@ func canNodeInitializeVoting(c *cli.Context) (*api.PDAOCanInitializeVotingRespon
 
 	gasInfo, err := network.EstimateInitializeVotingGas(rp, opts)
 	if err != nil {
-		return nil, fmt.Errorf("Could not estimate the gas required to claim RPL: %w", err)
+		return nil, fmt.Errorf("Could not estimate the gas required to initialize voting: %w", err)
 	}
 	response.GasInfo = gasInfo
 
