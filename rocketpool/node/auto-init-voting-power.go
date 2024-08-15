@@ -33,7 +33,7 @@ type autoInitVotingPower struct {
 	nodeAddress    common.Address
 }
 
-func newAutoInitVotingPower(c *cli.Context, logger log.ColorLogger) (*autoInitVotingPower, error) {
+func newAutoInitVotingPower(c *cli.Context, logger log.ColorLogger, gasThreshold float64) (*autoInitVotingPower, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -51,9 +51,6 @@ func newAutoInitVotingPower(c *cli.Context, logger log.ColorLogger) (*autoInitVo
 	if err != nil {
 		return nil, err
 	}
-
-	// Hardcoded to 5 gwei
-	gasThreshold := float64(5)
 
 	// Get the user-requested max fee
 	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
@@ -132,7 +129,6 @@ func (t *autoInitVotingPower) submitInitializeVotingPower() error {
 		return fmt.Errorf("Could not estimate the gas required to initialize voting: %w", err)
 	}
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
-
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
@@ -142,7 +138,7 @@ func (t *autoInitVotingPower) submitInitializeVotingPower() error {
 		}
 	}
 
-	// Print the gas info, t.gasThreshold is hardcoded to 5 gwei
+	// Print the gas info
 	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, t.log, maxFee, t.gasLimit) {
 		return nil
 	}

@@ -161,12 +161,11 @@ func run(c *cli.Context) error {
 			return err
 		}
 	}
-
 	var autoInitVotingPower *autoInitVotingPower
 	// Make sure the user opted into this duty
-	autoInitVP := cfg.Smartnode.AutoInitVP.Value.(bool)
-	if autoInitVP {
-		autoInitVotingPower, err = newAutoInitVotingPower(c, log.NewColorLogger(AutoInitVotingPowerColor))
+	AutoInitVPThreshold := cfg.Smartnode.AutoInitVPThreshold.Value.(float64)
+	if AutoInitVPThreshold != 0 {
+		autoInitVotingPower, err = newAutoInitVotingPower(c, log.NewColorLogger(AutoInitVotingPowerColor), AutoInitVPThreshold)
 		if err != nil {
 			return err
 		}

@@ -110,8 +110,8 @@ type SmartnodeConfig struct {
 	// The toggle for enabling pDAO proposal verification duties
 	VerifyProposals config.Parameter `yaml:"verifyProposals,omitempty"`
 
-	// The toggle for enabling auto initialization of voting power
-	AutoInitVP config.Parameter `yaml:"autoInitVP,omitempty"`
+	// Threshold for automatic vote power initialization transactions
+	AutoInitVPThreshold config.Parameter `yaml:"autoInitVPThreshold,omitempty"`
 
 	///////////////////////////
 	// Non-editable settings //
@@ -329,12 +329,14 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: false,
 		},
 
-		AutoInitVP: config.Parameter{
-			ID:                 "autoInitVP",
-			Name:               "Enable Auto Initialize Voting Power",
-			Description:        "Check this box to opt into automatically initializing voting power. Your node will regularly check if voting power is initialized or not. If the node's voting power is not initialized yet, it will automatically be initialized.",
-			Type:               config.ParameterType_Bool,
-			Default:            map[config.Network]interface{}{config.Network_All: true},
+		AutoInitVPThreshold: config.Parameter{
+			ID:   "autoInitVPThreshold",
+			Name: "Auto-Init Vote Power Gas Threshold",
+			Description: "The Smartnode will regularly check if the node has initialized voting power and attempt to initialize voting power if it isn't initialized.\n\n" +
+				"This threshold is a limit (in gwei) you can set on this automatic transaction; your node will not attempt to initialize voting power if the network suggested fee is below this limit.\n\n" +
+				"A value of 0 will disable this task. Disable this if your node was registered post-houston or your vote power is already initialized.\n\n",
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: float64(5)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -684,7 +686,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.AutoTxGasThreshold,
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
-		&cfg.AutoInitVP,
+		&cfg.AutoInitVPThreshold,
 		&cfg.RewardsTreeMode,
 		&cfg.PriceBalanceSubmissionReferenceTimestamp,
 		&cfg.RewardsTreeCustomUrl,
