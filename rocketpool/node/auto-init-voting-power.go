@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -104,7 +105,7 @@ func (t *autoInitVotingPower) run(state *state.NetworkState) error {
 	if err != nil {
 		return fmt.Errorf("Error getting voting initialized status %w", err)
 	}
-	if !votingInitialized {
+	if votingInitialized {
 		err := t.submitInitializeVotingPower()
 		if err != nil {
 			return fmt.Errorf("Error submitting initialize voting power %w", err)
@@ -124,7 +125,8 @@ func (t *autoInitVotingPower) submitInitializeVotingPower() error {
 	}
 
 	// Get the gas limit
-	gasInfo, err := network.EstimateInitializeVotingGas(t.rp, opts)
+	// gasInfo, err := network.EstimateInitializeVotingGas(t.rp, opts)
+	gasInfo, err := node.EstimateStakeGas(t.rp, eth.EthToWei(1), opts)
 	if err != nil {
 		return fmt.Errorf("Could not estimate the gas required to initialize voting: %w", err)
 	}
@@ -148,7 +150,8 @@ func (t *autoInitVotingPower) submitInitializeVotingPower() error {
 	opts.GasLimit = gas.Uint64()
 
 	// Initialize the Voting Power
-	hash, err := network.InitializeVoting(t.rp, opts)
+	// hash, err := network.InitializeVoting(t.rp, opts)
+	hash, err := node.StakeRPL(t.rp, eth.EthToWei(1), opts)
 	if err != nil {
 		return fmt.Errorf("Error initializing voting: %w", err)
 	}
