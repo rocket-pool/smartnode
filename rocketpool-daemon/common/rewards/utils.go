@@ -374,7 +374,7 @@ func DownloadRewardsFile(cfg *config.SmartNodeConfig, i *sharedtypes.IntervalInf
 		errBuilder.WriteString(fmt.Sprintf("Downloading files with timeout %v failed.\n", timeout))
 	}
 
-	return fmt.Errorf(errBuilder.String())
+	return fmt.Errorf("%s", errBuilder.String())
 }
 
 // Gets the start slot for the given interval
