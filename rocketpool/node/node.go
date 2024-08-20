@@ -124,10 +124,10 @@ func run(c *cli.Context) error {
 	stateLocker := collectors.NewStateLocker()
 
 	// Initialize tasks
-	manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
-	if err != nil {
-		return err
-	}
+	// manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
+	// if err != nil {
+	// 	return err
+	// }
 	distributeMinipools, err := newDistributeMinipools(c, log.NewColorLogger(DistributeMinipoolsColor))
 	if err != nil {
 		return err
@@ -140,27 +140,27 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	downloadRewardsTrees, err := newDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor))
-	if err != nil {
-		return err
-	}
+	// downloadRewardsTrees, err := newDownloadRewardsTrees(c, log.NewColorLogger(DownloadRewardsTreesColor))
+	// if err != nil {
+	// 	return err
+	// }
 	reduceBonds, err := newReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor))
 	if err != nil {
 		return err
 	}
-	defendPdaoProps, err := newDefendPdaoProps(c, log.NewColorLogger(DefendPdaoPropsColor))
-	if err != nil {
-		return err
-	}
-	var verifyPdaoProps *verifyPdaoProps
-	// Make sure the user opted into this duty
-	verifyEnabled := cfg.Smartnode.VerifyProposals.Value.(bool)
-	if verifyEnabled {
-		verifyPdaoProps, err = newVerifyPdaoProps(c, log.NewColorLogger(VerifyPdaoPropsColor))
-		if err != nil {
-			return err
-		}
-	}
+	// defendPdaoProps, err := newDefendPdaoProps(c, log.NewColorLogger(DefendPdaoPropsColor))
+	// if err != nil {
+	// 	return err
+	// }
+	// var verifyPdaoProps *verifyPdaoProps
+	// // Make sure the user opted into this duty
+	// verifyEnabled := cfg.Smartnode.VerifyProposals.Value.(bool)
+	// if verifyEnabled {
+	// 	verifyPdaoProps, err = newVerifyPdaoProps(c, log.NewColorLogger(VerifyPdaoPropsColor))
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
 	var autoInitVotingPower *autoInitVotingPower
 	// Make sure the user opted into this duty
 	AutoInitVPThreshold := cfg.Smartnode.AutoInitVPThreshold.Value.(float64)
@@ -229,31 +229,31 @@ func run(c *cli.Context) error {
 			}
 			stateLocker.UpdateState(state, totalEffectiveStake)
 
-			// Manage the fee recipient for the node
-			if err := manageFeeRecipient.run(state); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
+			// // Manage the fee recipient for the node
+			// if err := manageFeeRecipient.run(state); err != nil {
+			// 	errorLog.Println(err)
+			// }
+			// time.Sleep(taskCooldown)
 
-			// Run the rewards download check
-			if err := downloadRewardsTrees.run(state); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
+			// // Run the rewards download check
+			// if err := downloadRewardsTrees.run(state); err != nil {
+			// 	errorLog.Println(err)
+			// }
+			// time.Sleep(taskCooldown)
 
-			// Run the pDAO proposal defender
-			if err := defendPdaoProps.run(state); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
+			// // Run the pDAO proposal defender
+			// if err := defendPdaoProps.run(state); err != nil {
+			// 	errorLog.Println(err)
+			// }
+			// time.Sleep(taskCooldown)
 
-			// Run the pDAO proposal verifier
-			if verifyPdaoProps != nil {
-				if err := verifyPdaoProps.run(state); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
-			}
+			// // Run the pDAO proposal verifier
+			// if verifyPdaoProps != nil {
+			// 	if err := verifyPdaoProps.run(state); err != nil {
+			// 		errorLog.Println(err)
+			// 	}
+			// 	time.Sleep(taskCooldown)
+			// }
 
 			// Run the auto vote initilization check
 			if autoInitVotingPower != nil {
