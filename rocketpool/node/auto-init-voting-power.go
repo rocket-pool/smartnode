@@ -143,6 +143,11 @@ func (t *autoInitVotingPower) submitInitializeVotingPower() error {
 		return nil
 	}
 
+	// Lower the priority fee when the suggested maxfee is lower than the user requested priority fee
+	if maxFee.Cmp(t.maxPriorityFee) < 0 {
+		t.maxPriorityFee = new(big.Int).Div(maxFee, big.NewInt(2))
+	}
+
 	opts.GasFeeCap = maxFee
 	opts.GasTipCap = t.maxPriorityFee
 	opts.GasLimit = gas.Uint64()
