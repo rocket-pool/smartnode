@@ -126,7 +126,7 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		},
 		RocketSignerRegistryAddress:          hexToAddressPtr("0xc1062617d10Ae99E09D941b60746182A87eAB38F"),
 		PreviousProtocolDaoVerifierAddresses: []common.Address{},
-		OptimismPriceMessengerAddress:        hexToAddressPtr("0x16d468E69Dbb67Fb924a4c61D7D35F81d1B27A3F"),
+		OptimismPriceMessengerAddress:        hexToAddressPtr("0x12759f8Df234f8f2cDdb3d2Ed5604adF9ACCfc9F"),
 		PolygonPriceMessengerAddress:         hexToAddressPtr("0xb1029Ac2Be4e08516697093e2AFeC435057f3511"),
 		ArbitrumPriceMessengerAddress:        hexToAddressPtr("0x05330300f829AD3fC8f33838BC88CFC4093baD53"),
 		ArbitrumPriceMessengerAddressV2:      hexToAddressPtr("0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1"),
