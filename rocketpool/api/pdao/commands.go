@@ -969,10 +969,28 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "is-voting-initialized",
+				Aliases:   []string{"ivi"},
+				Usage:     "Checks if voting is initialized.",
+				UsageText: "rocketpool api pdao is-voting-initialized",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(isVotingInitialized(c))
+					return nil
+
+				},
+			},
+			{
 				Name:      "can-initialize-voting",
 				Aliases:   []string{"civ"},
 				Usage:     "Checks if voting can be initialized.",
-				UsageText: "rocketpool api pdao can-initialize-voting delegate-address",
+				UsageText: "rocketpool api pdao can-initialize-voting",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -990,7 +1008,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "initialize-voting",
 				Aliases:   []string{"iv"},
 				Usage:     "Initialize voting.",
-				UsageText: "rocketpool api pdao initialize-voting delegate-address",
+				UsageText: "rocketpool api pdao initialize-voting",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
