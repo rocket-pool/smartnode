@@ -18,6 +18,15 @@ const (
 	nodeVotingDetailsBatchSize uint64 = 250
 )
 
+// Get the version of the Rocket Network Voting Contract
+func GetRocketNetworkVotingVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint8, error) {
+	rocketNetworkVoting, err := getRocketNetworkVoting(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	return rocketpool.GetContractVersion(rp, *rocketNetworkVoting.Address, opts)
+}
+
 // Gets the voting power and delegation info for every node at the specified block using multicall
 func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, multicallAddress common.Address, opts *bind.CallOpts) ([]types.NodeVotingInfo, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, opts)
