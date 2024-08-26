@@ -29,6 +29,28 @@ func nodeStakeRpl(c *cli.Context) error {
 		return err
 	}
 
+	// Check for Houston 1.3.1 Hotfix
+	hotfix, err := rp.IsHoustonHotfixDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Houston Hotfix has been deployed: %w", err)
+	}
+	if hotfix.IsHoustonHotfixDeployed {
+		// Check if voting power is initialized
+		isVotingInitializedResponse, err := rp.IsVotingInitialized()
+		if err != nil {
+			return err
+		}
+		if isVotingInitializedResponse.VotingInitialized {
+			fmt.Println("Your voting power hasn't been initialized yet. Please visit https://docs.rocketpool.net/guides/houston/participate#initializing-voting to learn more.")
+		}
+
+		// Post a warning about initializing voting
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by staking RPL, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before staking RPL.%s\nWould you like to continue?", colorYellow, colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	}
+
 	// If a custom nonce is set, print the multi-transaction warning
 	if c.GlobalUint64("nonce") != 0 {
 		cliutils.PrintMultiTransactionNonceWarning()

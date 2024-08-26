@@ -50,7 +50,6 @@ func nodeDeposit(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error checking if Houston Hotfix has been deployed: %w", err)
 	}
-
 	if hotfix.IsHoustonHotfixDeployed {
 		// Check if voting power is initialized
 		isVotingInitializedResponse, err := rp.IsVotingInitialized()
