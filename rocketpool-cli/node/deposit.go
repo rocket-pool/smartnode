@@ -45,6 +45,29 @@ func nodeDeposit(c *cli.Context) error {
 	fmt.Println("Your eth2 client is on the correct network.")
 	fmt.Println()
 
+	// Check for Houston 1.3.1 Hotfix
+	hotfix, err := rp.IsHoustonHotfixDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Houston Hotfix has been deployed: %w", err)
+	}
+
+	if hotfix.IsHoustonHotfixDeployed {
+		// Check if voting power is initialized
+		isVotingInitializedResponse, err := rp.IsVotingInitialized()
+		if err != nil {
+			return err
+		}
+		if isVotingInitializedResponse.VotingInitialized {
+			fmt.Println("Your voting power hasn't been initialized yet. Please visit https://docs.rocketpool.net/guides/houston/participate#initializing-voting to learn more.")
+		}
+
+		// Post a warning about initializing voting
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	}
+
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
 	if err != nil {
@@ -52,21 +75,6 @@ func nodeDeposit(c *cli.Context) error {
 	}
 	if !isInitializedResponse.IsInitialized {
 		fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
-		return nil
-	}
-
-	// Check if voting power is initialized
-	isVotingInitializedResponse, err := rp.IsVotingInitialized()
-	if err != nil {
-		return err
-	}
-	if isVotingInitializedResponse.VotingInitialized {
-		fmt.Println("Your voting power hasn't been initialized yet. Please visit https://docs.rocketpool.net/guides/houston/participate#initializing-voting to learn more.")
-	}
-
-	// Post a warning about initializing voting
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
-		fmt.Println("Cancelled.")
 		return nil
 	}
 

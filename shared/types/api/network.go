@@ -116,3 +116,9 @@ type GetLatestDelegateResponse struct {
 	Error   string         `json:"error"`
 	Address common.Address `json:"address"`
 }
+
+type IsHoustonHotfixDeployedResponse struct {
+	Status                  string `json:"status"`
+	Error                   string `json:"error"`
+	IsHoustonHotfixDeployed bool   `json:"isHoustonHotfixDeployed"`
+}
