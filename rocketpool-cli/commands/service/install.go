@@ -37,10 +37,10 @@ var (
 		Aliases: []string{"u"},
 		Usage:   "Certain configuration values are reset when the Smart Node is updated, such as Docker container tags; use this flag to force that reset, even if the Smart Node hasn't been updated",
 	}
-	installLocalFlag *cli.BoolFlag = &cli.BoolFlag{
+	installLocalFlag *cli.StringFlag = &cli.StringFlag{
 		Name:    "local-script",
 		Aliases: []string{"l"},
-		Usage:   fmt.Sprintf("Use a local installer script instead of pulling it down from the source repository. The script and the installer package must be in your current working directory.%sMake sure you absolutely trust the script before using this flag.%s", terminal.ColorRed, terminal.ColorReset),
+		Usage:   fmt.Sprintf("Use a local installer script instead of pulling it down from the source repository. The script and the installer package must be in your current working directory.\n%sMake sure you absolutely trust the script before using this flag.%s", terminal.ColorRed, terminal.ColorReset),
 	}
 )
 
@@ -67,7 +67,7 @@ func installService(c *cli.Context) error {
 		c.Bool(installNoDepsFlag.Name),
 		c.String(installVersionFlag.Name),
 		c.String(installPathFlag.Name),
-		c.Bool(installLocalFlag.Name),
+		c.String(installLocalFlag.Name),
 	)
 	if err != nil {
 		return err

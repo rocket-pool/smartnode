@@ -33,55 +33,44 @@ func (c *Client) downloadAndRun(
 	url string,
 	verbose bool,
 	version string,
-	useLocalInstaller bool,
 	extraFlags []string,
 ) error {
 	var script []byte
+
+	// Download the installation script
+	resp, err := http.Get(fmt.Sprintf(url, version))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("unexpected http status downloading %s script: %d", name, resp.StatusCode)
+	}
+
+	// Sanity check that the script octet length matches content-length
+	script, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
+		return fmt.Errorf("downloaded script length %d did not match content-length header %s", len(script), resp.Header.Get("content-length"))
+	}
+
+	return c.runScript(script, version, verbose, extraFlags)
+}
+
+func (c *Client) runScript(
+	script []byte,
+	version string,
+	verbose bool,
+	extraFlags []string,
+) error {
 
 	flags := []string{
 		"-v", shellescape.Quote(version),
 	}
 	flags = append(flags, extraFlags...)
-
-	if useLocalInstaller {
-		// Make sure it exists
-		_, err := os.Stat(name)
-		if errors.Is(err, os.ErrNotExist) {
-			return fmt.Errorf("local script [%s] does not exist", name)
-		}
-		if err != nil {
-			return fmt.Errorf("error checking script [%s]: %w", name, err)
-		}
-
-		// Read it
-		script, err = os.ReadFile(name)
-		if err != nil {
-			return fmt.Errorf("error reading local script [%s]: %w", name, err)
-		}
-
-		// Set the "local mode" flag
-		flags = append(flags, "-l")
-	} else {
-		// Download the installation script
-		resp, err := http.Get(fmt.Sprintf(url, version))
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode != http.StatusOK {
-			return fmt.Errorf("unexpected http status downloading %s script: %d", name, resp.StatusCode)
-		}
-
-		// Sanity check that the script octet length matches content-length
-		script, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return err
-		}
-
-		if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
-			return fmt.Errorf("downloaded script length %d did not match content-length header %s", len(script), resp.Header.Get("content-length"))
-		}
-	}
 
 	// Get the escalation command
 	escalationCmd, err := c.getEscalationCommand()
@@ -134,8 +123,29 @@ func (c *Client) downloadAndRun(
 	return nil
 }
 
+func readLocalScript(path string) ([]byte, error) {
+	// Make sure it exists
+	_, err := os.Stat(path)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, fmt.Errorf("local script [%s] does not exist", path)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error checking script [%s]: %w", path, err)
+	}
+
+	// Read it
+	script, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("error reading local script [%s]: %w", path, err)
+	}
+
+	return script, nil
+}
+
 // Install the Rocket Pool service
-func (c *Client) InstallService(verbose bool, noDeps bool, version string, path string, useLocalInstaller bool) error {
+// installScriptPath is optional. If unset, the install script is downloaded from github.
+func (c *Client) InstallService(verbose bool, noDeps bool, version string, path string, installScriptPath string) error {
+
 	// Get installation script flags
 	flags := []string{}
 	if path != "" {
@@ -145,12 +155,29 @@ func (c *Client) InstallService(verbose bool, noDeps bool, version string, path 
 		flags = append(flags, "-d")
 	}
 
-	return c.downloadAndRun(installerName, installerURL, verbose, version, useLocalInstaller, flags)
+	if installScriptPath != "" {
+		script, err := readLocalScript(installScriptPath)
+		if err != nil {
+			return err
+		}
+		// Set the "local mode" flag
+		flags = append(flags, "-l")
+		return c.runScript(script, version, verbose, flags)
+	}
+
+	return c.downloadAndRun(installerName, installerURL, verbose, version, flags)
 }
 
 // Install the update tracker
-func (c *Client) InstallUpdateTracker(verbose bool, version string, useLocalInstaller bool) error {
-	return c.downloadAndRun(updateTrackerInstallerName, updateTrackerURL, verbose, version, useLocalInstaller, nil)
+func (c *Client) InstallUpdateTracker(verbose bool, version string, installScriptPath string) error {
+	if installScriptPath != "" {
+		script, err := readLocalScript(installScriptPath)
+		if err != nil {
+			return err
+		}
+		return c.runScript(script, version, verbose, nil)
+	}
+	return c.downloadAndRun(updateTrackerInstallerName, updateTrackerURL, verbose, version, nil)
 }
 
 // Start the Rocket Pool service
