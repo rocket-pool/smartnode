@@ -38,8 +38,8 @@ override_dh_auto_install:
 # Create the folder structure and copy the deploy files over
 	install -dm 0700 debian/rocketpool/var/lib/rocketpool/data
 	install -dm 0700 debian/rocketpool/var/lib/rocketpool/global
-	mkdir -p debian/rocketpool/usr/share/rocketpool/
-	cp -r deploy/* debian/rocketpool/usr/share/rocketpool/
-	chmod -R +x debian/rocketpool/usr/share/rocketpool/scripts
+	mkdir -p debian/rocketpool/opt/rocketpool/
+	cp -r deploy/* debian/rocketpool/opt/rocketpool/
+	chmod -R +x debian/rocketpool/opt/rocketpool/scripts
 
 override_dh_auto_test:

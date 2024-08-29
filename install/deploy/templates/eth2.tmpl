@@ -24,7 +24,7 @@ services:
       {{- end}}
     volumes:
       - {{.BeaconNodeDataVolume}}:/ethclient
-      - /usr/share/rocketpool/scripts:/usr/share/rocketpool/scripts:ro
+      - /opt/rocketpool/scripts:/opt/rocketpool/scripts:ro
       - /var/lib/rocketpool/data/{{.ProjectName}}:/secrets:ro
     networks:
       - net
@@ -61,7 +61,7 @@ services:
       - BN_P2P_QUIC_PORT={{.LocalBeaconClient.Lighthouse.P2pQuicPort}}
       {{- end}}
     entrypoint: sh
-    command: "/usr/share/rocketpool/scripts/{{.GetBnStartScript}}"
+    command: "/opt/rocketpool/scripts/{{.GetBnStartScript}}"
     cap_drop:
       - all
     cap_add:

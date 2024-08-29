@@ -18,10 +18,10 @@ import (
 )
 
 const (
-	templatesDir           string = "/usr/share/rocketpool/templates"
-	addonsSourceDir        string = "/usr/share/rocketpool/addons"
-	overrideSourceDir      string = "/usr/share/rocketpool/override"
-	nativeScriptsSourceDir string = "/usr/share/rocketpool/scripts/native"
+	templatesDir           string = "/opt/rocketpool/templates"
+	addonsSourceDir        string = "/opt/rocketpool/addons"
+	overrideSourceDir      string = "/opt/rocketpool/override"
+	nativeScriptsSourceDir string = "/opt/rocketpool/scripts/native"
 	overrideDir            string = "override"
 	runtimeDir             string = "runtime"
 	extraScrapeJobsDir     string = "extra-scrape-jobs"

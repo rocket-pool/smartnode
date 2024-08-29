@@ -336,12 +336,11 @@ install() {
     fi
 
     # Create rocket pool dir & files
-    RP_BIN_PATH=/usr/bin/rocketpool
-    RP_SHARE_PATH=/usr/share/rocketpool
+    RP_SYS_PATH=/opt/rocketpool
     RP_VAR_PATH=/var/lib/rocketpool
 
     progress 4 "Creating Rocket Pool directory structure..."
-    { mkdir -p "$RP_SHARE_PATH" || fail "Could not create the Rocket Pool resources directory."; } >&2
+    { mkdir -p "$RP_SYS_PATH" || fail "Could not create the Rocket Pool resources directory."; } >&2
     { mkdir -p "$RP_VAR_PATH/data" || fail "Could not create the Rocket Pool system data directory."; } >&2
     { chmod 0700 "$RP_VAR_PATH/data" || fail "Could not set the Rocket Pool data directory permissions."; } >&2
 
@@ -359,11 +358,11 @@ install() {
 
     # Copy package files
     progress 6 "Copying package files to Rocket Pool system directory..."
-    { cp -r "$PACKAGE_FILES_PATH/addons" "$RP_SHARE_PATH" || fail "Could not copy addons folder to the Rocket Pool system directory."; } >&2
-    { cp -r "$PACKAGE_FILES_PATH/override" "$RP_SHARE_PATH" || fail "Could not copy override folder to the Rocket Pool system directory."; } >&2
-    { cp -r "$PACKAGE_FILES_PATH/scripts" "$RP_SHARE_PATH" || fail "Could not copy scripts folder to the Rocket Pool system directory."; } >&2
-    { cp -r "$PACKAGE_FILES_PATH/templates" "$RP_SHARE_PATH" || fail "Could not copy templates folder to the Rocket Pool system directory."; } >&2
-    { find "$RP_SHARE_PATH/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || fail "Could not set executable permissions on package files."; } >&2
+    { cp -r "$PACKAGE_FILES_PATH/addons" "$RP_SYS_PATH" || fail "Could not copy addons folder to the Rocket Pool system directory."; } >&2
+    { cp -r "$PACKAGE_FILES_PATH/override" "$RP_SYS_PATH" || fail "Could not copy override folder to the Rocket Pool system directory."; } >&2
+    { cp -r "$PACKAGE_FILES_PATH/scripts" "$RP_SYS_PATH" || fail "Could not copy scripts folder to the Rocket Pool system directory."; } >&2
+    { cp -r "$PACKAGE_FILES_PATH/templates" "$RP_SYS_PATH" || fail "Could not copy templates folder to the Rocket Pool system directory."; } >&2
+    { find "$RP_SYS_PATH/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || fail "Could not set executable permissions on package files."; } >&2
 
 
     # Clean up unnecessary files from old installations

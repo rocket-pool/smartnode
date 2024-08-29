@@ -12,7 +12,7 @@ services:
     restart: unless-stopped
     ports: [{{.GetMevBoostOpenPorts}}]
     volumes:
-      - /usr/share/rocketpool/scripts:/usr/share/rocketpool/scripts:ro
+      - /opt/rocketpool/scripts:/opt/rocketpool/scripts:ro
     networks:
       - net
     environment:
@@ -20,7 +20,7 @@ services:
       - MEV_BOOST_PORT={{.MevBoost.Port}}
       - MEV_BOOST_RELAYS={{.MevBoost.GetRelayString}}
     entrypoint: sh
-    command: "/usr/share/rocketpool/scripts/{{.GetMevBoostStartScript}}"
+    command: "/opt/rocketpool/scripts/{{.GetMevBoostStartScript}}"
     cap_drop:
       - all
     cap_add:

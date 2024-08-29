@@ -16,7 +16,7 @@ services:
     ports: [ "{{$p2p}}:{{$p2p}}/udp", "{{$p2p}}:{{$p2p}}/tcp"{{.GetEcOpenApiPorts}} ]
     volumes:
       - {{.ExecutionClientDataVolume}}:/ethclient
-      - /usr/share/rocketpool/scripts:/usr/share/rocketpool/scripts:ro
+      - /opt/rocketpool/scripts:/opt/rocketpool/scripts:ro
       - /var/lib/rocketpool/data/{{.ProjectName}}:/secrets
     networks:
       - net
@@ -49,7 +49,7 @@ services:
       - RP_GETH_ARCHIVE_MODE={{.LocalExecutionClient.Geth.ArchiveMode}}
       {{- end}}
     entrypoint: sh
-    command: "/usr/share/rocketpool/scripts/{{.GetEcStartScript}}"
+    command: "/opt/rocketpool/scripts/{{.GetEcStartScript}}"
     cap_drop:
       - all
     cap_add:
