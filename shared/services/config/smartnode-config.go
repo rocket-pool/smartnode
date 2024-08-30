@@ -110,6 +110,9 @@ type SmartnodeConfig struct {
 	// The toggle for enabling pDAO proposal verification duties
 	VerifyProposals config.Parameter `yaml:"verifyProposals,omitempty"`
 
+	// Threshold for automatic vote power initialization transactions
+	AutoInitVPThreshold config.Parameter `yaml:"autoInitVPThreshold,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -321,6 +324,19 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			Description:        "Check this box to opt into the responsibility for verifying Protocol DAO proposals once the Houston upgrade has been activated. Your node will regularly check for new proposals, verify their correctness, and submit challenges to any that do not match the on-chain data (e.g., if someone tampered with voting power and attempted to cheat).\n\nTo learn more about the PDAO proposal checking duty, including requirements and RPL bonding, please see the documentation at https://docs.rocketpool.net/guides/houston/pdao#challenge-process.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		AutoInitVPThreshold: config.Parameter{
+			ID:   "autoInitVPThreshold",
+			Name: "Auto-Init Vote Power Gas Threshold",
+			Description: "The Smartnode will regularly check if the node has initialized voting power and attempt to initialize voting power if it isn't initialized.\n\n" +
+				"This threshold is a limit (in gwei) you can set on this automatic transaction; your node will not attempt to initialize voting power if the network suggested fee is below this limit.\n\n" +
+				"A value of 0 will disable this task. Disable this if your node was registered post-houston or your vote power is already initialized.\n\n",
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: float64(5)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -670,6 +686,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.AutoTxGasThreshold,
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
+		&cfg.AutoInitVPThreshold,
 		&cfg.RewardsTreeMode,
 		&cfg.PriceBalanceSubmissionReferenceTimestamp,
 		&cfg.RewardsTreeCustomUrl,
