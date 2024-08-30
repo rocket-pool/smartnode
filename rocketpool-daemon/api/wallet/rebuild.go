@@ -5,7 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
 	"github.com/rocket-pool/node-manager-core/utils/input"
-	key_recovery_manager "github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator/key-recovery-manager"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
 	"net/url"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
@@ -48,8 +48,7 @@ type walletRebuildContext struct {
 func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	vMgr := sp.GetValidatorManager()
-	partialKeyRecoveryManager := key_recovery_manager.NewPartialRecoveryManager(vMgr)
-	strictKeyRecoveryManager := key_recovery_manager.NewStrictRecoveryManager(vMgr)
+	keyRecoveryManager := validator.NewKeyRecoveryManager(vMgr, c.enablePartialRebuild, false)
 
 	// Requirements
 	err := sp.RequireWalletReady()
@@ -62,11 +61,7 @@ func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bi
 	}
 
 	// Recover validator keys
-	if c.enablePartialRebuild {
-		data.RebuiltValidatorKeys, data.FailureReasons, err = partialKeyRecoveryManager.RecoverMinipoolKeys()
-	} else {
-		data.RebuiltValidatorKeys, data.FailureReasons, err = strictKeyRecoveryManager.RecoverMinipoolKeys()
-	}
+	data.RebuiltValidatorKeys, data.FailureReasons, err = keyRecoveryManager.RecoverMinipoolKeys()
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error recovering minipool keys: %w", err)
 	}

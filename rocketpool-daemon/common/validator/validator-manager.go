@@ -3,6 +3,8 @@ package validator
 import (
 	"bytes"
 	"fmt"
+	"os"
+
 	"github.com/goccy/go-json"
 	batch "github.com/rocket-pool/batch-query"
 	"github.com/rocket-pool/node-manager-core/beacon"
@@ -20,7 +22,6 @@ import (
 	types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 	"gopkg.in/yaml.v3"
-	"os"
 	"path/filepath"
 )
 
@@ -48,6 +49,8 @@ type ValidatorManager struct {
 	queryMgr        *eth.QueryManager
 	keystoreManager *validator.ValidatorManager
 	nextAccount     uint64
+	node            *node.Node
+	minipoolManager *minipool.MinipoolManager
 }
 
 func NewValidatorManager(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, walletImpl *walletnode.Wallet, queryMgr *eth.QueryManager) (*ValidatorManager, error) {
@@ -62,9 +65,12 @@ func NewValidatorManager(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool,
 		queryMgr:        queryMgr,
 		keystoreManager: validatorManager,
 	}
+	err := mgr.initializeBindings()
+	if err != nil {
+		return nil, err
+	}
 
 	// Load the next account
-	var err error
 	mgr.nextAccount, err = loadNextAccount(cfg.GetNextAccountFilePath())
 	if err != nil {
 		return nil, err
@@ -259,70 +265,23 @@ func (m *ValidatorManager) TestRecoverValidatorKey(pubkey beacon.ValidatorPubkey
 	return index + startIndex, nil
 }
 
-// Get a validator private key by index
-func (m *ValidatorManager) getValidatorPrivateKey(index uint64) (*eth2types.BLSPrivateKey, string, error) {
-	// Get derivation path
-	derivationPath := fmt.Sprintf(ValidatorKeyPath, index)
-
-	// Get private key
-	privateKeyBytes, err := m.wallet.GenerateValidatorKey(derivationPath)
+func (m *ValidatorManager) GetMinipools() (map[beacon.ValidatorPubkey]bool, error) {
+	err := m.initializeBindings()
 	if err != nil {
-		return nil, "", fmt.Errorf("error getting validator %d private key: %w", index, err)
-	}
-	privateKey, err := types.BLSPrivateKeyFromBytes(privateKeyBytes)
-	if err != nil {
-		return nil, "", fmt.Errorf("error converting validator %d private key: %w", index, err)
-	}
-	return privateKey, derivationPath, nil
-}
-
-// Checks if the wallet is ready for validator key processing
-func (m *ValidatorManager) checkIfReady() error {
-	status, err := m.wallet.GetStatus()
-	if err != nil {
-		return err
-	}
-	return utils.CheckIfWalletReady(status)
-}
-
-func (m *ValidatorManager) GetWalletStatus() (walletcore.WalletStatus, error) {
-	status, err := m.wallet.GetStatus()
-	if err != nil {
-		return status, err
-	}
-	if !walletcore.IsWalletReady(status) {
-		return status, fmt.Errorf("wallet is not ready")
-	}
-	return status, nil
-}
-
-func (m *ValidatorManager) InitializeBindings(status walletcore.WalletStatus) (*node.Node, *minipool.MinipoolManager, error) {
-	address := status.Wallet.WalletAddress
-	rpNode, err := node.NewNode(m.rp, address)
-
-	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	mpMgr, err := minipool.NewMinipoolManager(m.rp)
-	if err != nil {
-		return nil, nil, err
-	}
-	return rpNode, mpMgr, nil
-}
-
-func (m *ValidatorManager) GetMinipools(node *node.Node, mpMgr *minipool.MinipoolManager) (map[beacon.ValidatorPubkey]bool, error) {
-	err := m.queryMgr.Query(nil, nil, node.ValidatingMinipoolCount)
+	err = m.queryMgr.Query(nil, nil, m.node.ValidatingMinipoolCount)
 	if err != nil {
 		return nil, fmt.Errorf("error getting node's validating minipool count: %w", err)
 	}
 
-	addresses, err := node.GetValidatingMinipoolAddresses(node.ValidatingMinipoolCount.Formatted(), nil)
+	addresses, err := m.node.GetValidatingMinipoolAddresses(m.node.ValidatingMinipoolCount.Formatted(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting node's validating minipool addresses: %w", err)
 	}
 
-	mps, err := mpMgr.CreateMinipoolsFromAddresses(addresses, false, nil)
+	mps, err := m.minipoolManager.CreateMinipoolsFromAddresses(addresses, false, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating bindings for node's validating minipools: %w", err)
 	}
@@ -419,4 +378,63 @@ func (m *ValidatorManager) LoadFiles() ([]os.DirEntry, error) {
 		return nil, err
 	}
 	return keyFiles, nil
+}
+
+// Get a validator private key by index
+func (m *ValidatorManager) getValidatorPrivateKey(index uint64) (*eth2types.BLSPrivateKey, string, error) {
+	// Get derivation path
+	derivationPath := fmt.Sprintf(ValidatorKeyPath, index)
+
+	// Get private key
+	privateKeyBytes, err := m.wallet.GenerateValidatorKey(derivationPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("error getting validator %d private key: %w", index, err)
+	}
+	privateKey, err := types.BLSPrivateKeyFromBytes(privateKeyBytes)
+	if err != nil {
+		return nil, "", fmt.Errorf("error converting validator %d private key: %w", index, err)
+	}
+	return privateKey, derivationPath, nil
+}
+
+// Checks if the wallet is ready for validator key processing
+func (m *ValidatorManager) checkIfReady() error {
+	status, err := m.wallet.GetStatus()
+	if err != nil {
+		return err
+	}
+	return utils.CheckIfWalletReady(status)
+}
+
+func (m *ValidatorManager) initializeBindings() error {
+	status, err := m.getWalletStatus()
+	if err != nil {
+		return err
+	}
+
+	rpNode, err := node.NewNode(m.rp, status.Wallet.WalletAddress)
+	if err != nil {
+		return err
+	}
+
+	mpMgr, err := minipool.NewMinipoolManager(m.rp)
+	if err != nil {
+		return err
+	}
+
+	m.node = rpNode
+	m.minipoolManager = mpMgr
+
+	return nil
+}
+
+func (m *ValidatorManager) getWalletStatus() (*walletcore.WalletStatus, error) {
+	status, err := m.wallet.GetStatus()
+	if err != nil {
+		return &status, err
+	}
+	if !walletcore.IsWalletReady(status) {
+		return &status, fmt.Errorf("wallet is not ready")
+	}
+	return &status, nil
 }

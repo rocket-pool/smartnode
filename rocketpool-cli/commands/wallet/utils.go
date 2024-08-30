@@ -59,7 +59,7 @@ var (
 	}
 	enablePartialRebuild = &cli.StringSliceFlag{
 		Name:    "enable-partial-rebuild",
-		Aliases: []string{"epr"},
+		Aliases: []string{"p"},
 		Usage:   "Allows the wallet rebuild process to partially succeed, responding with public keys for successfully rebuilt targets and errors for rebuild failures",
 	}
 )

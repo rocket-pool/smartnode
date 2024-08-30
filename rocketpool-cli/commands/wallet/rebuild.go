@@ -2,11 +2,11 @@ package wallet
 
 import (
 	"fmt"
-	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"os"
 
 	"github.com/rocket-pool/node-manager-core/wallet"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/urfave/cli/v2"
 )
 
@@ -61,13 +61,18 @@ func rebuildWallet(c *cli.Context) error {
 
 	// Log
 	fmt.Println("Rebuilding node validator keystores...")
-	fmt.Printf("Partial rebuild enabled: %s.\n", enablePartialRebuild.Name)
+	fmt.Printf("Partial rebuild enabled: %s.\n", enablePartialRebuild.Value)
 
 	// Rebuild wallet
-	response, _ := rp.Api.Wallet.Rebuild(enablePartialRebuildValue)
+	response, err := rp.Api.Wallet.Rebuild(enablePartialRebuildValue)
+	if err != nil {
+		return err
+	}
 
 	// Handle and print failure reasons with associated public keys
 	if len(response.Data.FailureReasons) > 0 {
+		fmt.Println("Some keys could not be recovered. You may need to import them manually, as they are not " +
+			"associated with your node wallet mnemonic. See the documentation for more details.")
 		fmt.Println("Failure reasons:")
 		for pubkey, reason := range response.Data.FailureReasons {
 			fmt.Printf("Public Key: %s - Failure Reason: %s\n", pubkey.Hex(), reason)
@@ -76,7 +81,6 @@ func rebuildWallet(c *cli.Context) error {
 		fmt.Println("No failures reported.")
 	}
 
-	fmt.Println("The response for rebuilding the node wallet was successfully received.")
 	if len(response.Data.RebuiltValidatorKeys) > 0 {
 		fmt.Println("Validator keys:")
 		for _, key := range response.Data.RebuiltValidatorKeys {
