@@ -26,6 +26,12 @@ func reduceBondAmount(c *cli.Context) error {
 		return err
 	}
 
+	// Print message and exit if bond reductions are disabled
+	if details.Data.BondReductionDisabled {
+		fmt.Println("Cannot perform a bond reduction: bond reductions are currently disabled")
+		return nil
+	}
+
 	// Check the fee distributor
 	if !details.Data.IsFeeDistributorInitialized {
 		fmt.Println("Minipools cannot have their bonds reduced until your fee distributor has been initialized.")
