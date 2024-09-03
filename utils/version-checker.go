@@ -5,11 +5,21 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/hashicorp/go-version"
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version.Version, error) {
+
+	// Check for v1.3.1 (Houston Hotfix)
+	networkVotingVersion, err := network.GetRocketNetworkVotingVersion(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error checking network voting version: %w", err)
+	}
+	if networkVotingVersion > 1 {
+		return version.NewSemver("1.3.1")
+	}
 
 	nodeMgrVersion, err := node.GetNodeManagerVersion(rp, opts)
 	if err != nil {
