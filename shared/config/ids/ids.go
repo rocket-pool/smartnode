@@ -28,6 +28,7 @@ const (
 	CheckpointRetentionLimitID                 string = "checkpointRetentionLimit"
 	RecordsPathID                              string = "recordsPath"
 	VerifyProposalsID                          string = "verifyProposals"
+	AutoInitVPThreshold                        string = "autoInitVPThreshold"
 
 	// Subconfig IDs
 	LoggingID           string = "logging"

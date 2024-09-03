@@ -44,6 +44,7 @@ type SmartNodeConfig struct {
 	CheckpointRetentionLimit                 config.Parameter[uint64]
 	RecordsPath                              config.Parameter[string]
 	VerifyProposals                          config.Parameter[bool]
+	AutoInitVPThreshold                      config.Parameter[float64]
 
 	// Logging
 	Logging *config.LoggerConfig
@@ -441,6 +442,22 @@ func NewSmartNodeConfig(rpDir string, isNativeMode bool) *SmartNodeConfig {
 				config.Network_All: false,
 			},
 		},
+
+		AutoInitVPThreshold: config.Parameter[float64]{
+			ParameterCommon: &config.ParameterCommon{
+				ID:   ids.AutoInitVPThreshold,
+				Name: "Auto-Init Vote Power Gas Threshold",
+				Description: "The Smartnode will regularly check if the node has initialized voting power and attempt to initialize voting power if it isn't initialized.\n\n" +
+					"This threshold is a limit (in gwei) you can set on this automatic transaction; your node will not attempt to initialize voting power if the network suggested fee is below this limit.\n\n" +
+					"A value of 0 will disable this task. Disable this if your node was registered post-houston or your vote power is already initialized.\n\n",
+				AffectsContainers:  []config.ContainerID{config.ContainerID_Daemon},
+				CanBeBlank:         false,
+				OverwriteOnUpgrade: false,
+			},
+			Default: map[config.Network]float64{
+				config.Network_All: float64(5),
+			},
+		},
 	}
 
 	// Create the subconfigs
@@ -477,6 +494,7 @@ func (cfg *SmartNodeConfig) GetParameters() []config.IParameter {
 		&cfg.Network,
 		&cfg.ClientMode,
 		&cfg.VerifyProposals,
+		&cfg.AutoInitVPThreshold,
 		&cfg.AutoTxMaxFee,
 		&cfg.MaxPriorityFee,
 		&cfg.AutoTxGasThreshold,
