@@ -42,9 +42,6 @@ type MevBoostConfig struct {
 	// bloXroute regulated relay
 	BloxRouteRegulatedRelay config.Parameter `yaml:"bloxRouteRegulatedEnabled,omitempty"`
 
-	// Eden relay
-	EdenRelay config.Parameter `yaml:"edenEnabled,omitempty"`
-
 	// Ultra sound relay
 	UltrasoundRelay config.Parameter `yaml:"ultrasoundEnabled,omitempty"`
 
@@ -144,7 +141,6 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		FlashbotsRelay:          generateRelayParameter("flashbotsEnabled", relayMap[config.MevRelayID_Flashbots]),
 		BloxRouteMaxProfitRelay: generateRelayParameter("bloxRouteMaxProfitEnabled", relayMap[config.MevRelayID_BloxrouteMaxProfit]),
 		BloxRouteRegulatedRelay: generateRelayParameter("bloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
-		EdenRelay:               generateRelayParameter("edenEnabled", relayMap[config.MevRelayID_Eden]),
 		UltrasoundRelay:         generateRelayParameter("ultrasoundEnabled", relayMap[config.MevRelayID_Ultrasound]),
 		AestusRelay:             generateRelayParameter("aestusEnabled", relayMap[config.MevRelayID_Aestus]),
 		TitanGlobalRelay:        generateRelayParameter("titanGlobalEnabled", relayMap[config.MevRelayID_TitanGlobal]),
@@ -221,7 +217,6 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.FlashbotsRelay,
 		&cfg.BloxRouteMaxProfitRelay,
 		&cfg.BloxRouteRegulatedRelay,
-		&cfg.EdenRelay,
 		&cfg.UltrasoundRelay,
 		&cfg.AestusRelay,
 		&cfg.TitanGlobalRelay,
@@ -315,12 +310,6 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteRegulated])
 			}
 		}
-		if cfg.EdenRelay.Value == true {
-			_, exists := cfg.relayMap[config.MevRelayID_Eden].Urls[currentNetwork]
-			if exists {
-				relays = append(relays, cfg.relayMap[config.MevRelayID_Eden])
-			}
-		}
 		if cfg.UltrasoundRelay.Value == true {
 			_, exists := cfg.relayMap[config.MevRelayID_Ultrasound].Urls[currentNetwork]
 			if exists {
@@ -397,18 +386,6 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Select this to enable the relay from bloXroute (formerly) known as \"Regulated\". (Both bloXroute relays propagate the same transactions...)",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xb0b07cd0abef743db4260b0ed50619cf6ad4d82064cb4fbec9d3ec530f7c5e6793d9f286c4e082c0244ffb9f2658fe88@bloxroute.regulated.blxrbdn.com?id=rocketpool",
-			},
-			Regulated: true,
-		},
-
-		// Eden
-		{
-			ID:          config.MevRelayID_Eden,
-			Name:        "Eden Network",
-			Description: "Eden Network is the home of Eden Relay, a block building hub focused on optimising block rewards for validators.",
-			Urls: map[config.Network]string{
-				config.Network_Mainnet: "https://0xb3ee7afcf27f1f1259ac1787876318c6584ee353097a50ed84f51a1f21a323b3736f271a895c7ce918c038e4265918be@relay.edennetwork.io?id=rocketpool",
-				config.Network_Devnet:  "https://0xaa1488eae4b06a1fff840a2b6db167afc520758dc2c8af0dfb57037954df3431b747e2f900fe8805f05d635e9a29717b@relay-goerli.edennetwork.io?id=rocketpool",
 			},
 			Regulated: true,
 		},

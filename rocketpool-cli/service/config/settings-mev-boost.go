@@ -82,7 +82,6 @@ func (configPage *MevBoostConfigPage) createContent() {
 	configPage.flashbotsBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.FlashbotsRelay)
 	configPage.bloxrouteMaxProfitBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteMaxProfitRelay)
 	configPage.bloxrouteRegulatedBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteRegulatedRelay)
-	configPage.edenBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.EdenRelay)
 	configPage.ultrasoundBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.UltrasoundRelay)
 	configPage.aestusBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.AestusRelay)
 	configPage.titanGlobalBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.TitanGlobalRelay)
@@ -171,8 +170,6 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 				configPage.layout.form.AddFormItem(configPage.bloxrouteMaxProfitBox.item)
 			case cfgtypes.MevRelayID_BloxrouteRegulated:
 				configPage.layout.form.AddFormItem(configPage.bloxrouteRegulatedBox.item)
-			case cfgtypes.MevRelayID_Eden:
-				configPage.layout.form.AddFormItem(configPage.edenBox.item)
 			case cfgtypes.MevRelayID_Ultrasound:
 				configPage.layout.form.AddFormItem(configPage.ultrasoundBox.item)
 			case cfgtypes.MevRelayID_Aestus:
