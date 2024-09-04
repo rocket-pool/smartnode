@@ -342,6 +342,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					cliutils.YesFlag,
 					installUpdateTrackerVerboseFlag,
 					installUpdateTrackerVersionFlag,
+					installLocalFlag,
 				},
 				Action: func(c *cli.Context) error {
 					// Validate args
