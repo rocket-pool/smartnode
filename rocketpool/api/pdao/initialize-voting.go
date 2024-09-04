@@ -11,6 +11,28 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
+func isVotingInitialized(c *cli.Context) (*api.PDAOIsVotingInitializedResponse, error) {
+
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	response := api.PDAOIsVotingInitializedResponse{}
+	response.VotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
+
+	return &response, nil
+
+}
+
 func canNodeInitializeVoting(c *cli.Context) (*api.PDAOCanInitializeVotingResponse, error) {
 
 	// Get services

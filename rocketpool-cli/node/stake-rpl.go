@@ -14,6 +14,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
+// Config
+const (
+	stakeRPLWarningMessage = "NOTE: by staking RPL, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before staking RPL."
+)
+
 func nodeStakeRpl(c *cli.Context) error {
 
 	// Get RP client
@@ -27,6 +32,12 @@ func nodeStakeRpl(c *cli.Context) error {
 	status, err := rp.NodeStatus()
 	if err != nil {
 		return err
+	}
+
+	// If hotfix is live and voting isn't initialized, display a warning
+	err = warnIfVotingUninitialized(rp, c, stakeRPLWarningMessage)
+	if err != nil {
+		return nil
 	}
 
 	// If a custom nonce is set, print the multi-transaction warning

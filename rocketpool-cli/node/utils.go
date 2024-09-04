@@ -14,6 +14,7 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/mitchellh/go-homedir"
+	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -277,14 +278,14 @@ func promptTimezone() string {
 func promptMinNodeFee(networkCurrentNodeFee, networkMinNodeFee float64) float64 {
 
 	// Get suggested min node fee
-	suggestedMinNodeFee := networkCurrentNodeFee - DefaultMaxNodeFeeSlippage
+	suggestedMinNodeFee := networkCurrentNodeFee - defaultMaxNodeFeeSlippage
 	if suggestedMinNodeFee < networkMinNodeFee {
 		suggestedMinNodeFee = networkMinNodeFee
 	}
 
 	// Prompt for suggested max slippage
 	fmt.Printf("The current network node commission rate that your minipool should receive is %f%%.\n", networkCurrentNodeFee*100)
-	fmt.Printf("The suggested maximum commission rate slippage for your deposit transaction is %f%%.\n", DefaultMaxNodeFeeSlippage*100)
+	fmt.Printf("The suggested maximum commission rate slippage for your deposit transaction is %f%%.\n", defaultMaxNodeFeeSlippage*100)
 	fmt.Printf("This will result in your minipool receiving a minimum possible commission rate of %f%%.\n", suggestedMinNodeFee*100)
 	if cliutils.Confirm("Do you want to use the suggested maximum commission rate slippage?") {
 		return suggestedMinNodeFee
@@ -388,4 +389,31 @@ func promptForSoloKeyPassword(rp *rocketpool.Client, cfg *config.RocketPoolConfi
 
 	return passwordFile, nil
 
+}
+
+// Display a warning if hotfix is live and voting is uninitialized
+func warnIfVotingUninitialized(rp *rocketpool.Client, c *cli.Context, warningMessage string) error {
+	// Check for Houston 1.3.1 Hotfix
+	hotfix, err := rp.IsHoustonHotfixDeployed()
+	if err != nil {
+		return fmt.Errorf("error checking if Houston Hotfix has been deployed: %w", err)
+	}
+
+	if !hotfix.IsHoustonHotfixDeployed {
+		// Check if voting power is initialized
+		isVotingInitializedResponse, err := rp.IsVotingInitialized()
+		if err != nil {
+			return fmt.Errorf("error checking if voting is initialized: %w", err)
+		}
+		if !isVotingInitializedResponse.VotingInitialized {
+			fmt.Println("Your voting power hasn't been initialized yet. Please visit https://docs.rocketpool.net/guides/houston/participate#initializing-voting to learn more.")
+			// Post a warning about initializing voting
+			if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%s%s%s\nWould you like to continue?", colorYellow, warningMessage, colorReset))) {
+				fmt.Println("Cancelled.")
+				return fmt.Errorf("operation cancelled by user")
+			}
+		}
+	}
+
+	return nil
 }

@@ -417,6 +417,12 @@ type PDAOInitializeVotingResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type PDAOIsVotingInitializedResponse struct {
+	Status            string `json:"status"`
+	Error             string `json:"error"`
+	VotingInitialized bool   `json:"votingInitialized"`
+}
+
 type PDAOStatusResponse struct {
 	Status                         string                 `json:"status"`
 	Error                          string                 `json:"error"`

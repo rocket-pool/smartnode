@@ -39,3 +39,14 @@ func IsHoustonDeployed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, er
 	constraint, _ := version.NewConstraint(">= 1.3.0")
 	return constraint.Check(currentVersion), nil
 }
+
+// Check if Houston Hotfix has been deployed
+func IsHoustonHotfixDeployed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	currentVersion, err := utils.GetCurrentVersion(rp, opts)
+	if err != nil {
+		return false, err
+	}
+
+	constraint, _ := version.NewConstraint(">= 1.3.1")
+	return constraint.Check(currentVersion), nil
+}

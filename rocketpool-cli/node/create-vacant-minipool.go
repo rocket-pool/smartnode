@@ -106,7 +106,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	if c.String("max-slippage") == "auto" {
 
 		// Use default max slippage
-		minNodeFee = nodeFees.NodeFee - DefaultMaxNodeFeeSlippage
+		minNodeFee = nodeFees.NodeFee - defaultMaxNodeFeeSlippage
 		if minNodeFee < nodeFees.MinNodeFee {
 			minNodeFee = nodeFees.MinNodeFee
 		}

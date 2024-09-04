@@ -16,7 +16,10 @@ import (
 )
 
 // Config
-const DefaultMaxNodeFeeSlippage = 0.01 // 1% below current network fee
+const (
+	defaultMaxNodeFeeSlippage = 0.01 // 1% below current network fee
+	depositWarningMessage     = "NOTE: by creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool."
+)
 
 func nodeDeposit(c *cli.Context) error {
 
@@ -44,6 +47,12 @@ func nodeDeposit(c *cli.Context) error {
 
 	fmt.Println("Your eth2 client is on the correct network.")
 	fmt.Println()
+
+	// If hotfix is live and voting isn't initialized, display a warning
+	err = warnIfVotingUninitialized(rp, c, depositWarningMessage)
+	if err != nil {
+		return nil
+	}
 
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
@@ -100,7 +109,7 @@ func nodeDeposit(c *cli.Context) error {
 	if c.String("max-slippage") == "auto" {
 
 		// Use default max slippage
-		minNodeFee = nodeFees.NodeFee - DefaultMaxNodeFeeSlippage
+		minNodeFee = nodeFees.NodeFee - defaultMaxNodeFeeSlippage
 		if minNodeFee < nodeFees.MinNodeFee {
 			minNodeFee = nodeFees.MinNodeFee
 		}

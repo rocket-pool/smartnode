@@ -655,7 +655,23 @@ func (c *Client) GetCurrentVotingDelegate() (api.PDAOCurrentVotingDelegateRespon
 	return response, nil
 }
 
-// CanInitializeVoting fetches whether the node's is initialized for on-chain voting
+// IsVotingInitialized checks if a node has initialized voting power
+func (c *Client) IsVotingInitialized() (api.PDAOIsVotingInitializedResponse, error) {
+	responseBytes, err := c.callAPI("pdao is-voting-initialized")
+	if err != nil {
+		return api.PDAOIsVotingInitializedResponse{}, fmt.Errorf("could not call is-voting-initialized: %w", err)
+	}
+	var response api.PDAOIsVotingInitializedResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOIsVotingInitializedResponse{}, fmt.Errorf("could not decode is-voting-initialized response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOIsVotingInitializedResponse{}, fmt.Errorf("error after requesting is-voting-initialized: %s", response.Error)
+	}
+	return response, nil
+}
+
+// CanInitializeVoting fetches the gas estimate and returns and error if voting is already initialized
 func (c *Client) CanInitializeVoting() (api.PDAOCanInitializeVotingResponse, error) {
 	responseBytes, err := c.callAPI("pdao can-initialize-voting")
 	if err != nil {
