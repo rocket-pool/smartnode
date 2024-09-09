@@ -89,6 +89,7 @@ func (c *minipoolRescueDissolvedDetailsContext) PrepareData(addresses []common.A
 			MinipoolState:   mpCommon.Status.Formatted(),
 			IsFinalized:     mpCommon.IsFinalised.Get(),
 			MinipoolVersion: mpCommon.Version,
+			BeaconBalance:   big.NewInt(0),
 		}
 
 		if mpDetails.MinipoolState != rptypes.MinipoolStatus_Dissolved || mpDetails.IsFinalized {
