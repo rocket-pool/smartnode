@@ -98,6 +98,7 @@ func (c *securityProposalsContext) PrepareData(data *api.SecurityProposalsData, 
 	for _, scProp := range scProps {
 		prop := api.SecurityProposalDetails{
 			ID:              scProp.ID,
+			DAO:             "rocketDAOSecurityProposals",
 			ProposerAddress: scProp.ProposerAddress.Get(),
 			Message:         scProp.Message.Get(),
 			CreatedTime:     scProp.CreatedTime.Formatted(),
