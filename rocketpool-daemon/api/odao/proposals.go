@@ -106,6 +106,7 @@ func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData
 			IsCancelled:     odaoProp.IsCancelled.Get(),
 			IsExecuted:      odaoProp.IsExecuted.Get(),
 			Payload:         odaoProp.Payload.Get(),
+			State:           odaoProp.State.Formatted(),
 		}
 		prop.PayloadStr, err = odaoProp.GetPayloadAsString()
 		if err != nil {
