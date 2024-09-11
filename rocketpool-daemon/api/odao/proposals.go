@@ -93,6 +93,7 @@ func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData
 	for _, odaoProp := range odaoProps {
 		prop := api.OracleDaoProposalDetails{
 			ID:              odaoProp.ID,
+			DAO:             "rocketDAONodeTrustedProposals",
 			ProposerAddress: odaoProp.ProposerAddress.Get(),
 			Message:         odaoProp.Message.Get(),
 			CreatedTime:     odaoProp.CreatedTime.Formatted(),
@@ -105,6 +106,7 @@ func (c *oracleDaoProposalsContext) PrepareData(data *api.OracleDaoProposalsData
 			IsCancelled:     odaoProp.IsCancelled.Get(),
 			IsExecuted:      odaoProp.IsExecuted.Get(),
 			Payload:         odaoProp.Payload.Get(),
+			State:           odaoProp.State.Formatted(),
 		}
 		prop.PayloadStr, err = odaoProp.GetPayloadAsString()
 		if err != nil {
