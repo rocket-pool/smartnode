@@ -487,7 +487,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rocketSignerRegistryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  "0x15Da69Dde70998FC045a260f84ad4aB0A2204e76",
 			config.Network_Holesky: "0x657FDE6B4764E26A81A323dbb79791A11B90dD91",
 		},
 
