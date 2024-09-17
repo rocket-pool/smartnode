@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils"
 	"github.com/urfave/cli"
@@ -45,6 +46,20 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 		return nil, err
 	}
 	response.InsufficientBalance = (amountWei.Cmp(rplBalance) > 0)
+
+	// Get the min RPL stake
+	minRplStake, err := node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+	response.MinimumRplStake = minRplStake
+
+	// Get the max stake fraction
+	maxStakeFraction, err := protocol.GetMaximumPerMinipoolStake(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	response.MaximumStakeFraction = maxStakeFraction
 
 	// Get gas estimates
 	opts, err := w.GetNodeAccountTransactor()
