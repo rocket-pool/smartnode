@@ -132,7 +132,7 @@ func (c *oracleDaoProposeSettingContext) PrepareData(data *api.OracleDaoProposeS
 			data.TxInfo = txInfo
 		}
 	}
-	return types.ResponseStatus_Error, nil
+	return types.ResponseStatus_Success, nil
 }
 
 func (c *oracleDaoProposeSettingContext) createProposalTx(category oracle.SettingsCategory, opts *bind.TransactOpts) (bool, *eth.TransactionInfo, error, error) {
