@@ -254,7 +254,7 @@ func (c *nodeDepositContext) PrepareData(data *api.NodeDepositData, opts *bind.T
 	// Get validator deposit data and associated parameters
 	// NOTE: validation is done in the NMC now
 	depositAmount := uint64(1e9) // 1 ETH in gwei
-	depositData, err := validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, rs.EthNetworkName)
+	depositData, err := validator.GetDepositData(c.handler.logger.Logger, validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, rs.EthNetworkName)
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error getting deposit data: %w", err)
 	}

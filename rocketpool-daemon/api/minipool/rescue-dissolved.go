@@ -140,7 +140,7 @@ func (c *minipoolRescueDissolvedContext) getDepositTx(minipoolAddress common.Add
 
 	// Get validator deposit data
 	amountGwei := big.NewInt(0).Div(amount, big.NewInt(1e9)).Uint64()
-	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, c.res.GenesisForkVersion, amountGwei, c.res.EthNetworkName)
+	depositData, err := nmc_validator.GetDepositData(c.handler.logger.Logger, validatorKey, withdrawalCredentials, c.res.GenesisForkVersion, amountGwei, c.res.EthNetworkName)
 	if err != nil {
 		return nil, err
 	}

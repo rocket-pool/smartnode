@@ -116,7 +116,7 @@ func (c *minipoolStakeContext) PrepareData(data *types.BatchTxInfoData, opts *bi
 		}
 
 		// Get validator deposit data
-		depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, rs.EthNetworkName)
+		depositData, err := nmc_validator.GetDepositData(c.handler.logger.Logger, validatorKey, withdrawalCredentials, rs.GenesisForkVersion, depositAmount, rs.EthNetworkName)
 		if err != nil {
 			return types.ResponseStatus_Error, fmt.Errorf("error getting deposit data for validator %s: %w", pubkey.Hex(), err)
 		}

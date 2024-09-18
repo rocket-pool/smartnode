@@ -193,7 +193,7 @@ func (t *StakePrelaunchMinipools) createStakeMinipoolTx(mpd *rpstate.NativeMinip
 	}
 
 	// Get validator deposit data
-	depositData, err := nmc_validator.GetDepositData(validatorKey, withdrawalCredentials, t.res.GenesisForkVersion, depositAmount, t.res.EthNetworkName)
+	depositData, err := nmc_validator.GetDepositData(t.logger, validatorKey, withdrawalCredentials, t.res.GenesisForkVersion, depositAmount, t.res.EthNetworkName)
 	if err != nil {
 		return nil, err
 	}
