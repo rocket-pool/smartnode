@@ -217,11 +217,7 @@ func (m *DirectionalModal) SetFocus(index int) *DirectionalModal {
 
 // Focus is called when this primitive receives focus.
 func (m *DirectionalModal) Focus(delegate func(p tview.Primitive)) {
-	if m.direction == DirectionalModalHorizontal {
-		delegate(m.forms[0])
-	} else {
-		delegate(m.forms[0])
-	}
+	delegate(m.forms[0])
 }
 
 // HasFocus returns whether or not this primitive has focus.
