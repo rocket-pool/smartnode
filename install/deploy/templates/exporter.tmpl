@@ -29,7 +29,7 @@ services:
       - "/sys:/host/sys:ro,rslave"
       - "/var/lib/node_exporter/textfile_collector:/host/textfile_collector:ro"
       {{- if .Metrics.Exporter.RootFs.Value }}
-      - "/:/rootfs:ro"
+      - "/:/rootfs:ro,rslave"
       {{- end}}
     network_mode: host
 networks:
