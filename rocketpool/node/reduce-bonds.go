@@ -281,7 +281,7 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
 	// Distribute
@@ -400,7 +400,7 @@ func (t *reduceBonds) reduceBond(mpd *rpstate.NativeMinipoolDetails, windowStart
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
 	// Reduce bond

@@ -394,6 +394,24 @@ func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, node
 	return state, totalEffectiveStake, nil
 }
 
+// Checks if the user-inputted priorityFee is greater than the oracle based maxFee
+// If so, return the min(priorityFee, 25% of the oracle based maxFee)
+func GetPriorityFee(priorityFee *big.Int, maxFee *big.Int) *big.Int {
+	// Check if priorityFee is less than maxFee
+	if priorityFee.Cmp(maxFee) < 0 {
+		return priorityFee
+	}
+
+	quarterMaxFee := new(big.Int).Div(maxFee, big.NewInt(4))
+
+	// Gets the min(priorityFee, 25% of the oracle based maxFee)
+	if priorityFee.Cmp(quarterMaxFee) < 0 {
+		return priorityFee
+	} else {
+		return quarterMaxFee
+	}
+}
+
 // Check if Houston has been deployed yet
 func printHoustonMessage(log *log.ColorLogger) {
 	log.Println(`

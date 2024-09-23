@@ -144,7 +144,7 @@ func (t *autoInitVotingPower) submitInitializeVotingPower() error {
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
 	// Initialize the Voting Power
