@@ -26,6 +26,7 @@ import (
 	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 
+	fee "github.com/rocket-pool/smartnode/rocketpool/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -516,7 +517,7 @@ func (t *processPenalties) submitPenalty(minipoolAddress common.Address, block *
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	opts.GasTipCap = fee.GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
 	hash, err := network.SubmitPenalty(t.rp, minipoolAddress, slotBig, opts)
