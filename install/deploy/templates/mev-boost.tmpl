@@ -19,6 +19,7 @@ services:
       - NETWORK={{.Network}}
       - MEV_BOOST_PORT={{.MevBoost.Port}}
       - MEV_BOOST_RELAYS={{.MevBoost.GetRelayString}}
+      - MEV_BOOST_ADDITIONAL_FLAGS={{.MevBoost.AdditionalFlags}}
     entrypoint: sh
     command: "/opt/rocketpool/scripts/{{.GetMevBoostStartScript}}"
     cap_drop:
