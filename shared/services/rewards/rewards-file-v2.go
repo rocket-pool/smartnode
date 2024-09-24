@@ -198,6 +198,16 @@ func (f *RewardsFile_v2) GetConsensusEndBlock() uint64 {
 	return f.RewardsFileHeader.ConsensusEndBlock
 }
 
+// Get the start time
+func (f *RewardsFile_v2) GetStartTime() time.Time {
+	return f.RewardsFileHeader.StartTime
+}
+
+// Get the end time
+func (f *RewardsFile_v2) GetEndTime() time.Time {
+	return f.RewardsFileHeader.EndTime
+}
+
 // Get all of the node addresses with rewards in this file
 // NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
 func (f *RewardsFile_v2) GetNodeAddresses() []common.Address {

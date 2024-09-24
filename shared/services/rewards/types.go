@@ -67,6 +67,8 @@ type IRewardsFile interface {
 	GetTotalPoolStakerSmoothingPoolEth() *big.Int
 	GetExecutionEndBlock() uint64
 	GetConsensusEndBlock() uint64
+	GetStartTime() time.Time
+	GetEndTime() time.Time
 
 	// Get all of the node addresses with rewards in this file
 	// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it

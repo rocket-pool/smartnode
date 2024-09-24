@@ -31,35 +31,35 @@ var _ IRewardsFile = (*ssz_types.SSZFile_v1)(nil)
 
 // Implementation for tree generator ruleset v9
 type treeGeneratorImpl_v9 struct {
-	networkState            *state.NetworkState
-	rewardsFile             *ssz_types.SSZFile_v1
-	elSnapshotHeader        *types.Header
-	snapshotEnd             *SnapshotEnd
-	log                     *log.ColorLogger
-	logPrefix               string
-	rp                      *rocketpool.RocketPool
-	cfg                     *config.RocketPoolConfig
-	bc                      beacon.Client
-	opts                    *bind.CallOpts
-	nodeDetails             []*NodeSmoothingDetails
-	smoothingPoolBalance    *big.Int
-	intervalDutiesInfo      *IntervalDutiesInfo
-	slotsPerEpoch           uint64
-	validatorIndexMap       map[string]*MinipoolInfo
-	elStartTime             time.Time
-	elEndTime               time.Time
-	validNetworkCache       map[uint64]bool
-	epsilon                 *big.Int
-	intervalSeconds         *big.Int
-	beaconConfig            beacon.Eth2Config
-	validatorStatusMap      map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
-	totalAttestationScore   *big.Int
-	successfulAttestations  uint64
-	genesisTime             time.Time
-	invalidNetworkNodes     map[common.Address]uint64
-	minipoolPerformanceFile *MinipoolPerformanceFile_v2
-	nodeRewards             map[common.Address]*ssz_types.NodeReward
-	networkRewards          map[ssz_types.Layer]*ssz_types.NetworkReward
+	networkState                 *state.NetworkState
+	rewardsFile                  *ssz_types.SSZFile_v1
+	elSnapshotHeader             *types.Header
+	snapshotEnd                  *SnapshotEnd
+	log                          *log.ColorLogger
+	logPrefix                    string
+	rp                           *rocketpool.RocketPool
+	previousRewardsPoolAddresses []common.Address
+	bc                           beacon.Client
+	opts                         *bind.CallOpts
+	nodeDetails                  []*NodeSmoothingDetails
+	smoothingPoolBalance         *big.Int
+	intervalDutiesInfo           *IntervalDutiesInfo
+	slotsPerEpoch                uint64
+	validatorIndexMap            map[string]*MinipoolInfo
+	elStartTime                  time.Time
+	elEndTime                    time.Time
+	validNetworkCache            map[uint64]bool
+	epsilon                      *big.Int
+	intervalSeconds              *big.Int
+	beaconConfig                 beacon.Eth2Config
+	validatorStatusMap           map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
+	totalAttestationScore        *big.Int
+	successfulAttestations       uint64
+	genesisTime                  time.Time
+	invalidNetworkNodes          map[common.Address]uint64
+	minipoolPerformanceFile      *MinipoolPerformanceFile_v2
+	nodeRewards                  map[common.Address]*ssz_types.NodeReward
+	networkRewards               map[ssz_types.Layer]*ssz_types.NetworkReward
 }
 
 // Create a new tree generator
@@ -105,21 +105,21 @@ func (r *treeGeneratorImpl_v9) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v9) generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*GenerateTreeResult, error) {
+func (r *treeGeneratorImpl_v9) generateTree(rp *rocketpool.RocketPool, networkName string, previousRewardsPoolAddresses []common.Address, bc beacon.Client) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	// Provision some struct params
 	r.rp = rp
-	r.cfg = cfg
+	r.previousRewardsPoolAddresses = previousRewardsPoolAddresses
 	r.bc = bc
 	r.validNetworkCache = map[uint64]bool{
 		0: true,
 	}
 
 	// Set the network name
-	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(fmt.Sprint(cfg.Smartnode.Network.Value))
-	r.minipoolPerformanceFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(networkName)
+	r.minipoolPerformanceFile.Network = networkName
 	r.minipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
 	r.minipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
@@ -190,19 +190,18 @@ func (r *treeGeneratorImpl_v9) generateTree(rp *rocketpool.RocketPool, cfg *conf
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v9) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error) {
+func (r *treeGeneratorImpl_v9) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, networkName string, bc beacon.Client) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
-	r.cfg = cfg
 	r.bc = bc
 	r.validNetworkCache = map[uint64]bool{
 		0: true,
 	}
 
 	// Set the network name
-	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(fmt.Sprint(cfg.Smartnode.Network.Value))
-	r.minipoolPerformanceFile.Network = fmt.Sprint(cfg.Smartnode.Network.Value)
+	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(networkName)
+	r.minipoolPerformanceFile.Network = networkName
 	r.minipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
 	r.minipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
@@ -505,7 +504,7 @@ func (r *treeGeneratorImpl_v9) calculateEthRewards(checkBeaconPerformance bool) 
 
 	// Get the start time of this interval based on the event from the previous one
 	//previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts) // This is immutable so querying at the head is fine and mitigates issues around calls for pruned EL state
-	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, nil)
+	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.previousRewardsPoolAddresses, r.rewardsFile.Index-1, r.opts)
 	if err != nil {
 		return err
 	}
@@ -1183,6 +1182,6 @@ func (r *treeGeneratorImpl_v9) getMinipoolBondAndNodeFee(details *rpstate.Native
 	return currentBond, currentFee
 }
 
-func (r *treeGeneratorImpl_v9) saveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
-	return saveRewardsArtifacts(r.cfg.Smartnode, treeResult, nodeTrusted)
+func (r *treeGeneratorImpl_v9) saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return saveRewardsArtifacts(smartnode, treeResult, nodeTrusted)
 }

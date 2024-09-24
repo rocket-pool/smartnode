@@ -7,31 +7,30 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 // TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetClaimIntervalTime(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
+func GetClaimIntervalTime(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	return rewards.GetClaimIntervalTime(rp, opts)
 }
 
 // TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetNodeOperatorRewardsPercent(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetNodeOperatorRewardsPercent(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	return rewards.GetNodeOperatorRewardsPercent(rp, opts)
 }
 
 // TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetTrustedNodeOperatorRewardsPercent(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetTrustedNodeOperatorRewardsPercent(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	return rewards.GetTrustedNodeOperatorRewardsPercent(rp, opts)
 }
 
 // TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetProtocolDaoRewardsPercent(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetProtocolDaoRewardsPercent(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	return rewards.GetProtocolDaoRewardsPercent(rp, opts)
 }
 
 // TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetPendingRPLRewards(cfg *config.RocketPoolConfig, index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetPendingRPLRewards(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	return rewards.GetPendingRPLRewards(rp, opts)
 }
 

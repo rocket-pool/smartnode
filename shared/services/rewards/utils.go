@@ -88,8 +88,11 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.Index = interval
 	var event rewards.RewardsEvent
 
+	// Get previous rewards pool addresses
+	previousRewardsPoolAddresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
+
 	// Get the event details for this interval
-	event, err = GetRewardSnapshotEvent(rp, cfg, interval, opts)
+	event, err = GetRewardSnapshotEvent(rp, previousRewardsPoolAddresses, interval, opts)
 	if err != nil {
 		return
 	}
@@ -152,10 +155,9 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 }
 
 // Get the event for a rewards snapshot
-func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
+func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, previousRewardsPoolAddresses []common.Address, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
 
-	addresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
-	found, event, err := rewards.GetRewardsEvent(rp, interval, addresses, opts)
+	found, event, err := rewards.GetRewardsEvent(rp, interval, previousRewardsPoolAddresses, opts)
 	if err != nil {
 		return rewards.RewardsEvent{}, fmt.Errorf("error getting rewards event for interval %d: %w", interval, err)
 	}

@@ -139,8 +139,11 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	generationPrefix := fmt.Sprintf("[Interval %d Tree]", index)
 	t.log.Printlnf("%s Starting generation of Merkle rewards tree for interval %d.", generationPrefix, index)
 
+	// Get previous rewards pool addresses
+	previousRewardsPoolAddresses := t.cfg.Smartnode.GetPreviousRewardsPoolAddresses()
+
 	// Find the event for this interval
-	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, t.cfg, index, nil)
+	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, previousRewardsPoolAddresses, index, nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return

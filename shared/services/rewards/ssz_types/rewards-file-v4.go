@@ -446,6 +446,14 @@ func (f *SSZFile_v1) GetExecutionEndBlock() uint64 {
 	return f.ExecutionEndBlock
 }
 
+func (f *SSZFile_v1) GetStartTime() time.Time {
+	return f.StartTime
+}
+
+func (f *SSZFile_v1) GetEndTime() time.Time {
+	return f.EndTime
+}
+
 func (f *SSZFile_v1) GetIntervalsPassed() uint64 {
 	return f.IntervalsPassed
 }

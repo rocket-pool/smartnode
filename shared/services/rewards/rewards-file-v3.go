@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -102,14 +103,24 @@ func (f *RewardsFile_v3) GetTotalNodeOperatorSmoothingPoolEth() *big.Int {
 	return &f.RewardsFileHeader.TotalRewards.NodeOperatorSmoothingPoolEth.Int
 }
 
-// Get the the execution end block
+// Get the execution end block
 func (f *RewardsFile_v3) GetExecutionEndBlock() uint64 {
 	return f.RewardsFileHeader.ExecutionEndBlock
 }
 
-// Get the the consensus end block
+// Get the consensus end block
 func (f *RewardsFile_v3) GetConsensusEndBlock() uint64 {
 	return f.RewardsFileHeader.ConsensusEndBlock
+}
+
+// Get the start time
+func (f *RewardsFile_v3) GetStartTime() time.Time {
+	return f.RewardsFileHeader.StartTime
+}
+
+// Get the end time
+func (f *RewardsFile_v3) GetEndTime() time.Time {
+	return f.RewardsFileHeader.EndTime
 }
 
 // Get all of the node addresses with rewards in this file
