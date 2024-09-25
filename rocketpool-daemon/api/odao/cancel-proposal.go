@@ -40,7 +40,7 @@ func (f *oracleDaoCancelProposalContextFactory) Create(args url.Values) (*oracle
 
 func (f *oracleDaoCancelProposalContextFactory) RegisterRoute(router *mux.Router) {
 	server.RegisterSingleStageRoute[*oracleDaoCancelProposalContext, api.OracleDaoCancelProposalData](
-		router, "proposal/execute", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
+		router, "proposal/cancel", f, f.handler.logger.Logger, f.handler.serviceProvider.ServiceProvider,
 	)
 }
 
