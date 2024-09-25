@@ -110,7 +110,7 @@ func (c *oracleDaoExecuteProposalsContext) PrepareData(dataBatch *types.DataBatc
 		data := &dataBatch.Batch[i]
 		state := prop.State.Formatted()
 		data.DoesNotExist = (c.ids[i] > c.dpm.ProposalCount.Formatted())
-		data.InvalidState = !(state == rptypes.ProposalState_Pending || state == rptypes.ProposalState_Active)
+		data.InvalidState = state == rptypes.ProposalState_Pending || state == rptypes.ProposalState_Active
 		data.CanExecute = !(data.DoesNotExist || data.InvalidState)
 
 		// Get the tx
