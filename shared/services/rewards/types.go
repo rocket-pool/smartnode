@@ -1,12 +1,16 @@
 package rewards
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/wealdtech/go-merkletree"
 )
@@ -24,6 +28,17 @@ const (
 
 	minRewardsFileVersionSSZ = rewardsFileVersionThree
 )
+
+// RewardsExecutionClient defines and interface
+// that contains only the functions from rocketpool.RocketPool
+// required for rewards generation.
+// This facade makes it easier to perform dependency injection in tests.
+type RewardsExecutionClient interface {
+	GetNetworkEnabled(networkId *big.Int, opts *bind.CallOpts) (bool, error)
+	HeaderByNumber(context.Context, *big.Int) (*ethtypes.Header, error)
+	GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error)
+	GetRewardSnapshotEvent(previousRewardsPoolAddresses []common.Address, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error)
+}
 
 // Interface for version-agnostic minipool performance
 type IMinipoolPerformanceFile interface {

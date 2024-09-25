@@ -12,8 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
@@ -33,7 +31,7 @@ type treeGeneratorImpl_v8 struct {
 	elSnapshotHeader             *types.Header
 	log                          *log.ColorLogger
 	logPrefix                    string
-	rp                           *rocketpool.RocketPool
+	rp                           RewardsExecutionClient
 	previousRewardsPoolAddresses []common.Address
 	bc                           beacon.Client
 	opts                         *bind.CallOpts
@@ -104,7 +102,7 @@ func (r *treeGeneratorImpl_v8) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v8) generateTree(rp *rocketpool.RocketPool, networkName string, previousRewardsPoolAddresses []common.Address, bc beacon.Client) (*GenerateTreeResult, error) {
+func (r *treeGeneratorImpl_v8) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc beacon.Client) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -181,7 +179,7 @@ func (r *treeGeneratorImpl_v8) generateTree(rp *rocketpool.RocketPool, networkNa
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v8) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, networkName string, bc beacon.Client) (*big.Int, error) {
+func (r *treeGeneratorImpl_v8) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc beacon.Client) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
@@ -535,7 +533,7 @@ func (r *treeGeneratorImpl_v8) calculateEthRewards(checkBeaconPerformance bool) 
 
 	// Get the start time of this interval based on the event from the previous one
 	//previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts) // This is immutable so querying at the head is fine and mitigates issues around calls for pruned EL state
-	previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.previousRewardsPoolAddresses, r.rewardsFile.Index-1, nil)
+	previousIntervalEvent, err := r.rp.GetRewardSnapshotEvent(r.previousRewardsPoolAddresses, r.rewardsFile.Index-1, nil)
 	if err != nil {
 		return err
 	}
@@ -1116,7 +1114,7 @@ func (r *treeGeneratorImpl_v8) validateNetwork(network uint64) (bool, error) {
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
 		var err error
-		valid, err = tnsettings.GetNetworkEnabled(r.rp, big.NewInt(int64(network)), r.opts)
+		valid, err = r.rp.GetNetworkEnabled(big.NewInt(int64(network)), r.opts)
 		if err != nil {
 			return false, err
 		}
@@ -1163,7 +1161,7 @@ func (r *treeGeneratorImpl_v8) getStartBlocksForInterval(previousIntervalEvent r
 		// We are pre-merge, so get the first block after the one from the previous interval
 		r.rewardsFile.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
 		r.rewardsFile.MinipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
-		startElHeader, err = r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(r.rewardsFile.ExecutionStartBlock)))
+		startElHeader, err = r.rp.HeaderByNumber(context.Background(), big.NewInt(int64(r.rewardsFile.ExecutionStartBlock)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL start block %d: %w", r.rewardsFile.ExecutionStartBlock, err)
 		}
@@ -1171,7 +1169,7 @@ func (r *treeGeneratorImpl_v8) getStartBlocksForInterval(previousIntervalEvent r
 		// We are post-merge, so get the EL block corresponding to the BC block
 		r.rewardsFile.ExecutionStartBlock = elBlockNumber
 		r.rewardsFile.MinipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
-		startElHeader, err = r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
+		startElHeader, err = r.rp.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL header for block %d: %w", elBlockNumber, err)
 		}

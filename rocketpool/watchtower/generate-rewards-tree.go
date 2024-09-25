@@ -142,8 +142,10 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	// Get previous rewards pool addresses
 	previousRewardsPoolAddresses := t.cfg.Smartnode.GetPreviousRewardsPoolAddresses()
 
+	rewardsClient := rprewards.NewRewardsExecutionClient(t.rp)
+
 	// Find the event for this interval
-	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(t.rp, previousRewardsPoolAddresses, index, nil)
+	rewardsEvent, err := rewardsClient.GetRewardSnapshotEvent(previousRewardsPoolAddresses, index, nil)
 	if err != nil {
 		t.handleError(fmt.Errorf("%s Error getting event for interval %d: %w", generationPrefix, index, err))
 		return

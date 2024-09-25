@@ -61,7 +61,7 @@ type TreeGenerator struct {
 	rewardsIntervalInfos map[uint64]rewardsIntervalInfo
 	logger               *log.ColorLogger
 	logPrefix            string
-	rp                   *rocketpool.RocketPool
+	rp                   *defaultRewardsExecutionClient
 	cfg                  *config.RocketPoolConfig
 	bc                   beacon.Client
 	index                uint64
@@ -84,8 +84,8 @@ type SnapshotEnd struct {
 }
 
 type treeGeneratorImpl interface {
-	generateTree(rp *rocketpool.RocketPool, networkName string, previousRewardsPoolAddresses []common.Address, bc beacon.Client) (*GenerateTreeResult, error)
-	approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, networkName string, bc beacon.Client) (*big.Int, error)
+	generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc beacon.Client) (*GenerateTreeResult, error)
+	approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc beacon.Client) (*big.Int, error)
 	getRulesetVersion() uint64
 	// Returns the primary artifact cid for consensus, all cids of all files in a map, and any potential errors
 	saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)
@@ -95,7 +95,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	t := &TreeGenerator{
 		logger:           logger,
 		logPrefix:        logPrefix,
-		rp:               rp,
+		rp:               &defaultRewardsExecutionClient{rp},
 		cfg:              cfg,
 		bc:               bc,
 		index:            index,

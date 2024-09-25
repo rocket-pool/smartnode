@@ -11,8 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ipfs/go-cid"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -30,7 +28,7 @@ type treeGeneratorImpl_v9_rolling struct {
 	snapshotEnd                  *SnapshotEnd
 	log                          *log.ColorLogger
 	logPrefix                    string
-	rp                           *rocketpool.RocketPool
+	rp                           RewardsExecutionClient
 	previousRewardsPoolAddresses []common.Address
 	bc                           beacon.Client
 	opts                         *bind.CallOpts
@@ -94,7 +92,7 @@ func (r *treeGeneratorImpl_v9_rolling) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v9_rolling) generateTree(rp *rocketpool.RocketPool, networkName string, previousRewardsPoolAddresses []common.Address, bc beacon.Client) (*GenerateTreeResult, error) {
+func (r *treeGeneratorImpl_v9_rolling) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc beacon.Client) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -178,7 +176,7 @@ func (r *treeGeneratorImpl_v9_rolling) generateTree(rp *rocketpool.RocketPool, n
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v9_rolling) approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, networkName string, bc beacon.Client) (*big.Int, error) {
+func (r *treeGeneratorImpl_v9_rolling) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc beacon.Client) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
@@ -646,7 +644,7 @@ func (r *treeGeneratorImpl_v9_rolling) validateNetwork(network uint64) (bool, er
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
 		var err error
-		valid, err = tnsettings.GetNetworkEnabled(r.rp, big.NewInt(int64(network)), r.opts)
+		valid, err = r.rp.GetNetworkEnabled(big.NewInt(int64(network)), r.opts)
 		if err != nil {
 			return false, err
 		}
@@ -674,7 +672,7 @@ func (r *treeGeneratorImpl_v9_rolling) getBlocksAndTimesForInterval() (*types.He
 	elBlockNumber := beaconBlock.ExecutionBlockNumber
 	r.rewardsFile.ExecutionStartBlock = elBlockNumber
 	r.minipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
-	startElHeader, err := r.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
+	startElHeader, err := r.rp.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 	if err != nil {
 		return nil, fmt.Errorf("error getting EL header for block %d: %w", elBlockNumber, err)
 	}
