@@ -10,12 +10,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/gorilla/mux"
 	batch "github.com/rocket-pool/batch-query"
+	"github.com/rocket-pool/rocketpool-go/v2/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/v2/node"
 	"github.com/rocket-pool/rocketpool-go/v2/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/v2/tokens"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
+	"github.com/rocket-pool/node-manager-core/eth"
 	"github.com/rocket-pool/node-manager-core/utils/input"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/utils"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
@@ -60,6 +62,7 @@ type nodeStakeRplContext struct {
 	node      *node.Node
 	balance   *big.Int
 	allowance *big.Int
+	pSettings *protocol.ProtocolDaoSettings
 }
 
 func (c *nodeStakeRplContext) Initialize() (types.ResponseStatus, error) {
@@ -86,6 +89,11 @@ func (c *nodeStakeRplContext) Initialize() (types.ResponseStatus, error) {
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error creating RocketNodeStaking binding: %w", err)
 	}
+	pMgr, err := protocol.NewProtocolDaoManager(c.rp)
+	if err != nil {
+		return types.ResponseStatus_Error, fmt.Errorf("error creating pDAO manager binding: %w", err)
+	}
+	c.pSettings = pMgr.Settings
 	c.nsAddress = rns.Address
 	return types.ResponseStatus_Success, nil
 }
@@ -93,12 +101,17 @@ func (c *nodeStakeRplContext) Initialize() (types.ResponseStatus, error) {
 func (c *nodeStakeRplContext) GetState(mc *batch.MultiCaller) {
 	c.rpl.BalanceOf(mc, &c.balance, c.nodeAddress)
 	c.rpl.GetAllowance(mc, &c.allowance, c.nodeAddress, c.nsAddress)
+	eth.AddQueryablesToMulticall(mc,
+		c.node.MaximumRplStake,
+	)
 }
 
 func (c *nodeStakeRplContext) PrepareData(data *api.NodeStakeRplData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	data.InsufficientBalance = (c.amount.Cmp(c.balance) > 0)
 	data.Allowance = c.allowance
 	data.CanStake = !(data.InsufficientBalance)
+	data.MaximumStakeFraction = c.pSettings.Node.MaximumPerMinipoolStake.Raw()
+	data.MaximumRplStake = c.node.MaximumRplStake.Get()
 
 	if data.CanStake {
 		if c.allowance.Cmp(c.amount) < 0 {

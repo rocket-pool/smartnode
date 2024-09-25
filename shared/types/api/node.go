@@ -151,11 +151,13 @@ type NodeSwapRplData struct {
 }
 
 type NodeStakeRplData struct {
-	CanStake            bool                 `json:"canStake"`
-	InsufficientBalance bool                 `json:"insufficientBalance"`
-	Allowance           *big.Int             `json:"allowance"`
-	ApproveTxInfo       *eth.TransactionInfo `json:"approveTxInfo"`
-	StakeTxInfo         *eth.TransactionInfo `json:"stakeTxInfo"`
+	CanStake             bool                 `json:"canStake"`
+	InsufficientBalance  bool                 `json:"insufficientBalance"`
+	Allowance            *big.Int             `json:"allowance"`
+	ApproveTxInfo        *eth.TransactionInfo `json:"approveTxInfo"`
+	StakeTxInfo          *eth.TransactionInfo `json:"stakeTxInfo"`
+	MaximumStakeFraction *big.Int             `json:"maximumStakeFraction"`
+	MaximumRplStake      *big.Int             `json:"maximumRplStake"`
 }
 
 type NodeSetStakeRplForAllowedData struct {

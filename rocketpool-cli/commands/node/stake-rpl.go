@@ -128,7 +128,10 @@ func nodeStakeRpl(c *cli.Context) error {
 
 	// Run the stake TX
 	validated, err := tx.HandleTx(c, rp, stakeResponse.Data.StakeTxInfo,
-		fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach over 100%% collateral!", math.RoundDown(eth.WeiToEth(amountWei), 6)),
+		fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach %.6f staked RPL (%.0f%% of bonded eth)!",
+			math.RoundDown(eth.WeiToEth(amountWei), 6),
+			math.RoundDown(eth.WeiToEth(status.Data.MaximumRplStake), 6),
+			eth.WeiToEth(status.Data.MaximumStakeFraction)*100),
 		"staking RPL",
 		"Staking RPL...",
 	)
