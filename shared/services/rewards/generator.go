@@ -17,32 +17,39 @@ import (
 // Settings
 const (
 	SmoothingPoolDetailsBatchSize uint64 = 8
-	TestingInterval               uint64 = 1000000000 // A large number that won't ever actually be hit
+
+	// Obsoleted Treegen intervals (for documentation only)
+	// HoleskyV2Interval uint64 = 0
+	// HoleskyV3Interval uint64 = 0
+	// HoleskyV4Interval uint64 = 0
+	// HoleskyV5Interval uint64 = 0
+	// HoleskyV6Interval uint64 = 0
+	// HoleskyV7Interval uint64 = 0
+	// MainnetV2Interval uint64 = 4
+	// MainnetV3Interval uint64 = 5
+	// MainnetV4Interval uint64 = 6
+	// MainnetV5Interval uint64 = 8
+	// MainnetV6Interval uint64 = 12
+	// MainnetV7Interval uint64 = 15
+	// DevnetV2Interval uint64 = 0
+	// DevnetV3Interval uint64 = 0
+	// DevnetV4Interval uint64 = 0
+	// DevnetV5Interval uint64 = 0
+	// DevnetV6Interval uint64 = 0
+	// DevnetV7Interval uint64 = 0
+	// HoleskyV2Interval uint64 = 0
+	// HoleskyV3Interval uint64 = 0
+	// HoleskyV4Interval uint64 = 0
+	// HoleskyV5Interval uint64 = 0
+	// HoleskyV6Interval uint64 = 0
+	// HoleskyV7Interval uint64 = 0
 
 	// Mainnet intervals
-	MainnetV2Interval uint64 = 4
-	MainnetV3Interval uint64 = 5
-	MainnetV4Interval uint64 = 6
-	MainnetV5Interval uint64 = 8
-	MainnetV6Interval uint64 = 12
-	MainnetV7Interval uint64 = 15
 	MainnetV8Interval uint64 = 18
 
 	// Devnet intervals
-	DevnetV2Interval uint64 = 0
-	DevnetV3Interval uint64 = 0
-	DevnetV4Interval uint64 = 0
-	DevnetV5Interval uint64 = 0
-	DevnetV6Interval uint64 = 0
-	DevnetV7Interval uint64 = 0
 
 	// Holesky intervals
-	HoleskyV2Interval uint64 = 0
-	HoleskyV3Interval uint64 = 0
-	HoleskyV4Interval uint64 = 0
-	HoleskyV5Interval uint64 = 0
-	HoleskyV6Interval uint64 = 0
-	HoleskyV7Interval uint64 = 0
 	HoleskyV8Interval uint64 = 93
 )
 
@@ -92,22 +99,6 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 		v8_generator = newTreeGeneratorImpl_v8_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
 	}
 
-	// v7
-	var v7_generator treeGeneratorImpl
-	if rollingRecord == nil {
-		v7_generator = newTreeGeneratorImpl_v7(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
-	} else {
-		v7_generator = newTreeGeneratorImpl_v7_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
-	}
-
-	// v6
-	var v6_generator treeGeneratorImpl
-	if rollingRecord == nil {
-		v6_generator = newTreeGeneratorImpl_v6(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
-	} else {
-		v6_generator = newTreeGeneratorImpl_v6_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
-	}
-
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
@@ -115,49 +106,6 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 			mainnetStartInterval:  MainnetV8Interval,
 			holeskyStartInterval:  HoleskyV8Interval,
 			generator:             v8_generator,
-		},
-		{
-			rewardsRulesetVersion: 7,
-			mainnetStartInterval:  MainnetV7Interval,
-			devnetStartInterval:   DevnetV7Interval,
-			holeskyStartInterval:  HoleskyV7Interval,
-			generator:             v7_generator,
-		}, {
-			rewardsRulesetVersion: 6,
-			mainnetStartInterval:  MainnetV6Interval,
-			devnetStartInterval:   DevnetV6Interval,
-			holeskyStartInterval:  HoleskyV6Interval,
-			generator:             v6_generator,
-		}, {
-			rewardsRulesetVersion: 5,
-			mainnetStartInterval:  MainnetV5Interval,
-			devnetStartInterval:   DevnetV5Interval,
-			holeskyStartInterval:  HoleskyV5Interval,
-			generator:             newTreeGeneratorImpl_v5(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state),
-		}, {
-			rewardsRulesetVersion: 4,
-			mainnetStartInterval:  MainnetV4Interval,
-			devnetStartInterval:   DevnetV4Interval,
-			holeskyStartInterval:  HoleskyV4Interval,
-			generator:             newTreeGeneratorImpl_v4(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
-		}, {
-			rewardsRulesetVersion: 3,
-			mainnetStartInterval:  MainnetV3Interval,
-			devnetStartInterval:   DevnetV3Interval,
-			holeskyStartInterval:  HoleskyV3Interval,
-			generator:             newTreeGeneratorImpl_v3(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
-		}, {
-			rewardsRulesetVersion: 2,
-			mainnetStartInterval:  MainnetV2Interval,
-			devnetStartInterval:   DevnetV2Interval,
-			holeskyStartInterval:  HoleskyV2Interval,
-			generator:             newTreeGeneratorImpl_v2(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
-		}, {
-			rewardsRulesetVersion: 1,
-			mainnetStartInterval:  0,
-			devnetStartInterval:   0,
-			holeskyStartInterval:  0,
-			generator:             newTreeGeneratorImpl_v1(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed),
 		},
 	}
 
@@ -177,7 +125,8 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	network := t.cfg.Smartnode.Network.Value.(cfgtypes.Network)
 
 	// Determine which actual rulesets to use based on the current interval number, checking in descending order from the latest
-	// to interval 2 since interval 1 is the default
+	// to interval 2.
+	// Do not default- require intervals to be explicit
 	foundGenerator := false
 	foundApproximator := false
 	for i := uint64(len(t.rewardsIntervalInfos)); i > 1; i-- {
@@ -200,12 +149,8 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 		}
 	}
 
-	// Default to interval 1 if nothing could be found
-	if !foundGenerator {
-		t.generatorImpl = t.rewardsIntervalInfos[1].generator
-	}
-	if !foundApproximator {
-		t.approximatorImpl = t.rewardsIntervalInfos[1].generator
+	if !foundGenerator || !foundApproximator {
+		return nil, fmt.Errorf("No treegen implementation could be found for interval %d", t.index)
 	}
 
 	return t, nil
