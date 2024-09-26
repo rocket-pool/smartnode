@@ -1,4 +1,17 @@
-rocketpool (2.0.0~b3) UNRELEASED; urgency=medium
+rocketpool (2.0.0~b4) unstable; urgency=medium
+
+  * Fixed a bug while rescuing dissolved minipools
+  * Fixed a bug while setting the RPL withdrawal address 
+  * Updated the initialize voting command to mirror V1's behaviour
+  * Added a check to handle a case where bond reductions are disabled
+  * Updated the initialize voting command text 
+  * Updated the node status text to mirror V1 
+  * Fixed a bug while submitting odao proposals
+  * Fixed a bug with the odao and security list/detail commands (eg. rocketpool security proposal details or rocketpool odao proposals list)
+
+ -- Rocket Pool <dev@rocketpool.net>  Mon, 23 Sep 2024 01:23:54 +0000
+
+rocketpool (2.0.0~b3) unstable; urgency=medium
 
   * Fixed the `minipool close` issue.
   * Fixed the client mode logic. 
