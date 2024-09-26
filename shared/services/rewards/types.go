@@ -14,6 +14,10 @@ import (
 type rewardsFileVersion uint64
 
 const (
+	FarEpoch uint64 = 18446744073709551615
+)
+
+const (
 	rewardsFileVersionUnknown = iota
 	rewardsFileVersionOne
 	rewardsFileVersionTwo
