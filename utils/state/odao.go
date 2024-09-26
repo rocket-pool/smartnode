@@ -41,14 +41,14 @@ func GetOracleDaoMemberDetails(rp *rocketpool.RocketPool, contracts *NetworkCont
 	details := OracleDaoMemberDetails{}
 	details.Address = memberAddress
 
-	addOracleDaoMemberDetailsCalls(rp, contracts, contracts.Multicaller, &details, opts)
+	addOracleDaoMemberDetailsCalls(contracts, contracts.Multicaller, &details)
 
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
 		return OracleDaoMemberDetails{}, fmt.Errorf("error executing multicall: %w", err)
 	}
 
-	fixupOracleDaoMemberDetails(rp, &details, opts)
+	fixupOracleDaoMemberDetails(&details)
 
 	return details, nil
 }
@@ -142,7 +142,7 @@ func getOracleDaoDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts,
 				details := &memberDetails[j]
 				details.Address = address
 
-				addOracleDaoMemberDetailsCalls(rp, contracts, mc, details, opts)
+				addOracleDaoMemberDetailsCalls(contracts, mc, details)
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -160,14 +160,14 @@ func getOracleDaoDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts,
 	// Postprocessing
 	for i := range memberDetails {
 		details := &memberDetails[i]
-		fixupOracleDaoMemberDetails(rp, details, opts)
+		fixupOracleDaoMemberDetails(details)
 	}
 
 	return memberDetails, nil
 }
 
 // Add the Oracle DAO details getters to the multicaller
-func addOracleDaoMemberDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *OracleDaoMemberDetails, opts *bind.CallOpts) error {
+func addOracleDaoMemberDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *OracleDaoMemberDetails) error {
 	address := details.Address
 	mc.AddCall(contracts.RocketDAONodeTrusted, &details.Exists, "getMemberIsValid", address)
 	mc.AddCall(contracts.RocketDAONodeTrusted, &details.ID, "getMemberID", address)
@@ -181,7 +181,7 @@ func addOracleDaoMemberDetailsCalls(rp *rocketpool.RocketPool, contracts *Networ
 }
 
 // Fixes a member details struct with supplemental logic
-func fixupOracleDaoMemberDetails(rp *rocketpool.RocketPool, details *OracleDaoMemberDetails, opts *bind.CallOpts) error {
+func fixupOracleDaoMemberDetails(details *OracleDaoMemberDetails) error {
 	details.JoinedTime = convertToTime(details.joinedTimeRaw)
 	details.LastProposalTime = convertToTime(details.lastProposalTimeRaw)
 	return nil

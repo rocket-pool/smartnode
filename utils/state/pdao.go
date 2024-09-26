@@ -59,7 +59,7 @@ func GetProtocolDaoProposalDetails(rp *rocketpool.RocketPool, contracts *Network
 	rawDetails := protocolDaoProposalDetailsRaw{}
 	details.ID = proposalID
 
-	addProposalCalls(rp, contracts, contracts.Multicaller, &rawDetails, opts)
+	addProposalCalls(contracts, contracts.Multicaller, &rawDetails)
 
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
@@ -117,7 +117,7 @@ func getProposalDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, 
 				details := &propDetailsRaw[j]
 				details.ID = id
 
-				addProposalCalls(rp, contracts, mc, details, opts)
+				addProposalCalls(contracts, mc, details)
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -144,7 +144,7 @@ func getProposalDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, 
 }
 
 // Get the details of a proposal
-func addProposalCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *protocolDaoProposalDetailsRaw, opts *bind.CallOpts) error {
+func addProposalCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *protocolDaoProposalDetailsRaw) error {
 	id := big.NewInt(0).SetUint64(details.ID)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ProposerAddress, "getProposer", id)
 	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.DAO, "getDAO", id)

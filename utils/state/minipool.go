@@ -93,7 +93,7 @@ func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContr
 		return NativeMinipoolDetails{}, fmt.Errorf("error executing multicall: %w", err)
 	}
 
-	fixupMinipoolDetails(rp, &details, opts)
+	fixupMinipoolDetails(&details)
 
 	return details, nil
 }
@@ -426,7 +426,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 			for j := i; j < max; j++ {
 				details := &minipoolDetails[j]
 				details.Version = versions[j]
-				addMinipoolShareCalls(rp, contracts, mc, details, opts)
+				addMinipoolShareCalls(rp, mc, details, opts)
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -443,7 +443,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 
 	// Postprocess the minipools
 	for i := range minipoolDetails {
-		fixupMinipoolDetails(rp, &minipoolDetails[i], opts)
+		fixupMinipoolDetails(&minipoolDetails[i])
 	}
 
 	return minipoolDetails, nil
@@ -519,7 +519,7 @@ func addMinipoolDetailsCalls(rp *rocketpool.RocketPool, contracts *NetworkContra
 }
 
 // Add the calls for the minipool node and user share to the multicaller
-func addMinipoolShareCalls(rp *rocketpool.RocketPool, contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeMinipoolDetails, opts *bind.CallOpts) error {
+func addMinipoolShareCalls(rp *rocketpool.RocketPool, mc *multicall.MultiCaller, details *NativeMinipoolDetails, opts *bind.CallOpts) error {
 	// Create the minipool contract binding
 	address := details.MinipoolAddress
 	mp, err := minipool.NewMinipoolFromVersion(rp, address, details.Version, opts)
@@ -541,7 +541,7 @@ func addMinipoolShareCalls(rp *rocketpool.RocketPool, contracts *NetworkContract
 }
 
 // Fixes a minipool details struct with supplemental logic
-func fixupMinipoolDetails(rp *rocketpool.RocketPool, details *NativeMinipoolDetails, opts *bind.CallOpts) error {
+func fixupMinipoolDetails(details *NativeMinipoolDetails) error {
 
 	details.Status = types.MinipoolStatus(details.StatusRaw)
 	details.DepositType = types.MinipoolDeposit(details.DepositTypeRaw)
