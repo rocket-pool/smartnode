@@ -1,6 +1,7 @@
 package beacon
 
 import (
+	"slices"
 	"testing"
 	"time"
 )
@@ -53,5 +54,57 @@ func TestFirstSlotAtLeast(t *testing.T) {
 	result = config.FirstSlotAtLeast(int64(st))
 	if result != slots+config.GenesisEpoch*config.SlotsPerEpoch {
 		t.Fatal("Whole number seconds shouldn't round up")
+	}
+}
+
+func TestMarshalJSON(t *testing.T) {
+	config := &Eth2Config{
+		GenesisForkVersion:           []byte{0x00, 0x00, 0x00, 0x08},
+		GenesisValidatorsRoot:        []byte{0xfe, 0x44, 0x33, 0x22},
+		GenesisEpoch:                 10,
+		GenesisTime:                  10000,
+		SecondsPerSlot:               4,
+		SlotsPerEpoch:                32,
+		SecondsPerEpoch:              32 * 4,
+		EpochsPerSyncCommitteePeriod: 256,
+	}
+
+	json, err := config.MarshalJSON()
+	if err != nil {
+		t.Fatalf("error marshalling config: %v", err)
+	}
+
+	unmarshalled := &Eth2Config{}
+	err = unmarshalled.UnmarshalJSON(json)
+	if err != nil {
+		t.Fatalf("error unmarshalling config: %v", err)
+	}
+
+	if !slices.Equal(unmarshalled.GenesisForkVersion, config.GenesisForkVersion) {
+		t.Fatalf("genesis fork version should be %v, instead got %v", config.GenesisForkVersion, unmarshalled.GenesisForkVersion)
+	}
+
+	if !slices.Equal(unmarshalled.GenesisValidatorsRoot, config.GenesisValidatorsRoot) {
+		t.Fatalf("genesis validators root should be %v, instead got %v", config.GenesisValidatorsRoot, unmarshalled.GenesisValidatorsRoot)
+	}
+
+	if unmarshalled.GenesisEpoch != config.GenesisEpoch {
+		t.Fatalf("genesis epoch should be %v, instead got %v", config.GenesisEpoch, unmarshalled.GenesisEpoch)
+	}
+
+	if unmarshalled.GenesisTime != config.GenesisTime {
+		t.Fatalf("genesis time should be %v, instead got %v", config.GenesisTime, unmarshalled.GenesisTime)
+	}
+
+	if unmarshalled.SecondsPerSlot != config.SecondsPerSlot {
+		t.Fatalf("seconds per slot should be %v, instead got %v", config.SecondsPerSlot, unmarshalled.SecondsPerSlot)
+	}
+
+	if unmarshalled.SlotsPerEpoch != config.SlotsPerEpoch {
+		t.Fatalf("slots per epoch should be %v, instead got %v", config.SlotsPerEpoch, unmarshalled.SlotsPerEpoch)
+	}
+
+	if unmarshalled.EpochsPerSyncCommitteePeriod != config.EpochsPerSyncCommitteePeriod {
+		t.Fatalf("epochs per sync committee period should be %v, instead got %v", config.EpochsPerSyncCommitteePeriod, unmarshalled.EpochsPerSyncCommitteePeriod)
 	}
 }

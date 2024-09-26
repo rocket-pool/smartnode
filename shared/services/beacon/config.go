@@ -1,18 +1,62 @@
 package beacon
 
 import (
+	"encoding/json"
 	"time"
+
+	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 type Eth2Config struct {
-	GenesisForkVersion           []byte
-	GenesisValidatorsRoot        []byte
-	GenesisEpoch                 uint64
-	GenesisTime                  uint64
-	SecondsPerSlot               uint64
-	SlotsPerEpoch                uint64
-	SecondsPerEpoch              uint64
-	EpochsPerSyncCommitteePeriod uint64
+	GenesisForkVersion           []byte `json:"genesis_fork_version"`
+	GenesisValidatorsRoot        []byte `json:"genesis_validators_root"`
+	GenesisEpoch                 uint64 `json:"genesis_epoch"`
+	GenesisTime                  uint64 `json:"genesis_time"`
+	SecondsPerSlot               uint64 `json:"seconds_per_slot"`
+	SlotsPerEpoch                uint64 `json:"slots_per_epoch"`
+	SecondsPerEpoch              uint64 `json:"seconds_per_epoch"`
+	EpochsPerSyncCommitteePeriod uint64 `json:"epochs_per_sync_committee_period"`
+}
+
+func (c *Eth2Config) MarshalJSON() ([]byte, error) {
+	// GenesisForkVersion and GenesisValidatorsRoot are returned as hex strings with 0x prefixes.
+	// The other fields are returned as uint64s.
+	type Alias Eth2Config
+	return json.Marshal(&struct {
+		GenesisForkVersion    string `json:"genesis_fork_version"`
+		GenesisValidatorsRoot string `json:"genesis_validators_root"`
+		*Alias
+	}{
+		GenesisForkVersion:    hexutil.Encode(c.GenesisForkVersion),
+		GenesisValidatorsRoot: hexutil.Encode(c.GenesisValidatorsRoot),
+		Alias:                 (*Alias)(c),
+	})
+}
+
+func (c *Eth2Config) UnmarshalJSON(data []byte) error {
+	type Alias Eth2Config
+	aux := &struct {
+		GenesisForkVersion    string `json:"genesis_fork_version"`
+		GenesisValidatorsRoot string `json:"genesis_validators_root"`
+		*Alias
+	}{
+		Alias: (*Alias)(c),
+	}
+
+	err := json.Unmarshal(data, &aux)
+	if err != nil {
+		return err
+	}
+
+	c.GenesisForkVersion, err = hexutil.Decode(aux.GenesisForkVersion)
+	if err != nil {
+		return err
+	}
+	c.GenesisValidatorsRoot, err = hexutil.Decode(aux.GenesisValidatorsRoot)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // GetSlotTime returns the time of a given slot for the network described by Eth2Config.

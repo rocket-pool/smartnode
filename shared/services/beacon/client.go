@@ -28,18 +28,18 @@ type BeaconHead struct {
 	PreviousJustifiedEpoch uint64
 }
 type ValidatorStatus struct {
-	Pubkey                     types.ValidatorPubkey
-	Index                      string
-	WithdrawalCredentials      common.Hash
-	Balance                    uint64
-	Status                     ValidatorState
-	EffectiveBalance           uint64
-	Slashed                    bool
-	ActivationEligibilityEpoch uint64
-	ActivationEpoch            uint64
-	ExitEpoch                  uint64
-	WithdrawableEpoch          uint64
-	Exists                     bool
+	Pubkey                     types.ValidatorPubkey `json:"pubkey"`
+	Index                      string                `json:"index"`
+	WithdrawalCredentials      common.Hash           `json:"withdrawal_credentials"`
+	Balance                    uint64                `json:"balance"`
+	Status                     ValidatorState        `json:"status"`
+	EffectiveBalance           uint64                `json:"effective_balance"`
+	Slashed                    bool                  `json:"slashed"`
+	ActivationEligibilityEpoch uint64                `json:"activation_eligibility_epoch"`
+	ActivationEpoch            uint64                `json:"activation_epoch"`
+	ExitEpoch                  uint64                `json:"exit_epoch"`
+	WithdrawableEpoch          uint64                `json:"withdrawable_epoch"`
+	Exists                     bool                  `json:"exists"`
 }
 type Eth1Data struct {
 	DepositRoot  common.Hash

@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
@@ -31,37 +32,130 @@ var fifteenEth = big.NewInt(0).Mul(big.NewInt(15), oneEth)
 var _13_6137_Eth = big.NewInt(0).Mul(big.NewInt(136137), big.NewInt(1e14))
 var _13_Eth = big.NewInt(0).Mul(big.NewInt(13), oneEth)
 
+type ValidatorDetailsMap map[types.ValidatorPubkey]beacon.ValidatorStatus
+
+func (vdm ValidatorDetailsMap) MarshalJSON() ([]byte, error) {
+	// Marshal as a slice of ValidatorStatus
+	out := make([]beacon.ValidatorStatus, 0, len(vdm))
+	for _, v := range vdm {
+		out = append(out, v)
+	}
+	return json.Marshal(out)
+}
+
+func (vdm *ValidatorDetailsMap) UnmarshalJSON(data []byte) error {
+	// Unmarshal as a slice of ValidatorStatus
+	var inp []beacon.ValidatorStatus
+	err := json.Unmarshal(data, &inp)
+	if err != nil {
+		return err
+	}
+
+	*vdm = make(ValidatorDetailsMap, len(inp))
+
+	// Convert back to a map
+	for _, v := range inp {
+		// Return an error if the pubkey is already in the map
+		if _, exists := (*vdm)[v.Pubkey]; exists {
+			return fmt.Errorf("duplicate validator details for pubkey %s", v.Pubkey.Hex())
+		}
+		(*vdm)[v.Pubkey] = v
+	}
+	return nil
+}
+
 type NetworkState struct {
 	// Network version
 
 	// Block / slot for this state
-	ElBlockNumber    uint64
-	BeaconSlotNumber uint64
-	BeaconConfig     beacon.Eth2Config
+	ElBlockNumber    uint64            `json:"el_block_number"`
+	BeaconSlotNumber uint64            `json:"beacon_slot_number"`
+	BeaconConfig     beacon.Eth2Config `json:"beacon_config"`
 
 	// Network details
-	NetworkDetails *rpstate.NetworkDetails
+	NetworkDetails *rpstate.NetworkDetails `json:"network_details"`
 
 	// Node details
-	NodeDetails          []rpstate.NativeNodeDetails
-	NodeDetailsByAddress map[common.Address]*rpstate.NativeNodeDetails
+	NodeDetails []rpstate.NativeNodeDetails `json:"node_details"`
+	// NodeDetailsByAddress is an index over NodeDetails and is ignored when marshaling to JSON
+	// it is rebuilt when unmarshaling from JSON.
+	NodeDetailsByAddress map[common.Address]*rpstate.NativeNodeDetails `json:"-"`
 
 	// Minipool details
-	MinipoolDetails          []rpstate.NativeMinipoolDetails
-	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails
-	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails
+	MinipoolDetails []rpstate.NativeMinipoolDetails `json:"minipool_details"`
+	// These next two fields are indexes over MinipoolDetails and are ignored when marshaling to JSON
+	// they are rebuilt when unmarshaling from JSON.
+	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails   `json:"-"`
+	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails `json:"-"`
 
 	// Validator details
-	ValidatorDetails map[types.ValidatorPubkey]beacon.ValidatorStatus
+	ValidatorDetails ValidatorDetailsMap `json:"validator_details"`
 
 	// Oracle DAO details
-	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails
+	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails `json:"oracle_dao_member_details"`
 
 	// Protocol DAO proposals
-	ProtocolDaoProposalDetails []protocol.ProtocolDaoProposalDetails
+	ProtocolDaoProposalDetails []protocol.ProtocolDaoProposalDetails `json:"protocol_dao_proposal_details,omitempty"`
 
 	// Internal fields
 	log *log.ColorLogger
+}
+
+func (ns NetworkState) MarshalJSON() ([]byte, error) {
+	// No changes needed
+	type Alias NetworkState
+	a := (*Alias)(&ns)
+	return json.Marshal(a)
+}
+
+func (ns *NetworkState) UnmarshalJSON(data []byte) error {
+	type Alias NetworkState
+	var a Alias
+	err := json.Unmarshal(data, &a)
+	if err != nil {
+		return err
+	}
+	*ns = NetworkState(a)
+	// Rebuild the node details by address index
+	ns.NodeDetailsByAddress = make(map[common.Address]*rpstate.NativeNodeDetails)
+	for i, details := range ns.NodeDetails {
+		if _, ok := ns.NodeDetailsByAddress[details.NodeAddress]; ok {
+			return fmt.Errorf("duplicate node details for address %s", details.NodeAddress.Hex())
+		}
+		// N.B. &details is not the same as &ns.NodeDetails[i]
+		// &details is the address of the current element in the loop
+		// &ns.NodeDetails[i] is the address of the struct in the slice
+		ns.NodeDetailsByAddress[details.NodeAddress] = &ns.NodeDetails[i]
+	}
+
+	// Rebuild the minipool details by address index
+	ns.MinipoolDetailsByAddress = make(map[common.Address]*rpstate.NativeMinipoolDetails)
+	for i, details := range ns.MinipoolDetails {
+		if _, ok := ns.MinipoolDetailsByAddress[details.MinipoolAddress]; ok {
+			return fmt.Errorf("duplicate minipool details for address %s", details.MinipoolAddress.Hex())
+		}
+
+		// N.B. &details is not the same as &ns.MinipoolDetails[i]
+		// &details is the address of the current element in the loop
+		// &ns.MinipoolDetails[i] is the address of the struct in the slice
+		ns.MinipoolDetailsByAddress[details.MinipoolAddress] = &ns.MinipoolDetails[i]
+	}
+
+	// Rebuild the minipool details by node index
+	ns.MinipoolDetailsByNode = make(map[common.Address][]*rpstate.NativeMinipoolDetails)
+	for i, details := range ns.MinipoolDetails {
+		// See comments in above loops as to why we're using &ns.MinipoolDetails[i]
+		currentDetails := &ns.MinipoolDetails[i]
+		nodeList, exists := ns.MinipoolDetailsByNode[details.NodeAddress]
+		if !exists {
+			ns.MinipoolDetailsByNode[details.NodeAddress] = []*rpstate.NativeMinipoolDetails{currentDetails}
+			continue
+		}
+		// See comments in other loops
+		ns.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
+	}
+
+	return nil
 }
 
 // Creates a snapshot of the entire Rocket Pool network state, on both the Execution and Consensus layers
