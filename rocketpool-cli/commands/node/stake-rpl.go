@@ -34,6 +34,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		return err
 	}
 
+	// If hotfix is live and voting isn't initialized, display a warning
 	err = warnIfVotingUninitialized(rp, c, stakeRPLWarningMessage)
 	if err != nil {
 		return err

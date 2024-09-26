@@ -384,20 +384,24 @@ func SwapRpl(c *cli.Context, rp *client.Client, amountWei *big.Int) error {
 
 // Display a warning if hotfix is live and voting is uninitialized
 func warnIfVotingUninitialized(rp *client.Client, c *cli.Context, warningMessage string) error {
-	// TODO check if houston hotfix is deployed
-
-	// Check if voting is initialized
-	votingInitializedResponse, err := rp.Api.PDao.IsVotingInitialized()
+	hotfix, err := rp.Api.Network.IsHoustonHotfixDeployed()
 	if err != nil {
 		return err
 	}
 
-	if !votingInitializedResponse.Data.VotingInitialized {
-		fmt.Println("Your voting power hasn't been initialized yet. Please visit https://docs.rocketpool.net/guides/houston/participate#initializing-voting to learn more.")
-		// Post a warning about initializing voting
-		if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("%s%s%s\nWould you like to continue?", terminal.ColorYellow, warningMessage, terminal.ColorReset))) {
-			fmt.Println("Cancelled.")
-			return fmt.Errorf("operation cancelled by user")
+	if hotfix.Data.IsHoustonHotfixDeployed {
+		// Check if voting is initialized
+		votingInitializedResponse, err := rp.Api.PDao.IsVotingInitialized()
+		if err != nil {
+			return fmt.Errorf("error checking if voting is initialized: %w", err)
+		}
+		if !votingInitializedResponse.Data.VotingInitialized {
+			fmt.Println("Your voting power hasn't been initialized yet. Please visit https://docs.rocketpool.net/guides/houston/participate#initializing-voting to learn more.")
+			// Post a warning about initializing voting
+			if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("%s%s%s\nWould you like to continue?", terminal.ColorYellow, warningMessage, terminal.ColorReset))) {
+				fmt.Println("Cancelled.")
+				return fmt.Errorf("operation cancelled by user")
+			}
 		}
 	}
 

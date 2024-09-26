@@ -45,6 +45,7 @@ func newDepositPrompts(c *cli.Context, rp *client.Client, soloConversionPubkey *
 		return nil, nil
 	}
 
+	// If hotfix is live and voting isn't initialized, display a warning
 	err = warnIfVotingUninitialized(rp, c, depositWarningMessage)
 	if err != nil {
 		return nil, err

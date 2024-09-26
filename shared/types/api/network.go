@@ -102,3 +102,7 @@ func (ndcid *NetworkDepositContractInfoData) PrintMismatch() bool {
 	fmt.Printf("\tYour Beacon client is using deposit contract %s on chain %d.%s\n", ndcid.BeaconDepositContract.Hex(), ndcid.BeaconNetwork, terminal.ColorReset)
 	return true
 }
+
+type NetworkHotfixDeployedData struct {
+	IsHoustonHotfixDeployed bool `json:"isHoustonHotfixDeployed"`
+}
