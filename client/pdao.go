@@ -239,3 +239,8 @@ func (r *PDaoRequester) SetSignallingAddress(signallingAddress common.Address, s
 func (r *PDaoRequester) ClearSignallingAddress() (*types.ApiResponse[types.TxInfoData], error) {
 	return client.SendGetRequest[types.TxInfoData](r, "clear-signalling-address", "ClearSignallingAddress", nil)
 }
+
+// IsVotingInitialized checks if a node has initialized voting power
+func (r *PDaoRequester) IsVotingInitialized() (*types.ApiResponse[api.ProtocolDaoIsVotingInitializedData], error) {
+	return client.SendGetRequest[api.ProtocolDaoIsVotingInitializedData](r, "is-voting-initialized", "IsVotingInitialized", nil)
+}

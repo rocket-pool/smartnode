@@ -325,3 +325,7 @@ type SnapshotResponseData struct {
 	Error                   string                          `json:"error"`
 	ActiveSnapshotProposals []*sharedtypes.SnapshotProposal `json:"activeSnapshotProposals"`
 }
+
+type ProtocolDaoIsVotingInitializedData struct {
+	VotingInitialized bool `json:"votingInitialized"`
+}
