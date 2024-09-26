@@ -321,10 +321,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(rp, t.cfg, rp.Client, t.bc, t.log)
-	if err != nil {
-		return fmt.Errorf("error creating network state manager for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
-	}
+	mgr := state.NewNetworkStateManager(rp, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, t.log)
 
 	// Create a new state for the target block
 	state, err := mgr.GetStateForSlot(snapshotBeaconBlock)

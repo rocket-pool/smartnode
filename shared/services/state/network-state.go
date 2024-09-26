@@ -159,10 +159,7 @@ func (ns *NetworkState) UnmarshalJSON(data []byte) error {
 }
 
 // Creates a snapshot of the entire Rocket Pool network state, on both the Execution and Consensus layers
-func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config) (*NetworkState, error) {
-	// Get the relevant network contracts
-	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketpool.RocketPool, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig *beacon.Eth2Config) (*NetworkState, error) {
 
 	// Get the execution block for the given slot
 	beaconBlock, exists, err := bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
@@ -186,7 +183,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		MinipoolDetailsByNode:    map[common.Address][]*rpstate.NativeMinipoolDetails{},
 		BeaconSlotNumber:         slotNumber,
 		ElBlockNumber:            elBlockNumber,
-		BeaconConfig:             beaconConfig,
+		BeaconConfig:             *beaconConfig,
 		log:                      log,
 	}
 
@@ -194,7 +191,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, batchContracts.Multicaller, batchContracts.BalanceBatcher, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
@@ -287,15 +284,11 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 
 // Creates a snapshot of the Rocket Pool network, but only for a single node
 // Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
-func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
+func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *rocketpool.RocketPool, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig *beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
 	steps := 5
 	if calculateTotalEffectiveStake {
 		steps++
 	}
-
-	// Get the relevant network contracts
-	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
 
 	// Get the execution block for the given slot
 	beaconBlock, exists, err := bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
@@ -319,7 +312,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		MinipoolDetailsByNode:    map[common.Address][]*rpstate.NativeMinipoolDetails{},
 		BeaconSlotNumber:         slotNumber,
 		ElBlockNumber:            elBlockNumber,
-		BeaconConfig:             beaconConfig,
+		BeaconConfig:             *beaconConfig,
 		log:                      log,
 	}
 
@@ -327,7 +320,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, batchContracts.Multicaller, batchContracts.BalanceBatcher, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
 	}

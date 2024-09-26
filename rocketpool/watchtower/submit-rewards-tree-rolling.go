@@ -282,11 +282,7 @@ func (t *submitRewardsTree_Rolling) run(headState *state.NetworkState) error {
 			}
 
 			// Generate the rewards state
-			stateMgr, err := state.NewNetworkStateManager(client, t.cfg, client.Client, t.bc, &t.log)
-			if err != nil {
-				t.handleError(fmt.Errorf("error creating state manager for rewards slot: %w", err))
-				return
-			}
+			stateMgr := state.NewNetworkStateManager(client, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, &t.log)
 			state, err := stateMgr.GetStateForSlot(snapshotEnd.ConsensusBlock)
 			if err != nil {
 				t.handleError(fmt.Errorf("error getting state for rewards slot: %w", err))

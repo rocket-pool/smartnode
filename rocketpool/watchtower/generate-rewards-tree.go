@@ -169,11 +169,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 	address, err := client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
 	if err == nil {
 		// Create the state manager with using the primary or fallback (not necessarily archive) EC
-		stateManager, err = state.NewNetworkStateManager(client, t.cfg, t.rp.Client, t.bc, &t.log)
-		if err != nil {
-			t.handleError(fmt.Errorf("error creating new NetworkStateManager with Archive EC: %w", err))
-			return
-		}
+		stateManager = state.NewNetworkStateManager(client, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, &t.log)
 	} else {
 		// Check if an Archive EC is provided, and if using it would potentially resolve the error
 		errMessage := err.Error()
@@ -204,12 +200,16 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 					t.handleError(fmt.Errorf("Error verifying rETH address with Archive EC: %w", err))
 					return
 				}
-				// Create the state manager with the archive EC
-				stateManager, err = state.NewNetworkStateManager(client, t.cfg, ec, t.bc, &t.log)
+
+				// Create a new rocketpool-go instance
+				archiveRP, err := rocketpool.NewRocketPool(ec, *t.rp.RocketStorageContract.Address)
 				if err != nil {
-					t.handleError(fmt.Errorf("Error creating new NetworkStateManager with ARchive EC: %w", err))
+					t.handleError(fmt.Errorf("Error instantiating client with Archive EC: %w", err))
 					return
 				}
+
+				// Create the state manager with the archive EC
+				stateManager = state.NewNetworkStateManager(archiveRP, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, &t.log)
 			} else {
 				// No archive node specified
 				t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", elBlockHeader.Number.Uint64()))

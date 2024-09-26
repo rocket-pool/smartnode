@@ -111,10 +111,7 @@ func run(c *cli.Context) error {
 	updateLog := log.NewColorLogger(UpdateColor)
 
 	// Create the state manager
-	m, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, &updateLog)
-	if err != nil {
-		return err
-	}
+	m := state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bc, &updateLog)
 
 	// Get the node address
 	nodeAccount, err := w.GetNodeAccount()

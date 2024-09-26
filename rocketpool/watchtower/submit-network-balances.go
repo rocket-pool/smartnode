@@ -297,10 +297,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	}
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(client, t.cfg, client.Client, t.bc, t.log)
-	if err != nil {
-		return networkBalances{}, fmt.Errorf("error creating network state manager for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
-	}
+	mgr := state.NewNetworkStateManager(client, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, t.log)
 
 	// Create a new state for the target block
 	state, err := mgr.GetStateForSlot(beaconBlock)

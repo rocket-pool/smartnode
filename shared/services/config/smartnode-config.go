@@ -49,6 +49,12 @@ const (
 	RewardsExtensionSSZ  RewardsExtension = ".ssz"
 )
 
+// Contract addresses for multicall / network state manager
+type StateManagerContracts struct {
+	Multicaller    common.Address
+	BalanceBatcher common.Address
+}
+
 // Configuration for the Smartnode
 type SmartnodeConfig struct {
 	Title string `yaml:"-"`
@@ -851,6 +857,10 @@ func (cfg *SmartnodeConfig) GetRethAddress() common.Address {
 }
 
 func getDefaultDataDir(config *RocketPoolConfig) string {
+	if config == nil {
+		// Handle tests. Eventually we'll refactor so this isn't necessary.
+		return ""
+	}
 	return filepath.Join(config.RocketPoolDirectory, "data")
 }
 
@@ -1010,6 +1020,14 @@ func (cfg *SmartnodeConfig) GetMulticallAddress() string {
 
 func (cfg *SmartnodeConfig) GetBalanceBatcherAddress() string {
 	return cfg.balancebatcherAddress[cfg.Network.Value.(config.Network)]
+}
+
+// Utility function to get the state manager contracts
+func (cfg *SmartnodeConfig) GetStateManagerContracts() StateManagerContracts {
+	return StateManagerContracts{
+		Multicaller:    common.HexToAddress(cfg.GetMulticallAddress()),
+		BalanceBatcher: common.HexToAddress(cfg.GetBalanceBatcherAddress()),
+	}
 }
 
 func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
