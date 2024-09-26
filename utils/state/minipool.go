@@ -24,40 +24,42 @@ const (
 // Complete details for a minipool
 type NativeMinipoolDetails struct {
 	// Redstone
-	Exists                            bool
-	MinipoolAddress                   common.Address
-	Pubkey                            types.ValidatorPubkey
-	StatusRaw                         uint8
-	StatusBlock                       *big.Int
-	StatusTime                        *big.Int
-	Finalised                         bool
-	DepositTypeRaw                    uint8
-	NodeFee                           *big.Int
-	NodeDepositBalance                *big.Int
-	NodeDepositAssigned               bool
-	UserDepositBalance                *big.Int
-	UserDepositAssigned               bool
-	UserDepositAssignedTime           *big.Int
-	UseLatestDelegate                 bool
-	Delegate                          common.Address
-	PreviousDelegate                  common.Address
-	EffectiveDelegate                 common.Address
-	PenaltyCount                      *big.Int
-	PenaltyRate                       *big.Int
-	NodeAddress                       common.Address
-	Version                           uint8
-	Balance                           *big.Int // Contract balance
-	DistributableBalance              *big.Int // Contract balance minus node op refund
-	NodeShareOfBalance                *big.Int // Result of calculateNodeShare(contract balance)
-	UserShareOfBalance                *big.Int // Result of calculateUserShare(contract balance)
-	NodeRefundBalance                 *big.Int
-	WithdrawalCredentials             common.Hash
-	Status                            types.MinipoolStatus
-	DepositType                       types.MinipoolDeposit
-	NodeShareOfBalanceIncludingBeacon *big.Int // Must call CalculateCompleteMinipoolShares to get this
-	UserShareOfBalanceIncludingBeacon *big.Int // Must call CalculateCompleteMinipoolShares to get this
-	NodeShareOfBeaconBalance          *big.Int // Must call CalculateCompleteMinipoolShares to get this
-	UserShareOfBeaconBalance          *big.Int // Must call CalculateCompleteMinipoolShares to get this
+	Exists                  bool                  `json:"exists"`
+	MinipoolAddress         common.Address        `json:"minipool_address"`
+	Pubkey                  types.ValidatorPubkey `json:"pubkey"`
+	StatusRaw               uint8                 `json:"status_raw"`
+	StatusBlock             *big.Int              `json:"status_block"`
+	StatusTime              *big.Int              `json:"status_time"`
+	Finalised               bool                  `json:"finalised"`
+	DepositTypeRaw          uint8                 `json:"deposit_type_raw"`
+	NodeFee                 *big.Int              `json:"node_fee"`
+	NodeDepositBalance      *big.Int              `json:"node_deposit_balance"`
+	NodeDepositAssigned     bool                  `json:"node_deposit_assigned"`
+	UserDepositBalance      *big.Int              `json:"user_deposit_balance"`
+	UserDepositAssigned     bool                  `json:"user_deposit_assigned"`
+	UserDepositAssignedTime *big.Int              `json:"user_deposit_assigned_time"`
+	UseLatestDelegate       bool                  `json:"use_latest_delegate"`
+	Delegate                common.Address        `json:"delegate"`
+	PreviousDelegate        common.Address        `json:"previous_delegate"`
+	EffectiveDelegate       common.Address        `json:"effective_delegate"`
+	PenaltyCount            *big.Int              `json:"penalty_count"`
+	PenaltyRate             *big.Int              `json:"penalty_rate"`
+	NodeAddress             common.Address        `json:"node_address"`
+	Version                 uint8                 `json:"version"`
+	Balance                 *big.Int              `json:"balance"`
+	DistributableBalance    *big.Int              `json:"distributable_balance"`
+	NodeShareOfBalance      *big.Int              `json:"node_share_of_balance"` // Result of calculateNodeShare(contract balance)
+	UserShareOfBalance      *big.Int              `json:"user_share_of_balance"` // Result of calculateUserShare(contract balance)
+	NodeRefundBalance       *big.Int              `json:"node_refund_balance"`
+	WithdrawalCredentials   common.Hash           `json:"withdrawal_credentials"`
+	Status                  types.MinipoolStatus  `json:"status"`
+	DepositType             types.MinipoolDeposit `json:"deposit_type"`
+
+	// Must call CalculateCompleteMinipoolShares to get these
+	NodeShareOfBalanceIncludingBeacon *big.Int `json:"node_share_of_balance_including_beacon"`
+	UserShareOfBalanceIncludingBeacon *big.Int `json:"user_share_of_balance_including_beacon"`
+	NodeShareOfBeaconBalance          *big.Int `json:"node_share_of_beacon_balance"`
+	UserShareOfBeaconBalance          *big.Int `json:"user_share_of_beacon_balance"`
 
 	// Atlas
 	UserDistributed              bool
