@@ -245,7 +245,7 @@ type CanNodeSwapRplResponse struct {
 	Error               string             `json:"error"`
 	CanSwap             bool               `json:"canSwap"`
 	InsufficientBalance bool               `json:"insufficientBalance"`
-	GasInfo             rocketpool.GasInfo `json:"GasInfo"`
+	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeSwapRplApproveGasResponse struct {
 	Status  string             `json:"status"`
@@ -489,6 +489,23 @@ type DepositContractInfoResponse struct {
 	BeaconDepositContract common.Address `json:"beaconDepositContract"`
 	BeaconNetwork         uint64         `json:"beaconNetwork"`
 	SufficientSync        bool           `json:"sufficientSync"`
+}
+
+type CanStakeEthResponse struct {
+	Status              string             `json:"status"`
+	Error               string             `json:"error"`
+	CanStake            bool               `json:"canStake"`
+	InsufficientBalance bool               `json:"insufficientBalance"`
+	DepositDisabled     bool               `json:"depositDisabled"`
+	BelowMinStakeAmount bool               `json:"belowMinStakeAmount"`
+	DepositPoolFull     bool               `json:"depositPoolFull"`
+	RethAmount          *big.Int           `json:"rethAmount"`
+	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+}
+type StakeEthResponse struct {
+	Status      string      `json:"status"`
+	Error       string      `json:"error"`
+	StakeTxHash common.Hash `json:"stakeTxHash"`
 }
 
 type NodeSignResponse struct {

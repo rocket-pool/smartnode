@@ -745,6 +745,38 @@ func (c *Client) DepositContractInfo() (api.DepositContractInfoResponse, error) 
 }
 
 // Estimate the gas required to set a voting snapshot delegate
+func (c *Client) CanStakeEth(amountWei *big.Int) (api.CanStakeEthResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-stake-eth %s", amountWei.String()))
+	if err != nil {
+		return api.CanStakeEthResponse{}, fmt.Errorf("Could not get can node stake ETH status: %w", err)
+	}
+	var response api.CanStakeEthResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanStakeEthResponse{}, fmt.Errorf("Could not decode can node stake ETH response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanStakeEthResponse{}, fmt.Errorf("Could not get can node stake ETH status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Estimate the gas required to set a voting snapshot delegate
+func (c *Client) StakeEth(amountWei *big.Int) (api.StakeEthResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node stake-eth %s", amountWei.String()))
+	if err != nil {
+		return api.StakeEthResponse{}, fmt.Errorf("Could not stake node's ETH: %w", err)
+	}
+	var response api.StakeEthResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.StakeEthResponse{}, fmt.Errorf("Could not decode node stake ETH response: %w", err)
+	}
+	if response.Error != "" {
+		return api.StakeEthResponse{}, fmt.Errorf("Could not stake node's ETH: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Estimate the gas required to set a voting snapshot delegate
 func (c *Client) EstimateSetSnapshotDelegateGas(address common.Address) (api.EstimateSetSnapshotDelegateGasResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node estimate-set-snapshot-delegate-gas %s", address.Hex()))
 	if err != nil {
