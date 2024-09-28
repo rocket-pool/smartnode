@@ -84,8 +84,8 @@ type SnapshotEnd struct {
 }
 
 type treeGeneratorImpl interface {
-	generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc beacon.Client) (*GenerateTreeResult, error)
-	approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc beacon.Client) (*big.Int, error)
+	generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error)
+	approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error)
 	getRulesetVersion() uint64
 	// Returns the primary artifact cid for consensus, all cids of all files in a map, and any potential errors
 	saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)

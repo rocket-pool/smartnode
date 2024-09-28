@@ -12,6 +12,7 @@ import (
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/wealdtech/go-merkletree"
 )
 
@@ -38,6 +39,16 @@ type RewardsExecutionClient interface {
 	HeaderByNumber(context.Context, *big.Int) (*ethtypes.Header, error)
 	GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error)
 	GetRewardSnapshotEvent(previousRewardsPoolAddresses []common.Address, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error)
+}
+
+// RewardsBeaconClient defines and interface
+// that contains only the functions from beacon.Client
+// required for rewards generation.
+// This facade makes it easier to perform dependency injection in tests.
+type RewardsBeaconClient interface {
+	GetBeaconBlock(slot string) (beacon.BeaconBlock, bool, error)
+	GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error)
+	GetAttestations(slot string) ([]beacon.AttestationInfo, bool, error)
 }
 
 // Interface for version-agnostic minipool performance
@@ -80,6 +91,8 @@ type IRewardsFile interface {
 	GetTotalCollateralRpl() *big.Int
 	GetTotalNodeOperatorSmoothingPoolEth() *big.Int
 	GetTotalPoolStakerSmoothingPoolEth() *big.Int
+	GetExecutionStartBlock() uint64
+	GetConsensusStartBlock() uint64
 	GetExecutionEndBlock() uint64
 	GetConsensusEndBlock() uint64
 	GetStartTime() time.Time

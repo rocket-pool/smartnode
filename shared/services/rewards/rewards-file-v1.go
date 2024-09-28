@@ -191,6 +191,16 @@ func (f *RewardsFile_v1) GetTotalNodeOperatorSmoothingPoolEth() *big.Int {
 	return &f.RewardsFileHeader.TotalRewards.NodeOperatorSmoothingPoolEth.Int
 }
 
+// Get the the execution start block
+func (f *RewardsFile_v1) GetExecutionStartBlock() uint64 {
+	return f.RewardsFileHeader.ExecutionStartBlock
+}
+
+// Get the the consensus start block
+func (f *RewardsFile_v1) GetConsensusStartBlock() uint64 {
+	return f.RewardsFileHeader.ConsensusStartBlock
+}
+
 // Get the the execution end block
 func (f *RewardsFile_v1) GetExecutionEndBlock() uint64 {
 	return f.RewardsFileHeader.ExecutionEndBlock

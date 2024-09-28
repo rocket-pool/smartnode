@@ -30,7 +30,7 @@ type treeGeneratorImpl_v8_rolling struct {
 	logPrefix                    string
 	rp                           RewardsExecutionClient
 	previousRewardsPoolAddresses []common.Address
-	bc                           beacon.Client
+	bc                           RewardsBeaconClient
 	opts                         *bind.CallOpts
 	smoothingPoolBalance         *big.Int
 	intervalDutiesInfo           *IntervalDutiesInfo
@@ -95,7 +95,7 @@ func (r *treeGeneratorImpl_v8_rolling) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v8_rolling) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc beacon.Client) (*GenerateTreeResult, error) {
+func (r *treeGeneratorImpl_v8_rolling) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -171,7 +171,7 @@ func (r *treeGeneratorImpl_v8_rolling) generateTree(rp RewardsExecutionClient, n
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v8_rolling) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc beacon.Client) (*big.Int, error) {
+func (r *treeGeneratorImpl_v8_rolling) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp

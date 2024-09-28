@@ -113,6 +113,16 @@ func (f *RewardsFile_v3) GetConsensusEndBlock() uint64 {
 	return f.RewardsFileHeader.ConsensusEndBlock
 }
 
+// Get the execution start block
+func (f *RewardsFile_v3) GetExecutionStartBlock() uint64 {
+	return f.RewardsFileHeader.ExecutionStartBlock
+}
+
+// Get the consensus start block
+func (f *RewardsFile_v3) GetConsensusStartBlock() uint64 {
+	return f.RewardsFileHeader.ConsensusStartBlock
+}
+
 // Get the start time
 func (f *RewardsFile_v3) GetStartTime() time.Time {
 	return f.RewardsFileHeader.StartTime

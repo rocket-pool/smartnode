@@ -438,6 +438,14 @@ func (f *SSZFile_v1) GetNodeAddresses() []common.Address {
 	return out
 }
 
+func (f *SSZFile_v1) GetConsensusStartBlock() uint64 {
+	return f.ConsensusStartBlock
+}
+
+func (f *SSZFile_v1) GetExecutionStartBlock() uint64 {
+	return f.ExecutionStartBlock
+}
+
 func (f *SSZFile_v1) GetConsensusEndBlock() uint64 {
 	return f.ConsensusEndBlock
 }
