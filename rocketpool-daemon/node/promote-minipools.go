@@ -27,16 +27,14 @@ import (
 
 // Promote minipools task
 type PromoteMinipools struct {
-	sp             *services.ServiceProvider
-	logger         *slog.Logger
-	alerter        *alerting.Alerter
-	cfg            *config.SmartNodeConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	mpMgr          *minipool.MinipoolManager
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
+	sp          *services.ServiceProvider
+	logger      *slog.Logger
+	alerter     *alerting.Alerter
+	cfg         *config.SmartNodeConfig
+	w           *wallet.Wallet
+	rp          *rocketpool.RocketPool
+	mpMgr       *minipool.MinipoolManager
+	gasSettings *GasSettings
 }
 
 // Create promote minipools task
@@ -44,16 +42,20 @@ func NewPromoteMinipools(sp *services.ServiceProvider, logger *log.Logger) *Prom
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Promote Minipools"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
-	return &PromoteMinipools{
-		sp:             sp,
-		logger:         log,
-		alerter:        alerting.NewAlerter(cfg, logger),
-		cfg:            cfg,
-		w:              sp.GetWallet(),
-		rp:             sp.GetRocketPool(),
-		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+	gasSettings := &GasSettings{
 		maxFee:         maxFee,
 		maxPriorityFee: maxPriorityFee,
+		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+	}
+
+	return &PromoteMinipools{
+		sp:          sp,
+		logger:      log,
+		alerter:     alerting.NewAlerter(cfg, logger),
+		cfg:         cfg,
+		w:           sp.GetWallet(),
+		rp:          sp.GetRocketPool(),
+		gasSettings: gasSettings,
 	}
 }
 
@@ -179,19 +181,19 @@ func (t *PromoteMinipools) promoteMinipools(submissions []*eth.TransactionSubmis
 	}
 
 	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
+	if t.gasSettings.maxFee == nil || t.gasSettings.maxFee.Uint64() == 0 {
+		t.gasSettings.maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return err
 		}
 	}
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+
+	// Set GasFeeCap and GasTipCap
+	t.gasSettings.ApplyTo(opts)
 
 	// Print the gas info
 	forceSubmissions := []*eth.TransactionSubmission{}
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.logger, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasSettings.gasThreshold, t.logger, t.gasSettings.maxFee) {
 		// Check for the timeout buffers
 		for i, mpd := range minipools {
 			creationTime := time.Unix(mpd.StatusTime.Int64(), 0)
