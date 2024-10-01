@@ -196,6 +196,7 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0x4d581a552490fb6fce5F978e66560C8b7E481818"),
 		},
+		RocketSignerRegistryAddress:          hexToAddressPtr("0x15Da69Dde70998FC045a260f84ad4aB0A2204e76"),
 		PreviousProtocolDaoVerifierAddresses: nil,
 		OptimismPriceMessengerAddress:        nil,
 		PolygonPriceMessengerAddress:         nil,
