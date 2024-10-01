@@ -482,7 +482,8 @@ func (g *GasSettings) ApplyTo(opts *bind.TransactOpts) *bind.TransactOpts {
 		return opts
 	}
 	quarterMaxFee := new(big.Int).Div(g.maxFee, big.NewInt(4))
-	// Otherwise apply maxPriorityFee to opts as min(priorityFee, 25% of the oracle based maxFee)
+
+	// Otherwise apply maxPriorityFee to opts as min(maxPriorityFee, 25% of the oracle based maxFee)
 	if g.maxPriorityFee.Cmp(quarterMaxFee) < 0 {
 		opts.GasTipCap = g.maxPriorityFee
 	} else {
