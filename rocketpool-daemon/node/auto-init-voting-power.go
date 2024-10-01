@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/beacon"
@@ -22,17 +21,16 @@ import (
 )
 
 type AutoInitVotingPower struct {
-	ctx            context.Context
-	sp             *services.ServiceProvider
-	logger         *slog.Logger
-	cfg            *config.SmartNodeConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	bc             beacon.IBeaconClient
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	nodeAddress    common.Address
+	ctx          context.Context
+	sp           *services.ServiceProvider
+	logger       *slog.Logger
+	cfg          *config.SmartNodeConfig
+	w            *wallet.Wallet
+	rp           *rocketpool.RocketPool
+	bc           beacon.IBeaconClient
+	gasThreshold float64
+	gasSettings  *GasSettings
+	nodeAddress  common.Address
 }
 
 // Auto Initialize Vote Power
@@ -40,17 +38,22 @@ func NewAutoInitVotingPower(ctx context.Context, sp *services.ServiceProvider, l
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Auto Initialize Vote Power"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
-	return &AutoInitVotingPower{
-		ctx:            ctx,
-		sp:             sp,
-		logger:         log,
-		cfg:            cfg,
-		w:              sp.GetWallet(),
-		rp:             sp.GetRocketPool(),
-		bc:             sp.GetBeaconClient(),
-		gasThreshold:   cfg.AutoInitVPThreshold.Value,
+
+	gasSettings := &GasSettings{
 		maxFee:         maxFee,
 		maxPriorityFee: maxPriorityFee,
+	}
+
+	return &AutoInitVotingPower{
+		ctx:          ctx,
+		sp:           sp,
+		logger:       log,
+		cfg:          cfg,
+		w:            sp.GetWallet(),
+		rp:           sp.GetRocketPool(),
+		bc:           sp.GetBeaconClient(),
+		gasThreshold: cfg.AutoInitVPThreshold.Value,
+		gasSettings:  gasSettings,
 	}
 }
 
@@ -73,7 +76,7 @@ func (t *AutoInitVotingPower) Run(state *state.NetworkState) error {
 	votingInitialized := node.IsVotingInitialized.Get()
 
 	// Create the tx and submit if voting isn't initialized
-	if !votingInitialized {
+	if votingInitialized {
 		txSubmission, err := t.createInitializeVotingTx()
 		if err != nil {
 			return fmt.Errorf("error preparing submission to initialize voting for node %s: %w", t.nodeAddress.Hex(), err)
@@ -101,7 +104,7 @@ func (t *AutoInitVotingPower) createInitializeVotingTx() (*eth.TransactionSubmis
 		return nil, fmt.Errorf("error creating node %s binding: %w", t.nodeAddress.Hex(), err)
 	}
 	// Get the tx info
-	txInfo, err := node.InitializeVoting(opts)
+	txInfo, err := node.StakeRpl(eth.EthToWei(1), opts)
 	if err != nil {
 		return nil, fmt.Errorf("error estimating the gas required to initialize voting for node %s: %w", t.nodeAddress.Hex(), err)
 	}
@@ -124,21 +127,15 @@ func (t *AutoInitVotingPower) initializeVotingPower(submission *eth.TransactionS
 	}
 
 	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
+	if t.gasSettings.maxFee == nil || t.gasSettings.maxFee.Uint64() == 0 {
+		t.gasSettings.maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return err
 		}
 	}
 
-	// Lower the priority fee when the suggested maxfee is lower than the user requested priority fee
-	if maxFee.Cmp(t.maxPriorityFee) < 0 {
-		t.maxPriorityFee = new(big.Int).Div(maxFee, big.NewInt(2))
-	}
-
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	// Set GasFeeCap and GasTipCap
+	t.gasSettings.ApplyTo(opts)
 
 	// Print the gas info
 	if !gas.PrintAndCheckGasInfo(submission.TxInfo.SimulationResult, true, t.gasThreshold, t.logger, opts.GasFeeCap, 0) {
