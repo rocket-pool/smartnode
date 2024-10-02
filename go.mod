@@ -7,7 +7,7 @@ toolchain go1.22.7
 require (
 	github.com/alessio/shellescape v1.4.2
 	github.com/blang/semver/v4 v4.0.0
-	github.com/docker/docker v26.0.0+incompatible
+	github.com/docker/docker v27.3.1+incompatible
 	github.com/dustin/go-humanize v1.0.1
 	github.com/ethereum/go-ethereum v1.14.8
 	github.com/fatih/color v1.16.0
@@ -28,7 +28,7 @@ require (
 	github.com/prometheus/client_golang v1.19.1
 	github.com/prysmaticlabs/prysm/v5 v5.1.0
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854 // DO NOT UPGRADE
-	github.com/rocket-pool/node-manager-core v0.5.2-0.20240918070718-74c95eff323a
+	github.com/rocket-pool/node-manager-core v0.5.2-0.20241002072934-89c9cc081cf6
 	github.com/rocket-pool/rocketpool-go/v2 v2.0.0-b2.0.20240709170030-c27aeb5fb99b
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/tyler-smith/go-bip39 v1.1.0
@@ -85,7 +85,7 @@ require (
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.19.1 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/herumi/bls-eth-go-binary v1.33.0 // indirect
+	github.com/herumi/bls-eth-go-binary v1.36.1 // indirect
 	github.com/holiman/uint256 v1.3.1 // indirect
 	github.com/ipfs/bbloom v0.0.4 // indirect
 	github.com/ipfs/boxo v0.18.0

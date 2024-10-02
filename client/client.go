@@ -26,7 +26,7 @@ type ApiClient struct {
 
 // Creates a new API client instance
 func NewApiClient(apiUrl *url.URL, logger *slog.Logger, tracer *httptrace.ClientTrace) *ApiClient {
-	context := client.NewNetworkRequesterContext(apiUrl, logger, tracer)
+	context := client.NewNetworkRequesterContext(apiUrl, logger, tracer, nil)
 
 	client := &ApiClient{
 		context:  context,
