@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"strconv"
-	"strings"
 
 	"github.com/alessio/shellescape"
 	"github.com/rocket-pool/node-manager-core/config"
@@ -764,17 +763,13 @@ func getNetworkOptions() []*config.ParameterOption[config.Network] {
 				Description: "This is the Holešky (Holešovice) test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smart Node in a free, safe environment before moving to Mainnet.",
 			},
 			Value: config.Network_Holesky,
-		},
-	}
-
-	if strings.HasSuffix(assets.RocketPoolVersion(), "-dev") {
-		options = append(options, &config.ParameterOption[config.Network]{
+		}, {
 			ParameterOptionCommon: &config.ParameterOptionCommon{
 				Name:        "Devnet",
 				Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.",
 			},
 			Value: Network_Devnet,
-		})
+		},
 	}
 
 	return options
