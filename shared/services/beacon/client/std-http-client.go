@@ -16,7 +16,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/prysmaticlabs/prysm/v5/beacon-chain/state"
+	state_native "github.com/prysmaticlabs/prysm/v5/beacon-chain/state/state-native"
 	"github.com/prysmaticlabs/prysm/v5/crypto/bls"
+	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
@@ -28,8 +31,9 @@ import (
 
 // Config
 const (
-	RequestUrlFormat   = "%s%s"
-	RequestContentType = "application/json"
+	RequestUrlFormat       = "%s%s"
+	RequestJsonContentType = "application/json"
+	RequestSSZContentType  = "application/octet-stream"
 
 	RequestSyncStatusPath                  = "/eth/v1/node/syncing"
 	RequestEth2ConfigPath                  = "/eth/v1/config/spec"
@@ -44,6 +48,7 @@ const (
 	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
 	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
 	RequestBeaconBlockHeaderPath           = "/eth/v1/beacon/headers/%s"
+	RequestBeaconStatePath                 = "/eth/v2/debug/beacon/states/%d"
 	RequestValidatorSyncDuties             = "/eth/v1/validator/duties/sync/%s"
 	RequestValidatorProposerDuties         = "/eth/v1/validator/duties/proposer/%s"
 	RequestWithdrawalCredentialsChangePath = "/eth/v1/beacon/pool/bls_to_execution_changes"
@@ -974,6 +979,28 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 	return beaconBlock, true, nil
 }
 
+// Get the Beacon state for a slot
+func (c *StandardHttpClient) GetBeaconState(slot uint64) (state.BeaconState, error) {
+	responseBody, status, err := c.getRequestWithContentType(fmt.Sprintf(RequestBeaconStatePath, slot), RequestSSZContentType)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get beacon state data: %w", err)
+	}
+	if status != http.StatusOK {
+		return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d; response body: '%s'", status, string(responseBody))
+	}
+	var beaconStateProto ethpb.BeaconStateDeneb
+	if err := beaconStateProto.UnmarshalSSZ(responseBody); err != nil {
+		return nil, fmt.Errorf("Could not decode beacon state data: %w", err)
+	}
+
+	var beaconState state.BeaconState
+	if beaconState, err = state_native.InitializeFromProtoDeneb(&beaconStateProto); err != nil {
+		return nil, fmt.Errorf("Could not convert the beacon state from proto representation: %w", err)
+	}
+
+	return beaconState, nil
+}
+
 // Get the specified beacon block header
 func (c *StandardHttpClient) getBeaconBlockHeader(blockId string) (BeaconBlockHeaderResponse, bool, error) {
 	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockHeaderPath, blockId))
@@ -1078,9 +1105,21 @@ func (c *StandardHttpClient) postWithdrawalCredentialsChange(request BLSToExecut
 
 // Make a GET request but do not read its body yet (allows buffered decoding)
 func (c *StandardHttpClient) getRequestReader(requestPath string) (io.ReadCloser, int, error) {
+	return c.getRequestReaderWithContentType(requestPath, RequestJsonContentType)
+}
 
+// Make a GET request but do not read its body yet (allows buffered decoding)
+func (c *StandardHttpClient) getRequestReaderWithContentType(requestPath string, contentType string) (io.ReadCloser, int, error) {
 	// Send request
-	response, err := http.Get(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath))
+	request, err := http.NewRequest("GET", fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	request.Header.Set("Accept", contentType)
+
+	client := http.Client{}
+
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1090,9 +1129,14 @@ func (c *StandardHttpClient) getRequestReader(requestPath string) (io.ReadCloser
 
 // Make a GET request to the beacon node and read the body of the response
 func (c *StandardHttpClient) getRequest(requestPath string) ([]byte, int, error) {
+	return c.getRequestWithContentType(requestPath, RequestJsonContentType)
+}
+
+// Make a GET request to the beacon node and read the body of the response
+func (c *StandardHttpClient) getRequestWithContentType(requestPath string, contentType string) ([]byte, int, error) {
 
 	// Send request
-	reader, status, err := c.getRequestReader(requestPath)
+	reader, status, err := c.getRequestReaderWithContentType(requestPath, contentType)
 	if err != nil {
 		return []byte{}, 0, err
 	}
@@ -1121,7 +1165,7 @@ func (c *StandardHttpClient) postRequest(requestPath string, requestBody interfa
 	requestBodyReader := bytes.NewReader(requestBodyBytes)
 
 	// Send request
-	response, err := http.Post(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), RequestContentType, requestBodyReader)
+	response, err := http.Post(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), RequestJsonContentType, requestBodyReader)
 	if err != nil {
 		return []byte{}, 0, err
 	}

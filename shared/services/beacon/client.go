@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/prysmaticlabs/prysm/v5/beacon-chain/state"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -138,6 +139,7 @@ type Client interface {
 	GetBeaconBlock(blockId string) (BeaconBlock, bool, error)
 	GetBeaconBlockHeader(blockId string) (BeaconBlockHeader, bool, error)
 	GetBeaconHead() (BeaconHead, error)
+	GetBeaconState(slot uint64) (state.BeaconState, error)
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
