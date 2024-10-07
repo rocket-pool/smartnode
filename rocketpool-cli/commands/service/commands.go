@@ -286,13 +286,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:    "stats",
 				Aliases: []string{"a"},
-				Usage:   "View the Rocket Pool service stats",
+				Usage:   "DEPRECATED - No longer supported",
 				Action: func(c *cli.Context) error {
-					// Validate args
-					utils.ValidateArgCount(c, 0)
 
 					// Run command
-					return serviceStats(c)
+					return serviceStats()
 				},
 			},
 
