@@ -2,6 +2,7 @@ package beacon
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
@@ -91,4 +92,35 @@ func (c *Eth2Config) FirstSlotAtLeast(t int64) uint64 {
 		slotsSinceGenesis = secondsSinceGenesis/c.SecondsPerSlot + 1
 	}
 	return c.GenesisEpoch*c.SlotsPerEpoch + slotsSinceGenesis
+}
+
+func (c *Eth2Config) SlotToEpoch(slot uint64) uint64 {
+	return slot / c.SlotsPerEpoch
+}
+
+func (c *Eth2Config) EpochToSlot(epoch uint64) uint64 {
+	return epoch * c.SlotsPerEpoch
+}
+
+func (c *Eth2Config) SlotOfEpoch(epoch uint64, slot uint64) (uint64, error) {
+	if slot > c.SlotsPerEpoch-1 {
+		return 0, fmt.Errorf("slot %d is not in range 0 - %d", slot, c.SlotsPerEpoch-1)
+	}
+	return epoch*c.SlotsPerEpoch + slot, nil
+}
+
+func (c *Eth2Config) LastSlotOfEpoch(epoch uint64) uint64 {
+	out, err := c.SlotOfEpoch(epoch, c.SlotsPerEpoch-1)
+	if err != nil {
+		panic("SlotOfEpoch should never return an error when passed SlotsPerEpoch - 1")
+	}
+	return out
+}
+
+func (c *Eth2Config) FirstSlotOfEpoch(epoch uint64) uint64 {
+	out, err := c.SlotOfEpoch(epoch, 0)
+	if err != nil {
+		panic("SlotOfEpoch should never return an error when passed 0")
+	}
+	return out
 }

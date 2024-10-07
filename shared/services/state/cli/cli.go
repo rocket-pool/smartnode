@@ -25,27 +25,12 @@ var elFlag = flag.String("e", "http://localhost:8545", "The execution node URL")
 var slotFlag = flag.Uint64("slot", 0, "The slot number to get the state for")
 var networkFlag = flag.String("network", "mainnet", "The network to get the state for, i.e. 'mainnet' or 'holesky'")
 var prettyFlag = flag.Bool("p", false, "Pretty print the output")
-
-var validateFlag = flag.Bool("validate", false, "Validate the json from stdin can be unmarshalled into a NetworkState")
-
-func validate() {
-	decoder := json.NewDecoder(os.Stdin)
-	networkState := state.NetworkState{}
-	err := decoder.Decode(&networkState)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error decoding network state: %v\n", err)
-		os.Exit(1)
-	}
-	fmt.Fprintf(os.Stderr, "Network state validated\n")
-}
+var inputFlag = flag.Bool("i", false, "Parse a network state from stdin instead of retrieving it from the network")
+var criticalDutiesSlotsFlag = flag.Bool("critical-duties-slots", false, "If passed, output a list of critical duties slots for the given state as if it were the final state in a 6300 epoch interval. This is outputted instead of the state json.")
+var criticalDutiesEpochCountFlag = flag.Uint64("critical-duties-epoch-count", 6300, "The number of epochs to consider when calculating critical duties")
 
 func main() {
 	flag.Parse()
-
-	if *validateFlag {
-		validate()
-		return
-	}
 
 	sn := config.NewSmartnodeConfig(nil)
 	switch *networkFlag {
@@ -80,7 +65,14 @@ func main() {
 
 	var networkState *state.NetworkState
 
-	if *slotFlag == 0 {
+	if *inputFlag {
+		decoder := json.NewDecoder(os.Stdin)
+		err := decoder.Decode(&networkState)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error decoding network state: %v\n", err)
+			os.Exit(1)
+		}
+	} else if *slotFlag == 0 {
 		fmt.Fprintf(os.Stderr, "Slot number not provided, defaulting to head slot.\n")
 		networkState, err = sm.GetHeadState()
 	} else {
@@ -89,6 +81,31 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting network state: %v\n", err)
 		os.Exit(1)
+	}
+
+	if *criticalDutiesSlotsFlag {
+		criticalDutiesEpochs := state.NewCriticalDutiesEpochs(*criticalDutiesEpochCountFlag, networkState)
+		fmt.Fprintf(os.Stderr, "Critical duties epochs to check: %d\n", len(criticalDutiesEpochs.CriticalDuties))
+
+		criticalDutiesSlots, err := state.NewCriticalDutiesSlots(criticalDutiesEpochs, bc)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error creating critical duties slots: %v\n", err)
+			os.Exit(1)
+		}
+
+		// Serialize the critical duties slots to stdout
+		encoder := json.NewEncoder(os.Stdout)
+		if *prettyFlag {
+			encoder.SetIndent("", "  ")
+		}
+		err = encoder.Encode(criticalDutiesSlots)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error encoding critical duties slots: %v\n", err)
+			os.Exit(1)
+		}
+
+		os.Exit(0)
+		return
 	}
 
 	fmt.Fprintf(os.Stderr, "Network state fetched, outputting to stdout\n")
