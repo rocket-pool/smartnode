@@ -240,7 +240,7 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 
 	// Calculate avg node fees and distributor shares
 	for _, details := range state.NodeDetails {
-		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		details.CalculateAverageFeeAndDistributorShares(state.MinipoolDetailsByNode[details.NodeAddress])
 	}
 
 	// Oracle DAO member details
@@ -370,7 +370,7 @@ func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *
 
 	// Calculate avg node fees and distributor shares
 	for _, details := range state.NodeDetails {
-		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		details.CalculateAverageFeeAndDistributorShares(state.MinipoolDetailsByNode[details.NodeAddress])
 	}
 
 	// Get the total network effective RPL stake
