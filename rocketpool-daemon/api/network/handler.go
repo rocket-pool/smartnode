@@ -34,6 +34,7 @@ func NewNetworkHandler(logger *log.Logger, ctx context.Context, serviceProvider 
 		&networkPriceContextFactory{h},
 		&networkStatsContextFactory{h},
 		&networkTimezoneContextFactory{h},
+		&networkHotfixDeployedContextFactory{h},
 	}
 	return h
 }

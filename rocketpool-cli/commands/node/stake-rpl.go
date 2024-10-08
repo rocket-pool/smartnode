@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	swapFlag string = "swap"
+	swapFlag               string = "swap"
+	stakeRPLWarningMessage string = "NOTE: by staking RPL, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before staking RPL."
 )
 
 func nodeStakeRpl(c *cli.Context) error {
@@ -29,6 +30,12 @@ func nodeStakeRpl(c *cli.Context) error {
 
 	// Get node status
 	status, err := rp.Api.Node.Status()
+	if err != nil {
+		return err
+	}
+
+	// If hotfix is live and voting isn't initialized, display a warning
+	err = warnIfVotingUninitialized(rp, c, stakeRPLWarningMessage)
 	if err != nil {
 		return err
 	}

@@ -90,3 +90,8 @@ func (r *NetworkRequester) Stats() (*types.ApiResponse[api.NetworkStatsData], er
 func (r *NetworkRequester) TimezoneMap() (*types.ApiResponse[api.NetworkTimezonesData], error) {
 	return client.SendGetRequest[api.NetworkTimezonesData](r, "timezone-map", "TimezoneMap", nil)
 }
+
+// Get the timezone map
+func (r *NetworkRequester) IsHoustonHotfixDeployed() (*types.ApiResponse[api.NetworkHotfixDeployedData], error) {
+	return client.SendGetRequest[api.NetworkHotfixDeployedData](r, "is-hotfix-deployed", "IsHoustonHotfixDeployed", nil)
+}

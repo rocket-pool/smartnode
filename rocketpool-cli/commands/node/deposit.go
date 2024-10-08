@@ -23,6 +23,7 @@ const (
 	maxSlippageFlag           string  = "max-slippage"
 	saltFlag                  string  = "salt"
 	defaultMaxNodeFeeSlippage float64 = 0.01 // 1% below current network fee
+	depositWarningMessage     string  = "NOTE: by creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool."
 )
 
 type deposit struct {
@@ -42,6 +43,12 @@ func newDepositPrompts(c *cli.Context, rp *client.Client, soloConversionPubkey *
 	}
 	if depositContractInfo.Data.PrintMismatch() {
 		return nil, nil
+	}
+
+	// If hotfix is live and voting isn't initialized, display a warning
+	err = warnIfVotingUninitialized(rp, c, depositWarningMessage)
+	if err != nil {
+		return nil, err
 	}
 
 	// Check if the fee distributor has been initialized

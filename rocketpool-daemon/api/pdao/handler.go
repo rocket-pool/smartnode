@@ -50,6 +50,7 @@ func NewProtocolDaoHandler(logger *log.Logger, ctx context.Context, serviceProvi
 		&protocolDaoGetStatusContextFactory{h},
 		&protocolDaoClearSignallingAddressFactory{h},
 		&protocolDaoSetSignallingAddressFactory{h},
+		&protocolDaoIsVotingInitializedContextFactory{h},
 	}
 	return h
 }
