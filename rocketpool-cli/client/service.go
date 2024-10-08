@@ -270,23 +270,6 @@ func (c *Client) PrintNodeLogs(composeFiles []string, tail string, logPaths ...s
 	return c.printOutput(cmd)
 }
 
-// Print the Rocket Pool service stats
-func (c *Client) PrintServiceStats(composeFiles []string) error {
-	// Get service container IDs
-	cmd, err := c.compose(composeFiles, "ps -q")
-	if err != nil {
-		return err
-	}
-	containers, err := c.readOutput(cmd)
-	if err != nil {
-		return err
-	}
-	containerIds := strings.Split(strings.TrimSpace(string(containers)), "\n")
-
-	// Print stats
-	return c.printOutput(fmt.Sprintf("docker stats %s", strings.Join(containerIds, " ")))
-}
-
 // Print the Rocket Pool service compose config
 func (c *Client) PrintServiceCompose(composeFiles []string) error {
 	cmd, err := c.compose(composeFiles, "config")
