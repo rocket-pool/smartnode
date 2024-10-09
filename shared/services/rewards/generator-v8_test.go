@@ -23,15 +23,15 @@ type v8Test struct {
 	bc *test.MockBeaconClient
 }
 
-func (t *v8Test) saveArtifacts(result *GenerateTreeResult) {
+func (t *v8Test) saveArtifacts(prefix string, result *GenerateTreeResult) {
 	tmpDir, err := os.MkdirTemp("", fmt.Sprintf("artifacts-%s", t.Name()))
 	t.failIf(err)
 	rewardsLocalFile := LocalFile[IRewardsFile]{
-		fullPath: filepath.Join(tmpDir, "rewards.json"),
+		fullPath: filepath.Join(tmpDir, fmt.Sprintf("%s-rewards.json", prefix)),
 		f:        result.RewardsFile,
 	}
 	performanceLocalFile := LocalFile[IMinipoolPerformanceFile]{
-		fullPath: filepath.Join(tmpDir, "minipool-performance.json"),
+		fullPath: filepath.Join(tmpDir, fmt.Sprintf("%s-minipool-performance.json", prefix)),
 		f:        result.MinipoolPerformanceFile,
 	}
 	_, err = rewardsLocalFile.Write()
@@ -106,7 +106,7 @@ func TestV8Mainnet(tt *testing.T) {
 	generator := newTreeGeneratorImpl_v8(
 		&logger,
 		t.Name(),
-		canonical.GetIndex(),
+		state.NetworkDetails.RewardIndex,
 		canonical.GetStartTime(),
 		canonical.GetEndTime(),
 		consensusEndBlock,
@@ -140,7 +140,7 @@ func TestV8Mainnet(tt *testing.T) {
 
 	// Save the artifacts if verbose mode is enabled
 	if testing.Verbose() {
-		t.saveArtifacts(artifacts)
+		t.saveArtifacts("", artifacts)
 	}
 
 	t.Logf("merkle root: %s\n", artifacts.RewardsFile.GetMerkleRoot())
