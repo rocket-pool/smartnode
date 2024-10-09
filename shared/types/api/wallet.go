@@ -30,6 +30,7 @@ type WalletInitializeData struct {
 type WalletRecoverData struct {
 	AccountAddress common.Address           `json:"accountAddress"`
 	ValidatorKeys  []beacon.ValidatorPubkey `json:"validatorKeys"`
+	FailureReasons map[beacon.ValidatorPubkey]error
 }
 
 type WalletSearchAndRecoverData struct {
@@ -38,10 +39,12 @@ type WalletSearchAndRecoverData struct {
 	DerivationPath string                   `json:"derivationPath"`
 	Index          uint                     `json:"index"`
 	ValidatorKeys  []beacon.ValidatorPubkey `json:"validatorKeys"`
+	FailureReasons map[beacon.ValidatorPubkey]error
 }
 
 type WalletRebuildData struct {
-	ValidatorKeys []beacon.ValidatorPubkey `json:"validatorKeys"`
+	RebuiltValidatorKeys []beacon.ValidatorPubkey `json:"validatorKeys"`
+	FailureReasons       map[beacon.ValidatorPubkey]error
 }
 
 type WalletExportData struct {
