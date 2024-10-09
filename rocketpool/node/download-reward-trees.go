@@ -96,7 +96,7 @@ func (d *downloadRewardsTrees) run(state *state.NetworkState) error {
 	missingIntervals := []uint64{}
 	for i := uint64(0); i < currentIndex; i++ {
 		// Check if the tree file exists
-		treeFilePath := d.cfg.Smartnode.GetRewardsTreePath(i, true)
+		treeFilePath := d.cfg.Smartnode.GetRewardsTreePath(i, true, config.RewardsExtensionJSON)
 		_, err = os.Stat(treeFilePath)
 		if os.IsNotExist(err) {
 			d.log.Printlnf("You are missing the rewards tree file for interval %d.", i)
