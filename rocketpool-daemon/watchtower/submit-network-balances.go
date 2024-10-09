@@ -100,11 +100,11 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	t.logger.Info("Starting network balance check.")
 
 	// Check the last submission block
-	lastSubmissionBlock := state.NetworkDetails.PricesBlock
+	lastSubmissionBlock := state.NetworkDetails.BalancesBlock
 	referenceTimestamp := t.cfg.PriceBalanceSubmissionReferenceTimestamp.Value
 
 	// Get the duration in seconds for the interval between submissions
-	submissionIntervalInSeconds := int64(state.NetworkDetails.PricesSubmissionFrequency)
+	submissionIntervalInSeconds := int64(state.NetworkDetails.BalancesSubmissionFrequency)
 	eth2Config := state.BeaconConfig
 
 	slotNumber, nextSubmissionTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.ctx, t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
