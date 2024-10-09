@@ -131,11 +131,11 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	}
 
 	// Check the last submission block
-	lastSubmissionBlock := state.NetworkDetails.PricesBlock
+	lastSubmissionBlock := state.NetworkDetails.BalancesBlock
 
 	referenceTimestamp := t.cfg.Smartnode.PriceBalanceSubmissionReferenceTimestamp.Value.(int64)
 	// Get the duration in seconds for the interval between submissions
-	submissionIntervalInSeconds := int64(state.NetworkDetails.PricesSubmissionFrequency)
+	submissionIntervalInSeconds := int64(state.NetworkDetails.BalancesSubmissionFrequency)
 	eth2Config := state.BeaconConfig
 
 	// Log
