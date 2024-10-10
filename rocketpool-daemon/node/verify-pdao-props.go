@@ -39,16 +39,15 @@ type defeat struct {
 }
 
 type VerifyPdaoProps struct {
-	ctx                 context.Context
-	sp                  *services.ServiceProvider
-	logger              *slog.Logger
-	cfg                 *config.SmartNodeConfig
-	w                   *wallet.Wallet
-	rp                  *rocketpool.RocketPool
-	bc                  beacon.IBeaconClient
-	gasThreshold        float64
-	maxFee              *big.Int
-	maxPriorityFee      *big.Int
+	ctx    context.Context
+	sp     *services.ServiceProvider
+	logger *slog.Logger
+	cfg    *config.SmartNodeConfig
+	w      *wallet.Wallet
+	rp     *rocketpool.RocketPool
+	bc     beacon.IBeaconClient
+	// gasThreshold        float64
+	gasSettings         *GasSettings
 	nodeAddress         common.Address
 	propMgr             *proposals.ProposalManager
 	pdaoMgr             *protocol.ProtocolDaoManager
@@ -64,6 +63,12 @@ func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logge
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Verify PDAO Proposals"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
+	gasSettings := &GasSettings{
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
+		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+	}
+
 	return &VerifyPdaoProps{
 		ctx:                 ctx,
 		sp:                  sp,
@@ -72,9 +77,7 @@ func NewVerifyPdaoProps(ctx context.Context, sp *services.ServiceProvider, logge
 		w:                   sp.GetWallet(),
 		rp:                  sp.GetRocketPool(),
 		bc:                  sp.GetBeaconClient(),
-		gasThreshold:        cfg.AutoTxGasThreshold.Value,
-		maxFee:              maxFee,
-		maxPriorityFee:      maxPriorityFee,
+		gasSettings:         gasSettings,
 		lastScannedBlock:    nil,
 		intervalSize:        big.NewInt(int64(config.EventLogInterval)),
 		validPropCache:      map[uint64]bool{},
@@ -402,18 +405,18 @@ func (t *VerifyPdaoProps) submitTxs(submissions []*eth.TransactionSubmission) er
 	}
 
 	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
+	if t.gasSettings.maxFee == nil || t.gasSettings.maxFee.Uint64() == 0 {
+		t.gasSettings.maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return err
 		}
 	}
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+
+	// Set GasFeeCap and GasTipCap
+	t.gasSettings.ApplyTo(opts)
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.logger, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasSettings.gasThreshold, t.logger, t.gasSettings.maxFee) {
 		return nil
 	}
 

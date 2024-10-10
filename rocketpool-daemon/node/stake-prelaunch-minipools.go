@@ -31,19 +31,17 @@ import (
 
 // Stake prelaunch minipools task
 type StakePrelaunchMinipools struct {
-	sp             *services.ServiceProvider
-	logger         *slog.Logger
-	alerter        *alerting.Alerter
-	cfg            *config.SmartNodeConfig
-	w              *wallet.Wallet
-	vMgr           *validator.ValidatorManager
-	rp             *rocketpool.RocketPool
-	bc             beacon.IBeaconClient
-	d              *client.Client
-	mpMgr          *minipool.MinipoolManager
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
+	sp          *services.ServiceProvider
+	logger      *slog.Logger
+	alerter     *alerting.Alerter
+	cfg         *config.SmartNodeConfig
+	w           *wallet.Wallet
+	vMgr        *validator.ValidatorManager
+	rp          *rocketpool.RocketPool
+	bc          beacon.IBeaconClient
+	d           *client.Client
+	mpMgr       *minipool.MinipoolManager
+	gasSettings *GasSettings
 }
 
 // Create stake prelaunch minipools task
@@ -51,19 +49,23 @@ func NewStakePrelaunchMinipools(sp *services.ServiceProvider, logger *log.Logger
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Prelaunch Stake"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
-	return &StakePrelaunchMinipools{
-		sp:             sp,
-		logger:         log,
-		alerter:        alerting.NewAlerter(cfg, logger),
-		cfg:            sp.GetConfig(),
-		w:              sp.GetWallet(),
-		vMgr:           sp.GetValidatorManager(),
-		rp:             sp.GetRocketPool(),
-		bc:             sp.GetBeaconClient(),
-		d:              sp.GetDocker().(*client.Client),
-		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+	gasSettings := &GasSettings{
 		maxFee:         maxFee,
 		maxPriorityFee: maxPriorityFee,
+		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+	}
+
+	return &StakePrelaunchMinipools{
+		sp:          sp,
+		logger:      log,
+		alerter:     alerting.NewAlerter(cfg, logger),
+		cfg:         sp.GetConfig(),
+		w:           sp.GetWallet(),
+		vMgr:        sp.GetValidatorManager(),
+		rp:          sp.GetRocketPool(),
+		bc:          sp.GetBeaconClient(),
+		d:           sp.GetDocker().(*client.Client),
+		gasSettings: gasSettings,
 	}
 }
 
@@ -230,20 +232,20 @@ func (t *StakePrelaunchMinipools) stakeMinipools(submissions []*eth.TransactionS
 	}
 
 	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
+	if t.gasSettings.maxFee == nil || t.gasSettings.maxFee.Uint64() == 0 {
+		t.gasSettings.maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return false, err
 		}
 	}
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+
+	// Set GasFeeCap and GasTipCap
+	t.gasSettings.ApplyTo(opts)
 
 	// Print the gas info
 	forceSubmissions := []*eth.TransactionSubmission{}
 	forceMinipools := []*rpstate.NativeMinipoolDetails{}
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.logger, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasSettings.gasThreshold, t.logger, t.gasSettings.maxFee) {
 		// Check for the timeout buffers
 		for i, mpd := range minipools {
 			prelaunchTime := time.Unix(mpd.StatusTime.Int64(), 0)

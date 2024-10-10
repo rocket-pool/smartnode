@@ -35,16 +35,14 @@ const (
 
 // Reduce bonds task
 type ReduceBonds struct {
-	sp             *services.ServiceProvider
-	logger         *slog.Logger
-	alerter        *alerting.Alerter
-	cfg            *config.SmartNodeConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	mpMgr          *minipool.MinipoolManager
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
+	sp          *services.ServiceProvider
+	logger      *slog.Logger
+	alerter     *alerting.Alerter
+	cfg         *config.SmartNodeConfig
+	w           *wallet.Wallet
+	rp          *rocketpool.RocketPool
+	mpMgr       *minipool.MinipoolManager
+	gasSettings *GasSettings
 }
 
 // Create reduce bonds task
@@ -52,29 +50,32 @@ func NewReduceBonds(sp *services.ServiceProvider, logger *log.Logger) *ReduceBon
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Reduce Bonds"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
-	gasThreshold := cfg.AutoTxGasThreshold.Value
 
-	if gasThreshold == 0 {
+	gasSettings := &GasSettings{
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
+		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+	}
+
+	if gasSettings.gasThreshold == 0 {
 		log.Info("Automatic tx gas threshold is 0, disabling auto-reduce.")
 	}
 
 	return &ReduceBonds{
-		sp:             sp,
-		logger:         log,
-		alerter:        alerting.NewAlerter(cfg, logger),
-		cfg:            cfg,
-		w:              sp.GetWallet(),
-		rp:             sp.GetRocketPool(),
-		gasThreshold:   gasThreshold,
-		maxFee:         maxFee,
-		maxPriorityFee: maxPriorityFee,
+		sp:          sp,
+		logger:      log,
+		alerter:     alerting.NewAlerter(cfg, logger),
+		cfg:         cfg,
+		w:           sp.GetWallet(),
+		rp:          sp.GetRocketPool(),
+		gasSettings: gasSettings,
 	}
 }
 
 // Reduce bonds
 func (t *ReduceBonds) Run(state *state.NetworkState) error {
 	// Check if auto-bond-reduction is disabled
-	if t.gasThreshold == 0 {
+	if t.gasSettings.gasThreshold == 0 {
 		return nil
 	}
 
@@ -212,21 +213,20 @@ func (t *ReduceBonds) forceFeeDistribution(state *state.NetworkState) (bool, err
 	}
 
 	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
+	if t.gasSettings == nil || t.gasSettings.maxFee.Uint64() == 0 {
+		t.gasSettings.maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return false, err
 		}
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasThreshold, t.logger, maxFee, txInfo.SimulationResult.SafeGasLimit) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasSettings.gasThreshold, t.logger, t.gasSettings.maxFee, txInfo.SimulationResult.SafeGasLimit) {
 		return false, nil
 	}
 
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	// Set GasFeeCap and GasTipCap
+	t.gasSettings.ApplyTo(opts)
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block
@@ -342,18 +342,18 @@ func (t *ReduceBonds) reduceBonds(submissions []*eth.TransactionSubmission, mini
 	}
 
 	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
+	if t.gasSettings.maxFee == nil || t.gasSettings.maxFee.Uint64() == 0 {
+		t.gasSettings.maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return err
 		}
 	}
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+
+	// Set GasFeeCap and GasTipCap
+	t.gasSettings.ApplyTo(opts)
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.logger, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasSettings.gasThreshold, t.logger, t.gasSettings.maxFee) {
 		for _, mp := range minipools {
 			timeSinceReductionStart := latestBlockTime.Sub(mp.ReduceBondTime.Formatted())
 			remainingTime := windowDuration - timeSinceReductionStart

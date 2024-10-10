@@ -39,9 +39,7 @@ type DefendPdaoProps struct {
 	rp               *rocketpool.RocketPool
 	bc               beacon.IBeaconClient
 	rs               *config.RocketPoolResources
-	gasThreshold     float64
-	maxFee           *big.Int
-	maxPriorityFee   *big.Int
+	gasSettings      *GasSettings
 	gasLimit         uint64
 	nodeAddress      common.Address
 	propMgr          *proposals.ProposalManager
@@ -56,6 +54,12 @@ func NewDefendPdaoProps(ctx context.Context, sp *services.ServiceProvider, logge
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Defend PDAO Proposals"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
+	gasSettings := &GasSettings{
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
+		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+	}
+
 	return &DefendPdaoProps{
 		ctx:              ctx,
 		sp:               sp,
@@ -65,9 +69,7 @@ func NewDefendPdaoProps(ctx context.Context, sp *services.ServiceProvider, logge
 		rp:               sp.GetRocketPool(),
 		bc:               sp.GetBeaconClient(),
 		rs:               cfg.GetRocketPoolResources(),
-		gasThreshold:     cfg.AutoTxGasThreshold.Value,
-		maxFee:           maxFee,
-		maxPriorityFee:   maxPriorityFee,
+		gasSettings:      gasSettings,
 		lastScannedBlock: nil,
 		intervalSize:     big.NewInt(int64(config.EventLogInterval)),
 	}
@@ -226,21 +228,20 @@ func (t *DefendPdaoProps) defendProposal(prop defendableProposal) error {
 	}
 
 	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
+	if t.gasSettings.maxFee == nil || t.gasSettings.maxFee.Uint64() == 0 {
+		t.gasSettings.maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasThreshold, t.logger, maxFee, t.gasLimit) {
+	if !gas.PrintAndCheckGasInfo(txInfo.SimulationResult, true, t.gasSettings.gasThreshold, t.logger, t.gasSettings.maxFee, t.gasLimit) {
 		t.logger.Warn("NOTICE: Challenge responses bypass the automatic TX gas threshold, responding for safety.")
 	}
 
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	// Set GasFeeCap and GasTipCap
+	t.gasSettings.ApplyTo(opts)
 	opts.GasLimit = txInfo.SimulationResult.SafeGasLimit
 
 	// Print TX info and wait for it to be included in a block

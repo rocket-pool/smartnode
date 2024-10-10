@@ -88,6 +88,12 @@ type TaskLoop struct {
 	secondsDelta                float64
 }
 
+type GasSettings struct {
+	maxFee         *big.Int
+	maxPriorityFee *big.Int
+	gasThreshold   float64
+}
+
 func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
 	logger := sp.GetTasksLogger()
 	ctx := logger.CreateContextWithLogger(sp.GetBaseContext())
@@ -464,4 +470,25 @@ func calculateTotalEffectiveStakeForNetwork(state *state.NetworkState) *big.Int 
 		}
 	}
 	return total
+}
+
+// Applies GasFeeCap and GasTipCap to opts and handles a case where the user-inputted maxPriorityFee is greater than the oracle based maxFee
+// If so, maxPriorityFee is appplied to opts as the min(maxPriorityFee, 25% of the oracle based maxFee)
+func (g *GasSettings) ApplyTo(opts *bind.TransactOpts) *bind.TransactOpts {
+	opts.GasFeeCap = g.maxFee
+	// If maxPriorityFee < maxFee, apply maxPriorityFee to opts
+	if g.maxPriorityFee.Cmp(g.maxFee) < 0 {
+		opts.GasTipCap = g.maxPriorityFee
+		return opts
+	}
+	quarterMaxFee := new(big.Int).Div(g.maxFee, big.NewInt(4))
+
+	// Otherwise apply maxPriorityFee to opts as min(maxPriorityFee, 25% of the oracle based maxFee)
+	if g.maxPriorityFee.Cmp(quarterMaxFee) < 0 {
+		opts.GasTipCap = g.maxPriorityFee
+	} else {
+		opts.GasTipCap = quarterMaxFee
+	}
+	return opts
+
 }
