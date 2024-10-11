@@ -75,6 +75,7 @@ type TaskLoop struct {
 	reduceBonds             *ReduceBonds
 	defendPdaoProps         *DefendPdaoProps
 	verifyPdaoProps         *VerifyPdaoProps
+	autoInitVotingPower     *AutoInitVotingPower
 
 	// Watchtower metrics
 	scrubCollector         *wc.ScrubCollector
@@ -131,6 +132,11 @@ func NewTaskLoop(sp *services.ServiceProvider, wg *sync.WaitGroup) *TaskLoop {
 	// Create the prop verifier if the user enabled it
 	if t.cfg.VerifyProposals.Value {
 		t.verifyPdaoProps = NewVerifyPdaoProps(t.ctx, t.sp, t.logger)
+	}
+
+	// Create auto init vp if the threshold is above 0
+	if t.cfg.AutoInitVPThreshold.Value != 0 {
+		t.autoInitVotingPower = NewAutoInitVotingPower(t.ctx, t.sp, t.logger)
 	}
 
 	return t
@@ -368,6 +374,15 @@ func (t *TaskLoop) runTasks() bool {
 	// Run the pDAO proposal verifier
 	if t.verifyPdaoProps != nil {
 		if err := t.verifyPdaoProps.Run(state); err != nil {
+			t.logger.Error(err.Error())
+		}
+		if utils.SleepWithCancel(t.ctx, taskCooldown) {
+			return true
+		}
+	}
+	// Run the auto vote initilization check
+	if t.autoInitVotingPower != nil {
+		if err := t.autoInitVotingPower.Run(state); err != nil {
 			t.logger.Error(err.Error())
 		}
 		if utils.SleepWithCancel(t.ctx, taskCooldown) {
