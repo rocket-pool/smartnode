@@ -36,11 +36,9 @@ type DistributeMinipools struct {
 	bc                  beacon.IBeaconClient
 	d                   *client.Client
 	mpMgr               *minipool.MinipoolManager
-	gasThreshold        float64
 	distributeThreshold *big.Int
 	eight               *big.Int
-	maxFee              *big.Int
-	maxPriorityFee      *big.Int
+	gasSettings         *GasSettings
 }
 
 // Create distribute minipools task
@@ -48,9 +46,14 @@ func NewDistributeMinipools(sp *services.ServiceProvider, logger *log.Logger) *D
 	cfg := sp.GetConfig()
 	log := logger.With(slog.String(keys.TaskKey, "Distribute Minipools"))
 	maxFee, maxPriorityFee := getAutoTxInfo(cfg, log)
-	gasThreshold := cfg.AutoTxGasThreshold.Value
 
-	if gasThreshold == 0 {
+	gasSettings := &GasSettings{
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
+		gasThreshold:   cfg.AutoTxGasThreshold.Value,
+	}
+
+	if gasSettings.gasThreshold == 0 {
 		logger.Info("Automatic tx gas threshold is 0, disabling auto-distribute.")
 	}
 
@@ -74,10 +77,8 @@ func NewDistributeMinipools(sp *services.ServiceProvider, logger *log.Logger) *D
 		rp:                  sp.GetRocketPool(),
 		bc:                  sp.GetBeaconClient(),
 		d:                   sp.GetDocker().(*client.Client),
-		gasThreshold:        gasThreshold,
 		distributeThreshold: distributeThreshold,
-		maxFee:              maxFee,
-		maxPriorityFee:      maxPriorityFee,
+		gasSettings:         gasSettings,
 		eight:               eth.EthToWei(8),
 	}
 }
@@ -85,7 +86,7 @@ func NewDistributeMinipools(sp *services.ServiceProvider, logger *log.Logger) *D
 // Distribute minipools
 func (t *DistributeMinipools) Run(state *state.NetworkState) error {
 	// Check if auto-distributing is disabled
-	if t.gasThreshold == 0 {
+	if t.gasSettings.gasThreshold == 0 {
 		return nil
 	}
 
@@ -201,18 +202,18 @@ func (t *DistributeMinipools) distributeMinipools(submissions []*eth.Transaction
 	}
 
 	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
+	if t.gasSettings.maxFee == nil || t.gasSettings.maxFee.Uint64() == 0 {
+		t.gasSettings.maxFee, err = gas.GetMaxFeeWeiForDaemon(t.logger)
 		if err != nil {
 			return err
 		}
 	}
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+
+	// Set GasFeeCap and GasTipCap
+	t.gasSettings.ApplyTo(opts)
 
 	// Print the gas info
-	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasThreshold, t.logger, maxFee) {
+	if !gas.PrintAndCheckGasInfoForBatch(submissions, true, t.gasSettings.gasThreshold, t.logger, t.gasSettings.maxFee) {
 		return nil
 	}
 
