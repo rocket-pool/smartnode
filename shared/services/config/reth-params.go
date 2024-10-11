@@ -34,7 +34,7 @@ type RethConfig struct {
 	// Max number of P2P peers to connect to. For Reth this will map to max outbound peers
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
 
-	// Mas number of P2P inbound peers to connect to.
+	// Max number of P2P inbound peers to connect to.
 	MaxInboundPeers config.Parameter `yaml:"maxInboundPeers,omitempty"`
 
 	// The archive mode flag
