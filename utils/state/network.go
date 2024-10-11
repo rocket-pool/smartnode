@@ -20,50 +20,50 @@ const (
 
 type NetworkDetails struct {
 	// Redstone
-	RplPrice                          *big.Int
-	MinCollateralFraction             *big.Int
-	MaxCollateralFraction             *big.Int
-	IntervalDuration                  time.Duration
-	IntervalStart                     time.Time
-	NodeOperatorRewardsPercent        *big.Int
-	TrustedNodeOperatorRewardsPercent *big.Int
-	ProtocolDaoRewardsPercent         *big.Int
-	PendingRPLRewards                 *big.Int
-	RewardIndex                       uint64
-	ScrubPeriod                       time.Duration
-	SmoothingPoolAddress              common.Address
-	DepositPoolBalance                *big.Int
-	DepositPoolExcess                 *big.Int
-	QueueCapacity                     minipool.QueueCapacity
-	QueueLength                       *big.Int
-	RPLInflationIntervalRate          *big.Int
-	RPLTotalSupply                    *big.Int
-	PricesBlock                       uint64
-	LatestReportablePricesBlock       uint64
-	ETHUtilizationRate                float64
-	StakingETHBalance                 *big.Int
-	RETHExchangeRate                  float64
-	TotalETHBalance                   *big.Int
-	RETHBalance                       *big.Int
-	TotalRETHSupply                   *big.Int
-	TotalRPLStake                     *big.Int
-	SmoothingPoolBalance              *big.Int
-	NodeFee                           float64
-	BalancesBlock                     uint64
-	LatestReportableBalancesBlock     uint64
-	SubmitBalancesEnabled             bool
-	SubmitPricesEnabled               bool
-	MinipoolLaunchTimeout             *big.Int
+	RplPrice                          *big.Int               `json:"rpl_price"`
+	MinCollateralFraction             *big.Int               `json:"min_collateral_fraction"`
+	MaxCollateralFraction             *big.Int               `json:"max_collateral_fraction"`
+	IntervalDuration                  time.Duration          `json:"interval_duration"`
+	IntervalStart                     time.Time              `json:"interval_start"`
+	NodeOperatorRewardsPercent        *big.Int               `json:"node_operator_rewards_percent"`
+	TrustedNodeOperatorRewardsPercent *big.Int               `json:"trusted_node_operator_rewards_percent"`
+	ProtocolDaoRewardsPercent         *big.Int               `json:"protocol_dao_rewards_percent"`
+	PendingRPLRewards                 *big.Int               `json:"pending_rpl_rewards"`
+	RewardIndex                       uint64                 `json:"reward_index"`
+	ScrubPeriod                       time.Duration          `json:"scrub_period"`
+	SmoothingPoolAddress              common.Address         `json:"smoothing_pool_address"`
+	DepositPoolBalance                *big.Int               `json:"deposit_pool_balance"`
+	DepositPoolExcess                 *big.Int               `json:"deposit_pool_excess"`
+	QueueCapacity                     minipool.QueueCapacity `json:"queue_capacity"`
+	QueueLength                       *big.Int               `json:"queue_length"`
+	RPLInflationIntervalRate          *big.Int               `json:"rpl_inflation_interval_rate"`
+	RPLTotalSupply                    *big.Int               `json:"rpl_total_supply"`
+	PricesBlock                       uint64                 `json:"prices_block"`
+	LatestReportablePricesBlock       uint64                 `json:"latest_reportable_prices_block"`
+	ETHUtilizationRate                float64                `json:"eth_utilization_rate"`
+	StakingETHBalance                 *big.Int               `json:"staking_eth_balance"`
+	RETHExchangeRate                  float64                `json:"reth_exchange_rate"`
+	TotalETHBalance                   *big.Int               `json:"total_eth_balance"`
+	RETHBalance                       *big.Int               `json:"reth_balance"`
+	TotalRETHSupply                   *big.Int               `json:"total_reth_supply"`
+	TotalRPLStake                     *big.Int               `json:"total_rpl_stake"`
+	SmoothingPoolBalance              *big.Int               `json:"smoothing_pool_balance"`
+	NodeFee                           float64                `json:"node_fee"`
+	BalancesBlock                     uint64                 `json:"balances_block"`
+	LatestReportableBalancesBlock     uint64                 `json:"latest_reportable_balances_block"`
+	SubmitBalancesEnabled             bool                   `json:"submit_balances_enabled"`
+	SubmitPricesEnabled               bool                   `json:"submit_prices_enabled"`
+	MinipoolLaunchTimeout             *big.Int               `json:"minipool_launch_timeout"`
 
 	// Atlas
-	PromotionScrubPeriod      time.Duration
-	BondReductionWindowStart  time.Duration
-	BondReductionWindowLength time.Duration
-	DepositPoolUserBalance    *big.Int
+	PromotionScrubPeriod      time.Duration `json:"promotion_scrub_period"`
+	BondReductionWindowStart  time.Duration `json:"bond_reduction_window_start"`
+	BondReductionWindowLength time.Duration `json:"bond_reduction_window_length"`
+	DepositPoolUserBalance    *big.Int      `json:"deposit_pool_user_balance"`
 
 	// Houston
-	PricesSubmissionFrequency   uint64
-	BalancesSubmissionFrequency uint64
+	PricesSubmissionFrequency   uint64 `json:"prices_submission_frequency"`
+	BalancesSubmissionFrequency uint64 `json:"balances_submission_frequency"`
 }
 
 // Create a snapshot of all of the network's details

@@ -21,34 +21,34 @@ const (
 
 // Complete details for a node
 type NativeNodeDetails struct {
-	Exists                           bool
-	RegistrationTime                 *big.Int
-	TimezoneLocation                 string
-	FeeDistributorInitialised        bool
-	FeeDistributorAddress            common.Address
-	RewardNetwork                    *big.Int
-	RplStake                         *big.Int
-	EffectiveRPLStake                *big.Int
-	MinimumRPLStake                  *big.Int
-	MaximumRPLStake                  *big.Int
-	EthMatched                       *big.Int
-	EthMatchedLimit                  *big.Int
-	MinipoolCount                    *big.Int
-	BalanceETH                       *big.Int
-	BalanceRETH                      *big.Int
-	BalanceRPL                       *big.Int
-	BalanceOldRPL                    *big.Int
-	DepositCreditBalance             *big.Int
-	DistributorBalanceUserETH        *big.Int // Must call CalculateAverageFeeAndDistributorShares to get this
-	DistributorBalanceNodeETH        *big.Int // Must call CalculateAverageFeeAndDistributorShares to get this
-	WithdrawalAddress                common.Address
-	PendingWithdrawalAddress         common.Address
-	SmoothingPoolRegistrationState   bool
-	SmoothingPoolRegistrationChanged *big.Int
-	NodeAddress                      common.Address
-	AverageNodeFee                   *big.Int // Must call CalculateAverageFeeAndDistributorShares to get this
-	CollateralisationRatio           *big.Int
-	DistributorBalance               *big.Int
+	Exists                           bool           `json:"exists"`
+	RegistrationTime                 *big.Int       `json:"registration_time"`
+	TimezoneLocation                 string         `json:"timezone_location"`
+	FeeDistributorInitialised        bool           `json:"fee_distributor_initialised"`
+	FeeDistributorAddress            common.Address `json:"fee_distributor_address"`
+	RewardNetwork                    *big.Int       `json:"reward_network"`
+	RplStake                         *big.Int       `json:"rpl_stake"`
+	EffectiveRPLStake                *big.Int       `json:"effective_rpl_stake"`
+	MinimumRPLStake                  *big.Int       `json:"minimum_rpl_stake"`
+	MaximumRPLStake                  *big.Int       `json:"maximum_rpl_stake"`
+	EthMatched                       *big.Int       `json:"eth_matched"`
+	EthMatchedLimit                  *big.Int       `json:"eth_matched_limit"`
+	MinipoolCount                    *big.Int       `json:"minipool_count"`
+	BalanceETH                       *big.Int       `json:"balance_eth"`
+	BalanceRETH                      *big.Int       `json:"balance_reth"`
+	BalanceRPL                       *big.Int       `json:"balance_rpl"`
+	BalanceOldRPL                    *big.Int       `json:"balance_old_rpl"`
+	DepositCreditBalance             *big.Int       `json:"deposit_credit_balance"`
+	DistributorBalanceUserETH        *big.Int       `json:"distributor_balance_user_eth"` // Must call CalculateAverageFeeAndDistributorShares to get this
+	DistributorBalanceNodeETH        *big.Int       `json:"distributor_balance_node_eth"` // Must call CalculateAverageFeeAndDistributorShares to get this
+	WithdrawalAddress                common.Address `json:"withdrawal_address"`
+	PendingWithdrawalAddress         common.Address `json:"pending_withdrawal_address"`
+	SmoothingPoolRegistrationState   bool           `json:"smoothing_pool_registration_state"`
+	SmoothingPoolRegistrationChanged *big.Int       `json:"smoothing_pool_registration_changed"`
+	NodeAddress                      common.Address `json:"node_address"`
+	AverageNodeFee                   *big.Int       `json:"average_node_fee"` // Must call CalculateAverageFeeAndDistributorShares to get this
+	CollateralisationRatio           *big.Int       `json:"collateralisation_ratio"`
+	DistributorBalance               *big.Int       `json:"distributor_balance"`
 }
 
 // Gets the details for a node using the efficient multicall contract
