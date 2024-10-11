@@ -133,8 +133,6 @@ The following commands are available via the Smartnode client:
   - `rocketpool service install-update-tracker, d` - Install the update tracker that provides the available system update count to the metrics dashboard
   - `rocketpool service check-cpu-features, ccf` - Checks if your CPU supports all of the features required by the "modern" version of certain client images. If not, it prints what features are missing.
   - `rocketpool service get-config-yaml` - Generate YAML that shows the current configuration schema, including all of the parameters and their descriptions
-  - `rocketpool service export-eth1-data` - Exports the execution client (eth1) chain data to an external folder. Use this if you want to back up your chain data before switching execution clients.
-  - `rocketpool service import-eth1-data` - Imports execution client (eth1) chain data from an external folder. Use this if you want to restore the data from an execution client that you previously backed up.
   - `rocketpool service resync-eth1` - Deletes the main ETH1 client's chain data and resyncs it from scratch. Only use this as a last resort!
   - `rocketpool service resync-eth2` - Deletes the ETH2 client's chain data and resyncs it from scratch. Only use this as a last resort!
   - `rocketpool service terminate, t` - Deletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Only use this if you are cleaning up the Smartnode and want to start over!
