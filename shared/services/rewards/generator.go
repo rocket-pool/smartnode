@@ -3,6 +3,7 @@ package rewards
 import (
 	"fmt"
 	"math/big"
+	"slices"
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
@@ -129,11 +130,13 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	// Do not default- require intervals to be explicit
 	foundGenerator := false
 	foundApproximator := false
-	for i := uint64(len(t.rewardsIntervalInfos)); i > 1; i-- {
-		info := t.rewardsIntervalInfos[i]
+
+	// Start iterating at the end
+	slices.Reverse(rewardsIntervalInfos)
+	for _, info := range rewardsIntervalInfos {
 		startInterval, err := info.GetStartInterval(network)
 		if err != nil {
-			return nil, fmt.Errorf("error getting start interval for rewards period %d: %w", i, err)
+			return nil, fmt.Errorf("error getting start interval for rewards period %d: %w", t.index, err)
 		}
 		if !foundGenerator && t.index >= startInterval {
 			t.generatorImpl = info.generator
