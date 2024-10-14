@@ -595,9 +595,15 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		previousRocketDAOProtocolVerifier: map[config.Network][]common.Address{
-			config.Network_Mainnet: {},
-			config.Network_Devnet:  {},
-			config.Network_Holesky: {},
+			config.Network_Mainnet: {
+				common.HexToAddress("0x25F41Cd11d95DBEC0919A0440343698cf1472a33"),
+			},
+			config.Network_Devnet: {
+				common.HexToAddress("0xC60b29d9c26D1dE843d7f437b079BeA0b5caa8e1"),
+			},
+			config.Network_Holesky: {
+				common.HexToAddress("0xE883Aa5C7CB0FE8D55EBB246B3EB22Ca8D49D191"),
+			},
 		},
 
 		optimismPriceMessengerAddress: map[config.Network]string{
