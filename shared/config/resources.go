@@ -124,17 +124,19 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 		},
-		RocketSignerRegistryAddress:          hexToAddressPtr("0xc1062617d10Ae99E09D941b60746182A87eAB38F"),
-		PreviousProtocolDaoVerifierAddresses: []common.Address{},
-		OptimismPriceMessengerAddress:        hexToAddressPtr("0x12759f8Df234f8f2cDdb3d2Ed5604adF9ACCfc9F"),
-		PolygonPriceMessengerAddress:         hexToAddressPtr("0xb1029Ac2Be4e08516697093e2AFeC435057f3511"),
-		ArbitrumPriceMessengerAddress:        hexToAddressPtr("0x05330300f829AD3fC8f33838BC88CFC4093baD53"),
-		ArbitrumPriceMessengerAddressV2:      hexToAddressPtr("0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1"),
-		ZkSyncEraPriceMessengerAddress:       hexToAddressPtr("0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8"),
-		BasePriceMessengerAddress:            hexToAddressPtr("0x64A5856869C06B0188C84A5F83d712bbAc03517d"),
-		ScrollPriceMessengerAddress:          hexToAddressPtr("0x0f22dc9b9c03757d4676539203d7549c8f22c15c"),
-		ScrollFeeEstimatorAddress:            hexToAddressPtr("0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B"),
-		RplTwapPoolAddress:                   hexToAddressPtr("0xe42318ea3b998e8355a3da364eb9d48ec725eb45"),
+		RocketSignerRegistryAddress: hexToAddressPtr("0xc1062617d10Ae99E09D941b60746182A87eAB38F"),
+		PreviousProtocolDaoVerifierAddresses: []common.Address{
+			common.HexToAddress("0x25F41Cd11d95DBEC0919A0440343698cf1472a33"),
+		},
+		OptimismPriceMessengerAddress:   hexToAddressPtr("0x12759f8Df234f8f2cDdb3d2Ed5604adF9ACCfc9F"),
+		PolygonPriceMessengerAddress:    hexToAddressPtr("0xb1029Ac2Be4e08516697093e2AFeC435057f3511"),
+		ArbitrumPriceMessengerAddress:   hexToAddressPtr("0x05330300f829AD3fC8f33838BC88CFC4093baD53"),
+		ArbitrumPriceMessengerAddressV2: hexToAddressPtr("0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1"),
+		ZkSyncEraPriceMessengerAddress:  hexToAddressPtr("0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8"),
+		BasePriceMessengerAddress:       hexToAddressPtr("0x64A5856869C06B0188C84A5F83d712bbAc03517d"),
+		ScrollPriceMessengerAddress:     hexToAddressPtr("0x0f22dc9b9c03757d4676539203d7549c8f22c15c"),
+		ScrollFeeEstimatorAddress:       hexToAddressPtr("0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B"),
+		RplTwapPoolAddress:              hexToAddressPtr("0xe42318ea3b998e8355a3da364eb9d48ec725eb45"),
 	}
 
 	// Holesky
@@ -160,17 +162,19 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"),
 		},
-		RocketSignerRegistryAddress:          hexToAddressPtr("0x657FDE6B4764E26A81A323dbb79791A11B90dD91"),
-		PreviousProtocolDaoVerifierAddresses: nil,
-		OptimismPriceMessengerAddress:        nil,
-		PolygonPriceMessengerAddress:         nil,
-		ArbitrumPriceMessengerAddress:        nil,
-		ArbitrumPriceMessengerAddressV2:      nil,
-		ZkSyncEraPriceMessengerAddress:       nil,
-		BasePriceMessengerAddress:            nil,
-		ScrollPriceMessengerAddress:          nil,
-		ScrollFeeEstimatorAddress:            nil,
-		RplTwapPoolAddress:                   hexToAddressPtr("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
+		RocketSignerRegistryAddress: hexToAddressPtr("0x657FDE6B4764E26A81A323dbb79791A11B90dD91"),
+		PreviousProtocolDaoVerifierAddresses: []common.Address{
+			common.HexToAddress("0xE883Aa5C7CB0FE8D55EBB246B3EB22Ca8D49D191"),
+		},
+		OptimismPriceMessengerAddress:   nil,
+		PolygonPriceMessengerAddress:    nil,
+		ArbitrumPriceMessengerAddress:   nil,
+		ArbitrumPriceMessengerAddressV2: nil,
+		ZkSyncEraPriceMessengerAddress:  nil,
+		BasePriceMessengerAddress:       nil,
+		ScrollPriceMessengerAddress:     nil,
+		ScrollFeeEstimatorAddress:       nil,
+		RplTwapPoolAddress:              hexToAddressPtr("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
 	}
 
 	// Devnet
@@ -196,17 +200,19 @@ func newRocketPoolResources(network config.Network) *RocketPoolResources {
 		PreviousRewardsPoolAddresses: []common.Address{
 			common.HexToAddress("0x4d581a552490fb6fce5F978e66560C8b7E481818"),
 		},
-		RocketSignerRegistryAddress:          hexToAddressPtr("0x15Da69Dde70998FC045a260f84ad4aB0A2204e76"),
-		PreviousProtocolDaoVerifierAddresses: nil,
-		OptimismPriceMessengerAddress:        nil,
-		PolygonPriceMessengerAddress:         nil,
-		ArbitrumPriceMessengerAddress:        nil,
-		ArbitrumPriceMessengerAddressV2:      nil,
-		ZkSyncEraPriceMessengerAddress:       nil,
-		BasePriceMessengerAddress:            nil,
-		ScrollPriceMessengerAddress:          nil,
-		ScrollFeeEstimatorAddress:            nil,
-		RplTwapPoolAddress:                   hexToAddressPtr("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
+		RocketSignerRegistryAddress: hexToAddressPtr("0x15Da69Dde70998FC045a260f84ad4aB0A2204e76"),
+		PreviousProtocolDaoVerifierAddresses: []common.Address{
+			common.HexToAddress("0xC60b29d9c26D1dE843d7f437b079BeA0b5caa8e1"),
+		},
+		OptimismPriceMessengerAddress:   nil,
+		PolygonPriceMessengerAddress:    nil,
+		ArbitrumPriceMessengerAddress:   nil,
+		ArbitrumPriceMessengerAddressV2: nil,
+		ZkSyncEraPriceMessengerAddress:  nil,
+		BasePriceMessengerAddress:       nil,
+		ScrollPriceMessengerAddress:     nil,
+		ScrollFeeEstimatorAddress:       nil,
+		RplTwapPoolAddress:              hexToAddressPtr("0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d"),
 	}
 	devnetResources.NetworkResources.Network = Network_Devnet
 
