@@ -23,25 +23,7 @@ func main() {
 	app.Name = "rocketpool"
 	app.Usage = "Rocket Pool service"
 	app.Version = shared.RocketPoolVersion
-	app.Authors = []cli.Author{
-		{
-			Name:  "David Rugendyke",
-			Email: "david@rocketpool.net",
-		},
-		{
-			Name:  "Jake Pospischil",
-			Email: "jake@rocketpool.net",
-		},
-		{
-			Name:  "Joe Clapis",
-			Email: "joe@rocketpool.net",
-		},
-		{
-			Name:  "Kane Wallmann",
-			Email: "kane@rocketpool.net",
-		},
-	}
-	app.Copyright = "(c) 2022 Rocket Pool Pty Ltd"
+	app.Copyright = "(c) 2024 Rocket Pool Pty Ltd"
 
 	// Set application flags
 	app.Flags = []cli.Flag{
