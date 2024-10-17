@@ -72,25 +72,17 @@ func nodeDeposit(c *cli.Context) error {
 
 	// Get deposit amount
 	var amount float64
-	if c.String("amount") != "" {
-		// Parse amount
-		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
-		if err != nil {
-			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
-		}
-		amount = depositAmount
-	} else {
-		// Get deposit amount options
-		amountOptions := []string{
-			"8 ETH",
-		}
 
-		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-		switch selected {
-		case 0:
-			amount = 8
-		}
+	// Get deposit amount options
+	amountOptions := []string{
+		"8 ETH",
+	}
+
+	// Prompt for amount
+	selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
+	switch selected {
+	case 0:
+		amount = 8
 	}
 
 	amountWei := eth.EthToWei(amount)

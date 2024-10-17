@@ -500,10 +500,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool node deposit [options]",
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of ETH to deposit (8 or 16)",
-					},
-					cli.StringFlag{
 						Name:  "max-slippage, s",
 						Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
 					},
