@@ -48,6 +48,33 @@ func nodeDeposit(c *cli.Context) error {
 	fmt.Println("Your eth2 client is on the correct network.")
 	fmt.Println()
 
+	// Get the node's registration status
+	smoothie, err := rp.NodeGetSmoothingPoolRegistrationStatus()
+	if err != nil {
+		return err
+	}
+
+	if !smoothie.NodeRegistered {
+		fmt.Println("Your node is not opted into the smoothing pool.")
+	} else {
+		fmt.Println("Your node is currently opted into the smoothing pool.")
+	}
+	fmt.Println()
+
+	// Post a warning about ETH only minipools
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: We’re excited to announce that newly launched Saturn 0 minipools will feature a commission structure ranging from 5%% to 14%%.\n\n- 5%% base commission\n- 5%% dynamic commission boost until Saturn 1\n- Up to 4%% boost for staked RPL valued at ≥10%% of borrowed ETH\n\n- Smoothing pool participation is required to benefit from dynamic commission\n- Dynamic commission starts when reward tree v10 is released (currently in development)\n- Dynamic commission ends soon after Saturn 1 is released\n\nNewly launched minipools with no RPL staked receive 10%% commission while newly launched minipools with ≥10%% of borrowed ETH staked receive 14%% commission.\n\nTo learn more about Saturn 0 and how it affects newly launched minipools, visit: https://rpips.rocketpool.net/tokenomics-explainers/005-rework-prelude%s\nWould you like to continue?", colorYellow, colorReset))) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
+	// Post a final warning about the dynamic comission boost
+	if !smoothie.NodeRegistered {
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Your node is not opted into the smoothing pool, which means newly launched minipools will not benefit from the 5-9%% dynamic commission boost. You can join the smoothing pool using: 'rocketpool node join-smoothing-pool'.\n%sAre you sure you'd like to continue without opting into the smoothing pool?", colorRed, colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	}
+
 	// If hotfix is live and voting isn't initialized, display a warning
 	err = warnIfVotingUninitialized(rp, c, depositWarningMessage)
 	if err != nil {
@@ -122,7 +149,7 @@ func nodeDeposit(c *cli.Context) error {
 
 		// Prompt for min node fee
 		if nodeFees.MinNodeFee == nodeFees.MaxNodeFee {
-			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", nodeFees.MinNodeFee*100)
+			fmt.Printf("Your minipool will use the current base commission rate of %.2f%%.\n", nodeFees.MinNodeFee*100)
 			minNodeFee = nodeFees.MinNodeFee
 		} else {
 			minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.MinNodeFee)
