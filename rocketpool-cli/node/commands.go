@@ -503,10 +503,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "max-slippage, s",
 						Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
 					},
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm deposit",
-					},
 					cli.StringFlag{
 						Name:  "salt, l",
 						Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
