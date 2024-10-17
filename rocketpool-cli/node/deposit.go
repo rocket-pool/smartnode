@@ -83,7 +83,6 @@ func nodeDeposit(c *cli.Context) error {
 		// Get deposit amount options
 		amountOptions := []string{
 			"8 ETH",
-			"16 ETH",
 		}
 
 		// Prompt for amount
@@ -91,8 +90,6 @@ func nodeDeposit(c *cli.Context) error {
 		switch selected {
 		case 0:
 			amount = 8
-		case 1:
-			amount = 16
 		}
 	}
 
