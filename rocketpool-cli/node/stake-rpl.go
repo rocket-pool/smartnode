@@ -172,15 +172,6 @@ func nodeStakeRpl(c *cli.Context) error {
 		}
 		amountWei = rplPrice.MinPer8EthMinipoolRplStake
 
-	} else if c.String("amount") == "min16" {
-
-		// Set amount to min per 16 ETH minipool RPL stake
-		rplPrice, err := rp.RplPrice()
-		if err != nil {
-			return err
-		}
-		amountWei = rplPrice.MinPer16EthMinipoolRplStake
-
 	} else if c.String("amount") == "all" {
 
 		// Set amount to node's entire RPL balance

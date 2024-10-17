@@ -320,7 +320,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of RPL to stake (also accepts 'min8' / 'max8' for 8-ETH minipools, 'min16' / 'max16' for 16-ETH minipools, or 'all' for all of your RPL)",
+						Usage: "The amount of RPL to stake (also accepts 'min8' for 8-ETH minipools, or 'all' for all of your RPL)",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
