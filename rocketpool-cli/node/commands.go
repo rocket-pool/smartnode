@@ -320,7 +320,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of RPL to stake (also accepts 'min8' / 'max8' for 8-ETH minipools, 'min16' / 'max16' for 16-ETH minipools, or 'all' for all of your RPL)",
+						Usage: "The amount of RPL to stake (also accepts 'min8' for 8-ETH minipools, or 'all' for all of your RPL)",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -500,16 +500,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				UsageText: "rocketpool node deposit [options]",
 				Flags: []cli.Flag{
 					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of ETH to deposit (8 or 16)",
-					},
-					cli.StringFlag{
 						Name:  "max-slippage, s",
 						Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
-					},
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm deposit",
 					},
 					cli.StringFlag{
 						Name:  "salt, l",
