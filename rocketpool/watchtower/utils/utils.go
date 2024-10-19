@@ -55,12 +55,23 @@ func FindLastBlockWithExecutionPayload(bc beacon.Client, slotNumber uint64) (bea
 }
 
 func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2Config, bc beacon.Client, ec rocketpool.ExecutionClient, lastSubmissionBlock uint64, referenceTimestamp int64, submissionIntervalInSeconds int64) (uint64, time.Time, *types.Header, error) {
+	// Get the time of the last submission
+	lastSubmissionBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(lastSubmissionBlock)))
+	if err != nil {
+		return 0, time.Time{}, nil, fmt.Errorf("can't get the latest submission block header: %w", err)
+	}
+
 	// Get the time of the latest block
 	latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return 0, time.Time{}, nil, fmt.Errorf("can't get the latest block time: %w", err)
 	}
 	latestBlockTimestamp := int64(latestEth1Block.Time)
+
+	if int64(lastSubmissionBlockHeader.Time)+submissionIntervalInSeconds > latestBlockTimestamp {
+		return 0, time.Time{}, nil, fmt.Errorf("not enough time has passed for the next price/balances submission")
+	}
+
 	// Calculate the next submission timestamp
 	submissionTimestamp, err := FindNextSubmissionTimestamp(latestBlockTimestamp, referenceTimestamp, submissionIntervalInSeconds)
 	if err != nil {
