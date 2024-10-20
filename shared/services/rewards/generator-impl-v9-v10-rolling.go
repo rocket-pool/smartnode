@@ -222,51 +222,19 @@ func (r *treeGeneratorImpl_v9_v10_rolling) approximateStakerShareOfSmoothingPool
 
 func (r *treeGeneratorImpl_v9_v10_rolling) calculateNodeRplRewards(
 	collateralRewards *big.Int,
-	nodeEffectiveStake *big.Int,
-	totalEffectiveRplStake *big.Int,
 	nodeWeight *big.Int,
 	totalNodeWeight *big.Int,
 ) *big.Int {
 
-	if nodeEffectiveStake.Sign() <= 0 || nodeWeight.Sign() <= 0 {
+	if nodeWeight.Sign() <= 0 {
 		return big.NewInt(0)
 	}
 
-	// C is in the closed range [1, 6]
-	// C := min(6, interval - 18 + 1)
-	c := int64(6)
-	interval := int64(r.networkState.NetworkDetails.RewardIndex)
-
-	if c > (interval - 18 + 1) {
-		c = interval - 18 + 1
-	}
-
-	if c <= 0 {
-		c = 1
-	}
-
-	bigC := big.NewInt(c)
-
-	// (collateralRewards * C * nodeWeight / (totalNodeWeight * 6)) + (collateralRewards * (6 - C) * nodeEffectiveStake / (totalEffectiveRplStake * 6))
-	// First, (collateralRewards * C * nodeWeight / (totalNodeWeight * 6))
+	// (collateralRewards * nodeWeight / totalNodeWeight)
 	rpip30Rewards := big.NewInt(0).Mul(collateralRewards, nodeWeight)
-	rpip30Rewards.Mul(rpip30Rewards, bigC)
-	rpip30Rewards.Quo(rpip30Rewards, big.NewInt(0).Mul(totalNodeWeight, six))
+	rpip30Rewards.Quo(rpip30Rewards, totalNodeWeight)
 
-	// Once C hits 6 we can exit early as an optimization
-	if c == 6 {
-		return rpip30Rewards
-	}
-
-	// Second, (collateralRewards * (6 - C) * nodeEffectiveStake / (totalEffectiveRplStake * 6))
-	oldRewards := big.NewInt(6)
-	oldRewards.Sub(oldRewards, bigC)
-	oldRewards.Mul(oldRewards, collateralRewards)
-	oldRewards.Mul(oldRewards, nodeEffectiveStake)
-	oldRewards.Quo(oldRewards, big.NewInt(0).Mul(totalEffectiveRplStake, six))
-
-	// Add them together
-	return rpip30Rewards.Add(rpip30Rewards, oldRewards)
+	return rpip30Rewards
 }
 
 // Calculates the RPL rewards for the given interval
@@ -296,10 +264,6 @@ func (r *treeGeneratorImpl_v9_v10_rolling) calculateRplRewards() error {
 	// Do it here, as the network state value will still be used for vote power, so doing it upstream is likely to introduce more issues.
 	// Doing it here also ensures that v1-7 continue to run correctly on networks other than mainnet where the max collateral fraction may not have always been 150%.
 	r.networkState.NetworkDetails.MaxCollateralFraction = big.NewInt(1.5e18) // 1.5 eth is 150% in wei
-	trueNodeEffectiveStakes, totalNodeEffectiveStake, err := r.networkState.CalculateTrueEffectiveStakes(true, true)
-	if err != nil {
-		return fmt.Errorf("error calculating effective RPL stakes: %w", err)
-	}
 
 	// Calculate the RPIP-30 weight of each node, scaling by their participation in this interval
 	nodeWeights, totalNodeWeight, err := r.networkState.CalculateNodeWeights()
@@ -308,7 +272,7 @@ func (r *treeGeneratorImpl_v9_v10_rolling) calculateRplRewards() error {
 	}
 
 	// Operate normally if any node has rewards
-	if totalNodeEffectiveStake.Sign() > 0 && totalNodeWeight.Sign() > 0 {
+	if totalNodeWeight.Sign() > 0 {
 		// Make sure to record totalNodeWeight in the rewards file
 		r.rewardsFile.TotalRewards.TotalNodeWeight.Set(totalNodeWeight)
 
@@ -317,8 +281,6 @@ func (r *treeGeneratorImpl_v9_v10_rolling) calculateRplRewards() error {
 			// Get how much RPL goes to this node
 			nodeRplRewards := r.calculateNodeRplRewards(
 				totalNodeRewards,
-				trueNodeEffectiveStakes[nodeDetails.NodeAddress],
-				totalNodeEffectiveStake,
 				nodeWeights[nodeDetails.NodeAddress],
 				totalNodeWeight,
 			)
