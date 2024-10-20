@@ -28,7 +28,7 @@ import (
 var _ IRewardsFile = (*ssz_types.SSZFile_v1)(nil)
 
 // Implementation for tree generator ruleset v9
-type treeGeneratorImpl_v9 struct {
+type treeGeneratorImpl_v9_v10 struct {
 	networkState                 *state.NetworkState
 	rewardsFile                  *ssz_types.SSZFile_v1
 	elSnapshotHeader             *types.Header
@@ -61,8 +61,8 @@ type treeGeneratorImpl_v9 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v9(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v9 {
-	return &treeGeneratorImpl_v9{
+func newTreeGeneratorImpl_v9_v10(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v9_v10 {
+	return &treeGeneratorImpl_v9_v10{
 		rewardsFile: &ssz_types.SSZFile_v1{
 			RewardsFileVersion: 3,
 			RulesetVersion:     9,
@@ -99,11 +99,11 @@ func newTreeGeneratorImpl_v9(log *log.ColorLogger, logPrefix string, index uint6
 }
 
 // Get the version of the ruleset used by this generator
-func (r *treeGeneratorImpl_v9) getRulesetVersion() uint64 {
+func (r *treeGeneratorImpl_v9_v10) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v9) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error) {
+func (r *treeGeneratorImpl_v9_v10) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -188,7 +188,7 @@ func (r *treeGeneratorImpl_v9) generateTree(rp RewardsExecutionClient, networkNa
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v9) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error) {
+func (r *treeGeneratorImpl_v9_v10) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
@@ -233,7 +233,7 @@ func (r *treeGeneratorImpl_v9) approximateStakerShareOfSmoothingPool(rp RewardsE
 	return r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Int, nil
 }
 
-func (r *treeGeneratorImpl_v9) calculateNodeRplRewards(
+func (r *treeGeneratorImpl_v9_v10) calculateNodeRplRewards(
 	collateralRewards *big.Int,
 	nodeEffectiveStake *big.Int,
 	totalEffectiveRplStake *big.Int,
@@ -283,7 +283,7 @@ func (r *treeGeneratorImpl_v9) calculateNodeRplRewards(
 }
 
 // Calculates the RPL rewards for the given interval
-func (r *treeGeneratorImpl_v9) calculateRplRewards() error {
+func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
 	if pendingRewards.Cmp(common.Big0) == 0 {
@@ -484,7 +484,7 @@ func (r *treeGeneratorImpl_v9) calculateRplRewards() error {
 }
 
 // Calculates the ETH rewards for the given interval
-func (r *treeGeneratorImpl_v9) calculateEthRewards(checkBeaconPerformance bool) error {
+func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
@@ -638,7 +638,7 @@ func (r *treeGeneratorImpl_v9) calculateEthRewards(checkBeaconPerformance bool) 
 }
 
 // Calculate the distribution of Smoothing Pool ETH to each node
-func (r *treeGeneratorImpl_v9) calculateNodeRewards() (*big.Int, *big.Int, error) {
+func (r *treeGeneratorImpl_v9_v10) calculateNodeRewards() (*big.Int, *big.Int, error) {
 
 	// If there weren't any successful attestations, everything goes to the pool stakers
 	if r.totalAttestationScore.Cmp(common.Big0) == 0 || r.successfulAttestations == 0 {
@@ -696,7 +696,7 @@ func (r *treeGeneratorImpl_v9) calculateNodeRewards() (*big.Int, *big.Int, error
 }
 
 // Get all of the duties for a range of epochs
-func (r *treeGeneratorImpl_v9) processAttestationsForInterval() error {
+func (r *treeGeneratorImpl_v9_v10) processAttestationsForInterval() error {
 
 	startEpoch := r.rewardsFile.ConsensusStartBlock / r.beaconConfig.SlotsPerEpoch
 	endEpoch := r.rewardsFile.ConsensusEndBlock / r.beaconConfig.SlotsPerEpoch
@@ -741,7 +741,7 @@ func (r *treeGeneratorImpl_v9) processAttestationsForInterval() error {
 }
 
 // Process an epoch, optionally getting the duties for all eligible minipools in it and checking each one's attestation performance
-func (r *treeGeneratorImpl_v9) processEpoch(getDuties bool, epoch uint64) error {
+func (r *treeGeneratorImpl_v9_v10) processEpoch(getDuties bool, epoch uint64) error {
 
 	// Get the committee info and attestation records for this epoch
 	var committeeData beacon.Committees
@@ -799,7 +799,7 @@ func (r *treeGeneratorImpl_v9) processEpoch(getDuties bool, epoch uint64) error 
 }
 
 // Handle all of the attestations in the given slot
-func (r *treeGeneratorImpl_v9) checkDutiesForSlot(attestations []beacon.AttestationInfo, slot uint64) error {
+func (r *treeGeneratorImpl_v9_v10) checkDutiesForSlot(attestations []beacon.AttestationInfo, slot uint64) error {
 
 	one := eth.EthToWei(1)
 	validatorReq := eth.EthToWei(32)
@@ -863,7 +863,7 @@ func (r *treeGeneratorImpl_v9) checkDutiesForSlot(attestations []beacon.Attestat
 }
 
 // Maps out the attestaion duties for the given epoch
-func (r *treeGeneratorImpl_v9) getDutiesForEpoch(committees beacon.Committees) error {
+func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committees) error {
 
 	// Crawl the committees
 	for idx := 0; idx < committees.Count(); idx++ {
@@ -927,7 +927,7 @@ func (r *treeGeneratorImpl_v9) getDutiesForEpoch(committees beacon.Committees) e
 }
 
 // Maps all minipools to their validator indices and creates a map of indices to minipool info
-func (r *treeGeneratorImpl_v9) createMinipoolIndexMap() error {
+func (r *treeGeneratorImpl_v9_v10) createMinipoolIndexMap() error {
 
 	// Get the status for all uncached minipool validators and add them to the cache
 	r.validatorIndexMap = map[string]*MinipoolInfo{}
@@ -981,7 +981,7 @@ func (r *treeGeneratorImpl_v9) createMinipoolIndexMap() error {
 }
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
-func (r *treeGeneratorImpl_v9) getSmoothingPoolNodeDetails() error {
+func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 
 	farFutureTime := time.Unix(1000000000000000000, 0) // Far into the future
 	farPastTime := time.Unix(0, 0)
@@ -1069,7 +1069,7 @@ func (r *treeGeneratorImpl_v9) getSmoothingPoolNodeDetails() error {
 }
 
 // Validates that the provided network is legal
-func (r *treeGeneratorImpl_v9) validateNetwork(network uint64) (bool, error) {
+func (r *treeGeneratorImpl_v9_v10) validateNetwork(network uint64) (bool, error) {
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
 		var err error
@@ -1084,7 +1084,7 @@ func (r *treeGeneratorImpl_v9) validateNetwork(network uint64) (bool, error) {
 }
 
 // Gets the start blocks for the given interval
-func (r *treeGeneratorImpl_v9) getBlocksAndTimesForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
+func (r *treeGeneratorImpl_v9_v10) getBlocksAndTimesForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
 	// Sanity check to confirm the BN can access the block from the previous interval
 	_, exists, err := r.bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
 	if err != nil {
@@ -1155,7 +1155,7 @@ func (r *treeGeneratorImpl_v9) getBlocksAndTimesForInterval(previousIntervalEven
 }
 
 // Get the bond and node fee of a minipool for the specified time
-func (r *treeGeneratorImpl_v9) getMinipoolBondAndNodeFee(details *rpstate.NativeMinipoolDetails, blockTime time.Time) (*big.Int, *big.Int) {
+func (r *treeGeneratorImpl_v9_v10) getMinipoolBondAndNodeFee(details *rpstate.NativeMinipoolDetails, blockTime time.Time) (*big.Int, *big.Int) {
 	currentBond := details.NodeDepositBalance
 	currentFee := details.NodeFee
 	previousBond := details.LastBondReductionPrevValue
@@ -1180,6 +1180,6 @@ func (r *treeGeneratorImpl_v9) getMinipoolBondAndNodeFee(details *rpstate.Native
 	return currentBond, currentFee
 }
 
-func (r *treeGeneratorImpl_v9) saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+func (r *treeGeneratorImpl_v9_v10) saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
 	return saveRewardsArtifacts(smartnode, treeResult, nodeTrusted)
 }

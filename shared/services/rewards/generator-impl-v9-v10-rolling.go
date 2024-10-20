@@ -21,7 +21,7 @@ import (
 )
 
 // Implementation for tree generator ruleset v9 with rolling record support
-type treeGeneratorImpl_v9_rolling struct {
+type treeGeneratorImpl_v9_v10_rolling struct {
 	networkState                 *state.NetworkState
 	rewardsFile                  *ssz_types.SSZFile_v1
 	elSnapshotHeader             *types.Header
@@ -51,8 +51,8 @@ type treeGeneratorImpl_v9_rolling struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v9_rolling(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v9_rolling {
-	return &treeGeneratorImpl_v9_rolling{
+func newTreeGeneratorImpl_v9_v10_rolling(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v9_v10_rolling {
+	return &treeGeneratorImpl_v9_v10_rolling{
 		rewardsFile: &ssz_types.SSZFile_v1{
 			RewardsFileVersion: 3,
 			RulesetVersion:     9,
@@ -88,11 +88,11 @@ func newTreeGeneratorImpl_v9_rolling(log *log.ColorLogger, logPrefix string, ind
 }
 
 // Get the version of the ruleset used by this generator
-func (r *treeGeneratorImpl_v9_rolling) getRulesetVersion() uint64 {
+func (r *treeGeneratorImpl_v9_v10_rolling) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v9_rolling) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error) {
+func (r *treeGeneratorImpl_v9_v10_rolling) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -176,7 +176,7 @@ func (r *treeGeneratorImpl_v9_rolling) generateTree(rp RewardsExecutionClient, n
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v9_rolling) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error) {
+func (r *treeGeneratorImpl_v9_v10_rolling) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
@@ -220,7 +220,7 @@ func (r *treeGeneratorImpl_v9_rolling) approximateStakerShareOfSmoothingPool(rp 
 	return r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Int, nil
 }
 
-func (r *treeGeneratorImpl_v9_rolling) calculateNodeRplRewards(
+func (r *treeGeneratorImpl_v9_v10_rolling) calculateNodeRplRewards(
 	collateralRewards *big.Int,
 	nodeEffectiveStake *big.Int,
 	totalEffectiveRplStake *big.Int,
@@ -270,7 +270,7 @@ func (r *treeGeneratorImpl_v9_rolling) calculateNodeRplRewards(
 }
 
 // Calculates the RPL rewards for the given interval
-func (r *treeGeneratorImpl_v9_rolling) calculateRplRewards() error {
+func (r *treeGeneratorImpl_v9_v10_rolling) calculateRplRewards() error {
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
 	if pendingRewards.Cmp(common.Big0) == 0 {
@@ -469,7 +469,7 @@ func (r *treeGeneratorImpl_v9_rolling) calculateRplRewards() error {
 }
 
 // Calculates the ETH rewards for the given interval
-func (r *treeGeneratorImpl_v9_rolling) calculateEthRewards(checkBeaconPerformance bool) error {
+func (r *treeGeneratorImpl_v9_v10_rolling) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
@@ -570,7 +570,7 @@ func (r *treeGeneratorImpl_v9_rolling) calculateEthRewards(checkBeaconPerformanc
 }
 
 // Calculate the distribution of Smoothing Pool ETH to each node
-func (r *treeGeneratorImpl_v9_rolling) calculateNodeRewards() (*big.Int, *big.Int, error) {
+func (r *treeGeneratorImpl_v9_v10_rolling) calculateNodeRewards() (*big.Int, *big.Int, error) {
 
 	// Get the list of cheaters
 	cheaters := r.getCheaters()
@@ -640,7 +640,7 @@ func (r *treeGeneratorImpl_v9_rolling) calculateNodeRewards() (*big.Int, *big.In
 }
 
 // Validates that the provided network is legal
-func (r *treeGeneratorImpl_v9_rolling) validateNetwork(network uint64) (bool, error) {
+func (r *treeGeneratorImpl_v9_v10_rolling) validateNetwork(network uint64) (bool, error) {
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
 		var err error
@@ -655,7 +655,7 @@ func (r *treeGeneratorImpl_v9_rolling) validateNetwork(network uint64) (bool, er
 }
 
 // Gets the EL header for the given interval's start block
-func (r *treeGeneratorImpl_v9_rolling) getBlocksAndTimesForInterval() (*types.Header, error) {
+func (r *treeGeneratorImpl_v9_v10_rolling) getBlocksAndTimesForInterval() (*types.Header, error) {
 
 	// Get the Beacon block for the start slot of the record
 	r.rewardsFile.ConsensusStartBlock = r.rollingRecord.StartSlot
@@ -699,7 +699,7 @@ func (r *treeGeneratorImpl_v9_rolling) getBlocksAndTimesForInterval() (*types.He
 }
 
 // Detect and flag any cheaters
-func (r *treeGeneratorImpl_v9_rolling) getCheaters() map[common.Address]bool {
+func (r *treeGeneratorImpl_v9_v10_rolling) getCheaters() map[common.Address]bool {
 	cheatingNodes := map[common.Address]bool{}
 	three := big.NewInt(3)
 
@@ -716,6 +716,6 @@ func (r *treeGeneratorImpl_v9_rolling) getCheaters() map[common.Address]bool {
 	return cheatingNodes
 }
 
-func (r *treeGeneratorImpl_v9_rolling) saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+func (r *treeGeneratorImpl_v9_v10_rolling) saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
 	return saveRewardsArtifacts(smartnode, treeResult, nodeTrusted)
 }

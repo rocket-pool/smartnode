@@ -68,7 +68,7 @@ func TestMockIntervalDefaultsTreegenv8v9(tt *testing.T) {
 	if testing.Verbose() {
 		t.saveArtifacts("v8", v8Artifacts)
 	}
-	generatorv9 := newTreeGeneratorImpl_v9(
+	generatorv9v10 := newTreeGeneratorImpl_v9_v10(
 		&logger,
 		t.Name(),
 		state.NetworkDetails.RewardIndex,
@@ -85,7 +85,7 @@ func TestMockIntervalDefaultsTreegenv8v9(tt *testing.T) {
 		state,
 	)
 
-	v9Artifacts, err := generatorv9.generateTree(
+	v9Artifacts, err := generatorv9v10.generateTree(
 		t.rp,
 		"mainnet",
 		make([]common.Address, 0),

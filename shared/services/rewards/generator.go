@@ -47,14 +47,15 @@ const (
 	// HoleskyV7Interval uint64 = 0
 
 	// Mainnet intervals
-	MainnetV8Interval uint64 = 18
-	MainnetV9Interval uint64 = 24
-
+	MainnetV8Interval  uint64 = 18
+	MainnetV9Interval  uint64 = 24
+	MainnetV10Interval uint64 = 29
 	// Devnet intervals
 
 	// Holesky intervals
-	HoleskyV8Interval uint64 = 93
-	HoleskyV9Interval uint64 = 197
+	HoleskyV8Interval  uint64 = 93
+	HoleskyV9Interval  uint64 = 197
+	HoleskyV10Interval uint64 = 300
 )
 
 type TreeGenerator struct {
@@ -106,12 +107,20 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 		intervalsPassed:  intervalsPassed,
 	}
 
+	// v10
+	var v10_generator treeGeneratorImpl
+	if rollingRecord == nil {
+		v10_generator = newTreeGeneratorImpl_v9_v10(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
+	} else {
+		v10_generator = newTreeGeneratorImpl_v9_v10_rolling(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+	}
+
 	// v9
 	var v9_generator treeGeneratorImpl
 	if rollingRecord == nil {
-		v9_generator = newTreeGeneratorImpl_v9(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
+		v9_generator = newTreeGeneratorImpl_v9_v10(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
 	} else {
-		v9_generator = newTreeGeneratorImpl_v9_rolling(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+		v9_generator = newTreeGeneratorImpl_v9_v10_rolling(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
 	}
 
 	// v8
@@ -124,6 +133,12 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
+		{
+			rewardsRulesetVersion: 10,
+			mainnetStartInterval:  MainnetV10Interval,
+			holeskyStartInterval:  HoleskyV10Interval,
+			generator:             v10_generator,
+		},
 		{
 			rewardsRulesetVersion: 9,
 			mainnetStartInterval:  MainnetV9Interval,
