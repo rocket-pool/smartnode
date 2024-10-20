@@ -491,7 +491,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 		Slots: map[uint64]*SlotInfo{},
 	}
 	if checkBeaconPerformance {
-		err = r.processAttestationsForInterval()
+		err = r.processAttestationsBalancesAndWithdrawalsForInterval()
 		if err != nil {
 			return err
 		}
@@ -652,7 +652,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeRewards() (*big.Int, *big.Int, e
 }
 
 // Get all of the duties for a range of epochs
-func (r *treeGeneratorImpl_v9_v10) processAttestationsForInterval() error {
+func (r *treeGeneratorImpl_v9_v10) processAttestationsBalancesAndWithdrawalsForInterval() error {
 
 	startEpoch := r.rewardsFile.ConsensusStartBlock / r.beaconConfig.SlotsPerEpoch
 	endEpoch := r.rewardsFile.ConsensusEndBlock / r.beaconConfig.SlotsPerEpoch
@@ -676,7 +676,7 @@ func (r *treeGeneratorImpl_v9_v10) processAttestationsForInterval() error {
 			epochsDone = 0
 		}
 
-		err := r.processEpoch(true, epoch)
+		err := r.processEpoch(startEpoch, endEpoch, true, epoch)
 		if err != nil {
 			return err
 		}
@@ -686,7 +686,7 @@ func (r *treeGeneratorImpl_v9_v10) processAttestationsForInterval() error {
 
 	// Check the epoch after the end of the interval for any lingering attestations
 	epoch := endEpoch + 1
-	err = r.processEpoch(false, epoch)
+	err = r.processEpoch(startEpoch, endEpoch, false, epoch)
 	if err != nil {
 		return err
 	}
@@ -697,7 +697,7 @@ func (r *treeGeneratorImpl_v9_v10) processAttestationsForInterval() error {
 }
 
 // Process an epoch, optionally getting the duties for all eligible minipools in it and checking each one's attestation performance
-func (r *treeGeneratorImpl_v9_v10) processEpoch(getDuties bool, epoch uint64) error {
+func (r *treeGeneratorImpl_v9_v10) processEpoch(startEpoch uint64, endEpoch uint64, getDuties bool, epoch uint64) error {
 
 	// Get the committee info and attestation records for this epoch
 	var committeeData beacon.Committees
@@ -713,17 +713,16 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(getDuties bool, epoch uint64) er
 	}
 
 	for i := uint64(0); i < r.slotsPerEpoch; i++ {
+		// Get the beacon block for this slot
 		i := i
 		slot := epoch*r.slotsPerEpoch + i
 		wg.Go(func() error {
-			attestations, found, err := r.bc.GetAttestations(fmt.Sprint(slot))
+			beaconBlock, found, err := r.bc.GetBeaconBlock(fmt.Sprint(slot))
 			if err != nil {
 				return err
 			}
 			if found {
-				attestationsPerSlot[i] = attestations
-			} else {
-				attestationsPerSlot[i] = []beacon.AttestationInfo{}
+				attestationsPerSlot[i] = beaconBlock.Attestations
 			}
 			return nil
 		})

@@ -129,10 +129,18 @@ func NewMockBeaconClient(t *testing.T) *MockBeaconClient {
 }
 
 func (bc *MockBeaconClient) GetBeaconBlock(slot string) (beacon.BeaconBlock, bool, error) {
+	attestations, _, err := bc.GetAttestations(slot)
+	if err != nil {
+		return beacon.BeaconBlock{}, false, err
+	}
 	if block, ok := bc.blocks[slot]; ok {
+		block.Attestations = attestations
 		return block, true, nil
 	}
-	return beacon.BeaconBlock{}, false, nil
+	// Otherwise, return the attestation info.
+	return beacon.BeaconBlock{
+		Attestations: attestations,
+	}, true, nil
 }
 
 func (bc *MockBeaconClient) SetBeaconBlock(slot string, block beacon.BeaconBlock) {
