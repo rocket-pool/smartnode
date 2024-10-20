@@ -94,8 +94,9 @@ type BeaconBlockResponse struct {
 				} `json:"eth1_data"`
 				Attestations     []Attestation `json:"attestations"`
 				ExecutionPayload *struct {
-					FeeRecipient byteArray `json:"fee_recipient"`
-					BlockNumber  uinteger  `json:"block_number"`
+					FeeRecipient byteArray    `json:"fee_recipient"`
+					BlockNumber  uinteger     `json:"block_number"`
+					Withdrawals  []Withdrawal `json:"withdrawals"`
 				} `json:"execution_payload"`
 			} `json:"body"`
 		} `json:"message"`
@@ -157,6 +158,13 @@ type Attestation struct {
 		Slot  uinteger `json:"slot"`
 		Index uinteger `json:"index"`
 	} `json:"data"`
+}
+
+type Withdrawal struct {
+	Index          string    `json:"index"`
+	ValidatorIndex string    `json:"validator_index"`
+	Address        byteArray `json:"address"`
+	Amount         string    `json:"amount"`
 }
 
 // Unsigned integer type

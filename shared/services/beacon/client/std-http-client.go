@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
 	"strconv"
 	"strings"
@@ -533,6 +534,19 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
 		}
 		beaconBlock.Attestations = append(beaconBlock.Attestations, info)
+	}
+
+	// Add withdrawals
+	for _, withdrawal := range block.Data.Message.Body.ExecutionPayload.Withdrawals {
+		amount, ok := new(big.Int).SetString(withdrawal.Amount, 10)
+		if !ok {
+			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding withdrawal amount for withdrawal for address %s of block %s: %s", withdrawal.Address, blockId, withdrawal.Amount)
+		}
+		beaconBlock.Withdrawals = append(beaconBlock.Withdrawals, beacon.WithdrawalInfo{
+			ValidatorIndex: withdrawal.ValidatorIndex,
+			Address:        common.BytesToAddress(withdrawal.Address),
+			Amount:         amount,
+		})
 	}
 
 	return beaconBlock, true, nil

@@ -1,6 +1,8 @@
 package beacon
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -46,6 +48,11 @@ type Eth1Data struct {
 	DepositCount uint64
 	BlockHash    common.Hash
 }
+type WithdrawalInfo struct {
+	ValidatorIndex string
+	Address        common.Address
+	Amount         *big.Int
+}
 type BeaconBlock struct {
 	Slot                 uint64
 	ProposerIndex        string
@@ -53,6 +60,7 @@ type BeaconBlock struct {
 	Attestations         []AttestationInfo
 	FeeRecipient         common.Address
 	ExecutionBlockNumber uint64
+	Withdrawals          []WithdrawalInfo
 }
 type BeaconBlockHeader struct {
 	Slot          uint64
