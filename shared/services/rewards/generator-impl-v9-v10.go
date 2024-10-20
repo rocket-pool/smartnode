@@ -272,12 +272,6 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 	totalNodeRewards.Div(totalNodeRewards, eth.EthToWei(1))
 	r.log.Printlnf("%s Approx. total collateral RPL rewards: %s (%.3f)", r.logPrefix, totalNodeRewards.String(), eth.WeiToEth(totalNodeRewards))
 
-	// Calculate the effective stake of each node, scaling by their participation in this interval
-	// Before entering this function, make sure to hard-code MaxCollateralFraction to 1.5 eth (150% in wei), to comply with RPIP-30.
-	// Do it here, as the network state value will still be used for vote power, so doing it upstream is likely to introduce more issues.
-	// Doing it here also ensures that v1-7 continue to run correctly on networks other than mainnet where the max collateral fraction may not have always been 150%.
-	r.networkState.NetworkDetails.MaxCollateralFraction = big.NewInt(1.5e18) // 1.5 eth is 150% in wei
-
 	// Calculate the RPIP-30 weight of each node, scaling by their participation in this interval
 	nodeWeights, totalNodeWeight, err := r.networkState.CalculateNodeWeights()
 	if err != nil {
