@@ -236,7 +236,7 @@ func (t *promoteMinipools) promoteMinipool(mpd *rpstate.NativeMinipoolDetails, c
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
 	// Promote minipool

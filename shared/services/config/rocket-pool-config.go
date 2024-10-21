@@ -1461,11 +1461,6 @@ func (cfg *RocketPoolConfig) Validate() []string {
 		errors = append(errors, "You are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	}
 
-	// Ensure there's a MEV-boost URL
-	if cfg.Smartnode.Network.Value == config.Network_Holesky || cfg.Smartnode.Network.Value == config.Network_Devnet {
-		// Disabled on Holesky
-		cfg.EnableMevBoost.Value = false
-	}
 	if !cfg.IsNativeMode && cfg.EnableMevBoost.Value == true {
 		switch cfg.MevBoost.Mode.Value.(config.Mode) {
 		case config.Mode_Local:

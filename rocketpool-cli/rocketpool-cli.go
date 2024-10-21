@@ -33,6 +33,9 @@ ______           _        _    ______           _
 | |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
 \_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|
 
+Authored by the Rocket Pool Core Team
+A special thanks to the Rocket Pool community for all their contributions.
+
 %s`, cli.AppHelpTemplate)
 
 	// Initialise application
@@ -42,25 +45,7 @@ ______           _        _    ______           _
 	app.Name = "rocketpool"
 	app.Usage = "Rocket Pool CLI"
 	app.Version = shared.RocketPoolVersion
-	app.Authors = []cli.Author{
-		{
-			Name:  "David Rugendyke",
-			Email: "david@rocketpool.net",
-		},
-		{
-			Name:  "Jake Pospischil",
-			Email: "jake@rocketpool.net",
-		},
-		{
-			Name:  "Joe Clapis",
-			Email: "joe@rocketpool.net",
-		},
-		{
-			Name:  "Kane Wallmann",
-			Email: "kane@rocketpool.net",
-		},
-	}
-	app.Copyright = "(c) 2023 Rocket Pool Pty Ltd"
+	app.Copyright = "(c) 2024 Rocket Pool Pty Ltd"
 
 	// Initialize app metadata
 	app.Metadata = make(map[string]interface{})

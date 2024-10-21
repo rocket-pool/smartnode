@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	prysmBnTest             string = "rocketpool/prysm:v5.1.0"
-	prysmBnProd             string = "rocketpool/prysm:v5.1.0"
-	prysmVcTest             string = "rocketpool/prysm:v5.1.0"
-	prysmVcProd             string = "rocketpool/prysm:v5.1.0"
+	prysmBnTest             string = "rocketpool/prysm:v5.1.2"
+	prysmBnProd             string = "rocketpool/prysm:v5.1.2"
+	prysmVcTest             string = "rocketpool/prysm:v5.1.2"
+	prysmVcProd             string = "rocketpool/prysm:v5.1.2"
 	defaultPrysmRpcPort     uint16 = 5053
 	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers    uint16 = 70

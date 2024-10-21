@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v1.0.3"
-	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v1.0.3"
+	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v1.1.0"
+	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v1.1.0"
 	rethEventLogInterval int    = 1000
 	rethStopSignal       string = "SIGTERM"
 )
@@ -31,8 +31,11 @@ type RethConfig struct {
 	// Size of Reth's Cache
 	CacheSize config.Parameter `yaml:"cacheSize,omitempty"`
 
-	// Max number of P2P peers to connect to
+	// Max number of P2P peers to connect to. For Reth this will map to max outbound peers
 	MaxPeers config.Parameter `yaml:"maxPeers,omitempty"`
+
+	// Max number of P2P inbound peers to connect to.
+	MaxInboundPeers config.Parameter `yaml:"maxInboundPeers,omitempty"`
 
 	// The archive mode flag
 	ArchiveMode config.Parameter `yaml:"archiveMode,omitempty"`
@@ -74,10 +77,21 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 
 		MaxPeers: config.Parameter{
 			ID:                 "maxPeers",
-			Name:               "Max Peers",
-			Description:        "The maximum number of peers Reth should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
+			Name:               "Max Outbound Peers",
+			Description:        "The maximum number of outbound peers Reth should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: calculateRethPeers()},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		MaxInboundPeers: config.Parameter{
+			ID:                 "maxInboundPeers",
+			Name:               "Max Inbound Peers",
+			Description:        "The maximum number of inbound peers Reth should connect to. This can be lowered to improve performance on low-power systems or constrained networks. We recommend keeping it at 12 or higher.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: uint16(30)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -146,9 +160,9 @@ func calculateRethCache() uint64 {
 // Calculate the default number of Reth peers
 func calculateRethPeers() uint16 {
 	if runtime.GOARCH == "arm64" {
-		return 25
+		return 50
 	}
-	return 50
+	return 100
 }
 
 // Get the config.Parameters for this config
@@ -156,6 +170,7 @@ func (cfg *RethConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.CacheSize,
 		&cfg.MaxPeers,
+		&cfg.MaxInboundPeers,
 		&cfg.ArchiveMode,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,

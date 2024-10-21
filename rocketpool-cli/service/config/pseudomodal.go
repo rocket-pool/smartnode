@@ -219,11 +219,7 @@ func (m *Pseudomodal) SetFocus(index int) *Pseudomodal {
 
 // Focus is called when this primitive receives focus.
 func (m *Pseudomodal) Focus(delegate func(p tview.Primitive)) {
-	if m.direction == DirectionalModalHorizontal {
-		delegate(m.forms[0])
-	} else {
-		delegate(m.forms[0])
-	}
+	delegate(m.forms[0])
 }
 
 // HasFocus returns whether or not this primitive has focus.

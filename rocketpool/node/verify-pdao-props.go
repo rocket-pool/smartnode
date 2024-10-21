@@ -383,7 +383,7 @@ func (t *verifyPdaoProps) submitChallenge(challenge challenge) error {
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
 	// Respond to the challenge
@@ -439,7 +439,7 @@ func (t *verifyPdaoProps) submitDefeat(defeat defeat) error {
 	}
 
 	opts.GasFeeCap = maxFee
-	opts.GasTipCap = t.maxPriorityFee
+	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
 	// Respond to the challenge
