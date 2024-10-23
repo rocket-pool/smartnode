@@ -113,10 +113,6 @@ func (t *SubmitNetworkBalances) Run(state *state.NetworkState) error {
 	}
 
 	targetBlockNumber := targetBlockHeader.Number.Uint64()
-	if targetBlockNumber > state.ElBlockNumber {
-		// No submission needed: target block in the future 
-		return nil
-	}
 
 	// Check if the process is already running
 	t.lock.Lock()
