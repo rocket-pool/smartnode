@@ -1,15 +1,17 @@
-package node
+package debug
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getBeaconStates(c *cli.Context, slot int64) (*api.GetBeaconStatesResponse, error) {
+func getBeaconStateForSlot(c *cli.Context, slot uint64) (*api.BeaconStateResponse, error) {
 	// Create a new response
-	response := api.GetBeaconStatesResponse{}
+	response := api.BeaconStateResponse{}
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -20,14 +22,14 @@ func getBeaconStates(c *cli.Context, slot int64) (*api.GetBeaconStatesResponse, 
 		return nil, err
 	}
 
-	// Get beacon states
-	beaconStates, err := bc.GetBeaconStates(slot)
+	// Get beacon state
+	beaconState, err := bc.GetBeaconState(slot)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Sprintf("received beacon state")
 
-	// Set response
-	response.BeaconStates = beaconStates
+	fmt.Sprintf("%w", beaconState.Fork())
 
 	// Return response
 	return &response, nil

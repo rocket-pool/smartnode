@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
+	state_native "github.com/prysmaticlabs/prysm/v5/beacon-chain/state/state-native"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
@@ -180,6 +181,17 @@ func (m *BeaconClientManager) GetBeaconHead() (beacon.BeaconHead, error) {
 		return beacon.BeaconHead{}, err
 	}
 	return result.(beacon.BeaconHead), nil
+}
+
+// Get the Beacon State information
+func (m *BeaconClientManager) GetBeaconState(slot uint64) (state_native.BeaconState, error) {
+	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
+		return client.GetBeaconState(slot)
+	})
+	if err != nil {
+		return state_native.BeaconState{}, err
+	}
+	return result.(state_native.BeaconState), nil
 }
 
 // Get a validator's status by its index

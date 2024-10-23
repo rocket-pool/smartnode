@@ -13,6 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	state_native "github.com/prysmaticlabs/prysm/v5/beacon-chain/state/state-native"
 	"github.com/prysmaticlabs/prysm/v5/crypto/bls"
 	"github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -40,6 +41,7 @@ const (
 	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
 	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
 	RequestBeaconBlockHeaderPath           = "/eth/v1/beacon/headers/%s"
+	RequestBeaconStatePath                 = "/eth/v2/debug/beacon/states/%d"
 	RequestValidatorSyncDuties             = "/eth/v1/validator/duties/sync/%s"
 	RequestValidatorProposerDuties         = "/eth/v1/validator/duties/proposer/%s"
 	RequestWithdrawalCredentialsChangePath = "/eth/v1/beacon/pool/bls_to_execution_changes"
@@ -807,6 +809,24 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not decode beacon block data: %w", err)
 	}
 	return beaconBlock, true, nil
+}
+
+func (c *StandardHttpClient) GetBeaconState(slot uint64) (state_native.BeaconState, error) {
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconStatePath, slot))
+	if err != nil {
+		return state_native.BeaconState{}, fmt.Errorf("Could not get beacon state data: %w", err)
+	}
+	if status == http.StatusNotFound {
+		return state_native.BeaconState{}, nil
+	}
+	if status != http.StatusOK {
+		return state_native.BeaconState{}, fmt.Errorf("Could not get beacon state data: HTTP status %d; response body: '%s'", status, string(responseBody))
+	}
+	var beaconState state_native.BeaconState
+	if err := json.Unmarshal(responseBody, &beaconState); err != nil {
+		return state_native.BeaconState{}, fmt.Errorf("Could not decode beacon state data: %w", err)
+	}
+	return beaconState, nil
 }
 
 // Get the specified beacon block header
