@@ -102,10 +102,6 @@ func (t *SubmitRplPrice) Run(state *state.NetworkState) error {
 	submissionTimestamp := uint64(nextSubmissionTime.Unix())
 
 	targetBlockNumber := targetBlockHeader.Number.Uint64()
-	if targetBlockNumber > state.ElBlockNumber {
-		// No submission needed: target block in the future
-		return nil
-	}
 
 	// Check if the process is already running
 	t.lock.Lock()
