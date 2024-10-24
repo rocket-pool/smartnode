@@ -3,7 +3,7 @@ package beacon
 import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
-	state_native "github.com/prysmaticlabs/prysm/v5/beacon-chain/state/state-native"
+	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
 
@@ -141,7 +141,7 @@ type Client interface {
 	GetBeaconBlock(blockId string) (BeaconBlock, bool, error)
 	GetBeaconBlockHeader(blockId string) (BeaconBlockHeader, bool, error)
 	GetBeaconHead() (BeaconHead, error)
-	GetBeaconState(slot uint64) (state_native.BeaconState, error)
+	GetBeaconState(slot uint64) (ethpb.BeaconStateDeneb, error)
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
