@@ -27,9 +27,8 @@ func getBeaconStateForSlot(c *cli.Context, slot uint64) (*api.BeaconStateRespons
 	if err != nil {
 		return nil, err
 	}
-	fmt.Sprintf("received beacon state")
 
-	fmt.Sprintf("%w", beaconState.Fork())
+	fmt.Println(beaconState.HashTreeRoot())
 
 	// Return response
 	return &response, nil
