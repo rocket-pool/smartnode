@@ -45,6 +45,32 @@ func newDepositPrompts(c *cli.Context, rp *client.Client, soloConversionPubkey *
 		return nil, nil
 	}
 
+	// Get the node's registration status
+	smoothie, err := rp.Api.Node.SetSmoothingPoolRegistrationState(true)
+	if err != nil {
+		return nil, err
+	}
+	if smoothie.Data.NodeRegistered {
+		fmt.Println("Your node is currently opted into the smoothing pool.")
+	} else if !smoothie.Data.NodeRegistered {
+		fmt.Println("Your node is not opted into the smoothing pool.")
+	}
+	fmt.Println()
+
+	// Post a warning about ETH only minipools
+	if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("%sNOTE: We’re excited to announce that newly launched Saturn 0 minipools will feature a commission structure ranging from 5%% to 14%%.\n\n- 5%% base commission\n- 5%% dynamic commission boost until Saturn 1\n- Up to 4%% boost for staked RPL valued at ≥10%% of borrowed ETH\n\n- Smoothing pool participation is required to benefit from dynamic commission\n- Dynamic commission starts when reward tree v10 is released (currently in development)\n- Dynamic commission ends soon after Saturn 1 is released\n\nNewly launched minipools with no RPL staked receive 10%% commission while newly launched minipools with ≥10%% of borrowed ETH staked receive 14%% commission.\n\nTo learn more about Saturn 0 and how it affects newly launched minipools, visit: https://rpips.rocketpool.net/tokenomics-explainers/005-rework-prelude%s\nWould you like to continue?", terminal.ColorYellow, terminal.ColorReset))) {
+		fmt.Println("Cancelled.")
+		return nil, err
+	}
+
+	// Post a final warning about the dynamic comission boost
+	if !smoothie.Data.NodeRegistered {
+		if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("%sWARNING: Your node is not opted into the smoothing pool, which means newly launched minipools will not benefit from the 5-9%% dynamic commission boost. You can join the smoothing pool using: 'rocketpool node join-smoothing-pool'.\n%sAre you sure you'd like to continue without opting into the smoothing pool?", terminal.ColorRed, terminal.ColorReset))) {
+			fmt.Println("Cancelled.")
+			return nil, err
+		}
+	}
+
 	// If hotfix is live and voting isn't initialized, display a warning
 	err = warnIfVotingUninitialized(rp, c, depositWarningMessage)
 	if err != nil {
@@ -69,7 +95,7 @@ func newDepositPrompts(c *cli.Context, rp *client.Client, soloConversionPubkey *
 
 	if soloConversionPubkey != nil {
 		// Print a notification about the pubkey
-		fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n", soloConversionPubkey.Hex())
+		fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into an 8 ETH deposit, and convert the remaining 24 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n", soloConversionPubkey.Hex())
 		fmt.Println()
 		fmt.Println("Please thoroughly read our documentation at https://docs.rocketpool.net/guides/atlas/solo-staker-migration.html to learn about the process and its implications.")
 		fmt.Println()
@@ -91,25 +117,12 @@ func newDepositPrompts(c *cli.Context, rp *client.Client, soloConversionPubkey *
 		}
 		amount = depositAmount
 	} else {
-		// Get deposit amount options
-		amountOptions := []string{
-			"8 ETH",
-			"16 ETH",
+		// Post a warning about deposit size
+		if !(c.Bool("yes") || utils.Confirm(fmt.Sprintf("%sNOTE: You are about to make an 8 ETH deposit.%s\nWould you like to continue?", terminal.ColorYellow, terminal.ColorReset))) {
+			fmt.Println("Cancelled.")
+			return nil, nil
 		}
-
-		// Prompt for amount
-		var selected int
-		if soloConversionPubkey != nil {
-			selected, _ = utils.Select("Please choose an amount of ETH you want to use as your deposit for the new minipool (this will become your share of the balance, and the remainder will become the pool stakers' share):", amountOptions)
-		} else {
-			selected, _ = utils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-		}
-		switch selected {
-		case 0:
-			amount = 8
-		case 1:
-			amount = 16
-		}
+		amount = 8
 	}
 
 	amountWei := eth.EthToWei(amount)
@@ -144,7 +157,7 @@ func newDepositPrompts(c *cli.Context, rp *client.Client, soloConversionPubkey *
 	} else {
 		// Prompt for min node fee
 		if nodeFeeResponse.Data.MinNodeFee.Cmp(nodeFeeResponse.Data.MaxNodeFee) == 0 {
-			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)*100)
+			fmt.Printf("Your minipool will use the current base commission rate of %.2f%%.\n", eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)*100)
 			minNodeFee = eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee)
 		} else {
 			minNodeFee = promptMinNodeFee(eth.WeiToEth(nodeFeeResponse.Data.NodeFee), eth.WeiToEth(nodeFeeResponse.Data.MinNodeFee))
