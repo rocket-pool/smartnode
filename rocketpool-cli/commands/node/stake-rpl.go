@@ -70,8 +70,6 @@ func nodeStakeRpl(c *cli.Context) error {
 	switch c.String(amountFlag) {
 	case "min8":
 		amountWei = priceResponse.Data.MinPer8EthMinipoolRplStake
-	case "min16":
-		amountWei = priceResponse.Data.MinPer16EthMinipoolRplStake
 	case "all":
 		amountWei = rplBalance
 	case "":
@@ -158,13 +156,11 @@ func nodeStakeRpl(c *cli.Context) error {
 func promptForRplAmount(priceResponse *api.NetworkRplPriceData, rplBalance *big.Int) (*big.Int, error) {
 	// Get min/max per minipool RPL stake amounts
 	minAmount8 := priceResponse.MinPer8EthMinipoolRplStake
-	minAmount16 := priceResponse.MinPer16EthMinipoolRplStake
 
 	// Prompt for amount option
 	var amountWei *big.Int
 	amountOptions := []string{
 		fmt.Sprintf("The minimum minipool stake amount for an 8-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount8), 6)),
-		fmt.Sprintf("The minimum minipool stake amount for a 16-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount16), 6)),
 		fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(rplBalance), 6)),
 		"A custom amount",
 	}
@@ -173,8 +169,6 @@ func promptForRplAmount(priceResponse *api.NetworkRplPriceData, rplBalance *big.
 	case 0:
 		amountWei = minAmount8
 	case 1:
-		amountWei = minAmount16
-	case 2:
 		amountWei = rplBalance
 	}
 
