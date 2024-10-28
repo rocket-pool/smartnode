@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ipfs/go-cid"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -62,7 +61,7 @@ type TreeGenerator struct {
 	rewardsIntervalInfos map[uint64]rewardsIntervalInfo
 	logger               *log.ColorLogger
 	logPrefix            string
-	rp                   *defaultRewardsExecutionClient
+	rp                   RewardsExecutionClient
 	cfg                  *config.RocketPoolConfig
 	bc                   beacon.Client
 	index                uint64
@@ -92,11 +91,11 @@ type treeGeneratorImpl interface {
 	saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)
 }
 
-func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
+func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecutionClient, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
 	t := &TreeGenerator{
 		logger:           logger,
 		logPrefix:        logPrefix,
-		rp:               &defaultRewardsExecutionClient{rp},
+		rp:               rp,
 		cfg:              cfg,
 		bc:               bc,
 		index:            index,
@@ -110,17 +109,17 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	// v10
 	var v10_generator treeGeneratorImpl
 	if rollingRecord == nil {
-		v10_generator = newTreeGeneratorImpl_v9_v10(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
+		v10_generator = newTreeGeneratorImpl_v9_v10(10, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
 	} else {
-		v10_generator = newTreeGeneratorImpl_v9_v10_rolling(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+		v10_generator = newTreeGeneratorImpl_v9_v10_rolling(10, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
 	}
 
 	// v9
 	var v9_generator treeGeneratorImpl
 	if rollingRecord == nil {
-		v9_generator = newTreeGeneratorImpl_v9_v10(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
+		v9_generator = newTreeGeneratorImpl_v9_v10(9, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
 	} else {
-		v9_generator = newTreeGeneratorImpl_v9_v10_rolling(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
+		v9_generator = newTreeGeneratorImpl_v9_v10_rolling(9, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
 	}
 
 	// v8

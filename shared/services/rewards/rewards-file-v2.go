@@ -25,6 +25,7 @@ type MinipoolPerformanceFile_v2 struct {
 	ExecutionStartBlock uint64                                                  `json:"executionStartBlock,omitempty"`
 	ExecutionEndBlock   uint64                                                  `json:"executionEndBlock,omitempty"`
 	MinipoolPerformance map[common.Address]*SmoothingPoolMinipoolPerformance_v2 `json:"minipoolPerformance"`
+	BonusScalar         *QuotedBigInt                                           `json:"bonusScalar,omitempty"`
 }
 
 // Serialize a minipool performance file into bytes
@@ -72,6 +73,9 @@ type SmoothingPoolMinipoolPerformance_v2 struct {
 	AttestationScore        *QuotedBigInt `json:"attestationScore"`
 	MissingAttestationSlots []uint64      `json:"missingAttestationSlots"`
 	EthEarned               *QuotedBigInt `json:"ethEarned"`
+	ConsensusIncome         *QuotedBigInt `json:"consensusIncome,omitempty"`
+	BonusEthEarned          *QuotedBigInt `json:"bonusEthEarned,omitempty"`
+	EffectiveCommission     *QuotedBigInt `json:"effectiveCommission,omitempty"`
 }
 
 func (p *SmoothingPoolMinipoolPerformance_v2) GetPubkey() (types.ValidatorPubkey, error) {
@@ -88,6 +92,24 @@ func (p *SmoothingPoolMinipoolPerformance_v2) GetMissingAttestationSlots() []uin
 }
 func (p *SmoothingPoolMinipoolPerformance_v2) GetEthEarned() *big.Int {
 	return &p.EthEarned.Int
+}
+func (p *SmoothingPoolMinipoolPerformance_v2) GetBonusEthEarned() *big.Int {
+	if p.BonusEthEarned == nil {
+		return big.NewInt(0)
+	}
+	return &p.BonusEthEarned.Int
+}
+func (p *SmoothingPoolMinipoolPerformance_v2) GetEffectiveCommission() *big.Int {
+	if p.EffectiveCommission == nil {
+		return big.NewInt(0)
+	}
+	return &p.EffectiveCommission.Int
+}
+func (p *SmoothingPoolMinipoolPerformance_v2) GetConsensusIncome() *big.Int {
+	if p.ConsensusIncome == nil {
+		return big.NewInt(0)
+	}
+	return &p.ConsensusIncome.Int
 }
 
 // Node operator rewards

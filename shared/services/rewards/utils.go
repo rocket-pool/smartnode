@@ -155,7 +155,11 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 }
 
 // Get the number of the latest EL block that was created before the given timestamp
-func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*types.Header, error) {
+func GetELBlockHeaderForTime(targetTime time.Time, rec RewardsExecutionClient) (*types.Header, error) {
+	rp := rec.Client()
+	if rp == nil {
+		return nil, fmt.Errorf("the provided RewardsExecutionClient does not have a valid RocketPool instance")
+	}
 
 	// Get the latest block's timestamp
 	latestBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), nil)

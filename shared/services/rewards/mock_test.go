@@ -69,6 +69,7 @@ func TestMockIntervalDefaultsTreegenv8v9(tt *testing.T) {
 		t.saveArtifacts("v8", v8Artifacts)
 	}
 	generatorv9v10 := newTreeGeneratorImpl_v9_v10(
+		9,
 		&logger,
 		t.Name(),
 		state.NetworkDetails.RewardIndex,

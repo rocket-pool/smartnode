@@ -91,6 +91,15 @@ func (p *SmoothingPoolMinipoolPerformance_v1) GetMissingAttestationSlots() []uin
 func (p *SmoothingPoolMinipoolPerformance_v1) GetEthEarned() *big.Int {
 	return eth.EthToWei(p.EthEarned)
 }
+func (p *SmoothingPoolMinipoolPerformance_v1) GetBonusEthEarned() *big.Int {
+	return big.NewInt(0)
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetEffectiveCommission() *big.Int {
+	return big.NewInt(0)
+}
+func (p *SmoothingPoolMinipoolPerformance_v1) GetConsensusIncome() *big.Int {
+	return big.NewInt(0)
+}
 
 // Node operator rewards
 type NodeRewardsInfo_v1 struct {

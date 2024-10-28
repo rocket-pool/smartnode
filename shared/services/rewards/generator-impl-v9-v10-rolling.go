@@ -51,11 +51,11 @@ type treeGeneratorImpl_v9_v10_rolling struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v9_v10_rolling(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v9_v10_rolling {
+func newTreeGeneratorImpl_v9_v10_rolling(rulesetVersion uint64, log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) *treeGeneratorImpl_v9_v10_rolling {
 	return &treeGeneratorImpl_v9_v10_rolling{
 		rewardsFile: &ssz_types.SSZFile_v1{
 			RewardsFileVersion: 3,
-			RulesetVersion:     9,
+			RulesetVersion:     rulesetVersion,
 			Index:              index,
 			IntervalsPassed:    intervalsPassed,
 			TotalRewards: &ssz_types.TotalRewards{

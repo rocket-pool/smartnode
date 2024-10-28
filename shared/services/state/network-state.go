@@ -427,7 +427,8 @@ func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *
 	return state, totalEffectiveStake, nil
 }
 
-func (s *NetworkState) GetNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *big.Int) *big.Int {
+func (s *NetworkState) GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth *big.Int, nodeStake *big.Int) (*big.Int, *big.Int) {
+
 	rplPrice := s.NetworkDetails.RplPrice
 
 	// stakedRplValueInEth := nodeStake * ratio / 1 Eth
@@ -435,10 +436,21 @@ func (s *NetworkState) GetNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *bi
 	stakedRplValueInEth.Mul(nodeStake, rplPrice)
 	stakedRplValueInEth.Quo(stakedRplValueInEth, oneEth)
 
+	// Avoid division by zero
+	if eligibleBorrowedEth.Sign() == 0 {
+		return stakedRplValueInEth, big.NewInt(0)
+	}
+
 	// percentOfBorrowedEth := stakedRplValueInEth * 100 Eth / eligibleBorrowedEth
 	percentOfBorrowedEth := big.NewInt(0)
 	percentOfBorrowedEth.Mul(stakedRplValueInEth, oneHundredEth)
 	percentOfBorrowedEth.Quo(percentOfBorrowedEth, eligibleBorrowedEth)
+
+	return stakedRplValueInEth, percentOfBorrowedEth
+}
+
+func (s *NetworkState) GetNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *big.Int) *big.Int {
+	stakedRplValueInEth, percentOfBorrowedEth := s.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeStake)
 
 	// If at or under 15%, return 100 * stakedRplValueInEth
 	if percentOfBorrowedEth.Cmp(fifteenEth) <= 0 {

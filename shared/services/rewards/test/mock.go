@@ -18,39 +18,31 @@ const FarFutureEpoch uint64 = 0xffffffffffffffff
 
 // This file contains structs useful for quickly creating mock histories for testing.
 
-var (
-	// Various offsets to create unique number spaces for each key type
-	lastNodeAddress     = common.BigToAddress(big.NewInt(2000))
-	lastMinipoolAddress = common.BigToAddress(big.NewInt(30000))
-	lastValidatorPubkey = types.BytesToValidatorPubkey(big.NewInt(600000).Bytes())
-	lastValidatorIndex  = "0"
-)
-
-func GetValidatorIndex() string {
-	u, err := strconv.ParseUint(lastValidatorIndex, 10, 64)
+func (h *MockHistory) GetValidatorIndex() string {
+	u, err := strconv.ParseUint(h.lastValidatorIndex, 10, 64)
 	if err != nil {
 		panic(err)
 	}
-	lastValidatorIndex = strconv.FormatUint(u+1, 10)
-	return lastValidatorIndex
+	h.lastValidatorIndex = strconv.FormatUint(u+1, 10)
+	return h.lastValidatorIndex
 }
 
-func GetValidatorPubkey() types.ValidatorPubkey {
-	next := big.NewInt(0).Add(big.NewInt(0).SetBytes(lastValidatorPubkey.Bytes()), big.NewInt(1))
-	lastValidatorPubkey = types.BytesToValidatorPubkey(next.Bytes())
-	return lastValidatorPubkey
+func (h *MockHistory) GetValidatorPubkey() types.ValidatorPubkey {
+	next := big.NewInt(0).Add(big.NewInt(0).SetBytes(h.lastValidatorPubkey.Bytes()), big.NewInt(1))
+	h.lastValidatorPubkey = types.BytesToValidatorPubkey(next.Bytes())
+	return h.lastValidatorPubkey
 }
 
-func GetMinipoolAddress() common.Address {
-	next := big.NewInt(0).Add(big.NewInt(0).SetBytes(lastMinipoolAddress.Bytes()), big.NewInt(1))
-	lastMinipoolAddress = common.BigToAddress(next)
-	return lastMinipoolAddress
+func (h *MockHistory) GetMinipoolAddress() common.Address {
+	next := big.NewInt(0).Add(big.NewInt(0).SetBytes(h.lastMinipoolAddress.Bytes()), big.NewInt(1))
+	h.lastMinipoolAddress = common.BigToAddress(next)
+	return h.lastMinipoolAddress
 }
 
-func GetNodeAddress() common.Address {
-	next := big.NewInt(0).Add(big.NewInt(0).SetBytes(lastNodeAddress.Bytes()), big.NewInt(1))
-	lastNodeAddress = common.BigToAddress(next)
-	return lastNodeAddress
+func (h *MockHistory) GetNodeAddress() common.Address {
+	next := big.NewInt(0).Add(big.NewInt(0).SetBytes(h.lastNodeAddress.Bytes()), big.NewInt(1))
+	h.lastNodeAddress = common.BigToAddress(next)
+	return h.lastNodeAddress
 }
 
 type MockMinipool struct {
@@ -81,14 +73,14 @@ var (
 	_bondSizeThirtyTwoEth = BondSize(eth.EthToWei(32))
 )
 
-func GetNewDefaultMockMinipool(bondSize BondSize) *MockMinipool {
+func (h *MockHistory) GetNewDefaultMockMinipool(bondSize BondSize) *MockMinipool {
 	if (*big.Int)(_bondSizeThirtyTwoEth).Cmp(bondSize) <= 0 {
 		panic("Bond size must be less than 32 ether")
 	}
 
 	out := &MockMinipool{
-		Address: GetMinipoolAddress(),
-		Pubkey:  GetValidatorPubkey(),
+		Address: h.GetMinipoolAddress(),
+		Pubkey:  h.GetValidatorPubkey(),
 		// By default, staked since always
 		Status:      types.Staking,
 		StatusBlock: big.NewInt(0),
@@ -96,7 +88,7 @@ func GetNewDefaultMockMinipool(bondSize BondSize) *MockMinipool {
 		// Default to 10% to make math simpler. Aka 0.1 ether
 		NodeFee:            big.NewInt(100000000000000000),
 		NodeDepositBalance: big.NewInt(0).Set(bondSize),
-		ValidatorIndex:     GetValidatorIndex(),
+		ValidatorIndex:     h.GetValidatorIndex(),
 	}
 
 	return out
@@ -143,22 +135,22 @@ func (h *MockHistory) GetNewDefaultMockNode(params *NewMockNodeParams) *MockNode
 	}
 
 	out := &MockNode{
-		Address:                          GetNodeAddress(),
+		Address:                          h.GetNodeAddress(),
 		RegistrationTime:                 time.Unix(DefaultMockHistoryGenesis, 0),
 		RplStake:                         big.NewInt(0),
 		SmoothingPoolRegistrationState:   params.SmoothingPool,
-		SmoothingPoolRegistrationChanged: time.Unix(DefaultMockHistoryGenesis, 0),
+		SmoothingPoolRegistrationChanged: time.Unix(0, 0),
 
 		borrowedEth: big.NewInt(0),
 		bondedEth:   big.NewInt(0),
 	}
 
 	for i := 0; i < params.EightEthMinipools; i++ {
-		out.AddMinipool(GetNewDefaultMockMinipool(BondSizeEightEth))
+		out.AddMinipool(h.GetNewDefaultMockMinipool(BondSizeEightEth))
 	}
 
 	for i := 0; i < params.SixteenEthMinipools; i++ {
-		out.AddMinipool(GetNewDefaultMockMinipool(BondSizeSixteenEth))
+		out.AddMinipool(h.GetNewDefaultMockMinipool(BondSizeSixteenEth))
 	}
 
 	out.RplStake = big.NewInt(params.CollateralRpl)
@@ -308,14 +300,22 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 	nodes = append(nodes, node)
 
 	// Finally, create two odao nodes to share the juicy odao rewards
-	for i := 0; i < 2; i++ {
-		node := h.GetNewDefaultMockNode(nil)
-		node.IsOdao = true
-		node.Class = "odao"
-		nodes = append(nodes, node)
-	}
+	odaoNodes := h.GetDefaultMockODAONodes()
+	nodes = append(nodes, odaoNodes...)
 
 	return nodes
+}
+
+func (h *MockHistory) GetDefaultMockODAONodes() []*MockNode {
+	odaoNodes := []*MockNode{
+		h.GetNewDefaultMockNode(nil),
+		h.GetNewDefaultMockNode(nil),
+	}
+	for _, node := range odaoNodes {
+		node.IsOdao = true
+		node.Class = "odao"
+	}
+	return odaoNodes
 }
 
 const DefaultMockHistoryGenesis = 1577836800
@@ -330,9 +330,15 @@ type MockHistory struct {
 	NetworkDetails *rpstate.NetworkDetails
 
 	Nodes []*MockNode
+
+	// Various offsets to create unique number spaces for each key type
+	lastNodeAddress     common.Address
+	lastMinipoolAddress common.Address
+	lastValidatorPubkey types.ValidatorPubkey
+	lastValidatorIndex  string
 }
 
-func NewDefaultMockHistory() *MockHistory {
+func NewDefaultMockHistoryNoNodes() *MockHistory {
 	out := &MockHistory{
 		StartEpoch:  100,
 		EndEpoch:    200,
@@ -372,8 +378,16 @@ func NewDefaultMockHistory() *MockHistory {
 
 			// The rest of the fields seem unimportant and are left empty
 		},
+		lastNodeAddress:     common.BigToAddress(big.NewInt(2000)),
+		lastMinipoolAddress: common.BigToAddress(big.NewInt(30000)),
+		lastValidatorPubkey: types.BytesToValidatorPubkey(big.NewInt(600000).Bytes()),
+		lastValidatorIndex:  "0",
 	}
+	return out
+}
 
+func NewDefaultMockHistory() *MockHistory {
+	out := NewDefaultMockHistoryNoNodes()
 	out.Nodes = out.GetDefaultMockNodes()
 	return out
 }

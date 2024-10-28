@@ -2,11 +2,13 @@ package test
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 	"testing"
 
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
@@ -100,6 +102,16 @@ type MockBeaconClient struct {
 
 	// A map of validator index to critical duties slots
 	criticalDutiesSlots criticalDutiesSlotMap
+
+	// Final slot balance
+	finalSlot        uint64
+	finalSlotBalance *big.Int
+
+	// custom balances to report for validators at given slots
+	customBalances map[validatorIndex][]struct {
+		Balance *big.Int
+		Slot    uint64
+	}
 }
 
 func (m *MockBeaconClient) SetState(state *state.NetworkState) {
@@ -390,4 +402,49 @@ func (bc *MockBeaconClient) SetMinipoolPerformance(index string, missedSlots []u
 	}
 	bc.validatorIndices.set(validatorIndex(index), bc.validatorCount)
 	bc.validatorCount++
+}
+
+func (bc *MockBeaconClient) SetFinalSlotBalance(slot uint64, balance *big.Int) {
+	bc.finalSlot = slot
+	bc.finalSlotBalance = balance
+}
+
+func (bc *MockBeaconClient) SetCustomBalance(index string, balance *big.Int, slot uint64) {
+	if bc.customBalances == nil {
+		bc.customBalances = make(map[validatorIndex][]struct {
+			Balance *big.Int
+			Slot    uint64
+		})
+	}
+	bc.customBalances[validatorIndex(index)] = append(bc.customBalances[validatorIndex(index)], struct {
+		Balance *big.Int
+		Slot    uint64
+	}{balance, slot})
+}
+
+func (bc *MockBeaconClient) GetValidatorBalances(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
+	out := make(map[string]*big.Int)
+	for _, index := range indices {
+		// Check for custom balances
+		if customBalances, ok := bc.customBalances[validatorIndex(index)]; ok {
+			found := false
+			for _, customBalance := range customBalances {
+				if customBalance.Slot == *opts.Slot {
+					out[index] = customBalance.Balance
+					found = true
+					break
+				}
+			}
+			if found {
+				continue
+			}
+		}
+		// In the last slot, all validators have 33 ETH
+		if *opts.Slot == bc.finalSlot {
+			out[index] = big.NewInt(0).Set(bc.finalSlotBalance)
+			continue
+		}
+		out[index] = big.NewInt(0).Mul(big.NewInt(32), eth.EthToWei(1))
+	}
+	return out, nil
 }

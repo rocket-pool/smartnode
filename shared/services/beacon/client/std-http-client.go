@@ -262,6 +262,8 @@ func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon
 	data := make(map[string]*big.Int, count)
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
+	// Create a mutex for writes to the data map
+	dataMutex := sync.Mutex{}
 	for i := 0; i < count; i += MaxRequestValidatorsCount {
 		i := i
 		max := i + MaxRequestValidatorsCount
@@ -281,7 +283,12 @@ func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon
 				if !ok {
 					return fmt.Errorf("invalid balance: %s", balance.Balance)
 				}
+				// Beacon clients return Gwei, but we want wei
+				b.Mul(b, big.NewInt(1e9))
+
+				dataMutex.Lock()
 				data[balance.Index] = b
+				dataMutex.Unlock()
 			}
 			return nil
 		})
@@ -605,6 +612,8 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 		if !ok {
 			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding withdrawal amount for withdrawal for address %s of block %s: %s", withdrawal.Address, blockId, withdrawal.Amount)
 		}
+		// amount is in Gwei, but we want wei
+		amount.Mul(amount, big.NewInt(1e9))
 		beaconBlock.Withdrawals = append(beaconBlock.Withdrawals, beacon.WithdrawalInfo{
 			ValidatorIndex: withdrawal.ValidatorIndex,
 			Address:        common.BytesToAddress(withdrawal.Address),

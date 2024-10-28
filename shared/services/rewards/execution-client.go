@@ -13,6 +13,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
 )
 
+// Interface assertion
+var _ RewardsExecutionClient = &defaultRewardsExecutionClient{}
+
 // An implementation of RewardsExecutionClient that uses
 // rocketpool-go to access chain data.
 //
@@ -24,9 +27,10 @@ type defaultRewardsExecutionClient struct {
 	*rocketpool.RocketPool
 }
 
-func NewRewardsExecutionClient(rp *rocketpool.RocketPool) (out *defaultRewardsExecutionClient) {
+func NewRewardsExecutionClient(rp *rocketpool.RocketPool) *defaultRewardsExecutionClient {
+	out := new(defaultRewardsExecutionClient)
 	out.RocketPool = rp
-	return
+	return out
 }
 
 func (client *defaultRewardsExecutionClient) GetNetworkEnabled(networkId *big.Int, opts *bind.CallOpts) (bool, error) {
@@ -53,4 +57,20 @@ func (client *defaultRewardsExecutionClient) GetRewardSnapshotEvent(previousRewa
 
 	return event, nil
 
+}
+
+func (client *defaultRewardsExecutionClient) GetRewardIndex(opts *bind.CallOpts) (*big.Int, error) {
+	return rewards.GetRewardIndex(client.RocketPool, opts)
+}
+
+func (client *defaultRewardsExecutionClient) GetContract(contractName string, opts *bind.CallOpts) (*rocketpool.Contract, error) {
+	return client.RocketPool.GetContract(contractName, opts)
+}
+
+func (client *defaultRewardsExecutionClient) BalanceAt(ctx context.Context, address common.Address, blockNumber *big.Int) (*big.Int, error) {
+	return client.RocketPool.Client.BalanceAt(ctx, address, blockNumber)
+}
+
+func (client *defaultRewardsExecutionClient) Client() *rocketpool.RocketPool {
+	return client.RocketPool
 }

@@ -15,8 +15,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/klauspost/compress/zstd"
-	rprewards "github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -40,7 +39,7 @@ type RollingRecordManager struct {
 	errLog          *log.ColorLogger
 	logPrefix       string
 	cfg             *config.RocketPoolConfig
-	rp              *rocketpool.RocketPool
+	rp              RewardsExecutionClient
 	bc              beacon.Client
 	mgr             *state.NetworkStateManager
 	startSlot       uint64
@@ -54,7 +53,7 @@ type RollingRecordManager struct {
 }
 
 // Creates a new manager for rolling records.
-func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, bc beacon.Client, mgr *state.NetworkStateManager, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
+func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp RewardsExecutionClient, bc beacon.Client, mgr *state.NetworkStateManager, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
 	// Get the Beacon genesis time
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 
@@ -609,7 +608,7 @@ func (r *RollingRecordManager) parseChecksumEntry(line string) (string, string, 
 // Creates a new record
 func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error {
 	// Get the current interval index
-	currentIndexBig, err := rprewards.GetRewardIndex(r.rp, nil)
+	currentIndexBig, err := rewards.GetRewardIndex(r.rp.Client(), nil)
 	if err != nil {
 		return fmt.Errorf("error getting rewards index: %w", err)
 	}
@@ -619,7 +618,7 @@ func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error 
 	prevAddresses := r.cfg.Smartnode.GetPreviousRewardsPoolAddresses()
 
 	// Get the last rewards event and starting epoch
-	found, event, err := rprewards.GetRewardsEvent(r.rp, currentIndex-1, prevAddresses, nil)
+	found, event, err := r.rp.GetRewardsEvent(currentIndex-1, prevAddresses, nil)
 	if err != nil {
 		return fmt.Errorf("error getting event for rewards interval %d: %w", currentIndex-1, err)
 	}

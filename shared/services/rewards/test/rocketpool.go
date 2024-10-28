@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/rewards"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 // MockRocketPool is a EC mock specifically for testing treegen.
@@ -39,12 +40,10 @@ func NewMockRocketPool(t *testing.T) *MockRocketPool {
 }
 
 func (mock *MockRocketPool) GetNetworkEnabled(networkId *big.Int, opts *bind.CallOpts) (bool, error) {
-	mock.t.Logf("GetNetworkEnabled(%+v, %+v)", networkId, opts)
 	return true, nil
 }
 
 func (mock *MockRocketPool) HeaderByNumber(_ context.Context, number *big.Int) (*types.Header, error) {
-	mock.t.Logf("HeaderByNumber(%+v)", number)
 	if header, ok := mock.headers[number.Uint64()]; ok {
 		return header, nil
 	}
@@ -59,7 +58,6 @@ func (mock *MockRocketPool) SetHeaderByNumber(number *big.Int, header *types.Hea
 }
 
 func (mock *MockRocketPool) GetRewardsEvent(index uint64, _ []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error) {
-	mock.t.Logf("GetRewardsEvent(%+v, %+v)", index, opts)
 
 	if event, ok := mock.rewardSnapshotEvents[index]; ok {
 		return true, event, nil
@@ -68,7 +66,6 @@ func (mock *MockRocketPool) GetRewardsEvent(index uint64, _ []common.Address, op
 }
 
 func (mock *MockRocketPool) GetRewardSnapshotEvent(previousRewardsPoolAddresses []common.Address, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
-	mock.t.Logf("GetRewardSnapshotEvent(%+v, %+v, %+v)", previousRewardsPoolAddresses, interval, opts)
 	if event, ok := mock.rewardSnapshotEvents[interval]; ok {
 		return event, nil
 	}
@@ -80,4 +77,8 @@ func (mock *MockRocketPool) SetRewardSnapshotEvent(event rewards.RewardsEvent) {
 		mock.rewardSnapshotEvents = make(map[uint64]rewards.RewardsEvent)
 	}
 	mock.rewardSnapshotEvents[event.Index.Uint64()] = event
+}
+
+func (mock *MockRocketPool) Client() *rocketpool.RocketPool {
+	panic("not implemented")
 }

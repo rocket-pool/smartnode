@@ -133,7 +133,7 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	}
 
 	// Make a new rolling manager
-	recordMgr, err := rprewards.NewRollingRecordManager(&task.log, &task.errLog, cfg, rp, bc, stateMgr, startSlot, beaconCfg, currentIndex)
+	recordMgr, err := rprewards.NewRollingRecordManager(&task.log, &task.errLog, cfg, rprewards.NewRewardsExecutionClient(rp), bc, stateMgr, startSlot, beaconCfg, currentIndex)
 	if err != nil {
 		return nil, fmt.Errorf("error creating rolling record manager: %w", err)
 	}
@@ -570,7 +570,7 @@ func (t *submitRewardsTree_Rolling) generateTree(
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.logPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(&t.log, t.logPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotEnd, snapshotElBlockHeader, uint64(intervalsPassed), state, t.recordMgr.Record)
+	treegen, err := rprewards.NewTreeGenerator(&t.log, t.logPrefix, rprewards.NewRewardsExecutionClient(rp), t.cfg, t.bc, currentIndex, startTime, endTime, snapshotEnd, snapshotElBlockHeader, uint64(intervalsPassed), state, t.recordMgr.Record)
 	if err != nil {
 		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
 	}

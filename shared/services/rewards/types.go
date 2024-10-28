@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/rewards"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/wealdtech/go-merkletree"
@@ -39,6 +40,8 @@ type RewardsExecutionClient interface {
 	HeaderByNumber(context.Context, *big.Int) (*ethtypes.Header, error)
 	GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error)
 	GetRewardSnapshotEvent(previousRewardsPoolAddresses []common.Address, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error)
+	// IFF this is a real execution client, return the client
+	Client() *rocketpool.RocketPool
 }
 
 // RewardsBeaconClient defines and interface
@@ -49,6 +52,7 @@ type RewardsBeaconClient interface {
 	GetBeaconBlock(slot string) (beacon.BeaconBlock, bool, error)
 	GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error)
 	GetAttestations(slot string) ([]beacon.AttestationInfo, bool, error)
+	GetValidatorBalances(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error)
 }
 
 // Interface for version-agnostic minipool performance
@@ -147,6 +151,9 @@ type ISmoothingPoolMinipoolPerformance interface {
 	GetMissedAttestationCount() uint64
 	GetMissingAttestationSlots() []uint64
 	GetEthEarned() *big.Int
+	GetBonusEthEarned() *big.Int
+	GetEffectiveCommission() *big.Int
+	GetConsensusIncome() *big.Int
 }
 
 // Small struct to test version information for rewards files during deserialization
@@ -213,6 +220,16 @@ type MinipoolInfo struct {
 	AttestationScore        *QuotedBigInt         `json:"attestationScore"`
 	CompletedAttestations   map[uint64]bool       `json:"-"`
 	AttestationCount        int                   `json:"attestationCount"`
+	TotalFee                *big.Int              `json:"-"`
+	MinipoolBonus           *big.Int              `json:"-"`
+	NodeOperatorBond        *big.Int              `json:"-"`
+	ConsensusIncome         *big.Int              `json:"-"`
+}
+
+var sixteenEth = big.NewInt(0).Mul(oneEth, big.NewInt(16))
+
+func (mi *MinipoolInfo) IsEligibleForBonuses() bool {
+	return mi.NodeOperatorBond.Cmp(sixteenEth) < 0
 }
 
 type IntervalDutiesInfo struct {
@@ -246,10 +263,31 @@ type NodeSmoothingDetails struct {
 	// v2 Fields
 	OptInTime  time.Time
 	OptOutTime time.Time
+
+	// v10 Fields
+	BonusEth *big.Int
+}
+
+func (nsd *NodeSmoothingDetails) IsEligibleForBonuses(elStartTime time.Time, elEndTime time.Time) bool {
+	// Nodes are eligible for bonuses if they were in the Smoothing Pool for a portion of the interval
+	if nsd.IsOptedIn {
+		return nsd.OptInTime.Before(elEndTime)
+	}
+	// Nodes that weren't opted in at the end of the interval are eligible if they opted out during the interval
+	return nsd.OptOutTime.After(elStartTime) && nsd.OptOutTime.Before(elEndTime)
 }
 
 type QuotedBigInt struct {
 	big.Int
+}
+
+func QuotedBigIntFromBigInt(x *big.Int) *QuotedBigInt {
+	if x == nil {
+		return nil
+	}
+	q := QuotedBigInt{}
+	q.Int = *big.NewInt(0).Set(x)
+	return &q
 }
 
 func NewQuotedBigInt(x int64) *QuotedBigInt {
