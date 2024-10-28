@@ -115,6 +115,12 @@ type BeaconBlockHeaderResponse struct {
 		} `json:"header"`
 	} `json:"data"`
 }
+type ValidatorBalancesResponse struct {
+	Data []struct {
+		Index   string `json:"index"`
+		Balance string `json:"balance"`
+	} `json:"data"`
+}
 type ValidatorsResponse struct {
 	Data []Validator `json:"data"`
 }

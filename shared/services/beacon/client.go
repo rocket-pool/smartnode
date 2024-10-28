@@ -144,6 +144,7 @@ type Client interface {
 	GetValidatorIndex(pubkey types.ValidatorPubkey) (string, error)
 	GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error)
 	GetValidatorProposerDuties(indices []string, epoch uint64) (map[string]uint64, error)
+	GetValidatorBalances(indices []string, opts *ValidatorStatusOptions) (map[string]*big.Int, error)
 	GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error)
 	ExitValidator(validatorIndex string, epoch uint64, signature types.ValidatorSignature) error
 	Close() error

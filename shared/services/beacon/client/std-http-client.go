@@ -37,6 +37,7 @@ const (
 	RequestFinalityCheckpointsPath         = "/eth/v1/beacon/states/%s/finality_checkpoints"
 	RequestForkPath                        = "/eth/v1/beacon/states/%s/fork"
 	RequestValidatorsPath                  = "/eth/v1/beacon/states/%s/validators"
+	RequestValidatorBalancesPath           = "/eth/v1/beacon/states/%s/validator_balances"
 	RequestVoluntaryExitPath               = "/eth/v1/beacon/pool/voluntary_exits"
 	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
 	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
@@ -230,6 +231,68 @@ func (c *StandardHttpClient) getValidatorStatus(pubkeyOrIndex string, opts *beac
 		Exists:                     true,
 	}, nil
 
+}
+
+// Get multiple validators' balances
+func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
+
+	// Get state ID
+	var stateId string
+	if opts == nil {
+		stateId = "head"
+	} else if opts.Slot != nil {
+		stateId = strconv.FormatInt(int64(*opts.Slot), 10)
+	} else if opts.Epoch != nil {
+
+		// Get eth2 config
+		eth2Config, err := c.getEth2Config()
+		if err != nil {
+			return nil, err
+		}
+
+		// Get slot nuimber
+		slot := *opts.Epoch * uint64(eth2Config.Data.SlotsPerEpoch)
+		stateId = strconv.FormatInt(int64(slot), 10)
+
+	} else {
+		return nil, fmt.Errorf("must specify a slot or epoch when calling getValidatorsByOpts")
+	}
+
+	count := len(indices)
+	data := make(map[string]*big.Int, count)
+	var wg errgroup.Group
+	wg.SetLimit(threadLimit)
+	for i := 0; i < count; i += MaxRequestValidatorsCount {
+		i := i
+		max := i + MaxRequestValidatorsCount
+		if max > count {
+			max = count
+		}
+
+		wg.Go(func() error {
+			// Get & add validators
+			batch := indices[i:max]
+			balances, err := c.getValidatorBalances(stateId, batch)
+			if err != nil {
+				return fmt.Errorf("error getting validator balances: %w", err)
+			}
+			for _, balance := range balances.Data {
+				b, ok := big.NewInt(0).SetString(balance.Balance, 10)
+				if !ok {
+					return fmt.Errorf("invalid balance: %s", balance.Balance)
+				}
+				data[balance.Index] = b
+			}
+			return nil
+		})
+	}
+
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting validator balances: %w", err)
+	}
+
+	// Return
+	return data, nil
 }
 
 // Get multiple validators' statuses
@@ -684,6 +747,26 @@ func (c *StandardHttpClient) getFork(stateId string) (ForkResponse, error) {
 		return ForkResponse{}, fmt.Errorf("Could not decode fork data: %w", err)
 	}
 	return fork, nil
+}
+
+// Get validator balances
+func (c *StandardHttpClient) getValidatorBalances(stateId string, indices []string) (ValidatorBalancesResponse, error) {
+	var query string
+	if len(indices) > 0 {
+		query = fmt.Sprintf("?id=%s", strings.Join(indices, ","))
+	}
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorBalancesPath, stateId) + query)
+	if err != nil {
+		return ValidatorBalancesResponse{}, fmt.Errorf("Could not get validator balances: %w", err)
+	}
+	if status != http.StatusOK {
+		return ValidatorBalancesResponse{}, fmt.Errorf("Could not get validator balances: HTTP status %d; response body: '%s'", status, string(responseBody))
+	}
+	var balances ValidatorBalancesResponse
+	if err := json.Unmarshal(responseBody, &balances); err != nil {
+		return ValidatorBalancesResponse{}, fmt.Errorf("Could not decode validator balances: %w", err)
+	}
+	return balances, nil
 }
 
 // Get validators
