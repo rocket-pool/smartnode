@@ -55,7 +55,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Post a warning about fee distribution
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -75,19 +75,11 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		amount = depositAmount
 
 	} else {
-
-		// Get deposit amount options
-		amountOptions := []string{
-			"8 ETH",
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: Your new minipool will use an 8 ETH deposit (this will become your share of the balance, and the remainder will become the pool stakers' share):%s\nWould you like to continue?", colorYellow, colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
 		}
-
-		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose an amount of ETH you want to use as your deposit for the new minipool (this will become your share of the balance, and the remainder will become the pool stakers' share):", amountOptions)
-		switch selected {
-		case 0:
-			amount = 8
-		}
-
+		amount = 8
 	}
 
 	amountWei := eth.EthToWei(amount)
