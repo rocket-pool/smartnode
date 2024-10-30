@@ -13,6 +13,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/prysmaticlabs/prysm/v5/beacon-chain/state"
+	state_native "github.com/prysmaticlabs/prysm/v5/beacon-chain/state/state-native"
 	"github.com/prysmaticlabs/prysm/v5/crypto/bls"
 	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -812,23 +814,25 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 	return beaconBlock, true, nil
 }
 
-type BeaconStateData struct {
-	Data ethpb.BeaconState `json:"data"`
-}
-
 // Get the Beacon state for a slot
-func (c *StandardHttpClient) GetBeaconState(slot uint64) (ethpb.BeaconStateDeneb, error) {
+func (c *StandardHttpClient) GetBeaconState(slot uint64) (state.BeaconState, error) {
 	responseBody, status, err := c.getRequestWithContentType(fmt.Sprintf(RequestBeaconStatePath, slot), RequestSSZContentType)
 	if err != nil {
-		return ethpb.BeaconStateDeneb{}, fmt.Errorf("Could not get beacon state data: %w", err)
+		return nil, fmt.Errorf("Could not get beacon state data: %w", err)
 	}
 	if status != http.StatusOK {
-		return ethpb.BeaconStateDeneb{}, fmt.Errorf("Could not get beacon state data: HTTP status %d; response body: '%s'", status, string(responseBody))
+		return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
-	var beaconState ethpb.BeaconStateDeneb
-	if err := beaconState.UnmarshalSSZ(responseBody); err != nil {
-		return ethpb.BeaconStateDeneb{}, fmt.Errorf("Could not decode beacon state data: %w", err)
+	var beaconStateProto ethpb.BeaconStateDeneb
+	if err := beaconStateProto.UnmarshalSSZ(responseBody); err != nil {
+		return nil, fmt.Errorf("Could not decode beacon state data: %w", err)
 	}
+
+	var beaconState state.BeaconState
+	if beaconState, err = state_native.InitializeFromProtoDeneb(&beaconStateProto); err != nil {
+		return nil, fmt.Errorf("Could not convert the beacon state from proto representation: %w", err)
+	}
+
 	return beaconState, nil
 }
 
