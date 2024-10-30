@@ -16,12 +16,13 @@ type NodeFeeResponse struct {
 }
 
 type RplPriceResponse struct {
-	Status                      string   `json:"status"`
-	Error                       string   `json:"error"`
-	RplPrice                    *big.Int `json:"rplPrice"`
-	RplPriceBlock               uint64   `json:"rplPriceBlock"`
-	MinPer8EthMinipoolRplStake  *big.Int `json:"minPer8EthMinipoolRplStake"`
-	MinPer16EthMinipoolRplStake *big.Int `json:"minPer16EthMinipoolRplStake"`
+	Status                         string   `json:"status"`
+	Error                          string   `json:"error"`
+	RplPrice                       *big.Int `json:"rplPrice"`
+	RplPriceBlock                  uint64   `json:"rplPriceBlock"`
+	FivePercentBorrowedRplStake    *big.Int `json:"fivePercentBorrowedRplStake"`
+	TenPercentBorrowedRplStake     *big.Int `json:"tenPercentRplStake"`
+	FifteenPercentBorrowedRplStake *big.Int `json:"fifteenPercentRplStake"`
 }
 
 type NetworkStatsResponse struct {

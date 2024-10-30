@@ -16,7 +16,7 @@ import (
 
 // Config
 const (
-	stakeRPLWarningMessage = "NOTE: by staking RPL, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before staking RPL."
+	stakeRPLWarningMessage = "NOTE: By staking RPL, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before staking RPL."
 )
 
 func nodeStakeRpl(c *cli.Context) error {
@@ -161,16 +161,27 @@ func nodeStakeRpl(c *cli.Context) error {
 
 	}
 
+	// Get min/max per minipool RPL stake amounts
+	rplPrice, err := rp.RplPrice()
+	if err != nil {
+		return err
+	}
+
 	// Get stake amount
 	var amountWei *big.Int
-	if c.String("amount") == "min8" {
+	if c.String("amount") == "5" {
+		// Set RPL stake amount to 5% of borrowed ETH for one minipool
+		amountWei = rplPrice.FivePercentBorrowedRplStake
 
-		// Set amount to min per 8 ETH minipool RPL stake
-		rplPrice, err := rp.RplPrice()
-		if err != nil {
-			return err
-		}
-		amountWei = rplPrice.MinPer8EthMinipoolRplStake
+	} else if c.String("amount") == "10" {
+
+		// Set RPL stake amount to 10% of borrowed ETH for one minipool
+		amountWei = rplPrice.TenPercentBorrowedRplStake
+
+	} else if c.String("amount") == "15" {
+
+		// Set RPL stake amount to 15% of borrowed ETH for one minipool
+		amountWei = rplPrice.FifteenPercentBorrowedRplStake
 
 	} else if c.String("amount") == "all" {
 
@@ -187,25 +198,28 @@ func nodeStakeRpl(c *cli.Context) error {
 		amountWei = eth.EthToWei(stakeAmount)
 
 	} else {
-
-		// Get min/max per minipool RPL stake amounts
-		rplPrice, err := rp.RplPrice()
-		if err != nil {
-			return err
-		}
-		minAmount8 := rplPrice.MinPer8EthMinipoolRplStake
+		// Get the RPL stake amounts for 5,10,15% borrowed ETH per LEB8
+		fivePercentBorrowedRplStake := rplPrice.FivePercentBorrowedRplStake
+		tenPercentBorrowedRplStake := rplPrice.TenPercentBorrowedRplStake
+		fifteenPercentBorrowedRplStake := rplPrice.FifteenPercentBorrowedRplStake
 
 		// Prompt for amount option
 		amountOptions := []string{
-			fmt.Sprintf("The minimum minipool stake amount for an 8-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount8), 6)),
+			fmt.Sprintf("5%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(fivePercentBorrowedRplStake), 6)),
+			fmt.Sprintf("10%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(tenPercentBorrowedRplStake), 6)),
+			fmt.Sprintf("15%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(fifteenPercentBorrowedRplStake), 6)),
 			fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&rplBalance), 6)),
 			"A custom amount",
 		}
 		selected, _ := cliutils.Select("Please choose an amount of RPL to stake:", amountOptions)
 		switch selected {
 		case 0:
-			amountWei = minAmount8
+			amountWei = fivePercentBorrowedRplStake
 		case 1:
+			amountWei = tenPercentBorrowedRplStake
+		case 2:
+			amountWei = fifteenPercentBorrowedRplStake
+		case 3:
 			amountWei = &rplBalance
 		}
 
