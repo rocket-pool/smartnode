@@ -169,16 +169,16 @@ func nodeStakeRpl(c *cli.Context) error {
 
 	// Get stake amount
 	var amountWei *big.Int
-	if c.String("amount") == "5" {
+	if c.String("amount") == "5%" {
 		// Set RPL stake amount to 5% of borrowed ETH for one minipool
 		amountWei = rplPrice.FivePercentBorrowedRplStake
 
-	} else if c.String("amount") == "10" {
+	} else if c.String("amount") == "10%" {
 
 		// Set RPL stake amount to 10% of borrowed ETH for one minipool
 		amountWei = rplPrice.TenPercentBorrowedRplStake
 
-	} else if c.String("amount") == "15" {
+	} else if c.String("amount") == "15%" {
 
 		// Set RPL stake amount to 15% of borrowed ETH for one minipool
 		amountWei = rplPrice.FifteenPercentBorrowedRplStake
