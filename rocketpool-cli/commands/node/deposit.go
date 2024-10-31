@@ -23,7 +23,7 @@ const (
 	maxSlippageFlag           string  = "max-slippage"
 	saltFlag                  string  = "salt"
 	defaultMaxNodeFeeSlippage float64 = 0.01 // 1% below current network fee
-	depositWarningMessage     string  = "NOTE: by creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool."
+	depositWarningMessage     string  = "NOTE: By creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool."
 )
 
 type deposit struct {
