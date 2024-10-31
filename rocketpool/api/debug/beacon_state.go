@@ -3,6 +3,7 @@ package debug
 import (
 	"fmt"
 
+	state_native "github.com/prysmaticlabs/prysm/v5/beacon-chain/state/state-native"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -28,7 +29,13 @@ func getBeaconStateForSlot(c *cli.Context, slot uint64) (*api.BeaconStateRespons
 		return nil, err
 	}
 
-	fmt.Println("%w", beaconState)
+	stateNative, ok := beaconState.(*state_native.BeaconState)
+	if !ok {
+		return nil, fmt.Errorf("failed while casting to state_native.BeaconState")
+	}
+
+	fmt.Println("%w", stateNative)
+
 
 	// Return response
 	return &response, nil
