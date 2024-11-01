@@ -94,7 +94,7 @@ type snapshotProposal struct {
 	Start         int64     `json:"start"`
 	End           int64     `json:"end"`
 	State         string    `json:"state"`
-	Snapshot      string    `json:"snapshot"`
+	Snapshot      int64     `json:"snapshot"`
 	Author        string    `json:"author"`
 	Choices       []string  `json:"choices"`
 	Scores        []float64 `json:"scores"`

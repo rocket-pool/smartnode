@@ -16,7 +16,7 @@ type SnapshotProposal struct {
 	Start         time.Time     `json:"start"`
 	End           time.Time     `json:"end"`
 	State         ProposalState `json:"state"`
-	Snapshot      string        `json:"snapshot"`
+	Snapshot      int64         `json:"snapshot"`
 	Author        string        `json:"author"`
 	Choices       []string      `json:"choices"`
 	Scores        []float64     `json:"scores"`
