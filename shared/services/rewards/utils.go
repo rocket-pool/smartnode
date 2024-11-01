@@ -1,10 +1,8 @@
 package rewards
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"math"
 	"math/big"
 	"net/http"
 	"os"
@@ -14,14 +12,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/storage"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -34,7 +30,7 @@ var zero *big.Int
 // Gets the intervals the node can claim and the intervals that have already been claimed
 func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (unclaimed []uint64, claimed []uint64, err error) {
 	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
+	currentIndexBig, err := rp.GetRewardIndex(nil)
 	if err != nil {
 		return
 	}
@@ -152,88 +148,6 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.MerkleProof = proof
 
 	return
-}
-
-// Get the number of the latest EL block that was created before the given timestamp
-func GetELBlockHeaderForTime(targetTime time.Time, rec RewardsExecutionClient) (*types.Header, error) {
-	rp := rec.Client()
-	if rp == nil {
-		return nil, fmt.Errorf("the provided RewardsExecutionClient does not have a valid RocketPool instance")
-	}
-
-	// Get the latest block's timestamp
-	latestBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting latest block header: %w", err)
-	}
-	latestBlock := latestBlockHeader.Number
-
-	// Get the block that Rocket Pool deployed to the chain on, use that as the search start
-	deployBlock, err := storage.GetDeployBlock(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting Rocket Pool deployment block: %w", err)
-	}
-
-	// Get half the distance between the protocol deployment and right now
-	delta := big.NewInt(0).Sub(latestBlock, deployBlock)
-	delta.Div(delta, big.NewInt(2))
-
-	// Start at the halfway point
-	candidateBlockNumber := big.NewInt(0).Sub(latestBlock, delta)
-	candidateBlock, err := rp.Client.HeaderByNumber(context.Background(), candidateBlockNumber)
-	if err != nil {
-		return nil, fmt.Errorf("error getting EL block %d: %w", candidateBlock, err)
-	}
-	bestBlock := candidateBlock
-	pivotSize := candidateBlock.Number.Uint64()
-	minimumDistance := +math.Inf(1)
-	targetTimeUnix := float64(targetTime.Unix())
-
-	for {
-		// Get the distance from the candidate block to the target time
-		candidateTime := float64(candidateBlock.Time)
-		delta := targetTimeUnix - candidateTime
-		distance := math.Abs(delta)
-
-		// If it's better, replace the best candidate with it
-		if distance < minimumDistance {
-			minimumDistance = distance
-			bestBlock = candidateBlock
-		} else if pivotSize == 1 {
-			// If the pivot is down to size 1 and we didn't find anything better after another iteration, this is the best block!
-			for candidateTime > targetTimeUnix {
-				// Get the previous block if this one happened after the target time
-				candidateBlockNumber.Sub(candidateBlockNumber, big.NewInt(1))
-				candidateBlock, err = rp.Client.HeaderByNumber(context.Background(), candidateBlockNumber)
-				if err != nil {
-					return nil, fmt.Errorf("error getting EL block %d: %w", candidateBlock, err)
-				}
-				candidateTime = float64(candidateBlock.Time)
-				bestBlock = candidateBlock
-			}
-			return bestBlock, nil
-		}
-
-		// Iterate over the correct half, setting the pivot to the halfway point of that half (rounded up)
-		pivotSize = uint64(math.Ceil(float64(pivotSize) / 2))
-		if delta < 0 {
-			// Go left
-			candidateBlockNumber.Sub(candidateBlockNumber, big.NewInt(int64(pivotSize)))
-		} else {
-			// Go right
-			candidateBlockNumber.Add(candidateBlockNumber, big.NewInt(int64(pivotSize)))
-		}
-
-		// Clamp the new candidate to the latest block
-		if candidateBlockNumber.Uint64() > (latestBlock.Uint64() - 1) {
-			candidateBlockNumber.SetUint64(latestBlock.Uint64() - 1)
-		}
-
-		candidateBlock, err = rp.Client.HeaderByNumber(context.Background(), candidateBlockNumber)
-		if err != nil {
-			return nil, fmt.Errorf("error getting EL block %d: %w", candidateBlock, err)
-		}
-	}
 }
 
 // Downloads the rewards file for this interval

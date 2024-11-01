@@ -11,7 +11,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/wealdtech/go-merkletree"
@@ -40,8 +39,7 @@ type RewardsExecutionClient interface {
 	HeaderByNumber(context.Context, *big.Int) (*ethtypes.Header, error)
 	GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error)
 	GetRewardSnapshotEvent(previousRewardsPoolAddresses []common.Address, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error)
-	// IFF this is a real execution client, return the client
-	Client() *rocketpool.RocketPool
+	GetRewardIndex(opts *bind.CallOpts) (*big.Int, error)
 }
 
 // RewardsBeaconClient defines and interface

@@ -15,7 +15,6 @@ import (
 
 	"github.com/blang/semver/v4"
 	"github.com/klauspost/compress/zstd"
-	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -608,7 +607,7 @@ func (r *RollingRecordManager) parseChecksumEntry(line string) (string, string, 
 // Creates a new record
 func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error {
 	// Get the current interval index
-	currentIndexBig, err := rewards.GetRewardIndex(r.rp.Client(), nil)
+	currentIndexBig, err := r.rp.GetRewardIndex(nil)
 	if err != nil {
 		return fmt.Errorf("error getting rewards index: %w", err)
 	}

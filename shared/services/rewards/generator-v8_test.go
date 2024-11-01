@@ -42,8 +42,8 @@ func (t *v8Test) saveArtifacts(prefix string, result *GenerateTreeResult) {
 	t.Logf("wrote artifacts to %s\n", tmpDir)
 }
 
-func newV8Test(t *testing.T) *v8Test {
-	rp := test.NewMockRocketPool(t)
+func newV8Test(t *testing.T, index uint64) *v8Test {
+	rp := test.NewMockRocketPool(t, index)
 	out := &v8Test{
 		T:  t,
 		rp: rp,
@@ -83,7 +83,9 @@ func (t *v8Test) SetMinipoolPerformance(canonicalMinipoolPerformance IMinipoolPe
 // TestV8Mainnet builds a tree using serialized state for a mainnet interval that used v8
 // and checks that the resulting artifacts match their canonical values.
 func TestV8Mainnet(tt *testing.T) {
-	t := newV8Test(tt)
+	state := assets.GetMainnet20RewardsState()
+
+	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
 	canonical, err := DeserializeRewardsFile(assets.GetMainnet20RewardsJSON())
 	t.failIf(err)
@@ -91,7 +93,6 @@ func TestV8Mainnet(tt *testing.T) {
 	canonicalPerformance, err := DeserializeMinipoolPerformanceFile(assets.GetMainnet20MinipoolPerformanceJSON())
 	t.failIf(err)
 
-	state := assets.GetMainnet20RewardsState()
 	t.Logf("pending rpl rewards: %s", state.NetworkDetails.PendingRPLRewards.String())
 
 	t.bc.SetState(state)

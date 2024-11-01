@@ -20,10 +20,10 @@ import (
 )
 
 func TestMockIntervalDefaultsTreegenv8v9(tt *testing.T) {
-	t := newV8Test(tt)
-
 	history := test.NewDefaultMockHistory()
 	state := history.GetEndNetworkState()
+
+	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 

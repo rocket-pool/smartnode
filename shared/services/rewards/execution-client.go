@@ -60,7 +60,7 @@ func (client *defaultRewardsExecutionClient) GetRewardSnapshotEvent(previousRewa
 }
 
 func (client *defaultRewardsExecutionClient) GetRewardIndex(opts *bind.CallOpts) (*big.Int, error) {
-	return rewards.GetRewardIndex(client.RocketPool, opts)
+	return client.RocketPool.GetRewardIndex(opts)
 }
 
 func (client *defaultRewardsExecutionClient) GetContract(contractName string, opts *bind.CallOpts) (*rocketpool.Contract, error) {

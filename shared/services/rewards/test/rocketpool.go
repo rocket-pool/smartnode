@@ -30,13 +30,14 @@ import (
 // something like the contract address data are being requested from, but instead the high-level
 // function name and arguments.
 type MockRocketPool struct {
+	RewardsIndex         *big.Int
 	t                    *testing.T
 	rewardSnapshotEvents map[uint64]rewards.RewardsEvent
 	headers              map[uint64]*types.Header
 }
 
-func NewMockRocketPool(t *testing.T) *MockRocketPool {
-	return &MockRocketPool{t: t}
+func NewMockRocketPool(t *testing.T, index uint64) *MockRocketPool {
+	return &MockRocketPool{t: t, RewardsIndex: big.NewInt(int64(index))}
 }
 
 func (mock *MockRocketPool) GetNetworkEnabled(networkId *big.Int, opts *bind.CallOpts) (bool, error) {
@@ -77,6 +78,10 @@ func (mock *MockRocketPool) SetRewardSnapshotEvent(event rewards.RewardsEvent) {
 		mock.rewardSnapshotEvents = make(map[uint64]rewards.RewardsEvent)
 	}
 	mock.rewardSnapshotEvents[event.Index.Uint64()] = event
+}
+
+func (mock *MockRocketPool) GetRewardIndex(opts *bind.CallOpts) (*big.Int, error) {
+	return mock.RewardsIndex, nil
 }
 
 func (mock *MockRocketPool) Client() *rocketpool.RocketPool {

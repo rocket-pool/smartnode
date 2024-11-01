@@ -21,7 +21,6 @@ import (
 )
 
 func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
-	t := newV8Test(tt)
 
 	history := test.NewDefaultMockHistory()
 	// Add a node which is earning some bonus commission
@@ -33,6 +32,8 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 	node.Minipools[0].NodeFee, _ = big.NewInt(0).SetString("50000000000000000", 10)
 	history.Nodes = append(history.Nodes, node)
 	state := history.GetEndNetworkState()
+
+	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -367,7 +368,6 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 }
 
 func TestInsufficientEthForBonuseses(tt *testing.T) {
-	t := newV8Test(tt)
 
 	history := test.NewDefaultMockHistoryNoNodes()
 	// Add two nodes which are earning some bonus commission
@@ -392,6 +392,8 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 	// Ovewrite the SP balance to a value under the bonus commission
 	history.NetworkDetails.SmoothingPoolBalance = big.NewInt(1000)
 	state := history.GetEndNetworkState()
+
+	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -474,7 +476,6 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 }
 
 func TestMockNoRPLRewards(tt *testing.T) {
-	t := newV8Test(tt)
 
 	history := test.NewDefaultMockHistoryNoNodes()
 	// Add two nodes which are earning some bonus commission
@@ -499,6 +500,8 @@ func TestMockNoRPLRewards(tt *testing.T) {
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
 	state := history.GetEndNetworkState()
+
+	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 

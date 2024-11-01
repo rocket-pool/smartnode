@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -33,7 +32,7 @@ func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenera
 	response := api.CanNetworkGenerateRewardsTreeResponse{}
 
 	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
+	currentIndexBig, err := rp.GetRewardIndex(nil)
 	if err != nil {
 		return nil, err
 	}

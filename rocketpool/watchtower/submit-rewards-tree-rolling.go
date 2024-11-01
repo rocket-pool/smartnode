@@ -86,7 +86,7 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 
 	// Get the current interval index
-	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
+	currentIndexBig, err := rp.GetRewardIndex(nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting rewards index: %w", err)
 	}
