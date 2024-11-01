@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -89,7 +90,7 @@ type treegenArguments struct {
 type treeGenerator struct {
 	log               *log.ColorLogger
 	errLog            *log.ColorLogger
-	rp                *rocketpool.RocketPool
+	rp                rprewards.RewardsExecutionClient
 	cfg               *config.RocketPoolConfig
 	mgr               *state.NetworkStateManager
 	recordMgr         *rprewards.RollingRecordManager
@@ -160,16 +161,13 @@ func GenerateTree(c *cli.Context) error {
 	}
 
 	// Create the NetworkStateManager
-	mgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bn, &logger)
-	if err != nil {
-		return err
-	}
+	mgr := state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bn, &logger)
 
 	// Create the generator
 	generator := treeGenerator{
 		log:               &logger,
 		errLog:            &errLogger,
-		rp:                rp,
+		rp:                rprewards.NewRewardsExecutionClient(rp),
 		cfg:               cfg,
 		bn:                bn,
 		mgr:               mgr,
@@ -212,7 +210,11 @@ func (g *treeGenerator) getTreegenArgs() (*treegenArguments, error) {
 		startSlot := uint64(0)
 		if index > 0 {
 			// Get the start slot for this interval
-			previousRewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(index-1), nil)
+			previousRewardsEvent, err := g.rp.GetRewardSnapshotEvent(
+				g.cfg.Smartnode.GetPreviousRewardsPoolAddresses(),
+				uint64(index-1),
+				nil,
+			)
 			if err != nil {
 				return nil, fmt.Errorf("error getting event for interval %d: %w", index-1, err)
 			}
@@ -222,7 +224,7 @@ func (g *treeGenerator) getTreegenArgs() (*treegenArguments, error) {
 			}
 		}
 
-		elBlockHeader, err := g.rp.Client.HeaderByNumber(context.Background(), g.targets.rewardsEvent.ExecutionBlock)
+		elBlockHeader, err := g.rp.HeaderByNumber(context.Background(), g.targets.rewardsEvent.ExecutionBlock)
 		if err != nil {
 			return nil, fmt.Errorf("error getting el block header %d: %w", g.targets.rewardsEvent.ExecutionBlock.Uint64(), err)
 		}
@@ -337,7 +339,11 @@ func (g *treeGenerator) setTargets(interval int64, targetEpoch uint64) error {
 
 	// We're generating a previous interval (full or partial)
 	// Get the corresponding rewards event for that interval
-	rewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(interval), nil)
+	rewardsEvent, err := g.rp.GetRewardSnapshotEvent(
+		g.cfg.Smartnode.GetPreviousRewardsPoolAddresses(),
+		uint64(interval),
+		nil,
+	)
 	if err != nil {
 		return err
 	}
@@ -406,7 +412,7 @@ func (g *treeGenerator) slotToTime(slot uint64) time.Time {
 }
 
 // Generates the rewards file for the given generator
-func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (rprewards.IRewardsFile, error) {
+func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (*rprewards.GenerateTreeResult, error) {
 	if g.ruleset == 0 {
 		return treegen.GenerateTree()
 	}
@@ -415,8 +421,8 @@ func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (r
 }
 
 // Serializes the minipool performance file into JSON
-func (g *treeGenerator) serializeMinipoolPerformance(rewardsFile rprewards.IRewardsFile) ([]byte, error) {
-	perfFile := rewardsFile.GetMinipoolPerformanceFile()
+func (g *treeGenerator) serializeMinipoolPerformance(result *rprewards.GenerateTreeResult) ([]byte, error) {
+	perfFile := result.MinipoolPerformanceFile
 
 	if g.prettyPrint {
 		return perfFile.SerializeHuman()
@@ -435,16 +441,23 @@ func (g *treeGenerator) serializeRewardsTree(rewardsFile rprewards.IRewardsFile)
 }
 
 // Writes both the performance file and the rewards file to disk
-func (g *treeGenerator) writeFiles(rewardsFile rprewards.IRewardsFile) error {
+func (g *treeGenerator) writeFiles(result *rprewards.GenerateTreeResult) error {
 	g.log.Printlnf("Saving JSON files...")
-	index := rewardsFile.GetHeader().Index
+	rewardsFile := result.RewardsFile
+	index := rewardsFile.GetIndex()
 
 	// Get the output paths
-	rewardsTreePath := filepath.Join(g.outputDir, fmt.Sprintf(config.RewardsTreeFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), index))
-	minipoolPerformancePath := filepath.Join(g.outputDir, fmt.Sprintf(config.MinipoolPerformanceFilenameFormat, string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), index))
+	rewardsTreePath := filepath.Join(
+		g.outputDir,
+		g.cfg.Smartnode.GetRewardsTreeFilename(index, config.RewardsExtensionJSON),
+	)
+	minipoolPerformancePath := filepath.Join(
+		g.outputDir,
+		g.cfg.Smartnode.GetMinipoolPerformanceFilename(index),
+	)
 
 	// Serialize the minipool performance file
-	minipoolPerformanceBytes, err := g.serializeMinipoolPerformance(rewardsFile)
+	minipoolPerformanceBytes, err := g.serializeMinipoolPerformance(result)
 	if err != nil {
 		return fmt.Errorf("error serializing minipool performance file into JSON: %w", err)
 	}
@@ -505,7 +518,7 @@ func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
 		network := g.cfg.Smartnode.Network.Value.(cfgtypes.Network)
 		switch network {
 		case cfgtypes.Network_Mainnet:
-			ignoreRollingRecords = (index < rprewards.MainnetV6Interval)
+			ignoreRollingRecords = (index < rprewards.MainnetV8Interval)
 		default:
 			return fmt.Errorf("unknown network [%v]", network)
 		}
@@ -563,7 +576,12 @@ func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGen
 	// Create the tree generator
 	out, err := rprewards.NewTreeGenerator(
 		g.log, "", g.rp, g.cfg, g.bn, args.index,
-		args.startTime, args.endTime, args.block.Slot, args.elBlockHeader,
+		args.startTime, args.endTime,
+		&rprewards.SnapshotEnd{
+			Slot:           args.state.BeaconConfig.FirstSlotAtLeast(args.endTime.Unix()),
+			ConsensusBlock: args.block.Slot,
+			ExecutionBlock: args.elBlockHeader.Number.Uint64(),
+		}, args.elBlockHeader,
 		args.intervalsPassed, args.state, record)
 	if err != nil {
 		return nil, fmt.Errorf("error creating tree generator: %w", err)
@@ -589,11 +607,11 @@ func (g *treeGenerator) approximateRethSpRewards() error {
 		args.block.Slot, opts.BlockNumber.Uint64(), args.startTime, args.endTime)
 
 	// Get the Smoothing Pool contract's balance
-	smoothingPoolContract, err := g.rp.GetContract("rocketSmoothingPool", opts)
+	smoothingPoolContract, err := g.rp.Client().GetContract("rocketSmoothingPool", opts)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
-	smoothingPoolBalance, err := g.rp.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, opts.BlockNumber)
+	smoothingPoolBalance, err := g.rp.Client().Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, opts.BlockNumber)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}
@@ -635,28 +653,28 @@ func (g *treeGenerator) generateTree() error {
 
 	// Generate the rewards file
 	start := time.Now()
-	rewardsFile, err := g.generateRewardsFile(treegen)
+	result, err := g.generateRewardsFile(treegen)
 	if err != nil {
 		return fmt.Errorf("error generating Merkle tree: %w", err)
 	}
 
-	header := rewardsFile.GetHeader()
-	for address, network := range header.InvalidNetworkNodes {
+	for address, network := range result.InvalidNetworkNodes {
 		g.log.Printlnf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network)
 	}
 	g.log.Printlnf("Finished in %s", time.Since(start).String())
 
 	// Validate the Merkle root
 	if g.targets.rewardsEvent != nil {
-		root := common.BytesToHash(header.MerkleTree.Root())
-		if root != g.targets.rewardsEvent.MerkleRoot {
+		rootString := result.RewardsFile.GetMerkleRoot()
+		root := common.HexToHash(rootString)
+		if !bytes.Equal(root[:], g.targets.rewardsEvent.MerkleRoot[:]) {
 			g.log.Printlnf("WARNING: your Merkle tree had a root of %s, but the canonical Merkle tree's root was %s. This file will not be usable for claiming rewards.", root.Hex(), g.targets.rewardsEvent.MerkleRoot.Hex())
 		} else {
-			g.log.Printlnf("Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", header.MerkleRoot)
+			g.log.Printlnf("Your Merkle tree's root of %s matches the canonical root! You will be able to use this file for claiming rewards.", rootString)
 		}
 	}
 
-	err = g.writeFiles(rewardsFile)
+	err = g.writeFiles(result)
 	if err != nil {
 		return err
 	}
@@ -683,14 +701,14 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 		opts.BlockNumber = snapshotElBlockHeader.Number
 	} else {
 		opts.BlockNumber = big.NewInt(0).SetUint64(g.targets.block.ExecutionBlockNumber)
-		snapshotElBlockHeader, err = g.rp.Client.HeaderByNumber(context.Background(), opts.BlockNumber)
+		snapshotElBlockHeader, err = g.rp.HeaderByNumber(context.Background(), opts.BlockNumber)
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL block %d: %w", opts.BlockNumber.Uint64(), err)
 		}
 	}
 
 	// Get the interval index
-	indexBig, err := rewards.GetRewardIndex(g.rp, &opts)
+	indexBig, err := rewards.GetRewardIndex(g.rp.Client(), &opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting current reward index: %w", err)
 	}
@@ -700,7 +718,11 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 	startSlot := uint64(0)
 	if index > 0 {
 		// Get the start slot for this interval
-		previousRewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, uint64(index-1), nil)
+		previousRewardsEvent, err := g.rp.GetRewardSnapshotEvent(
+			g.cfg.Smartnode.GetPreviousRewardsPoolAddresses(),
+			uint64(index-1),
+			nil,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("error getting event for interval %d: %w", index-1, err)
 		}
@@ -711,11 +733,11 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 	}
 
 	// Get the start time for the interval, and how long an interval is supposed to take
-	startTime, err := rewards.GetClaimIntervalTimeStart(g.rp, &opts)
+	startTime, err := rewards.GetClaimIntervalTimeStart(g.rp.Client(), &opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting claim interval start time: %w", err)
 	}
-	intervalTime, err := rewards.GetClaimIntervalTime(g.rp, &opts)
+	intervalTime, err := rewards.GetClaimIntervalTime(g.rp.Client(), &opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting claim interval time: %w", err)
 	}
@@ -787,7 +809,11 @@ func (g *treeGenerator) printNetworkInfo() error {
 
 	// Find the event for the previous interval
 	if args.index > 0 {
-		rewardsEvent, err := rprewards.GetRewardSnapshotEvent(g.rp, g.cfg, args.index-1, nil)
+		rewardsEvent, err := g.rp.GetRewardSnapshotEvent(
+			g.cfg.Smartnode.GetPreviousRewardsPoolAddresses(),
+			args.index-1,
+			nil,
+		)
 		if err != nil {
 			return fmt.Errorf("error getting rewards submission event for previous interval (%d): %w", args.index-1, err)
 		}
