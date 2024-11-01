@@ -9,7 +9,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/docker/docker v27.3.1+incompatible
 	github.com/dustin/go-humanize v1.0.1
-	github.com/ethereum/go-ethereum v1.14.8
+	github.com/ethereum/go-ethereum v1.14.11
 	github.com/fatih/color v1.16.0
 	github.com/gdamore/tcell/v2 v2.7.4
 	github.com/go-openapi/errors v0.22.0
@@ -28,7 +28,7 @@ require (
 	github.com/prometheus/client_golang v1.19.1
 	github.com/prysmaticlabs/prysm/v5 v5.1.0
 	github.com/rivo/tview v0.0.0-20230208211350-7dfff1ce7854 // DO NOT UPGRADE
-	github.com/rocket-pool/node-manager-core v0.5.2-0.20241002072934-89c9cc081cf6
+	github.com/rocket-pool/node-manager-core v0.5.2-0.20241031175200-2488d6dc142f
 	github.com/rocket-pool/rocketpool-go/v2 v2.0.0-b2.0.20240709170030-c27aeb5fb99b
 	github.com/shirou/gopsutil/v3 v3.24.3
 	github.com/tyler-smith/go-bip39 v1.1.0
@@ -140,7 +140,7 @@ require (
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/supranational/blst v0.3.11 // indirect
+	github.com/supranational/blst v0.3.13 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e // indirect
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
@@ -160,7 +160,7 @@ require (
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.23.0 // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/sys v0.22.0 // indirect
 	golang.org/x/text v0.15.0
 	google.golang.org/api v0.171.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240325203815-454cdb8f5daa // indirect
@@ -172,6 +172,10 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-require golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
+require (
+	github.com/crate-crypto/go-ipa v0.0.0-20240223125850-b1e8a79f509c // indirect
+	github.com/ethereum/go-verkle v0.1.1-0.20240829091221-dffa7562dbe9 // indirect
+	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842 // indirect
+)
 
 replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd

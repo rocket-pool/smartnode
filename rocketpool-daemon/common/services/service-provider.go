@@ -181,7 +181,8 @@ func NewServiceProvider(userDir string, resourcesDir string) (ISmartNodeServiceP
 	}
 
 	// Make the core provider
-	sp, err := services.NewServiceProvider(cfg, selectedResources.NetworkResources, config.ClientTimeout)
+	opts := services.ServiceProviderOptions{}
+	sp, err := services.NewServiceProvider(cfg, selectedResources.NetworkResources, config.ClientTimeout, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error creating core service provider: %w", err)
 	}
