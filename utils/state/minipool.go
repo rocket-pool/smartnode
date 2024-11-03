@@ -3,6 +3,7 @@ package state
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -214,6 +215,44 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 	}
 
 	return nil
+}
+
+var oneEth = big.NewInt(1e18)
+var thirtyTwoEth = big.NewInt(0).Mul(big.NewInt(32), oneEth)
+
+func (details *NativeMinipoolDetails) GetMinipoolAttestationScore(blockTime time.Time) *big.Int {
+	bond, fee := details.GetMinipoolBondAndNodeFee(blockTime)
+	minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
+	minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
+	minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
+	minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
+	return minipoolScore
+}
+
+// Get the bond and node fee of a minipool for the specified time
+func (details *NativeMinipoolDetails) GetMinipoolBondAndNodeFee(blockTime time.Time) (*big.Int, *big.Int) {
+	currentBond := details.NodeDepositBalance
+	currentFee := details.NodeFee
+	previousBond := details.LastBondReductionPrevValue
+	previousFee := details.LastBondReductionPrevNodeFee
+
+	var reductionTimeBig *big.Int = details.LastBondReductionTime
+	if reductionTimeBig.Cmp(common.Big0) == 0 {
+		// Never reduced
+		return currentBond, currentFee
+	}
+
+	reductionTime := time.Unix(reductionTimeBig.Int64(), 0)
+	if reductionTime.Sub(blockTime) > 0 {
+		// This block occurred before the reduction
+		if previousFee.Cmp(common.Big0) == 0 {
+			// Catch for minipools that were created before this call existed
+			return previousBond, currentFee
+		}
+		return previousBond, previousFee
+	}
+
+	return currentBond, currentFee
 }
 
 // Get all minipool addresses using the multicaller
