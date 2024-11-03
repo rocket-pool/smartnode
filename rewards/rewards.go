@@ -61,19 +61,6 @@ type rewardSnapshot struct {
 	Time              *big.Int         `json:"time"`
 }
 
-// Get the index of the active rewards period
-func GetRewardIndex(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	index := new(*big.Int)
-	if err := rocketRewardsPool.Call(opts, index, "getRewardIndex"); err != nil {
-		return nil, fmt.Errorf("error getting current reward index: %w", err)
-	}
-	return *index, nil
-}
-
 // Get the timestamp that the current rewards interval started
 func GetClaimIntervalTimeStart(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Time, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
