@@ -45,6 +45,43 @@ func (h *MockHistory) GetNodeAddress() common.Address {
 	return h.lastNodeAddress
 }
 
+func (h *MockHistory) GetMinipoolAttestationScoreAndCount(address common.Address, state *state.NetworkState) (*big.Int, uint64) {
+	out := big.NewInt(0)
+	mpi := state.MinipoolDetailsByAddress[address]
+	nodeDetails := state.NodeDetailsByAddress[mpi.NodeAddress]
+
+	// Check every slot in the history
+	count := uint64(0)
+	for slot := h.GetConsensusStartBlock(); slot <= h.GetConsensusEndBlock(); slot++ {
+		// Get the time at the slot
+		blockTime := h.BeaconConfig.GetSlotTime(slot)
+		// Check the status of the minipool at this time
+		if mpi.Status != types.Staking {
+			continue
+		}
+		if mpi.Finalised {
+			continue
+		}
+		// Check if the minipool was opted in at this time
+		if !nodeDetails.WasOptedInAt(blockTime) {
+			continue
+		}
+		pubkey := mpi.Pubkey
+		validator := state.ValidatorDetails[pubkey]
+		index := validator.Index
+		indexInt, _ := strconv.ParseUint(index, 10, 64)
+		// Count the attestation if index%32 == slot%32
+		if indexInt%32 == uint64(slot%32) {
+			count++
+
+			// Give the minipool a score according to its fee
+			score := mpi.GetMinipoolAttestationScore(blockTime)
+			out.Add(out, score)
+		}
+	}
+	return out, count
+}
+
 type MockMinipool struct {
 	Address            common.Address
 	Pubkey             types.ValidatorPubkey
@@ -155,6 +192,11 @@ func (h *MockHistory) GetNewDefaultMockNode(params *NewMockNodeParams) *MockNode
 
 	out.RplStake = big.NewInt(params.CollateralRpl)
 	out.RplStake.Mul(out.RplStake, eth.EthToWei(1))
+
+	// Opt nodes in an epoch before the start of the interval
+	if params.SmoothingPool {
+		out.SmoothingPoolRegistrationChanged = h.BeaconConfig.GetSlotTime(h.BeaconConfig.FirstSlotOfEpoch(h.StartEpoch - 1))
+	}
 
 	return out
 }
@@ -329,7 +371,8 @@ type MockHistory struct {
 	// Network details for the final slot
 	NetworkDetails *rpstate.NetworkDetails
 
-	Nodes []*MockNode
+	Nodes     []*MockNode
+	Minipools []*MockMinipool
 
 	// Various offsets to create unique number spaces for each key type
 	lastNodeAddress     common.Address
@@ -467,6 +510,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			// Ratio of bonded to bonded plus borrowed
 			CollateralisationRatio: collateralisationRatio,
 		}
+
 		out.NodeDetails = append(out.NodeDetails, details)
 		ptr := &out.NodeDetails[len(out.NodeDetails)-1]
 		out.NodeDetailsByAddress[node.Address] = ptr

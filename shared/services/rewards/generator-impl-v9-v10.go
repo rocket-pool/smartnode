@@ -14,7 +14,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types"
@@ -518,7 +517,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 
 					// Make up an attestation
 					details := r.networkState.MinipoolDetailsByAddress[minipool.Address]
-					bond, fee := r.getMinipoolBondAndNodeFee(details, r.elEndTime)
+					bond, fee := details.GetMinipoolBondAndNodeFee(r.elEndTime)
 					minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
 					minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
 					minipoolScore.Div(minipoolScore, validatorReq)  // Divide by 32 to get the bond as a fraction of a total validator
@@ -577,7 +576,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 					AttestationScore:        minipoolInfo.AttestationScore,
 					EthEarned:               QuotedBigIntFromBigInt(minipoolInfo.MinipoolShare),
 					BonusEthEarned:          QuotedBigIntFromBigInt(minipoolInfo.MinipoolBonus),
-					ConsensusIncome:         QuotedBigIntFromBigInt(minipoolInfo.ConsensusIncome),
+					ConsensusIncome:         minipoolInfo.ConsensusIncome,
 					EffectiveCommission:     QuotedBigIntFromBigInt(minipoolInfo.TotalFee),
 					MissingAttestationSlots: []uint64{},
 				}
@@ -682,7 +681,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 				startBcBalance = big.NewInt(0).Set(thirtyTwoEth)
 			}
 			consensusIncome.Sub(consensusIncome, startBcBalance)
-			mpd.ConsensusIncome = big.NewInt(0).Set(consensusIncome)
+			mpd.ConsensusIncome = &QuotedBigInt{Int: *(big.NewInt(0).Set(consensusIncome))}
 			bonusShare := bonusFee.Mul(bonusFee, big.NewInt(0).Sub(thirtyTwoEth, mpi.NodeDepositBalance))
 			bonusShare.Div(bonusShare, thirtyTwoEth)
 			minipoolBonus := consensusIncome.Mul(consensusIncome, bonusShare)
@@ -1095,8 +1094,6 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(getDuties bool, epoch uint64) er
 
 func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.AttestationInfo) error {
 
-	validatorReq := big.NewInt(0).Set(thirtyTwoEth)
-
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
 		// Get the RP committees for this attestation's slot and index
@@ -1138,11 +1135,7 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 
 			// Get the pseudoscore for this attestation
 			details := r.networkState.MinipoolDetailsByAddress[validator.Address]
-			bond, fee := r.getMinipoolBondAndNodeFee(details, blockTime)
-			minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
-			minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
-			minipoolScore.Div(minipoolScore, validatorReq)  // Divide by 32 to get the bond as a fraction of a total validator
-			minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
+			minipoolScore := details.GetMinipoolAttestationScore(blockTime)
 
 			// Add it to the minipool's score and the total score
 			validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
@@ -1273,11 +1266,11 @@ func (r *treeGeneratorImpl_v9_v10) createMinipoolIndexMap() error {
 
 }
 
+var farFutureTimestamp int64 = 1000000000000000000 // Far into the future
+var farPastTimestamp int64 = 0
+
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
 func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
-
-	farFutureTime := time.Unix(1000000000000000000, 0) // Far into the future
-	farPastTime := time.Unix(0, 0)
 
 	// For each NO, get their opt-in status and time of last change in batches
 	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation...", r.logPrefix)
@@ -1312,10 +1305,10 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 
 				if nodeDetails.IsOptedIn {
 					nodeDetails.OptInTime = statusChangeTime
-					nodeDetails.OptOutTime = farFutureTime
+					nodeDetails.OptOutTime = time.Unix(farFutureTimestamp, 0)
 				} else {
 					nodeDetails.OptOutTime = statusChangeTime
-					nodeDetails.OptInTime = farPastTime
+					nodeDetails.OptInTime = time.Unix(farPastTimestamp, 0)
 				}
 
 				// Get the details for each minipool in the node
@@ -1447,32 +1440,6 @@ func (r *treeGeneratorImpl_v9_v10) getBlocksAndTimesForInterval(previousInterval
 	}
 
 	return startElHeader, nil
-}
-
-// Get the bond and node fee of a minipool for the specified time
-func (r *treeGeneratorImpl_v9_v10) getMinipoolBondAndNodeFee(details *rpstate.NativeMinipoolDetails, blockTime time.Time) (*big.Int, *big.Int) {
-	currentBond := details.NodeDepositBalance
-	currentFee := details.NodeFee
-	previousBond := details.LastBondReductionPrevValue
-	previousFee := details.LastBondReductionPrevNodeFee
-
-	var reductionTimeBig *big.Int = details.LastBondReductionTime
-	if reductionTimeBig.Cmp(common.Big0) == 0 {
-		// Never reduced
-		return currentBond, currentFee
-	} else {
-		reductionTime := time.Unix(reductionTimeBig.Int64(), 0)
-		if reductionTime.Sub(blockTime) > 0 {
-			// This block occurred before the reduction
-			if previousFee.Cmp(common.Big0) == 0 {
-				// Catch for minipools that were created before this call existed
-				return previousBond, currentFee
-			}
-			return previousBond, previousFee
-		}
-	}
-
-	return currentBond, currentFee
 }
 
 func (r *treeGeneratorImpl_v9_v10) saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {

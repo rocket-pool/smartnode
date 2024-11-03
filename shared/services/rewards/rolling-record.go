@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -34,10 +33,6 @@ type RollingRecord struct {
 	log                *log.ColorLogger    `json:"-"`
 	logPrefix          string              `json:"-"`
 	intervalDutiesInfo *IntervalDutiesInfo `json:"-"`
-
-	// Constants for convenience
-	one          *big.Int `json:"-"`
-	validatorReq *big.Int `json:"-"`
 }
 
 // Create a new rolling record wrapper
@@ -57,9 +52,6 @@ func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, 
 		intervalDutiesInfo: &IntervalDutiesInfo{
 			Slots: map[uint64]*SlotInfo{},
 		},
-
-		one:          eth.EthToWei(1),
-		validatorReq: eth.EthToWei(32),
 	}
 }
 
@@ -74,9 +66,6 @@ func DeserializeRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.
 		intervalDutiesInfo: &IntervalDutiesInfo{
 			Slots: map[uint64]*SlotInfo{},
 		},
-
-		one:          eth.EthToWei(1),
-		validatorReq: eth.EthToWei(32),
 	}
 
 	err := json.Unmarshal(bytes, &record)
@@ -212,6 +201,9 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 				NodeAddress:             mpd.NodeAddress,
 				MissingAttestationSlots: map[uint64]bool{},
 				AttestationScore:        NewQuotedBigInt(0),
+				ConsensusIncome:         NewQuotedBigInt(0),
+				NodeOperatorBond:        mpd.NodeDepositBalance,
+				MinipoolBonus:           big.NewInt(0),
 			}
 			r.ValidatorIndexMap[validator.Index] = minipoolInfo
 		}
@@ -221,7 +213,7 @@ func (r *RollingRecord) updateValidatorIndices(state *state.NetworkState) {
 // Get the attestation duties for the given epoch, up to (and including) the provided end slot
 func (r *RollingRecord) getDutiesForEpoch(epoch uint64, endSlot uint64, state *state.NetworkState) error {
 
-	lastSlotInEpoch := (epoch+1)*r.beaconConfig.SlotsPerEpoch - 1
+	lastSlotInEpoch := state.BeaconConfig.LastSlotOfEpoch(epoch)
 
 	if r.LastDutiesSlot >= lastSlotInEpoch {
 		// Already collected the duties for this epoch
@@ -380,11 +372,7 @@ func (r *RollingRecord) processAttestationsInSlot(inclusionSlot uint64, attestat
 
 						// Get the pseudoscore for this attestation
 						details := state.MinipoolDetailsByAddress[validator.Address]
-						bond, fee := getMinipoolBondAndNodeFee(details, blockTime)
-						minipoolScore := big.NewInt(0).Sub(r.one, fee)   // 1 - fee
-						minipoolScore.Mul(minipoolScore, bond)           // Multiply by bond
-						minipoolScore.Div(minipoolScore, r.validatorReq) // Divide by 32 to get the bond as a fraction of a total validator
-						minipoolScore.Add(minipoolScore, fee)            // Total = fee + (bond/32)(1 - fee)
+						minipoolScore := details.GetMinipoolAttestationScore(blockTime)
 
 						// Add it to the minipool's score
 						validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)

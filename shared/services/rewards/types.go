@@ -221,7 +221,7 @@ type MinipoolInfo struct {
 	TotalFee                *big.Int              `json:"-"`
 	MinipoolBonus           *big.Int              `json:"-"`
 	NodeOperatorBond        *big.Int              `json:"-"`
-	ConsensusIncome         *big.Int              `json:"-"`
+	ConsensusIncome         *QuotedBigInt         `json:"consensusIncome"`
 }
 
 var sixteenEth = big.NewInt(0).Mul(oneEth, big.NewInt(16))

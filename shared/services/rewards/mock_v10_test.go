@@ -14,11 +14,52 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/fatih/color"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/test"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/test/assets"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
+
+func getRollingRecord(history *test.MockHistory, state *state.NetworkState, defaultConsensusIncome *big.Int) *RollingRecord {
+	validatorIndexMap := make(map[string]*MinipoolInfo)
+	for _, node := range history.Nodes {
+		// The validator index doesn't contain nodes that were never opted in
+		nnd := state.NodeDetailsByAddress[node.Address]
+		if nnd.SmoothingPoolRegistrationChanged.Cmp(big.NewInt(0)) == 0 {
+			continue
+		}
+		for _, minipool := range node.Minipools {
+			mpi := &MinipoolInfo{
+				Address:                 minipool.Address,
+				ValidatorPubkey:         minipool.Pubkey,
+				ValidatorIndex:          minipool.ValidatorIndex,
+				NodeAddress:             node.Address,
+				MissingAttestationSlots: make(map[uint64]bool),
+				MinipoolBonus:           big.NewInt(0),
+			}
+
+			// Populate the attestation score and count
+			score, count := history.GetMinipoolAttestationScoreAndCount(minipool.Address, state)
+			mpi.AttestationScore = QuotedBigIntFromBigInt(score)
+			mpi.AttestationCount = int(count)
+
+			// Populate the consensus income
+			mpi.ConsensusIncome = QuotedBigIntFromBigInt(defaultConsensusIncome)
+
+			// Add to the index
+			validatorIndexMap[minipool.ValidatorIndex] = mpi
+		}
+	}
+	return &RollingRecord{
+		StartSlot:         history.GetConsensusStartBlock(),
+		LastDutiesSlot:    history.BeaconConfig.LastSlotOfEpoch(history.EndEpoch),
+		ValidatorIndexMap: validatorIndexMap,
+		RewardsInterval:   history.NetworkDetails.RewardIndex,
+		SmartnodeVersion:  shared.RocketPoolVersion,
+	}
+}
 
 func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 
@@ -56,25 +97,30 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 		t.bc.SetMinipoolPerformance(validator.Index, make([]uint64, 0))
 	}
 
+	rollingRecord := getRollingRecord(history, state, big.NewInt(1e18))
+
 	// Set some custom balances for the validators that opt in and out of smoothing pool
 	nodeSummary := history.GetNodeSummary()
 	customBalanceNodes := nodeSummary["single_eight_eth_opted_in_quarter"]
 	for _, node := range customBalanceNodes {
 		t.bc.SetCustomBalance(node.Minipools[0].ValidatorIndex, eth.EthToWei(32.25), history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+(history.EndEpoch-history.StartEpoch)/4))
+		rollingRecord.ValidatorIndexMap[node.Minipools[0].ValidatorIndex].ConsensusIncome = QuotedBigIntFromBigInt(eth.EthToWei(0.75))
 	}
 	customBalanceNodes = nodeSummary["single_eight_eth_opted_out_three_quarters"]
 	for _, node := range customBalanceNodes {
 		t.bc.SetCustomBalance(node.Minipools[0].ValidatorIndex, eth.EthToWei(32.75), history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+3*(history.EndEpoch-history.StartEpoch)/4))
+		rollingRecord.ValidatorIndexMap[node.Minipools[0].ValidatorIndex].ConsensusIncome = QuotedBigIntFromBigInt(eth.EthToWei(0.75))
 	}
 	customBalanceNodes = nodeSummary["single_bond_reduction"]
 	for _, node := range customBalanceNodes {
 		t.bc.SetCustomBalance(node.Minipools[0].ValidatorIndex, eth.EthToWei(32.5), history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+(history.EndEpoch-history.StartEpoch)/2))
+		rollingRecord.ValidatorIndexMap[node.Minipools[0].ValidatorIndex].ConsensusIncome = QuotedBigIntFromBigInt(eth.EthToWei(0.5))
 	}
 
 	generatorv9v10 := newTreeGeneratorImpl_v9_v10(
 		10,
 		&logger,
-		t.Name(),
+		t.Name()+"-stateless",
 		state.NetworkDetails.RewardIndex,
 		&SnapshotEnd{
 			Slot:           consensusEndBlock,
@@ -89,6 +135,33 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 		state,
 	)
 
+	generatorv9v10Rolling := newTreeGeneratorImpl_v9_v10_rolling(
+		10,
+		&logger,
+		t.Name()+"-rolling",
+		state.NetworkDetails.RewardIndex,
+		&SnapshotEnd{
+			Slot:           consensusEndBlock,
+			ConsensusBlock: consensusEndBlock,
+			ExecutionBlock: executionEndBlock,
+		},
+		&types.Header{
+			Number: big.NewInt(int64(history.GetExecutionEndBlock())),
+			Time:   assets.Mainnet20ELHeaderTime,
+		},
+		/* intervalsPassed= */ 1,
+		state,
+		rollingRecord,
+	)
+
+	v10RRArtifacts, err := generatorv9v10Rolling.generateTree(
+		t.rp,
+		"mainnet",
+		make([]common.Address, 0),
+		t.bc,
+	)
+	t.failIf(err)
+
 	v10Artifacts, err := generatorv9v10.generateTree(
 		t.rp,
 		"mainnet",
@@ -99,6 +172,11 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 
 	if testing.Verbose() {
 		t.saveArtifacts("v10", v10Artifacts)
+		t.saveArtifacts("v10-rolling", v10RRArtifacts)
+	}
+
+	if v10RRArtifacts.RewardsFile.GetMerkleRoot() != v10Artifacts.RewardsFile.GetMerkleRoot() {
+		t.Fatalf("Merkle root does not match between rolling and non-rolling %s != %s", v10RRArtifacts.RewardsFile.GetMerkleRoot(), v10Artifacts.RewardsFile.GetMerkleRoot())
 	}
 
 	// Validate individual node details in the rewards file
@@ -434,6 +512,34 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 		state,
 	)
 
+	rollingRecord := getRollingRecord(history, state, big.NewInt(1e18))
+	generatorv9v10Rolling := newTreeGeneratorImpl_v9_v10_rolling(
+		10,
+		&logger,
+		t.Name(),
+		state.NetworkDetails.RewardIndex,
+		&SnapshotEnd{
+			Slot:           consensusEndBlock,
+			ConsensusBlock: consensusEndBlock,
+			ExecutionBlock: executionEndBlock,
+		},
+		&types.Header{
+			Number: big.NewInt(int64(history.GetExecutionEndBlock())),
+			Time:   assets.Mainnet20ELHeaderTime,
+		},
+		1,
+		state,
+		rollingRecord,
+	)
+
+	v10RRArtifacts, err := generatorv9v10Rolling.generateTree(
+		t.rp,
+		"mainnet",
+		make([]common.Address, 0),
+		t.bc,
+	)
+	t.failIf(err)
+
 	v10Artifacts, err := generatorv9v10.generateTree(
 		t.rp,
 		"mainnet",
@@ -441,6 +547,15 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 		t.bc,
 	)
 	t.failIf(err)
+
+	if testing.Verbose() {
+		t.saveArtifacts("v10", v10Artifacts)
+		t.saveArtifacts("v10-rolling", v10RRArtifacts)
+	}
+
+	if v10RRArtifacts.RewardsFile.GetMerkleRoot() != v10Artifacts.RewardsFile.GetMerkleRoot() {
+		t.Fatalf("Merkle root does not match between rolling and non-rolling %s != %s", v10RRArtifacts.RewardsFile.GetMerkleRoot(), v10Artifacts.RewardsFile.GetMerkleRoot())
+	}
 
 	// Check the rewards file
 	rewardsFile := v10Artifacts.RewardsFile
@@ -468,10 +583,6 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 	}
 	if perfTwo.GetBonusEthEarned().Uint64() != 252 {
 		t.Fatalf("Node two bonus does not match expected value: %s != %d", perfTwo.GetBonusEthEarned().String(), 252)
-	}
-
-	if testing.Verbose() {
-		t.saveArtifacts("v10", v10Artifacts)
 	}
 }
 
@@ -542,6 +653,25 @@ func TestMockNoRPLRewards(tt *testing.T) {
 		state,
 	)
 
+	generatorv9v10Rolling := newTreeGeneratorImpl_v9_v10_rolling(
+		10,
+		&logger,
+		t.Name(),
+		state.NetworkDetails.RewardIndex,
+		&SnapshotEnd{
+			Slot:           consensusEndBlock,
+			ConsensusBlock: consensusEndBlock,
+			ExecutionBlock: executionEndBlock,
+		},
+		&types.Header{
+			Number: big.NewInt(int64(history.GetExecutionEndBlock())),
+			Time:   assets.Mainnet20ELHeaderTime,
+		},
+		1,
+		state,
+		getRollingRecord(history, state, big.NewInt(1e18)),
+	)
+
 	v10Artifacts, err := generatorv9v10.generateTree(
 		t.rp,
 		"mainnet",
@@ -549,6 +679,23 @@ func TestMockNoRPLRewards(tt *testing.T) {
 		t.bc,
 	)
 	t.failIf(err)
+
+	v10RRArtifacts, err := generatorv9v10Rolling.generateTree(
+		t.rp,
+		"mainnet",
+		make([]common.Address, 0),
+		t.bc,
+	)
+	t.failIf(err)
+
+	if testing.Verbose() {
+		t.saveArtifacts("v10", v10Artifacts)
+		t.saveArtifacts("v10-rolling", v10RRArtifacts)
+	}
+
+	if v10RRArtifacts.RewardsFile.GetMerkleRoot() != v10Artifacts.RewardsFile.GetMerkleRoot() {
+		t.Fatalf("Merkle root does not match between rolling and non-rolling %s != %s", v10RRArtifacts.RewardsFile.GetMerkleRoot(), v10Artifacts.RewardsFile.GetMerkleRoot())
+	}
 
 	// Check the rewards file
 	rewardsFile := v10Artifacts.RewardsFile
@@ -590,9 +737,5 @@ func TestMockNoRPLRewards(tt *testing.T) {
 	// Node two is in the SP and starts with 5% commission. It has no RPL staked, so it earns an extra 5% on top of that.
 	if perfThree.GetEffectiveCommission().Uint64() != 100000000000000000 {
 		t.Fatalf("Node two minipool two effective commission does not match expected value: %s != %d", perfThree.GetEffectiveCommission().String(), 100000000000000000)
-	}
-
-	if testing.Verbose() {
-		t.saveArtifacts("v10", v10Artifacts)
 	}
 }
