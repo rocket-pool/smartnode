@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
@@ -161,35 +162,26 @@ func nodeStakeRpl(c *cli.Context) error {
 
 	}
 
-	// Get min/max per minipool RPL stake amounts
+	// Get RPL price
 	rplPrice, err := rp.RplPrice()
 	if err != nil {
 		return err
 	}
 
-	// Get stake amount
 	var amountWei *big.Int
-	if c.String("amount") == "5%" {
-		// Set RPL stake amount to 5% of borrowed ETH for one minipool
-		amountWei = rplPrice.FivePercentBorrowedRplStake
 
-	} else if c.String("amount") == "10%" {
-
-		// Set RPL stake amount to 10% of borrowed ETH for one minipool
-		amountWei = rplPrice.TenPercentBorrowedRplStake
-
-	} else if c.String("amount") == "15%" {
-
-		// Set RPL stake amount to 15% of borrowed ETH for one minipool
-		amountWei = rplPrice.FifteenPercentBorrowedRplStake
+	// Amount flag custom percentage input
+	if strings.HasSuffix(c.String("amount"), "%") {
+		amountWei, err = parsePercentageInput(c.String("amount"), rplPrice.RplPrice)
+		if err != nil {
+			return fmt.Errorf("Invalid stake amount '%s': %w", c.String("amount"), err)
+		}
 
 	} else if c.String("amount") == "all" {
-
 		// Set amount to node's entire RPL balance
 		amountWei = &rplBalance
 
 	} else if c.String("amount") != "" {
-
 		// Parse amount
 		stakeAmount, err := strconv.ParseFloat(c.String("amount"), 64)
 		if err != nil {
@@ -199,9 +191,11 @@ func nodeStakeRpl(c *cli.Context) error {
 
 	} else {
 		// Get the RPL stake amounts for 5,10,15% borrowed ETH per LEB8
-		fivePercentBorrowedRplStake := rplPrice.FivePercentBorrowedRplStake
-		tenPercentBorrowedRplStake := rplPrice.TenPercentBorrowedRplStake
-		fifteenPercentBorrowedRplStake := rplPrice.FifteenPercentBorrowedRplStake
+		fivePercentBorrowedPerMinipool := new(big.Int)
+		fivePercentBorrowedPerMinipool.SetString("50000000000000000", 10)
+		fivePercentBorrowedRplStake := borrowedRplStake(fivePercentBorrowedPerMinipool, rplPrice.RplPrice)
+		tenPercentBorrowedRplStake := new(big.Int).Mul(fivePercentBorrowedRplStake, big.NewInt(2))
+		fifteenPercentBorrowedRplStake := new(big.Int).Mul(fivePercentBorrowedRplStake, big.NewInt(3))
 
 		// Prompt for amount option
 		amountOptions := []string{
@@ -210,8 +204,12 @@ func nodeStakeRpl(c *cli.Context) error {
 			fmt.Sprintf("15%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(fifteenPercentBorrowedRplStake), 6)),
 			fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&rplBalance), 6)),
 			"A custom amount",
+			"A custom percentage",
 		}
 		selected, _ := cliutils.Select("Please choose an amount of RPL to stake:", amountOptions)
+
+		var customAmount bool
+		var customPercentage bool
 		switch selected {
 		case 0:
 			amountWei = fivePercentBorrowedRplStake
@@ -221,10 +219,14 @@ func nodeStakeRpl(c *cli.Context) error {
 			amountWei = fifteenPercentBorrowedRplStake
 		case 3:
 			amountWei = &rplBalance
+		case 4:
+			customAmount = true
+		case 5:
+			customPercentage = true
 		}
 
 		// Prompt for custom amount
-		if amountWei == nil {
+		if customAmount == true {
 			inputAmount := cliutils.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 			stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
@@ -232,7 +234,14 @@ func nodeStakeRpl(c *cli.Context) error {
 			}
 			amountWei = eth.EthToWei(stakeAmount)
 		}
-
+		// Prompt for custom percentage
+		if customPercentage == true {
+			inputPercentage := cliutils.Prompt("Please specify a percentage of borrowed ETH as RPL to stake: (e.g 3%, 3.5%, 15%, etc)", "^(0|[1-9][0-9]*)(\\.[0-9]+)?%$", "Invalid amount")
+			amountWei, err = parsePercentageInput(inputPercentage, rplPrice.RplPrice)
+			if err != nil {
+				return fmt.Errorf("Invalid stake amount '%s': %w", inputPercentage, err)
+			}
+		}
 	}
 
 	// Check allowance
@@ -335,5 +344,28 @@ func nodeStakeRpl(c *cli.Context) error {
 	// Log & return
 	fmt.Printf("Successfully staked %.6f RPL.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
 	return nil
+
+}
+
+func borrowedRplStake(borrowedPerMinipool *big.Int, rplPrice *big.Int) *big.Int {
+	percentBorrowedRplStake := big.NewInt(0)
+	percentBorrowedRplStake.Mul(eth.EthToWei(24), borrowedPerMinipool)
+	percentBorrowedRplStake.Div(percentBorrowedRplStake, rplPrice)
+	percentBorrowedRplStake.Add(percentBorrowedRplStake, big.NewInt(1))
+	amountWei := percentBorrowedRplStake
+
+	return amountWei
+
+}
+
+func parsePercentageInput(customInput string, rplPrice *big.Int) (*big.Int, error) {
+	trimmedInput := strings.TrimSuffix(customInput, "%")
+	stakePercent, err := strconv.ParseFloat(trimmedInput, 64)
+	if err != nil {
+		return nil, err
+	}
+	amountWei := borrowedRplStake(eth.EthToWei(stakePercent/100), rplPrice)
+
+	return amountWei, err
 
 }

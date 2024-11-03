@@ -2,6 +2,8 @@ package node
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/urfave/cli"
 
@@ -320,7 +322,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of RPL to stake (also accepts '5%', '10%', or '15%' for 8-ETH minipools, or 'all' for all of your RPL)",
+						Usage: "The amount of RPL to stake (also accepts custom percentages for 8-ETH minipools (eg. 3% of borrowed ETH as RPL), or 'all' for all of your RPL)",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -339,13 +341,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Validate flags
-					if c.String("amount") != "" &&
-						c.String("amount") != "5%" &&
-						c.String("amount") != "10%" &&
-						c.String("amount") != "15%" &&
-						c.String("amount") != "all" {
-						if _, err := cliutils.ValidatePositiveEthAmount("stake amount", c.String("amount")); err != nil {
-							return err
+					amount := c.String("amount")
+					if amount != "" {
+						if strings.HasSuffix(amount, "%") {
+							trimmedAmount := strings.TrimSuffix(amount, "%")
+							stakePercent, err := strconv.ParseFloat(trimmedAmount, 64)
+							if err != nil || stakePercent <= 0 {
+								return fmt.Errorf("invalid percentage value: %s", amount)
+							}
+
+						} else if amount != "all" {
+							// Validate it as a positive ETH amount if it's not a percentage or "all"
+							if _, err := cliutils.ValidatePositiveEthAmount("stake amount", amount); err != nil {
+								return err
+							}
 						}
 					}
 
