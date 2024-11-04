@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
@@ -37,7 +38,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *colle
 	if err != nil {
 		return err
 	}
-	s, err := services.GetSnapshotDelegation(c)
+	reg, err := services.GetRocketSignerRegistry(c)
 	if err != nil {
 		return err
 	}
@@ -80,14 +81,14 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *colle
 	registry.MustRegister(smoothingPoolCollector)
 
 	// Set up snapshot checking if enabled
-	votingId := cfg.Smartnode.GetVotingSnapshotID()
-	if s != nil {
-		votingDelegate, err := s.Delegation(nil, nodeAccount.Address, votingId)
+	if cfg.Smartnode.GetRocketSignerRegistryAddress() != "" {
+		signallingAddress, err := reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
 		if err != nil {
-			return fmt.Errorf("Error getting node delegate: %w", err)
+			return fmt.Errorf("Error getting the signalling address: %w", err)
 		}
-		snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, nodeAccount.Address, votingDelegate)
+		snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, nodeAccount.Address, signallingAddress)
 		registry.MustRegister(snapshotCollector)
+
 	}
 
 	// Start the HTTP server
