@@ -202,12 +202,9 @@ func nodeStakeRpl(c *cli.Context) error {
 			fmt.Sprintf("15%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(fifteenPercentBorrowedRplStake), 6)),
 			fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&rplBalance), 6)),
 			"A custom amount",
-			"A custom percentage",
 		}
 		selected, _ := cliutils.Select("Please choose an amount of RPL to stake:", amountOptions)
 
-		var customAmount bool
-		var customPercentage bool
 		switch selected {
 		case 0:
 			amountWei = fivePercentBorrowedRplStake
@@ -217,26 +214,21 @@ func nodeStakeRpl(c *cli.Context) error {
 			amountWei = fifteenPercentBorrowedRplStake
 		case 3:
 			amountWei = &rplBalance
-		case 4:
-			customAmount = true
-		case 5:
-			customPercentage = true
 		}
 
-		// Prompt for custom amount
-		if customAmount == true {
-			inputAmount := cliutils.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
-			stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
-			if err != nil {
-				return fmt.Errorf("Invalid stake amount '%s': %w", inputAmount, err)
+		// Prompt for custom amount or percentage
+		if amountWei == nil {
+			inputAmountOrPercent := cliutils.Prompt("Please enter an amount of RPL or percentage of borrowed ETH to stake. (e.g '50' for 50 RPL or '5%' for 5% borrowed ETH as RPL):", "^(0|[1-9]\\d*)(\\.\\d+)?%?$", "Invalid amount")
+			if strings.HasSuffix(inputAmountOrPercent, "%") {
+				fmt.Sscanf(inputAmountOrPercent, "%f%%", &stakePercent)
+				amountWei = rplStakeForLEB8(eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
+			} else {
+				stakeAmount, err := strconv.ParseFloat(inputAmountOrPercent, 64)
+				if err != nil {
+					return fmt.Errorf("Invalid stake amount '%s': %w", inputAmountOrPercent, err)
+				}
+				amountWei = eth.EthToWei(stakeAmount)
 			}
-			amountWei = eth.EthToWei(stakeAmount)
-		}
-		// Prompt for custom percentage
-		if customPercentage == true {
-			inputPercentage := cliutils.Prompt("Please specify a percentage of borrowed ETH as RPL to stake: (e.g 3%, 3.5%, 15%, etc)", "^(0|[1-9][0-9]*)(\\.[0-9]+)?%$", "Invalid amount")
-			fmt.Sscanf(inputPercentage, "%f%%", &stakePercent)
-			amountWei = rplStakeForLEB8(eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
 		}
 	}
 
