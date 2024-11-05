@@ -133,7 +133,18 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 	}
 
 	// Make a new rolling manager
-	recordMgr, err := rprewards.NewRollingRecordManager(&task.log, &task.errLog, cfg, rprewards.NewRewardsExecutionClient(rp), bc, stateMgr, startSlot, beaconCfg, currentIndex)
+	settings := rprewards.RollingRecordManagerSettings{
+		RP:                           rprewards.NewRewardsExecutionClient(rp),
+		BC:                           bc,
+		Log:                          &task.log,
+		ErrLog:                       &task.errLog,
+		RecordsPath:                  cfg.Smartnode.GetRecordsPath(),
+		CheckpointRetentionLimit:     cfg.Smartnode.CheckpointRetentionLimit.Value.(uint64),
+		RecordCheckpointInterval:     cfg.Smartnode.RecordCheckpointInterval.Value.(uint64),
+		PreviousRewardsPoolAddresses: cfg.Smartnode.GetPreviousRewardsPoolAddresses(),
+		StateProvider:                stateMgr,
+	}
+	recordMgr, err := rprewards.NewRollingRecordManager(startSlot, currentIndex, settings)
 	if err != nil {
 		return nil, fmt.Errorf("error creating rolling record manager: %w", err)
 	}

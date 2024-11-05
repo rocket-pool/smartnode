@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/blang/semver/v4"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/klauspost/compress/zstd"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -27,6 +28,10 @@ const (
 	latestCompatibleVersionString string = "1.11.0-dev"
 )
 
+type StateProvider interface {
+	GetStateForSlot(slotNumber uint64) (*state.NetworkState, error)
+}
+
 // Manager for RollingRecords
 type RollingRecordManager struct {
 	Record                       *RollingRecord
@@ -37,12 +42,16 @@ type RollingRecordManager struct {
 	log             *log.ColorLogger
 	errLog          *log.ColorLogger
 	logPrefix       string
-	cfg             *config.RocketPoolConfig
 	rp              RewardsExecutionClient
 	bc              beacon.Client
-	mgr             *state.NetworkStateManager
+	mgr             StateProvider
 	startSlot       uint64
 	nextEpochToSave uint64
+
+	recordsPath                  string
+	checkpointRetentionLimit     uint64
+	recordCheckpointInterval     uint64
+	previousRewardsPoolAddresses []common.Address
 
 	beaconCfg            beacon.Eth2Config
 	genesisTime          time.Time
@@ -51,8 +60,25 @@ type RollingRecordManager struct {
 	recordsFilenameRegex *regexp.Regexp
 }
 
+type RollingRecordManagerSettings struct {
+	RP                           RewardsExecutionClient
+	BC                           beacon.Client
+	Log                          *log.ColorLogger
+	ErrLog                       *log.ColorLogger
+	RecordsPath                  string
+	CheckpointRetentionLimit     uint64
+	RecordCheckpointInterval     uint64
+	PreviousRewardsPoolAddresses []common.Address
+	StateProvider                StateProvider
+}
+
 // Creates a new manager for rolling records.
-func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg *config.RocketPoolConfig, rp RewardsExecutionClient, bc beacon.Client, mgr *state.NetworkStateManager, startSlot uint64, beaconCfg beacon.Eth2Config, rewardsInterval uint64) (*RollingRecordManager, error) {
+func NewRollingRecordManager(startSlot uint64, rewardsInterval uint64, settings RollingRecordManagerSettings) (*RollingRecordManager, error) {
+	beaconCfg, err := settings.BC.GetEth2Config()
+	if err != nil {
+		return nil, fmt.Errorf("error getting beacon config: %w", err)
+	}
+
 	// Get the Beacon genesis time
 	genesisTime := time.Unix(int64(beaconCfg.GenesisTime), 0)
 
@@ -70,37 +96,39 @@ func NewRollingRecordManager(log *log.ColorLogger, errLog *log.ColorLogger, cfg 
 	recordsFilenameRegex := regexp.MustCompile(recordsFilenamePattern)
 
 	// Make the records folder if it doesn't exist
-	recordsPath := cfg.Smartnode.GetRecordsPath()
-	fileInfo, err := os.Stat(recordsPath)
+	fileInfo, err := os.Stat(settings.RecordsPath)
 	if os.IsNotExist(err) {
-		err2 := os.MkdirAll(recordsPath, 0755)
+		err2 := os.MkdirAll(settings.RecordsPath, 0755)
 		if err2 != nil {
 			return nil, fmt.Errorf("error creating rolling records folder: %w", err)
 		}
 	} else if err != nil {
 		return nil, fmt.Errorf("error checking rolling records folder: %w", err)
 	} else if !fileInfo.IsDir() {
-		return nil, fmt.Errorf("rolling records folder location exists (%s), but is not a folder", recordsPath)
+		return nil, fmt.Errorf("rolling records folder location exists (%s), but is not a folder", settings.RecordsPath)
 	}
 
 	logPrefix := "[Rolling Record]"
-	log.Printlnf("%s Created Rolling Record manager for start slot %d.", logPrefix, startSlot)
+	settings.Log.Printlnf("%s Created Rolling Record manager for start slot %d.", logPrefix, startSlot)
 	return &RollingRecordManager{
-		Record: NewRollingRecord(log, logPrefix, bc, startSlot, &beaconCfg, rewardsInterval),
+		Record: NewRollingRecord(settings.Log, logPrefix, settings.BC, startSlot, &beaconCfg, rewardsInterval),
 
-		log:                  log,
-		errLog:               errLog,
-		logPrefix:            logPrefix,
-		cfg:                  cfg,
-		rp:                   rp,
-		bc:                   bc,
-		mgr:                  mgr,
-		startSlot:            startSlot,
-		beaconCfg:            beaconCfg,
-		genesisTime:          genesisTime,
-		compressor:           encoder,
-		decompressor:         decoder,
-		recordsFilenameRegex: recordsFilenameRegex,
+		log:                          settings.Log,
+		errLog:                       settings.ErrLog,
+		logPrefix:                    logPrefix,
+		rp:                           settings.RP,
+		bc:                           settings.BC,
+		mgr:                          settings.StateProvider,
+		startSlot:                    startSlot,
+		beaconCfg:                    beaconCfg,
+		genesisTime:                  genesisTime,
+		compressor:                   encoder,
+		decompressor:                 decoder,
+		recordsFilenameRegex:         recordsFilenameRegex,
+		recordsPath:                  settings.RecordsPath,
+		checkpointRetentionLimit:     settings.CheckpointRetentionLimit,
+		recordCheckpointInterval:     settings.RecordCheckpointInterval,
+		previousRewardsPoolAddresses: settings.PreviousRewardsPoolAddresses,
 	}, nil
 }
 
@@ -147,8 +175,7 @@ func (r *RollingRecordManager) SaveRecordToFile(record *RollingRecord) error {
 	// Get the record filename
 	slot := record.LastDutiesSlot
 	epoch := record.LastDutiesSlot / r.beaconCfg.SlotsPerEpoch
-	recordsPath := r.cfg.Smartnode.GetRecordsPath()
-	filename := filepath.Join(recordsPath, fmt.Sprintf(recordsFilenameFormat, slot, epoch))
+	filename := filepath.Join(r.recordsPath, fmt.Sprintf(recordsFilenameFormat, slot, epoch))
 
 	// Write it to a file
 	err = os.WriteFile(filename, compressedBytes, 0664)
@@ -193,10 +220,9 @@ func (r *RollingRecordManager) SaveRecordToFile(record *RollingRecord) error {
 	}
 
 	// Get the number of lines to write
-	checkpointRetentionLimit := r.cfg.Smartnode.CheckpointRetentionLimit.Value.(uint64)
 	var newLines []string
-	if len(lines) > int(checkpointRetentionLimit) {
-		numberOfNewLines := int(checkpointRetentionLimit)
+	if len(lines) > int(r.checkpointRetentionLimit) {
+		numberOfNewLines := int(r.checkpointRetentionLimit)
 		cullCount := len(lines) - numberOfNewLines
 
 		// Remove old lines and delete the corresponding files that shouldn't be retained
@@ -209,7 +235,7 @@ func (r *RollingRecordManager) SaveRecordToFile(record *RollingRecord) error {
 				return fmt.Errorf("error parsing checkpoint line (%s): expected 2 elements, but got %d", line, len(elems))
 			}
 			filename := elems[1]
-			fullFilename := filepath.Join(recordsPath, filename)
+			fullFilename := filepath.Join(r.recordsPath, filename)
 
 			// Delete the file if it exists
 			_, err := os.Stat(fullFilename)
@@ -238,7 +264,7 @@ func (r *RollingRecordManager) SaveRecordToFile(record *RollingRecord) error {
 	checksumBytes := []byte(fileContents)
 
 	// Save the new file
-	checksumFilename := filepath.Join(recordsPath, config.ChecksumTableFilename)
+	checksumFilename := filepath.Join(r.recordsPath, config.ChecksumTableFilename)
 	err = os.WriteFile(checksumFilename, checksumBytes, 0644)
 	if err != nil {
 		return fmt.Errorf("error writing checksum file after culling: %w", err)
@@ -249,7 +275,6 @@ func (r *RollingRecordManager) SaveRecordToFile(record *RollingRecord) error {
 
 // Load the most recent appropriate rolling record from disk, using the checksum table as an index
 func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSlot uint64, rewardsInterval uint64) (*RollingRecord, error) {
-	recordCheckpointInterval := r.cfg.Smartnode.RecordCheckpointInterval.Value.(uint64)
 	latestCompatibleVersion, err := semver.New(latestCompatibleVersionString)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing latest compatible version string [%s]: %w", latestCompatibleVersionString, err)
@@ -265,12 +290,11 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 		r.log.Printlnf("%s Checksum file not found, creating a new record from the start of the interval.", r.logPrefix)
 		record := NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg, rewardsInterval)
 		r.Record = record
-		r.nextEpochToSave = startSlot/r.beaconCfg.SlotsPerEpoch + recordCheckpointInterval - 1
+		r.nextEpochToSave = startSlot/r.beaconCfg.SlotsPerEpoch + r.recordCheckpointInterval - 1
 		return record, nil
 	}
 
 	// Iterate over each file, counting backwards from the bottom
-	recordsPath := r.cfg.Smartnode.GetRecordsPath()
 	for i := len(lines) - 1; i >= 0; i-- {
 		line := lines[i]
 
@@ -299,7 +323,7 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 		}
 
 		// Try to load it
-		fullFilename := filepath.Join(recordsPath, filename)
+		fullFilename := filepath.Join(r.recordsPath, filename)
 		record, err := r.loadRecordFromFile(fullFilename, checksum)
 		if err != nil {
 			r.log.Printlnf("%s WARNING: error loading record from file [%s]: %s... attempting previous file", r.logPrefix, fullFilename, err.Error())
@@ -336,7 +360,7 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 		epoch := slot / r.beaconCfg.SlotsPerEpoch
 		r.log.Printlnf("%s Loaded file [%s] which ended on slot %d (epoch %d) for rewards interval %d.", r.logPrefix, filename, slot, epoch, record.RewardsInterval)
 		r.Record = record
-		r.nextEpochToSave = record.LastDutiesSlot/r.beaconCfg.SlotsPerEpoch + recordCheckpointInterval
+		r.nextEpochToSave = record.LastDutiesSlot/r.beaconCfg.SlotsPerEpoch + r.recordCheckpointInterval
 		return record, nil
 
 	}
@@ -345,7 +369,7 @@ func (r *RollingRecordManager) LoadBestRecordFromDisk(startSlot uint64, targetSl
 	r.log.Printlnf("%s None of the saved record checkpoint files were eligible for use, creating a new record from the start of the interval.", r.logPrefix)
 	record := NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg, rewardsInterval)
 	r.Record = record
-	r.nextEpochToSave = startSlot/r.beaconCfg.SlotsPerEpoch + recordCheckpointInterval - 1
+	r.nextEpochToSave = startSlot/r.beaconCfg.SlotsPerEpoch + r.recordCheckpointInterval - 1
 	return record, nil
 
 }
@@ -384,7 +408,6 @@ func (r *RollingRecordManager) updateImpl(state *state.NetworkState, latestFinal
 	}
 
 	// Get the state for the target slot
-	recordCheckpointInterval := r.cfg.Smartnode.RecordCheckpointInterval.Value.(uint64)
 	finalTarget := latestFinalizedSlot
 	finalizedState := state
 	if finalTarget != state.BeaconSlotNumber {
@@ -437,7 +460,7 @@ func (r *RollingRecordManager) updateImpl(state *state.NetworkState, latestFinal
 				return fmt.Errorf("error saving record: %w", err)
 			}
 			r.log.Printlnf("%s Saved record checkpoint.", r.logPrefix)
-			r.nextEpochToSave += recordCheckpointInterval // Set the next epoch to save 1 checkpoint in the future
+			r.nextEpochToSave += r.recordCheckpointInterval // Set the next epoch to save 1 checkpoint in the future
 		}
 
 		nextStartSlot = nextTargetSlot + 1
@@ -534,8 +557,7 @@ func (r *RollingRecordManager) loadRecordFromFile(filename string, expectedCheck
 // Get the lines from the checksum file
 func (r *RollingRecordManager) parseChecksumFile() (bool, []string, error) {
 	// Get the checksum filename
-	recordsPath := r.cfg.Smartnode.GetRecordsPath()
-	checksumFilename := filepath.Join(recordsPath, config.ChecksumTableFilename)
+	checksumFilename := filepath.Join(r.recordsPath, config.ChecksumTableFilename)
 
 	// Check if the file exists
 	_, err := os.Stat(checksumFilename)
@@ -613,11 +635,8 @@ func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error 
 	}
 	currentIndex := currentIndexBig.Uint64()
 
-	// Get the previous RocketRewardsPool addresses
-	prevAddresses := r.cfg.Smartnode.GetPreviousRewardsPoolAddresses()
-
 	// Get the last rewards event and starting epoch
-	found, event, err := r.rp.GetRewardsEvent(currentIndex-1, prevAddresses, nil)
+	found, event, err := r.rp.GetRewardsEvent(currentIndex-1, r.previousRewardsPoolAddresses, nil)
 	if err != nil {
 		return fmt.Errorf("error getting event for rewards interval %d: %w", currentIndex-1, err)
 	}
@@ -636,8 +655,7 @@ func (r *RollingRecordManager) createNewRecord(state *state.NetworkState) error 
 	r.log.Printlnf("%s Current record is for interval %d which has passed, creating a new record for interval %d starting on slot %d (epoch %d).", r.logPrefix, r.Record.RewardsInterval, state.NetworkDetails.RewardIndex, startSlot, newEpoch)
 	r.Record = NewRollingRecord(r.log, r.logPrefix, r.bc, startSlot, &r.beaconCfg, state.NetworkDetails.RewardIndex)
 	r.startSlot = startSlot
-	recordCheckpointInterval := r.cfg.Smartnode.RecordCheckpointInterval.Value.(uint64)
-	r.nextEpochToSave = startSlot/r.beaconCfg.SlotsPerEpoch + recordCheckpointInterval - 1
+	r.nextEpochToSave = startSlot/r.beaconCfg.SlotsPerEpoch + r.recordCheckpointInterval - 1
 
 	return nil
 }
