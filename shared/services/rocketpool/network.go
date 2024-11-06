@@ -40,12 +40,6 @@ func (c *Client) RplPrice() (api.RplPriceResponse, error) {
 	if response.RplPrice == nil {
 		response.RplPrice = big.NewInt(0)
 	}
-	if response.MinPer8EthMinipoolRplStake == nil {
-		response.MinPer8EthMinipoolRplStake = big.NewInt(0)
-	}
-	if response.MinPer16EthMinipoolRplStake == nil {
-		response.MinPer16EthMinipoolRplStake = big.NewInt(0)
-	}
 	return response, nil
 }
 

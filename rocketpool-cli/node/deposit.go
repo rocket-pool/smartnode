@@ -18,7 +18,7 @@ import (
 // Config
 const (
 	defaultMaxNodeFeeSlippage = 0.01 // 1% below current network fee
-	depositWarningMessage     = "NOTE: by creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool."
+	depositWarningMessage     = "NOTE: By creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool."
 )
 
 func nodeDeposit(c *cli.Context) error {
@@ -92,7 +92,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Post a warning about fee distribution
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -100,15 +100,18 @@ func nodeDeposit(c *cli.Context) error {
 	// Get deposit amount
 	var amount float64
 
-	// Get deposit amount options
-	amountOptions := []string{
-		"8 ETH",
-	}
-
-	// Prompt for amount
-	selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-	switch selected {
-	case 0:
+	if c.String("amount") != "" {
+		// Parse amount
+		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		if err != nil {
+			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
+		}
+		amount = depositAmount
+	} else {
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to make an 8 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
 		amount = 8
 	}
 
