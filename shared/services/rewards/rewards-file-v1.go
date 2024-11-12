@@ -100,6 +100,9 @@ func (p *SmoothingPoolMinipoolPerformance_v1) GetEffectiveCommission() *big.Int 
 func (p *SmoothingPoolMinipoolPerformance_v1) GetConsensusIncome() *big.Int {
 	return big.NewInt(0)
 }
+func (p *SmoothingPoolMinipoolPerformance_v1) GetAttestationScore() *big.Int {
+	return big.NewInt(0)
+}
 
 // Node operator rewards
 type NodeRewardsInfo_v1 struct {

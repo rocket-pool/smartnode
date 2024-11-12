@@ -154,6 +154,7 @@ type ISmoothingPoolMinipoolPerformance interface {
 	GetBonusEthEarned() *big.Int
 	GetEffectiveCommission() *big.Int
 	GetConsensusIncome() *big.Int
+	GetAttestationScore() *big.Int
 }
 
 // Small struct to test version information for rewards files during deserialization

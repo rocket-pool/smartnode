@@ -10,7 +10,9 @@ import (
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/rewards/fees"
 	"github.com/rocket-pool/smartnode/shared/services/state"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 	"golang.org/x/sync/errgroup"
 )
@@ -36,6 +38,8 @@ type RollingRecord struct {
 	RewardsInterval   uint64                   `json:"rewardsInterval"`
 	SmartnodeVersion  string                   `json:"smartnodeVersion,omitempty"`
 	BCBalanceMap      map[string]BCBalances    `json:"bcBalanceMap"`
+	RulesetVersion    uint64                   `json:"rulesetVersion"`
+	Network           cfgtypes.Network         `json:"network"`
 
 	// Private fields
 	bc                 RewardsBeaconClient `json:"-"`
@@ -47,13 +51,16 @@ type RollingRecord struct {
 }
 
 // Create a new rolling record wrapper
-func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc RewardsBeaconClient, startSlot uint64, beaconConfig *beacon.Eth2Config, rewardsInterval uint64) *RollingRecord {
+func NewRollingRecord(log *log.ColorLogger, logPrefix string, network cfgtypes.Network, bc RewardsBeaconClient, startSlot uint64, beaconConfig *beacon.Eth2Config, rewardsInterval uint64) *RollingRecord {
+	rulesetVersion := GetRulesetVersion(network, rewardsInterval)
 	return &RollingRecord{
 		StartSlot:         startSlot,
 		LastDutiesSlot:    0,
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
 		RewardsInterval:   rewardsInterval,
 		SmartnodeVersion:  shared.RocketPoolVersion,
+		RulesetVersion:    rulesetVersion,
+		Network:           network,
 
 		bc:           bc,
 		beaconConfig: beaconConfig,
@@ -182,6 +189,8 @@ func (r *RollingRecord) Serialize() ([]byte, error) {
 		LastDutiesSlot:    r.LastDutiesSlot,
 		RewardsInterval:   r.RewardsInterval,
 		SmartnodeVersion:  r.SmartnodeVersion,
+		RulesetVersion:    r.RulesetVersion,
+		Network:           r.Network,
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
 		// Don't bother cloning the balance map since it isn't
 		// stripped like the ValidatorIndexMap
@@ -423,7 +432,19 @@ func (r *RollingRecord) processAttestationsInSlot(inclusionSlot uint64, attestat
 
 						// Get the pseudoscore for this attestation
 						details := state.MinipoolDetailsByAddress[validator.Address]
-						minipoolScore := details.GetMinipoolAttestationScore(blockTime)
+						bond, fee := details.GetMinipoolBondAndNodeFee(blockTime)
+
+						if r.RulesetVersion >= 10 {
+							nnd := state.NodeDetailsByAddress[validator.NodeAddress]
+							eligibleBorrowedEth := state.GetEligibleBorrowedEth(nnd)
+							_, percentOfBorrowedEth := state.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nnd.RplStake)
+							fee = fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
+						}
+
+						minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
+						minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
+						minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
+						minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
 
 						// Add it to the minipool's score
 						validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)

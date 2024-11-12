@@ -111,6 +111,9 @@ func (p *SmoothingPoolMinipoolPerformance_v2) GetConsensusIncome() *big.Int {
 	}
 	return &p.ConsensusIncome.Int
 }
+func (p *SmoothingPoolMinipoolPerformance_v2) GetAttestationScore() *big.Int {
+	return &p.AttestationScore.Int
+}
 
 // Node operator rewards
 type NodeRewardsInfo_v2 struct {

@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/rewards/fees"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
 
@@ -45,6 +46,9 @@ func (h *MockHistory) GetNodeAddress() common.Address {
 	return h.lastNodeAddress
 }
 
+var oneEth = big.NewInt(1000000000000000000)
+var thirtyTwoEth = big.NewInt(0).Mul(oneEth, big.NewInt(32))
+
 func (h *MockHistory) GetMinipoolAttestationScoreAndCount(address common.Address, state *state.NetworkState) (*big.Int, uint64) {
 	out := big.NewInt(0)
 	mpi := state.MinipoolDetailsByAddress[address]
@@ -74,9 +78,16 @@ func (h *MockHistory) GetMinipoolAttestationScoreAndCount(address common.Address
 		if indexInt%32 == uint64(slot%32) {
 			count++
 
+			bond, fee := mpi.GetMinipoolBondAndNodeFee(blockTime)
 			// Give the minipool a score according to its fee
-			score := mpi.GetMinipoolAttestationScore(blockTime)
-			out.Add(out, score)
+			eligibleBorrowedEth := state.GetEligibleBorrowedEth(nodeDetails)
+			_, percentOfBorrowedEth := state.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
+			fee = fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
+			minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
+			minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
+			minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
+			minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
+			out.Add(out, minipoolScore)
 		}
 	}
 	return out, count

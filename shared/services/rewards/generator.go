@@ -57,6 +57,39 @@ const (
 	HoleskyV10Interval uint64 = 300
 )
 
+func GetMainnetRulesetVersion(interval uint64) uint64 {
+	if interval >= MainnetV10Interval {
+		return 10
+	}
+	if interval >= MainnetV9Interval {
+		return 9
+	}
+	return 8
+}
+
+func GetHoleskyRulesetVersion(interval uint64) uint64 {
+	if interval >= HoleskyV10Interval {
+		return 10
+	}
+	if interval >= HoleskyV9Interval {
+		return 9
+	}
+	return 8
+}
+
+func GetRulesetVersion(network cfgtypes.Network, interval uint64) uint64 {
+	switch network {
+	case cfgtypes.Network_Mainnet:
+		return GetMainnetRulesetVersion(interval)
+	case cfgtypes.Network_Holesky:
+		return GetHoleskyRulesetVersion(interval)
+	case cfgtypes.Network_Devnet:
+		return 10
+	default:
+		return 10
+	}
+}
+
 type TreeGenerator struct {
 	rewardsIntervalInfos map[uint64]rewardsIntervalInfo
 	logger               *log.ColorLogger

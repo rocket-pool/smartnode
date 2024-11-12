@@ -25,6 +25,7 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
@@ -143,6 +144,7 @@ func newSubmitRewardsTree_Rolling(c *cli.Context, logger log.ColorLogger, errorL
 		RecordCheckpointInterval:     cfg.Smartnode.RecordCheckpointInterval.Value.(uint64),
 		PreviousRewardsPoolAddresses: cfg.Smartnode.GetPreviousRewardsPoolAddresses(),
 		StateProvider:                stateMgr,
+		Network:                      cfg.Smartnode.Network.Value.(cfgtypes.Network),
 	}
 	recordMgr, err := rprewards.NewRollingRecordManager(startSlot, currentIndex, settings)
 	if err != nil {

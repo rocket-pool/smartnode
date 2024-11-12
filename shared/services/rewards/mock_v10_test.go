@@ -69,7 +69,9 @@ func getRollingRecord(history *test.MockHistory, state *state.NetworkState, defa
 		LastDutiesSlot:    history.BeaconConfig.LastSlotOfEpoch(history.EndEpoch),
 		ValidatorIndexMap: validatorIndexMap,
 		RewardsInterval:   history.NetworkDetails.RewardIndex,
-		SmartnodeVersion:  shared.RocketPoolVersion,
+		RulesetVersion:    10,
+
+		SmartnodeVersion: shared.RocketPoolVersion,
 	}
 }
 
@@ -237,7 +239,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 		expectedEthAmount := big.NewInt(0)
 		if node.SmoothingPoolRegistrationState {
 			if node.Class == "single_eight_eth_sp" {
-				expectedEthAmount.SetString("1330515055467511885", 10)
+				expectedEthAmount.SetString("1450562599049128367", 10)
 				// There should be a bonus for these nodes' minipools
 				if len(node.Minipools) != 1 {
 					t.Fatalf("Expected 1 minipool for node %s, got %d", node.Notes, len(node.Minipools))
@@ -250,6 +252,14 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 				if minipoolPerf.GetBonusEthEarned().Cmp(expectedBonusEthEarned) != 0 {
 					t.Fatalf("Minipool %s bonus does not match expected value: %s != %s", node.Minipools[0].Address.Hex(), minipoolPerf.GetBonusEthEarned().String(), expectedBonusEthEarned.String())
 				}
+				expectedAttestationScore := big.NewInt(0).Sub(oneEth, big.NewInt(14e16))
+				expectedAttestationScore.Mul(expectedAttestationScore, eightEth)
+				expectedAttestationScore.Div(expectedAttestationScore, thirtyTwoEth)
+				expectedAttestationScore.Add(expectedAttestationScore, big.NewInt(14e16))
+				expectedAttestationScore.Mul(expectedAttestationScore, big.NewInt(101)) // there are 101 epochs in the interval
+				if minipoolPerf.GetAttestationScore().Cmp(expectedAttestationScore) != 0 {
+					t.Fatalf("Minipool %s attestation score does not match expected value: %s != %s", node.Minipools[0].Address.Hex(), minipoolPerf.GetAttestationScore().String(), expectedAttestationScore.String())
+				}
 			} else {
 				// 16-eth minipools earn more eth! A bit less than double.
 				expectedEthAmount.SetString("2200871632329635499", 10)
@@ -257,6 +267,15 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 					t.Fatalf("Expected 1 minipool for node %s, got %d", node.Notes, len(node.Minipools))
 				}
 				minipoolPerf, _ := minipoolPerformanceFile.GetSmoothingPoolPerformance(node.Minipools[0].Address)
+				// The 16 eth minipools earn 10% on 24/32.
+				expectedAttestationScore := big.NewInt(0).Sub(oneEth, big.NewInt(1e17))
+				expectedAttestationScore.Mul(expectedAttestationScore, sixteenEth)
+				expectedAttestationScore.Div(expectedAttestationScore, thirtyTwoEth)
+				expectedAttestationScore.Add(expectedAttestationScore, big.NewInt(1e17))
+				expectedAttestationScore.Mul(expectedAttestationScore, big.NewInt(101)) // there are 101 epochs in the interval
+				if minipoolPerf.GetAttestationScore().Cmp(expectedAttestationScore) != 0 {
+					t.Fatalf("Minipool %s attestation score does not match expected value: %s != %s", node.Minipools[0].Address.Hex(), minipoolPerf.GetAttestationScore().String(), expectedAttestationScore.String())
+				}
 				// 16 eth minipools earn no bonus.
 				if minipoolPerf.GetBonusEthEarned().Sign() != 0 {
 					t.Fatalf("Minipool %s bonus does not match expected value: %s != 0", node.Minipools[0].Address.Hex(), minipoolPerf.GetBonusEthEarned().String())
@@ -307,7 +326,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 		expectedEthAmount := big.NewInt(0)
 		if node.Class == "single_eight_eth_opted_in_quarter" {
 			// About 3/4 what the full nodes got
-			expectedEthAmount.SetString("1001105388272583201", 10)
+			expectedEthAmount.SetString("1091438193343898573", 10)
 			// Earns 3/4 the bonus of a node that was in for the whole interval
 			expectedBonusEthEarned, _ := big.NewInt(0).SetString("22500000000000000", 10)
 			if perf.GetBonusEthEarned().Cmp(expectedBonusEthEarned) != 0 {
@@ -357,7 +376,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 		expectedEthAmount := big.NewInt(0)
 		if node.Class == "single_eight_eth_opted_out_three_quarters" {
 			// About 3/4 what the full nodes got
-			expectedEthAmount.SetString("988229001584786053", 10)
+			expectedEthAmount.SetString("1077373217115689381", 10)
 			// Earns 3/4 the bonus of a node that was in for the whole interval
 			expectedBonusEthEarned, _ := big.NewInt(0).SetString("22500000000000000", 10)
 			if perf.GetBonusEthEarned().Cmp(expectedBonusEthEarned) != 0 {
@@ -401,7 +420,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 
 		// Make sure it got reduced ETH
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
-		expectedEthAmount, _ := big.NewInt(0).SetString("1860285261489698890", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("1920903328050713153", 10)
 		if ethAmount.Cmp(expectedEthAmount) != 0 {
 			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
 		}
@@ -444,12 +463,12 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 	v10MerkleRoot := v10Artifacts.RewardsFile.GetMerkleRoot()
 
 	// Expected merkle root:
-	// 0x3fa097234425378acf21030870e4abb0a8c56a39e07b4a59a28d648d51781f0e
+	// 0x176bba15231cb82edb5c34c8882af09dfb77a2ee31a96b623bffd8e48cedf18b
 	//
 	// If this does not match, it implies either you updated the set of default mock nodes,
 	// or you introduced a regression in treegen.
 	// DO NOT update this value unless you know what you are doing.
-	expectedMerkleRoot := "0x3fa097234425378acf21030870e4abb0a8c56a39e07b4a59a28d648d51781f0e"
+	expectedMerkleRoot := "0x176bba15231cb82edb5c34c8882af09dfb77a2ee31a96b623bffd8e48cedf18b"
 	if !strings.EqualFold(v10MerkleRoot, expectedMerkleRoot) {
 		t.Fatalf("Merkle root does not match expected value %s != %s", v10MerkleRoot, expectedMerkleRoot)
 	} else {
@@ -847,7 +866,7 @@ func TestMockNoRPLRewards(tt *testing.T) {
 		t.Fatalf("Node one ETH amount does not match expected value: %s != %d", ethOne.String(), 0)
 	}
 	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
-	expectedEthTwo, _ := big.NewInt(0).SetString("28825000000000000000", 10)
+	expectedEthTwo, _ := big.NewInt(0).SetString("32575000000000000000", 10)
 	if ethTwo.Cmp(expectedEthTwo) != 0 {
 		t.Fatalf("Node two ETH amount does not match expected value: %s != %s", ethTwo.String(), expectedEthTwo.String())
 	}
@@ -1007,7 +1026,7 @@ func TestMockOptedOutAndThenBondReduced(tt *testing.T) {
 		t.Fatalf("Node one ETH amount does not match expected value: %s != %s", ethOne.String(), expectedEthOne.String())
 	}
 	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
-	expectedEthTwo, _ := big.NewInt(0).SetString("23083134920634920634", 10)
+	expectedEthTwo, _ := big.NewInt(0).SetString("26089087301587301587", 10)
 	if ethTwo.Cmp(expectedEthTwo) != 0 {
 		t.Fatalf("Node two ETH amount does not match expected value: %s != %s", ethTwo.String(), expectedEthTwo.String())
 	}

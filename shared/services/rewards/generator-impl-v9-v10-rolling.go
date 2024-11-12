@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/rewards/fees"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types"
 	sszbig "github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types/big"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -544,20 +545,13 @@ func (r *treeGeneratorImpl_v9_v10_rolling) calculateNodeBonuses() (*big.Int, err
 		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
 		for _, mpd := range nsd.Minipools {
 			mpi := r.networkState.MinipoolDetailsByAddress[mpd.Address]
-			fee := mpi.NodeFee
 			if !mpi.IsEligibleForBonuses(r.elEndTime) {
 				mpd.MinipoolBonus = nil
 				mpd.ConsensusIncome = nil
 				continue
 			}
-			// fee = max(fee, 0.10 Eth + (0.04 Eth * min(10 Eth, percentOfBorrowedETH) / 10 Eth))
-			_min := big.NewInt(0).Set(tenEth)
-			if _min.Cmp(percentOfBorrowedEth) > 0 {
-				_min.Set(percentOfBorrowedEth)
-			}
-			dividend := _min.Mul(_min, pointOhFourEth)
-			divResult := dividend.Div(dividend, tenEth)
-			feeWithBonus := divResult.Add(divResult, pointOneEth)
+			bond, fee := mpi.GetMinipoolBondAndNodeFee(r.elEndTime)
+			feeWithBonus := fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
 			if fee.Cmp(feeWithBonus) >= 0 {
 				// This minipool won't get any bonuses, so skip it
 				mpd.MinipoolBonus = nil

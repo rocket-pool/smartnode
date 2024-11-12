@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/rewards/fees"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types"
 	sszbig "github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types/big"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -512,12 +513,18 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 		for _, nodeInfo := range r.nodeDetails {
 			// Check if the node is currently opted in for simplicity
 			if nodeInfo.IsEligible && nodeInfo.IsOptedIn && r.elEndTime.After(nodeInfo.OptInTime) {
+				nnd := r.networkState.NodeDetailsByAddress[nodeInfo.Address]
+				eligibleBorrowedEth := r.networkState.GetEligibleBorrowedEth(nnd)
+				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nnd.RplStake)
 				for _, minipool := range nodeInfo.Minipools {
 					minipool.CompletedAttestations = map[uint64]bool{0: true}
 
 					// Make up an attestation
 					details := r.networkState.MinipoolDetailsByAddress[minipool.Address]
 					bond, fee := details.GetMinipoolBondAndNodeFee(r.elEndTime)
+					if r.rewardsFile.RulesetVersion >= 10 {
+						fee = fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
+					}
 					minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
 					minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
 					minipoolScore.Div(minipoolScore, validatorReq)  // Divide by 32 to get the bond as a fraction of a total validator
@@ -609,11 +616,9 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 }
 
 var oneEth = big.NewInt(1000000000000000000)
-var pointOneEth = big.NewInt(0).Div(oneEth, big.NewInt(10))
-var tenEth = big.NewInt(0).Mul(oneEth, big.NewInt(10))
+var eightEth = big.NewInt(0).Mul(oneEth, big.NewInt(8))
 var fourteenPercentEth = big.NewInt(14e16)
 var thirtyTwoEth = big.NewInt(0).Mul(oneEth, big.NewInt(32))
-var pointOhFourEth = big.NewInt(40000000000000000)
 
 func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 	totalConsensusBonus := big.NewInt(0)
@@ -634,7 +639,6 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
 		for _, mpd := range nsd.Minipools {
 			mpi := r.networkState.MinipoolDetailsByAddress[mpd.Address]
-			fee := mpi.NodeFee
 			if !mpi.IsEligibleForBonuses(eligibleEnd) {
 				continue
 			}
@@ -643,14 +647,8 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 				// Validators with no balance at the end of the interval don't get any bonus commission
 				continue
 			}
-			// fee = max(fee, 0.10 Eth + (0.04 Eth * min(10 Eth, percentOfBorrowedETH) / 10 Eth))
-			_min := big.NewInt(0).Set(tenEth)
-			if _min.Cmp(percentOfBorrowedEth) > 0 {
-				_min.Set(percentOfBorrowedEth)
-			}
-			dividend := _min.Mul(_min, pointOhFourEth)
-			divResult := dividend.Div(dividend, tenEth)
-			feeWithBonus := divResult.Add(divResult, pointOneEth)
+			bond, fee := mpi.GetMinipoolBondAndNodeFee(eligibleEnd)
+			feeWithBonus := fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
 			if fee.Cmp(feeWithBonus) >= 0 {
 				// This minipool won't get any bonuses, so skip it
 				continue
@@ -947,7 +945,7 @@ func (r *treeGeneratorImpl_v9_v10) getValidatorBalancesAtStartAndEnd() error {
 		}
 	}
 
-	r.log.Printlnf("%s Finished updating validator balances for %d slots in %d seconds", r.logPrefix, total, time.Since(startTime).Seconds())
+	r.log.Printlnf("%s Finished updating validator balances for %d slots in %s", r.logPrefix, total, time.Since(startTime).String())
 
 	return nil
 }
@@ -1130,12 +1128,25 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 				continue
 			}
 
+			nnd := r.networkState.NodeDetailsByAddress[validator.NodeAddress]
+			eligibleBorrowedEth := r.networkState.GetEligibleBorrowedEth(nnd)
+			_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nnd.RplStake)
+
 			// Mark this duty as completed
 			validator.CompletedAttestations[attestation.SlotIndex] = true
 
 			// Get the pseudoscore for this attestation
 			details := r.networkState.MinipoolDetailsByAddress[validator.Address]
-			minipoolScore := details.GetMinipoolAttestationScore(blockTime)
+			bond, fee := details.GetMinipoolBondAndNodeFee(blockTime)
+
+			if r.rewardsFile.RulesetVersion >= 10 {
+				fee = fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
+			}
+
+			minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
+			minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
+			minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
+			minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
 
 			// Add it to the minipool's score and the total score
 			validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
