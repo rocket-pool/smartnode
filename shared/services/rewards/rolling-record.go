@@ -19,15 +19,26 @@ const (
 	threadLimit int = 12
 )
 
+type BCBalance struct {
+	Slot    uint64        `json:"slot"`
+	Balance *QuotedBigInt `json:"balance"`
+}
+
+type BCBalances struct {
+	Start *BCBalance `json:"start"`
+	End   *BCBalance `json:"end"`
+}
+
 type RollingRecord struct {
 	StartSlot         uint64                   `json:"startSlot"`
 	LastDutiesSlot    uint64                   `json:"lastDutiesSlot"`
 	ValidatorIndexMap map[string]*MinipoolInfo `json:"validatorIndexMap"`
 	RewardsInterval   uint64                   `json:"rewardsInterval"`
 	SmartnodeVersion  string                   `json:"smartnodeVersion,omitempty"`
+	BCBalanceMap      map[string]BCBalances    `json:"bcBalanceMap"`
 
 	// Private fields
-	bc                 beacon.Client       `json:"-"`
+	bc                 RewardsBeaconClient `json:"-"`
 	beaconConfig       *beacon.Eth2Config  `json:"-"`
 	genesisTime        time.Time           `json:"-"`
 	log                *log.ColorLogger    `json:"-"`
@@ -36,7 +47,7 @@ type RollingRecord struct {
 }
 
 // Create a new rolling record wrapper
-func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, startSlot uint64, beaconConfig *beacon.Eth2Config, rewardsInterval uint64) *RollingRecord {
+func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc RewardsBeaconClient, startSlot uint64, beaconConfig *beacon.Eth2Config, rewardsInterval uint64) *RollingRecord {
 	return &RollingRecord{
 		StartSlot:         startSlot,
 		LastDutiesSlot:    0,
@@ -56,7 +67,7 @@ func NewRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, 
 }
 
 // Load an existing record from serialized JSON data
-func DeserializeRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.Client, beaconConfig *beacon.Eth2Config, bytes []byte) (*RollingRecord, error) {
+func DeserializeRollingRecord(log *log.ColorLogger, logPrefix string, bc RewardsBeaconClient, beaconConfig *beacon.Eth2Config, bytes []byte) (*RollingRecord, error) {
 	record := &RollingRecord{
 		bc:           bc,
 		beaconConfig: beaconConfig,
@@ -74,6 +85,13 @@ func DeserializeRollingRecord(log *log.ColorLogger, logPrefix string, bc beacon.
 	}
 
 	return record, nil
+}
+
+// Updates the beacon chain start and end balances for the given state
+// For start balances, the balance at the most recent of (interval_start_slot, opt_in_slot, bond_reduction_slot)
+// is taken, but only for minipools that are eligible for consensus bonuses (opted in at some point had an 8 eth bond at some point during the interval)
+func (r *RollingRecord) updateBeaconChainBalances(state *state.NetworkState) error {
+	return nil
 }
 
 // Update the record to the requested slot, using the provided state as a reference.
@@ -113,8 +131,14 @@ func (r *RollingRecord) UpdateToSlot(slot uint64, state *state.NetworkState) err
 
 	}
 
+	// Update beacon chain balances
+	err := r.updateBeaconChainBalances(state)
+	if err != nil {
+		return fmt.Errorf("error updating beacon chain balances: %w", err)
+	}
+
 	// Process the epoch after the last one to check for late attestations / attestations of the last slot
-	err := r.processAttestationsInEpoch(stateEpoch+1, state)
+	err = r.processAttestationsInEpoch(stateEpoch+1, state)
 	if err != nil {
 		return fmt.Errorf("error processing attestations in epoch %d: %w", stateEpoch+1, err)
 	}
@@ -159,6 +183,9 @@ func (r *RollingRecord) Serialize() ([]byte, error) {
 		RewardsInterval:   r.RewardsInterval,
 		SmartnodeVersion:  r.SmartnodeVersion,
 		ValidatorIndexMap: map[string]*MinipoolInfo{},
+		// Don't bother cloning the balance map since it isn't
+		// stripped like the ValidatorIndexMap
+		BCBalanceMap: r.BCBalanceMap,
 	}
 
 	// Remove minipool perf records with zero attestations from the serialization
@@ -312,16 +339,40 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 		i := i
 		slot := epoch*slotsPerEpoch + i
 		wg.Go(func() error {
-			attestations, found, err := r.bc.GetAttestations(fmt.Sprint(slot))
+			beaconBlock, found, err := r.bc.GetBeaconBlock(fmt.Sprint(slot))
 			if err != nil {
 				return fmt.Errorf("error getting attestations for slot %d: %w", slot, err)
 			}
 			if found {
-				attestationsPerSlot[i] = attestations
+				attestationsPerSlot[i] = beaconBlock.Attestations
 			} else {
 				attestationsPerSlot[i] = []beacon.AttestationInfo{}
 			}
 
+			// For all slots except the first slot of the interval, store withdrawal amounts as income
+			if slot != r.StartSlot {
+				for _, withdrawal := range beaconBlock.Withdrawals {
+					mpi, exists := r.ValidatorIndexMap[withdrawal.ValidatorIndex]
+					if !exists {
+						continue
+					}
+
+					// Check that the minipool is opted into the SP during this slot
+					nodeInfo := state.NodeDetails[mpi.NodeIndex]
+					blockTime := state.BeaconConfig.GetSlotTime(slot)
+					if !nodeInfo.WasOptedInAt(blockTime) {
+						continue
+					}
+
+					// Create the minipool's income big.Int if it doesn't exist
+					if mpi.ConsensusIncome == nil {
+						mpi.ConsensusIncome = NewQuotedBigInt(0)
+					}
+
+					// Add the withdrawal amount as consensus income
+					mpi.ConsensusIncome.Add(&mpi.ConsensusIncome.Int, withdrawal.Amount)
+				}
+			}
 			return nil
 		})
 	}

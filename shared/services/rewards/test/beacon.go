@@ -448,3 +448,26 @@ func (bc *MockBeaconClient) GetValidatorBalances(indices []string, opts *beacon.
 	}
 	return out, nil
 }
+
+func (bc *MockBeaconClient) GetEth2Config() (beacon.Eth2Config, error) {
+	return bc.state.BeaconConfig, nil
+}
+
+func (bc *MockBeaconClient) GetBeaconHead() (beacon.BeaconHead, error) {
+	// Tell the tests that the beacon head is far enough ahead that the target slot
+	// is in an epoch that has a finalized epoch right after it.
+	out := beacon.BeaconHead{
+		Epoch:                  bc.state.BeaconConfig.SlotToEpoch(bc.state.BeaconSlotNumber) + 3,
+		JustifiedEpoch:         bc.state.BeaconConfig.SlotToEpoch(bc.state.BeaconSlotNumber) + 2,
+		PreviousJustifiedEpoch: bc.state.BeaconConfig.SlotToEpoch(bc.state.BeaconSlotNumber) + 1,
+		FinalizedEpoch:         bc.state.BeaconConfig.SlotToEpoch(bc.state.BeaconSlotNumber) + 1,
+	}
+	return out, nil
+}
+
+func (bc *MockBeaconClient) GetStateForSlot(slot uint64) (*state.NetworkState, error) {
+	if slot == bc.state.BeaconSlotNumber {
+		return bc.state, nil
+	}
+	return nil, fmt.Errorf("not implemented", slot)
+}

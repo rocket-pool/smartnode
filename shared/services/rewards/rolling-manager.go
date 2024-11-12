@@ -23,9 +23,10 @@ import (
 )
 
 const (
-	recordsFilenameFormat         string = "%d-%d.json.zst"
-	recordsFilenamePattern        string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
-	latestCompatibleVersionString string = "1.11.0-dev"
+	recordsFilenameFormat  string = "%d-%d.json.zst"
+	recordsFilenamePattern string = "(?P<slot>\\d+)\\-(?P<epoch>\\d+)\\.json\\.zst"
+	// TODO - update this to the latest version.
+	latestCompatibleVersionString string = "1.15.0"
 )
 
 type StateProvider interface {
@@ -43,7 +44,7 @@ type RollingRecordManager struct {
 	errLog          *log.ColorLogger
 	logPrefix       string
 	rp              RewardsExecutionClient
-	bc              beacon.Client
+	bc              RewardsBeaconClient
 	mgr             StateProvider
 	startSlot       uint64
 	nextEpochToSave uint64
@@ -62,7 +63,7 @@ type RollingRecordManager struct {
 
 type RollingRecordManagerSettings struct {
 	RP                           RewardsExecutionClient
-	BC                           beacon.Client
+	BC                           RewardsBeaconClient
 	Log                          *log.ColorLogger
 	ErrLog                       *log.ColorLogger
 	RecordsPath                  string

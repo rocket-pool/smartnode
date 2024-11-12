@@ -545,7 +545,7 @@ func (r *treeGeneratorImpl_v9_v10_rolling) calculateNodeBonuses() (*big.Int, err
 		for _, mpd := range nsd.Minipools {
 			mpi := r.networkState.MinipoolDetailsByAddress[mpd.Address]
 			fee := mpi.NodeFee
-			if !mpd.IsEligibleForBonuses() {
+			if !mpi.IsEligibleForBonuses(r.elEndTime) {
 				mpd.MinipoolBonus = nil
 				mpd.ConsensusIncome = nil
 				continue

@@ -263,7 +263,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 }
 
 // Gets the start slot for the given interval
-func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beacon.Client, beaconConfig beacon.Eth2Config) (uint64, error) {
+func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc RewardsBeaconClient, beaconConfig beacon.Eth2Config) (uint64, error) {
 	// Get the chain head
 	head, err := bc.GetBeaconHead()
 	if err != nil {

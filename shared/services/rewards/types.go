@@ -51,6 +51,8 @@ type RewardsBeaconClient interface {
 	GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error)
 	GetAttestations(slot string) ([]beacon.AttestationInfo, bool, error)
 	GetValidatorBalances(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error)
+	GetEth2Config() (beacon.Eth2Config, error)
+	GetBeaconHead() (beacon.BeaconHead, error)
 }
 
 // Interface for version-agnostic minipool performance
@@ -226,10 +228,6 @@ type MinipoolInfo struct {
 
 var sixteenEth = big.NewInt(0).Mul(oneEth, big.NewInt(16))
 
-func (mi *MinipoolInfo) IsEligibleForBonuses() bool {
-	return mi.NodeOperatorBond.Cmp(sixteenEth) < 0
-}
-
 type IntervalDutiesInfo struct {
 	Index uint64
 	Slots map[uint64]*SlotInfo
@@ -264,15 +262,6 @@ type NodeSmoothingDetails struct {
 
 	// v10 Fields
 	BonusEth *big.Int
-}
-
-func (nsd *NodeSmoothingDetails) IsEligibleForBonuses(elStartTime time.Time, elEndTime time.Time) bool {
-	// Nodes are eligible for bonuses if they were in the Smoothing Pool for a portion of the interval
-	if nsd.IsOptedIn {
-		return nsd.OptInTime.Before(elEndTime)
-	}
-	// Nodes that weren't opted in at the end of the interval are eligible if they opted out during the interval
-	return nsd.OptOutTime.After(elStartTime) && nsd.OptOutTime.Before(elEndTime)
 }
 
 type QuotedBigInt struct {
