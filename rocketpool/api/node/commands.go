@@ -1025,6 +1025,49 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "can-stake-eth",
+				Usage:     "Check whether the node can swap ETH to rETH via the deposit pool",
+				UsageText: "rocketpool api node can-stake-eth amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canSwapEth(c, amountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:      "stake-eth",
+				Usage:     "Swap ETH to rETH via the deposit pool",
+				UsageText: "rocketpool api node stake-eth amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("swap amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(swapEth(c, amountWei))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "sign",
 				Usage:     "Signs a transaction with the node's private key. The TX must be serialized as a hex string.",
 				UsageText: "rocketpool api node sign tx",

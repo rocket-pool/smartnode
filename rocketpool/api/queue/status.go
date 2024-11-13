@@ -3,6 +3,7 @@ package queue
 import (
 	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/minipool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -31,6 +32,13 @@ func getStatus(c *cli.Context) (*api.QueueStatusResponse, error) {
 	wg.Go(func() error {
 		var err error
 		response.DepositPoolBalance, err = deposit.GetBalance(rp, nil)
+		return err
+	})
+
+	// Get deposit pool max capacity
+	wg.Go(func() error {
+		var err error
+		response.MaxDepositPoolBalance, err = protocol.GetMaximumDepositPoolSize(rp, nil)
 		return err
 	})
 
