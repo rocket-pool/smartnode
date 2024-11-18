@@ -7,7 +7,9 @@ parse_additional_flags() {
   # Check if the environment variable MEV_BOOST_ADDITIONAL_FLAGS is not empty
   if [ -n "$MEV_BOOST_ADDITIONAL_FLAGS" ]; then
     # Split the input string into an array of key-value pairs using comma as the delimiter
-    IFS=',' read -r -a pairs <<< "$MEV_BOOST_ADDITIONAL_FLAGS"
+    IFS=',' read -r -a pairs <<EOF
+$MEV_BOOST_ADDITIONAL_FLAGS
+EOF
 
     # Iterate over each key-value pair
     for pair in "${pairs[@]}"; do
