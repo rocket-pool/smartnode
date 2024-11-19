@@ -2,8 +2,12 @@ package debug
 
 import (
 	"fmt"
+	"math"
 
 	state_native "github.com/prysmaticlabs/prysm/v5/beacon-chain/state/state-native"
+	"github.com/prysmaticlabs/prysm/v5/beacon-chain/state/stateutil"
+	"github.com/prysmaticlabs/prysm/v5/container/trie"
+	"github.com/prysmaticlabs/prysm/v5/encoding/ssz"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -34,8 +38,14 @@ func getBeaconStateForSlot(c *cli.Context, slot uint64) (*api.BeaconStateRespons
 		return nil, fmt.Errorf("failed while casting to state_native.BeaconState")
 	}
 
-	fmt.Println("%w", stateNative)
+	roots, err := stateutil.OptimizedValidatorRoots(stateNative.Validators())
+	if err != nil {
+		return nil, fmt.Errorf("failed getting validator roots: %w", err)
+	}
 
+	//trie.GenerateTrieFromItems(roots, ssz.Depth(roots))
+
+	fmt.Println("%w", roots[1100000])
 
 	// Return response
 	return &response, nil
