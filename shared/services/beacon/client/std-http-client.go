@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/big"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -273,10 +274,6 @@ func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon
 
 	count := len(indices)
 	data := make(map[string]*big.Int, count)
-	var wg errgroup.Group
-	wg.SetLimit(threadLimit)
-	// Create a mutex for writes to the data map
-	dataMutex := sync.Mutex{}
 	for i := 0; i < count; i += MaxRequestValidatorsCount {
 		i := i
 		max := i + MaxRequestValidatorsCount
@@ -284,31 +281,22 @@ func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon
 			max = count
 		}
 
-		wg.Go(func() error {
-			// Get & add validators
-			batch := indices[i:max]
-			balances, err := c.getValidatorBalances(stateId, batch)
-			if err != nil {
-				return fmt.Errorf("error getting validator balances: %w", err)
+		// Get & add validators
+		batch := indices[i:max]
+		balances, err := c.getValidatorBalances(stateId, batch)
+		if err != nil {
+			return nil, fmt.Errorf("error getting validator balances: %w", err)
+		}
+		for _, balance := range balances.Data {
+			b, ok := big.NewInt(0).SetString(balance.Balance, 10)
+			if !ok {
+				return nil, fmt.Errorf("invalid balance: %s", balance.Balance)
 			}
-			for _, balance := range balances.Data {
-				b, ok := big.NewInt(0).SetString(balance.Balance, 10)
-				if !ok {
-					return fmt.Errorf("invalid balance: %s", balance.Balance)
-				}
-				// Beacon clients return Gwei, but we want wei
-				b.Mul(b, big.NewInt(1e9))
+			// Beacon clients return Gwei, but we want wei
+			b.Mul(b, big.NewInt(1e9))
 
-				dataMutex.Lock()
-				data[balance.Index] = b
-				dataMutex.Unlock()
-			}
-			return nil
-		})
-	}
-
-	if err := wg.Wait(); err != nil {
-		return nil, fmt.Errorf("error getting validator balances: %w", err)
+			data[balance.Index] = b
+		}
 	}
 
 	// Return
@@ -321,6 +309,11 @@ func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon
 // bn has not entered optimistic sync due to being unable to provide forkchoice updates,
 // and that the current head is a recent slot.
 func (c *StandardHttpClient) GetValidatorBalancesSafe(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
+	// Filter out empty indices
+	indices = slices.DeleteFunc(indices, func(index string) bool {
+		return index == ""
+	})
+
 	beaconConfig, err := c.GetEth2Config()
 	if err != nil {
 		return nil, err
