@@ -50,7 +50,7 @@ type RewardsBeaconClient interface {
 	GetBeaconBlock(slot string) (beacon.BeaconBlock, bool, error)
 	GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error)
 	GetAttestations(slot string) ([]beacon.AttestationInfo, bool, error)
-	GetValidatorBalances(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error)
+	GetValidatorBalancesSafe(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error)
 	GetEth2Config() (beacon.Eth2Config, error)
 	GetBeaconHead() (beacon.BeaconHead, error)
 }

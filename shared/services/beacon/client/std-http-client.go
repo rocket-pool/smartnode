@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -92,8 +93,17 @@ func (c *StandardHttpClient) GetSyncStatus() (beacon.SyncStatus, error) {
 
 }
 
+var eth2ConfigCache atomic.Pointer[beacon.Eth2Config]
+
 // Get the eth2 config
+// cache it for future requests
 func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
+
+	// Check the cache
+	cached := eth2ConfigCache.Load()
+	if cached != nil {
+		return *cached, nil
+	}
 
 	// Data
 	var wg errgroup.Group
@@ -119,8 +129,8 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 		return beacon.Eth2Config{}, err
 	}
 
-	// Return response
-	return beacon.Eth2Config{
+	// Save the result
+	out := beacon.Eth2Config{
 		GenesisForkVersion:           genesis.Data.GenesisForkVersion,
 		GenesisValidatorsRoot:        genesis.Data.GenesisValidatorsRoot,
 		GenesisEpoch:                 0,
@@ -129,8 +139,11 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 		SlotsPerEpoch:                uint64(eth2Config.Data.SlotsPerEpoch),
 		SecondsPerEpoch:              uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
 		EpochsPerSyncCommitteePeriod: uint64(eth2Config.Data.EpochsPerSyncCommitteePeriod),
-	}, nil
+	}
+	eth2ConfigCache.Store(&out)
 
+	// Return
+	return out, nil
 }
 
 // Get the eth2 deposit contract info
@@ -300,6 +313,53 @@ func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon
 
 	// Return
 	return data, nil
+}
+
+// GetValidatorBalancesSafe returns the balances of the validators
+// In order to avoid thrashing the bn, when opts.Slot is provided,
+// we will preflight the balance query with a sync query, and ensure that the
+// bn has not entered optimistic sync due to being unable to provide forkchoice updates,
+// and that the current head is a recent slot.
+func (c *StandardHttpClient) GetValidatorBalancesSafe(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
+	beaconConfig, err := c.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+	// Check the current head
+	safe := false
+	for i := 0; i < 30; i++ {
+		syncStatus, err := c.getSyncStatus()
+		if err != nil {
+			// If we get an error, wait and try again
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		if syncStatus.Data.IsSyncing {
+			// If the bn is still syncing, wait and try again
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		if syncStatus.Data.ELOffline {
+			// If the bn is offline, wait and try again
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		// Check that the head is no more than 2 slots behind the current time.
+		if beaconConfig.GetSlotTime(uint64(syncStatus.Data.HeadSlot)).Add(2 * time.Second * time.Duration(beaconConfig.SecondsPerSlot)).Before(time.Now()) {
+			// If the head is too far behind, wait and try again
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		safe = true
+		break
+	}
+	if !safe {
+		return nil, fmt.Errorf("bn is not in sync after 30 seconds")
+	}
+
+	// Get the balances
+	return c.GetValidatorBalances(indices, opts)
 }
 
 // Get multiple validators' statuses

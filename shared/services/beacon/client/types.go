@@ -32,9 +32,11 @@ type BLSToExecutionChangeRequest struct {
 // Response types
 type SyncStatusResponse struct {
 	Data struct {
-		IsSyncing    bool     `json:"is_syncing"`
 		HeadSlot     uinteger `json:"head_slot"`
 		SyncDistance uinteger `json:"sync_distance"`
+		IsSyncing    bool     `json:"is_syncing"`
+		IsOptimistic bool     `json:"is_optimistic"`
+		ELOffline    bool     `json:"el_offline"`
 	} `json:"data"`
 }
 type Eth2ConfigResponse struct {

@@ -309,6 +309,17 @@ func (m *BeaconClientManager) ChangeWithdrawalCredentials(validatorIndex string,
 	return nil
 }
 
+// Get the validator balances for a set of validators at a given slot, with backoff.
+func (m *BeaconClientManager) GetValidatorBalancesSafe(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
+	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
+		return client.GetValidatorBalancesSafe(indices, opts)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(map[string]*big.Int), nil
+}
+
 // Get the validator balances for a set of validators at a given slot
 func (m *BeaconClientManager) GetValidatorBalances(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {

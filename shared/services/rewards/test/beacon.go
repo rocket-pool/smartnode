@@ -422,6 +422,14 @@ func (bc *MockBeaconClient) SetCustomBalance(index string, balance *big.Int, slo
 	}{balance, slot})
 }
 
+// GetValidatorBalancesSafe returns the balances of the validators
+// The mock doesn't need to worry about thrashing the bn, since there is none.
+func (bc *MockBeaconClient) GetValidatorBalancesSafe(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
+
+	// Get the balances
+	return bc.GetValidatorBalances(indices, opts)
+}
+
 func (bc *MockBeaconClient) GetValidatorBalances(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
 	out := make(map[string]*big.Int)
 	for _, index := range indices {

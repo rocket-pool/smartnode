@@ -820,7 +820,7 @@ func (r *treeGeneratorImpl_v9_v10) getValidatorBalancesAtStartAndEnd() error {
 
 	r.log.Printlnf("%s Getting %d validator balances at start and end", r.logPrefix, len(indices))
 
-	validatorBalancesAtStart, err := r.bc.GetValidatorBalances(indices, &beacon.ValidatorStatusOptions{
+	validatorBalancesAtStart, err := r.bc.GetValidatorBalancesSafe(indices, &beacon.ValidatorStatusOptions{
 		Slot: &r.rewardsFile.ConsensusStartBlock,
 	})
 	if err != nil {
@@ -830,7 +830,7 @@ func (r *treeGeneratorImpl_v9_v10) getValidatorBalancesAtStartAndEnd() error {
 		r.validatorBalancesAtStart[r.validatorIndexMap[index].Address] = balance
 	}
 
-	validatorBalancesAtEnd, err := r.bc.GetValidatorBalances(indices, &beacon.ValidatorStatusOptions{
+	validatorBalancesAtEnd, err := r.bc.GetValidatorBalancesSafe(indices, &beacon.ValidatorStatusOptions{
 		Slot: &r.rewardsFile.ConsensusEndBlock,
 	})
 	if err != nil {
@@ -917,7 +917,7 @@ func (r *treeGeneratorImpl_v9_v10) getValidatorBalancesAtStartAndEnd() error {
 			r.log.Printlnf("%s On slot %d of %d (%.2f%%) - %.2f seconds per slot", r.logPrefix, i, total, float64(i)/float64(total)*100.0, secondsPerSlot)
 		}
 		i++
-		balances, err := r.bc.GetValidatorBalances(validatorIndices, &beacon.ValidatorStatusOptions{
+		balances, err := r.bc.GetValidatorBalancesSafe(validatorIndices, &beacon.ValidatorStatusOptions{
 			Slot: &slot,
 		})
 		if err != nil {
@@ -934,7 +934,7 @@ func (r *treeGeneratorImpl_v9_v10) getValidatorBalancesAtStartAndEnd() error {
 			r.log.Printlnf("%s On slot %d of %d (%.2f%%) - %.2f seconds per slot", r.logPrefix, i, total, float64(i)/float64(total)*100.0, secondsPerSlot)
 		}
 		i++
-		balances, err := r.bc.GetValidatorBalances(validatorIndices, &beacon.ValidatorStatusOptions{
+		balances, err := r.bc.GetValidatorBalancesSafe(validatorIndices, &beacon.ValidatorStatusOptions{
 			Slot: &slot,
 		})
 		if err != nil {
