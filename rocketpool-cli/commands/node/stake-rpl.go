@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/node-manager-core/eth"
@@ -12,13 +13,14 @@ import (
 	"github.com/rocket-pool/node-manager-core/utils/math"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/client"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
+	cliutils "github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/utils/tx"
 	"github.com/rocket-pool/smartnode/v2/shared/types/api"
 )
 
 const (
 	swapFlag               string = "swap"
-	stakeRPLWarningMessage string = "NOTE: by staking RPL, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before staking RPL."
+	stakeRPLWarningMessage string = "NOTE: By staking RPL, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before staking RPL."
 )
 
 func nodeStakeRpl(c *cli.Context) error {
@@ -64,28 +66,35 @@ func nodeStakeRpl(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error getting RPL price: %w", err)
 	}
-
 	// Get stake amount
 	var amountWei *big.Int
-	switch c.String(amountFlag) {
-	case "min8":
-		amountWei = priceResponse.Data.MinPer8EthMinipoolRplStake
-	case "min16":
-		amountWei = priceResponse.Data.MinPer16EthMinipoolRplStake
-	case "all":
+	var stakePercent float64
+
+	// Amount flag custom percentage input
+	if strings.HasSuffix(c.String("amount"), "%") {
+		_, err := fmt.Sscanf(c.String("amount"), "%f%%", &stakePercent)
+		if err != nil {
+			return fmt.Errorf("invalid percentage format '%s': %w", c.String("amount"), err)
+		}
+		amountWei = rplStakeForLEB8(eth.EthToWei(stakePercent/100), priceResponse.Data.RplPrice)
+
+	} else if c.String("amount") == "all" {
+		// Set amount to node's entire RPL balance
 		amountWei = rplBalance
-	case "":
-		amountWei, err = promptForRplAmount(priceResponse.Data, rplBalance)
+
+	} else if c.String("amount") != "" {
+		// Parse amount
+		stakeAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		if err != nil {
+			return fmt.Errorf("Invalid stake amount '%s': %w", c.String("amount"), err)
+		}
+		amountWei = eth.EthToWei(stakeAmount)
+
+	} else {
+		amountWei, err = promptForRplAmount(priceResponse.Data, rplBalance, stakePercent)
 		if err != nil {
 			return err
 		}
-	default:
-		// Parse amount
-		stakeAmount, err := strconv.ParseFloat(c.String(amountFlag), 64)
-		if err != nil {
-			return fmt.Errorf("invalid stake amount '%s': %w", c.String(amountFlag), err)
-		}
-		amountWei = eth.EthToWei(stakeAmount)
 	}
 
 	// Build the stake TX
@@ -155,37 +164,64 @@ func nodeStakeRpl(c *cli.Context) error {
 }
 
 // Prompt the user for the amount of RPL to stake
-func promptForRplAmount(priceResponse *api.NetworkRplPriceData, rplBalance *big.Int) (*big.Int, error) {
-	// Get min/max per minipool RPL stake amounts
-	minAmount8 := priceResponse.MinPer8EthMinipoolRplStake
-	minAmount16 := priceResponse.MinPer16EthMinipoolRplStake
+func promptForRplAmount(priceResponse *api.NetworkRplPriceData, rplBalance *big.Int, stakePercent float64) (*big.Int, error) {
+	// Get the RPL stake amounts for 5,10,15% borrowed ETH per LEB8
+	fivePercentBorrowedPerMinipool := new(big.Int)
+	fivePercentBorrowedPerMinipool.SetString("50000000000000000", 10)
+	fivePercentBorrowedRplStake := rplStakeForLEB8(fivePercentBorrowedPerMinipool, priceResponse.RplPrice)
+	tenPercentBorrowedRplStake := new(big.Int).Mul(fivePercentBorrowedRplStake, big.NewInt(2))
+	fifteenPercentBorrowedRplStake := new(big.Int).Mul(fivePercentBorrowedRplStake, big.NewInt(3))
 
 	// Prompt for amount option
 	var amountWei *big.Int
 	amountOptions := []string{
-		fmt.Sprintf("The minimum minipool stake amount for an 8-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount8), 6)),
-		fmt.Sprintf("The minimum minipool stake amount for a 16-ETH minipool (%.6f RPL)?", math.RoundUp(eth.WeiToEth(minAmount16), 6)),
+		fmt.Sprintf("5%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(fivePercentBorrowedRplStake), 6)),
+		fmt.Sprintf("10%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(tenPercentBorrowedRplStake), 6)),
+		fmt.Sprintf("15%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(fifteenPercentBorrowedRplStake), 6)),
 		fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(rplBalance), 6)),
 		"A custom amount",
 	}
 	selected, _ := utils.Select("Please choose an amount of RPL to stake:", amountOptions)
 	switch selected {
 	case 0:
-		amountWei = minAmount8
+		amountWei = fivePercentBorrowedRplStake
 	case 1:
-		amountWei = minAmount16
+		amountWei = tenPercentBorrowedRplStake
 	case 2:
+		amountWei = fifteenPercentBorrowedRplStake
+	case 3:
 		amountWei = rplBalance
 	}
 
-	// Prompt for custom amount
+	// Prompt for custom amount or percentage
 	if amountWei == nil {
-		inputAmount := utils.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
-		stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid stake amount '%s': %w", inputAmount, err)
+		inputAmountOrPercent := cliutils.Prompt("Please enter an amount of RPL or percentage of borrowed ETH to stake. (e.g '50' for 50 RPL or '5%' for 5% borrowed ETH as RPL):", "^(0|[1-9]\\d*)(\\.\\d+)?%?$", "Invalid amount")
+		if strings.HasSuffix(inputAmountOrPercent, "%") {
+			_, err := fmt.Sscanf(inputAmountOrPercent, "%f%%", &stakePercent)
+			if err != nil {
+				return nil, fmt.Errorf("Invalid percentage format '%s': %w", inputAmountOrPercent, err)
+			}
+			amountWei = rplStakeForLEB8(eth.EthToWei(stakePercent/100), priceResponse.RplPrice)
+			fmt.Println(amountWei)
+		} else {
+			stakeAmount, err := strconv.ParseFloat(inputAmountOrPercent, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Invalid stake amount '%s': %w", inputAmountOrPercent, err)
+			}
+			amountWei = eth.EthToWei(stakeAmount)
 		}
-		amountWei = eth.EthToWei(stakeAmount)
 	}
 	return amountWei, nil
+
+}
+
+func rplStakeForLEB8(borrowedPerMinipool *big.Int, rplPrice *big.Int) *big.Int {
+	percentBorrowedRplStake := big.NewInt(0)
+	percentBorrowedRplStake.Mul(eth.EthToWei(24), borrowedPerMinipool)
+	percentBorrowedRplStake.Div(percentBorrowedRplStake, rplPrice)
+	percentBorrowedRplStake.Add(percentBorrowedRplStake, big.NewInt(1))
+	amountWei := percentBorrowedRplStake
+
+	return amountWei
+
 }

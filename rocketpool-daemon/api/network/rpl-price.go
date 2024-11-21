@@ -84,27 +84,9 @@ func (c *networkPriceContext) GetState(mc *batch.MultiCaller) {
 
 func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	var rplPrice *big.Int
-	_24Eth := eth.EthToWei(24)
-	_16Eth := eth.EthToWei(16)
-	var minPerMinipoolStake *big.Int
 
 	data.RplPriceBlock = c.networkMgr.PricesBlock.Formatted()
 	rplPrice = c.networkMgr.RplPrice.Raw()
-	minPerMinipoolStake = c.pSettings.Node.MinimumPerMinipoolStake.Raw()
-
-	// Min for LEB8s
-	minPer8EthMinipoolRplStake := big.NewInt(0)
-	minPer8EthMinipoolRplStake.Mul(_24Eth, minPerMinipoolStake) // Min is 10% of borrowed (24 ETH)
-	minPer8EthMinipoolRplStake.Div(minPer8EthMinipoolRplStake, rplPrice)
-	minPer8EthMinipoolRplStake.Add(minPer8EthMinipoolRplStake, big.NewInt(1))
-	data.MinPer8EthMinipoolRplStake = minPer8EthMinipoolRplStake
-
-	// Min for 16s
-	minPer16EthMinipoolRplStake := big.NewInt(0)
-	minPer16EthMinipoolRplStake.Mul(_16Eth, minPerMinipoolStake) // Min is 10% of borrowed (16 ETH)
-	minPer16EthMinipoolRplStake.Div(minPer16EthMinipoolRplStake, rplPrice)
-	minPer16EthMinipoolRplStake.Add(minPer16EthMinipoolRplStake, big.NewInt(1))
-	data.MinPer16EthMinipoolRplStake = minPer16EthMinipoolRplStake
 
 	// Update & return response
 	data.RplPrice = rplPrice

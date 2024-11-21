@@ -291,8 +291,6 @@ func getStatus(c *cli.Context) error {
 			math.RoundDown(eth.WeiToEth(status.Data.EffectiveRplStake), 6))
 		if status.Data.BorrowedCollateralRatio > 0 {
 			rplTooLow := (status.Data.RplStake.Cmp(status.Data.MinimumRplStake) < 0)
-			rplTotalStake := math.RoundDown(eth.WeiToEth(status.Data.RplStake), 6)
-			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.Data.MaximumRplStake), 6)
 			if rplTooLow {
 				fmt.Printf(
 					"This is currently %s%.2f%% of its borrowed ETH%s and %.2f%% of its bonded ETH.\n",
@@ -302,34 +300,8 @@ func getStatus(c *cli.Context) error {
 					"This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n",
 					status.Data.BorrowedCollateralRatio*100, status.Data.BondedCollateralRatio*100)
 			}
-			fmt.Printf(
-				"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.Data.MinimumRplStake), 6))
-			fmt.Printf(
-				"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of %.6f RPL (150%% of bonded ETH). Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n", math.RoundDown(eth.WeiToEth(status.Data.MaximumRplStake), 6))
-			if rplTotalStake > rplWithdrawalLimit {
-				fmt.Printf(
-					"You can now withdraw down to %.6f RPL (%.0f%% of bonded eth)\n",
-					math.RoundDown(eth.WeiToEth(status.Data.MaximumRplStake), 6),
-					eth.WeiToEth(status.Data.MaximumStakeFraction)*100)
-			}
-			if rplTooLow {
-				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", terminal.ColorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.Data.MinimumRplStake, status.Data.RplStake)), 6), terminal.ColorReset)
-			}
 		}
 		fmt.Println()
-
-		remainingAmount := big.NewInt(0).Sub(status.Data.EthMatchedLimit, status.Data.EthMatched)
-		remainingAmount.Sub(remainingAmount, status.Data.PendingMatchAmount)
-		remainingAmountEth := int(eth.WeiToEth(remainingAmount))
-		remainingFor8EB := remainingAmountEth / 24
-		if remainingFor8EB < 0 {
-			remainingFor8EB = 0
-		}
-		remainingFor16EB := remainingAmountEth / 16
-		if remainingFor16EB < 0 {
-			remainingFor16EB = 0
-		}
-		fmt.Printf("The node has enough RPL staked to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
 
 		// Minipool details
 		fmt.Printf("%s=== Minipools ===%s\n", terminal.ColorGreen, terminal.ColorReset)
