@@ -84,22 +84,9 @@ func (c *networkPriceContext) GetState(mc *batch.MultiCaller) {
 
 func (c *networkPriceContext) PrepareData(data *api.NetworkRplPriceData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	var rplPrice *big.Int
-	_24Eth := eth.EthToWei(24)
 
 	data.RplPriceBlock = c.networkMgr.PricesBlock.Formatted()
 	rplPrice = c.networkMgr.RplPrice.Raw()
-
-	// RPL stake amounts for 5,10,15% borrowed ETH per LEB8
-	fivePercentBorrowedPerMinipool := new(big.Int)
-	fivePercentBorrowedPerMinipool.SetString("50000000000000000", 10)
-
-	fivePercentBorrowedRplStake := big.NewInt(0)
-	fivePercentBorrowedRplStake.Mul(_24Eth, fivePercentBorrowedPerMinipool)
-	fivePercentBorrowedRplStake.Div(fivePercentBorrowedRplStake, rplPrice)
-	fivePercentBorrowedRplStake.Add(fivePercentBorrowedRplStake, big.NewInt(1))
-	data.FivePercentBorrowedRplStake = fivePercentBorrowedRplStake
-	data.TenPercentBorrowedRplStake = new(big.Int).Mul(fivePercentBorrowedRplStake, big.NewInt(2))
-	data.FifteenPercentBorrowedRplStake = new(big.Int).Mul(fivePercentBorrowedRplStake, big.NewInt(3))
 
 	// Update & return response
 	data.RplPrice = rplPrice

@@ -17,11 +17,8 @@ type NetworkNodeFeeData struct {
 }
 
 type NetworkRplPriceData struct {
-	RplPrice                       *big.Int `json:"rplPrice"`
-	RplPriceBlock                  uint64   `json:"rplPriceBlock"`
-	FivePercentBorrowedRplStake    *big.Int `json:"fivePercentBorrowedRplStake"`
-	TenPercentBorrowedRplStake     *big.Int `json:"tenPercentRplStake"`
-	FifteenPercentBorrowedRplStake *big.Int `json:"fifteenPercentRplStake"`
+	RplPrice      *big.Int `json:"rplPrice"`
+	RplPriceBlock uint64   `json:"rplPriceBlock"`
 }
 
 type NetworkStatsData struct {
