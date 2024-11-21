@@ -359,7 +359,7 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 			}
 
 			// For all slots except the first slot of the interval, store withdrawal amounts as income
-			if slot != r.StartSlot {
+			if slot != r.StartSlot && slot <= state.BeaconSlotNumber {
 				for _, withdrawal := range beaconBlock.Withdrawals {
 					mpi, exists := r.ValidatorIndexMap[withdrawal.ValidatorIndex]
 					if !exists {
