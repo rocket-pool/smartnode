@@ -1004,14 +1004,14 @@ func (r *treeGeneratorImpl_v9_v10) processAttestationsBalancesAndWithdrawalsForI
 }
 
 // Process an epoch, optionally getting the duties for all eligible minipools in it and checking each one's attestation performance
-func (r *treeGeneratorImpl_v9_v10) processEpoch(getDuties bool, epoch uint64) error {
+func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint64) error {
 
 	// Get the committee info and attestation records for this epoch
 	var committeeData beacon.Committees
 	attestationsPerSlot := make([][]beacon.AttestationInfo, r.slotsPerEpoch)
 	var wg errgroup.Group
 
-	if getDuties {
+	if duringInterval {
 		wg.Go(func() error {
 			var err error
 			committeeData, err = r.bc.GetCommitteesForEpoch(&epoch)
@@ -1034,7 +1034,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(getDuties bool, epoch uint64) er
 
 			// If we don't need withdrawal amounts because we're using ruleset 9,
 			// return early
-			if r.rewardsFile.RulesetVersion < 10 {
+			if r.rewardsFile.RulesetVersion < 10 || !duringInterval {
 				return nil
 			}
 
@@ -1070,7 +1070,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(getDuties bool, epoch uint64) er
 		return fmt.Errorf("error getting committee and attestaion records for epoch %d: %w", epoch, err)
 	}
 
-	if getDuties {
+	if duringInterval {
 		// Get all of the expected duties for the epoch
 		err = r.getDutiesForEpoch(committeeData)
 		if err != nil {
