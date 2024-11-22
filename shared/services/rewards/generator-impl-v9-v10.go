@@ -62,10 +62,6 @@ type treeGeneratorImpl_v9_v10 struct {
 	// fields for RPIP-62 bonus calculations
 	// Withdrawals made by a minipool's validator.
 	minipoolWithdrawals map[common.Address]*big.Int
-	// Balances of each minipool's validator at the start of their eligibility for the interval
-	validatorBalancesAtStart map[common.Address]*big.Int
-	// Balances of each minipool's validator at the end of their eligibility for the interval
-	validatorBalancesAtEnd map[common.Address]*big.Int
 }
 
 // Create a new tree generator
@@ -101,11 +97,9 @@ func newTreeGeneratorImpl_v9_v10(rulesetVersion uint64, log *log.ColorLogger, lo
 			Index:               index,
 			MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
 		},
-		nodeRewards:              map[common.Address]*ssz_types.NodeReward{},
-		networkRewards:           map[ssz_types.Layer]*ssz_types.NetworkReward{},
-		minipoolWithdrawals:      map[common.Address]*big.Int{},
-		validatorBalancesAtStart: map[common.Address]*big.Int{},
-		validatorBalancesAtEnd:   map[common.Address]*big.Int{},
+		nodeRewards:         map[common.Address]*ssz_types.NodeReward{},
+		networkRewards:      map[ssz_types.Layer]*ssz_types.NetworkReward{},
+		minipoolWithdrawals: map[common.Address]*big.Int{},
 	}
 }
 
@@ -642,11 +636,6 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 			if !mpi.IsEligibleForBonuses(eligibleEnd) {
 				continue
 			}
-			endBcBalance, ok := r.validatorBalancesAtEnd[mpd.Address]
-			if !ok {
-				// Validators with no balance at the end of the interval don't get any bonus commission
-				continue
-			}
 			bond, fee := mpi.GetMinipoolBondAndNodeFee(eligibleEnd)
 			feeWithBonus := fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
 			if fee.Cmp(feeWithBonus) >= 0 {
@@ -668,17 +657,11 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 			}
 			bonusFee := big.NewInt(0).Set(fee)
 			bonusFee.Sub(bonusFee, mpi.NodeFee)
-			consensusIncome := big.NewInt(0).Set(endBcBalance)
 			withdrawalTotal := r.minipoolWithdrawals[mpd.Address]
 			if withdrawalTotal == nil {
 				withdrawalTotal = big.NewInt(0)
 			}
-			consensusIncome.Add(consensusIncome, withdrawalTotal)
-			startBcBalance, ok := r.validatorBalancesAtStart[mpd.Address]
-			if !ok || startBcBalance == nil || startBcBalance.Cmp(thirtyTwoEth) < 0 {
-				startBcBalance = big.NewInt(0).Set(thirtyTwoEth)
-			}
-			consensusIncome.Sub(consensusIncome, startBcBalance)
+			consensusIncome := big.NewInt(0).Set(withdrawalTotal)
 			mpd.ConsensusIncome = &QuotedBigInt{Int: *(big.NewInt(0).Set(consensusIncome))}
 			bonusShare := bonusFee.Mul(bonusFee, big.NewInt(0).Sub(thirtyTwoEth, mpi.NodeDepositBalance))
 			bonusShare.Div(bonusShare, thirtyTwoEth)
@@ -795,161 +778,6 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeRewards() (*big.Int, *big.Int, *
 
 }
 
-func (r *treeGeneratorImpl_v9_v10) getValidatorBalancesAtStartAndEnd() error {
-	indices := make([]string, 0, len(r.validatorIndexMap))
-
-	for _, nsd := range r.nodeDetails {
-		nnd := r.networkState.NodeDetailsByAddress[nsd.Address]
-		eligible, _, eligibleEnd := nnd.IsEligibleForBonuses(r.elStartTime, r.elEndTime)
-		if !eligible {
-			continue
-		}
-
-		for _, mpi := range nsd.Minipools {
-			mpd, ok := r.networkState.MinipoolDetailsByAddress[mpi.Address]
-			if !ok {
-				return fmt.Errorf("minipool details not found for validator %s", mpi.Address.Hex())
-			}
-			if !mpd.IsEligibleForBonuses(eligibleEnd) {
-				// Don't need balances for validators that aren't eligible for bonuses
-				continue
-			}
-			indices = append(indices, mpi.ValidatorIndex)
-		}
-	}
-
-	r.log.Printlnf("%s Getting %d validator balances at start and end", r.logPrefix, len(indices))
-
-	validatorBalancesAtStart, err := r.bc.GetValidatorBalancesSafe(indices, &beacon.ValidatorStatusOptions{
-		Slot: &r.rewardsFile.ConsensusStartBlock,
-	})
-	if err != nil {
-		return fmt.Errorf("error getting validator balances at start: %w", err)
-	}
-	for index, balance := range validatorBalancesAtStart {
-		r.validatorBalancesAtStart[r.validatorIndexMap[index].Address] = balance
-	}
-
-	validatorBalancesAtEnd, err := r.bc.GetValidatorBalancesSafe(indices, &beacon.ValidatorStatusOptions{
-		Slot: &r.rewardsFile.ConsensusEndBlock,
-	})
-	if err != nil {
-		return fmt.Errorf("error getting validator balances at end: %w", err)
-	}
-	for index, balance := range validatorBalancesAtEnd {
-		r.validatorBalancesAtEnd[r.validatorIndexMap[index].Address] = balance
-	}
-
-	// For any minipool that opted in or out, reset its balances to the those values
-	nodeStartBalanceSlots := make(map[string]uint64)
-	nodeEndBalanceSlots := make(map[string]uint64)
-	for validatorIndex, mpi := range r.validatorIndexMap {
-		nodeDetails := r.networkState.NodeDetailsByAddress[mpi.NodeAddress]
-		registrationChanged := time.Unix(nodeDetails.SmoothingPoolRegistrationChanged.Int64(), 0)
-		if registrationChanged.After(r.elStartTime) && registrationChanged.Before(r.elEndTime) {
-			// Node opted in or out during the interval.
-			// Get the approximate slot at which the change occurred
-			slot := r.networkState.BeaconConfig.FirstSlotAtLeast(registrationChanged.Unix())
-			if nodeDetails.SmoothingPoolRegistrationState {
-				nodeStartBalanceSlots[validatorIndex] = slot
-			} else {
-				nodeEndBalanceSlots[validatorIndex] = slot
-			}
-		}
-	}
-
-	// For any minipool that bond-reduced, reset its balance to the value at the time of the reduction
-	for validatorIndex, mpi := range r.validatorIndexMap {
-		mpd := r.networkState.MinipoolDetailsByAddress[mpi.Address]
-		if mpd.LastBondReductionTime == nil {
-			continue
-		}
-		bondReductionTime := time.Unix(mpd.LastBondReductionTime.Int64(), 0)
-		if bondReductionTime.After(r.elStartTime) && bondReductionTime.Before(r.elEndTime) {
-			// Balance should be taken at whichever happened later- opt-in or bond reduction
-			nodeStartBalanceSlots[validatorIndex] = max(nodeStartBalanceSlots[validatorIndex], r.networkState.BeaconConfig.FirstSlotAtLeast(bondReductionTime.Unix()))
-		}
-	}
-
-	// For any minipool that was staked during the interval, reset its balance to the value at the time of staking
-	for validatorIndex, mpi := range r.validatorIndexMap {
-		mpd := r.networkState.MinipoolDetailsByAddress[mpi.Address]
-		if mpd.StatusTime == nil {
-			continue
-		}
-		if mpd.StatusTime.Sign() == 0 {
-			continue
-		}
-		statusTime := time.Unix(mpd.StatusTime.Int64(), 0)
-		if statusTime.After(r.elStartTime) {
-			// Balance should be taken at the latest point
-			nodeStartBalanceSlots[validatorIndex] = max(nodeStartBalanceSlots[validatorIndex], r.networkState.BeaconConfig.FirstSlotAtLeast(statusTime.Unix()))
-		}
-	}
-
-	// Invert the maps to get a list of slots to query.
-	startBalanceSlots := make(map[uint64][]string)
-	endBalanceSlots := make(map[uint64][]string)
-	for validatorIndex, slot := range nodeStartBalanceSlots {
-		startBalanceSlots[slot] = append(startBalanceSlots[slot], validatorIndex)
-	}
-	for validatorIndex, slot := range nodeEndBalanceSlots {
-		endBalanceSlots[slot] = append(endBalanceSlots[slot], validatorIndex)
-	}
-
-	r.log.Printlnf("%s Updating %d validator balances handle opt-ins, bond reductions, and stakings", r.logPrefix, len(nodeStartBalanceSlots))
-	r.log.Printlnf("%s Updating %d validator balances handle opt-outs", r.logPrefix, len(nodeEndBalanceSlots))
-	r.log.Printlnf("%s Querying %d slots for balances for validators that opted in", r.logPrefix, len(startBalanceSlots))
-	r.log.Printlnf("%s Querying %d slots for balances for validators that opted out", r.logPrefix, len(endBalanceSlots))
-
-	// Get the updated start balances for the validators that changed during the interval
-	total := len(startBalanceSlots) + len(endBalanceSlots)
-	i := 0
-	startTime := time.Now()
-	for slot, validatorIndices := range startBalanceSlots {
-		if i%10 == 0 {
-			elapsed := time.Since(startTime)
-			var secondsPerSlot float64
-			// For the first slot, don't divide by 0
-			if i != 0 {
-				secondsPerSlot = float64(elapsed.Seconds()) / float64(i)
-			}
-			r.log.Printlnf("%s On slot %d of %d (%.2f%%) - %.2f seconds per slot", r.logPrefix, i, total, float64(i)/float64(total)*100.0, secondsPerSlot)
-		}
-		i++
-		balances, err := r.bc.GetValidatorBalancesSafe(validatorIndices, &beacon.ValidatorStatusOptions{
-			Slot: &slot,
-		})
-		if err != nil {
-			return fmt.Errorf("error getting validator balances slot %d: %w", slot, err)
-		}
-		for index, balance := range balances {
-			r.validatorBalancesAtStart[r.validatorIndexMap[index].Address] = balance
-		}
-	}
-	for slot, validatorIndices := range endBalanceSlots {
-		if i%10 == 0 {
-			elapsed := time.Since(startTime)
-			secondsPerSlot := float64(elapsed.Seconds()) / float64(i)
-			r.log.Printlnf("%s On slot %d of %d (%.2f%%) - %.2f seconds per slot", r.logPrefix, i, total, float64(i)/float64(total)*100.0, secondsPerSlot)
-		}
-		i++
-		balances, err := r.bc.GetValidatorBalancesSafe(validatorIndices, &beacon.ValidatorStatusOptions{
-			Slot: &slot,
-		})
-		if err != nil {
-			return fmt.Errorf("error getting validator balances slot %d: %w", slot, err)
-		}
-		for index, balance := range balances {
-			r.validatorBalancesAtEnd[r.validatorIndexMap[index].Address] = balance
-		}
-	}
-
-	r.log.Printlnf("%s Finished updating validator balances for %d slots in %s", r.logPrefix, total, time.Since(startTime).String())
-
-	return nil
-}
-
 // Get all of the duties for a range of epochs
 func (r *treeGeneratorImpl_v9_v10) processAttestationsBalancesAndWithdrawalsForInterval() error {
 
@@ -960,14 +788,6 @@ func (r *treeGeneratorImpl_v9_v10) processAttestationsBalancesAndWithdrawalsForI
 	err := r.createMinipoolIndexMap()
 	if err != nil {
 		return err
-	}
-
-	// Get validator balances at start and end
-	if r.rewardsFile.RulesetVersion >= 10 {
-		err = r.getValidatorBalancesAtStartAndEnd()
-		if err != nil {
-			return err
-		}
 	}
 
 	// Check all of the attestations for each epoch
@@ -1023,6 +843,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 		// Get the beacon block for this slot
 		i := i
 		slot := epoch*r.slotsPerEpoch + i
+		slotTime := r.networkState.BeaconConfig.GetSlotTime(slot)
 		wg.Go(func() error {
 			beaconBlock, found, err := r.bc.GetBeaconBlock(fmt.Sprint(slot))
 			if err != nil {
@@ -1038,29 +859,31 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 				return nil
 			}
 
-			// For all slots except the first, store withdrawal amounts
-			if slot != r.rewardsFile.ConsensusStartBlock {
-				for _, withdrawal := range beaconBlock.Withdrawals {
-					// Ignore non-RP validators
-					mpi, exists := r.validatorIndexMap[withdrawal.ValidatorIndex]
-					if !exists {
-						continue
-					}
-
-					// Check that the minipool is opted into the SP during this slot
-					nodeInfo := r.nodeDetails[mpi.NodeIndex]
-					blockTime := r.networkState.BeaconConfig.GetSlotTime(slot)
-					if blockTime.Before(nodeInfo.OptInTime) || blockTime.After(nodeInfo.OptOutTime) {
-						continue
-					}
-
-					// Create the minipool's withdrawal sum big.Int if it doesn't exist
-					if r.minipoolWithdrawals[mpi.Address] == nil {
-						r.minipoolWithdrawals[mpi.Address] = big.NewInt(0)
-					}
-					// Add the withdrawal amount
-					r.minipoolWithdrawals[mpi.Address].Add(r.minipoolWithdrawals[mpi.Address], withdrawal.Amount)
+			for _, withdrawal := range beaconBlock.Withdrawals {
+				// Ignore non-RP validators
+				mpi, exists := r.validatorIndexMap[withdrawal.ValidatorIndex]
+				if !exists {
+					continue
 				}
+				nnd := r.networkState.NodeDetailsByAddress[mpi.NodeAddress]
+				nmd := r.networkState.MinipoolDetailsByAddress[mpi.Address]
+
+				// Check that the node is opted into the SP during this slot
+				if !nnd.WasOptedInAt(slotTime) {
+					continue
+				}
+
+				// Check that the minipool's bond is eligible for bonuses at this slot
+				if eligible := nmd.IsEligibleForBonuses(slotTime); !eligible {
+					continue
+				}
+
+				// Create the minipool's withdrawal sum big.Int if it doesn't exist
+				if r.minipoolWithdrawals[mpi.Address] == nil {
+					r.minipoolWithdrawals[mpi.Address] = big.NewInt(0)
+				}
+				// Add the withdrawal amount
+				r.minipoolWithdrawals[mpi.Address].Add(r.minipoolWithdrawals[mpi.Address], withdrawal.Amount)
 			}
 			return nil
 		})

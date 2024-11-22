@@ -545,7 +545,9 @@ func (r *treeGeneratorImpl_v9_v10_rolling) calculateNodeBonuses() (*big.Int, err
 		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
 		for _, mpd := range nsd.Minipools {
 			mpi := r.networkState.MinipoolDetailsByAddress[mpd.Address]
-			if !mpi.IsEligibleForBonuses(r.elEndTime) {
+			nnd := r.networkState.NodeDetailsByAddress[mpd.NodeAddress]
+			eligible, _, _ := nnd.IsEligibleForBonuses(r.elStartTime, r.elEndTime)
+			if !eligible {
 				mpd.MinipoolBonus = nil
 				mpd.ConsensusIncome = nil
 				continue
@@ -554,6 +556,12 @@ func (r *treeGeneratorImpl_v9_v10_rolling) calculateNodeBonuses() (*big.Int, err
 			feeWithBonus := fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
 			if fee.Cmp(feeWithBonus) >= 0 {
 				// This minipool won't get any bonuses, so skip it
+				mpd.MinipoolBonus = nil
+				mpd.ConsensusIncome = nil
+				continue
+			}
+			if mpd.ConsensusIncome.Cmp(big.NewInt(0)) == 0 {
+				// Minipools with no consensus income don't get bonuses
 				mpd.MinipoolBonus = nil
 				mpd.ConsensusIncome = nil
 				continue
