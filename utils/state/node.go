@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -49,6 +50,37 @@ type NativeNodeDetails struct {
 	AverageNodeFee                   *big.Int       `json:"average_node_fee"` // Must call CalculateAverageFeeAndDistributorShares to get this
 	CollateralisationRatio           *big.Int       `json:"collateralisation_ratio"`
 	DistributorBalance               *big.Int       `json:"distributor_balance"`
+}
+
+func timeMax(a, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
+}
+
+func timeMin(a, b time.Time) time.Time {
+	if a.Before(b) {
+		return a
+	}
+	return b
+}
+
+// Returns whether the node is eligible for bonuses, and the start and end times of its eligibility
+func (nnd *NativeNodeDetails) IsEligibleForBonuses(eligibleStart time.Time, eligibleEnd time.Time) (bool, time.Time, time.Time) {
+	// Nodes are not eligible for bonuses if they never opted into the smoothing pool
+	registeredTime := time.Unix(nnd.SmoothingPoolRegistrationChanged.Int64(), 0)
+	if registeredTime.Unix() == 0 {
+		return false, time.Time{}, time.Time{}
+	}
+
+	// Nodes are eligible for bonuses if they were in the Smoothing Pool for a portion of the interval
+	if nnd.SmoothingPoolRegistrationState {
+		return registeredTime.Before(eligibleEnd), timeMax(registeredTime, eligibleStart), eligibleEnd
+	}
+
+	// Nodes that weren't opted in at the end of the interval are eligible if they opted out during the interval
+	return registeredTime.Before(eligibleEnd), timeMax(registeredTime, eligibleStart), timeMin(registeredTime, eligibleEnd)
 }
 
 // Gets the details for a node using the efficient multicall contract
@@ -180,8 +212,23 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 	return nodeDetails, nil
 }
 
+func (node *NativeNodeDetails) WasOptedInAt(t time.Time) bool {
+	if node.SmoothingPoolRegistrationState {
+		// If a node is opted in, check if the check time is after the opt-in time
+		return t.After(time.Unix(node.SmoothingPoolRegistrationChanged.Int64(), 0))
+	}
+
+	// If the node isn't opted in and was never opted in, it's not opted in
+	if node.SmoothingPoolRegistrationChanged.Cmp(big.NewInt(0)) == 0 {
+		return false
+	}
+
+	// If a node is opted out, but was opted in, check if the check time is before the opt-out time
+	return t.Before(time.Unix(node.SmoothingPoolRegistrationChanged.Int64(), 0))
+}
+
 // Calculate the average node fee and user/node shares of the distributor's balance
-func CalculateAverageFeeAndDistributorShares(rp *rocketpool.RocketPool, contracts *NetworkContracts, node NativeNodeDetails, minipoolDetails []*NativeMinipoolDetails) error {
+func (node *NativeNodeDetails) CalculateAverageFeeAndDistributorShares(minipoolDetails []*NativeMinipoolDetails) error {
 
 	// Calculate the total of all fees for staking minipools that aren't finalized
 	totalFee := big.NewInt(0)
