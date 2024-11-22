@@ -75,6 +75,27 @@ type NativeMinipoolDetails struct {
 	PreMigrationBalance          *big.Int
 }
 
+var sixteenEth = big.NewInt(0).Mul(big.NewInt(16), oneEth)
+
+func (details *NativeMinipoolDetails) IsEligibleForBonuses(eligibleEnd time.Time) bool {
+	// A minipool is eligible for bonuses if it was active and had a bond of less than 16 ETH during the interval
+	if details.Status != types.Staking {
+		return false
+	}
+	if details.NodeDepositBalance.Cmp(sixteenEth) >= 0 {
+		return false
+	}
+
+	lastBondReductionTimestamp := details.LastBondReductionTime.Int64()
+	if lastBondReductionTimestamp == 0 {
+		// eligible if the bond was always under 16 eth
+		return true
+	}
+	lastBondReductionTime := time.Unix(lastBondReductionTimestamp, 0)
+	// eligible if the bond was reduced before or during the interval
+	return lastBondReductionTime.Before(eligibleEnd)
+}
+
 // Gets the details for a minipool using the efficient multicall contract
 func GetNativeMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, minipoolAddress common.Address) (NativeMinipoolDetails, error) {
 	opts := &bind.CallOpts{
@@ -218,16 +239,6 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 }
 
 var oneEth = big.NewInt(1e18)
-var thirtyTwoEth = big.NewInt(0).Mul(big.NewInt(32), oneEth)
-
-func (details *NativeMinipoolDetails) GetMinipoolAttestationScore(blockTime time.Time) *big.Int {
-	bond, fee := details.GetMinipoolBondAndNodeFee(blockTime)
-	minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
-	minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
-	minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
-	minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
-	return minipoolScore
-}
 
 // Get the bond and node fee of a minipool for the specified time
 func (details *NativeMinipoolDetails) GetMinipoolBondAndNodeFee(blockTime time.Time) (*big.Int, *big.Int) {

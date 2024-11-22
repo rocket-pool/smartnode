@@ -52,6 +52,37 @@ type NativeNodeDetails struct {
 	DistributorBalance               *big.Int       `json:"distributor_balance"`
 }
 
+func timeMax(a, b time.Time) time.Time {
+	if a.After(b) {
+		return a
+	}
+	return b
+}
+
+func timeMin(a, b time.Time) time.Time {
+	if a.Before(b) {
+		return a
+	}
+	return b
+}
+
+// Returns whether the node is eligible for bonuses, and the start and end times of its eligibility
+func (nnd *NativeNodeDetails) IsEligibleForBonuses(eligibleStart time.Time, eligibleEnd time.Time) (bool, time.Time, time.Time) {
+	// Nodes are not eligible for bonuses if they never opted into the smoothing pool
+	registeredTime := time.Unix(nnd.SmoothingPoolRegistrationChanged.Int64(), 0)
+	if registeredTime.Unix() == 0 {
+		return false, time.Time{}, time.Time{}
+	}
+
+	// Nodes are eligible for bonuses if they were in the Smoothing Pool for a portion of the interval
+	if nnd.SmoothingPoolRegistrationState {
+		return registeredTime.Before(eligibleEnd), timeMax(registeredTime, eligibleStart), eligibleEnd
+	}
+
+	// Nodes that weren't opted in at the end of the interval are eligible if they opted out during the interval
+	return registeredTime.Before(eligibleEnd), timeMax(registeredTime, eligibleStart), timeMin(registeredTime, eligibleEnd)
+}
+
 // Gets the details for a node using the efficient multicall contract
 func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, nodeAddress common.Address) (NativeNodeDetails, error) {
 	opts := &bind.CallOpts{
