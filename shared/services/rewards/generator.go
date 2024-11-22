@@ -47,14 +47,14 @@ const (
 
 	// Mainnet intervals
 	MainnetV8Interval  uint64 = 18
-	MainnetV9Interval  uint64 = 24
-	MainnetV10Interval uint64 = 29
+	MainnetV9Interval  uint64 = 29
+	MainnetV10Interval uint64 = 30
 	// Devnet intervals
 
 	// Holesky intervals
 	HoleskyV8Interval  uint64 = 93
-	HoleskyV9Interval  uint64 = 197
-	HoleskyV10Interval uint64 = 300
+	HoleskyV9Interval  uint64 = 276
+	HoleskyV10Interval uint64 = 277
 )
 
 func GetMainnetRulesetVersion(interval uint64) uint64 {
