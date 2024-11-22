@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
@@ -84,9 +85,11 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *colle
 	if cfg.Smartnode.GetRocketSignerRegistryAddress() != "" {
 		signallingAddress, err := reg.NodeToSigner(&bind.CallOpts{}, nodeAccount.Address)
 		if err != nil {
-			return fmt.Errorf("Error getting the signalling address: %w", err)
+			logger.Printlnf("Error getting the signalling address: %w", err)
+			// Set signallingAddress to blank address instead of erroring out of the task loop.
+			signallingAddress = common.Address{}
 		}
-		snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, nodeAccount.Address, signallingAddress)
+		snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, ec, bc, nodeAccount.Address, signallingAddress)
 		registry.MustRegister(snapshotCollector)
 
 	}
