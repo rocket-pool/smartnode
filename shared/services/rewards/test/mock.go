@@ -110,6 +110,12 @@ type MockMinipool struct {
 
 	ValidatorIndex string
 
+	// Withdrawal amount to add to the minipool during its SP period
+	SPWithdrawals *big.Int
+
+	// Withdrawal amount to add to the minipool during its regular period
+	OptedOutWithdrawals *big.Int
+
 	Notes []string
 }
 
@@ -137,6 +143,8 @@ func (h *MockHistory) GetNewDefaultMockMinipool(bondSize BondSize) *MockMinipool
 		NodeFee:            big.NewInt(100000000000000000),
 		NodeDepositBalance: big.NewInt(0).Set(bondSize),
 		ValidatorIndex:     h.GetValidatorIndex(),
+		// Default to 1 ETH of SP withdrawals
+		SPWithdrawals: big.NewInt(1e18),
 	}
 
 	return out
@@ -167,6 +175,55 @@ func (n *MockNode) AddMinipool(minipool *MockMinipool) {
 	n.borrowedEth.Add(n.borrowedEth, borrowedEth)
 
 	n.Minipools = append(n.Minipools, minipool)
+}
+
+func (h *MockHistory) SetWithdrawals(mockBeaconClient *MockBeaconClient) {
+	for _, node := range h.Nodes {
+		var slotWhileIn uint64
+		// Get a slot inside the node's SP period
+		if node.SmoothingPoolRegistrationState {
+			// Use the last slot of the SP period
+			slotWhileIn = h.BeaconConfig.LastSlotOfEpoch(h.EndEpoch)
+		} else {
+			// Get the opt-out time and ensure the node was opted in for at least 1 slot
+			optedOut := node.SmoothingPoolRegistrationChanged
+			if optedOut.Unix() != 0 {
+				slotWhileIn = h.BeaconConfig.FirstSlotAtLeast(optedOut.Unix()) - 1
+				if slotWhileIn < h.BeaconConfig.FirstSlotOfEpoch(h.StartEpoch) {
+					slotWhileIn = 0
+				}
+			}
+		}
+
+		var slotWhileOut uint64
+		if !node.SmoothingPoolRegistrationState {
+			slotWhileOut = h.BeaconConfig.LastSlotOfEpoch(h.EndEpoch)
+		} else {
+			// Get the opt-in time and ensure the node was opted out for at least 1 slot
+			optedIn := node.SmoothingPoolRegistrationChanged
+			if optedIn.Unix() != 0 {
+				slotWhileOut = h.BeaconConfig.FirstSlotAtLeast(optedIn.Unix()) - 1
+				if slotWhileOut < h.BeaconConfig.FirstSlotOfEpoch(h.StartEpoch) {
+					slotWhileOut = 0
+				}
+			}
+		}
+
+		for _, minipool := range node.Minipools {
+			if minipool.SPWithdrawals != nil && minipool.SPWithdrawals.Sign() > 0 {
+				if slotWhileIn == 0 {
+					panic("minipool has sp withdrawals but node was never in the sp")
+				}
+				mockBeaconClient.AddWithdrawal(slotWhileIn, minipool.ValidatorIndex, minipool.SPWithdrawals)
+			}
+			if minipool.OptedOutWithdrawals != nil && minipool.OptedOutWithdrawals.Sign() > 0 {
+				if slotWhileOut == 0 {
+					panic("minipool has opted out withdrawals but node was never opted out of the sp")
+				}
+				mockBeaconClient.AddWithdrawal(slotWhileOut, minipool.ValidatorIndex, minipool.OptedOutWithdrawals)
+			}
+		}
+	}
 }
 
 type NewMockNodeParams struct {
@@ -228,6 +285,8 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		})
 		node.Notes = "Regular node with one regular 8-eth minipool"
 		node.Class = "single_eight_eth"
+		node.Minipools[0].SPWithdrawals = nil
+		node.Minipools[0].OptedOutWithdrawals = big.NewInt(1e18)
 		nodes = append(nodes, node)
 	}
 
@@ -251,6 +310,8 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		})
 		node.Notes = "Regular node with one regular 16-eth minipool"
 		node.Class = "single_sixteen_eth"
+		node.Minipools[0].SPWithdrawals = nil
+		node.Minipools[0].OptedOutWithdrawals = big.NewInt(1e18)
 		nodes = append(nodes, node)
 	}
 
@@ -338,6 +399,7 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		CollateralRpl:     10,
 	})
 	node.Minipools[0].Status = types.Prelaunch
+	node.Minipools[0].SPWithdrawals = nil
 	node.Notes = "Node with one 8-eth minipool that is pending"
 	node.Class = "single_eight_eth_pending"
 	nodes = append(nodes, node)
@@ -348,6 +410,7 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		CollateralRpl:     10,
 	})
 	node.Minipools[0].Finalised = true
+	node.Minipools[0].SPWithdrawals = nil
 	node.Notes = "Node with one 8-eth minipool that is finalized"
 	node.Class = "single_eight_eth_finalized"
 	nodes = append(nodes, node)
@@ -382,8 +445,7 @@ type MockHistory struct {
 	// Network details for the final slot
 	NetworkDetails *rpstate.NetworkDetails
 
-	Nodes     []*MockNode
-	Minipools []*MockMinipool
+	Nodes []*MockNode
 
 	// Various offsets to create unique number spaces for each key type
 	lastNodeAddress     common.Address

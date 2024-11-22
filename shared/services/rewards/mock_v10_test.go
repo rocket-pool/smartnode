@@ -97,9 +97,6 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 	consensusEndBlock := history.GetConsensusEndBlock()
 	executionEndBlock := history.GetExecutionEndBlock()
 
-	// Give minipools 1 eth of earning each
-	t.bc.SetFinalSlotBalance(consensusEndBlock, eth.EthToWei(33))
-
 	logger := log.NewColorLogger(color.Faint)
 
 	t.rp.SetRewardSnapshotEvent(history.GetPreviousRewardSnapshotEvent())
@@ -117,19 +114,21 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 	nodeSummary := history.GetNodeSummary()
 	customBalanceNodes := nodeSummary["single_eight_eth_opted_in_quarter"]
 	for _, node := range customBalanceNodes {
-		t.bc.SetCustomBalance(node.Minipools[0].ValidatorIndex, eth.EthToWei(32.25), history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+(history.EndEpoch-history.StartEpoch)/4))
+		node.Minipools[0].SPWithdrawals = eth.EthToWei(0.75)
 		rollingRecord.ValidatorIndexMap[node.Minipools[0].ValidatorIndex].ConsensusIncome = QuotedBigIntFromBigInt(eth.EthToWei(0.75))
 	}
 	customBalanceNodes = nodeSummary["single_eight_eth_opted_out_three_quarters"]
 	for _, node := range customBalanceNodes {
-		t.bc.SetCustomBalance(node.Minipools[0].ValidatorIndex, eth.EthToWei(32.75), history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+3*(history.EndEpoch-history.StartEpoch)/4))
+		node.Minipools[0].SPWithdrawals = eth.EthToWei(0.75)
 		rollingRecord.ValidatorIndexMap[node.Minipools[0].ValidatorIndex].ConsensusIncome = QuotedBigIntFromBigInt(eth.EthToWei(0.75))
 	}
 	customBalanceNodes = nodeSummary["single_bond_reduction"]
 	for _, node := range customBalanceNodes {
-		t.bc.SetCustomBalance(node.Minipools[0].ValidatorIndex, eth.EthToWei(32.5), history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+(history.EndEpoch-history.StartEpoch)/2))
+		node.Minipools[0].SPWithdrawals = eth.EthToWei(0.5)
 		rollingRecord.ValidatorIndexMap[node.Minipools[0].ValidatorIndex].ConsensusIncome = QuotedBigIntFromBigInt(eth.EthToWei(0.5))
 	}
+
+	history.SetWithdrawals(t.bc)
 
 	generatorv9v10 := newTreeGeneratorImpl_v9_v10(
 		10,
@@ -498,9 +497,6 @@ func TestMockIntervalDefaultsTreegenv10RollingManager(tt *testing.T) {
 	consensusEndBlock := history.GetConsensusEndBlock()
 	executionEndBlock := history.GetExecutionEndBlock()
 
-	// Give minipools 1 eth of earning each
-	t.bc.SetFinalSlotBalance(consensusEndBlock, eth.EthToWei(33))
-
 	logger := log.NewColorLogger(color.Faint)
 
 	t.rp.SetRewardSnapshotEvent(history.GetPreviousRewardSnapshotEvent())
@@ -518,17 +514,14 @@ func TestMockIntervalDefaultsTreegenv10RollingManager(tt *testing.T) {
 	nodeSummary := history.GetNodeSummary()
 	customBalanceNodes := nodeSummary["single_eight_eth_opted_in_quarter"]
 	for _, node := range customBalanceNodes {
-		t.bc.SetCustomBalance(node.Minipools[0].ValidatorIndex, eth.EthToWei(32.25), history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+(history.EndEpoch-history.StartEpoch)/4))
 		rollingRecord.ValidatorIndexMap[node.Minipools[0].ValidatorIndex].ConsensusIncome = QuotedBigIntFromBigInt(eth.EthToWei(0.75))
 	}
 	customBalanceNodes = nodeSummary["single_eight_eth_opted_out_three_quarters"]
 	for _, node := range customBalanceNodes {
-		t.bc.SetCustomBalance(node.Minipools[0].ValidatorIndex, eth.EthToWei(32.75), history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+3*(history.EndEpoch-history.StartEpoch)/4))
 		rollingRecord.ValidatorIndexMap[node.Minipools[0].ValidatorIndex].ConsensusIncome = QuotedBigIntFromBigInt(eth.EthToWei(0.75))
 	}
 	customBalanceNodes = nodeSummary["single_bond_reduction"]
 	for _, node := range customBalanceNodes {
-		t.bc.SetCustomBalance(node.Minipools[0].ValidatorIndex, eth.EthToWei(32.5), history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+(history.EndEpoch-history.StartEpoch)/2))
 		rollingRecord.ValidatorIndexMap[node.Minipools[0].ValidatorIndex].ConsensusIncome = QuotedBigIntFromBigInt(eth.EthToWei(0.5))
 	}
 
@@ -635,14 +628,12 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
+	history.SetWithdrawals(t.bc)
 
 	consensusStartBlock := history.GetConsensusStartBlock()
 	executionStartBlock := history.GetExecutionStartBlock()
 	consensusEndBlock := history.GetConsensusEndBlock()
 	executionEndBlock := history.GetExecutionEndBlock()
-
-	// Give minipools 1 eth of earning each
-	t.bc.SetFinalSlotBalance(consensusEndBlock, eth.EthToWei(33))
 
 	logger := log.NewColorLogger(color.Faint)
 
@@ -721,12 +712,12 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 	// Check the rewards file
 	rewardsFile := v10Artifacts.RewardsFile
 	ethOne := rewardsFile.GetNodeSmoothingPoolEth(nodeOne.Address)
-	if ethOne.Uint64() != 143+442 {
-		t.Fatalf("Node one ETH amount does not match expected value: %s != %d", ethOne.String(), 143+442)
+	if ethOne.Uint64() != 169+416 {
+		t.Fatalf("Node one ETH amount does not match expected value: %s != %d", ethOne.String(), 169+416)
 	}
 	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
-	if ethTwo.Uint64() != 162+252 {
-		t.Fatalf("Node two ETH amount does not match expected value: %s != %d", ethTwo.String(), 162+252)
+	if ethTwo.Uint64() != 177+237 {
+		t.Fatalf("Node two ETH amount does not match expected value: %s != %d", ethTwo.String(), 177+237)
 	}
 
 	// Check the minipool performance file
@@ -735,15 +726,15 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 	if !ok {
 		t.Fatalf("Node one minipool performance not found")
 	}
-	if perfOne.GetBonusEthEarned().Uint64() != 442 {
-		t.Fatalf("Node one bonus does not match expected value: %s != %d", perfOne.GetBonusEthEarned().String(), 442)
+	if perfOne.GetBonusEthEarned().Uint64() != 416 {
+		t.Fatalf("Node one bonus does not match expected value: %s != %d", perfOne.GetBonusEthEarned().String(), 416)
 	}
 	perfTwo, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeTwo.Minipools[0].Address)
 	if !ok {
 		t.Fatalf("Node two minipool performance not found")
 	}
-	if perfTwo.GetBonusEthEarned().Uint64() != 252 {
-		t.Fatalf("Node two bonus does not match expected value: %s != %d", perfTwo.GetBonusEthEarned().String(), 252)
+	if perfTwo.GetBonusEthEarned().Uint64() != 237 {
+		t.Fatalf("Node two bonus does not match expected value: %s != %d", perfTwo.GetBonusEthEarned().String(), 237)
 	}
 }
 
@@ -777,13 +768,15 @@ func TestMockNoRPLRewards(tt *testing.T) {
 
 	t.bc.SetState(state)
 
+	// Give all three minipools 1 ETH of consensus income
+	t.bc.AddWithdrawal(history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+1), nodeOne.Minipools[0].ValidatorIndex, big.NewInt(1e18))
+	t.bc.AddWithdrawal(history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+1), nodeTwo.Minipools[0].ValidatorIndex, big.NewInt(1e18))
+	t.bc.AddWithdrawal(history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+1), nodeTwo.Minipools[1].ValidatorIndex, big.NewInt(1e18))
+
 	consensusStartBlock := history.GetConsensusStartBlock()
 	executionStartBlock := history.GetExecutionStartBlock()
 	consensusEndBlock := history.GetConsensusEndBlock()
 	executionEndBlock := history.GetExecutionEndBlock()
-
-	// Give minipools 1 eth of earning each
-	t.bc.SetFinalSlotBalance(consensusEndBlock, eth.EthToWei(33))
 
 	logger := log.NewColorLogger(color.Faint)
 
@@ -936,13 +929,14 @@ func TestMockOptedOutAndThenBondReduced(tt *testing.T) {
 
 	t.bc.SetState(state)
 
+	// Add withdrawals to both minipools
+	t.bc.AddWithdrawal(history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+1), nodeOne.Minipools[0].ValidatorIndex, big.NewInt(1e18))
+	t.bc.AddWithdrawal(history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+1), nodeTwo.Minipools[0].ValidatorIndex, big.NewInt(1e18))
+
 	consensusStartBlock := history.GetConsensusStartBlock()
 	executionStartBlock := history.GetExecutionStartBlock()
 	consensusEndBlock := history.GetConsensusEndBlock()
 	executionEndBlock := history.GetExecutionEndBlock()
-
-	// Give minipools 1 eth of earning each
-	t.bc.SetFinalSlotBalance(consensusEndBlock, eth.EthToWei(33))
 
 	logger := log.NewColorLogger(color.Faint)
 

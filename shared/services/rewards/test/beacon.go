@@ -1,6 +1,7 @@
 package test
 
 import (
+	"errors"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -8,7 +9,6 @@ import (
 
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
@@ -103,15 +103,8 @@ type MockBeaconClient struct {
 	// A map of validator index to critical duties slots
 	criticalDutiesSlots criticalDutiesSlotMap
 
-	// Final slot balance
-	finalSlot        uint64
-	finalSlotBalance *big.Int
-
-	// custom balances to report for validators at given slots
-	customBalances map[validatorIndex][]struct {
-		Balance *big.Int
-		Slot    uint64
-	}
+	// A map of validator index to withdrawals
+	withdrawals map[slot]map[validatorIndex]*big.Int
 }
 
 func (m *MockBeaconClient) SetState(state *state.NetworkState) {
@@ -140,19 +133,33 @@ func NewMockBeaconClient(t *testing.T) *MockBeaconClient {
 	return &MockBeaconClient{t: t}
 }
 
-func (bc *MockBeaconClient) GetBeaconBlock(slot string) (beacon.BeaconBlock, bool, error) {
-	attestations, _, err := bc.GetAttestations(slot)
+func (bc *MockBeaconClient) GetBeaconBlock(s string) (beacon.BeaconBlock, bool, error) {
+	attestations, _, err := bc.GetAttestations(s)
 	if err != nil {
 		return beacon.BeaconBlock{}, false, err
 	}
-	if block, ok := bc.blocks[slot]; ok {
-		block.Attestations = attestations
-		return block, true, nil
+	sInt, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		panic(err)
 	}
-	// Otherwise, return the attestation info.
-	return beacon.BeaconBlock{
-		Attestations: attestations,
-	}, true, nil
+	withdrawalMap := bc.withdrawals[slot(sInt)]
+	var out beacon.BeaconBlock
+	if block, ok := bc.blocks[s]; ok {
+		out = block
+		out.Attestations = attestations
+	}
+
+	// Withdrawals
+	out.Withdrawals = make([]beacon.WithdrawalInfo, 0, len(withdrawalMap))
+	for validatorIndex, amount := range withdrawalMap {
+		out.Withdrawals = append(out.Withdrawals, beacon.WithdrawalInfo{
+			ValidatorIndex: string(validatorIndex),
+			Amount:         amount,
+		})
+	}
+	out.Attestations = attestations
+
+	return out, true, nil
 }
 
 func (bc *MockBeaconClient) SetBeaconBlock(slot string, block beacon.BeaconBlock) {
@@ -404,59 +411,6 @@ func (bc *MockBeaconClient) SetMinipoolPerformance(index string, missedSlots []u
 	bc.validatorCount++
 }
 
-func (bc *MockBeaconClient) SetFinalSlotBalance(slot uint64, balance *big.Int) {
-	bc.finalSlot = slot
-	bc.finalSlotBalance = balance
-}
-
-func (bc *MockBeaconClient) SetCustomBalance(index string, balance *big.Int, slot uint64) {
-	if bc.customBalances == nil {
-		bc.customBalances = make(map[validatorIndex][]struct {
-			Balance *big.Int
-			Slot    uint64
-		})
-	}
-	bc.customBalances[validatorIndex(index)] = append(bc.customBalances[validatorIndex(index)], struct {
-		Balance *big.Int
-		Slot    uint64
-	}{balance, slot})
-}
-
-// GetValidatorBalancesSafe returns the balances of the validators
-// The mock doesn't need to worry about thrashing the bn, since there is none.
-func (bc *MockBeaconClient) GetValidatorBalancesSafe(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
-
-	// Get the balances
-	return bc.GetValidatorBalances(indices, opts)
-}
-
-func (bc *MockBeaconClient) GetValidatorBalances(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
-	out := make(map[string]*big.Int)
-	for _, index := range indices {
-		// Check for custom balances
-		if customBalances, ok := bc.customBalances[validatorIndex(index)]; ok {
-			found := false
-			for _, customBalance := range customBalances {
-				if customBalance.Slot == *opts.Slot {
-					out[index] = customBalance.Balance
-					found = true
-					break
-				}
-			}
-			if found {
-				continue
-			}
-		}
-		// In the last slot, all validators have 33 ETH
-		if *opts.Slot == bc.finalSlot {
-			out[index] = big.NewInt(0).Set(bc.finalSlotBalance)
-			continue
-		}
-		out[index] = big.NewInt(0).Mul(big.NewInt(32), eth.EthToWei(1))
-	}
-	return out, nil
-}
-
 func (bc *MockBeaconClient) GetEth2Config() (beacon.Eth2Config, error) {
 	return bc.state.BeaconConfig, nil
 }
@@ -477,5 +431,16 @@ func (bc *MockBeaconClient) GetStateForSlot(slot uint64) (*state.NetworkState, e
 	if slot == bc.state.BeaconSlotNumber {
 		return bc.state, nil
 	}
-	return nil, fmt.Errorf("not implemented", slot)
+	return nil, errors.New("not implemented")
+}
+
+func (bc *MockBeaconClient) AddWithdrawal(s uint64, index string, amount *big.Int) {
+	if bc.withdrawals == nil {
+		bc.withdrawals = make(map[slot]map[validatorIndex]*big.Int)
+	}
+	ss := slot(s)
+	if bc.withdrawals[ss] == nil {
+		bc.withdrawals[ss] = make(map[validatorIndex]*big.Int)
+	}
+	bc.withdrawals[ss][validatorIndex(index)] = amount
 }
