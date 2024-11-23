@@ -18,7 +18,7 @@ import (
 // Config
 const (
 	defaultMaxNodeFeeSlippage = 0.01 // 1% below current network fee
-	depositWarningMessage     = "NOTE: by creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool."
+	depositWarningMessage     = "NOTE: By creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool."
 )
 
 func nodeDeposit(c *cli.Context) error {
@@ -48,6 +48,33 @@ func nodeDeposit(c *cli.Context) error {
 	fmt.Println("Your eth2 client is on the correct network.")
 	fmt.Println()
 
+	// Get the node's registration status
+	smoothie, err := rp.NodeGetSmoothingPoolRegistrationStatus()
+	if err != nil {
+		return err
+	}
+
+	if !smoothie.NodeRegistered {
+		fmt.Println("Your node is not opted into the smoothing pool.")
+	} else {
+		fmt.Println("Your node is currently opted into the smoothing pool.")
+	}
+	fmt.Println()
+
+	// Post a warning about ETH only minipools
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: We’re excited to announce that newly launched Saturn 0 minipools will feature a commission structure ranging from 5%% to 14%%.\n\n- 5%% base commission\n- 5%% dynamic commission boost until Saturn 1\n- Up to 4%% boost for staked RPL valued at ≥10%% of borrowed ETH\n\n- Smoothing pool participation is required to benefit from dynamic commission\n- Dynamic commission starts when reward tree v10 is released (currently in development)\n- Dynamic commission ends soon after Saturn 1 is released\n\nNewly launched minipools with no RPL staked receive 10%% commission while newly launched minipools with ≥10%% of borrowed ETH staked receive 14%% commission.\n\nTo learn more about Saturn 0 and how it affects newly launched minipools, visit: https://rpips.rocketpool.net/tokenomics-explainers/005-rework-prelude%s\nWould you like to continue?", colorYellow, colorReset))) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
+	// Post a final warning about the dynamic comission boost
+	if !smoothie.NodeRegistered {
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Your node is not opted into the smoothing pool, which means newly launched minipools will not benefit from the 5-9%% dynamic commission boost. You can join the smoothing pool using: 'rocketpool node join-smoothing-pool'.\n%sAre you sure you'd like to continue without opting into the smoothing pool?", colorRed, colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	}
+
 	// If hotfix is live and voting isn't initialized, display a warning
 	err = warnIfVotingUninitialized(rp, c, depositWarningMessage)
 	if err != nil {
@@ -65,13 +92,14 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Post a warning about fee distribution
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Get deposit amount
 	var amount float64
+
 	if c.String("amount") != "" {
 		// Parse amount
 		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
@@ -80,20 +108,11 @@ func nodeDeposit(c *cli.Context) error {
 		}
 		amount = depositAmount
 	} else {
-		// Get deposit amount options
-		amountOptions := []string{
-			"8 ETH",
-			"16 ETH",
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to make an 8 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
 		}
-
-		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose an amount of ETH to deposit:", amountOptions)
-		switch selected {
-		case 0:
-			amount = 8
-		case 1:
-			amount = 16
-		}
+		amount = 8
 	}
 
 	amountWei := eth.EthToWei(amount)
@@ -133,7 +152,7 @@ func nodeDeposit(c *cli.Context) error {
 
 		// Prompt for min node fee
 		if nodeFees.MinNodeFee == nodeFees.MaxNodeFee {
-			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", nodeFees.MinNodeFee*100)
+			fmt.Printf("Your minipool will use the current base commission rate of %.2f%%.\n", nodeFees.MinNodeFee*100)
 			minNodeFee = nodeFees.MinNodeFee
 		} else {
 			minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.MinNodeFee)

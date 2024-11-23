@@ -3,6 +3,7 @@ package rewards
 import (
 	"fmt"
 	"math/big"
+	"slices"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -200,22 +201,31 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 	// Get the current network
 	network := t.cfg.Smartnode.Network.Value.(cfgtypes.Network)
 
-	// Determine which actual rulesets to use based on the current interval number, checking in descending order from the latest
-	// to interval 2.
-	// Do not default- require intervals to be explicit
+	// Determine which actual rulesets to use based on the current interval number, checking in descending order.
 	foundGenerator := false
 	foundApproximator := false
-	for i := uint64(len(t.rewardsIntervalInfos)); i > 1; i-- {
-		info := t.rewardsIntervalInfos[i]
+
+	// Sort by version number, reversed. That way we will pick the highest version number whose startInterval
+	// is eligible
+	slices.SortFunc(rewardsIntervalInfos, func(a, b rewardsIntervalInfo) int {
+		// b - a sorts high to low
+		return int(b.rewardsRulesetVersion) - int(a.rewardsRulesetVersion)
+	})
+
+	// The first ruleset whose startInterval is at most t.index is the one to use
+	// for treegen, and for some reason, the first ruleset whose start interval is less than t.index
+	// is the one to use for approximations
+	for _, info := range rewardsIntervalInfos {
+
 		startInterval, err := info.GetStartInterval(network)
 		if err != nil {
-			return nil, fmt.Errorf("error getting start interval for rewards period %d: %w", i, err)
+			return nil, fmt.Errorf("error getting start interval for rewards period %d: %w", t.index, err)
 		}
-		if !foundGenerator && t.index >= startInterval {
+		if !foundGenerator && startInterval <= t.index {
 			t.generatorImpl = info.generator
 			foundGenerator = true
 		}
-		if !foundApproximator && t.index > startInterval {
+		if !foundApproximator && startInterval < t.index {
 			t.approximatorImpl = info.generator
 			foundApproximator = true
 		}
@@ -226,6 +236,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 	}
 
 	if !foundGenerator || !foundApproximator {
+		// Do not default- require intervals to be explicit
 		return nil, fmt.Errorf("No treegen implementation could be found for interval %d", t.index)
 	}
 

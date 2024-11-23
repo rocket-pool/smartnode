@@ -55,13 +55,13 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Post a warning about fee distribution
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: by creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Print a notification about the pubkey
-	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into either an 8 ETH or 16 ETH deposit (your choice), and convert the remaining 24 or 16 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at https://docs.rocketpool.net/guides/atlas/solo-staker-migration.html to learn about the process and its implications.\n\n1. First, we'll create the new minipool.\n2. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator.\n3. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n%sNOTE: If you intend to use the credit balance to create additional validators, you will need to have enough RPL staked to support them.%s\n\n", pubkey.Hex(), colorYellow, colorReset)
+	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into an 8 ETH deposit, and convert the remaining 24 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at https://docs.rocketpool.net/guides/atlas/solo-staker-migration.html to learn about the process and its implications.\n\n1. First, we'll create the new minipool.\n2. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator.\n3. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n%sNOTE: If you intend to use the credit balance to create additional validators, you will need to have enough RPL staked to support them.%s\n\n", pubkey.Hex(), colorYellow, colorReset)
 
 	// Get deposit amount
 	var amount float64
@@ -75,22 +75,11 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		amount = depositAmount
 
 	} else {
-
-		// Get deposit amount options
-		amountOptions := []string{
-			"8 ETH",
-			"16 ETH",
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: Your new minipool will use an 8 ETH deposit (this will become your share of the balance, and the remainder will become the pool stakers' share):%s\nWould you like to continue?", colorYellow, colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
 		}
-
-		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose an amount of ETH you want to use as your deposit for the new minipool (this will become your share of the balance, and the remainder will become the pool stakers' share):", amountOptions)
-		switch selected {
-		case 0:
-			amount = 8
-		case 1:
-			amount = 16
-		}
-
+		amount = 8
 	}
 
 	amountWei := eth.EthToWei(amount)
@@ -130,7 +119,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 
 		// Prompt for min node fee
 		if nodeFees.MinNodeFee == nodeFees.MaxNodeFee {
-			fmt.Printf("Your minipool will use the current fixed commission rate of %.2f%%.\n", nodeFees.MinNodeFee*100)
+			fmt.Printf("Your minipool will use the current base commission rate of %.2f%%.\n", nodeFees.MinNodeFee*100)
 			minNodeFee = nodeFees.MinNodeFee
 		} else {
 			minNodeFee = promptMinNodeFee(nodeFees.NodeFee, nodeFees.MinNodeFee)

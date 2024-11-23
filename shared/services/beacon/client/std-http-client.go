@@ -437,6 +437,10 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 
 // Get whether validators have sync duties to perform at given epoch
 func (c *StandardHttpClient) GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error) {
+	// Return if there are not validators to check
+	if len(indices) == 0 {
+		return nil, nil
+	}
 
 	// Perform the post request
 	responseBody, status, err := c.postRequest(fmt.Sprintf(RequestValidatorSyncDuties, strconv.FormatUint(epoch, 10)), indices)
