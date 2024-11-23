@@ -1046,3 +1046,164 @@ func TestMockOptedOutAndThenBondReduced(tt *testing.T) {
 		t.Fatalf("Node two minipool one effective commission does not match expected value: %s != %d", perfTwo.GetEffectiveCommission().String(), 100000000000000000)
 	}
 }
+
+func TestMockWithdrawableEpoch(tt *testing.T) {
+
+	history := test.NewDefaultMockHistoryNoNodes()
+	// Add two nodes which are earning some bonus commission
+	nodeOne := history.GetNewDefaultMockNode(&test.NewMockNodeParams{
+		SmoothingPool:     true,
+		EightEthMinipools: 1,
+		CollateralRpl:     0,
+	})
+	nodeOne.Minipools[0].NodeFee, _ = big.NewInt(0).SetString("50000000000000000", 10)
+	history.Nodes = append(history.Nodes, nodeOne)
+	nodeTwo := history.GetNewDefaultMockNode(&test.NewMockNodeParams{
+		SmoothingPool:     true,
+		EightEthMinipools: 1,
+		CollateralRpl:     0,
+	})
+	nodeTwo.Minipools[0].NodeFee, _ = big.NewInt(0).SetString("50000000000000000", 10)
+	// Withdrawable epoch half way through the interval
+	nodeTwo.Minipools[0].WithdrawableEpoch = history.StartEpoch + (history.EndEpoch-history.StartEpoch)/2
+	history.Nodes = append(history.Nodes, nodeTwo)
+
+	// Add oDAO nodes
+	odaoNodes := history.GetDefaultMockODAONodes()
+	history.Nodes = append(history.Nodes, odaoNodes...)
+
+	state := history.GetEndNetworkState()
+
+	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+
+	t.bc.SetState(state)
+
+	// Add withdrawals to both minipools
+	t.bc.AddWithdrawal(history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+1), nodeOne.Minipools[0].ValidatorIndex, big.NewInt(1e18))
+	// Add a withdrawal in the epoch after the interval ends
+	t.bc.AddWithdrawal(history.BeaconConfig.FirstSlotOfEpoch(history.EndEpoch+1), nodeOne.Minipools[0].ValidatorIndex, big.NewInt(1e18))
+	// Withdraw 0.5 eth at the start of the interval
+	t.bc.AddWithdrawal(history.BeaconConfig.FirstSlotOfEpoch(history.StartEpoch+1), nodeTwo.Minipools[0].ValidatorIndex, big.NewInt(5e17))
+	// Withdraw 32.5 eth at the end of the interval
+	t.bc.AddWithdrawal(history.BeaconConfig.FirstSlotOfEpoch(history.EndEpoch-1), nodeTwo.Minipools[0].ValidatorIndex, big.NewInt(0).Mul(big.NewInt(325), big.NewInt(1e17)))
+
+	consensusStartBlock := history.GetConsensusStartBlock()
+	executionStartBlock := history.GetExecutionStartBlock()
+	consensusEndBlock := history.GetConsensusEndBlock()
+	executionEndBlock := history.GetExecutionEndBlock()
+
+	logger := log.NewColorLogger(color.Faint)
+
+	t.rp.SetRewardSnapshotEvent(history.GetPreviousRewardSnapshotEvent())
+	t.bc.SetBeaconBlock(fmt.Sprint(consensusStartBlock-1), beacon.BeaconBlock{ExecutionBlockNumber: executionStartBlock - 1})
+	t.bc.SetBeaconBlock(fmt.Sprint(consensusStartBlock), beacon.BeaconBlock{ExecutionBlockNumber: executionStartBlock})
+	t.rp.SetHeaderByNumber(big.NewInt(int64(executionStartBlock)), &types.Header{Time: uint64(history.GetStartTime().Unix())})
+
+	for _, validator := range state.ValidatorDetails {
+		t.bc.SetMinipoolPerformance(validator.Index, make([]uint64, 0))
+	}
+
+	generatorv9v10 := newTreeGeneratorImpl_v9_v10(
+		10,
+		&logger,
+		t.Name(),
+		state.NetworkDetails.RewardIndex,
+		&SnapshotEnd{
+			Slot:           consensusEndBlock,
+			ConsensusBlock: consensusEndBlock,
+			ExecutionBlock: executionEndBlock,
+		},
+		&types.Header{
+			Number: big.NewInt(int64(history.GetExecutionEndBlock())),
+			Time:   assets.Mainnet20ELHeaderTime,
+		},
+		/* intervalsPassed= */ 1,
+		state,
+	)
+
+	generatorv9v10Rolling := newTreeGeneratorImpl_v9_v10_rolling(
+		10,
+		&logger,
+		t.Name(),
+		state.NetworkDetails.RewardIndex,
+		&SnapshotEnd{
+			Slot:           consensusEndBlock,
+			ConsensusBlock: consensusEndBlock,
+			ExecutionBlock: executionEndBlock,
+		},
+		&types.Header{
+			Number: big.NewInt(int64(history.GetExecutionEndBlock())),
+			Time:   assets.Mainnet20ELHeaderTime,
+		},
+		1,
+		state,
+		getRollingRecord(history, state, big.NewInt(1e18)),
+	)
+
+	v10Artifacts, err := generatorv9v10.generateTree(
+		t.rp,
+		"mainnet",
+		make([]common.Address, 0),
+		t.bc,
+	)
+	t.failIf(err)
+
+	v10RRArtifacts, err := generatorv9v10Rolling.generateTree(
+		t.rp,
+		"mainnet",
+		make([]common.Address, 0),
+		t.bc,
+	)
+	t.failIf(err)
+
+	if testing.Verbose() {
+		t.saveArtifacts("v10", v10Artifacts)
+		t.saveArtifacts("v10-rolling", v10RRArtifacts)
+	}
+
+	if v10RRArtifacts.RewardsFile.GetMerkleRoot() != v10Artifacts.RewardsFile.GetMerkleRoot() {
+		t.Fatalf("Merkle root does not match between rolling and non-rolling %s != %s", v10RRArtifacts.RewardsFile.GetMerkleRoot(), v10Artifacts.RewardsFile.GetMerkleRoot())
+	}
+
+	// Check the rewards file
+	rewardsFile := v10Artifacts.RewardsFile
+	ethOne := rewardsFile.GetNodeSmoothingPoolEth(nodeOne.Address)
+	expectedEthOne, _ := big.NewInt(0).SetString("21920833333333333333", 10)
+	if ethOne.Cmp(expectedEthOne) != 0 {
+		t.Fatalf("Node one ETH amount does not match expected value: %s != %s", ethOne.String(), expectedEthOne.String())
+	}
+	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
+	expectedEthTwo, _ := big.NewInt(0).SetString("10654166666666666666", 10)
+	if ethTwo.Cmp(expectedEthTwo) != 0 {
+		t.Fatalf("Node two ETH amount does not match expected value: %s != %s", ethTwo.String(), expectedEthTwo.String())
+	}
+
+	// Check the minipool performance file
+	minipoolPerformanceFile := v10Artifacts.MinipoolPerformanceFile
+	perfOne, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeOne.Minipools[0].Address)
+	if !ok {
+		t.Fatalf("Node one minipool performance should be found")
+	}
+	if perfOne.GetBonusEthEarned().Uint64() != 37500000000000000 {
+		t.Fatalf("Node one minipool one bonus does not match expected value: %s != %d", perfOne.GetBonusEthEarned().String(), 37500000000000000)
+	}
+	if perfOne.GetEffectiveCommission().Uint64() != 100000000000000000 {
+		t.Fatalf("Node one minipool one effective commission does not match expected value: %s != %d", perfOne.GetEffectiveCommission().String(), 1000000000000000000)
+	}
+	if perfOne.GetConsensusIncome().Uint64() != 1000000000000000000 {
+		t.Fatalf("Node one minipool one consensus income does not match expected value: %s != %d", perfOne.GetConsensusIncome().String(), 1000000000000000000)
+	}
+	perfTwo, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeTwo.Minipools[0].Address)
+	if !ok {
+		t.Fatalf("Node two minipool one performance not found")
+	}
+	if perfTwo.GetBonusEthEarned().Uint64() != 37500000000000000 {
+		t.Fatalf("Node two minipool one bonus does not match expected value: %s != %d", perfTwo.GetBonusEthEarned().String(), 37500000000000000)
+	}
+	if perfTwo.GetEffectiveCommission().Uint64() != 100000000000000000 {
+		t.Fatalf("Node two minipool one effective commission does not match expected value: %s != %d", perfTwo.GetEffectiveCommission().String(), 100000000000000000)
+	}
+	if perfTwo.GetConsensusIncome().Uint64() != 1000000000000000000 {
+		t.Fatalf("Node two minipool one consensus income does not match expected value: %s != %d", perfTwo.GetConsensusIncome().String(), 1000000000000000000)
+	}
+}

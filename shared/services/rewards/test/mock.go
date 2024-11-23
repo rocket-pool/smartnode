@@ -72,6 +72,10 @@ func (h *MockHistory) GetMinipoolAttestationScoreAndCount(address common.Address
 		}
 		pubkey := mpi.Pubkey
 		validator := state.ValidatorDetails[pubkey]
+		// Check if the validator was exited before this slot
+		if validator.ExitEpoch <= h.BeaconConfig.SlotToEpoch(slot) {
+			continue
+		}
 		index := validator.Index
 		indexInt, _ := strconv.ParseUint(index, 10, 64)
 		// Count the attestation if index%32 == slot%32
@@ -115,6 +119,10 @@ type MockMinipool struct {
 
 	// Withdrawal amount to add to the minipool during its regular period
 	OptedOutWithdrawals *big.Int
+
+	// The epoch after which the minipool is withdrawable.
+	// Defaults to FAR_FUTURE_EPOCH.
+	WithdrawableEpoch uint64
 
 	Notes []string
 }
@@ -627,6 +635,12 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 
 			// Finally, populate the the ValidatorDetails map
 			pubkey := minipool.Pubkey
+			withdrawableEpoch := FarFutureEpoch
+			exitEpoch := FarFutureEpoch
+			if minipool.WithdrawableEpoch != 0 {
+				withdrawableEpoch = minipool.WithdrawableEpoch
+				exitEpoch = minipool.WithdrawableEpoch - 1
+			}
 			details := beacon.ValidatorStatus{
 				Pubkey:                     minipool.Pubkey,
 				Index:                      minipool.ValidatorIndex,
@@ -636,8 +650,8 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 				Slashed:                    false,
 				ActivationEligibilityEpoch: 0,
 				ActivationEpoch:            0,
-				ExitEpoch:                  FarFutureEpoch,
-				WithdrawableEpoch:          FarFutureEpoch,
+				ExitEpoch:                  exitEpoch,
+				WithdrawableEpoch:          withdrawableEpoch,
 				Exists:                     true,
 			}
 			if minipool.Status == types.Staking {
