@@ -878,12 +878,24 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 					continue
 				}
 
+				// If the withdrawal is in or after the minipool's withdrawable epoch, adjust it.
+				withdrawalAmount := withdrawal.Amount
+				validatorInfo := r.networkState.ValidatorDetails[mpi.ValidatorPubkey]
+				if slot >= r.networkState.BeaconConfig.FirstSlotOfEpoch(validatorInfo.WithdrawableEpoch) {
+					// Subtract 32 ETH from the withdrawal amount
+					withdrawalAmount = big.NewInt(0).Sub(withdrawalAmount, thirtyTwoEth)
+					// max(withdrawalAmount, 0)
+					if withdrawalAmount.Sign() < 0 {
+						withdrawalAmount.SetInt64(0)
+					}
+				}
+
 				// Create the minipool's withdrawal sum big.Int if it doesn't exist
 				if r.minipoolWithdrawals[mpi.Address] == nil {
 					r.minipoolWithdrawals[mpi.Address] = big.NewInt(0)
 				}
 				// Add the withdrawal amount
-				r.minipoolWithdrawals[mpi.Address].Add(r.minipoolWithdrawals[mpi.Address], withdrawal.Amount)
+				r.minipoolWithdrawals[mpi.Address].Add(r.minipoolWithdrawals[mpi.Address], withdrawalAmount)
 			}
 			return nil
 		})

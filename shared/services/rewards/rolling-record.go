@@ -379,13 +379,25 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 						continue
 					}
 
+					// If the withdrawal is in or after the minipool's withdrawable epoch, adjust it.
+					withdrawalAmount := withdrawal.Amount
+					validatorInfo := state.ValidatorDetails[mpi.ValidatorPubkey]
+					if slot >= state.BeaconConfig.FirstSlotOfEpoch(validatorInfo.WithdrawableEpoch) {
+						// Subtract 32 ETH from the withdrawal amount
+						withdrawalAmount = big.NewInt(0).Sub(withdrawalAmount, thirtyTwoEth)
+						// max(withdrawalAmount, 0)
+						if withdrawalAmount.Sign() < 0 {
+							withdrawalAmount.SetInt64(0)
+						}
+					}
+
 					// Create the minipool's income big.Int if it doesn't exist
 					if mpi.ConsensusIncome == nil {
 						mpi.ConsensusIncome = NewQuotedBigInt(0)
 					}
 
 					// Add the withdrawal amount as consensus income
-					mpi.ConsensusIncome.Add(&mpi.ConsensusIncome.Int, withdrawal.Amount)
+					mpi.ConsensusIncome.Add(&mpi.ConsensusIncome.Int, withdrawalAmount)
 				}
 			}
 			return nil
