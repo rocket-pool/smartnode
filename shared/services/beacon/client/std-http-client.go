@@ -650,6 +650,7 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 	}
 
 	// Add attestation info
+	beaconBlock.Attestations = make([]beacon.AttestationInfo, 0, len(block.Data.Message.Body.Attestations))
 	for i, attestation := range block.Data.Message.Body.Attestations {
 		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
 		info := beacon.AttestationInfo{
@@ -664,6 +665,7 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 	}
 
 	// Add withdrawals
+	beaconBlock.Withdrawals = make([]beacon.WithdrawalInfo, 0, len(block.Data.Message.Body.ExecutionPayload.Withdrawals))
 	for _, withdrawal := range block.Data.Message.Body.ExecutionPayload.Withdrawals {
 		amount, ok := new(big.Int).SetString(withdrawal.Amount, 10)
 		if !ok {
