@@ -161,7 +161,6 @@ type GetMinipoolCloseDetailsForNodeResponse struct {
 	Status                      string                 `json:"status"`
 	Error                       string                 `json:"error"`
 	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
-	IsVotingInitialized         bool                   `json:"isVotingInitialized"`
 	Details                     []MinipoolCloseDetails `json:"details"`
 }
 type CloseMinipoolResponse struct {

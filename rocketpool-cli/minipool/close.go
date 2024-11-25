@@ -44,10 +44,6 @@ func closeMinipools(c *cli.Context) error {
 		return nil
 	}
 
-	if !details.IsVotingInitialized {
-		fmt.Println("Minipools should not be closed until your node has initialized voting power. \nPlease run `rocketpool pdao initialize-voting` first, then return here to close your minipools.")
-	}
-
 	closableMinipools := []api.MinipoolCloseDetails{}
 	versionTooLowMinipools := []api.MinipoolCloseDetails{}
 	balanceLessThanRefundMinipools := []api.MinipoolCloseDetails{}
