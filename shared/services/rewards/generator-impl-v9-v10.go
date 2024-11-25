@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -839,6 +840,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 		})
 	}
 
+	withdrawalsLock := &sync.Mutex{}
 	for i := uint64(0); i < r.slotsPerEpoch; i++ {
 		// Get the beacon block for this slot
 		i := i
@@ -891,11 +893,13 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 				}
 
 				// Create the minipool's withdrawal sum big.Int if it doesn't exist
+				withdrawalsLock.Lock()
 				if r.minipoolWithdrawals[mpi.Address] == nil {
 					r.minipoolWithdrawals[mpi.Address] = big.NewInt(0)
 				}
 				// Add the withdrawal amount
 				r.minipoolWithdrawals[mpi.Address].Add(r.minipoolWithdrawals[mpi.Address], withdrawalAmount)
+				withdrawalsLock.Unlock()
 			}
 			return nil
 		})

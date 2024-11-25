@@ -3,6 +3,7 @@ package rewards
 import (
 	"fmt"
 	"math/big"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -344,6 +345,7 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 	attestationsPerSlot := make([][]beacon.AttestationInfo, r.beaconConfig.SlotsPerEpoch)
 
 	// Get the attestation records for this epoch
+	withdrawalsLock := &sync.Mutex{}
 	for i := uint64(0); i < slotsPerEpoch; i++ {
 		i := i
 		slot := epoch*slotsPerEpoch + i
@@ -392,12 +394,14 @@ func (r *RollingRecord) processAttestationsInEpoch(epoch uint64, state *state.Ne
 					}
 
 					// Create the minipool's income big.Int if it doesn't exist
+					withdrawalsLock.Lock()
 					if mpi.ConsensusIncome == nil {
 						mpi.ConsensusIncome = NewQuotedBigInt(0)
 					}
 
 					// Add the withdrawal amount as consensus income
 					mpi.ConsensusIncome.Add(&mpi.ConsensusIncome.Int, withdrawalAmount)
+					withdrawalsLock.Unlock()
 				}
 			}
 			return nil
