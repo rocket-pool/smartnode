@@ -152,7 +152,6 @@ type MinipoolCloseDetails struct {
 	Balance            *big.Int              `json:"balance"`
 	Refund             *big.Int              `json:"refund"`
 	UserDepositBalance *big.Int              `json:"userDepositBalance"`
-	DepositBalance     *big.Int              `json:"depositBalance"`
 	BeaconState        beacon.ValidatorState `json:"beaconState"`
 	NodeShare          *big.Int              `json:"nodeShare"`
 	GasInfo            rocketpool.GasInfo    `json:"gasInfo"`

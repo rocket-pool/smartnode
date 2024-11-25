@@ -213,15 +213,6 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 		}
 		return nil
 	})
-	wg1.Go(func() error {
-		var err error
-		nodeDetails, err := mp.GetNodeDetails(nil)
-		if err != nil {
-			return fmt.Errorf("error getting minipool details %s: %w", minipoolAddress.Hex(), err)
-		}
-		details.DepositBalance = nodeDetails.DepositBalance
-		return nil
-	})
 
 	if err := wg1.Wait(); err != nil {
 		return api.MinipoolCloseDetails{}, err
