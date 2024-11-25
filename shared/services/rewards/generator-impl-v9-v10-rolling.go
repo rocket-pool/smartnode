@@ -687,6 +687,9 @@ func (r *treeGeneratorImpl_v9_v10_rolling) calculateNodeRewards() (*big.Int, *bi
 				// Calculate the reduced bonus for each minipool
 				// Because of integer division, this will be less than the actual bonus by up to 1 wei
 				for _, mpd := range nsd.Minipools {
+					if mpd.MinipoolBonus == nil {
+						continue
+					}
 					mpd.MinipoolBonus.Mul(mpd.MinipoolBonus, remainingBalance)
 					mpd.MinipoolBonus.Div(mpd.MinipoolBonus, totalConsensusBonus)
 				}
