@@ -635,6 +635,7 @@ func (r *treeGeneratorImpl_v9_v10_rolling) calculateNodeRewards() (*big.Int, *bi
 				SmoothingPoolEth: big.NewInt(0),
 				BonusEth:         big.NewInt(0),
 				RewardsNetwork:   nnd.RewardNetwork.Uint64(),
+				RplStake:         nnd.RplStake,
 			}
 			nodeInfo.IsOptedIn = nnd.SmoothingPoolRegistrationState
 			statusChangeTimeBig := nnd.SmoothingPoolRegistrationChanged
