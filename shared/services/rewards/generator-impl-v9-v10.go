@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -507,9 +508,8 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 		for _, nodeInfo := range r.nodeDetails {
 			// Check if the node is currently opted in for simplicity
 			if nodeInfo.IsEligible && nodeInfo.IsOptedIn && r.elEndTime.After(nodeInfo.OptInTime) {
-				nnd := r.networkState.NodeDetailsByAddress[nodeInfo.Address]
-				eligibleBorrowedEth := r.networkState.GetEligibleBorrowedEth(nnd)
-				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nnd.RplStake)
+				eligibleBorrowedEth := nodeInfo.EligibleBorrowedEth
+				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeInfo.RplStake)
 				for _, minipool := range nodeInfo.Minipools {
 					minipool.CompletedAttestations = map[uint64]bool{0: true}
 
@@ -621,16 +621,15 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 			continue
 		}
 
-		nnd := r.networkState.NodeDetailsByAddress[nsd.Address]
-		eligible, _, eligibleEnd := nnd.IsEligibleForBonuses(r.elStartTime, r.elEndTime)
+		nodeDetails := r.networkState.NodeDetailsByAddress[nsd.Address]
+		eligible, _, eligibleEnd := nodeDetails.IsEligibleForBonuses(r.elStartTime, r.elEndTime)
 		if !eligible {
 			continue
 		}
 
 		// Get the nodeDetails from the network state
-		nodeDetails := r.networkState.NodeDetailsByAddress[nsd.Address]
-		eligibleBorrowedEth := r.networkState.GetEligibleBorrowedEth(nodeDetails)
-		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
+		eligibleBorrowedEth := nsd.EligibleBorrowedEth
+		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nsd.RplStake)
 		for _, mpd := range nsd.Minipools {
 			mpi := r.networkState.MinipoolDetailsByAddress[mpd.Address]
 			if !mpi.IsEligibleForBonuses(eligibleEnd) {
@@ -739,6 +738,9 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeRewards() (*big.Int, *big.Int, *
 				// Calculate the reduced bonus for each minipool
 				// Because of integer division, this will be less than the actual bonus by up to 1 wei
 				for _, mpd := range nsd.Minipools {
+					if mpd.MinipoolBonus == nil {
+						continue
+					}
 					mpd.MinipoolBonus.Mul(mpd.MinipoolBonus, remainingBalance)
 					mpd.MinipoolBonus.Div(mpd.MinipoolBonus, totalConsensusBonus)
 				}
@@ -839,6 +841,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 		})
 	}
 
+	withdrawalsLock := &sync.Mutex{}
 	for i := uint64(0); i < r.slotsPerEpoch; i++ {
 		// Get the beacon block for this slot
 		i := i
@@ -891,11 +894,13 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 				}
 
 				// Create the minipool's withdrawal sum big.Int if it doesn't exist
+				withdrawalsLock.Lock()
 				if r.minipoolWithdrawals[mpi.Address] == nil {
 					r.minipoolWithdrawals[mpi.Address] = big.NewInt(0)
 				}
 				// Add the withdrawal amount
 				r.minipoolWithdrawals[mpi.Address].Add(r.minipoolWithdrawals[mpi.Address], withdrawalAmount)
+				withdrawalsLock.Unlock()
 			}
 			return nil
 		})
@@ -963,9 +968,8 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 				continue
 			}
 
-			nnd := r.networkState.NodeDetailsByAddress[validator.NodeAddress]
-			eligibleBorrowedEth := r.networkState.GetEligibleBorrowedEth(nnd)
-			_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nnd.RplStake)
+			eligibleBorrowedEth := nodeDetails.EligibleBorrowedEth
+			_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
 
 			// Mark this duty as completed
 			validator.CompletedAttestations[attestation.SlotIndex] = true
@@ -1143,6 +1147,7 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 					SmoothingPoolEth: big.NewInt(0),
 					BonusEth:         big.NewInt(0),
 					RewardsNetwork:   nativeNodeDetails.RewardNetwork.Uint64(),
+					RplStake:         nativeNodeDetails.RplStake,
 				}
 
 				nodeDetails.IsOptedIn = nativeNodeDetails.SmoothingPoolRegistrationState
@@ -1196,6 +1201,12 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 		if err := wg.Wait(); err != nil {
 			return err
 		}
+	}
+
+	// Populate the eligible borrowed ETH field for all nodes
+	for _, nodeDetails := range r.nodeDetails {
+		nnd := r.networkState.NodeDetailsByAddress[nodeDetails.Address]
+		nodeDetails.EligibleBorrowedEth = r.networkState.GetEligibleBorrowedEth(nnd)
 	}
 
 	return nil

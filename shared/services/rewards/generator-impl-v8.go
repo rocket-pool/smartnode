@@ -1051,6 +1051,7 @@ func (r *treeGeneratorImpl_v8) getSmoothingPoolNodeDetails() error {
 					Minipools:        []*MinipoolInfo{},
 					SmoothingPoolEth: big.NewInt(0),
 					RewardsNetwork:   nativeNodeDetails.RewardNetwork.Uint64(),
+					RplStake:         nativeNodeDetails.RplStake,
 				}
 
 				nodeDetails.IsOptedIn = nativeNodeDetails.SmoothingPoolRegistrationState
@@ -1103,6 +1104,12 @@ func (r *treeGeneratorImpl_v8) getSmoothingPoolNodeDetails() error {
 		if err := wg.Wait(); err != nil {
 			return err
 		}
+	}
+
+	// Populate the eligible borrowed ETH field for all nodes
+	for _, nodeDetails := range r.nodeDetails {
+		nnd := r.networkState.NodeDetailsByAddress[nodeDetails.Address]
+		nodeDetails.EligibleBorrowedEth = r.networkState.GetEligibleBorrowedEth(nnd)
 	}
 
 	return nil

@@ -261,7 +261,9 @@ type NodeSmoothingDetails struct {
 	OptOutTime time.Time
 
 	// v10 Fields
-	BonusEth *big.Int
+	BonusEth            *big.Int
+	EligibleBorrowedEth *big.Int
+	RplStake            *big.Int
 }
 
 type QuotedBigInt struct {

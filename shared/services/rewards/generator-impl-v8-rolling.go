@@ -707,10 +707,12 @@ func (r *treeGeneratorImpl_v8_rolling) calculateNodeRewards() (*big.Int, *big.In
 		// Get the node amount
 		nodeInfo, exists := r.nodeDetails[minipool.NodeAddress]
 		if !exists {
+			nodeDetails := r.networkState.NodeDetailsByAddress[minipool.NodeAddress]
 			nodeInfo = &NodeSmoothingDetails{
 				Minipools:        []*MinipoolInfo{},
 				SmoothingPoolEth: big.NewInt(0),
-				RewardsNetwork:   r.networkState.NodeDetailsByAddress[minipool.NodeAddress].RewardNetwork.Uint64(),
+				RewardsNetwork:   nodeDetails.RewardNetwork.Uint64(),
+				RplStake:         nodeDetails.RplStake,
 			}
 			r.nodeDetails[minipool.NodeAddress] = nodeInfo
 		}
