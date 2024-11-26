@@ -145,6 +145,9 @@ func GenerateTree(c *cli.Context) error {
 	case 1:
 		network = cfgtypes.Network_Mainnet
 		logger.Printlnf("Beacon node is configured for Mainnet.")
+	case 17000:
+		network = cfgtypes.Network_Holesky
+		logger.Printlnf("Beacon node is configured for Holesky.")
 	default:
 		return fmt.Errorf("your Beacon node is configured for an unknown network with Chain ID [%d]", depositContract.ChainID)
 	}
