@@ -3,13 +3,13 @@ package collectors
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -247,9 +247,6 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		} else {
 			collector.cachedDelegateVotingPower = delegateVotingPower
 		}
-	} else {
-		collector.cachedNodeVotingPower = 0
-		collector.cachedDelegateVotingPower = 0
 	}
 
 	if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
@@ -282,11 +279,5 @@ func getVotingPower(propMgr *proposals.ProposalManager, blockNumber uint32, addr
 		return 0, fmt.Errorf("error getting voting power: %w", err)
 	}
 
-	// Parse voting power to float64
-	votingPower, err := strconv.ParseFloat(totalDelegatedVP.String(), 64)
-	if err != nil {
-		return 0, fmt.Errorf("error parsing voting power: %w", err)
-	}
-
-	return votingPower, nil
+	return eth.WeiToEth(totalDelegatedVP), nil
 }
