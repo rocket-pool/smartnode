@@ -188,37 +188,45 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Get latest block number
 	wg.Go(func() error {
-		blockNumber, err = collector.ec.BlockNumber(context.Background())
-		if err != nil {
-			return fmt.Errorf("Error getting block number: %w", err)
+		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
+			blockNumber, err = collector.ec.BlockNumber(context.Background())
+			if err != nil {
+				return fmt.Errorf("Error getting block number: %w", err)
+			}
 		}
 		return nil
+
 	})
 
 	// Get the propMgr
 	wg.Go(func() error {
-		propMgr, err = proposals.NewProposalManager(nil, collector.cfg, collector.rp, collector.bc)
-		if err != nil {
-			return fmt.Errorf("Error getting the prop manager: %w", err)
+		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
+			propMgr, err = proposals.NewProposalManager(nil, collector.cfg, collector.rp, collector.bc)
+			if err != nil {
+				return fmt.Errorf("Error getting the prop manager: %w", err)
+			}
 		}
 		return nil
 	})
 
 	// Get the node onchain voting delegate
 	wg.Go(func() error {
-		var err error
-		onchainVotingDelegate, err = network.GetCurrentVotingDelegate(collector.rp, collector.nodeAddress, nil)
-		if err != nil {
-			return fmt.Errorf("Error getting the on-chain voting delegate: %w", err)
+		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
+			onchainVotingDelegate, err = network.GetCurrentVotingDelegate(collector.rp, collector.nodeAddress, nil)
+			if err != nil {
+				return fmt.Errorf("Error getting the on-chain voting delegate: %w", err)
+			}
 		}
 		return err
 	})
 
 	// Get Voting Initialized status
 	wg.Go(func() error {
-		isVotingInitialized, err = network.GetVotingInitialized(collector.rp, collector.nodeAddress, nil)
-		if err != nil {
-			return fmt.Errorf("Error checking if voting is initialized: %w", err)
+		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
+			isVotingInitialized, err = network.GetVotingInitialized(collector.rp, collector.nodeAddress, nil)
+			if err != nil {
+				return fmt.Errorf("Error checking if voting is initialized: %w", err)
+			}
 		}
 		return err
 	})
