@@ -108,18 +108,6 @@ type SmartnodeConfig struct {
 	// Manual override for the watchtower's priority fee
 	WatchtowerPrioFeeOverride config.Parameter `yaml:"watchtowerPrioFeeOverride,omitempty"`
 
-	// The toggle for rolling records
-	UseRollingRecords config.Parameter `yaml:"useRollingRecords,omitempty"`
-
-	// The rolling record checkpoint interval
-	RecordCheckpointInterval config.Parameter `yaml:"recordCheckpointInterval,omitempty"`
-
-	// The checkpoint retention limit
-	CheckpointRetentionLimit config.Parameter `yaml:"checkpointRetentionLimit,omitempty"`
-
-	// The path of the records folder where snapshots of rolling record info is stored during a rewards interval
-	RecordsPath config.Parameter `yaml:"recordsPath,omitempty"`
-
 	// The toggle for enabling pDAO proposal verification duties
 	VerifyProposals config.Parameter `yaml:"verifyProposals,omitempty"`
 
@@ -430,50 +418,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: true,
 		},
 
-		UseRollingRecords: config.Parameter{
-			ID:                 "useRollingRecords",
-			Name:               "Use Rolling Records",
-			Description:        "[orange]**WARNING: EXPERIMENTAL**\n\n[white]Enable this to use the new rolling records feature, which stores attestation records for the entire Rocket Pool network in real time instead of collecting them all after a rewards period during tree generation.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
-			Type:               config.ParameterType_Bool,
-			Default:            map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
-			CanBeBlank:         false,
-			OverwriteOnUpgrade: false,
-		},
-
-		RecordCheckpointInterval: config.Parameter{
-			ID:                 "recordCheckpointInterval",
-			Name:               "Record Checkpoint Interval",
-			Description:        "The number of epochs that should pass before saving a new rolling record checkpoint. Used if Rolling Records is enabled.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
-			Type:               config.ParameterType_Uint,
-			Default:            map[config.Network]interface{}{config.Network_All: uint64(45)},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
-			CanBeBlank:         false,
-			OverwriteOnUpgrade: false,
-		},
-
-		CheckpointRetentionLimit: config.Parameter{
-			ID:                 "checkpointRetentionLimit",
-			Name:               "Checkpoint Retention Limit",
-			Description:        "The number of checkpoint files to save on-disk before pruning old ones. Used if Rolling Records is enabled.\n\nOnly useful for the Oracle DAO, or if you generate your own rewards trees.",
-			Type:               config.ParameterType_Uint,
-			Default:            map[config.Network]interface{}{config.Network_All: uint64(200)},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
-			CanBeBlank:         false,
-			OverwriteOnUpgrade: false,
-		},
-
-		RecordsPath: config.Parameter{
-			ID:                 "recordsPath",
-			Name:               "Records Path",
-			Description:        "The path of the folder to store rolling record checkpoints in during a rewards interval. Used if Rolling Records is enabled.\n\nOnly useful if you're an Oracle DAO member, or if you generate your own rewards trees.",
-			Type:               config.ParameterType_String,
-			Default:            map[config.Network]interface{}{config.Network_All: getDefaultRecordsDir(cfg)},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
-			CanBeBlank:         false,
-			OverwriteOnUpgrade: false,
-		},
-
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
 			config.Network_Devnet:  "https://holesky.etherscan.io/tx",
@@ -706,10 +650,6 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.ArchiveECUrl,
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
-		&cfg.UseRollingRecords,
-		&cfg.RecordCheckpointInterval,
-		&cfg.CheckpointRetentionLimit,
-		&cfg.RecordsPath,
 	}
 }
 
@@ -862,10 +802,6 @@ func getDefaultDataDir(config *RocketPoolConfig) string {
 		return ""
 	}
 	return filepath.Join(config.RocketPoolDirectory, "data")
-}
-
-func getDefaultRecordsDir(config *RocketPoolConfig) string {
-	return filepath.Join(getDefaultDataDir(config), "records")
 }
 
 func (cfg *SmartnodeConfig) GetRewardsTreeDirectory(daemon bool) string {

@@ -95,12 +95,6 @@ func run(c *cli.Context) error {
 		fmt.Println("Starting watchtower daemon in Docker Mode.")
 	}
 
-	// Check if rolling records are enabled
-	useRollingRecords := cfg.Smartnode.UseRollingRecords.Value.(bool)
-	if useRollingRecords {
-		fmt.Println("***NOTE: EXPERIMENTAL ROLLING RECORDS ARE ENABLED, BE ADVISED!***")
-	}
-
 	// Initialize the metrics reporters
 	scrubCollector := collectors.NewScrubCollector()
 	bondReductionCollector := collectors.NewBondReductionCollector()
@@ -141,17 +135,9 @@ func run(c *cli.Context) error {
 		return fmt.Errorf("error during scrub check: %w", err)
 	}
 	var submitRewardsTree_Stateless *submitRewardsTree_Stateless
-	var submitRewardsTree_Rolling *submitRewardsTree_Rolling
-	if !useRollingRecords {
-		submitRewardsTree_Stateless, err = newSubmitRewardsTree_Stateless(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
-		if err != nil {
-			return fmt.Errorf("error during stateless rewards tree check: %w", err)
-		}
-	} else {
-		submitRewardsTree_Rolling, err = newSubmitRewardsTree_Rolling(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
-		if err != nil {
-			return fmt.Errorf("error during rolling rewards tree check: %w", err)
-		}
+	submitRewardsTree_Stateless, err = newSubmitRewardsTree_Stateless(c, log.NewColorLogger(SubmitRewardsTreeColor), errorLog, m)
+	if err != nil {
+		return fmt.Errorf("error during stateless rewards tree check: %w", err)
 	}
 	/*processPenalties, err := newProcessPenalties(c, log.NewColorLogger(ProcessPenaltiesColor), errorLog)
 	if err != nil {
@@ -248,19 +234,11 @@ func run(c *cli.Context) error {
 				}
 				time.Sleep(taskCooldown)
 
-				if !useRollingRecords {
-					// Run the rewards tree submission check
-					if err := submitRewardsTree_Stateless.Run(isOnOdao, state, latestBlock.Slot); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
-				} else {
-					// Run the network balance and rewards tree submission check
-					if err := submitRewardsTree_Rolling.run(state); err != nil {
-						errorLog.Println(err)
-					}
-					time.Sleep(taskCooldown)
+				// Run the rewards tree submission check
+				if err := submitRewardsTree_Stateless.Run(isOnOdao, state, latestBlock.Slot); err != nil {
+					errorLog.Println(err)
 				}
+				time.Sleep(taskCooldown)
 
 				// Run the price submission check
 				if err := submitRplPrice.run(state); err != nil {
@@ -304,18 +282,9 @@ func run(c *cli.Context) error {
 				}*/
 				// DISABLED until MEV-Boost can support it
 			} else {
-				/*
-				 */
-				if !useRollingRecords {
-					// Run the rewards tree submission check
-					if err := submitRewardsTree_Stateless.Run(isOnOdao, nil, latestBlock.Slot); err != nil {
-						errorLog.Println(err)
-					}
-				} else {
-					// Run the network balance and rewards tree submission check
-					if err := submitRewardsTree_Rolling.run(nil); err != nil {
-						errorLog.Println(err)
-					}
+				// Run the rewards tree submission check
+				if err := submitRewardsTree_Stateless.Run(isOnOdao, nil, latestBlock.Slot); err != nil {
+					errorLog.Println(err)
 				}
 			}
 

@@ -125,7 +125,7 @@ type treeGeneratorImpl interface {
 	saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)
 }
 
-func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecutionClient, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
+func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecutionClient, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) (*TreeGenerator, error) {
 	t := &TreeGenerator{
 		logger:           logger,
 		logPrefix:        logPrefix,
@@ -141,28 +141,13 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 	}
 
 	// v10
-	var v10_generator treeGeneratorImpl
-	if rollingRecord == nil {
-		v10_generator = newTreeGeneratorImpl_v9_v10(10, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
-	} else {
-		v10_generator = newTreeGeneratorImpl_v9_v10_rolling(10, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
-	}
+	v10_generator := newTreeGeneratorImpl_v9_v10(10, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
 
 	// v9
-	var v9_generator treeGeneratorImpl
-	if rollingRecord == nil {
-		v9_generator = newTreeGeneratorImpl_v9_v10(9, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
-	} else {
-		v9_generator = newTreeGeneratorImpl_v9_v10_rolling(9, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
-	}
+	v9_generator := newTreeGeneratorImpl_v9_v10(9, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
 
 	// v8
-	var v8_generator treeGeneratorImpl
-	if rollingRecord == nil {
-		v8_generator = newTreeGeneratorImpl_v8(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.snapshotEnd.ConsensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
-	} else {
-		v8_generator = newTreeGeneratorImpl_v8_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.snapshotEnd.ConsensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
-	}
+	v8_generator := newTreeGeneratorImpl_v8(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.snapshotEnd.ConsensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
 
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
