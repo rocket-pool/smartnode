@@ -497,30 +497,6 @@ type NodeSignResponse struct {
 	SignedData string `json:"signedData"`
 }
 
-type EstimateSetSnapshotDelegateGasResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
-}
-
-type SetSnapshotDelegateResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
-
-type EstimateClearSnapshotDelegateGasResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
-}
-
-type ClearSnapshotDelegateResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
-
 type NodeIsFeeDistributorInitializedResponse struct {
 	Status        string `json:"status"`
 	Error         string `json:"error"`

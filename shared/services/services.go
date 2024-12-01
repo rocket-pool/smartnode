@@ -39,7 +39,6 @@ var (
 	ecManager            *ExecutionClientManager
 	bcManager            *BeaconClientManager
 	rocketPool           *rocketpool.RocketPool
-	snapshotDelegation   *contracts.SnapshotDelegation
 	rocketSignerRegistry *contracts.RocketSignerRegistry
 	beaconClient         beacon.Client
 	docker               *client.Client
@@ -51,7 +50,6 @@ var (
 	initBCManager            sync.Once
 	initRocketPool           sync.Once
 	initOneInchOracle        sync.Once
-	initSnapshotDelegation   sync.Once
 	initRocketSignerRegistry sync.Once
 	initBeaconClient         sync.Once
 	initDocker               sync.Once
@@ -123,18 +121,6 @@ func GetRocketSignerRegistry(c *cli.Context) (*contracts.RocketSignerRegistry, e
 		return nil, err
 	}
 	return getRocketSignerRegistry(cfg, ec)
-}
-
-func GetSnapshotDelegation(c *cli.Context) (*contracts.SnapshotDelegation, error) {
-	cfg, err := getConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	ec, err := getEthClient(c, cfg)
-	if err != nil {
-		return nil, err
-	}
-	return getSnapshotDelegation(cfg, ec)
 }
 
 func GetBeaconClient(c *cli.Context) (*BeaconClientManager, error) {
@@ -254,17 +240,6 @@ func getRocketSignerRegistry(cfg *config.RocketPoolConfig, client rocketpool.Exe
 		}
 	})
 	return rocketSignerRegistry, err
-}
-
-func getSnapshotDelegation(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*contracts.SnapshotDelegation, error) {
-	var err error
-	initSnapshotDelegation.Do(func() {
-		address := cfg.Smartnode.GetSnapshotDelegationAddress()
-		if address != "" {
-			snapshotDelegation, err = contracts.NewSnapshotDelegation(common.HexToAddress(address), client)
-		}
-	})
-	return snapshotDelegation, err
 }
 
 func getBeaconClient(c *cli.Context, cfg *config.RocketPoolConfig) (*BeaconClientManager, error) {
