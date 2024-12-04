@@ -89,7 +89,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *colle
 			// Set signallingAddress to blank address instead of erroring out of the task loop.
 			signallingAddress = common.Address{}
 		}
-		snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, ec, bc, nodeAccount.Address, signallingAddress)
+		snapshotCollector := collectors.NewSnapshotCollector(rp, cfg, ec, bc, reg, nodeAccount.Address, signallingAddress)
 		registry.MustRegister(snapshotCollector)
 
 	}
