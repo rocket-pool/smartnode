@@ -1,15 +1,17 @@
 package debug
 
 import (
+	"bytes"
 	"fmt"
+
 	"math/bits"
 
 	"github.com/pkg/errors"
-	"github.com/prysmaticlabs/prysm/v3/crypto/hash/htr"
 	state_native "github.com/prysmaticlabs/prysm/v5/beacon-chain/state/state-native"
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/state/stateutil"
-	"github.com/prysmaticlabs/prysm/v5/encoding/ssz"
-	eth "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
+	"github.com/prysmaticlabs/prysm/v5/crypto/hash"
+	"github.com/prysmaticlabs/prysm/v5/crypto/hash/htr"
+	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -35,30 +37,33 @@ func getBeaconStateForSlot(c *cli.Context, slot uint64) (*api.BeaconStateRespons
 		return nil, err
 	}
 
-	beaconState.
-
 	stateNative, ok := beaconState.(*state_native.BeaconState)
 	if !ok {
 		return nil, fmt.Errorf("failed while casting to state_native.BeaconState")
 	}
-
-
-
-	roots, err := stateutil.OptimizedValidatorRoots(stateNative.Validators())
+	proof, err := ValidatorProof(stateNative.Validators(), 1)
 	if err != nil {
-		return nil, fmt.Errorf("failed getting validator roots: %w", err)
+		return nil, fmt.Errorf("error calculating validator proof")
 	}
 
-	fmt.Println("%w", roots[1100000])
+	val, err := stateNative.ValidatorAtIndex(1)
+	if err != nil {
+		return nil, fmt.Errorf("error getting validator by index")
+	}
+
+	root, err := stateutil.ValidatorRegistryRoot(stateNative.Validators())
+
+	verified, err := VerifyValidatorProof(val, 1, proof, root)
+
+	fmt.Println("%w", verified)
 
 	// Return response
 	return &response, nil
 }
 
-// ValidatorRegistryProof computes the merkle proof for a validator at a specific index
+// ValidatorProof computes the merkle proof for a validator at a specific index
 // in the validator registry.
-func ValidatorRegistryProof(validators []*eth.Validator, index uint64) ([][32]byte, error) {
-	validatorFieldRoots := 8
+func ValidatorProof(validators []*ethpb.Validator, index uint64) ([][32]byte, error) {
 	if index >= uint64(len(validators)) {
 		return nil, errors.New("validator index out of bounds")
 	}
@@ -69,37 +74,14 @@ func ValidatorRegistryProof(validators []*eth.Validator, index uint64) ([][32]by
 		return nil, errors.Wrap(err, "could not get validator roots")
 	}
 
-	// Since each validator has 8 fields, we need to get the root
-	// at the correct position in the flattened array
-	validatorPosition := index * uint64(validatorFieldRoots)
-
-	// Get the individual validator root by hashing its field roots
-	subRoots := make([][32]byte, validatorFieldRoots)
-	copy(subRoots, roots[validatorPosition:validatorPosition+validatorFieldRoots])
-
-	for i := 0; i < validatorTreeDepth; i++ {
-		subRoots = htr.VectorizedSha256(subRoots)
-	}
-
 	// Create merkle tree from all validator roots
 	depth := bits.Len64(uint64(len(validators) - 1)) // Calculate required depth
-	tree := make([][32]byte, len(validators))
-
-	// Fill tree with validator roots
-	for i := 0; i < len(validators); i++ {
-		pos := i * validatorFieldRoots
-		vRoots := roots[pos : pos+validatorFieldRoots]
-		// Hash up individual validator roots
-		for j := 0; j < validatorTreeDepth; j++ {
-			vRoots = htr.VectorizedSha256(vRoots)
-		}
-		tree[i] = vRoots[0]
-	}
 
 	// Generate proof
 	proof := make([][32]byte, depth)
-	tmp := tree
+	tmp := roots
 	for h := 0; h < depth; h++ {
+		// Get the sibling index at height "h"
 		idx := (index >> h) ^ 1
 		if idx < uint64(len(tmp)) {
 			proof[h] = tmp[idx]
@@ -110,12 +92,12 @@ func ValidatorRegistryProof(validators []*eth.Validator, index uint64) ([][32]by
 		newTmp := make([][32]byte, newSize)
 		for i := 0; i < len(tmp)-1; i += 2 {
 			concat := append(tmp[i][:], tmp[i+1][:]...)
-			newTmp[i/2] = ssz.HashWithDefaultHasher(concat)
+			newTmp[i/2] = hash.Hash(concat)
 		}
 		// Handle odd number of elements
 		if len(tmp)%2 == 1 {
 			concat := append(tmp[len(tmp)-1][:], make([]byte, 32)...)
-			newTmp[len(newTmp)-1] = ssz.HashWithDefaultHasher(concat)
+			newTmp[len(newTmp)-1] = hash.Hash(concat)
 		}
 		tmp = newTmp
 	}
