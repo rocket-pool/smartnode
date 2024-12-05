@@ -39,8 +39,8 @@ type ExecutionCommonConfig struct {
 	// P2P traffic port
 	P2pPort config.Parameter `yaml:"p2pPort,omitempty"`
 
-	// The suggested block limit
-	SuggestedBlockLimit config.Parameter `yaml:"suggestedBlockLimit,ommitempty"`
+	// The suggested block gas limit
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,ommitempty"`
 
 	// Label for Ethstats
 	EthstatsLabel config.Parameter `yaml:"ethstatsLabel,omitempty"`
@@ -101,10 +101,10 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 			Options:            rpcPortModes,
 		},
 
-		SuggestedBlockLimit: config.Parameter{
-			ID:                 "suggestedBlockLimit",
-			Name:               "Suggested Block Limit",
-			Description:        "The block limit that should be used for locally built blocks.",
+		SuggestedBlockGasLimit: config.Parameter{
+			ID:                 "suggestedBlockGasLimit",
+			Name:               "Suggested Block Gas Limit",
+			Description:        "The block gas limit that should be used for locally built blocks.",
 			Type:               config.ParameterType_Uint,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultSuggestedBlockLimit},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
@@ -154,7 +154,7 @@ func (cfg *ExecutionCommonConfig) GetParameters() []*config.Parameter {
 		&cfg.WsPort,
 		&cfg.EnginePort,
 		&cfg.OpenRpcPorts,
-		&cfg.SuggestedBlockLimit,
+		&cfg.SuggestedBlockGasLimit,
 		&cfg.P2pPort,
 		&cfg.EthstatsLabel,
 		&cfg.EthstatsLogin,
