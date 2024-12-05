@@ -906,6 +906,10 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 		})
 	}
 	err := wg.Wait()
+	// Return preallocated memory to the pool if it exists
+	if committeeData != nil {
+		defer committeeData.Release()
+	}
 	if err != nil {
 		return fmt.Errorf("error getting committee and attestaion records for epoch %d: %w", epoch, err)
 	}
