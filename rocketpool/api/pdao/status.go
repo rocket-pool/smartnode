@@ -223,6 +223,7 @@ func GetSnapshotVotedProposals(apiDomain string, space string, nodeAddress commo
 		  where: {
 			space: "%s",
 			voter_in: ["%s", "%s"],
+			created_gte: 1727694646
 		  },
 		  orderBy: "created",
 		  orderDirection: desc
@@ -264,7 +265,7 @@ func GetSnapshotProposals(apiDomain string, space string, state string) (*api.Sn
 		stateFilter = fmt.Sprintf(`, state: "%s"`, state)
 	}
 	query := fmt.Sprintf(`query Proposals {
-	proposals(where: {space: "%s"%s}, orderBy: "created", orderDirection: desc) {
+	proposals(where: {space: "%s"%s, start_gte: 1727694646}, orderBy: "created", orderDirection: desc) {
 	    id
 	    title
 	    choices
