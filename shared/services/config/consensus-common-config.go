@@ -86,7 +86,7 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 			Description:        "The block limit that should be used for externally built blocks.",
 			Type:               config.ParameterType_Uint,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultSuggestedBlockLimit},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
