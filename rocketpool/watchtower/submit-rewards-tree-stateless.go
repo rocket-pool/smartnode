@@ -155,10 +155,12 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Get the block and timestamp of the consensus block that best matches the end time
-	snapshotBeaconBlock, elBlockNumber, err := t.getSnapshotConsensusBlock(endTime, state)
+	snapshotEnd, err := t.getSnapshotEnd(endTime, state)
 	if err != nil {
 		return err
 	}
+	snapshotBeaconBlock := snapshotEnd.ConsensusBlock
+	elBlockNumber := snapshotEnd.ExecutionBlock
 
 	// Get the number of the EL block matching the CL snapshot block
 	snapshotElBlockHeader, err := t.ec.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
@@ -181,15 +183,13 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	t.lock.Unlock()
 
 	// Get the expected file paths
-	rewardsTreePath := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true)
-	compressedRewardsTreePath := rewardsTreePath + config.RewardsTreeIpfsExtension
-	minipoolPerformancePath := t.cfg.Smartnode.GetMinipoolPerformancePath(currentIndex, true)
-	compressedMinipoolPerformancePath := minipoolPerformancePath + config.RewardsTreeIpfsExtension
+	rewardsTreePathJSON := t.cfg.Smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON)
+	compressedRewardsTreePathJSON := rewardsTreePathJSON + config.RewardsTreeIpfsExtension
 
 	// Check if we can reuse an existing file for this interval
-	if t.isExistingRewardsFileValid(rewardsTreePath, uint64(intervalsPassed)) {
+	if t.isExistingRewardsFileValid(rewardsTreePathJSON, uint64(intervalsPassed)) {
 		if !nodeTrusted {
-			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, rewardsTreePath)
+			t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s.", currentIndex, rewardsTreePathJSON)
 			return nil
 		}
 
@@ -202,10 +202,10 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 			return nil
 		}
 
-		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, rewardsTreePath)
+		t.log.Printlnf("Merkle rewards tree for interval %d already exists at %s, attempting to resubmit...", currentIndex, rewardsTreePathJSON)
 
 		// Deserialize the file
-		localRewardsFile, err := rprewards.ReadLocalRewardsFile(rewardsTreePath)
+		localRewardsFile, err := rprewards.ReadLocalRewardsFile(rewardsTreePathJSON)
 		if err != nil {
 			return fmt.Errorf("Error reading rewards tree file: %w", err)
 		}
@@ -213,15 +213,15 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		proofWrapper := localRewardsFile.Impl()
 
 		// Save the compressed file and get the CID for it
-		cid, err := localRewardsFile.CreateCompressedFileAndCid()
+		_, cid, err := localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePath, err)
+			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePathJSON, err)
 		}
 
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -231,7 +231,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	}
 
 	// Generate the tree
-	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+	t.generateTree(intervalsPassed, nodeTrusted, currentIndex, snapshotEnd, elBlockIndex, startTime, endTime, snapshotElBlockHeader)
 
 	// Done
 	return nil
@@ -268,9 +268,12 @@ func (t *submitRewardsTree_Stateless) isExistingRewardsFileValid(rewardsTreePath
 
 	// Compare the number of intervals in it with the current number of intervals
 	proofWrapper := localRewardsFile.Impl()
-	header := proofWrapper.GetHeader()
-	if header.IntervalsPassed != intervalsPassed {
-		t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n", header.Index, header.IntervalsPassed, intervalsPassed)
+	if proofWrapper.GetIntervalsPassed() != intervalsPassed {
+		t.log.Printlnf("Existing file for interval %d had %d intervals passed but %d have passed now, regenerating file...\n",
+			proofWrapper.GetIndex(),
+			proofWrapper.GetIntervalsPassed(),
+			intervalsPassed,
+		)
 		return false
 	}
 
@@ -280,7 +283,7 @@ func (t *submitRewardsTree_Stateless) isExistingRewardsFileValid(rewardsTreePath
 }
 
 // Kick off the tree generation goroutine
-func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) {
+func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotEnd *rprewards.SnapshotEnd, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header) {
 
 	go func() {
 		t.lock.Lock()
@@ -295,7 +298,7 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 		}
 
 		// Generate the tree
-		err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotBeaconBlock, elBlockIndex, startTime, endTime, snapshotElBlockHeader, rewardsTreePath, compressedRewardsTreePath, minipoolPerformancePath, compressedMinipoolPerformancePath)
+		err = t.generateTreeImpl(client, intervalsPassed, nodeTrusted, currentIndex, snapshotEnd, elBlockIndex, startTime, endTime, snapshotElBlockHeader)
 		if err != nil {
 			t.handleError(err)
 		}
@@ -308,7 +311,8 @@ func (t *submitRewardsTree_Stateless) generateTree(intervalsPassed time.Duration
 }
 
 // Implementation for rewards tree generation using a viable EC
-func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotBeaconBlock uint64, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header, rewardsTreePath string, compressedRewardsTreePath string, minipoolPerformancePath string, compressedMinipoolPerformancePath string) error {
+func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool, intervalsPassed time.Duration, nodeTrusted bool, currentIndex uint64, snapshotEnd *rprewards.SnapshotEnd, elBlockIndex uint64, startTime time.Time, endTime time.Time, snapshotElBlockHeader *types.Header) error {
+	snapshotBeaconBlock := snapshotEnd.ConsensusBlock
 
 	// Log
 	if uint64(intervalsPassed) > 1 {
@@ -317,10 +321,7 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	t.log.Printlnf("Rewards checkpoint has passed, starting Merkle tree generation for interval %d in the background.\n%s Snapshot Beacon block = %d, EL block = %d, running from %s to %s", currentIndex, t.generationPrefix, snapshotBeaconBlock, elBlockIndex, startTime, endTime)
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(rp, t.cfg, rp.Client, t.bc, t.log)
-	if err != nil {
-		return fmt.Errorf("error creating network state manager for EL block %d, Beacon slot %d: %w", elBlockIndex, snapshotBeaconBlock, err)
-	}
+	mgr := state.NewNetworkStateManager(rp, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, t.log)
 
 	// Create a new state for the target block
 	state, err := mgr.GetStateForSlot(snapshotBeaconBlock)
@@ -329,65 +330,34 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 	}
 
 	// Generate the rewards file
-	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rp, t.cfg, t.bc, currentIndex, startTime, endTime, snapshotBeaconBlock, snapshotElBlockHeader, uint64(intervalsPassed), state, nil)
+	treegen, err := rprewards.NewTreeGenerator(t.log, t.generationPrefix, rprewards.NewRewardsExecutionClient(rp), t.cfg, t.bc, currentIndex, startTime, endTime, snapshotEnd, snapshotElBlockHeader, uint64(intervalsPassed), state)
 	if err != nil {
 		return fmt.Errorf("Error creating Merkle tree generator: %w", err)
 	}
-	rewardsFile, err := treegen.GenerateTree()
+	treeResult, err := treegen.GenerateTree()
 	if err != nil {
 		return fmt.Errorf("Error generating Merkle tree: %w", err)
 	}
-	for address, network := range rewardsFile.GetHeader().InvalidNetworkNodes {
+	rewardsFile := treeResult.RewardsFile
+	for address, network := range treeResult.InvalidNetworkNodes {
 		t.printMessage(fmt.Sprintf("WARNING: Node %s has invalid network %d assigned! Using 0 (mainnet) instead.", address.Hex(), network))
 	}
 
-	// Serialize the minipool performance file
-	localMinipoolPerformanceFile := rprewards.NewLocalFile[rprewards.IMinipoolPerformanceFile](
-		rewardsFile.GetMinipoolPerformanceFile(),
-		minipoolPerformancePath,
-	)
-
-	// Write it to disk
-	err = localMinipoolPerformanceFile.Write()
+	// Save the files
+	t.printMessage("Generation complete! Saving files...")
+	cid, cids, err := treegen.SaveFiles(treeResult, nodeTrusted)
 	if err != nil {
-		return fmt.Errorf("Error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
+		return fmt.Errorf("Error writing rewards artifacts to disk: %w", err)
+	}
+	for filename, cid := range cids {
+		t.printMessage(fmt.Sprintf("\t%s - CID %s", filename, cid.String()))
 	}
 
 	if nodeTrusted {
-		minipoolPerformanceCid, err := localMinipoolPerformanceFile.CreateCompressedFileAndCid()
-		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s: %w", compressedMinipoolPerformancePath, err)
-		}
-		t.printMessage(fmt.Sprintf("Calculated minipool performance CID: %s", minipoolPerformanceCid))
-		rewardsFile.SetMinipoolPerformanceFileCID(minipoolPerformanceCid.String())
-	} else {
-		t.printMessage("Saved minipool performance file.")
-		rewardsFile.SetMinipoolPerformanceFileCID("---")
-	}
-
-	// Serialize the rewards tree to JSON
-	localRewardsFile := rprewards.NewLocalFile[rprewards.IRewardsFile](
-		rewardsFile,
-		rewardsTreePath,
-	)
-	t.printMessage("Generation complete! Saving tree...")
-
-	// Write the rewards tree to disk
-	err = localRewardsFile.Write()
-	if err != nil {
-		return fmt.Errorf("Error saving rewards tree file to %s: %w", rewardsTreePath, err)
-	}
-
-	if nodeTrusted {
-		// Save the compressed file and get the CID for it
-		cid, err := localRewardsFile.CreateCompressedFileAndCid()
-		if err != nil {
-			return fmt.Errorf("Error getting CID for file %s : %w", rewardsTreePath, err)
-		}
 		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile.GetHeader(), cid.String(), big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile, cid.String(), big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -402,9 +372,9 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 }
 
 // Submit rewards info to the contracts
-func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFileHeader *rprewards.RewardsFileHeader, cid string, intervalsPassed *big.Int) error {
+func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFile rprewards.IRewardsFile, cid string, intervalsPassed *big.Int) error {
 
-	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFileHeader.MerkleRoot))
+	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFile.GetMerkleRoot()))
 	if err != nil {
 		return fmt.Errorf("Error decoding merkle root: %w", err)
 	}
@@ -416,18 +386,11 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	smoothingPoolEthRewards := []*big.Int{}
 
 	// Create the total rewards for each network
-	network := uint64(0)
-	for {
-		networkRewards, exists := rewardsFileHeader.NetworkRewards[network]
-		if !exists {
-			break
-		}
+	for network := uint64(0); rewardsFile.HasRewardsForNetwork(network); network++ {
 
-		collateralRplRewards = append(collateralRplRewards, &networkRewards.CollateralRpl.Int)
-		oDaoRplRewards = append(oDaoRplRewards, &networkRewards.OracleDaoRpl.Int)
-		smoothingPoolEthRewards = append(smoothingPoolEthRewards, &networkRewards.SmoothingPoolEth.Int)
-
-		network++
+		collateralRplRewards = append(collateralRplRewards, rewardsFile.GetNetworkCollateralRpl(network))
+		oDaoRplRewards = append(oDaoRplRewards, rewardsFile.GetNetworkOracleDaoRpl(network))
+		smoothingPoolEthRewards = append(smoothingPoolEthRewards, rewardsFile.GetNetworkSmoothingPoolEth(network))
 	}
 
 	// Get transactor
@@ -444,11 +407,11 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 		MerkleRoot:      treeRoot,
 		MerkleTreeCID:   cid,
 		IntervalsPassed: intervalsPassed,
-		TreasuryRPL:     &rewardsFileHeader.TotalRewards.ProtocolDaoRpl.Int,
+		TreasuryRPL:     rewardsFile.GetTotalProtocolDaoRpl(),
 		NodeRPL:         collateralRplRewards,
 		TrustedNodeRPL:  oDaoRplRewards,
 		NodeETH:         smoothingPoolEthRewards,
-		UserETH:         &rewardsFileHeader.TotalRewards.PoolStakerSmoothingPoolEth.Int,
+		UserETH:         rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
 	}
 
 	// Get the gas limit
@@ -493,12 +456,12 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
-func (t *submitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Time, state *state.NetworkState) (uint64, uint64, error) {
+func (t *submitRewardsTree_Stateless) getSnapshotEnd(endTime time.Time, state *state.NetworkState) (*rprewards.SnapshotEnd, error) {
 
 	// Get the beacon head
 	beaconHead, err := t.bc.GetBeaconHead()
 	if err != nil {
-		return 0, 0, fmt.Errorf("Error getting Beacon head: %w", err)
+		return nil, fmt.Errorf("Error getting Beacon head: %w", err)
 	}
 
 	// Get the target block number
@@ -512,7 +475,11 @@ func (t *submitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 
 	// Check if the required epoch is finalized yet
 	if beaconHead.FinalizedEpoch < requiredEpoch {
-		return 0, 0, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
+		return nil, fmt.Errorf("Snapshot end time = %s, slot (epoch) = %d (%d)... waiting until epoch %d is finalized (currently %d).", endTime, targetSlot, targetSlotEpoch, requiredEpoch, beaconHead.FinalizedEpoch)
+	}
+
+	out := &rprewards.SnapshotEnd{
+		Slot: targetSlot,
 	}
 
 	// Get the first successful block
@@ -520,19 +487,23 @@ func (t *submitRewardsTree_Stateless) getSnapshotConsensusBlock(endTime time.Tim
 		// Try to get the current block
 		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(targetSlot))
 		if err != nil {
-			return 0, 0, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
+			return nil, fmt.Errorf("Error getting Beacon block %d: %w", targetSlot, err)
 		}
 
 		// If the block was missing, try the previous one
 		if !exists {
 			t.log.Printlnf("Slot %d was missing, trying the previous one...", targetSlot)
 			targetSlot--
-		} else {
-			// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
-			return targetSlot, block.ExecutionBlockNumber, nil
+			continue
 		}
+
+		// Ok, we have the first proposed finalized block - this is the one to use for the snapshot!
+		out.ConsensusBlock = targetSlot
+		out.ExecutionBlock = block.ExecutionBlockNumber
+		break
 	}
 
+	return out, nil
 }
 
 // Check whether the rewards tree for the current interval been submitted by the node

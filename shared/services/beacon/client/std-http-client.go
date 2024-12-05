@@ -5,10 +5,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"math/big"
 	"net/http"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -36,6 +39,7 @@ const (
 	RequestFinalityCheckpointsPath         = "/eth/v1/beacon/states/%s/finality_checkpoints"
 	RequestForkPath                        = "/eth/v1/beacon/states/%s/fork"
 	RequestValidatorsPath                  = "/eth/v1/beacon/states/%s/validators"
+	RequestValidatorBalancesPath           = "/eth/v1/beacon/states/%s/validator_balances"
 	RequestVoluntaryExitPath               = "/eth/v1/beacon/pool/voluntary_exits"
 	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
 	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
@@ -90,8 +94,17 @@ func (c *StandardHttpClient) GetSyncStatus() (beacon.SyncStatus, error) {
 
 }
 
+var eth2ConfigCache atomic.Pointer[beacon.Eth2Config]
+
 // Get the eth2 config
+// cache it for future requests
 func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
+
+	// Check the cache
+	cached := eth2ConfigCache.Load()
+	if cached != nil {
+		return *cached, nil
+	}
 
 	// Data
 	var wg errgroup.Group
@@ -117,8 +130,8 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 		return beacon.Eth2Config{}, err
 	}
 
-	// Return response
-	return beacon.Eth2Config{
+	// Save the result
+	out := beacon.Eth2Config{
 		GenesisForkVersion:           genesis.Data.GenesisForkVersion,
 		GenesisValidatorsRoot:        genesis.Data.GenesisValidatorsRoot,
 		GenesisEpoch:                 0,
@@ -127,8 +140,11 @@ func (c *StandardHttpClient) GetEth2Config() (beacon.Eth2Config, error) {
 		SlotsPerEpoch:                uint64(eth2Config.Data.SlotsPerEpoch),
 		SecondsPerEpoch:              uint64(eth2Config.Data.SecondsPerSlot * eth2Config.Data.SlotsPerEpoch),
 		EpochsPerSyncCommitteePeriod: uint64(eth2Config.Data.EpochsPerSyncCommitteePeriod),
-	}, nil
+	}
+	eth2ConfigCache.Store(&out)
 
+	// Return
+	return out, nil
 }
 
 // Get the eth2 deposit contract info
@@ -229,6 +245,114 @@ func (c *StandardHttpClient) getValidatorStatus(pubkeyOrIndex string, opts *beac
 		Exists:                     true,
 	}, nil
 
+}
+
+// Get multiple validators' balances
+func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
+
+	// Get state ID
+	var stateId string
+	if opts == nil {
+		stateId = "head"
+	} else if opts.Slot != nil {
+		stateId = strconv.FormatInt(int64(*opts.Slot), 10)
+	} else if opts.Epoch != nil {
+
+		// Get eth2 config
+		eth2Config, err := c.getEth2Config()
+		if err != nil {
+			return nil, err
+		}
+
+		// Get slot nuimber
+		slot := *opts.Epoch * uint64(eth2Config.Data.SlotsPerEpoch)
+		stateId = strconv.FormatInt(int64(slot), 10)
+
+	} else {
+		return nil, fmt.Errorf("must specify a slot or epoch when calling getValidatorsByOpts")
+	}
+
+	count := len(indices)
+	data := make(map[string]*big.Int, count)
+	for i := 0; i < count; i += MaxRequestValidatorsCount {
+		i := i
+		max := i + MaxRequestValidatorsCount
+		if max > count {
+			max = count
+		}
+
+		// Get & add validators
+		batch := indices[i:max]
+		balances, err := c.getValidatorBalances(stateId, batch)
+		if err != nil {
+			return nil, fmt.Errorf("error getting validator balances: %w", err)
+		}
+		for _, balance := range balances.Data {
+			b, ok := big.NewInt(0).SetString(balance.Balance, 10)
+			if !ok {
+				return nil, fmt.Errorf("invalid balance: %s", balance.Balance)
+			}
+			// Beacon clients return Gwei, but we want wei
+			b.Mul(b, big.NewInt(1e9))
+
+			data[balance.Index] = b
+		}
+	}
+
+	// Return
+	return data, nil
+}
+
+// GetValidatorBalancesSafe returns the balances of the validators
+// In order to avoid thrashing the bn, when opts.Slot is provided,
+// we will preflight the balance query with a sync query, and ensure that the
+// bn has not entered optimistic sync due to being unable to provide forkchoice updates,
+// and that the current head is a recent slot.
+func (c *StandardHttpClient) GetValidatorBalancesSafe(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
+	// Filter out empty indices
+	indices = slices.DeleteFunc(indices, func(index string) bool {
+		return index == ""
+	})
+
+	beaconConfig, err := c.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+	// Check the current head
+	safe := false
+	for i := 0; i < 30; i++ {
+		syncStatus, err := c.getSyncStatus()
+		if err != nil {
+			// If we get an error, wait and try again
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		if syncStatus.Data.IsSyncing {
+			// If the bn is still syncing, wait and try again
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		if syncStatus.Data.ELOffline {
+			// If the bn is offline, wait and try again
+			time.Sleep(1 * time.Second)
+			continue
+		}
+		// Check that the head is no more than 2 slots behind the current time.
+		if beaconConfig.GetSlotTime(uint64(syncStatus.Data.HeadSlot)).Add(2 * time.Second * time.Duration(beaconConfig.SecondsPerSlot)).Before(time.Now()) {
+			// If the head is too far behind, wait and try again
+			time.Sleep(1 * time.Second)
+			continue
+		}
+
+		safe = true
+		break
+	}
+	if !safe {
+		return nil, fmt.Errorf("bn is not in sync after 30 seconds")
+	}
+
+	// Get the balances
+	return c.GetValidatorBalances(indices, opts)
 }
 
 // Get multiple validators' statuses
@@ -526,6 +650,7 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 	}
 
 	// Add attestation info
+	beaconBlock.Attestations = make([]beacon.AttestationInfo, 0, len(block.Data.Message.Body.Attestations))
 	for i, attestation := range block.Data.Message.Body.Attestations {
 		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
 		info := beacon.AttestationInfo{
@@ -537,6 +662,22 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
 		}
 		beaconBlock.Attestations = append(beaconBlock.Attestations, info)
+	}
+
+	// Add withdrawals
+	beaconBlock.Withdrawals = make([]beacon.WithdrawalInfo, 0, len(block.Data.Message.Body.ExecutionPayload.Withdrawals))
+	for _, withdrawal := range block.Data.Message.Body.ExecutionPayload.Withdrawals {
+		amount, ok := new(big.Int).SetString(withdrawal.Amount, 10)
+		if !ok {
+			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding withdrawal amount for withdrawal for address %s of block %s: %s", withdrawal.Address, blockId, withdrawal.Amount)
+		}
+		// amount is in Gwei, but we want wei
+		amount.Mul(amount, big.NewInt(1e9))
+		beaconBlock.Withdrawals = append(beaconBlock.Withdrawals, beacon.WithdrawalInfo{
+			ValidatorIndex: withdrawal.ValidatorIndex,
+			Address:        common.BytesToAddress(withdrawal.Address),
+			Amount:         amount,
+		})
 	}
 
 	return beaconBlock, true, nil
@@ -674,6 +815,26 @@ func (c *StandardHttpClient) getFork(stateId string) (ForkResponse, error) {
 		return ForkResponse{}, fmt.Errorf("Could not decode fork data: %w", err)
 	}
 	return fork, nil
+}
+
+// Get validator balances
+func (c *StandardHttpClient) getValidatorBalances(stateId string, indices []string) (ValidatorBalancesResponse, error) {
+	var query string
+	if len(indices) > 0 {
+		query = fmt.Sprintf("?id=%s", strings.Join(indices, ","))
+	}
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorBalancesPath, stateId) + query)
+	if err != nil {
+		return ValidatorBalancesResponse{}, fmt.Errorf("Could not get validator balances: %w", err)
+	}
+	if status != http.StatusOK {
+		return ValidatorBalancesResponse{}, fmt.Errorf("Could not get validator balances: HTTP status %d; response body: '%s'", status, string(responseBody))
+	}
+	var balances ValidatorBalancesResponse
+	if err := json.Unmarshal(responseBody, &balances); err != nil {
+		return ValidatorBalancesResponse{}, fmt.Errorf("Could not decode validator balances: %w", err)
+	}
+	return balances, nil
 }
 
 // Get validators

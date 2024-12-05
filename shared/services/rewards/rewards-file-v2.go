@@ -13,9 +13,8 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
-// Holds information
 type MinipoolPerformanceFile_v2 struct {
-	RewardsFileVersion  rewardsFileVersion                                      `json:"rewardsFileVersion"`
+	RewardsFileVersion  uint64                                                  `json:"rewardsFileVersion"`
 	RulesetVersion      uint64                                                  `json:"rulesetVersion"`
 	Index               uint64                                                  `json:"index"`
 	Network             string                                                  `json:"network"`
@@ -26,11 +25,16 @@ type MinipoolPerformanceFile_v2 struct {
 	ExecutionStartBlock uint64                                                  `json:"executionStartBlock,omitempty"`
 	ExecutionEndBlock   uint64                                                  `json:"executionEndBlock,omitempty"`
 	MinipoolPerformance map[common.Address]*SmoothingPoolMinipoolPerformance_v2 `json:"minipoolPerformance"`
+	BonusScalar         *QuotedBigInt                                           `json:"bonusScalar,omitempty"`
 }
 
 // Serialize a minipool performance file into bytes
 func (f *MinipoolPerformanceFile_v2) Serialize() ([]byte, error) {
 	return json.Marshal(f)
+}
+
+func (f *MinipoolPerformanceFile_v2) SerializeSSZ() ([]byte, error) {
+	return nil, fmt.Errorf("ssz format not implemented for minipool performance files")
 }
 
 // Serialize a minipool performance file into bytes designed for human readability
@@ -69,6 +73,9 @@ type SmoothingPoolMinipoolPerformance_v2 struct {
 	AttestationScore        *QuotedBigInt `json:"attestationScore"`
 	MissingAttestationSlots []uint64      `json:"missingAttestationSlots"`
 	EthEarned               *QuotedBigInt `json:"ethEarned"`
+	ConsensusIncome         *QuotedBigInt `json:"consensusIncome,omitempty"`
+	BonusEthEarned          *QuotedBigInt `json:"bonusEthEarned,omitempty"`
+	EffectiveCommission     *QuotedBigInt `json:"effectiveCommission,omitempty"`
 }
 
 func (p *SmoothingPoolMinipoolPerformance_v2) GetPubkey() (types.ValidatorPubkey, error) {
@@ -86,6 +93,27 @@ func (p *SmoothingPoolMinipoolPerformance_v2) GetMissingAttestationSlots() []uin
 func (p *SmoothingPoolMinipoolPerformance_v2) GetEthEarned() *big.Int {
 	return &p.EthEarned.Int
 }
+func (p *SmoothingPoolMinipoolPerformance_v2) GetBonusEthEarned() *big.Int {
+	if p.BonusEthEarned == nil {
+		return big.NewInt(0)
+	}
+	return &p.BonusEthEarned.Int
+}
+func (p *SmoothingPoolMinipoolPerformance_v2) GetEffectiveCommission() *big.Int {
+	if p.EffectiveCommission == nil {
+		return big.NewInt(0)
+	}
+	return &p.EffectiveCommission.Int
+}
+func (p *SmoothingPoolMinipoolPerformance_v2) GetConsensusIncome() *big.Int {
+	if p.ConsensusIncome == nil {
+		return big.NewInt(0)
+	}
+	return &p.ConsensusIncome.Int
+}
+func (p *SmoothingPoolMinipoolPerformance_v2) GetAttestationScore() *big.Int {
+	return &p.AttestationScore.Int
+}
 
 // Node operator rewards
 type NodeRewardsInfo_v2 struct {
@@ -97,21 +125,13 @@ type NodeRewardsInfo_v2 struct {
 	MerkleProof      []string      `json:"merkleProof"`
 }
 
-func (i *NodeRewardsInfo_v2) GetRewardNetwork() uint64 {
-	return i.RewardNetwork
-}
-func (i *NodeRewardsInfo_v2) GetCollateralRpl() *QuotedBigInt {
-	return i.CollateralRpl
-}
-func (i *NodeRewardsInfo_v2) GetOracleDaoRpl() *QuotedBigInt {
-	return i.OracleDaoRpl
-}
-func (i *NodeRewardsInfo_v2) GetSmoothingPoolEth() *QuotedBigInt {
-	return i.SmoothingPoolEth
-}
-func (n *NodeRewardsInfo_v2) GetMerkleProof() ([]common.Hash, error) {
-	proof := []common.Hash{}
-	for _, proofLevel := range n.MerkleProof {
+func (f *RewardsFile_v2) GetMerkleProof(addr common.Address) ([]common.Hash, error) {
+	nr, ok := f.getNodeRewardsInfo(addr)
+	if !ok {
+		return nil, nil
+	}
+	proof := make([]common.Hash, 0, len(nr.MerkleProof))
+	for _, proofLevel := range nr.MerkleProof {
 		proof = append(proof, common.HexToHash(proofLevel))
 	}
 	return proof, nil
@@ -129,14 +149,98 @@ func (f *RewardsFile_v2) Serialize() ([]byte, error) {
 	return json.Marshal(f)
 }
 
+func (f *RewardsFile_v2) SerializeSSZ() ([]byte, error) {
+	return nil, fmt.Errorf("ssz format not implemented for rewards file v2")
+}
+
 // Deserialize a rewards file from bytes
 func (f *RewardsFile_v2) Deserialize(bytes []byte) error {
 	return json.Unmarshal(bytes, &f)
 }
 
-// Get the rewards file's header
-func (f *RewardsFile_v2) GetHeader() *RewardsFileHeader {
-	return f.RewardsFileHeader
+// Get the rewards file version
+func (f *RewardsFile_v2) GetRewardsFileVersion() uint64 {
+	return rewardsFileVersionTwo
+}
+
+// Get the rewards file index
+func (f *RewardsFile_v2) GetIndex() uint64 {
+	return f.RewardsFileHeader.Index
+}
+
+// Get the TotalNodeWeight (only added in v3)
+func (f *RewardsFile_v2) GetTotalNodeWeight() *big.Int {
+	return nil
+}
+
+// Get the merkle root
+func (f *RewardsFile_v2) GetMerkleRoot() string {
+	return f.RewardsFileHeader.MerkleRoot
+}
+
+// Get network rewards for a specific network
+func (f *RewardsFile_v2) GetNetworkRewards(network uint64) *NetworkRewardsInfo {
+	return f.RewardsFileHeader.NetworkRewards[network]
+}
+
+// Get the number of intervals that have passed
+func (f *RewardsFile_v2) GetIntervalsPassed() uint64 {
+	return f.RewardsFileHeader.IntervalsPassed
+}
+
+// Get the total RPL sent to the pDAO
+func (f *RewardsFile_v2) GetTotalProtocolDaoRpl() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.ProtocolDaoRpl.Int
+}
+
+// Get the total RPL sent to the pDAO
+func (f *RewardsFile_v2) GetTotalOracleDaoRpl() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.TotalOracleDaoRpl.Int
+}
+
+// Get the total Eth sent to pool stakers from the SP
+func (f *RewardsFile_v2) GetTotalPoolStakerSmoothingPoolEth() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.PoolStakerSmoothingPoolEth.Int
+}
+
+// Get the total rpl sent to stakers
+func (f *RewardsFile_v2) GetTotalCollateralRpl() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.TotalCollateralRpl.Int
+}
+
+// Get the total smoothing pool eth sent to node operators
+func (f *RewardsFile_v2) GetTotalNodeOperatorSmoothingPoolEth() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.NodeOperatorSmoothingPoolEth.Int
+}
+
+// Get the the execution start block
+func (f *RewardsFile_v2) GetExecutionStartBlock() uint64 {
+	return f.RewardsFileHeader.ExecutionStartBlock
+}
+
+// Get the the consensus start block
+func (f *RewardsFile_v2) GetConsensusStartBlock() uint64 {
+	return f.RewardsFileHeader.ConsensusStartBlock
+}
+
+// Get the the execution end block
+func (f *RewardsFile_v2) GetExecutionEndBlock() uint64 {
+	return f.RewardsFileHeader.ExecutionEndBlock
+}
+
+// Get the the consensus end block
+func (f *RewardsFile_v2) GetConsensusEndBlock() uint64 {
+	return f.RewardsFileHeader.ConsensusEndBlock
+}
+
+// Get the start time
+func (f *RewardsFile_v2) GetStartTime() time.Time {
+	return f.RewardsFileHeader.StartTime
+}
+
+// Get the end time
+func (f *RewardsFile_v2) GetEndTime() time.Time {
+	return f.RewardsFileHeader.EndTime
 }
 
 // Get all of the node addresses with rewards in this file
@@ -151,15 +255,71 @@ func (f *RewardsFile_v2) GetNodeAddresses() []common.Address {
 	return addresses
 }
 
-// Get info about a node's rewards
-func (f *RewardsFile_v2) GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool) {
+func (f *RewardsFile_v2) getNodeRewardsInfo(address common.Address) (*NodeRewardsInfo_v2, bool) {
 	rewards, exists := f.NodeRewards[address]
 	return rewards, exists
 }
 
-// Gets the minipool performance file corresponding to this rewards file
-func (f *RewardsFile_v2) GetMinipoolPerformanceFile() IMinipoolPerformanceFile {
-	return &f.MinipoolPerformanceFile
+func (f *RewardsFile_v2) HasRewardsFor(addr common.Address) bool {
+	_, ok := f.NodeRewards[addr]
+	return ok
+}
+
+func (f *RewardsFile_v2) GetNodeCollateralRpl(addr common.Address) *big.Int {
+	nr, ok := f.NodeRewards[addr]
+	if !ok {
+		return big.NewInt(0)
+	}
+	return &nr.CollateralRpl.Int
+}
+
+func (f *RewardsFile_v2) GetNodeOracleDaoRpl(addr common.Address) *big.Int {
+	nr, ok := f.NodeRewards[addr]
+	if !ok {
+		return big.NewInt(0)
+	}
+	return &nr.OracleDaoRpl.Int
+}
+
+func (f *RewardsFile_v2) GetNodeSmoothingPoolEth(addr common.Address) *big.Int {
+	nr, ok := f.NodeRewards[addr]
+	if !ok {
+		return big.NewInt(0)
+	}
+	return &nr.SmoothingPoolEth.Int
+}
+
+// Getters for network info
+func (f *RewardsFile_v2) HasRewardsForNetwork(network uint64) bool {
+	_, ok := f.NetworkRewards[network]
+	return ok
+}
+
+func (f *RewardsFile_v2) GetNetworkCollateralRpl(network uint64) *big.Int {
+	nr, ok := f.NetworkRewards[network]
+	if !ok {
+		return big.NewInt(0)
+	}
+
+	return &nr.CollateralRpl.Int
+}
+
+func (f *RewardsFile_v2) GetNetworkOracleDaoRpl(network uint64) *big.Int {
+	nr, ok := f.NetworkRewards[network]
+	if !ok {
+		return big.NewInt(0)
+	}
+
+	return &nr.OracleDaoRpl.Int
+}
+
+func (f *RewardsFile_v2) GetNetworkSmoothingPoolEth(network uint64) *big.Int {
+	nr, ok := f.NetworkRewards[network]
+	if !ok {
+		return big.NewInt(0)
+	}
+
+	return &nr.SmoothingPoolEth.Int
 }
 
 // Sets the CID of the minipool performance file corresponding to this rewards file
@@ -168,7 +328,7 @@ func (f *RewardsFile_v2) SetMinipoolPerformanceFileCID(cid string) {
 }
 
 // Generates a merkle tree from the provided rewards map
-func (f *RewardsFile_v2) generateMerkleTree() error {
+func (f *RewardsFile_v2) GenerateMerkleTree() error {
 	// Generate the leaf data for each node
 	totalData := make([][]byte, 0, len(f.NodeRewards))
 	for address, rewardsForNode := range f.NodeRewards {

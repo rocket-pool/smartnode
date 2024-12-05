@@ -43,10 +43,7 @@ func NewProposalManager(log *log.ColorLogger, cfg *config.RocketPoolConfig, rp *
 		return nil, fmt.Errorf("error creating node tree manager: %w", err)
 	}
 
-	stateMgr, err := state.NewNetworkStateManager(rp, cfg, rp.Client, bc, log)
-	if err != nil {
-		return nil, fmt.Errorf("error creating network state manager: %w", err)
-	}
+	stateMgr := state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bc, log)
 
 	logPrefix := "[PDAO Proposals]"
 	return &ProposalManager{

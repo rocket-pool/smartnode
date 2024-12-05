@@ -1,6 +1,7 @@
 package state
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 	"time"
@@ -31,44 +32,134 @@ var fifteenEth = big.NewInt(0).Mul(big.NewInt(15), oneEth)
 var _13_6137_Eth = big.NewInt(0).Mul(big.NewInt(136137), big.NewInt(1e14))
 var _13_Eth = big.NewInt(0).Mul(big.NewInt(13), oneEth)
 
+type ValidatorDetailsMap map[types.ValidatorPubkey]beacon.ValidatorStatus
+
+func (vdm ValidatorDetailsMap) MarshalJSON() ([]byte, error) {
+	// Marshal as a slice of ValidatorStatus
+	out := make([]beacon.ValidatorStatus, 0, len(vdm))
+	for _, v := range vdm {
+		out = append(out, v)
+	}
+	return json.Marshal(out)
+}
+
+func (vdm *ValidatorDetailsMap) UnmarshalJSON(data []byte) error {
+	// Unmarshal as a slice of ValidatorStatus
+	var inp []beacon.ValidatorStatus
+	err := json.Unmarshal(data, &inp)
+	if err != nil {
+		return err
+	}
+
+	*vdm = make(ValidatorDetailsMap, len(inp))
+
+	// Convert back to a map
+	for _, v := range inp {
+		// Return an error if the pubkey is already in the map
+		if _, exists := (*vdm)[v.Pubkey]; exists {
+			return fmt.Errorf("duplicate validator details for pubkey %s", v.Pubkey.Hex())
+		}
+		(*vdm)[v.Pubkey] = v
+	}
+	return nil
+}
+
 type NetworkState struct {
 	// Network version
 
 	// Block / slot for this state
-	ElBlockNumber    uint64
-	BeaconSlotNumber uint64
-	BeaconConfig     beacon.Eth2Config
+	ElBlockNumber    uint64            `json:"el_block_number"`
+	BeaconSlotNumber uint64            `json:"beacon_slot_number"`
+	BeaconConfig     beacon.Eth2Config `json:"beacon_config"`
 
 	// Network details
-	NetworkDetails *rpstate.NetworkDetails
+	NetworkDetails *rpstate.NetworkDetails `json:"network_details"`
 
 	// Node details
-	NodeDetails          []rpstate.NativeNodeDetails
-	NodeDetailsByAddress map[common.Address]*rpstate.NativeNodeDetails
+	NodeDetails []rpstate.NativeNodeDetails `json:"node_details"`
+	// NodeDetailsByAddress is an index over NodeDetails and is ignored when marshaling to JSON
+	// it is rebuilt when unmarshaling from JSON.
+	NodeDetailsByAddress map[common.Address]*rpstate.NativeNodeDetails `json:"-"`
 
 	// Minipool details
-	MinipoolDetails          []rpstate.NativeMinipoolDetails
-	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails
-	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails
+	MinipoolDetails []rpstate.NativeMinipoolDetails `json:"minipool_details"`
+	// These next two fields are indexes over MinipoolDetails and are ignored when marshaling to JSON
+	// they are rebuilt when unmarshaling from JSON.
+	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails   `json:"-"`
+	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails `json:"-"`
 
 	// Validator details
-	ValidatorDetails map[types.ValidatorPubkey]beacon.ValidatorStatus
+	ValidatorDetails ValidatorDetailsMap `json:"validator_details"`
 
 	// Oracle DAO details
-	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails
+	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails `json:"oracle_dao_member_details"`
 
 	// Protocol DAO proposals
-	ProtocolDaoProposalDetails []protocol.ProtocolDaoProposalDetails
+	ProtocolDaoProposalDetails []protocol.ProtocolDaoProposalDetails `json:"protocol_dao_proposal_details,omitempty"`
 
 	// Internal fields
 	log *log.ColorLogger
 }
 
+func (ns NetworkState) MarshalJSON() ([]byte, error) {
+	// No changes needed
+	type Alias NetworkState
+	a := (*Alias)(&ns)
+	return json.Marshal(a)
+}
+
+func (ns *NetworkState) UnmarshalJSON(data []byte) error {
+	type Alias NetworkState
+	var a Alias
+	err := json.Unmarshal(data, &a)
+	if err != nil {
+		return err
+	}
+	*ns = NetworkState(a)
+	// Rebuild the node details by address index
+	ns.NodeDetailsByAddress = make(map[common.Address]*rpstate.NativeNodeDetails)
+	for i, details := range ns.NodeDetails {
+		if _, ok := ns.NodeDetailsByAddress[details.NodeAddress]; ok {
+			return fmt.Errorf("duplicate node details for address %s", details.NodeAddress.Hex())
+		}
+		// N.B. &details is not the same as &ns.NodeDetails[i]
+		// &details is the address of the current element in the loop
+		// &ns.NodeDetails[i] is the address of the struct in the slice
+		ns.NodeDetailsByAddress[details.NodeAddress] = &ns.NodeDetails[i]
+	}
+
+	// Rebuild the minipool details by address index
+	ns.MinipoolDetailsByAddress = make(map[common.Address]*rpstate.NativeMinipoolDetails)
+	for i, details := range ns.MinipoolDetails {
+		if _, ok := ns.MinipoolDetailsByAddress[details.MinipoolAddress]; ok {
+			return fmt.Errorf("duplicate minipool details for address %s", details.MinipoolAddress.Hex())
+		}
+
+		// N.B. &details is not the same as &ns.MinipoolDetails[i]
+		// &details is the address of the current element in the loop
+		// &ns.MinipoolDetails[i] is the address of the struct in the slice
+		ns.MinipoolDetailsByAddress[details.MinipoolAddress] = &ns.MinipoolDetails[i]
+	}
+
+	// Rebuild the minipool details by node index
+	ns.MinipoolDetailsByNode = make(map[common.Address][]*rpstate.NativeMinipoolDetails)
+	for i, details := range ns.MinipoolDetails {
+		// See comments in above loops as to why we're using &ns.MinipoolDetails[i]
+		currentDetails := &ns.MinipoolDetails[i]
+		nodeList, exists := ns.MinipoolDetailsByNode[details.NodeAddress]
+		if !exists {
+			ns.MinipoolDetailsByNode[details.NodeAddress] = []*rpstate.NativeMinipoolDetails{currentDetails}
+			continue
+		}
+		// See comments in other loops
+		ns.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
+	}
+
+	return nil
+}
+
 // Creates a snapshot of the entire Rocket Pool network state, on both the Execution and Consensus layers
-func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config) (*NetworkState, error) {
-	// Get the relevant network contracts
-	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketpool.RocketPool, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig *beacon.Eth2Config) (*NetworkState, error) {
 
 	// Get the execution block for the given slot
 	beaconBlock, exists, err := bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
@@ -92,7 +183,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 		MinipoolDetailsByNode:    map[common.Address][]*rpstate.NativeMinipoolDetails{},
 		BeaconSlotNumber:         slotNumber,
 		ElBlockNumber:            elBlockNumber,
-		BeaconConfig:             beaconConfig,
+		BeaconConfig:             *beaconConfig,
 		log:                      log,
 	}
 
@@ -100,7 +191,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, batchContracts.Multicaller, batchContracts.BalanceBatcher, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
@@ -149,7 +240,7 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 
 	// Calculate avg node fees and distributor shares
 	for _, details := range state.NodeDetails {
-		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		details.CalculateAverageFeeAndDistributorShares(state.MinipoolDetailsByNode[details.NodeAddress])
 	}
 
 	// Oracle DAO member details
@@ -193,15 +284,11 @@ func CreateNetworkState(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool,
 
 // Creates a snapshot of the Rocket Pool network, but only for a single node
 // Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
-func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
+func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *rocketpool.RocketPool, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig *beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
 	steps := 5
 	if calculateTotalEffectiveStake {
 		steps++
 	}
-
-	// Get the relevant network contracts
-	multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-	balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
 
 	// Get the execution block for the given slot
 	beaconBlock, exists, err := bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
@@ -225,7 +312,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 		MinipoolDetailsByNode:    map[common.Address][]*rpstate.NativeMinipoolDetails{},
 		BeaconSlotNumber:         slotNumber,
 		ElBlockNumber:            elBlockNumber,
-		BeaconConfig:             beaconConfig,
+		BeaconConfig:             *beaconConfig,
 		log:                      log,
 	}
 
@@ -233,7 +320,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, batchContracts.Multicaller, batchContracts.BalanceBatcher, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
@@ -283,7 +370,7 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 
 	// Calculate avg node fees and distributor shares
 	for _, details := range state.NodeDetails {
-		rpstate.CalculateAverageFeeAndDistributorShares(rp, contracts, details, state.MinipoolDetailsByNode[details.NodeAddress])
+		details.CalculateAverageFeeAndDistributorShares(state.MinipoolDetailsByNode[details.NodeAddress])
 	}
 
 	// Get the total network effective RPL stake
@@ -340,7 +427,8 @@ func CreateNetworkStateForNode(cfg *config.RocketPoolConfig, rp *rocketpool.Rock
 	return state, totalEffectiveStake, nil
 }
 
-func (s *NetworkState) GetNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *big.Int) *big.Int {
+func (s *NetworkState) GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth *big.Int, nodeStake *big.Int) (*big.Int, *big.Int) {
+
 	rplPrice := s.NetworkDetails.RplPrice
 
 	// stakedRplValueInEth := nodeStake * ratio / 1 Eth
@@ -348,10 +436,21 @@ func (s *NetworkState) GetNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *bi
 	stakedRplValueInEth.Mul(nodeStake, rplPrice)
 	stakedRplValueInEth.Quo(stakedRplValueInEth, oneEth)
 
+	// Avoid division by zero
+	if eligibleBorrowedEth.Sign() == 0 {
+		return stakedRplValueInEth, big.NewInt(0)
+	}
+
 	// percentOfBorrowedEth := stakedRplValueInEth * 100 Eth / eligibleBorrowedEth
 	percentOfBorrowedEth := big.NewInt(0)
 	percentOfBorrowedEth.Mul(stakedRplValueInEth, oneHundredEth)
 	percentOfBorrowedEth.Quo(percentOfBorrowedEth, eligibleBorrowedEth)
+
+	return stakedRplValueInEth, percentOfBorrowedEth
+}
+
+func (s *NetworkState) GetNodeWeight(eligibleBorrowedEth *big.Int, nodeStake *big.Int) *big.Int {
+	stakedRplValueInEth, percentOfBorrowedEth := s.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeStake)
 
 	// If at or under 15%, return 100 * stakedRplValueInEth
 	if percentOfBorrowedEth.Cmp(fifteenEth) <= 0 {

@@ -1,34 +1,64 @@
 package rewards
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/wealdtech/go-merkletree"
 )
-
-type rewardsFileVersion uint64
 
 const (
 	FarEpoch uint64 = 18446744073709551615
 )
 
 const (
-	rewardsFileVersionUnknown = iota
+	rewardsFileVersionUnknown uint64 = iota
 	rewardsFileVersionOne
 	rewardsFileVersionTwo
 	rewardsFileVersionThree
 	rewardsFileVersionMax = iota - 1
+
+	minRewardsFileVersionSSZ = rewardsFileVersionThree
 )
+
+// RewardsExecutionClient defines and interface
+// that contains only the functions from rocketpool.RocketPool
+// required for rewards generation.
+// This facade makes it easier to perform dependency injection in tests.
+type RewardsExecutionClient interface {
+	GetNetworkEnabled(networkId *big.Int, opts *bind.CallOpts) (bool, error)
+	HeaderByNumber(context.Context, *big.Int) (*ethtypes.Header, error)
+	GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error)
+	GetRewardSnapshotEvent(previousRewardsPoolAddresses []common.Address, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error)
+	GetRewardIndex(opts *bind.CallOpts) (*big.Int, error)
+}
+
+// RewardsBeaconClient defines and interface
+// that contains only the functions from beacon.Client
+// required for rewards generation.
+// This facade makes it easier to perform dependency injection in tests.
+type RewardsBeaconClient interface {
+	GetBeaconBlock(slot string) (beacon.BeaconBlock, bool, error)
+	GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error)
+	GetAttestations(slot string) ([]beacon.AttestationInfo, bool, error)
+	GetEth2Config() (beacon.Eth2Config, error)
+	GetBeaconHead() (beacon.BeaconHead, error)
+}
 
 // Interface for version-agnostic minipool performance
 type IMinipoolPerformanceFile interface {
 	// Serialize a minipool performance file into bytes
 	Serialize() ([]byte, error)
+	SerializeSSZ() ([]byte, error)
 
 	// Serialize a minipool performance file into bytes designed for human readability
 	SerializeHuman() ([]byte, error)
@@ -48,28 +78,51 @@ type IMinipoolPerformanceFile interface {
 type IRewardsFile interface {
 	// Serialize a rewards file into bytes
 	Serialize() ([]byte, error)
+	SerializeSSZ() ([]byte, error)
 
 	// Deserialize a rewards file from bytes
 	Deserialize([]byte) error
 
-	// Get the rewards file's header
-	GetHeader() *RewardsFileHeader
+	// Getters for general interval info
+	GetRewardsFileVersion() uint64
+	GetIndex() uint64
+	GetTotalNodeWeight() *big.Int
+	GetMerkleRoot() string
+	GetIntervalsPassed() uint64
+	GetTotalProtocolDaoRpl() *big.Int
+	GetTotalOracleDaoRpl() *big.Int
+	GetTotalCollateralRpl() *big.Int
+	GetTotalNodeOperatorSmoothingPoolEth() *big.Int
+	GetTotalPoolStakerSmoothingPoolEth() *big.Int
+	GetExecutionStartBlock() uint64
+	GetConsensusStartBlock() uint64
+	GetExecutionEndBlock() uint64
+	GetConsensusEndBlock() uint64
+	GetStartTime() time.Time
+	GetEndTime() time.Time
 
 	// Get all of the node addresses with rewards in this file
 	// NOTE: the order of node addresses is not guaranteed to be stable, so don't rely on it
 	GetNodeAddresses() []common.Address
 
-	// Get info about a node's rewards
-	GetNodeRewardsInfo(address common.Address) (INodeRewardsInfo, bool)
+	// Getters for into about specific node's rewards
+	HasRewardsFor(common.Address) bool
+	GetNodeCollateralRpl(common.Address) *big.Int
+	GetNodeOracleDaoRpl(common.Address) *big.Int
+	GetNodeSmoothingPoolEth(common.Address) *big.Int
+	GetMerkleProof(common.Address) ([]common.Hash, error)
 
-	// Gets the minipool performance file corresponding to this rewards file
-	GetMinipoolPerformanceFile() IMinipoolPerformanceFile
+	// Getters for network info
+	HasRewardsForNetwork(network uint64) bool
+	GetNetworkCollateralRpl(network uint64) *big.Int
+	GetNetworkOracleDaoRpl(network uint64) *big.Int
+	GetNetworkSmoothingPoolEth(network uint64) *big.Int
 
 	// Sets the CID of the minipool performance file corresponding to this rewards file
 	SetMinipoolPerformanceFileCID(cid string)
 
 	// Generate the Merkle Tree and its root from the rewards file's proofs
-	generateMerkleTree() error
+	GenerateMerkleTree() error
 }
 
 // Rewards per network
@@ -97,26 +150,21 @@ type ISmoothingPoolMinipoolPerformance interface {
 	GetMissedAttestationCount() uint64
 	GetMissingAttestationSlots() []uint64
 	GetEthEarned() *big.Int
-}
-
-// Interface for version-agnostic node operator rewards
-type INodeRewardsInfo interface {
-	GetRewardNetwork() uint64
-	GetCollateralRpl() *QuotedBigInt
-	GetOracleDaoRpl() *QuotedBigInt
-	GetSmoothingPoolEth() *QuotedBigInt
-	GetMerkleProof() ([]common.Hash, error)
+	GetBonusEthEarned() *big.Int
+	GetEffectiveCommission() *big.Int
+	GetConsensusIncome() *big.Int
+	GetAttestationScore() *big.Int
 }
 
 // Small struct to test version information for rewards files during deserialization
 type VersionHeader struct {
-	RewardsFileVersion rewardsFileVersion `json:"rewardsFileVersion,omitempty"`
+	RewardsFileVersion uint64 `json:"rewardsFileVersion,omitempty"`
 }
 
 // General version-agnostic information about a rewards file
 type RewardsFileHeader struct {
 	// Serialized fields
-	RewardsFileVersion         rewardsFileVersion             `json:"rewardsFileVersion"`
+	RewardsFileVersion         uint64                         `json:"rewardsFileVersion"`
 	RulesetVersion             uint64                         `json:"rulesetVersion,omitempty"`
 	Index                      uint64                         `json:"index"`
 	Network                    string                         `json:"network"`
@@ -133,8 +181,7 @@ type RewardsFileHeader struct {
 	NetworkRewards             map[uint64]*NetworkRewardsInfo `json:"networkRewards"`
 
 	// Non-serialized fields
-	MerkleTree          *merkletree.MerkleTree    `json:"-"`
-	InvalidNetworkNodes map[common.Address]uint64 `json:"-"`
+	MerkleTree *merkletree.MerkleTree `json:"-"`
 }
 
 // Information about an interval
@@ -153,7 +200,7 @@ type IntervalInfo struct {
 	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`
 	MerkleProof            []common.Hash `json:"merkleProof"`
 
-	TotalNodeWeight *QuotedBigInt `json:"-"`
+	TotalNodeWeight *big.Int `json:"-"`
 }
 
 type MinipoolInfo struct {
@@ -173,7 +220,13 @@ type MinipoolInfo struct {
 	AttestationScore        *QuotedBigInt         `json:"attestationScore"`
 	CompletedAttestations   map[uint64]bool       `json:"-"`
 	AttestationCount        int                   `json:"attestationCount"`
+	TotalFee                *big.Int              `json:"-"`
+	MinipoolBonus           *big.Int              `json:"-"`
+	NodeOperatorBond        *big.Int              `json:"-"`
+	ConsensusIncome         *QuotedBigInt         `json:"consensusIncome"`
 }
+
+var sixteenEth = big.NewInt(0).Mul(oneEth, big.NewInt(16))
 
 type IntervalDutiesInfo struct {
 	Index uint64
@@ -206,10 +259,24 @@ type NodeSmoothingDetails struct {
 	// v2 Fields
 	OptInTime  time.Time
 	OptOutTime time.Time
+
+	// v10 Fields
+	BonusEth            *big.Int
+	EligibleBorrowedEth *big.Int
+	RplStake            *big.Int
 }
 
 type QuotedBigInt struct {
 	big.Int
+}
+
+func QuotedBigIntFromBigInt(x *big.Int) *QuotedBigInt {
+	if x == nil {
+		return nil
+	}
+	q := QuotedBigInt{}
+	q.Int = *big.NewInt(0).Set(x)
+	return &q
 }
 
 func NewQuotedBigInt(x int64) *QuotedBigInt {
@@ -279,7 +346,7 @@ func (versionHeader *VersionHeader) deserializeMinipoolPerformanceFile(bytes []b
 		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	case rewardsFileVersionThree:
-		file := &MinipoolPerformanceFile_v3{}
+		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	}
 

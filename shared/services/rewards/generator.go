@@ -6,8 +6,9 @@ import (
 	"slices"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/ipfs/go-cid"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -46,38 +47,85 @@ const (
 	// HoleskyV7Interval uint64 = 0
 
 	// Mainnet intervals
-	MainnetV8Interval uint64 = 18
-
+	MainnetV8Interval  uint64 = 18
+	MainnetV9Interval  uint64 = 29
+	MainnetV10Interval uint64 = 30
 	// Devnet intervals
 
 	// Holesky intervals
-	HoleskyV8Interval uint64 = 93
+	HoleskyV8Interval  uint64 = 93
+	HoleskyV9Interval  uint64 = 276
+	HoleskyV10Interval uint64 = 277
 )
+
+func GetMainnetRulesetVersion(interval uint64) uint64 {
+	if interval >= MainnetV10Interval {
+		return 10
+	}
+	if interval >= MainnetV9Interval {
+		return 9
+	}
+	return 8
+}
+
+func GetHoleskyRulesetVersion(interval uint64) uint64 {
+	if interval >= HoleskyV10Interval {
+		return 10
+	}
+	if interval >= HoleskyV9Interval {
+		return 9
+	}
+	return 8
+}
+
+func GetRulesetVersion(network cfgtypes.Network, interval uint64) uint64 {
+	switch network {
+	case cfgtypes.Network_Mainnet:
+		return GetMainnetRulesetVersion(interval)
+	case cfgtypes.Network_Holesky:
+		return GetHoleskyRulesetVersion(interval)
+	case cfgtypes.Network_Devnet:
+		return 10
+	default:
+		return 10
+	}
+}
 
 type TreeGenerator struct {
 	rewardsIntervalInfos map[uint64]rewardsIntervalInfo
 	logger               *log.ColorLogger
 	logPrefix            string
-	rp                   *rocketpool.RocketPool
+	rp                   RewardsExecutionClient
 	cfg                  *config.RocketPoolConfig
 	bc                   beacon.Client
 	index                uint64
 	startTime            time.Time
 	endTime              time.Time
-	consensusBlock       uint64
+	snapshotEnd          *SnapshotEnd
 	elSnapshotHeader     *types.Header
 	intervalsPassed      uint64
 	generatorImpl        treeGeneratorImpl
 	approximatorImpl     treeGeneratorImpl
 }
 
-type treeGeneratorImpl interface {
-	generateTree(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (IRewardsFile, error)
-	approximateStakerShareOfSmoothingPool(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client) (*big.Int, error)
-	getRulesetVersion() uint64
+type SnapshotEnd struct {
+	// Slot is the last slot of the interval
+	Slot uint64
+	// ConsensusBlock is the last non-missed slot of the interval
+	ConsensusBlock uint64
+	// ExecutionBlock is the EL block number of ConsensusBlock
+	ExecutionBlock uint64
 }
 
-func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, consensusBlock uint64, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, rollingRecord *RollingRecord) (*TreeGenerator, error) {
+type treeGeneratorImpl interface {
+	generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error)
+	approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error)
+	getRulesetVersion() uint64
+	// Returns the primary artifact cid for consensus, all cids of all files in a map, and any potential errors
+	saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)
+}
+
+func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecutionClient, cfg *config.RocketPoolConfig, bc beacon.Client, index uint64, startTime time.Time, endTime time.Time, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) (*TreeGenerator, error) {
 	t := &TreeGenerator{
 		logger:           logger,
 		logPrefix:        logPrefix,
@@ -87,21 +135,34 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 		index:            index,
 		startTime:        startTime,
 		endTime:          endTime,
-		consensusBlock:   consensusBlock,
+		snapshotEnd:      snapshotEnd,
 		elSnapshotHeader: elSnapshotHeader,
 		intervalsPassed:  intervalsPassed,
 	}
 
+	// v10
+	v10_generator := newTreeGeneratorImpl_v9_v10(10, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
+
+	// v9
+	v9_generator := newTreeGeneratorImpl_v9_v10(9, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
+
 	// v8
-	var v8_generator treeGeneratorImpl
-	if rollingRecord == nil {
-		v8_generator = newTreeGeneratorImpl_v8(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
-	} else {
-		v8_generator = newTreeGeneratorImpl_v8_rolling(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.consensusBlock, t.elSnapshotHeader, t.intervalsPassed, state, rollingRecord)
-	}
+	v8_generator := newTreeGeneratorImpl_v8(t.logger, t.logPrefix, t.index, t.startTime, t.endTime, t.snapshotEnd.ConsensusBlock, t.elSnapshotHeader, t.intervalsPassed, state)
 
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
+		{
+			rewardsRulesetVersion: 10,
+			mainnetStartInterval:  MainnetV10Interval,
+			holeskyStartInterval:  HoleskyV10Interval,
+			generator:             v10_generator,
+		},
+		{
+			rewardsRulesetVersion: 9,
+			mainnetStartInterval:  MainnetV9Interval,
+			holeskyStartInterval:  HoleskyV9Interval,
+			generator:             v9_generator,
+		},
 		{
 			rewardsRulesetVersion: 8,
 			mainnetStartInterval:  MainnetV8Interval,
@@ -167,12 +228,18 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp *rocketpool.
 	return t, nil
 }
 
-func (t *TreeGenerator) GenerateTree() (IRewardsFile, error) {
-	return t.generatorImpl.generateTree(t.rp, t.cfg, t.bc)
+type GenerateTreeResult struct {
+	RewardsFile             IRewardsFile
+	MinipoolPerformanceFile IMinipoolPerformanceFile
+	InvalidNetworkNodes     map[common.Address]uint64
+}
+
+func (t *TreeGenerator) GenerateTree() (*GenerateTreeResult, error) {
+	return t.generatorImpl.generateTree(t.rp, fmt.Sprint(t.cfg.Smartnode.Network.Value), t.cfg.Smartnode.GetPreviousRewardsPoolAddresses(), t.bc)
 }
 
 func (t *TreeGenerator) ApproximateStakerShareOfSmoothingPool() (*big.Int, error) {
-	return t.approximatorImpl.approximateStakerShareOfSmoothingPool(t.rp, t.cfg, t.bc)
+	return t.approximatorImpl.approximateStakerShareOfSmoothingPool(t.rp, fmt.Sprint(t.cfg.Smartnode.Network.Value), t.bc)
 }
 
 func (t *TreeGenerator) GetGeneratorRulesetVersion() uint64 {
@@ -183,13 +250,18 @@ func (t *TreeGenerator) GetApproximatorRulesetVersion() uint64 {
 	return t.approximatorImpl.getRulesetVersion()
 }
 
-func (t *TreeGenerator) GenerateTreeWithRuleset(ruleset uint64) (IRewardsFile, error) {
+func (t *TreeGenerator) GenerateTreeWithRuleset(ruleset uint64) (*GenerateTreeResult, error) {
 	info, exists := t.rewardsIntervalInfos[ruleset]
 	if !exists {
 		return nil, fmt.Errorf("ruleset v%d does not exist", ruleset)
 	}
 
-	return info.generator.generateTree(t.rp, t.cfg, t.bc)
+	return info.generator.generateTree(
+		t.rp,
+		fmt.Sprint(t.cfg.Smartnode.Network.Value),
+		t.cfg.Smartnode.GetPreviousRewardsPoolAddresses(),
+		t.bc,
+	)
 }
 
 func (t *TreeGenerator) ApproximateStakerShareOfSmoothingPoolWithRuleset(ruleset uint64) (*big.Int, error) {
@@ -198,5 +270,9 @@ func (t *TreeGenerator) ApproximateStakerShareOfSmoothingPoolWithRuleset(ruleset
 		return nil, fmt.Errorf("ruleset v%d does not exist", ruleset)
 	}
 
-	return info.generator.approximateStakerShareOfSmoothingPool(t.rp, t.cfg, t.bc)
+	return info.generator.approximateStakerShareOfSmoothingPool(t.rp, fmt.Sprint(t.cfg.Smartnode.Network.Value), t.bc)
+}
+
+func (t *TreeGenerator) SaveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+	return t.generatorImpl.saveFiles(t.cfg.Smartnode, treeResult, nodeTrusted)
 }

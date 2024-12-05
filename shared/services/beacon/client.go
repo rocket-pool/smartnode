@@ -1,6 +1,8 @@
 package beacon
 
 import (
+	"math/big"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -17,16 +19,6 @@ type SyncStatus struct {
 	Syncing  bool
 	Progress float64
 }
-type Eth2Config struct {
-	GenesisForkVersion           []byte
-	GenesisValidatorsRoot        []byte
-	GenesisEpoch                 uint64
-	GenesisTime                  uint64
-	SecondsPerSlot               uint64
-	SlotsPerEpoch                uint64
-	SecondsPerEpoch              uint64
-	EpochsPerSyncCommitteePeriod uint64
-}
 type Eth2DepositContract struct {
 	ChainID uint64
 	Address common.Address
@@ -38,23 +30,28 @@ type BeaconHead struct {
 	PreviousJustifiedEpoch uint64
 }
 type ValidatorStatus struct {
-	Pubkey                     types.ValidatorPubkey
-	Index                      string
-	WithdrawalCredentials      common.Hash
-	Balance                    uint64
-	Status                     ValidatorState
-	EffectiveBalance           uint64
-	Slashed                    bool
-	ActivationEligibilityEpoch uint64
-	ActivationEpoch            uint64
-	ExitEpoch                  uint64
-	WithdrawableEpoch          uint64
-	Exists                     bool
+	Pubkey                     types.ValidatorPubkey `json:"pubkey"`
+	Index                      string                `json:"index"`
+	WithdrawalCredentials      common.Hash           `json:"withdrawal_credentials"`
+	Balance                    uint64                `json:"balance"`
+	Status                     ValidatorState        `json:"status"`
+	EffectiveBalance           uint64                `json:"effective_balance"`
+	Slashed                    bool                  `json:"slashed"`
+	ActivationEligibilityEpoch uint64                `json:"activation_eligibility_epoch"`
+	ActivationEpoch            uint64                `json:"activation_epoch"`
+	ExitEpoch                  uint64                `json:"exit_epoch"`
+	WithdrawableEpoch          uint64                `json:"withdrawable_epoch"`
+	Exists                     bool                  `json:"exists"`
 }
 type Eth1Data struct {
 	DepositRoot  common.Hash
 	DepositCount uint64
 	BlockHash    common.Hash
+}
+type WithdrawalInfo struct {
+	ValidatorIndex string
+	Address        common.Address
+	Amount         *big.Int
 }
 type BeaconBlock struct {
 	Slot                 uint64
@@ -63,6 +60,7 @@ type BeaconBlock struct {
 	Attestations         []AttestationInfo
 	FeeRecipient         common.Address
 	ExecutionBlockNumber uint64
+	Withdrawals          []WithdrawalInfo
 }
 type BeaconBlockHeader struct {
 	Slot          uint64
@@ -146,6 +144,8 @@ type Client interface {
 	GetValidatorIndex(pubkey types.ValidatorPubkey) (string, error)
 	GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error)
 	GetValidatorProposerDuties(indices []string, epoch uint64) (map[string]uint64, error)
+	GetValidatorBalances(indices []string, opts *ValidatorStatusOptions) (map[string]*big.Int, error)
+	GetValidatorBalancesSafe(indices []string, opts *ValidatorStatusOptions) (map[string]*big.Int, error)
 	GetDomainData(domainType []byte, epoch uint64, useGenesisFork bool) ([]byte, error)
 	ExitValidator(validatorIndex string, epoch uint64, signature types.ValidatorSignature) error
 	Close() error
