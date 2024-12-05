@@ -12,7 +12,7 @@ const (
 	ecOpenRpcPortsID string = "openRpcPorts"
 
 	// Defaults
-	defaultSuggestedBlockLimit uint32 = 30000000
+	defaultSuggestedBlockLimit uint64 = 30000000
 	defaultEcP2pPort           uint16 = 30303
 	defaultEcHttpPort          uint16 = 8545
 	defaultEcWsPort            uint16 = 8546
