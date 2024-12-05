@@ -22,6 +22,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
@@ -39,6 +40,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return nil, err
 	}
 	if err := services.RequireRocketStorage(c); err != nil {
+		return nil, err
+	}
+	if err := services.RequireBeaconClientSynced(c); err != nil {
 		return nil, err
 	}
 	cfg, err := services.GetConfig(c)
@@ -70,6 +74,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	response.PenalizedMinipools = map[common.Address]uint64{}
 	response.NodeRPLLocked = big.NewInt(0)
 
+	// Get the legacy MinipoolQueue contract address
+	legacyMinipoolQueueAddress := cfg.Smartnode.GetV110MinipoolQueueAddress()
+
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
@@ -80,6 +87,23 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	// Sync
 	var wg errgroup.Group
+
+	wg.Go(func() error {
+		mpDetails, err := mp.GetNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)
+		if err == nil {
+			response.Minipools = mpDetails
+		}
+		return err
+	})
+
+	wg.Go(func() error {
+		delegate, err := rp.GetContract("rocketMinipoolDelegate", nil)
+		if err != nil {
+			return fmt.Errorf("Error getting latest minipool delegate contract: %w", err)
+		}
+		response.LatestDelegate = *delegate.Address
+		return err
+	})
 
 	// Get node trusted status
 	wg.Go(func() error {
