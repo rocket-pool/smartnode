@@ -32,6 +32,9 @@ type ConsensusCommonConfig struct {
 	// The checkpoint sync URL if used
 	CheckpointSyncProvider config.Parameter `yaml:"checkpointSyncProvider,omitempty"`
 
+	// The suggested block gas limit
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,ommitempty"`
+
 	// The port to use for gossip traffic
 	P2pPort config.Parameter `yaml:"p2pPort,omitempty"`
 
@@ -74,6 +77,17 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 			Default:            map[config.Network]interface{}{config.Network_All: defaultCheckpointSyncProvider},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		SuggestedBlockGasLimit: config.Parameter{
+			ID:                 "suggestedBlockGasLimit",
+			Name:               "Suggested Block Gas Limit",
+			Description:        "The block gas limit that should be used for externally built blocks.",
+			Type:               config.ParameterType_Uint,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultSuggestedBlockLimit},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
+			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 
@@ -130,6 +144,7 @@ func (cfg *ConsensusCommonConfig) GetParameters() []*config.Parameter {
 		&cfg.Graffiti,
 		&cfg.CheckpointSyncProvider,
 		&cfg.P2pPort,
+		&cfg.SuggestedBlockGasLimit,
 		&cfg.ApiPort,
 		&cfg.OpenApiPort,
 		&cfg.DoppelgangerDetection,

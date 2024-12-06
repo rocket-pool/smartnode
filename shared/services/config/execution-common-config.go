@@ -12,11 +12,12 @@ const (
 	ecOpenRpcPortsID string = "openRpcPorts"
 
 	// Defaults
-	defaultEcP2pPort     uint16 = 30303
-	defaultEcHttpPort    uint16 = 8545
-	defaultEcWsPort      uint16 = 8546
-	defaultEcEnginePort  uint16 = 8551
-	defaultOpenEcApiPort string = string(config.RPC_Closed)
+	defaultSuggestedBlockLimit uint64 = 30000000
+	defaultEcP2pPort           uint16 = 30303
+	defaultEcHttpPort          uint16 = 8545
+	defaultEcWsPort            uint16 = 8546
+	defaultEcEnginePort        uint16 = 8551
+	defaultOpenEcApiPort       string = string(config.RPC_Closed)
 )
 
 // Configuration for the Execution client
@@ -37,6 +38,9 @@ type ExecutionCommonConfig struct {
 
 	// P2P traffic port
 	P2pPort config.Parameter `yaml:"p2pPort,omitempty"`
+
+	// The suggested block gas limit
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,ommitempty"`
 
 	// Label for Ethstats
 	EthstatsLabel config.Parameter `yaml:"ethstatsLabel,omitempty"`
@@ -97,10 +101,21 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 			Options:            rpcPortModes,
 		},
 
+		SuggestedBlockGasLimit: config.Parameter{
+			ID:                 "suggestedBlockGasLimit",
+			Name:               "Suggested Block Gas Limit",
+			Description:        "The block gas limit that should be used for locally built blocks.",
+			Type:               config.ParameterType_Uint,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultSuggestedBlockLimit},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		P2pPort: config.Parameter{
 			ID:                 "p2pPort",
 			Name:               "P2P Port",
-			Description:        "The port Geth should use for P2P (blockchain) traffic to communicate with other nodes.",
+			Description:        "The port the Execution Client should use for P2P (blockchain) traffic to communicate with other nodes.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultEcP2pPort},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
@@ -139,6 +154,7 @@ func (cfg *ExecutionCommonConfig) GetParameters() []*config.Parameter {
 		&cfg.WsPort,
 		&cfg.EnginePort,
 		&cfg.OpenRpcPorts,
+		&cfg.SuggestedBlockGasLimit,
 		&cfg.P2pPort,
 		&cfg.EthstatsLabel,
 		&cfg.EthstatsLogin,
