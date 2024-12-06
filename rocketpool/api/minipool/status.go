@@ -46,7 +46,7 @@ func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	details, err := getNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)
+	details, err := GetNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)
 	if err != nil {
 		return nil, err
 	}

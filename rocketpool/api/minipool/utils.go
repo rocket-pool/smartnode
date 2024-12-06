@@ -38,7 +38,7 @@ func validateMinipoolOwner(mp minipool.Minipool, nodeAddress common.Address) err
 }
 
 // Get all node minipool details
-func getNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, legacyMinipoolQueueAddress *common.Address) ([]api.MinipoolDetails, error) {
+func GetNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, legacyMinipoolQueueAddress *common.Address) ([]api.MinipoolDetails, error) {
 
 	// Data
 	var wg1 errgroup.Group
