@@ -258,6 +258,13 @@ func getStatus(c *cli.Context) error {
 
 		// Fee distributor details
 		fmt.Printf("%s=== Fee Distributor and Smoothing Pool ===%s\n", colorGreen, colorReset)
+		fmt.Printf("The node's fee distributor %s%s%s has a balance of %.6f ETH.\n", colorBlue, status.FeeRecipientInfo.FeeDistributorAddress.Hex(), colorReset, math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
+		if cfg.IsNativeMode && !status.FeeRecipientInfo.IsInSmoothingPool && !status.FeeRecipientInfo.IsInOptOutCooldown {
+			fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
+		}
+		if !status.IsFeeDistributorInitialized {
+			fmt.Printf("\n%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n", colorYellow, colorReset)
+		}
 		if status.FeeRecipientInfo.IsInSmoothingPool {
 			fmt.Printf(
 				"The node is currently opted into the Smoothing Pool (%s%s%s).\n",
@@ -279,14 +286,24 @@ func getStatus(c *cli.Context) error {
 			}
 		} else {
 			fmt.Printf("The node is not opted into the Smoothing Pool.\nTo learn more about the Smoothing Pool, please visit %s.\n", smoothingPoolLink)
-		}
+			// Count the number of 8 ETH, <10% commission minipools
+			poolsWithMissingCommission := 0
+			leb16wei := new(big.Int)
+			leb16wei.SetString("16000000000000000000", 10)
+			for _, minipool := range status.Minipools {
+				if minipool.Node.DepositBalance.Cmp(leb16wei) < 0 && minipool.Node.Fee*100 < 10 {
+					poolsWithMissingCommission++
+				}
+			}
+			if poolsWithMissingCommission == 1 {
+				fmt.Printf("%sYou have %d minipool that would earn extra commission if you opted into the smoothing pool!%s\n", colorYellow, poolsWithMissingCommission, colorReset)
+				fmt.Println("See https://rpips.rocketpool.net/RPIPs/RPIP-62 for more information about bonus commission, or run `rocketpool node join-smoothing-pool` to opt in.")
+			}
+			if poolsWithMissingCommission > 1 {
+				fmt.Printf("%sYou have %d minipools that would earn extra commission if you opted into the smoothing pool!%s\n", colorYellow, poolsWithMissingCommission, colorReset)
+				fmt.Println("See https://rpips.rocketpool.net/RPIPs/RPIP-62 for more information about bonus commission, or run `rocketpool node join-smoothing-pool` to opt in.")
+			}
 
-		fmt.Printf("The node's fee distributor %s%s%s has a balance of %.6f ETH.\n", colorBlue, status.FeeRecipientInfo.FeeDistributorAddress.Hex(), colorReset, math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
-		if cfg.IsNativeMode && !status.FeeRecipientInfo.IsInSmoothingPool && !status.FeeRecipientInfo.IsInOptOutCooldown {
-			fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
-		}
-		if !status.IsFeeDistributorInitialized {
-			fmt.Printf("\n%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n", colorYellow, colorReset)
 		}
 
 		fmt.Println()
