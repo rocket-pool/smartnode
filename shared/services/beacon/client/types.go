@@ -32,9 +32,11 @@ type BLSToExecutionChangeRequest struct {
 // Response types
 type SyncStatusResponse struct {
 	Data struct {
-		IsSyncing    bool     `json:"is_syncing"`
 		HeadSlot     uinteger `json:"head_slot"`
 		SyncDistance uinteger `json:"sync_distance"`
+		IsSyncing    bool     `json:"is_syncing"`
+		IsOptimistic bool     `json:"is_optimistic"`
+		ELOffline    bool     `json:"el_offline"`
 	} `json:"data"`
 }
 type Eth2ConfigResponse struct {
@@ -94,8 +96,9 @@ type BeaconBlockResponse struct {
 				} `json:"eth1_data"`
 				Attestations     []Attestation `json:"attestations"`
 				ExecutionPayload *struct {
-					FeeRecipient byteArray `json:"fee_recipient"`
-					BlockNumber  uinteger  `json:"block_number"`
+					FeeRecipient byteArray    `json:"fee_recipient"`
+					BlockNumber  uinteger     `json:"block_number"`
+					Withdrawals  []Withdrawal `json:"withdrawals"`
 				} `json:"execution_payload"`
 			} `json:"body"`
 		} `json:"message"`
@@ -112,6 +115,12 @@ type BeaconBlockHeaderResponse struct {
 				ProposerIndex string   `json:"proposer_index"`
 			} `json:"message"`
 		} `json:"header"`
+	} `json:"data"`
+}
+type ValidatorBalancesResponse struct {
+	Data []struct {
+		Index   string `json:"index"`
+		Balance string `json:"balance"`
 	} `json:"data"`
 }
 type ValidatorsResponse struct {
@@ -157,6 +166,13 @@ type Attestation struct {
 		Slot  uinteger `json:"slot"`
 		Index uinteger `json:"index"`
 	} `json:"data"`
+}
+
+type Withdrawal struct {
+	Index          string    `json:"index"`
+	ValidatorIndex string    `json:"validator_index"`
+	Address        byteArray `json:"address"`
+	Amount         string    `json:"amount"`
 }
 
 // Unsigned integer type

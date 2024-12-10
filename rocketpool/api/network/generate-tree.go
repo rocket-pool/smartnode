@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/urfave/cli"
 )
@@ -32,14 +32,14 @@ func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenera
 	response := api.CanNetworkGenerateRewardsTreeResponse{}
 
 	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
+	currentIndexBig, err := rp.GetRewardIndex(nil)
 	if err != nil {
 		return nil, err
 	}
 	response.CurrentIndex = currentIndexBig.Uint64()
 
 	// Get the path of the file to save
-	filePath := cfg.Smartnode.GetRewardsTreePath(index, true)
+	filePath := cfg.Smartnode.GetRewardsTreePath(index, true, config.RewardsExtensionJSON)
 	_, err = os.Stat(filePath)
 	if os.IsNotExist(err) {
 		response.TreeFileExists = false

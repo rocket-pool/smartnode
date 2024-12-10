@@ -1,10 +1,8 @@
 package rewards
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"math"
 	"math/big"
 	"net/http"
 	"os"
@@ -14,14 +12,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/storage"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -34,7 +30,7 @@ var zero *big.Int
 // Gets the intervals the node can claim and the intervals that have already been claimed
 func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (unclaimed []uint64, claimed []uint64, err error) {
 	// Get the current interval
-	currentIndexBig, err := rewards.GetRewardIndex(rp, nil)
+	currentIndexBig, err := rp.GetRewardIndex(nil)
 	if err != nil {
 		return
 	}
@@ -88,8 +84,11 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.Index = interval
 	var event rewards.RewardsEvent
 
+	previousRewardsPoolAddresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
+
 	// Get the event details for this interval
-	event, err = GetRewardSnapshotEvent(rp, cfg, interval, opts)
+	client := NewRewardsExecutionClient(rp)
+	event, err = client.GetRewardSnapshotEvent(previousRewardsPoolAddresses, interval, opts)
 	if err != nil {
 		return
 	}
@@ -101,7 +100,7 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.MerkleRoot = merkleRootCanon
 
 	// Check if the tree file exists
-	info.TreeFilePath = cfg.Smartnode.GetRewardsTreePath(interval, true)
+	info.TreeFilePath = cfg.Smartnode.GetRewardsTreePath(interval, true, config.RewardsExtensionJSON)
 	_, err = os.Stat(info.TreeFilePath)
 	if os.IsNotExist(err) {
 		info.TreeFileExists = false
@@ -119,10 +118,10 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 
 	proofWrapper := localRewardsFile.Impl()
 
-	info.TotalNodeWeight = proofWrapper.GetHeader().TotalRewards.TotalNodeWeight
+	info.TotalNodeWeight = proofWrapper.GetTotalNodeWeight()
 
 	// Make sure the Merkle root has the expected value
-	merkleRootFromFile := common.HexToHash(proofWrapper.GetHeader().MerkleRoot)
+	merkleRootFromFile := common.HexToHash(proofWrapper.GetMerkleRoot())
 	if merkleRootCanon != merkleRootFromFile {
 		info.MerkleRootValid = false
 		return
@@ -130,117 +129,25 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.MerkleRootValid = true
 
 	// Get the rewards from it
-	rewards, exists := proofWrapper.GetNodeRewardsInfo(nodeAddress)
-	info.NodeExists = exists
-	if exists {
-		info.CollateralRplAmount = rewards.GetCollateralRpl()
-		info.ODaoRplAmount = rewards.GetOracleDaoRpl()
-		info.SmoothingPoolEthAmount = rewards.GetSmoothingPoolEth()
-
-		var proof []common.Hash
-		proof, err = rewards.GetMerkleProof()
-		if err != nil {
-			err = fmt.Errorf("error deserializing merkle proof for %s, node %s: %w", info.TreeFilePath, nodeAddress.Hex(), err)
-			return
-		}
-		info.MerkleProof = proof
+	info.NodeExists = proofWrapper.HasRewardsFor(nodeAddress)
+	if !info.NodeExists {
+		return
 	}
+	info.CollateralRplAmount = &QuotedBigInt{*proofWrapper.GetNodeCollateralRpl(nodeAddress)}
+	info.ODaoRplAmount = &QuotedBigInt{*proofWrapper.GetNodeOracleDaoRpl(nodeAddress)}
+	info.SmoothingPoolEthAmount = &QuotedBigInt{*proofWrapper.GetNodeSmoothingPoolEth(nodeAddress)}
+
+	proof, err := proofWrapper.GetMerkleProof(nodeAddress)
+	if proof == nil {
+		err = fmt.Errorf("error deserializing merkle proof for %s, node %s: no proof for this node found", info.TreeFilePath, nodeAddress.Hex())
+		return
+	}
+	if err != nil {
+		err = fmt.Errorf("error deserializing merkle proof for %s, node %s: %w", info.TreeFilePath, nodeAddress.Hex(), err)
+	}
+	info.MerkleProof = proof
 
 	return
-}
-
-// Get the event for a rewards snapshot
-func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {
-
-	addresses := cfg.Smartnode.GetPreviousRewardsPoolAddresses()
-	found, event, err := rewards.GetRewardsEvent(rp, interval, addresses, opts)
-	if err != nil {
-		return rewards.RewardsEvent{}, fmt.Errorf("error getting rewards event for interval %d: %w", interval, err)
-	}
-	if !found {
-		return rewards.RewardsEvent{}, fmt.Errorf("interval %d event not found", interval)
-	}
-
-	return event, nil
-
-}
-
-// Get the number of the latest EL block that was created before the given timestamp
-func GetELBlockHeaderForTime(targetTime time.Time, rp *rocketpool.RocketPool) (*types.Header, error) {
-
-	// Get the latest block's timestamp
-	latestBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting latest block header: %w", err)
-	}
-	latestBlock := latestBlockHeader.Number
-
-	// Get the block that Rocket Pool deployed to the chain on, use that as the search start
-	deployBlock, err := storage.GetDeployBlock(rp)
-	if err != nil {
-		return nil, fmt.Errorf("error getting Rocket Pool deployment block: %w", err)
-	}
-
-	// Get half the distance between the protocol deployment and right now
-	delta := big.NewInt(0).Sub(latestBlock, deployBlock)
-	delta.Div(delta, big.NewInt(2))
-
-	// Start at the halfway point
-	candidateBlockNumber := big.NewInt(0).Sub(latestBlock, delta)
-	candidateBlock, err := rp.Client.HeaderByNumber(context.Background(), candidateBlockNumber)
-	if err != nil {
-		return nil, fmt.Errorf("error getting EL block %d: %w", candidateBlock, err)
-	}
-	bestBlock := candidateBlock
-	pivotSize := candidateBlock.Number.Uint64()
-	minimumDistance := +math.Inf(1)
-	targetTimeUnix := float64(targetTime.Unix())
-
-	for {
-		// Get the distance from the candidate block to the target time
-		candidateTime := float64(candidateBlock.Time)
-		delta := targetTimeUnix - candidateTime
-		distance := math.Abs(delta)
-
-		// If it's better, replace the best candidate with it
-		if distance < minimumDistance {
-			minimumDistance = distance
-			bestBlock = candidateBlock
-		} else if pivotSize == 1 {
-			// If the pivot is down to size 1 and we didn't find anything better after another iteration, this is the best block!
-			for candidateTime > targetTimeUnix {
-				// Get the previous block if this one happened after the target time
-				candidateBlockNumber.Sub(candidateBlockNumber, big.NewInt(1))
-				candidateBlock, err = rp.Client.HeaderByNumber(context.Background(), candidateBlockNumber)
-				if err != nil {
-					return nil, fmt.Errorf("error getting EL block %d: %w", candidateBlock, err)
-				}
-				candidateTime = float64(candidateBlock.Time)
-				bestBlock = candidateBlock
-			}
-			return bestBlock, nil
-		}
-
-		// Iterate over the correct half, setting the pivot to the halfway point of that half (rounded up)
-		pivotSize = uint64(math.Ceil(float64(pivotSize) / 2))
-		if delta < 0 {
-			// Go left
-			candidateBlockNumber.Sub(candidateBlockNumber, big.NewInt(int64(pivotSize)))
-		} else {
-			// Go right
-			candidateBlockNumber.Add(candidateBlockNumber, big.NewInt(int64(pivotSize)))
-		}
-
-		// Clamp the new candidate to the latest block
-		if candidateBlockNumber.Uint64() > (latestBlock.Uint64() - 1) {
-			candidateBlockNumber.SetUint64(latestBlock.Uint64() - 1)
-		}
-
-		candidateBlock, err = rp.Client.HeaderByNumber(context.Background(), candidateBlockNumber)
-		if err != nil {
-			return nil, fmt.Errorf("error getting EL block %d: %w", candidateBlock, err)
-		}
-	}
 }
 
 // Downloads the rewards file for this interval
@@ -249,7 +156,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 	expectedCid := i.CID
 	expectedRoot := i.MerkleRoot
 	// Determine file name and path
-	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon))
+	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon, config.RewardsExtensionJSON))
 	if err != nil {
 		return fmt.Errorf("error expanding rewards tree path: %w", err)
 	}
@@ -316,16 +223,13 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 			}
 
 			// Get the original merkle root
-			downloadedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
-
-			// Clear the merkle root so we have a safer comparison after calculating it again
-			deserializedRewardsFile.GetHeader().MerkleRoot = ""
+			downloadedRoot := deserializedRewardsFile.GetMerkleRoot()
 
 			// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
-			deserializedRewardsFile.generateMerkleTree()
+			deserializedRewardsFile.GenerateMerkleTree()
 
 			// Get the resulting merkle root
-			calculatedRoot := deserializedRewardsFile.GetHeader().MerkleRoot
+			calculatedRoot := deserializedRewardsFile.GetMerkleRoot()
 
 			// Compare the merkle roots to see if the original is correct
 			if !strings.EqualFold(downloadedRoot, calculatedRoot) {
@@ -342,7 +246,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 				deserializedRewardsFile,
 				rewardsTreePath,
 			)
-			err = localRewardsFile.Write()
+			_, err = localRewardsFile.Write()
 			if err != nil {
 				return fmt.Errorf("error saving interval %d file to %s: %w", interval, rewardsTreePath, err)
 			}
@@ -359,7 +263,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 }
 
 // Gets the start slot for the given interval
-func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc beacon.Client, beaconConfig beacon.Eth2Config) (uint64, error) {
+func GetStartSlotForInterval(previousIntervalEvent rewards.RewardsEvent, bc RewardsBeaconClient, beaconConfig beacon.Eth2Config) (uint64, error) {
 	// Get the chain head
 	head, err := bc.GetBeaconHead()
 	if err != nil {

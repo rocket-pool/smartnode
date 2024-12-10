@@ -297,10 +297,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	}
 
 	// Create a new state gen manager
-	mgr, err := state.NewNetworkStateManager(client, t.cfg, client.Client, t.bc, t.log)
-	if err != nil {
-		return networkBalances{}, fmt.Errorf("error creating network state manager for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
-	}
+	mgr := state.NewNetworkStateManager(client, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, t.log)
 
 	// Create a new state for the target block
 	state, err := mgr.GetStateForSlot(beaconBlock)
@@ -352,10 +349,16 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		timeSinceStart := slotTime.Sub(startTime)
 		intervalsPassed := timeSinceStart / intervalTime
 		endTime := slotTime
+		// Since we aren't generating an actual tree, just use beaconBlock as the snapshotEnd
+		snapshotEnd := &rprewards.SnapshotEnd{
+			Slot:           beaconBlock,
+			ConsensusBlock: beaconBlock,
+			ExecutionBlock: state.ElBlockNumber,
+		}
 
 		// Approximate the staker's share of the smoothing pool balance
 		// NOTE: this will use the "vanilla" variant of treegen, without rolling records, to retain parity with other Oracle DAO nodes that aren't using rolling records
-		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", client, t.cfg, t.bc, currentIndex, startTime, endTime, beaconBlock, elBlockHeader, uint64(intervalsPassed), state, nil)
+		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", rprewards.NewRewardsExecutionClient(client), t.cfg, t.bc, currentIndex, startTime, endTime, snapshotEnd, elBlockHeader, uint64(intervalsPassed), state)
 		if err != nil {
 			return fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
 		}

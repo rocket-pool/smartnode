@@ -10,46 +10,51 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
 type NetworkStateManager struct {
-	cfg          *config.RocketPoolConfig
-	rp           *rocketpool.RocketPool
-	ec           rocketpool.ExecutionClient
-	bc           beacon.Client
-	log          *log.ColorLogger
-	Config       *config.RocketPoolConfig
-	Network      cfgtypes.Network
-	ChainID      uint
-	BeaconConfig beacon.Eth2Config
+	rp  *rocketpool.RocketPool
+	bc  beacon.Client
+	log *log.ColorLogger
+
+	// Memoized Beacon config
+	beaconConfig *beacon.Eth2Config
+
+	// Multicaller and batch balance contract addresses
+	contracts config.StateManagerContracts
 }
 
 // Create a new manager for the network state
-func NewNetworkStateManager(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, ec rocketpool.ExecutionClient, bc beacon.Client, log *log.ColorLogger) (*NetworkStateManager, error) {
+func NewNetworkStateManager(
+	rp *rocketpool.RocketPool,
+	contracts config.StateManagerContracts,
+	bc beacon.Client,
+	log *log.ColorLogger,
+) *NetworkStateManager {
 
 	// Create the manager
-	m := &NetworkStateManager{
-		cfg:     cfg,
-		rp:      rp,
-		ec:      ec,
-		bc:      bc,
-		log:     log,
-		Config:  cfg,
-		Network: cfg.Smartnode.Network.Value.(cfgtypes.Network),
-		ChainID: cfg.Smartnode.GetChainID(),
+	return &NetworkStateManager{
+		rp:        rp,
+		bc:        bc,
+		log:       log,
+		contracts: contracts,
+	}
+}
+
+func (m *NetworkStateManager) getBeaconConfig() (*beacon.Eth2Config, error) {
+	if m.beaconConfig != nil {
+		return m.beaconConfig, nil
 	}
 
 	// Get the Beacon config info
-	var err error
-	m.BeaconConfig, err = m.bc.GetEth2Config()
+	beaconConfig, err := m.bc.GetEth2Config()
 	if err != nil {
 		return nil, err
 	}
+	m.beaconConfig = &beaconConfig
 
-	return m, nil
-
+	return m.beaconConfig, nil
 }
 
 // Get the state of the network using the latest Execution layer block
@@ -86,27 +91,35 @@ func (m *NetworkStateManager) GetLatestBeaconBlock() (beacon.BeaconBlock, error)
 
 // Gets the latest valid finalized block
 func (m *NetworkStateManager) GetLatestFinalizedBeaconBlock() (beacon.BeaconBlock, error) {
+	beaconConfig, err := m.getBeaconConfig()
+	if err != nil {
+		return beacon.BeaconBlock{}, fmt.Errorf("error getting Beacon config: %w", err)
+	}
 	head, err := m.bc.GetBeaconHead()
 	if err != nil {
 		return beacon.BeaconBlock{}, fmt.Errorf("error getting Beacon chain head: %w", err)
 	}
-	targetSlot := head.FinalizedEpoch*m.BeaconConfig.SlotsPerEpoch + (m.BeaconConfig.SlotsPerEpoch - 1)
+	targetSlot := head.FinalizedEpoch*beaconConfig.SlotsPerEpoch + (beaconConfig.SlotsPerEpoch - 1)
 	return m.GetLatestProposedBeaconBlock(targetSlot)
 }
 
 // Gets the Beacon slot for the latest execution layer block
 func (m *NetworkStateManager) GetHeadSlot() (uint64, error) {
+	beaconConfig, err := m.getBeaconConfig()
+	if err != nil {
+		return 0, fmt.Errorf("error getting Beacon config: %w", err)
+	}
 	// Get the latest EL block
-	latestBlockHeader, err := m.ec.HeaderByNumber(context.Background(), nil)
+	latestBlockHeader, err := m.rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {
 		return 0, fmt.Errorf("error getting latest EL block: %w", err)
 	}
 
 	// Get the corresponding Beacon slot based on the timestamp
 	latestBlockTime := time.Unix(int64(latestBlockHeader.Time), 0)
-	genesisTime := time.Unix(int64(m.BeaconConfig.GenesisTime), 0)
+	genesisTime := time.Unix(int64(beaconConfig.GenesisTime), 0)
 	secondsSinceGenesis := uint64(latestBlockTime.Sub(genesisTime).Seconds())
-	targetSlot := secondsSinceGenesis / m.BeaconConfig.SecondsPerSlot
+	targetSlot := secondsSinceGenesis / beaconConfig.SecondsPerSlot
 	return targetSlot, nil
 }
 
@@ -131,7 +144,11 @@ func (m *NetworkStateManager) GetLatestProposedBeaconBlock(targetSlot uint64) (b
 
 // Get the state of the network at the provided Beacon slot
 func (m *NetworkStateManager) getState(slotNumber uint64) (*NetworkState, error) {
-	state, err := CreateNetworkState(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig)
+	beaconConfig, err := m.getBeaconConfig()
+	if err != nil {
+		return nil, fmt.Errorf("error getting Beacon config: %w", err)
+	}
+	state, err := createNetworkState(m.contracts, m.rp, m.bc, m.log, slotNumber, beaconConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -140,7 +157,11 @@ func (m *NetworkStateManager) getState(slotNumber uint64) (*NetworkState, error)
 
 // Get the state of the network for a specific node only at the provided Beacon slot
 func (m *NetworkStateManager) getStateForNode(nodeAddress common.Address, slotNumber uint64, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
-	state, totalEffectiveStake, err := CreateNetworkStateForNode(m.cfg, m.rp, m.ec, m.bc, m.log, slotNumber, m.BeaconConfig, nodeAddress, calculateTotalEffectiveStake)
+	beaconConfig, err := m.getBeaconConfig()
+	if err != nil {
+		return nil, nil, fmt.Errorf("error getting Beacon config: %w", err)
+	}
+	state, totalEffectiveStake, err := createNetworkStateForNode(m.contracts, m.rp, m.bc, m.log, slotNumber, beaconConfig, nodeAddress, calculateTotalEffectiveStake)
 	if err != nil {
 		return nil, nil, err
 	}
