@@ -155,7 +155,12 @@ func (mp *megapoolV1) GetNodeAddress(opts *bind.CallOpts) (common.Address, error
 	return *nodeAddress, nil
 }
 
-// TODO gas estimators for the below functions
+// Estimate the gas required to create a new validator as part of a megapool
+func (mp *megapoolV1) EstimateNewValidatorGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "newValidator", validatorId, validatorSignature[:], depositDataRoot)
+}
+
+// Create a new validator as part of a megapool
 func (mp *megapoolV1) NewValidator(bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "newValidator", bondAmount, useExpressTicket, validatorPubkey[:], validatorSignature[:])
 	if err != nil {
@@ -164,6 +169,12 @@ func (mp *megapoolV1) NewValidator(bondAmount *big.Int, useExpressTicket bool, v
 	return tx.Hash(), nil
 }
 
+// Estimate the gas required to remove a validator from the deposit queue
+func (mp *megapoolV1) EstimateDequeueGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "dequeue", validatorId)
+}
+
+// Remove a validator from the deposit queue
 func (mp *megapoolV1) Dequeue(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "dequeue", validatorId)
 	if err != nil {
@@ -172,6 +183,12 @@ func (mp *megapoolV1) Dequeue(validatorId uint32, opts *bind.TransactOpts) (comm
 	return tx.Hash(), nil
 }
 
+// Estimate the gas required to accept requested funds from the deposit pool
+func (mp *megapoolV1) EstimateAssignFundsGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "assignFunds", validatorId)
+}
+
+// Accept requested funds from the deposit pool
 func (mp *megapoolV1) AssignFunds(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "assignFunds", validatorId)
 	if err != nil {
@@ -180,6 +197,12 @@ func (mp *megapoolV1) AssignFunds(validatorId uint32, opts *bind.TransactOpts) (
 	return tx.Hash(), nil
 }
 
+// Estimate the gas required to dissolve a validator that has not staked within the required period
+func (mp *megapoolV1) EstimateDissolveValidatorGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "dissolveValidator", validatorId)
+}
+
+// Dissolve a validator that has not staked within the required period
 func (mp *megapoolV1) DissolveValidator(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "dissolveValidator", validatorId)
 	if err != nil {
@@ -188,6 +211,12 @@ func (mp *megapoolV1) DissolveValidator(validatorId uint32, opts *bind.TransactO
 	return tx.Hash(), nil
 }
 
+// Estimate the gas required to repay megapool debt
+func (mp *megapoolV1) EstimateRepayDebtGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "repayDebt")
+}
+
+// Receive ETH, which is sent to the rETH contract, to repay a megapool debt
 func (mp *megapoolV1) RepayDebt(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "repayDebt")
 	if err != nil {
@@ -196,6 +225,7 @@ func (mp *megapoolV1) RepayDebt(opts *bind.TransactOpts) (common.Hash, error) {
 	return tx.Hash(), nil
 }
 
+// Get the expected withdrawal credentials for any validator within this megapool
 func (mp *megapoolV1) GetWithdrawalCredentials(opts *bind.CallOpts) ([]byte, error) {
 	withdrawalCredentials := make([]byte, 32)
 	if err := mp.Contract.Call(opts, withdrawalCredentials, "getWithdrawalCredentials"); err != nil {
@@ -204,7 +234,13 @@ func (mp *megapoolV1) GetWithdrawalCredentials(opts *bind.CallOpts) ([]byte, err
 	return withdrawalCredentials, nil
 }
 
+// Estimate the gas required to Request RPL previously staked on this megapool to be unstaked
+func (mp *megapoolV1) EstimateRequestUnstakeRPL(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "requestUnstakeRPL")
+}
+
 // RequestUnstakeRPL is not yet implemented in RocketMegapoolDelegate.sol
+// Request RPL previously staked on this megapool to be unstaked
 func (mp *megapoolV1) RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "requestUnstakeRPL")
 	if err != nil {
@@ -215,7 +251,7 @@ func (mp *megapoolV1) RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, e
 
 // Estimate the gas of Stake
 func (mp *megapoolV1) EstimateStakeGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorSignature[:], validatorSignature[:], depositDataRoot)
+	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorId, validatorSignature[:], depositDataRoot)
 }
 
 // Progress the prelaunch megapool to staking
