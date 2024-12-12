@@ -158,6 +158,29 @@ func StakeRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.Transact
 	return tx.Hash(), nil
 }
 
+// Estimate the gas of Burn RPL
+func EstimateBurnRpl(rp *rocketpool.RocketPool, from common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeStaking.GetTransactionGasInfo(opts, "burnRPL", from, rplAmount)
+}
+
+// Burn RPL
+func BurnRPL(rp *rocketpool.RocketPool, from common.Address, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNodeStaking.Transact(opts, "burnRPL", from, rplAmount)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error burning RPL: %w", err)
+	}
+	return tx.Hash(), nil
+
+}
+
 // Estimate the gas of set RPL locking allowed
 func EstimateSetRPLLockingAllowedGas(rp *rocketpool.RocketPool, caller common.Address, allowed bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)

@@ -742,6 +742,20 @@ func GetExpressTicketCount(rp *rocketpool.RocketPool, nodeAddress common.Address
 	return (*expressTicketCount).Uint64(), nil
 }
 
+// Consume an express ticket for the given node operator
+func UseExpressTicket(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, nil
+	}
+
+	tx, err := rocketNodeManager.Transact(opts, "useExpressTicket")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error calling useExpressticket: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 
