@@ -23,7 +23,6 @@ type Megapool interface {
 	// CalculateRewards (not yet implemented)
 	GetPendingRewards(opts *bind.CallOpts) (uint64, error)
 	GetNodeAddress(opts *bind.CallOpts) (common.Address, error)
-	// The functions below require gas estimators
 	EstimateNewValidatorGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	NewValidator(bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateDequeueGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error)

@@ -171,6 +171,19 @@ func GetNodeUsableCredit(rp *rocketpool.RocketPool, nodeAddress common.Address, 
 	return *usableCredit, nil
 }
 
+func GetBondRequirement(rp *rocketpool.RocketPool, numValidators *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	bondRequirement := new(*big.Int)
+	if err := rocketNodeDeposit.Call(opts, bondRequirement, "getBondRequirement", numValidators); err != nil {
+		return nil, fmt.Errorf("error getting the bond requirement: %w", err)
+	}
+	return *bondRequirement, nil
+}
+
 // Get contracts
 var rocketNodeDepositLock sync.Mutex
 
