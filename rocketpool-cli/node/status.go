@@ -78,10 +78,13 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
-	// Check Houston 1.3.1 is Active
-	hotfix, err := rp.IsHoustonHotfixDeployed()
+	// Check Saturn 1.4 is Active
+	saturn, err := rp.IsSaturnDeployed()
 	if err != nil {
-		return fmt.Errorf("error checking if Houston Hotfix has been deployed: %w", err)
+		return fmt.Errorf("error checking if Saturn has been deployed: %w", err)
+	}
+
+	if saturn.IsSaturnDeployed {
 	}
 
 	// Account address & balances
@@ -328,36 +331,32 @@ func getStatus(c *cli.Context) error {
 					"This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n",
 					status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
 			}
-			if !hotfix.IsHoustonHotfixDeployed {
+			fmt.Printf(
+				"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
+			fmt.Printf(
+				"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of 150%% of bonded ETH. Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n")
+			if rplTotalStake > rplWithdrawalLimit {
 				fmt.Printf(
-					"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
-				fmt.Printf(
-					"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of 150%% of bonded ETH. Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n")
-				if rplTotalStake > rplWithdrawalLimit {
-					fmt.Printf(
-						"You can now withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6), (status.MaximumStakeFraction)*100)
-				}
-				if rplTooLow {
-					fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
-				}
+					"You can now withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6), (status.MaximumStakeFraction)*100)
+			}
+			if rplTooLow {
+				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
 			}
 		}
 		fmt.Println()
 
-		if !hotfix.IsHoustonHotfixDeployed {
-			remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
-			remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
-			remainingAmountEth := int(eth.WeiToEth(remainingAmount))
-			remainingFor8EB := remainingAmountEth / 24
-			if remainingFor8EB < 0 {
-				remainingFor8EB = 0
-			}
-			remainingFor16EB := remainingAmountEth / 16
-			if remainingFor16EB < 0 {
-				remainingFor16EB = 0
-			}
-			fmt.Printf("The node has enough RPL staked to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
+		remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
+		remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
+		remainingAmountEth := int(eth.WeiToEth(remainingAmount))
+		remainingFor8EB := remainingAmountEth / 24
+		if remainingFor8EB < 0 {
+			remainingFor8EB = 0
 		}
+		remainingFor16EB := remainingAmountEth / 16
+		if remainingFor16EB < 0 {
+			remainingFor16EB = 0
+		}
+		fmt.Printf("The node has enough RPL staked to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
 
 		// Minipool details
 		fmt.Printf("%s=== Minipools ===%s\n", colorGreen, colorReset)

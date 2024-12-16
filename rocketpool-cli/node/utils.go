@@ -393,25 +393,17 @@ func promptForSoloKeyPassword(rp *rocketpool.Client, cfg *config.RocketPoolConfi
 
 // Display a warning if hotfix is live and voting is uninitialized
 func warnIfVotingUninitialized(rp *rocketpool.Client, c *cli.Context, warningMessage string) error {
-	// Check for Houston 1.3.1 Hotfix
-	hotfix, err := rp.IsHoustonHotfixDeployed()
+	// Check if voting power is initialized
+	isVotingInitializedResponse, err := rp.IsVotingInitialized()
 	if err != nil {
-		return fmt.Errorf("error checking if Houston Hotfix has been deployed: %w", err)
+		return fmt.Errorf("error checking if voting is initialized: %w", err)
 	}
-
-	if hotfix.IsHoustonHotfixDeployed {
-		// Check if voting power is initialized
-		isVotingInitializedResponse, err := rp.IsVotingInitialized()
-		if err != nil {
-			return fmt.Errorf("error checking if voting is initialized: %w", err)
-		}
-		if !isVotingInitializedResponse.VotingInitialized {
-			fmt.Println("Your voting power hasn't been initialized yet. Please visit https://docs.rocketpool.net/guides/houston/participate#initializing-voting to learn more.")
-			// Post a warning about initializing voting
-			if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%s%s%s\nWould you like to continue?", colorYellow, warningMessage, colorReset))) {
-				fmt.Println("Cancelled.")
-				return fmt.Errorf("operation cancelled by user")
-			}
+	if !isVotingInitializedResponse.VotingInitialized {
+		fmt.Println("Your voting power hasn't been initialized yet. Please visit https://docs.rocketpool.net/guides/houston/participate#initializing-voting to learn more.")
+		// Post a warning about initializing voting
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%s%s%s\nWould you like to continue?", colorYellow, warningMessage, colorReset))) {
+			fmt.Println("Cancelled.")
+			return fmt.Errorf("operation cancelled by user")
 		}
 	}
 

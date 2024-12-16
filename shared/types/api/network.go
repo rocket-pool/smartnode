@@ -115,8 +115,9 @@ type GetLatestDelegateResponse struct {
 	Address common.Address `json:"address"`
 }
 
-type IsHoustonHotfixDeployedResponse struct {
+type IsSaturnDeployedResponse struct {
 	Status                  string `json:"status"`
 	Error                   string `json:"error"`
-	IsHoustonHotfixDeployed bool   `json:"isHoustonHotfixDeployed"`
+	IsSaturnDeployed        bool   `json:"isSaturnDeployed"`
 }
+

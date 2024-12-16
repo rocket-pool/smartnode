@@ -180,10 +180,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "is-houston-hotfix-deployed",
-				Aliases:   []string{"ihhd"},
-				Usage:     "Checks if Houston Hotfix 1.3.1 has been deployed yet.",
-				UsageText: "rocketpool api network is-houston-deployed",
+				Name:      "is-saturn-deployed",
+				Aliases:   []string{"isd"},
+				Usage:     "Checks if Saturn 1 has been deployed yet.",
+				UsageText: "rocketpool api network is-saturn-deployed",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -192,7 +192,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(isHoustonHotfixDeployed(c))
+					api.PrintResponse(isSaturnDeployed(c))
 					return nil
 
 				},
