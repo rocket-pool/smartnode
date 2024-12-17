@@ -16,11 +16,11 @@ func GetMegapoolDeployed(rp *rocketpool.RocketPool, nodeAddress common.Address, 
 	if err != nil {
 		return false, err
 	}
-	deployed := false
+	deployed := new(bool)
 	if err := rocketMegapoolFactory.Call(opts, deployed, "getMegapoolDeployed", nodeAddress); err != nil {
 		return false, fmt.Errorf("error getting megapool deployed for node %s: %w", nodeAddress, err)
 	}
-	return deployed, nil
+	return *deployed, nil
 }
 
 // Get a megapool expected address
