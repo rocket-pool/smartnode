@@ -827,7 +827,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 					submit, err := cliutils.ValidateBool("submit", c.Args().Get(4))
-					if err != nil {
+										if err != nil {
 						return err
 					}
 
@@ -1515,6 +1515,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(sendMessage(c, address, message))
+					return nil
+
+				},
+			},
+
+			{Name: "can-deploy-megapool",
+				Usage:     "Check if the node can deploy a megapool",
+				UsageText: "rocketpool api node can-deploy-megapool",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canDeployMegapool(c))
 					return nil
 
 				},
