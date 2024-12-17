@@ -11,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 )
 
 // Estimate the gas of Deposit
@@ -80,21 +81,21 @@ func DepositWithCredit(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpres
 }
 
 // Estimate the gas of CreateVacantMinipool
-func EstimateCreateVacantMinipoolGas(rp *rocketpool.RocketPool, bondAmount *big.Int, validatorPubkey rptypes.ValidatorPubkey, salt *big.Int, expectedMinipoolAddress common.Address, currentBalance *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateCreateVacantMinipoolGas(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, salt *big.Int, expectedMinipoolAddress common.Address, currentBalance *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "createVacantMinipool", bondAmount, validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "createVacantMinipool", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
 }
 
 // Make a vacant minipool for solo staker migration
-func CreateVacantMinipool(rp *rocketpool.RocketPool, bondAmount *big.Int, validatorPubkey rptypes.ValidatorPubkey, salt *big.Int, expectedMinipoolAddress common.Address, currentBalance *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+func CreateVacantMinipool(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, salt *big.Int, expectedMinipoolAddress common.Address, currentBalance *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "createVacantMinipool", bondAmount, validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
+	tx, err := rocketNodeDeposit.Transact(opts, "createVacantMinipool", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], salt, expectedMinipoolAddress, currentBalance)
 	if err != nil {
 		return nil, fmt.Errorf("error creating vacant minipool: %w", err)
 	}
