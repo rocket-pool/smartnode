@@ -19,6 +19,13 @@ type validatorProof struct {
 	witnesses             [][32]byte
 }
 
+type withdrawal struct {
+	index                 *big.Int
+	validatorIndex        *big.Int
+	withdrawalCredentials [32]byte
+	amountInGwei          *big.Int
+}
+
 type MegapoolV1 interface {
 	Megapool
 }
