@@ -11,6 +11,15 @@ import (
 )
 
 func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version.Version, error) {
+	nodeMgrVersion, err := node.GetNodeManagerVersion(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error checking node manager version: %w", err)
+	}
+
+	// Check for v1.4 (Saturn 1)
+	if nodeMgrVersion > 4 {
+		return version.NewSemver("1.4.0")
+	}
 
 	// Check for v1.3.1 (Houston Hotfix)
 	networkVotingVersion, err := network.GetRocketNetworkVotingVersion(rp, opts)
@@ -21,12 +30,6 @@ func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version
 		return version.NewSemver("1.3.1")
 	}
 
-	nodeMgrVersion, err := node.GetNodeManagerVersion(rp, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error checking node manager version: %w", err)
-	}
-
-	// Check for v1.3 (Houston)
 	if nodeMgrVersion > 3 {
 		return version.NewSemver("1.3.0")
 	}
