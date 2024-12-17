@@ -46,7 +46,7 @@ const (
 var megapoolV1Abi *abi.ABI
 
 // Create new minipool contract
-func newMegaPoolV1(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (Megapool, error) {
+func NewMegaPoolV1(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (Megapool, error) {
 
 	var contract *rocketpool.Contract
 	var err error
