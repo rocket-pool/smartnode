@@ -31,6 +31,12 @@ func canDeployMegapool(c *cli.Context) (*api.CanDeployMegapoolResponse, error) {
 		return nil, err
 	}
 
+	// Get gas estimate
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
 	// Check if the megapool is already deployed
 	alreadyDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
 	if err != nil {
@@ -39,7 +45,7 @@ func canDeployMegapool(c *cli.Context) (*api.CanDeployMegapoolResponse, error) {
 	response.AlreadyDeployed = alreadyDeployed
 
 	// Check if the node can deploy a megapool
-	gasInfo, err := node.EstimateDeployMegapool(rp, nil)
+	gasInfo, err := node.EstimateDeployMegapool(rp, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -56,6 +62,11 @@ func deployMegapool(c *cli.Context) (*api.DeployMegapoolResponse, error) {
 		return nil, err
 	}
 
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -64,8 +75,14 @@ func deployMegapool(c *cli.Context) (*api.DeployMegapoolResponse, error) {
 	// Response
 	response := api.DeployMegapoolResponse{}
 
+	// Get gas estimate
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
 	// Deploy megapool
-	txHash, err := node.DeployMegapool(rp, nil)
+	txHash, err := node.DeployMegapool(rp, opts)
 	if err != nil {
 		return nil, err
 	}

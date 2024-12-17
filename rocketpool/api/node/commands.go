@@ -1557,6 +1557,23 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{Name: "deploy-megapool",
+				Usage:     "Deploy the node's megapool",
+				UsageText: "rocketpool api node deploy-megapool",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(deployMegapool(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }
