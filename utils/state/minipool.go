@@ -3,6 +3,7 @@ package state
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -72,6 +73,27 @@ type NativeMinipoolDetails struct {
 	ReduceBondCancelled          bool
 	ReduceBondValue              *big.Int
 	PreMigrationBalance          *big.Int
+}
+
+var sixteenEth = big.NewInt(0).Mul(big.NewInt(16), oneEth)
+
+func (details *NativeMinipoolDetails) IsEligibleForBonuses(eligibleEnd time.Time) bool {
+	// A minipool is eligible for bonuses if it was active and had a bond of less than 16 ETH during the interval
+	if details.Status != types.Staking {
+		return false
+	}
+	if details.NodeDepositBalance.Cmp(sixteenEth) >= 0 {
+		return false
+	}
+
+	lastBondReductionTimestamp := details.LastBondReductionTime.Int64()
+	if lastBondReductionTimestamp == 0 {
+		// eligible if the bond was always under 16 eth
+		return true
+	}
+	lastBondReductionTime := time.Unix(lastBondReductionTimestamp, 0)
+	// eligible if the bond was reduced before or during the interval
+	return lastBondReductionTime.Before(eligibleEnd)
 }
 
 // Gets the details for a minipool using the efficient multicall contract
@@ -214,6 +236,34 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 	}
 
 	return nil
+}
+
+var oneEth = big.NewInt(1e18)
+
+// Get the bond and node fee of a minipool for the specified time
+func (details *NativeMinipoolDetails) GetMinipoolBondAndNodeFee(blockTime time.Time) (*big.Int, *big.Int) {
+	currentBond := details.NodeDepositBalance
+	currentFee := details.NodeFee
+	previousBond := details.LastBondReductionPrevValue
+	previousFee := details.LastBondReductionPrevNodeFee
+
+	var reductionTimeBig *big.Int = details.LastBondReductionTime
+	if reductionTimeBig.Cmp(common.Big0) == 0 {
+		// Never reduced
+		return currentBond, currentFee
+	}
+
+	reductionTime := time.Unix(reductionTimeBig.Int64(), 0)
+	if reductionTime.Sub(blockTime) > 0 {
+		// This block occurred before the reduction
+		if previousFee.Cmp(common.Big0) == 0 {
+			// Catch for minipools that were created before this call existed
+			return previousBond, currentFee
+		}
+		return previousBond, previousFee
+	}
+
+	return currentBond, currentFee
 }
 
 // Get all minipool addresses using the multicaller
