@@ -86,6 +86,8 @@ type NodeStatusResponse struct {
 	SignallingAddressFormatted string            `json:"signallingAddressFormatted"`
 	Minipools                  []MinipoolDetails `json:"minipools"`
 	LatestDelegate             common.Address    `json:"latestDelegate"`
+	MegapoolAddress            common.Address    `json:"megapoolAddress"`
+	IsSaturnDeployed           bool              `json:"isSaturnDeployed"`
 }
 
 type NodeAlert struct {
@@ -370,6 +372,7 @@ type CanNodeDepositResponse struct {
 	DepositDisabled                  bool               `json:"depositDisabled"`
 	InConsensus                      bool               `json:"inConsensus"`
 	MinipoolAddress                  common.Address     `json:"minipoolAddress"`
+	MegapoolAddress                  common.Address     `json:"megapoolAddress"`
 	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeDepositResponse struct {
@@ -661,4 +664,17 @@ type NodeAlertsResponse struct {
 	Error  string `json:"error"`
 	// TODO: change to GettableAlerts
 	Message string `json:"message"`
+}
+type CanDeployMegapoolResponse struct {
+	Status          string             `json:"status"`
+	Error           string             `json:"error"`
+	CanDeploy       bool               `json:"canDeploy"`
+	AlreadyDeployed bool               `json:"alreadyDeployed"`
+	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type DeployMegapoolResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
 }

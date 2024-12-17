@@ -22,6 +22,7 @@ import (
 
 	prdeposit "github.com/prysmaticlabs/prysm/v5/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
+	nodev131 "github.com/rocket-pool/rocketpool-go/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -36,7 +37,7 @@ const (
 	ValidatorEth          float64 = 32.0
 )
 
-func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int) (*api.CanNodeDepositResponse, error) {
+func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, useExpressTicket bool) (*api.CanNodeDepositResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -240,13 +241,13 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 	// Run the deposit gas estimator
 	if response.CanUseCredit {
-		gasInfo, err := node.EstimateDepositWithCreditGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		gasInfo, err := nodev131.EstimateDepositWithCreditGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 		if err != nil {
 			return nil, err
 		}
 		response.GasInfo = gasInfo
 	} else {
-		gasInfo, err := node.EstimateDepositGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		gasInfo, err := nodev131.EstimateDepositGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 		if err != nil {
 			return nil, err
 		}
@@ -257,7 +258,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 }
 
-func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, submit bool) (*api.NodeDepositResponse, error) {
+func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, useExpressTicket bool, submit bool) (*api.NodeDepositResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -424,9 +425,9 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	// Deposit
 	var tx *types.Transaction
 	if useCreditBalance {
-		tx, err = node.DepositWithCredit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		tx, err = nodev131.DepositWithCredit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 	} else {
-		tx, err = node.Deposit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		tx, err = nodev131.Deposit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
 	}
 	if err != nil {
 		return nil, err

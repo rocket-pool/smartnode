@@ -78,15 +78,6 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
-	// Check Saturn 1.4 is Active
-	saturn, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Saturn has been deployed: %w", err)
-	}
-
-	if saturn.IsSaturnDeployed {
-	}
-
 	// Account address & balances
 	fmt.Printf("%s=== Account and Balances ===%s\n", colorGreen, colorReset)
 	fmt.Printf(
@@ -115,6 +106,15 @@ func getStatus(c *cli.Context) error {
 			fmt.Println("The node is a member of the oracle DAO - it can vote on DAO proposals and perform watchtower duties.")
 		}
 		fmt.Println("")
+
+		if status.IsSaturnDeployed {
+			fmt.Printf("%s=== Megapool ===%s\n", colorGreen, colorReset)
+			if status.MegapoolAddress != (common.Address{}) {
+				fmt.Printf("The node has a megapool deployed at %s%s%s.\n", colorBlue, status.MegapoolAddress.Hex(), colorReset)
+			} else {
+				fmt.Printf("The node does not have a megapool deployed yet.\n")
+			}
+		}
 
 		// Penalties
 		fmt.Printf("%s=== Penalty Status ===%s\n", colorGreen, colorReset)
