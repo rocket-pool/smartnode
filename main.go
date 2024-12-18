@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 
+	"github.com/felixge/fgprof"
 	"github.com/urfave/cli/v2"
 )
 
@@ -105,6 +106,11 @@ func main() {
 			Aliases: []string{"m"},
 			Usage:   "Path to which to save a pprof heap profile, e.g. ./treegen.pprof. If unset, profiling is disabled.",
 		},
+		&cli.StringFlag{
+			Name:    "fgprof",
+			Aliases: []string{"f"},
+			Usage:   "Path to which to save a fgprof profile, e.g. ./treegen.pprof. If unset, profiling is disabled.",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
@@ -135,6 +141,22 @@ func main() {
 				runtime.GC()
 				if err := pprof.WriteHeapProfile(f); err != nil {
 					fmt.Printf("%sError saving heap profile: %w%w\n", colorRed, err, colorReset)
+				}
+			}()
+		}
+
+		fgprofile := c.String("fgprof")
+		if fgprofile != "" {
+			f, err := os.Create(fgprofile)
+			if err != nil {
+				fmt.Printf("%sError saving heap profile: %w%w\n", colorRed, err, colorReset)
+				os.Exit(1)
+			}
+			closure := fgprof.Start(f, fgprof.FormatPprof)
+			defer func() {
+				err := closure()
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "Error stopping fgprof: %s\n", err.Error())
 				}
 			}()
 		}

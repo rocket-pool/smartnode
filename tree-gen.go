@@ -91,9 +91,9 @@ type treeGenerator struct {
 	log               *log.ColorLogger
 	errLog            *log.ColorLogger
 	rp                rprewards.RewardsExecutionClient
+	rpNative          *rocketpool.RocketPool
 	cfg               *config.RocketPoolConfig
 	mgr               *state.NetworkStateManager
-	recordMgr         *rprewards.RollingRecordManager
 	bn                beacon.Client
 	beaconConfig      beacon.Eth2Config
 	targets           targets
@@ -171,6 +171,7 @@ func GenerateTree(c *cli.Context) error {
 		log:               &logger,
 		errLog:            &errLogger,
 		rp:                rprewards.NewRewardsExecutionClient(rp),
+		rpNative:          rp,
 		cfg:               cfg,
 		bn:                bn,
 		mgr:               mgr,
@@ -493,88 +494,8 @@ func (g *treeGenerator) writeFiles(result *rprewards.GenerateTreeResult) error {
 	return nil
 }
 
-// Create the manager for rolling records to use (if applicable) and update the record to the target slot
-func (g *treeGenerator) prepareRecordManager(args *treegenArguments) error {
-	// Ignore this on old rulesets without rolling records
-	if g.ruleset < 6 && g.ruleset > 0 {
-		g.log.Printlnf("Ruleset %d does not use rolling records, ignoring them.", g.ruleset)
-		return nil
-	}
-
-	// Get the target index
-	ignoreRollingRecords := false
-	var index uint64
-	if g.targets.rewardsEvent != nil {
-		index = g.targets.rewardsEvent.Index.Uint64()
-	} else {
-		index = g.targets.snapshotDetails.index
-	}
-
-	// Ignore rolling records for the first interval
-	if index == 0 {
-		g.log.Println("Interval 0 cannot use rolling records because there was no previous event to indicate when to start collecting records, ignoring them.")
-		return nil
-	}
-
-	// If a ruleset isn't specified, check if the interval is before v6
-	if g.ruleset == 0 {
-		network := g.cfg.Smartnode.Network.Value.(cfgtypes.Network)
-		switch network {
-		case cfgtypes.Network_Mainnet:
-			ignoreRollingRecords = (index < rprewards.MainnetV8Interval)
-		default:
-			return fmt.Errorf("unknown network [%v]", network)
-		}
-	}
-
-	// Ignore this on old intervals without rolling records
-	if ignoreRollingRecords {
-		g.log.Printlnf("Rewards interval %d cannot use rolling records because it used an older ruleset, ignoring them.", index)
-		return nil
-	}
-
-	// Rolling records are supported, build up the manager
-	var err error
-	g.recordMgr, err = rprewards.NewRollingRecordManager(g.log, g.errLog, g.cfg, g.rp, g.bn, g.mgr, args.startSlot, g.beaconConfig, index)
-	if err != nil {
-		return fmt.Errorf("error creating rolling record manager: %w", err)
-	}
-
-	// Determine the target slot for tree generation
-	var targetSlot uint64
-	if g.targets.rewardsEvent != nil {
-		targetSlot = g.targets.rewardsEvent.ConsensusBlock.Uint64()
-	} else {
-		targetSlot = g.targets.snapshotDetails.snapshotBeaconBlock
-	}
-
-	// Create and update the record to that slot
-	g.log.Printlnf("Generation supports rolling records - creating a new record manager.")
-	record, err := g.recordMgr.GenerateRecordForState(args.state)
-	if err != nil {
-		return fmt.Errorf("error creating record for slot %d: %w", targetSlot, err)
-	}
-	g.recordMgr.Record = record
-
-	return nil
-}
-
 // Creates a tree generator using the provided arguments
 func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGenerator, error) {
-	// Prepare the rolling record manager and record if applicable
-	if g.useRollingRecords {
-		g.log.Println("Rolling records are enabled, preparing rolling manager.")
-		err := g.prepareRecordManager(args)
-		if err != nil {
-			return nil, fmt.Errorf("error preparing rolling record: %w", err)
-		}
-	} else {
-		g.log.Println("Rolling records are not enabled, ignoring them.")
-	}
-	var record *rprewards.RollingRecord = nil
-	if g.recordMgr != nil {
-		record = g.recordMgr.Record
-	}
 
 	// Create the tree generator
 	out, err := rprewards.NewTreeGenerator(
@@ -585,7 +506,7 @@ func (g *treeGenerator) getGenerator(args *treegenArguments) (*rprewards.TreeGen
 			ConsensusBlock: args.block.Slot,
 			ExecutionBlock: args.elBlockHeader.Number.Uint64(),
 		}, args.elBlockHeader,
-		args.intervalsPassed, args.state, record)
+		args.intervalsPassed, args.state)
 	if err != nil {
 		return nil, fmt.Errorf("error creating tree generator: %w", err)
 	}
@@ -610,11 +531,11 @@ func (g *treeGenerator) approximateRethSpRewards() error {
 		args.block.Slot, opts.BlockNumber.Uint64(), args.startTime, args.endTime)
 
 	// Get the Smoothing Pool contract's balance
-	smoothingPoolContract, err := g.rp.Client().GetContract("rocketSmoothingPool", opts)
+	smoothingPoolContract, err := g.rpNative.GetContract("rocketSmoothingPool", opts)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool contract: %w", err)
 	}
-	smoothingPoolBalance, err := g.rp.Client().Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, opts.BlockNumber)
+	smoothingPoolBalance, err := g.rpNative.Client.BalanceAt(context.Background(), *smoothingPoolContract.Address, opts.BlockNumber)
 	if err != nil {
 		return fmt.Errorf("error getting smoothing pool balance: %w", err)
 	}
@@ -696,22 +617,16 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 	// Get the number of the EL block matching the CL snapshot block
 	var snapshotElBlockHeader *types.Header
 	if g.targets.block.ExecutionBlockNumber == 0 {
-		// No EL data so the Merge hasn't happened yet, figure out the EL block based on the Epoch ending time
-		snapshotElBlockHeader, err = rprewards.GetELBlockHeaderForTime(endTime, g.rp)
-		if err != nil {
-			return nil, fmt.Errorf("error getting EL block for time %s: %w", endTime, err)
-		}
-		opts.BlockNumber = snapshotElBlockHeader.Number
-	} else {
-		opts.BlockNumber = big.NewInt(0).SetUint64(g.targets.block.ExecutionBlockNumber)
-		snapshotElBlockHeader, err = g.rp.HeaderByNumber(context.Background(), opts.BlockNumber)
-		if err != nil {
-			return nil, fmt.Errorf("error getting EL block %d: %w", opts.BlockNumber.Uint64(), err)
-		}
+		return nil, fmt.Errorf("slot %d was pre-merge", g.targets.block.Slot)
+	}
+	opts.BlockNumber = big.NewInt(0).SetUint64(g.targets.block.ExecutionBlockNumber)
+	snapshotElBlockHeader, err = g.rp.HeaderByNumber(context.Background(), opts.BlockNumber)
+	if err != nil {
+		return nil, fmt.Errorf("error getting EL block %d: %w", opts.BlockNumber.Uint64(), err)
 	}
 
 	// Get the interval index
-	indexBig, err := rewards.GetRewardIndex(g.rp.Client(), &opts)
+	indexBig, err := g.rpNative.GetRewardIndex(&opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting current reward index: %w", err)
 	}
@@ -736,11 +651,11 @@ func (g *treeGenerator) getSnapshotDetails() (*snapshotDetails, error) {
 	}
 
 	// Get the start time for the interval, and how long an interval is supposed to take
-	startTime, err := rewards.GetClaimIntervalTimeStart(g.rp.Client(), &opts)
+	startTime, err := rewards.GetClaimIntervalTimeStart(g.rpNative, &opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting claim interval start time: %w", err)
 	}
-	intervalTime, err := rewards.GetClaimIntervalTime(g.rp.Client(), &opts)
+	intervalTime, err := rewards.GetClaimIntervalTime(g.rpNative, &opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting claim interval time: %w", err)
 	}
