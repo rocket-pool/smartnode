@@ -33,7 +33,7 @@ type Megapool interface {
 	DissolveValidator(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateRepayDebtGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	RepayDebt(opts *bind.TransactOpts) (common.Hash, error)
-	GetWithdrawalCredentials(opts *bind.CallOpts) ([]byte, error)
+	GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, error)
 	EstimateRequestUnstakeRPL(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateStakeGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
