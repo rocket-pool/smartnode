@@ -30,7 +30,7 @@ func GetMegapoolExpectedAddress(rp *rocketpool.RocketPool, nodeAddress common.Ad
 		return common.Address{}, err
 	}
 	expectedAddress := common.Address{}
-	if err := rocketMegapoolFactory.Call(opts, expectedAddress, "getExpectedAddress", nodeAddress); err != nil {
+	if err := rocketMegapoolFactory.Call(opts, &expectedAddress, "getExpectedAddress", nodeAddress); err != nil {
 		return common.Address{}, fmt.Errorf("error getting megapool expected address for node %s: %w", nodeAddress, err)
 	}
 	return expectedAddress, nil
