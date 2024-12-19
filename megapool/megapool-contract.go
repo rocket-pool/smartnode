@@ -233,12 +233,12 @@ func (mp *megapoolV1) RepayDebt(opts *bind.TransactOpts) (common.Hash, error) {
 }
 
 // Get the expected withdrawal credentials for any validator within this megapool
-func (mp *megapoolV1) GetWithdrawalCredentials(opts *bind.CallOpts) ([]byte, error) {
-	withdrawalCredentials := make([]byte, 32)
+func (mp *megapoolV1) GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, error) {
+	withdrawalCredentials := new(common.Hash)
 	if err := mp.Contract.Call(opts, withdrawalCredentials, "getWithdrawalCredentials"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s withdrawal credentials: %w", mp.Address.Hex(), err)
+		return common.Hash{}, fmt.Errorf("error getting megapool %s withdrawal credentials: %w", mp.Address.Hex(), err)
 	}
-	return withdrawalCredentials, nil
+	return *withdrawalCredentials, nil
 }
 
 // Estimate the gas required to Request RPL previously staked on this megapool to be unstaked
