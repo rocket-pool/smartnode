@@ -11,6 +11,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
 	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
@@ -25,6 +26,7 @@ import (
 	nodev131 "github.com/rocket-pool/rocketpool-go/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -75,13 +77,20 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return nil, err
 	}
 
-	// Adjust the salt
-	if salt.Cmp(big.NewInt(0)) == 0 {
-		nonce, err := ec.NonceAt(context.Background(), nodeAccount.Address, nil)
-		if err != nil {
-			return nil, err
+	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if !saturnDeployed {
+		// Adjust the salt
+		if salt.Cmp(big.NewInt(0)) == 0 {
+			nonce, err := ec.NonceAt(context.Background(), nodeAccount.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+			salt.SetUint64(nonce)
 		}
-		salt.SetUint64(nonce)
 	}
 
 	// Data
@@ -195,15 +204,40 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return nil, err
 	}
 
-	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err = minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
-	if err != nil {
-		return nil, err
-	}
-	response.MinipoolAddress = minipoolAddress
-	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
+	var withdrawalCredentials common.Hash
+
+	if !saturnDeployed {
+		// Get the next minipool address and withdrawal credentials
+		minipoolAddress, err = minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
+		if err != nil {
+			return nil, err
+		}
+		response.MinipoolAddress = minipoolAddress
+		withdrawalCredentials, err = minipool.GetMinipoolWithdrawalCredentials(rp, minipoolAddress, nil)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// In case Saturn is deployed, the withdrawal credential will always be the Megapool
+
+		// Get the megapool address
+		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		// Load the megapool
+		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		// Get the withdrawal credentials
+		withdrawalCredentials, err = mp.GetWithdrawalCredentials(nil)
+		if err != nil {
+			return nil, err
+		}
+
 	}
 
 	// Get validator deposit data and associated parameters
@@ -239,19 +273,36 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		)
 	}
 
-	// Run the deposit gas estimator
-	if response.CanUseCredit {
-		gasInfo, err := nodev131.EstimateDepositWithCreditGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
-		if err != nil {
-			return nil, err
+	if !saturnDeployed {
+		// Run the deposit gas estimator
+		if response.CanUseCredit {
+			gasInfo, err := nodev131.EstimateDepositWithCreditGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo = gasInfo
+		} else {
+			gasInfo, err := nodev131.EstimateDepositGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo = gasInfo
 		}
-		response.GasInfo = gasInfo
 	} else {
-		gasInfo, err := nodev131.EstimateDepositGas(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
-		if err != nil {
-			return nil, err
+		// Run the deposit gas estimator
+		if response.CanUseCredit {
+			gasInfo, err := node.EstimateDepositWithCreditGas(rp, amountWei, useExpressTicket, pubKey, signature, depositDataRoot, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo = gasInfo
+		} else {
+			gasInfo, err := node.EstimateDepositGas(rp, amountWei, useExpressTicket, pubKey, signature, depositDataRoot, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo = gasInfo
 		}
-		response.GasInfo = gasInfo
 	}
 
 	return &response, nil
@@ -293,16 +344,23 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		return nil, err
 	}
 
+	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Response
 	response := api.NodeDepositResponse{}
 
-	// Adjust the salt
-	if salt.Cmp(big.NewInt(0)) == 0 {
-		nonce, err := ec.NonceAt(context.Background(), nodeAccount.Address, nil)
-		if err != nil {
-			return nil, err
+	if !saturnDeployed {
+		// Adjust the salt
+		if salt.Cmp(big.NewInt(0)) == 0 {
+			nonce, err := ec.NonceAt(context.Background(), nodeAccount.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+			salt.SetUint64(nonce)
 		}
-		salt.SetUint64(nonce)
 	}
 
 	// Make sure ETH2 is on the correct chain
@@ -356,14 +414,35 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 		return nil, err
 	}
 
-	// Get the next minipool address and withdrawal credentials
-	minipoolAddress, err := minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
-	if err != nil {
-		return nil, err
-	}
-	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
+	var withdrawalCredentials common.Hash
+	var minipoolAddress common.Address
+	if !saturnDeployed {
+		// Get the next minipool address and withdrawal credentials
+		minipoolAddress, err = minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
+		if err != nil {
+			return nil, err
+		}
+		withdrawalCredentials, err = minipool.GetMinipoolWithdrawalCredentials(rp, minipoolAddress, nil)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		// In case Saturn is deployed, the withdrawal credential will always be the Megapool
+
+		// Get the megapool address
+		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		// Load the megapool
+		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		// Get the withdrawal credentials
+		withdrawalCredentials, err = mp.GetWithdrawalCredentials(nil)
 	}
 
 	// Get validator deposit data and associated parameters
@@ -382,11 +461,10 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 	if status.Exists {
 		return nil, fmt.Errorf("**** ALERT ****\n"+
-			"Your minipool %s has the following as a validator pubkey:\n\t%s\n"+
-			"This key is already in use by validator %s on the Beacon chain!\n"+
+			"The following validator pubkey is alrady in use on the Beacon chain:\n\t%s\n"+
 			"Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.\n"+
 			"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.\n"+
-			"***************\n", minipoolAddress.Hex(), pubKey.Hex(), status.Index)
+			"***************\n", pubKey.Hex(), status.Index)
 	}
 
 	// Do a final sanity check

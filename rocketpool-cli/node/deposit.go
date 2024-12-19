@@ -81,14 +81,21 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
-	// Check if the fee distributor has been initialized
-	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
+	saturnDeployed, err := rp.IsSaturnDeployed()
 	if err != nil {
 		return err
 	}
-	if !isInitializedResponse.IsInitialized {
-		fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
-		return nil
+
+	if !saturnDeployed.IsSaturnDeployed {
+		// Check if the fee distributor has been initialized
+		isInitializedResponse, err := rp.IsFeeDistributorInitialized()
+		if err != nil {
+			return err
+		}
+		if !isInitializedResponse.IsInitialized {
+			fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
+			return nil
+		}
 	}
 
 	// Post a warning about fee distribution
@@ -178,7 +185,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Check deposit can be made
-	canDeposit, err := rp.CanNodeDeposit(amountWei, minNodeFee, salt)
+	canDeposit, err := rp.CanNodeDeposit(amountWei, minNodeFee, salt, false)
 	if err != nil {
 		return err
 	}
@@ -275,7 +282,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Make deposit
-	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt, useCreditBalance, true)
+	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt, useCreditBalance, false, true)
 	if err != nil {
 		return err
 	}

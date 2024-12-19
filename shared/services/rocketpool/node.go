@@ -569,8 +569,8 @@ func (c *Client) NodeWithdrawEth(amountWei *big.Int) (api.NodeWithdrawEthRespons
 }
 
 // Check whether the node can make a deposit
-func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int) (api.CanNodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s", amountWei.String(), minFee, salt.String()))
+func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useExpressTicket bool) (api.CanNodeDepositResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s %t", amountWei.String(), minFee, salt.String(), useExpressTicket))
 	if err != nil {
 		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %w", err)
 	}
@@ -585,8 +585,8 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.In
 }
 
 // Make a node deposit
-func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, submit bool) (api.NodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %t", amountWei.String(), minFee, salt.String(), useCreditBalance, submit))
+func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, useExpressTicket bool, submit bool) (api.NodeDepositResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %t %t", amountWei.String(), minFee, salt.String(), useCreditBalance, useExpressTicket, submit))
 	if err != nil {
 		return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
 	}
