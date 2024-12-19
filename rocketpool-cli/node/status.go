@@ -105,14 +105,16 @@ func getStatus(c *cli.Context) error {
 		if status.Trusted {
 			fmt.Println("The node is a member of the oracle DAO - it can vote on DAO proposals and perform watchtower duties.")
 		}
-		fmt.Println("")
+		fmt.Println()
 
 		if status.IsSaturnDeployed {
 			fmt.Printf("%s=== Megapool ===%s\n", colorGreen, colorReset)
 			if status.MegapoolAddress != (common.Address{}) {
-				fmt.Printf("The node has a megapool deployed at %s%s%s.\n", colorBlue, status.MegapoolAddress.Hex(), colorReset)
+				fmt.Printf("The node has a megapool deployed at %s%s%s.", colorBlue, status.MegapoolAddress.Hex(), colorReset)
+				fmt.Println()
 			} else {
-				fmt.Printf("The node does not have a megapool deployed yet.\n")
+				fmt.Println("The node does not have a megapool deployed yet.")
+				fmt.Println()
 			}
 		}
 
