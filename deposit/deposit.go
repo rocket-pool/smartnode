@@ -102,3 +102,11 @@ func getRocketDepositPool(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rock
 	defer rocketDepositPoolLock.Unlock()
 	return rp.GetContract("rocketDepositPool", opts)
 }
+
+func GetRocketDepositPoolVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint8, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	return rocketpool.GetContractVersion(rp, *rocketDepositPool.Address, opts)
+}
