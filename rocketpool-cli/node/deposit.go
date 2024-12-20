@@ -200,9 +200,6 @@ func nodeDeposit(c *cli.Context) error {
 			creditBalance := eth.WeiToEth(canDeposit.CreditBalance)
 			fmt.Printf("The node's balance of %.6f ETH and credit balance of %.6f ETH are not enough to create a minipool with a %.1f ETH bond.", nodeBalance, creditBalance, amount)
 		}
-		if canDeposit.InsufficientRplStake {
-			fmt.Printf("The node has not staked enough RPL to collateralize a new minipool with a bond of %d ETH (this also includes the RPL required to support any pending bond reductions).\n", int(amount))
-		}
 		if canDeposit.InvalidAmount {
 			fmt.Println("The deposit amount is invalid.")
 		}
