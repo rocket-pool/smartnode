@@ -65,7 +65,7 @@ func NewMegaPoolV1(rp *rocketpool.RocketPool, address common.Address, opts *bind
 	// Create and return
 	return &megapoolV1{
 		Address:    address,
-		Version:    3,
+		Version:    1,
 		Contract:   contract,
 		RocketPool: rp,
 	}, nil
@@ -96,62 +96,62 @@ func (mp *megapoolV1) GetValidatorCount(opts *bind.CallOpts) (uint64, error) {
 
 //TODO func GetValidatorInfo()
 
-func (mp *megapoolV1) GetAssignedValue(opts *bind.CallOpts) (uint64, error) {
-	validatorCount := new(*big.Int)
-	if err := mp.Contract.Call(opts, validatorCount, "getAssignedValue"); err != nil {
-		return 0, fmt.Errorf("error getting megapool %s assigned value: %w", mp.Address.Hex(), err)
-	}
-	return (*validatorCount).Uint64(), nil
-}
-
-func (mp *megapoolV1) GetDebt(opts *bind.CallOpts) (uint64, error) {
+func (mp *megapoolV1) GetAssignedValue(opts *bind.CallOpts) (*big.Int, error) {
 	assignedValue := new(*big.Int)
-	if err := mp.Contract.Call(opts, assignedValue, "getDebt"); err != nil {
-		return 0, fmt.Errorf("error getting megapool %s debt: %w", mp.Address.Hex(), err)
+	if err := mp.Contract.Call(opts, assignedValue, "getAssignedValue"); err != nil {
+		return nil, fmt.Errorf("error getting megapool %s assigned value: %w", mp.Address.Hex(), err)
 	}
-	return (*assignedValue).Uint64(), nil
+	return *assignedValue, nil
 }
 
-func (mp *megapoolV1) GetRefundValue(opts *bind.CallOpts) (uint64, error) {
+func (mp *megapoolV1) GetDebt(opts *bind.CallOpts) (*big.Int, error) {
+	debt := new(*big.Int)
+	if err := mp.Contract.Call(opts, debt, "getDebt"); err != nil {
+		return nil, fmt.Errorf("error getting megapool %s debt: %w", mp.Address.Hex(), err)
+	}
+	return *debt, nil
+}
+
+func (mp *megapoolV1) GetRefundValue(opts *bind.CallOpts) (*big.Int, error) {
 	refundValue := new(*big.Int)
 	if err := mp.Contract.Call(opts, refundValue, "getRefundValue"); err != nil {
-		return 0, fmt.Errorf("error getting megapool %s refund value: %w", mp.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting megapool %s refund value: %w", mp.Address.Hex(), err)
 	}
-	return (*refundValue).Uint64(), nil
+	return *refundValue, nil
 }
 
-func (mp *megapoolV1) GetNodeCapital(opts *bind.CallOpts) (uint64, error) {
+func (mp *megapoolV1) GetNodeCapital(opts *bind.CallOpts) (*big.Int, error) {
 	nodeCapital := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeCapital, "getNodeCapital"); err != nil {
-		return 0, fmt.Errorf("error getting megapool %s node capital: %w", mp.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting megapool %s node capital: %w", mp.Address.Hex(), err)
 	}
-	return (*nodeCapital).Uint64(), nil
+	return *nodeCapital, nil
 }
 
-func (mp *megapoolV1) GetNodeBond(opts *bind.CallOpts) (uint64, error) {
+func (mp *megapoolV1) GetNodeBond(opts *bind.CallOpts) (*big.Int, error) {
 	nodeBond := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeBond, "getNodeBond"); err != nil {
-		return 0, fmt.Errorf("error getting megapool %s debt: %w", mp.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting megapool %s debt: %w", mp.Address.Hex(), err)
 	}
-	return (*nodeBond).Uint64(), nil
+	return *nodeBond, nil
 }
 
-func (mp *megapoolV1) GetUserCapital(opts *bind.CallOpts) (uint64, error) {
+func (mp *megapoolV1) GetUserCapital(opts *bind.CallOpts) (*big.Int, error) {
 	userCapital := new(*big.Int)
 	if err := mp.Contract.Call(opts, userCapital, "getUserCapital"); err != nil {
-		return 0, fmt.Errorf("error getting megapool %s user capital: %w", mp.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting megapool %s user capital: %w", mp.Address.Hex(), err)
 	}
-	return (*userCapital).Uint64(), nil
+	return *userCapital, nil
 }
 
 //TODO _calculateRewards is currently a view in RocketMegapoolDelegate.sol
 
-func (mp *megapoolV1) GetPendingRewards(opts *bind.CallOpts) (uint64, error) {
+func (mp *megapoolV1) GetPendingRewards(opts *bind.CallOpts) (*big.Int, error) {
 	pendingRewards := new(*big.Int)
 	if err := mp.Contract.Call(opts, pendingRewards, "getPendingRewards"); err != nil {
-		return 0, fmt.Errorf("error getting megapool %s pending rewards: %w", mp.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting megapool %s pending rewards: %w", mp.Address.Hex(), err)
 	}
-	return (*pendingRewards).Uint64(), nil
+	return *pendingRewards, nil
 }
 
 func (mp *megapoolV1) GetNodeAddress(opts *bind.CallOpts) (common.Address, error) {
