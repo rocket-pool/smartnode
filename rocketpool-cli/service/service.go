@@ -986,7 +986,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	if selectedEc == cfgtypes.ExecutionClient_Geth || selectedEc == cfgtypes.ExecutionClient_Besu {
 		if selectedEc == cfgtypes.ExecutionClient_Geth {
-			fmt.Printf("%sGeth has a new feature that renders pruning obsolete. Consider enabling PBSS in the Execution Client settings in `rocketpool service config` and resyncing with `rocketpool service resync-eth1` instead of pruning.%s\n", colorYellow, colorReset)
+			fmt.Printf("%sGeth has a new feature that renders pruning obsolete. However, as this is a new feature you may have to resync with `rocketpool service resync-eth1` before this takes effect.%s\n", colorYellow, colorReset)
 		}
 		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if cfg.UseFallbackClients.Value == false {
