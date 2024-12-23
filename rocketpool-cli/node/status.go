@@ -112,10 +112,17 @@ func getStatus(c *cli.Context) error {
 			if status.MegapoolAddress != (common.Address{}) {
 				fmt.Printf("The node has a megapool deployed at %s%s%s.", colorBlue, status.MegapoolAddress.Hex(), colorReset)
 				fmt.Println()
+				fmt.Printf("The megapool debt is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
+				fmt.Println()
+				fmt.Printf("The megapool refund value is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolRefundValue), 6))
+				fmt.Println()
+				fmt.Printf("The megapool has %d validators.", status.MegapoolValidatorCount)
+				fmt.Println()
 			} else {
 				fmt.Println("The node does not have a megapool deployed yet.")
 				fmt.Println()
 			}
+			fmt.Println()
 		}
 
 		// Penalties

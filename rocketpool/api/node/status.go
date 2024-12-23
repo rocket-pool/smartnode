@@ -101,8 +101,26 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			if err == nil {
 				response.MegapoolAddress = megapoolAddress
 			}
+
+			// Load the megapool contract
+			mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+			if err == nil {
+				debt, err := mp.GetDebt(nil)
+				if err == nil {
+					response.MegapoolNodeDebt = debt
+				}
+				refund, err := mp.GetRefundValue(nil)
+				if err == nil {
+					response.MegapoolRefundValue = refund
+				}
+				validatorCount, err := mp.GetValidatorCount(nil)
+				if err == nil {
+					response.MegapoolValidatorCount = uint16(validatorCount)
+				}
+			}
 			return err
 		})
+
 	}
 
 	wg.Go(func() error {

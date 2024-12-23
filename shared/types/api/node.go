@@ -87,6 +87,9 @@ type NodeStatusResponse struct {
 	Minipools                  []MinipoolDetails `json:"minipools"`
 	LatestDelegate             common.Address    `json:"latestDelegate"`
 	MegapoolAddress            common.Address    `json:"megapoolAddress"`
+	MegapoolValidatorCount     uint16            `json:"megapoolValidatorCount"`
+	MegapoolNodeDebt           *big.Int          `json:"megapoolNodeDebt"`
+	MegapoolRefundValue        *big.Int          `json:"megapoolRefundValue"`
 	IsSaturnDeployed           bool              `json:"isSaturnDeployed"`
 }
 
@@ -366,7 +369,6 @@ type CanNodeDepositResponse struct {
 	NodeBalance                      *big.Int           `json:"nodeBalance"`
 	InsufficientBalance              bool               `json:"insufficientBalance"`
 	InsufficientBalanceWithoutCredit bool               `json:"insufficientBalanceWithoutCredit"`
-	InsufficientRplStake             bool               `json:"insufficientRplStake"`
 	InvalidAmount                    bool               `json:"invalidAmount"`
 	UnbondedMinipoolsAtMax           bool               `json:"unbondedMinipoolsAtMax"`
 	DepositDisabled                  bool               `json:"depositDisabled"`

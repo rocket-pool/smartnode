@@ -29,7 +29,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
@@ -95,9 +94,6 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 	// Data
 	var wg1 errgroup.Group
-	var ethMatched *big.Int
-	var ethMatchedLimit *big.Int
-	var pendingMatchAmount *big.Int
 	var minipoolAddress common.Address
 	var depositPoolBalance *big.Int
 
@@ -128,15 +124,6 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return err
 	})
 
-	// Get node staking information
-	wg1.Go(func() error {
-		ethMatched, ethMatchedLimit, pendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
-		if err != nil {
-			return fmt.Errorf("error checking collateral for node %s: %w", nodeAccount.Address.Hex(), err)
-		}
-		return nil
-	})
-
 	// Get deposit pool balance
 	wg1.Go(func() error {
 		var err error
@@ -157,15 +144,8 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	response.DepositBalance = depositPoolBalance
 	response.CanUseCredit = (depositPoolBalance.Cmp(eth.EthToWei(1)) >= 0)
 
-	// Check data
-	validatorEthWei := eth.EthToWei(ValidatorEth)
-	matchRequest := big.NewInt(0).Sub(validatorEthWei, amountWei)
-	availableToMatch := big.NewInt(0).Sub(ethMatchedLimit, ethMatched)
-	availableToMatch.Sub(availableToMatch, pendingMatchAmount)
-	response.InsufficientRplStake = (availableToMatch.Cmp(matchRequest) == -1)
-
 	// Update response
-	response.CanDeposit = !(response.InsufficientBalance || response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
+	response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled)
 	if !response.CanDeposit {
 		return &response, nil
 	}
@@ -443,6 +423,9 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 
 		// Get the withdrawal credentials
 		withdrawalCredentials, err = mp.GetWithdrawalCredentials(nil)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Get validator deposit data and associated parameters
@@ -500,15 +483,27 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	// Do not send transaction unless requested
 	opts.NoSend = !submit
 
-	// Deposit
 	var tx *types.Transaction
-	if useCreditBalance {
-		tx, err = nodev131.DepositWithCredit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+	if !saturnDeployed {
+		// Legacy Deposit
+		if useCreditBalance {
+			tx, err = nodev131.DepositWithCredit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		} else {
+			tx, err = nodev131.Deposit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
+		}
+		if err != nil {
+			return nil, err
+		}
 	} else {
-		tx, err = nodev131.Deposit(rp, amountWei, minNodeFee, pubKey, signature, depositDataRoot, salt, minipoolAddress, opts)
-	}
-	if err != nil {
-		return nil, err
+		// Deposit
+		if useCreditBalance {
+			tx, err = node.DepositWithCredit(rp, amountWei, useExpressTicket, pubKey, signature, depositDataRoot, opts)
+		} else {
+			tx, err = node.Deposit(rp, amountWei, useExpressTicket, pubKey, signature, depositDataRoot, opts)
+		}
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Save wallet

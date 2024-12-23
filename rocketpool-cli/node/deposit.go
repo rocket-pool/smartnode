@@ -115,11 +115,19 @@ func nodeDeposit(c *cli.Context) error {
 		}
 		amount = depositAmount
 	} else {
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to make an 8 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
-			fmt.Println("Cancelled.")
-			return nil
+		if !saturnDeployed.IsSaturnDeployed {
+			if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to make an 8 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
+				fmt.Println("Cancelled.")
+				return nil
+			}
+			amount = 8
+		} else {
+			if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to make a 4 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
+				fmt.Println("Cancelled.")
+				return nil
+			}
+			amount = 4
 		}
-		amount = 8
 	}
 
 	amountWei := eth.EthToWei(amount)
@@ -199,9 +207,6 @@ func nodeDeposit(c *cli.Context) error {
 			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
 			creditBalance := eth.WeiToEth(canDeposit.CreditBalance)
 			fmt.Printf("The node's balance of %.6f ETH and credit balance of %.6f ETH are not enough to create a minipool with a %.1f ETH bond.", nodeBalance, creditBalance, amount)
-		}
-		if canDeposit.InsufficientRplStake {
-			fmt.Printf("The node has not staked enough RPL to collateralize a new minipool with a bond of %d ETH (this also includes the RPL required to support any pending bond reductions).\n", int(amount))
 		}
 		if canDeposit.InvalidAmount {
 			fmt.Println("The deposit amount is invalid.")
