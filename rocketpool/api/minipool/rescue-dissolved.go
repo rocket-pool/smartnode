@@ -281,7 +281,7 @@ func getDepositTx(rp *rocketpool.RocketPool, w *wallet.Wallet, bc beacon.Client,
 
 }
 
-func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address, amount *big.Int) (*api.RescueDissolvedMinipoolResponse, error) {
+func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address, amount *big.Int, submit bool) (*api.RescueDissolvedMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -316,11 +316,23 @@ func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address, amo
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
+	opts.NoSend = !submit
+
 	// Submit the rescue deposit
 	tx, err := getDepositTx(rp, w, bc, minipoolAddress, amount, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error submitting rescue deposit: %w", err)
 	}
+
+	// Print transaction if requested
+	if !submit {
+		b, err := tx.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("%x\n", b)
+	}
+
 	response.TxHash = tx.Hash()
 
 	// Return response

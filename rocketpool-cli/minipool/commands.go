@@ -546,6 +546,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "amount, a",
 						Usage: "The amount of ETH to deposit into the minipool",
 					},
+					cli.BoolFlag{
+						Name:  "no-send, n",
+						Usage: "Don't submit the transaction",
+					},
 				},
 				Action: func(c *cli.Context) error {
 

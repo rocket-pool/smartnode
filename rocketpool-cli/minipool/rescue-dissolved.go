@@ -209,8 +209,10 @@ func rescueDissolved(c *cli.Context) error {
 		return nil
 	}
 
+	submit := !c.Bool("no-send")
+
 	// Refund minipool
-	response, err := rp.RescueDissolvedMinipool(selectedMinipool.Address, depositAmount)
+	response, err := rp.RescueDissolvedMinipool(selectedMinipool.Address, depositAmount, submit)
 	if err != nil {
 		return fmt.Errorf("Could not rescue minipool %s: %s.\n", selectedMinipool.Address.Hex(), err.Error())
 	}
