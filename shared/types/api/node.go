@@ -91,6 +91,7 @@ type NodeStatusResponse struct {
 	MegapoolNodeDebt           *big.Int          `json:"megapoolNodeDebt"`
 	MegapoolRefundValue        *big.Int          `json:"megapoolRefundValue"`
 	IsSaturnDeployed           bool              `json:"isSaturnDeployed"`
+	ExpressTicketCount         uint64            `json:"expressTicketCount"`
 }
 
 type NodeAlert struct {
