@@ -773,11 +773,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "rescue-dissolved",
 				Usage:     "Rescue a dissolved minipool by depositing ETH for it to the Beacon deposit contract",
-				UsageText: "rocketpool api minipool rescue-dissolved minipool-address deposit-amount",
+				UsageText: "rocketpool api minipool rescue-dissolved minipool-address deposit-amount submit",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
 					minipoolAddress, err := cliutils.ValidateAddress("minipool address", c.Args().Get(0))
@@ -788,9 +788,13 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
+					submit, err := cliutils.ValidateBool("submit", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
 
 					// Run
-					api.PrintResponse(rescueDissolvedMinipool(c, minipoolAddress, depositAmount))
+					api.PrintResponse(rescueDissolvedMinipool(c, minipoolAddress, depositAmount, submit))
 					return nil
 
 				},
