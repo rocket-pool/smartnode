@@ -68,7 +68,7 @@ type SSZFile_v1 struct {
 	ConsensusStartBlock uint64 `json:"consensusStartBlock,omitempty"`
 	// ConsensusEndBlock is the last non-empty slot of the interval
 	ConsensusEndBlock uint64 `json:"consensusEndBlock"`
-	// ExecutionBlock is the execution block number included in ConsensusStartBlock
+	// ExecutionStartBlock is the execution block number included in ConsensusStartBlock
 	ExecutionStartBlock uint64 `json:"executionStartBlock,omitempty"`
 	// ExecutionEndBlock is the execution block number included in ConsensusEndBlock
 	ExecutionEndBlock uint64 `json:"executionEndBlock"`
