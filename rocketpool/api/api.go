@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/rocketpool/api/debug"
+	"github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/rocketpool/api/security"
 	"github.com/urfave/cli"
@@ -67,6 +68,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	// Register subcommands
 	auction.RegisterSubcommands(&command, "auction", []string{"a"})
 	minipool.RegisterSubcommands(&command, "minipool", []string{"m"})
+	megapool.RegisterSubcommands(&command, "megapool", []string{"g"})
 	network.RegisterSubcommands(&command, "network", []string{"e"})
 	node.RegisterSubcommands(&command, "node", []string{"n"})
 	odao.RegisterSubcommands(&command, "odao", []string{"o"})
