@@ -403,6 +403,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "minipool, m",
 						Usage: "The minipool/s to upgrade (address or 'all')",
 					},
+					cli.BoolFlag{
+						Name:  "include-finalized, f",
+						Usage: "Include finailized minipools in the list (default is to hide them).",
+					},
 				},
 				Action: func(c *cli.Context) error {
 

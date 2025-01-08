@@ -33,10 +33,14 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 		return err
 	}
 
+	includeFinalized := c.Bool("include-finalized")
+
 	minipools := []api.MinipoolDetails{}
 	for _, mp := range status.Minipools {
 		if mp.Delegate != latestDelegateResponse.Address && !mp.UseLatestDelegate {
-			minipools = append(minipools, mp)
+			if includeFinalized || !mp.Finalised {
+				minipools = append(minipools, mp)
+			}
 		}
 	}
 
