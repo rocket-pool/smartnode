@@ -142,7 +142,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 	// Check if the credit balance can be used
 	response.DepositBalance = depositPoolBalance
-	response.CanUseCredit = (depositPoolBalance.Cmp(eth.EthToWei(1)) >= 0)
+	response.CanUseCredit = (depositPoolBalance.Cmp(eth.EthToWei(1)) >= 0) && response.CreditBalance.Cmp(amountWei) >= 0
 
 	// Update response
 	response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled)

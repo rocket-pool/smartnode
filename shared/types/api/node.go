@@ -371,7 +371,6 @@ type CanNodeDepositResponse struct {
 	InsufficientBalance              bool               `json:"insufficientBalance"`
 	InsufficientBalanceWithoutCredit bool               `json:"insufficientBalanceWithoutCredit"`
 	InvalidAmount                    bool               `json:"invalidAmount"`
-	UnbondedMinipoolsAtMax           bool               `json:"unbondedMinipoolsAtMax"`
 	DepositDisabled                  bool               `json:"depositDisabled"`
 	InConsensus                      bool               `json:"inConsensus"`
 	MinipoolAddress                  common.Address     `json:"minipoolAddress"`
