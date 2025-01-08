@@ -95,6 +95,12 @@ func main() {
 			Usage:   "Enable the rolling record capability of the Smartnode tree generator. Use this to store and load record caches instead of recalculating attestation performance each time you run treegen.",
 			Value:   false,
 		},
+		&cli.BoolFlag{
+			Name:    "generate-voting-power",
+			Aliases: []string{"gvp"},
+			Usage:   "If Enabled, a file containing the voting power breakdown of all nodes will be saved to the output directory.",
+			Value:   false,
+		},
 		&cli.StringFlag{
 			Name:    "cpuprofile",
 			Aliases: []string{"c"},
