@@ -88,19 +88,19 @@ type treegenArguments struct {
 
 // Treegen holder for the requested execution metadata and necessary artifacts
 type treeGenerator struct {
-	log               *log.ColorLogger
-	errLog            *log.ColorLogger
-	rp                rprewards.RewardsExecutionClient
-	rpNative          *rocketpool.RocketPool
-	cfg               *config.RocketPoolConfig
-	mgr               *state.NetworkStateManager
-	bn                beacon.Client
-	beaconConfig      beacon.Eth2Config
-	targets           targets
-	outputDir         string
-	prettyPrint       bool
-	ruleset           uint64
-	useRollingRecords bool
+	log                 *log.ColorLogger
+	errLog              *log.ColorLogger
+	rp                  rprewards.RewardsExecutionClient
+	rpNative            *rocketpool.RocketPool
+	cfg                 *config.RocketPoolConfig
+	mgr                 *state.NetworkStateManager
+	bn                  beacon.Client
+	beaconConfig        beacon.Eth2Config
+	targets             targets
+	outputDir           string
+	prettyPrint         bool
+	ruleset             uint64
+	generateVotingPower bool
 }
 
 // Generates a new rewards tree based on the command line flags
@@ -168,18 +168,18 @@ func GenerateTree(c *cli.Context) error {
 
 	// Create the generator
 	generator := treeGenerator{
-		log:               &logger,
-		errLog:            &errLogger,
-		rp:                rprewards.NewRewardsExecutionClient(rp),
-		rpNative:          rp,
-		cfg:               cfg,
-		bn:                bn,
-		mgr:               mgr,
-		beaconConfig:      beaconConfig,
-		outputDir:         c.String("output-dir"),
-		prettyPrint:       c.Bool("pretty-print"),
-		ruleset:           c.Uint64("ruleset"),
-		useRollingRecords: c.Bool("use-rolling-records"),
+		log:                 &logger,
+		errLog:              &errLogger,
+		rp:                  rprewards.NewRewardsExecutionClient(rp),
+		rpNative:            rp,
+		cfg:                 cfg,
+		bn:                  bn,
+		mgr:                 mgr,
+		beaconConfig:        beaconConfig,
+		outputDir:           c.String("output-dir"),
+		prettyPrint:         c.Bool("pretty-print"),
+		ruleset:             c.Uint64("ruleset"),
+		generateVotingPower: c.Bool("generate-voting-power"),
 	}
 
 	// initialize the generator targets
@@ -424,6 +424,14 @@ func (g *treeGenerator) generateRewardsFile(treegen *rprewards.TreeGenerator) (*
 	return treegen.GenerateTreeWithRuleset(g.ruleset)
 }
 
+func (g *treeGenerator) serializeVotingPower(votingPowerFile *VotingPowerFile) ([]byte, error) {
+	if g.prettyPrint {
+		return json.MarshalIndent(votingPowerFile, "", "\t")
+	}
+
+	return json.Marshal(votingPowerFile)
+}
+
 // Serializes the minipool performance file into JSON
 func (g *treeGenerator) serializeMinipoolPerformance(result *rprewards.GenerateTreeResult) ([]byte, error) {
 	perfFile := result.MinipoolPerformanceFile
@@ -445,7 +453,7 @@ func (g *treeGenerator) serializeRewardsTree(rewardsFile rprewards.IRewardsFile)
 }
 
 // Writes both the performance file and the rewards file to disk
-func (g *treeGenerator) writeFiles(result *rprewards.GenerateTreeResult) error {
+func (g *treeGenerator) writeFiles(result *rprewards.GenerateTreeResult, votingPowerFile *VotingPowerFile) error {
 	g.log.Printlnf("Saving JSON files...")
 	rewardsFile := result.RewardsFile
 	index := rewardsFile.GetIndex()
@@ -489,6 +497,21 @@ func (g *treeGenerator) writeFiles(result *rprewards.GenerateTreeResult) error {
 	}
 
 	g.log.Printlnf("Saved rewards snapshot file to %s", rewardsTreePath)
+
+	// Write the voting power file to disk
+	if votingPowerFile != nil {
+		votingPowerFileBytes, err := g.serializeVotingPower(votingPowerFile)
+		if err != nil {
+			return fmt.Errorf("error serializing voting power file into JSON: %w", err)
+		}
+
+		votingFilePath := filepath.Join(g.outputDir, fmt.Sprintf("rp-voting-power-%s-%d.json", string(g.cfg.Smartnode.Network.Value.(cfgtypes.Network)), votingPowerFile.ConsensusSlot))
+		err = os.WriteFile(votingFilePath, votingPowerFileBytes, 0644)
+		if err != nil {
+			return fmt.Errorf("error saving voting power file to %s: %w", votingFilePath, err)
+		}
+		g.log.Printlnf("Saved voting power file to %s", votingFilePath)
+	}
 	g.log.Printlnf("Successfully generated rewards snapshot for interval %d", index)
 
 	return nil
@@ -564,6 +587,7 @@ func (g *treeGenerator) approximateRethSpRewards() error {
 
 // Generate a complete rewards tree
 func (g *treeGenerator) generateTree() error {
+	var votingPowerFile *VotingPowerFile
 	args, err := g.getTreegenArgs()
 	if err != nil {
 		return fmt.Errorf("error compiling treegen arguments: %w", err)
@@ -573,6 +597,12 @@ func (g *treeGenerator) generateTree() error {
 	treegen, err := g.getGenerator(args)
 	if err != nil {
 		return err
+	}
+
+	// If a voting power file was requested, generate it now.
+	if g.generateVotingPower {
+		votingPowerFile = g.GenerateVotingPower(args.state)
+		votingPowerFile.Time = args.endTime
 	}
 
 	// Generate the rewards file
@@ -598,7 +628,7 @@ func (g *treeGenerator) generateTree() error {
 		}
 	}
 
-	err = g.writeFiles(result)
+	err = g.writeFiles(result, votingPowerFile)
 	if err != nil {
 		return err
 	}
