@@ -61,8 +61,13 @@ func nodeDeposit(c *cli.Context) error {
 	}
 	fmt.Println()
 
+	saturnDeployed, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+
 	// Post a warning about ETH only minipools
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: We're excited to announce that newly launched Saturn 0 minipools will feature a commission structure ranging from 5%% to 14%%.\n\n- 5%% base commission\n- 5%% dynamic commission boost until Saturn 1\n- Up to 4%% boost for staked RPL valued at ≥10%% of borrowed ETH\n\n- Smoothing pool participation is required to benefit from dynamic commission\n- Dynamic commission starts when reward tree v10 is released (currently in development)\n- Dynamic commission ends soon after Saturn 1 is released\n\nNewly launched minipools with no RPL staked receive 10%% commission while newly launched minipools with ≥10%% of borrowed ETH staked receive 14%% commission.\n\nTo learn more about Saturn 0 and how it affects newly launched minipools, visit: https://rpips.rocketpool.net/tokenomics-explainers/005-rework-prelude%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !saturnDeployed.IsSaturnDeployed && !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: We're excited to announce that newly launched Saturn 0 minipools will feature a commission structure ranging from 5%% to 14%%.\n\n- 5%% base commission\n- 5%% dynamic commission boost until Saturn 1\n- Up to 4%% boost for staked RPL valued at ≥10%% of borrowed ETH\n\n- Smoothing pool participation is required to benefit from dynamic commission\n- Dynamic commission starts when reward tree v10 is released (currently in development)\n- Dynamic commission ends soon after Saturn 1 is released\n\nNewly launched minipools with no RPL staked receive 10%% commission while newly launched minipools with ≥10%% of borrowed ETH staked receive 14%% commission.\n\nTo learn more about Saturn 0 and how it affects newly launched minipools, visit: https://rpips.rocketpool.net/tokenomics-explainers/005-rework-prelude%s\nWould you like to continue?", colorYellow, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -81,11 +86,6 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
-	saturnDeployed, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-
 	if !saturnDeployed.IsSaturnDeployed {
 		// Check if the fee distributor has been initialized
 		isInitializedResponse, err := rp.IsFeeDistributorInitialized()
@@ -96,12 +96,12 @@ func nodeDeposit(c *cli.Context) error {
 			fmt.Println("Your fee distributor has not been initialized yet so you cannot create a new minipool.\nPlease run `rocketpool node initialize-fee-distributor` to initialize it first.")
 			return nil
 		}
-	}
 
-	// Post a warning about fee distribution
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
-		fmt.Println("Cancelled.")
-		return nil
+		// Post a warning about fee distribution
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
 	}
 
 	// Get deposit amount
@@ -127,6 +127,33 @@ func nodeDeposit(c *cli.Context) error {
 				return nil
 			}
 			amount = 4
+		}
+	}
+
+	useExpressTicket := false
+	if saturnDeployed.IsSaturnDeployed {
+
+		expressTicketCount, err := rp.GetExpressTicketCount()
+		if err != nil {
+			return err
+		}
+
+		if c.Bool("use-express-ticket") {
+			if expressTicketCount.Count > 0 {
+				useExpressTicket = true
+			} else {
+				fmt.Println("You do not have any express tickets available.")
+				return nil
+			}
+		} else {
+			if expressTicketCount.Count > 0 {
+				fmt.Printf("You have %d express tickets available.", expressTicketCount.Count)
+				fmt.Println()
+				// Prompt for confirmation
+				if c.Bool("yes") || cliutils.Confirm("Would you like to use an express ticket?") {
+					useExpressTicket = true
+				}
+			}
 		}
 	}
 
@@ -193,7 +220,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Check deposit can be made
-	canDeposit, err := rp.CanNodeDeposit(amountWei, minNodeFee, salt, false)
+	canDeposit, err := rp.CanNodeDeposit(amountWei, minNodeFee, salt, useExpressTicket)
 	if err != nil {
 		return err
 	}
@@ -287,7 +314,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Make deposit
-	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt, useCreditBalance, false, true)
+	response, err := rp.NodeDeposit(amountWei, minNodeFee, salt, useCreditBalance, useExpressTicket, true)
 	if err != nil {
 		return err
 	}

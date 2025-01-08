@@ -1574,6 +1574,19 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "get-express-ticket-count",
+				Usage:     "Get the number of express tickets available for the node",
+				UsageText: "rocketpool api node get-express-ticket-count",
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					api.PrintResponse(getExpressTicketCount(c))
+					return nil
+				},
+			},
 		},
 	})
 }

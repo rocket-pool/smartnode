@@ -681,3 +681,9 @@ type DeployMegapoolResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type GetExpressTicketCountResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+	Count  uint64 `json:"count"`
+}
