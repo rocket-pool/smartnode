@@ -1143,3 +1143,19 @@ func (c *Client) DeployMegapool() (api.DeployMegapoolResponse, error) {
 	}
 	return response, nil
 }
+
+// Get the number of express tickets available for the node
+func (c *Client) GetExpressTicketCount() (api.GetExpressTicketCountResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node get-express-ticket-count"))
+	if err != nil {
+		return api.GetExpressTicketCountResponse{}, fmt.Errorf("Could not get express ticket count: %w", err)
+	}
+	var response api.GetExpressTicketCountResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetExpressTicketCountResponse{}, fmt.Errorf("Could not decode express ticket count response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetExpressTicketCountResponse{}, fmt.Errorf("Could not get express ticket count: %s", response.Error)
+	}
+	return response, nil
+}

@@ -523,6 +523,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "salt, l",
 						Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
 					},
+					cli.BoolFlag{
+						Name:  "use-express-ticket, e",
+						Usage: "Use an express ticket to create a new validator",
+					},
 				},
 				Action: func(c *cli.Context) error {
 

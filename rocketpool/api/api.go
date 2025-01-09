@@ -67,6 +67,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 	// Register subcommands
 	auction.RegisterSubcommands(&command, "auction", []string{"a"})
+	megapool.RegisterSubcommands(&command, "megapool", []string{"g"})
 	minipool.RegisterSubcommands(&command, "minipool", []string{"m"})
 	megapool.RegisterSubcommands(&command, "megapool", []string{"g"})
 	network.RegisterSubcommands(&command, "network", []string{"e"})

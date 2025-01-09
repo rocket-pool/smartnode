@@ -371,7 +371,6 @@ type CanNodeDepositResponse struct {
 	InsufficientBalance              bool               `json:"insufficientBalance"`
 	InsufficientBalanceWithoutCredit bool               `json:"insufficientBalanceWithoutCredit"`
 	InvalidAmount                    bool               `json:"invalidAmount"`
-	UnbondedMinipoolsAtMax           bool               `json:"unbondedMinipoolsAtMax"`
 	DepositDisabled                  bool               `json:"depositDisabled"`
 	InConsensus                      bool               `json:"inConsensus"`
 	MinipoolAddress                  common.Address     `json:"minipoolAddress"`
@@ -677,6 +676,24 @@ type CanDeployMegapoolResponse struct {
 }
 
 type DeployMegapoolResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type GetExpressTicketCountResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+	Count  uint64 `json:"count"`
+}
+
+type CanRepayDebtResponse struct {
+	Status   string             `json:"status"`
+	Error    string             `json:"error"`
+	CanRepay bool               `json:"canRepay"`
+	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+}
+type RepayDebtResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
