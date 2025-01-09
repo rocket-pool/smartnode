@@ -32,7 +32,10 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("%v", status)
+	fmt.Printf("Node Account Address Formatted %s\n", status.NodeAccountAddressFormatted)
+	fmt.Printf("Megapool Address: %s\n", status.Megapool.MegapoolAddress)
+	fmt.Printf("Megapool Address Formatted: %s\n", status.Megapool.MegapoolAddressFormatted)
+	fmt.Printf("Megapool Deployed: %t\n", status.Megapool.MegapoolDeployed)
 
 	return nil
 }
