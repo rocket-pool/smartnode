@@ -1,6 +1,7 @@
 package megapool
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
@@ -64,8 +65,25 @@ func canRepayDebt(c *cli.Context, amount *big.Int) (*api.CanRepayDebtResponse, e
 		return nil, err
 	}
 
-	if debt.Cmp(big.NewInt(0)) == 0 {
+	// Check if amount is greater than debt
+	if amount.Cmp(debt) > 0 {
 		response.CanRepay = false
+		response.NotEnoughDebt = true
+		return &response, nil
+	}
+
+	// Get call options block number
+	var blockNumber *big.Int
+
+	// Check if node has enough balance to repay debt
+	ethBalance, err := rp.Client.BalanceAt(context.Background(), nodeAccount.Address, blockNumber)
+	if err != nil {
+		return nil, err
+	}
+	if ethBalance.Cmp(amount) < 0 {
+		response.CanRepay = false
+		response.NotEnoughBalance = true
+		return &response, nil
 	}
 
 	// Get gas estimate

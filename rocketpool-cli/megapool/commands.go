@@ -31,6 +31,33 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "repay-debt",
+				Usage:     "Repay megapool debt",
+				UsageText: "rocketpool megapool repay-debt amount",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get amount
+					amount, err := cliutils.ValidatePositiveWeiAmount("amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return repayDebt(c, amount)
+				},
+			},
 		},
 	})
 }

@@ -688,10 +688,12 @@ type GetExpressTicketCountResponse struct {
 }
 
 type CanRepayDebtResponse struct {
-	Status   string             `json:"status"`
-	Error    string             `json:"error"`
-	CanRepay bool               `json:"canRepay"`
-	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+	Status           string             `json:"status"`
+	Error            string             `json:"error"`
+	CanRepay         bool               `json:"canRepay"`
+	NotEnoughDebt    bool               `json:"notEnoughDebt"`
+	NotEnoughBalance bool               `json:"notEnoughBalance"`
+	GasInfo          rocketpool.GasInfo `json:"gasInfo"`
 }
 type RepayDebtResponse struct {
 	Status string      `json:"status"`
