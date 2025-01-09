@@ -686,3 +686,15 @@ type GetExpressTicketCountResponse struct {
 	Error  string `json:"error"`
 	Count  uint64 `json:"count"`
 }
+
+type CanRepayDebtResponse struct {
+	Status   string             `json:"status"`
+	Error    string             `json:"error"`
+	CanRepay bool               `json:"canRepay"`
+	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+}
+type RepayDebtResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}

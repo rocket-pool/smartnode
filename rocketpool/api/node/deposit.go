@@ -444,7 +444,7 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	}
 	if status.Exists {
 		return nil, fmt.Errorf("**** ALERT ****\n"+
-			"The following validator pubkey is alrady in use on the Beacon chain:\n\t%s\n"+
+			"The following validator pubkey is already in use on the Beacon chain:\n\t%s\n"+
 			"Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.\n"+
 			"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.\n"+
 			"***************\n", pubKey.Hex(), status.Index)
