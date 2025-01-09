@@ -32,7 +32,7 @@ func deployMegapool(c *cli.Context) error {
 		fmt.Println("This command is only available after the Saturn upgrade.")
 		return nil
 	}
-	
+
 	if !canDeploy.CanDeploy {
 		if canDeploy.AlreadyDeployed {
 			fmt.Println("The node already has a Megapool deployed.")

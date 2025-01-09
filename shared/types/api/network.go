@@ -116,8 +116,7 @@ type GetLatestDelegateResponse struct {
 }
 
 type IsSaturnDeployedResponse struct {
-	Status                  string `json:"status"`
-	Error                   string `json:"error"`
-	IsSaturnDeployed        bool   `json:"isSaturnDeployed"`
+	Status           string `json:"status"`
+	Error            string `json:"error"`
+	IsSaturnDeployed bool   `json:"isSaturnDeployed"`
 }
-
