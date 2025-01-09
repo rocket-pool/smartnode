@@ -49,7 +49,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Get amount
-					amount, err := cliutils.ValidatePositiveWeiAmount("amount", c.Args().Get(0))
+					amount, err := cliutils.ValidatePositiveEthAmount("amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}

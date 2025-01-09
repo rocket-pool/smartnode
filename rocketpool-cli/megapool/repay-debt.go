@@ -2,7 +2,6 @@ package megapool
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -12,7 +11,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func repayDebt(c *cli.Context, amount *big.Int) error {
+func repayDebt(c *cli.Context, amount float64) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -21,8 +20,11 @@ func repayDebt(c *cli.Context, amount *big.Int) error {
 	}
 	defer rp.Close()
 
+	// Convert amount to wei
+	amountWei := eth.EthToWei(amount)
+
 	// Check megapool debt can be repaid
-	canRepay, err := rp.CanRepayDebt(amount)
+	canRepay, err := rp.CanRepayDebt(amountWei)
 	if err != nil {
 		return err
 	}
@@ -41,13 +43,13 @@ func repayDebt(c *cli.Context, amount *big.Int) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to repay %.6f of megapool debt?", math.RoundDown(eth.WeiToEth(amount), 6)))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to repay %.6f of megapool debt?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Repay megapool debt
-	response, err := rp.RepayDebt(amount)
+	response, err := rp.RepayDebt(amountWei)
 	if err != nil {
 		return err
 	}
@@ -59,7 +61,7 @@ func repayDebt(c *cli.Context, amount *big.Int) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully repaid %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(amount), 6))
+	fmt.Printf("Successfully repaid %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
 	return nil
 
 }
