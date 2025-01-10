@@ -56,3 +56,35 @@ func (c *Client) RepayDebt(amountWei *big.Int) (api.RepayDebtResponse, error) {
 	}
 	return response, nil
 }
+
+// Check whether the node can exit the megapool queue
+func (c *Client) CanExitQueue(validatorIndex uint64, expressQueue bool) (api.CanExitQueueResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-exit-queue %d %t", validatorIndex, expressQueue))
+	if err != nil {
+		return api.CanExitQueueResponse{}, fmt.Errorf("Could not get can exit queue status: %w", err)
+	}
+	var response api.CanExitQueueResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanExitQueueResponse{}, fmt.Errorf("Could not decode can exit queue response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanExitQueueResponse{}, fmt.Errorf("Could not get can exit queue status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Exit the megapool queue
+func (c *Client) ExitQueue(validatorIndex uint64, expressQueue bool) (api.ExitQueueResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool exit-queue %d %t", validatorIndex, expressQueue))
+	if err != nil {
+		return api.ExitQueueResponse{}, fmt.Errorf("Could not exit queue: %w", err)
+	}
+	var response api.ExitQueueResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ExitQueueResponse{}, fmt.Errorf("Could not decode exit queue response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ExitQueueResponse{}, fmt.Errorf("Could not exit queue: %s", response.Error)
+	}
+	return response, nil
+}

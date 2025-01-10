@@ -58,6 +58,35 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					return repayDebt(c, amount)
 				},
 			},
+			{
+				Name:      "exit-queue",
+				Usage:     "Exit the megapool queue",
+				UsageText: "rocketpool megapool exit-queue",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+					cli.StringFlag{
+						Name:  "validator-index",
+						Usage: "The validator index to exit",
+					},
+					cli.BoolFlag{
+						Name:  "express",
+						Usage: "Exit the validator from the express queue",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return exitQueue(c)
+				},
+			},
 		},
 	})
 }

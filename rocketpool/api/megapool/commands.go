@@ -80,6 +80,64 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "can-exit-queue",
+				Usage:     "Check whether the node can exit the megapool queue",
+				UsageText: "rocketpool api megapool can-exit-queue validator-index express-queue",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Check the validator-index
+					validatorIndex, err := cliutils.ValidatePositiveUint(c.Args().Get(0), "validator-index")
+					if err != nil {
+						return err
+					}
+
+					// Check the express-queue value
+					expressQueue, err := cliutils.ValidateBool(c.Args().Get(1), "express-queue")
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canExitQueue(c, validatorIndex, expressQueue))
+					return nil
+
+				},
+			},
+			{
+				Name:      "exit-queue",
+				Usage:     "Exit the megapool queue",
+				UsageText: "rocketpool api megapool exit-queue validator-index express-queue",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+
+					// Check the validator-index
+					validatorIndex, err := cliutils.ValidatePositiveUint(c.Args().Get(0), "validator-index")
+					if err != nil {
+						return err
+					}
+
+					// Check the express-queue value
+					expressQueue, err := cliutils.ValidateBool(c.Args().Get(1), "express-queue")
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(exitQueue(c, validatorIndex, expressQueue))
+					return nil
+
+				},
+			},
 		},
 	})
 }
