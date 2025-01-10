@@ -23,6 +23,8 @@ const (
 	MaximumDepositAssignmentsSettingPath           string = "deposit.assign.maximum"
 	MaximumSocializedDepositAssignmentsSettingPath string = "deposit.assign.socialised.maximum"
 	DepositFeeSettingPath                          string = "deposit.fee"
+	DepositQueueRatePath                           string = "deposit.express.queue.rate"
+	DepositQueueTicketsBaseProvisionPath           string = "deposit.express.queue.tickets.base.provision"
 )
 
 // Deposits currently enabled
@@ -156,6 +158,44 @@ func ProposeDepositFee(rp *rocketpool.RocketPool, value *big.Int, blockNumber ui
 }
 func EstimateProposeDepositFeeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DepositFeeSettingPath), DepositSettingsContractName, DepositFeeSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+func GetDepositQueueRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := depositSettingsContract.Call(opts, value, "getDepositQueueRate"); err != nil {
+		return nil, fmt.Errorf("error getting deposit queue rate: %w", err)
+	}
+	return *value, nil
+}
+
+func ProposeDepositQueueRate(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", DepositQueueRatePath), DepositSettingsContractName, DepositQueueRatePath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeDepositQueueRateGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DepositQueueRatePath), DepositSettingsContractName, DepositQueueRatePath, value, blockNumber, treeNodes, opts)
+}
+
+func GetDepositQueueTicketsBaseProvision(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := depositSettingsContract.Call(opts, value, "getDepositQueueTicketsBaseProvision"); err != nil {
+		return nil, fmt.Errorf("error getting deposit queue tickets base provision: %w", err)
+	}
+	return *value, nil
+}
+
+func ProposeDepositQueueTicketsBaseProvision(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", DepositQueueTicketsBaseProvisionPath), DepositSettingsContractName, DepositQueueTicketsBaseProvisionPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeDepositQueueTicketsBaseProvisionGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DepositQueueTicketsBaseProvisionPath), DepositSettingsContractName, DepositQueueTicketsBaseProvisionPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts
