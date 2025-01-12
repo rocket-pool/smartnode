@@ -160,16 +160,16 @@ func EstimateProposeDepositFeeGas(rp *rocketpool.RocketPool, value *big.Int, blo
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DepositFeeSettingPath), DepositSettingsContractName, DepositFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-func GetDepositExpressQueueRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetDepositExpressQueueRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	value := new(*big.Int)
 	if err := depositSettingsContract.Call(opts, value, "getExpressQueueRate"); err != nil {
-		return nil, fmt.Errorf("error getting deposit queue rate: %w", err)
+		return 0, fmt.Errorf("error getting deposit queue rate: %w", err)
 	}
-	return *value, nil
+	return (*value).Uint64(), nil
 }
 
 func ProposeExpressQueueRate(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
@@ -179,16 +179,16 @@ func EstimateProposeExpressQueueRateGas(rp *rocketpool.RocketPool, value *big.In
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ExpressQueueRatePath), DepositSettingsContractName, ExpressQueueRatePath, value, blockNumber, treeNodes, opts)
 }
 
-func GetExpressQueueTicketsBaseProvision(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetExpressQueueTicketsBaseProvision(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
 	value := new(*big.Int)
 	if err := depositSettingsContract.Call(opts, value, "getExpressQueueTicketsBaseProvision"); err != nil {
-		return nil, fmt.Errorf("error getting express queue tickets base provision: %w", err)
+		return 0, fmt.Errorf("error getting express queue tickets base provision: %w", err)
 	}
-	return *value, nil
+	return (*value).Uint64(), nil
 }
 
 func ProposeExpressQueueTicketsBaseProvision(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
