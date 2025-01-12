@@ -160,7 +160,7 @@ func EstimateProposeDepositFeeGas(rp *rocketpool.RocketPool, value *big.Int, blo
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DepositFeeSettingPath), DepositSettingsContractName, DepositFeeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-func GetDepositExpressQueueRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetExpressQueueRate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	depositSettingsContract, err := getDepositSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
