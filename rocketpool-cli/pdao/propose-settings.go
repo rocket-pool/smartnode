@@ -79,6 +79,16 @@ func proposeSettingDepositMaximumSocialisedAssignmentsPerDeposit(c *cli.Context,
 	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.MaximumSocializedDepositAssignmentsSettingPath, trueValue)
 }
 
+func proposeSettingDepositExpressQueueRate(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.ExpressQueueRatePath, trueValue)
+}
+
+func proposeSettingDepositExpressQueueTicketsBaseProvision(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.ExpressQueueTicketsBaseProvisionPath, trueValue)
+}
+
 func proposeSettingDepositDepositFee(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
 	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.DepositFeeSettingPath, trueValue)
