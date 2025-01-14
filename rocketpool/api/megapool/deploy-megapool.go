@@ -1,4 +1,4 @@
-package node
+package megapool
 
 import (
 	"github.com/rocket-pool/rocketpool-go/megapool"

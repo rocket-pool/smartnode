@@ -823,20 +823,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
-			{
-				Name:      "deploy-megapool",
-				Usage:     "Deploy a megapool for your node",
-				UsageText: "rocketpool node deploy-megapool",
-				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm deployment",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					return deployMegapool(c)
-				},
-			},
+			
 		},
 	})
 }

@@ -86,6 +86,7 @@ type NodeStatusResponse struct {
 	SignallingAddressFormatted string            `json:"signallingAddressFormatted"`
 	Minipools                  []MinipoolDetails `json:"minipools"`
 	LatestDelegate             common.Address    `json:"latestDelegate"`
+	MegapoolDeployed           bool              `json:"megapoolDeployed"`
 	MegapoolAddress            common.Address    `json:"megapoolAddress"`
 	MegapoolValidatorCount     uint16            `json:"megapoolValidatorCount"`
 	MegapoolNodeDebt           *big.Int          `json:"megapoolNodeDebt"`

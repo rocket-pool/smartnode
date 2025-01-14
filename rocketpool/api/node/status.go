@@ -97,6 +97,10 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	if saturnDeployed {
 		wg.Go(func() error {
+			deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+			if err == nil {
+				response.MegapoolDeployed = deployed
+			}
 			megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
 			if err == nil {
 				response.MegapoolAddress = megapoolAddress

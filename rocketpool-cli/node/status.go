@@ -109,20 +109,25 @@ func getStatus(c *cli.Context) error {
 
 		if status.IsSaturnDeployed {
 			fmt.Printf("%s=== Megapool ===%s\n", colorGreen, colorReset)
-			if status.MegapoolAddress != (common.Address{}) {
+			if status.MegapoolDeployed {
 				fmt.Printf("The node has a megapool deployed at %s%s%s.", colorBlue, status.MegapoolAddress.Hex(), colorReset)
-				fmt.Println()
-				fmt.Printf("The megapool debt is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
-				fmt.Println()
-				fmt.Printf("The megapool refund value is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolRefundValue), 6))
 				fmt.Println()
 				fmt.Printf("The megapool has %d validators.", status.MegapoolValidatorCount)
 				fmt.Println()
+				if status.MegapoolNodeDebt.Cmp(big.NewInt(0)) > 0 {
+					fmt.Printf("The megapool debt is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
+					fmt.Println()
+				}
+				if status.MegapoolRefundValue.Cmp(big.NewInt(0)) > 0 {
+					fmt.Printf("The megapool refund value is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolRefundValue), 6))
+					fmt.Println()
+				}
 			} else {
 				fmt.Println("The node does not have a megapool deployed yet.")
 				fmt.Println()
 			}
 			fmt.Printf("The node has %d express tickets.", status.ExpressTicketCount)
+			fmt.Println()
 			fmt.Println()
 		}
 

@@ -13,7 +13,58 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Aliases: aliases,
 		Usage:   "Manage the node's megapool",
 		Subcommands: []cli.Command{
+			{
+				Name:      "deploy-megapool",
+				Usage:     "Deploy a megapool for your node",
+				UsageText: "rocketpool node deploy-megapool",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm deployment",
+					},
+				},
+				Action: func(c *cli.Context) error {
+					return deployMegapool(c)
+				},
+			},
+			{
+				Name:      "deposit",
+				Aliases:   []string{"d"},
+				Usage:     "Make a deposit and create a new validator on the megapool",
+				UsageText: "rocketpool node deposit [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "amount, a",
+						Usage: "The amount of ETH to deposit",
+					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm deposit",
+					},
+					cli.BoolFlag{
+						Name:  "use-express-ticket, e",
+						Usage: "Use an express ticket to create a new validator",
+					},
+				},
+				Action: func(c *cli.Context) error {
 
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Validate flags
+					if c.String("amount") != "" {
+						if _, err := cliutils.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
+							return err
+						}
+					}
+
+					// Run
+					return nodeMegapoolDeposit(c)
+
+				},
+			},
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},

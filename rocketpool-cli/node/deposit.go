@@ -51,7 +51,8 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	if saturnDeployed.IsSaturnDeployed {
-		return nodeMegapoolDeposit(c)
+		fmt.Println("Saturn 1 is deployed and this command is deprecated. Use `rocketpool megapool deposit` instead.")
+		return nil
 	}
 
 	fmt.Println("Your eth2 client is on the correct network.")
@@ -330,19 +331,6 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	}
 
 	fmt.Println("Your eth2 client is on the correct network.")
-	fmt.Println()
-
-	// Get the node's registration status
-	smoothie, err := rp.NodeGetSmoothingPoolRegistrationStatus()
-	if err != nil {
-		return err
-	}
-
-	if !smoothie.NodeRegistered {
-		fmt.Println("Your node is not opted into the smoothing pool.")
-	} else {
-		fmt.Println("Your node is currently opted into the smoothing pool.")
-	}
 	fmt.Println()
 
 	// If hotfix is live and voting isn't initialized, display a warning
