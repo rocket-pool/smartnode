@@ -84,6 +84,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 			{
 				Name:      "repay-debt",
+				Aliases:   []string{"r"},
 				Usage:     "Repay megapool debt",
 				UsageText: "rocketpool megapool repay-debt amount",
 				Flags: []cli.Flag{

@@ -33,6 +33,9 @@ func repayDebt(c *cli.Context, amount float64) error {
 		if canRepay.NotEnoughDebt {
 			fmt.Println("Not enough megapool debt to repay.")
 		}
+		if canRepay.NotEnoughBalance {
+			fmt.Println("Not enough balance to repay megapool debt.")
+		}
 		return nil
 	}
 

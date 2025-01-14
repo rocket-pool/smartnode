@@ -95,6 +95,7 @@ func canRepayDebt(c *cli.Context, amount *big.Int) (*api.CanRepayDebtResponse, e
 	if err == nil {
 		response.GasInfo = gasInfo
 	}
+	response.CanRepay = true
 
 	return &response, nil
 

@@ -103,7 +103,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Get amount
-					amount, err := cliutils.ValidatePositiveWeiAmount(c.Args().Get(0), "amount")
+					amount, err := cliutils.ValidatePositiveWeiAmount("amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
