@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -85,6 +86,38 @@ func (c *Client) ExitQueue(validatorIndex uint64, expressQueue bool) (api.ExitQu
 	}
 	if response.Error != "" {
 		return api.ExitQueueResponse{}, fmt.Errorf("Could not exit queue: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether a megapool can have its auto-upgrade setting changed
+func (c *Client) CanSetUseLatestDelegateMegapool(address common.Address, setting bool) (api.MegapoolCanSetUseLatestDelegateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-set-use-latest-delegate %s %t", address.Hex(), setting))
+	if err != nil {
+		return api.MegapoolCanSetUseLatestDelegateResponse{}, fmt.Errorf("Could not get can set use latest delegate for megapool status: %w", err)
+	}
+	var response api.MegapoolCanSetUseLatestDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.MegapoolCanSetUseLatestDelegateResponse{}, fmt.Errorf("Could not decode can set use latest delegate for megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.MegapoolCanSetUseLatestDelegateResponse{}, fmt.Errorf("Could not get can set use latest delegate for megapool status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Change a megapool's auto-upgrade setting
+func (c *Client) SetUseLatestDelegateMegapool(address common.Address, setting bool) (api.MegapoolSetUseLatestDelegateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool set-use-latest-delegate %s %t", address.Hex(), setting))
+	if err != nil {
+		return api.MegapoolSetUseLatestDelegateResponse{}, fmt.Errorf("Could not set use latest delegate for megapool: %w", err)
+	}
+	var response api.MegapoolSetUseLatestDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.MegapoolSetUseLatestDelegateResponse{}, fmt.Errorf("Could not decode set use latest delegate for megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.MegapoolSetUseLatestDelegateResponse{}, fmt.Errorf("Could not set use latest delegate for megapool: %s", response.Error)
 	}
 	return response, nil
 }

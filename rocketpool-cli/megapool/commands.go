@@ -138,6 +138,28 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					return exitQueue(c)
 				},
 			},
+			{
+				Name:      "set-use-latest-delegate",
+				Aliases:   []string{"l"},
+				Usage:     "Use this to enable or disable the \"use-latest-delegate\" flag on the node's megapool. If enabled, the megapool will ignore its current delegate contract and always use whatever the latest delegate is.",
+				UsageText: "rocketpool megapool set-use-latest-delegate [options] true/false",
+
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					setting, err := cliutils.ValidateBool("setting", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return setUseLatestDelegateMegapool(c, setting)
+
+				},
+			},
 		},
 	})
 }

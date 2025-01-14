@@ -172,6 +172,77 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "can-set-use-latest-delegate",
+				Usage:     "Check whether the 'always use latest delegate' toggle can be set",
+				UsageText: "rocketpool api megapool can-set-use-latest-delegate megapool-address setting",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					setting, err := cliutils.ValidateBool("setting", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canSetUseLatestDelegate(c, megapoolAddress, setting))
+					return nil
+
+				},
+			},
+			{
+				Name:      "set-use-latest-delegate",
+				Usage:     "Set whether or not to ignore the megapool's current delegate, and always use the latest delegate instead",
+				UsageText: "rocketpool api megapool set-use-latest-delegate setting",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					setting, err := cliutils.ValidateBool("setting", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(setUseLatestDelegate(c, megapoolAddress, setting))
+					return nil
+
+				},
+			},
+			{
+				Name:      "get-delegate",
+				Usage:     "Gets the address of the current delegate contract used by the megapool",
+				UsageText: "rocketpool api megapool get-delegate megapool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getDelegate(c, megapoolAddress))
+					return nil
+
+				},
+			},
 		},
 	})
 }

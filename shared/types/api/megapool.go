@@ -4,6 +4,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
 type MegapoolStatusResponse struct {
@@ -23,4 +24,21 @@ type MegapoolDetails struct {
 	PendingRewards         *big.Int       `json:"pendingRewards"`
 	NodeExpressTicketCount uint64         `json:"nodeExpressTicketCount"`
 	UseLatestDelegate      bool           `json:"useLatestDelegate"`
+}
+
+type MegapoolGetDelegateResponse struct {
+	Status  string         `json:"status"`
+	Error   string         `json:"error"`
+	Address common.Address `json:"address"`
+}
+
+type MegapoolCanSetUseLatestDelegateResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type MegapoolSetUseLatestDelegateResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
 }

@@ -40,7 +40,7 @@ func getStatus(c *cli.Context) error {
 	fmt.Printf("Megapool Deployed: %t\n", status.Megapool.Deployed)
 	fmt.Printf("Megapool Refund Value: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.RefundValue), 6))
 	fmt.Printf("Megapool Pending Rewards: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.PendingRewards), 6))
-	fmt.Printf("Megapool Validator Count:%d \n", status.Megapool.ValidatorCount)
+	fmt.Printf("Megapool Validator Count: %d \n", status.Megapool.ValidatorCount)
 	fmt.Printf("Node Express Ticket Count: %d\n", status.Megapool.NodeExpressTicketCount)
 
 	return nil
