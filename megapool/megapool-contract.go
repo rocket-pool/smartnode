@@ -270,6 +270,38 @@ func (mp *megapoolV1) Stake(validatorId uint32, validatorSignature rptypes.Valid
 	return tx.Hash(), nil
 }
 
+// Estimate the gas of SetUseLatestDelegate
+func (mp *megapoolV1) EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "setUseLatestDelegate", setting)
+}
+
+// If set to true, will automatically use the latest delegate contract
+func (mp *megapoolV1) SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "setUseLatestDelegate", setting)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error setting use latest delegate for megapool %s: %w", mp.Address.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
+// Returns the address of the megapool's stored delegate
+func (mp *megapoolV1) GetDelegate(opts *bind.CallOpts) (common.Address, error) {
+	address := new(common.Address)
+	if err := mp.Contract.Call(opts, address, "getDelegate"); err != nil {
+		return common.Address{}, fmt.Errorf("error getting delegate for megapool %s: %w", mp.Address.Hex(), err)
+	}
+	return *address, nil
+}
+
+// Returns the delegate which will be used when calling this minipool taking into account useLatestDelegate setting
+func (mp *megapoolV1) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, error) {
+	address := new(common.Address)
+	if err := mp.Contract.Call(opts, address, "getEffectiveDelegate"); err != nil {
+		return common.Address{}, fmt.Errorf("error getting effective delegate for megapool %s: %w", mp.Address.Hex(), err)
+	}
+	return *address, nil
+}
+
 // Create a megapool contract directly from its ABI
 func createMegapoolContractFromAbi(rp *rocketpool.RocketPool, address common.Address, abi *abi.ABI) (*rocketpool.Contract, error) {
 	// Create and return

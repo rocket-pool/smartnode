@@ -10,7 +10,7 @@ import (
 )
 
 // Returns true if this megapool always uses the latest delegate contract
-func getUseLatestDelegate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+func GetUseLatestDelegate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
 	megapoolProxy, err := getRocketMegapoolProxy(rp, opts)
 	if err != nil {
 		return false, err
@@ -22,8 +22,8 @@ func getUseLatestDelegate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool,
 	return *isUsingLatestDelegate, nil
 }
 
-// Upgrade this megapool to the latest network delegate contract
-func getDelegate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Address, error) {
+// Returns the address of the megapool's stored delegate
+func GetDelegate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Address, error) {
 	megapoolProxy, err := getRocketMegapoolProxy(rp, opts)
 	if err != nil {
 		return common.Address{}, err
@@ -36,7 +36,7 @@ func getDelegate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Address
 }
 
 // Returns the delegate which will be used when calling this megapool taking into account useLatestDelegate setting
-func getEffectiveDelegate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Address, error) {
+func GetEffectiveDelegate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Address, error) {
 	megapoolProxy, err := getRocketMegapoolProxy(rp, opts)
 	if err != nil {
 		return common.Address{}, err
@@ -49,7 +49,7 @@ func getEffectiveDelegate(rp *rocketpool.RocketPool, opts *bind.CallOpts) (commo
 }
 
 // Returns true if the megapools current delegate has expired
-func getDelegateExpired(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+func GetDelegateExpired(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
 	megapoolProxy, err := getRocketMegapoolProxy(rp, opts)
 	if err != nil {
 		return false, err
@@ -59,13 +59,13 @@ func getDelegateExpired(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, e
 		return false, fmt.Errorf("error checking if the megapool's delegate has expired:, %w", err)
 	}
 	return *delegateExpired, nil
-
 }
 
-var RocketMegapoolProxyLock sync.Mutex
+// Get contracts
+var rocketMegapoolProxyLock sync.Mutex
 
 func getRocketMegapoolProxy(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	RocketMegapoolProxyLock.Lock()
-	defer RocketMegapoolProxyLock.Unlock()
+	rocketMegapoolProxyLock.Lock()
+	defer rocketMegapoolProxyLock.Unlock()
 	return rp.GetContract("rocketMegapoolProxy", opts)
 }
