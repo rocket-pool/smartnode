@@ -3,7 +3,9 @@ package megapool
 import (
 	"fmt"
 
+	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/utils/math"
 	"github.com/urfave/cli"
 )
 
@@ -32,10 +34,14 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("Node Account Address Formatted %s\n", status.NodeAccountAddressFormatted)
-	fmt.Printf("Megapool Address: %s\n", status.Megapool.MegapoolAddress)
-	fmt.Printf("Megapool Address Formatted: %s\n", status.Megapool.MegapoolAddressFormatted)
-	fmt.Printf("Megapool Deployed: %t\n", status.Megapool.MegapoolDeployed)
+	fmt.Printf("Megapool Address: %s\n", status.Megapool.Address)
+	fmt.Printf("Megapool Delegate Address: %s\n", status.Megapool.DelegateAddress)
+	fmt.Printf("Megapool Delegate Expiry Block: %d\n", status.Megapool.DelegateExpiry)
+	fmt.Printf("Megapool Deployed: %t\n", status.Megapool.Deployed)
+	fmt.Printf("Megapool Refund Value: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.RefundValue), 6))
+	fmt.Printf("Megapool Pending Rewards: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.PendingRewards), 6))
+	fmt.Printf("Megapool Validator Count:%d \n", status.Megapool.ValidatorCount)
+	fmt.Printf("Node Express Ticket Count: %d\n", status.Megapool.NodeExpressTicketCount)
 
 	return nil
 }

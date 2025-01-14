@@ -1,18 +1,26 @@
 package api
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"math/big"
+
+	"github.com/ethereum/go-ethereum/common"
+)
 
 type MegapoolStatusResponse struct {
-	Status                      string          `json:"status"`
-	Error                       string          `json:"error"`
-	Megapool                    MegapoolDetails `json:"megapoolDetails"`
-	NodeAccount                 common.Address  `json:"nodeAccount"`
-	NodeAccountAddressFormatted string          `json:"nodeAccountAddressFormatted"`
+	Status   string          `json:"status"`
+	Error    string          `json:"error"`
+	Megapool MegapoolDetails `json:"megapoolDetails"`
 }
 
 type MegapoolDetails struct {
-	MegapoolAddress          common.Address `json:"address"`
-	MegapoolAddressFormatted string         `json:"megapoolAddressFormatted"`
-	MegapoolDeployed         bool           `json:"megapoolDeployed"`
-	DelegateExpiry           uint64         `json:"DelegateExpiry"`
+	Address                common.Address `json:"address"`
+	DelegateAddress        common.Address `json:"delegate"`
+	Deployed               bool           `json:"deployed"`
+	ValidatorCount         uint16         `json:"validatorCount"`
+	NodeDebt               *big.Int       `json:"nodeDebt"`
+	RefundValue            *big.Int       `json:"refundValue"`
+	DelegateExpiry         uint64         `json:"delegateExpiry"`
+	PendingRewards         *big.Int       `json:"pendingRewards"`
+	NodeExpressTicketCount uint64         `json:"nodeExpressTicketCount"`
+	UseLatestDelegate      bool           `json:"useLatestDelegate"`
 }
