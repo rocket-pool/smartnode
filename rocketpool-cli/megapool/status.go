@@ -34,6 +34,12 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
+	// Return if megapool isn't deployed
+	if !status.Megapool.Deployed {
+		fmt.Println("The node does not have a megapool.")
+		return nil
+	}
+
 	fmt.Printf("Megapool Address: %s\n", status.Megapool.Address)
 	fmt.Printf("Megapool Delegate Address: %s\n", status.Megapool.DelegateAddress)
 	fmt.Printf("Megapool Delegate Expiry Block: %d\n", status.Megapool.DelegateExpiry)
