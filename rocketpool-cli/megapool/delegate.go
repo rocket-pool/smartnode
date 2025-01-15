@@ -49,7 +49,22 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 		return nil
 	}
 
+	// Update flag
+	response, err := rp.SetUseLatestDelegateMegapool(megapoolAddress, setting)
+	if err != nil {
+		fmt.Printf("Could not set use latest delegate for megapool %s: %s. \n", megapoolAddress.Hex(), err)
+		return nil
+	}
+
+	// Log and wait for the auto-upgrade setting update
+	fmt.Printf("Updating the auto-upgrade setting for megapool %s...\n", megapoolAddress.Hex())
+	cliutils.PrintTransactionHash(rp, response.TxHash)
+	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+		return err
+	}
+
 	// Return
+	fmt.Printf("Successfully updated the setting for megapool %s.\n", megapoolAddress.Hex())
 	return nil
 
 }
