@@ -173,6 +173,27 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "get-use-latest-delegate",
+				Usage:     "Gets the current setting of the 'always use latest delegate' toggle",
+				UsageText: "rocketpool api megapool get-use-latest-delegate megapool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getUseLatestDelegate(c, megapoolAddress))
+					return nil
+
+				},
+			},
+			{
 				Name:      "can-set-use-latest-delegate",
 				Usage:     "Check whether the 'always use latest delegate' toggle can be set",
 				UsageText: "rocketpool api megapool can-set-use-latest-delegate megapool-address setting",

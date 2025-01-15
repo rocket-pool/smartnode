@@ -43,6 +43,14 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 			if err == nil {
 				details.PendingRewards = pendingRewards
 			}
+			useLatest, err := mp.GetUseLatestDelegate(nil)
+			if err == nil {
+				details.UseLatestDelegate = useLatest
+			}
+			delegateAddress, err := mp.GetDelegate(nil)
+			if err == nil {
+				details.DelegateAddress = delegateAddress
+			}
 		}
 		return err
 	})
@@ -63,18 +71,18 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return err
 	})
 
-	wg.Go(func() error {
-		megapoolDelegate, err := rp.GetContract("rocketMegapoolDelegate", nil)
-		if err == nil {
-			details.DelegateAddress = *megapoolDelegate.Address
-		}
+	// wg.Go(func() error {
+	// 	megapoolDelegate, err := rp.GetContract("rocketMegapoolDelegate", nil)
+	// 	if err == nil {
+	// 		details.DelegateAddress = *megapoolDelegate.Address
+	// 	}
 
-		megapoolDelegateExpiry, err := megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, nil)
-		if err == nil {
-			details.DelegateExpiry = megapoolDelegateExpiry
-		}
-		return err
-	})
+	// 	megapoolDelegateExpiry, err := megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, nil)
+	// 	if err == nil {
+	// 		details.DelegateExpiry = megapoolDelegateExpiry
+	// 	}
+	// 	return err
+	// })
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {

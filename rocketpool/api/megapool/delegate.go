@@ -17,6 +17,38 @@ import (
 
 // func getEffectiveDelegate()
 
+func getUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolGetUseLatestDelegateResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.MegapoolGetUseLatestDelegateResponse{}
+
+	// Create megapool
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get data
+	setting, err := mega.GetUseLatestDelegate(nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting use latest delegate: %w", err)
+	}
+
+	//Return response
+	response.Setting = setting
+	return &response, nil
+
+}
+
 func canSetUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, setting bool) (*api.MegapoolCanSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -56,7 +88,7 @@ func canSetUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, set
 
 }
 
-func setUseLatestDelegate(c *cli.Context, megapoolAdddress common.Address, setting bool) (*api.MegapoolSetUseLatestDelegateResponse, error) {
+func setUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, setting bool) (*api.MegapoolSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -74,7 +106,7 @@ func setUseLatestDelegate(c *cli.Context, megapoolAdddress common.Address, setti
 	response := api.MegapoolSetUseLatestDelegateResponse{}
 
 	// Create megapool
-	mega, err := megapool.NewMegaPoolV1(rp, megapoolAdddress, nil)
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +161,8 @@ func getDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolG
 		return nil, fmt.Errorf("Error getting delegate: %w", err)
 	}
 	response.Address = address
+
+	// Return response
 	return &response, nil
 
 }

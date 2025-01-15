@@ -23,6 +23,12 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 		return err
 	}
 
+	// Return if megapool isn't deployed
+	if !status.Megapool.Deployed {
+		fmt.Println("The node does not have a megapool.")
+		return nil
+	}
+
 	megapoolAddress := status.Megapool.Address
 
 	// Get the gas estimate

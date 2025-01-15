@@ -44,6 +44,7 @@ func getStatus(c *cli.Context) error {
 	fmt.Printf("Megapool Delegate Address: %s\n", status.Megapool.DelegateAddress)
 	fmt.Printf("Megapool Delegate Expiry Block: %d\n", status.Megapool.DelegateExpiry)
 	fmt.Printf("Megapool Deployed: %t\n", status.Megapool.Deployed)
+	fmt.Printf("Megapool UseLatestDelegate: %t\n", status.Megapool.UseLatestDelegate)
 	fmt.Printf("Megapool Refund Value: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.RefundValue), 6))
 	fmt.Printf("Megapool Pending Rewards: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.PendingRewards), 6))
 	fmt.Printf("Megapool Validator Count: %d \n", status.Megapool.ValidatorCount)

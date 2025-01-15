@@ -42,3 +42,9 @@ type MegapoolSetUseLatestDelegateResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type MegapoolGetUseLatestDelegateResponse struct {
+	Status  string `json:"status"`
+	Error   string `json:"error"`
+	Setting bool   `json:"setting"`
+}
