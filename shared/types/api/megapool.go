@@ -16,7 +16,7 @@ type MegapoolStatusResponse struct {
 type MegapoolDetails struct {
 	Address                  common.Address `json:"address"`
 	DelegateAddress          common.Address `json:"delegate"`
-	EffectiveDelegateAddress common.Address `json:"effectiveDelegateAddress`
+	EffectiveDelegateAddress common.Address `json:"effectiveDelegateAddress"`
 	Deployed                 bool           `json:"deployed"`
 	ValidatorCount           uint16         `json:"validatorCount"`
 	NodeDebt                 *big.Int       `json:"nodeDebt"`
@@ -34,9 +34,10 @@ type MegapoolGetDelegateResponse struct {
 }
 
 type MegapoolCanSetUseLatestDelegateResponse struct {
-	Status  string             `json:"status"`
-	Error   string             `json:"error"`
-	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+	Status                string             `json:"status"`
+	Error                 string             `json:"error"`
+	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
+	MatchesCurrentSetting bool               `json:"matchesCurrentSetting"`
 }
 type MegapoolSetUseLatestDelegateResponse struct {
 	Status string      `json:"status"`

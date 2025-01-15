@@ -32,13 +32,21 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 	megapoolAddress := status.Megapool.Address
 
 	// Get the gas estimate
-	canSet, err := rp.CanSetUseLatestDelegateMegapool(megapoolAddress, setting)
+	canResponse, err := rp.CanSetUseLatestDelegateMegapool(megapoolAddress, setting)
 	if err != nil {
 		return fmt.Errorf("error checking if megapool %s could have its use-latest-delegate flag changed: %w", megapoolAddress.Hex(), err)
 	}
+	if canResponse.MatchesCurrentSetting == true {
+		if setting == true {
+			fmt.Printf("Could not enable use-latest-delegate on the node's megapool, the setting is already enabled.")
+		} else {
+			fmt.Printf("Could not disable use-latest-delegate on the node's megapool, the setting is already disabled.")
+		}
+		return nil
+	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSet.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
@@ -64,7 +72,7 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 	}
 
 	// Return
-	fmt.Printf("Successfully updated the setting for megapool %s.\n", megapoolAddress.Hex())
+	fmt.Printf("Successfully updated the auto-upgrade setting for megapool %s.\n", megapoolAddress.Hex())
 	return nil
 
 }

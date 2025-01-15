@@ -70,6 +70,17 @@ func canSetUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, set
 		return nil, err
 	}
 
+	// Return if requested setting change is the same as current setting
+	currentSetting, err := mega.GetUseLatestDelegate(nil)
+	if err != nil {
+		return nil, err
+	}
+	if currentSetting == setting {
+		response.MatchesCurrentSetting = true
+		return &response, nil
+	}
+	response.MatchesCurrentSetting = false
+
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
