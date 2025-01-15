@@ -311,6 +311,20 @@ func (mp *megapoolV1) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address,
 	return *address, nil
 }
 
+// Estimate the gas of DelegateUpgrade
+func (mp *megapoolV1) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "delegateUpgrade")
+}
+
+// Upgrade this megapool to the latest network delegate contract
+func (mp *megapoolV1) DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "delegateUpgrade")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error upgrading delegate for megapool %s: %w", mp.Address.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
 // Create a megapool contract directly from its ABI
 func createMegapoolContractFromAbi(rp *rocketpool.RocketPool, address common.Address, abi *abi.ABI) (*rocketpool.Contract, error) {
 	// Create and return
