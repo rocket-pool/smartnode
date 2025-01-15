@@ -121,3 +121,35 @@ func (c *Client) SetUseLatestDelegateMegapool(address common.Address, setting bo
 	}
 	return response, nil
 }
+
+// Get the megapool's delegate address
+func (c *Client) GetDelegate(address common.Address) (api.MegapoolGetDelegateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool set-use-latest-delegate %s", address.Hex()))
+	if err != nil {
+		return api.MegapoolGetDelegateResponse{}, fmt.Errorf("Could get delegate for megapool: %w", err)
+	}
+	var response api.MegapoolGetDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.MegapoolGetDelegateResponse{}, fmt.Errorf("Could not decode get delegate for megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.MegapoolGetDelegateResponse{}, fmt.Errorf("Could not get delegate for megapool: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get the megapool's effective delegate address
+func (c *Client) GetEffectiveDelegate(address common.Address) (api.MegapoolGetEffectiveDelegateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool set-use-latest-delegate %s", address.Hex()))
+	if err != nil {
+		return api.MegapoolGetEffectiveDelegateResponse{}, fmt.Errorf("Could get effective delegate for megapool: %w", err)
+	}
+	var response api.MegapoolGetEffectiveDelegateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.MegapoolGetEffectiveDelegateResponse{}, fmt.Errorf("Could not decode get effective delegate for megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.MegapoolGetEffectiveDelegateResponse{}, fmt.Errorf("Could not get effective delegate for megapool: %s", response.Error)
+	}
+	return response, nil
+}

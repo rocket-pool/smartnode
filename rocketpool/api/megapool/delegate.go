@@ -15,8 +15,6 @@ import (
 
 // func delegateUpgrade()
 
-// func getEffectiveDelegate()
-
 func getUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolGetUseLatestDelegateResponse, error) {
 
 	// Get services
@@ -165,4 +163,35 @@ func getDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolG
 	// Return response
 	return &response, nil
 
+}
+
+func getEffectiveDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolGetEffectiveDelegateResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.MegapoolGetEffectiveDelegateResponse{}
+
+	// Create Megapool
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get data
+	address, err := mega.GetEffectiveDelegate(nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting delegate: %w", err)
+	}
+
+	// Return response
+	response.Address = address
+	return &response, nil
 }

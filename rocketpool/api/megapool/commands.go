@@ -264,6 +264,27 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "get-effective-delegate",
+				Usage:     "Gets the address of the effective delegate contract used by the megapool, which takes the UseLatestDelegate setting into account",
+				UsageText: "rocketpool api megapool get-effective-delegate megapool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getEffectiveDelegate(c, megapoolAddress))
+					return nil
+
+				},
+			},
 		},
 	})
 }
