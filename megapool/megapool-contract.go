@@ -284,6 +284,15 @@ func (mp *megapoolV1) SetUseLatestDelegate(setting bool, opts *bind.TransactOpts
 	return tx.Hash(), nil
 }
 
+// Getter for useLatestDelegate setting
+func (mp *megapoolV1) GetUseLatestDelegate(opts *bind.CallOpts) (bool, error) {
+	setting := new(bool)
+	if err := mp.Contract.Call(opts, setting, "getUseLatestDelegate"); err != nil {
+		return false, fmt.Errorf("error getting use latest delegate for megapool %s: %w", mp.Address.Hex(), err)
+	}
+	return *setting, nil
+}
+
 // Returns the address of the megapool's stored delegate
 func (mp *megapoolV1) GetDelegate(opts *bind.CallOpts) (common.Address, error) {
 	address := new(common.Address)

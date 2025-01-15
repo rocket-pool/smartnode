@@ -40,6 +40,7 @@ type Megapool interface {
 	Stake(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof validatorProof, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error)
+	GetUseLatestDelegate(opts *bind.CallOpts) (bool, error)
 	GetDelegate(opts *bind.CallOpts) (common.Address, error)
 	GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, error)
 }
