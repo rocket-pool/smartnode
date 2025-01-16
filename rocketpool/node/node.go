@@ -32,19 +32,20 @@ var totalEffectiveStakeCooldown, _ = time.ParseDuration("1h")
 const (
 	MaxConcurrentEth1Requests = 200
 
-	StakePrelaunchMinipoolsColor = color.FgBlue
-	DownloadRewardsTreesColor    = color.FgGreen
-	MetricsColor                 = color.FgHiYellow
-	ManageFeeRecipientColor      = color.FgHiCyan
-	PromoteMinipoolsColor        = color.FgMagenta
-	ReduceBondAmountColor        = color.FgHiBlue
-	DefendPdaoPropsColor         = color.FgYellow
-	VerifyPdaoPropsColor         = color.FgYellow
-	AutoInitVotingPowerColor     = color.FgHiYellow
-	DistributeMinipoolsColor     = color.FgHiGreen
-	ErrorColor                   = color.FgRed
-	WarningColor                 = color.FgYellow
-	UpdateColor                  = color.FgHiWhite
+	StakePrelaunchMinipoolsColor   = color.FgBlue
+	DownloadRewardsTreesColor      = color.FgGreen
+	MetricsColor                   = color.FgHiYellow
+	ManageFeeRecipientColor        = color.FgHiCyan
+	PromoteMinipoolsColor          = color.FgMagenta
+	ReduceBondAmountColor          = color.FgHiBlue
+	DefendPdaoPropsColor           = color.FgYellow
+	VerifyPdaoPropsColor           = color.FgYellow
+	AutoInitVotingPowerColor       = color.FgHiYellow
+	DistributeMinipoolsColor       = color.FgHiGreen
+	ErrorColor                     = color.FgRed
+	WarningColor                   = color.FgYellow
+	UpdateColor                    = color.FgHiWhite
+	PrestakeMegapoolValidatorColor = color.FgHiYellow
 )
 
 // Register node command
@@ -167,6 +168,11 @@ func run(c *cli.Context) error {
 			return err
 		}
 	}
+	var prestakeMegapoolValidator *prestakeMegapoolValidator
+	prestakeMegapoolValidator, err = newPrestakeMegapoolValidator(c, log.NewColorLogger(PrestakeMegapoolValidatorColor))
+	if err != nil {
+		return err
+	}
 
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
@@ -255,6 +261,14 @@ func run(c *cli.Context) error {
 			// Run the auto vote initilization check
 			if autoInitVotingPower != nil {
 				if err := autoInitVotingPower.run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+			}
+
+			// Run the megapool prestake check
+			if prestakeMegapoolValidator != nil {
+				if err := prestakeMegapoolValidator.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
