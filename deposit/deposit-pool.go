@@ -30,6 +30,16 @@ func ExitQueue(rp *rocketpool.RocketPool, validatorIndex uint64, expressQueue bo
 	return tx.Hash(), nil
 }
 
+// Estimate the gas required to assign megapools
+func EstimateAssignMegapoolsGas(rp *rocketpool.RocketPool, count uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketDepositPool.GetTransactionGasInfo(opts, "assignMegapools", count)
+}
+
+// Assign megapools
 func AssignMegapools(rp *rocketpool.RocketPool, count uint64, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
