@@ -2,6 +2,7 @@ package deposit
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -14,7 +15,8 @@ func EstimateExitQueueGas(rp *rocketpool.RocketPool, validatorIndex uint64, expr
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketDepositPool.GetTransactionGasInfo(opts, "exitQueue", validatorIndex, expressQueue)
+	validatorIndexBig := big.NewInt(int64(validatorIndex))
+	return rocketDepositPool.GetTransactionGasInfo(opts, "exitQueue", validatorIndexBig, expressQueue)
 }
 
 // Exit the validator queue
@@ -23,7 +25,8 @@ func ExitQueue(rp *rocketpool.RocketPool, validatorIndex uint64, expressQueue bo
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketDepositPool.Transact(opts, "exitQueue", validatorIndex, expressQueue)
+	validatorIndexBig := big.NewInt(int64(validatorIndex))
+	tx, err := rocketDepositPool.Transact(opts, "exitQueue", validatorIndexBig, expressQueue)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error exiting validator queue: %w", err)
 	}
