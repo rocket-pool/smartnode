@@ -36,8 +36,11 @@ func canExitQueue(c *cli.Context, validatorIndex uint64, expressQueue bool) (*ap
 		return nil, err
 	}
 	gasInfo, err := deposit.EstimateExitQueueGas(rp, validatorIndex, expressQueue, opts)
-	if err == nil {
+	if err != nil {
+		return nil, err
+	} else {
 		response.GasInfo = gasInfo
+		response.CanExit = true
 	}
 
 	return &response, nil

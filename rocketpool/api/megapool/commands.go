@@ -121,18 +121,18 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
 
 					// Check the validator-index
-					validatorIndex, err := cliutils.ValidatePositiveUint(c.Args().Get(0), "validator-index")
+					validatorIndex, err := cliutils.ValidateUint("validator-index", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Check the express-queue value
-					expressQueue, err := cliutils.ValidateBool(c.Args().Get(1), "express-queue")
+					expressQueue, err := cliutils.ValidateBool("express-queue", c.Args().Get(1))
 					if err != nil {
 						return err
 					}

@@ -39,6 +39,8 @@ func exitQueue(c *cli.Context) error {
 
 	var expressQueue bool
 
+	expressQueue = c.Bool("express-queue")
+
 	// Check whether the validator can be exited
 	canExit, err := rp.CanExitQueue(validatorIndex, expressQueue)
 	if err != nil {
