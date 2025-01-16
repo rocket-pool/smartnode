@@ -11,9 +11,90 @@ import (
 	"github.com/urfave/cli"
 )
 
-// func canDelegateUpgrade()
+func canDelegateUpgrade(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolCanDelegateUpgradeResponse, error) {
 
-// func delegateUpgrade()
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.MegapoolCanDelegateUpgradeResponse{}
+
+	// Create megapool
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// get gas estimate
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+	gasInfo, err := mega.EstimateDelegateUpgradeGas(opts)
+	if err == nil {
+		response.GasInfo = gasInfo
+	}
+
+	// Return response
+	return &response, nil
+}
+
+func delegateUpgrade(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolDelegateUpgradeResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.MegapoolDelegateUpgradeResponse{}
+
+	// Create megapool
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	}
+
+	// Upgrade
+	hash, err := mega.DelegateUpgrade(opts)
+	if err != nil {
+		return nil, err
+	}
+	response.TxHash = hash
+
+	// Return response
+	return &response, nil
+}
 
 func getUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolGetUseLatestDelegateResponse, error) {
 

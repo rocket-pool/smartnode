@@ -161,6 +161,22 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "delegate-upgrade",
+				Aliases:   []string{"u"},
+				Usage:     "Upgrade a megapool's delegate contract to the latest version",
+				UsageText: "rocketpool megapool delegate-upgrade",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					return delegateUpgradeMegapool(c)
+
+				},
+			},
 		},
 	})
 }

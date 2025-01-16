@@ -285,6 +285,48 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "can-delegate-upgrade",
+				Usage:     "Check whether the megapool delegate can be upgraded",
+				UsageText: "rocketpool api megapool can-delegate-upgrade megapool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canDelegateUpgrade(c, megapoolAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "delegate-upgrade",
+				Usage:     "Upgrade this megapool to the latest network delegate contract",
+				UsageText: "rocketpool api megapool delegate-upgrade megapool-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(delegateUpgrade(c, megapoolAddress))
+					return nil
+
+				},
+			},
 		},
 	})
 }

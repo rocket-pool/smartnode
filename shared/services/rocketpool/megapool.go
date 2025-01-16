@@ -90,6 +90,38 @@ func (c *Client) ExitQueue(validatorIndex uint64, expressQueue bool) (api.ExitQu
 	return response, nil
 }
 
+// Get the gas info for a megapool delegate upgrade
+func (c *Client) CanDelegateUpgradeMegapool(address common.Address) (api.MegapoolCanDelegateUpgradeResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-delegate-upgrade %s", address.Hex()))
+	if err != nil {
+		return api.MegapoolCanDelegateUpgradeResponse{}, fmt.Errorf("Could not get can delegate upgrade megapool status: %w", err)
+	}
+	var response api.MegapoolCanDelegateUpgradeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.MegapoolCanDelegateUpgradeResponse{}, fmt.Errorf("Could not decode can delegate upgrade megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.MegapoolCanDelegateUpgradeResponse{}, fmt.Errorf("Could not get can delegate upgrade megapool status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Upgrade the megapool delegate
+func (c *Client) DelegateUpgradeMegapool(address common.Address) (api.MegapoolDelegateUpgradeResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool delegate-upgrade %s", address.Hex()))
+	if err != nil {
+		return api.MegapoolDelegateUpgradeResponse{}, fmt.Errorf("Could not upgrade megapool delegate: %w", err)
+	}
+	var response api.MegapoolDelegateUpgradeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.MegapoolDelegateUpgradeResponse{}, fmt.Errorf("Could not decode megapool delegate upgrade response: %w", err)
+	}
+	if response.Error != "" {
+		return api.MegapoolDelegateUpgradeResponse{}, fmt.Errorf("Could not upgrade megapool delegate: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Get the megapool's auto-upgrade setting
 func (c *Client) GetUseLatestDelegate(address common.Address) (api.MegapoolGetUseLatestDelegateResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool get-use-latest-delegate %s", address.Hex()))

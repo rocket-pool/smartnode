@@ -43,6 +43,7 @@ func getStatus(c *cli.Context) error {
 	fmt.Printf("Megapool Address: %s\n", status.Megapool.Address)
 	fmt.Printf("Megapool Delegate Address: %s\n", status.Megapool.DelegateAddress)
 	fmt.Printf("Megapool Effective Delegate Address: %s\n", status.Megapool.EffectiveDelegateAddress)
+	fmt.Printf("Megapool Latest Delegate Address %s\n", status.LatestDelegate)
 	fmt.Printf("Megapool Delegate Expiry Block: %d\n", status.Megapool.DelegateExpiry)
 	fmt.Printf("Megapool Deployed: %t\n", status.Megapool.Deployed)
 	fmt.Printf("Megapool UseLatestDelegate: %t\n", status.Megapool.UseLatestDelegate)

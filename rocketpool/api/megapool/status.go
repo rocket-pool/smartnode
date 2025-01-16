@@ -1,6 +1,8 @@
 package megapool
 
 import (
+	"fmt"
+
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/urfave/cli"
@@ -41,8 +43,15 @@ func getStatus(c *cli.Context) (*api.MegapoolStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	response.Megapool = details
 
+	// Get latest delegate address
+	delegate, err := rp.GetContract("rocketMegapoolDelegate", nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting latest minipool delegate contract: %w", err)
+	}
+	response.LatestDelegate = *delegate.Address
+
+	// Return response
 	return &response, nil
 }

@@ -8,9 +8,10 @@ import (
 )
 
 type MegapoolStatusResponse struct {
-	Status   string          `json:"status"`
-	Error    string          `json:"error"`
-	Megapool MegapoolDetails `json:"megapoolDetails"`
+	Status         string          `json:"status"`
+	Error          string          `json:"error"`
+	Megapool       MegapoolDetails `json:"megapoolDetails"`
+	LatestDelegate common.Address  `json:"latestDelegate"`
 }
 
 type MegapoolDetails struct {
@@ -25,6 +26,17 @@ type MegapoolDetails struct {
 	PendingRewards           *big.Int       `json:"pendingRewards"`
 	NodeExpressTicketCount   uint64         `json:"nodeExpressTicketCount"`
 	UseLatestDelegate        bool           `json:"useLatestDelegate"`
+}
+
+type MegapoolCanDelegateUpgradeResponse struct {
+	Status  string             `json:"status"`
+	Error   string             `json:"error"`
+	GasInfo rocketpool.GasInfo `json:"gasInfo"`
+}
+type MegapoolDelegateUpgradeResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
 }
 
 type MegapoolGetDelegateResponse struct {
