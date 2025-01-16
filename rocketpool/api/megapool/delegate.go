@@ -15,8 +15,6 @@ import (
 
 // func delegateUpgrade()
 
-// func getEffectiveDelegate()
-
 func getUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolGetUseLatestDelegateResponse, error) {
 
 	// Get services
@@ -71,6 +69,17 @@ func canSetUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, set
 	if err != nil {
 		return nil, err
 	}
+
+	// Return if requested setting change is the same as current setting
+	currentSetting, err := mega.GetUseLatestDelegate(nil)
+	if err != nil {
+		return nil, err
+	}
+	if currentSetting == setting {
+		response.MatchesCurrentSetting = true
+		return &response, nil
+	}
+	response.MatchesCurrentSetting = false
 
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
@@ -165,4 +174,35 @@ func getDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolG
 	// Return response
 	return &response, nil
 
+}
+
+func getEffectiveDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolGetEffectiveDelegateResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.MegapoolGetEffectiveDelegateResponse{}
+
+	// Create Megapool
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get data
+	address, err := mega.GetEffectiveDelegate(nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting delegate: %w", err)
+	}
+
+	// Return response
+	response.Address = address
+	return &response, nil
 }

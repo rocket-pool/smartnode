@@ -51,6 +51,10 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 			if err == nil {
 				details.DelegateAddress = delegateAddress
 			}
+			effectiveDelegateAddress, err := mp.GetEffectiveDelegate(nil)
+			if err == nil {
+				details.EffectiveDelegateAddress = effectiveDelegateAddress
+			}
 		}
 		return err
 	})
