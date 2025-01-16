@@ -30,14 +30,20 @@ func ExitQueue(rp *rocketpool.RocketPool, validatorIndex uint64, expressQueue bo
 	return tx.Hash(), nil
 }
 
-func GetQueueTop(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Address, error) {
+// Struct to hold queue top (address of the validator at the top of the queue and a boolean indicating if the assignment is possible)
+type QueueTop struct {
+	MegapoolAddress common.Address
+	CanAssign       bool
+}
+
+func GetQueueTop(rp *rocketpool.RocketPool, opts *bind.CallOpts) (QueueTop, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, opts)
 	if err != nil {
-		return common.Address{}, err
+		return QueueTop{}, err
 	}
-	queueTop := new(common.Address)
+	queueTop := new(QueueTop)
 	if err := rocketDepositPool.Call(opts, queueTop, "getQueueTop"); err != nil {
-		return common.Address{}, fmt.Errorf("error getting queue top: %w", err)
+		return QueueTop{}, fmt.Errorf("error getting queue top: %w", err)
 	}
 	return *queueTop, nil
 }
