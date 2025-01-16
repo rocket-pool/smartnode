@@ -29,3 +29,15 @@ func ExitQueue(rp *rocketpool.RocketPool, validatorIndex uint64, expressQueue bo
 	}
 	return tx.Hash(), nil
 }
+
+func GetQueueTop(rp *rocketpool.RocketPool, opts *bind.CallOpts) (common.Address, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, opts)
+	if err != nil {
+		return common.Address{}, err
+	}
+	queueTop := new(common.Address)
+	if err := rocketDepositPool.Call(opts, queueTop, "getQueueTop"); err != nil {
+		return common.Address{}, fmt.Errorf("error getting queue top: %w", err)
+	}
+	return *queueTop, nil
+}
