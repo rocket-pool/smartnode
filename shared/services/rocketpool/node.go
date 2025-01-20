@@ -1114,7 +1114,7 @@ func (c *Client) SendMessage(address common.Address, message []byte) (api.NodeSe
 
 // Check if the node can deploy a megapool
 func (c *Client) CanDeployMegapool() (api.CanDeployMegapoolResponse, error) {
-	responseBytes, err := c.callAPI("node can-deploy-megapool")
+	responseBytes, err := c.callAPI("megapool can-deploy-megapool")
 	if err != nil {
 		return api.CanDeployMegapoolResponse{}, fmt.Errorf("Could not get can-deploy-megapool response: %w", err)
 	}
@@ -1130,7 +1130,7 @@ func (c *Client) CanDeployMegapool() (api.CanDeployMegapoolResponse, error) {
 
 // Deploy a megapool
 func (c *Client) DeployMegapool() (api.DeployMegapoolResponse, error) {
-	responseBytes, err := c.callAPI("node deploy-megapool")
+	responseBytes, err := c.callAPI("megapool deploy-megapool")
 	if err != nil {
 		return api.DeployMegapoolResponse{}, fmt.Errorf("Could not get deploy-megapool response: %w", err)
 	}
