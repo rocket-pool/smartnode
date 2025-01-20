@@ -3,14 +3,14 @@ package megapool
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli"
 )
 
-func canExitQueue(c *cli.Context, validatorIndex uint64, expressQueue bool) (*api.CanExitQueueResponse, error) {
+func canExitQueue(c *cli.Context, validatorIndex uint32) (*api.CanExitQueueResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -23,6 +23,12 @@ func canExitQueue(c *cli.Context, validatorIndex uint64, expressQueue bool) (*ap
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the node account
+	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +41,30 @@ func canExitQueue(c *cli.Context, validatorIndex uint64, expressQueue bool) (*ap
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := deposit.EstimateExitQueueGas(rp, validatorIndex, expressQueue, opts)
+
+	// Check if the megapool is deployed
+	megapoolDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+	if !megapoolDeployed {
+		response.CanExit = false
+		return &response, nil
+	}
+
+	// Get the megapool address
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load the megapool
+	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	gasInfo, err := mp.EstimateDequeueGas(validatorIndex, opts)
 	if err != nil {
 		return nil, err
 	} else {
@@ -47,7 +76,7 @@ func canExitQueue(c *cli.Context, validatorIndex uint64, expressQueue bool) (*ap
 
 }
 
-func exitQueue(c *cli.Context, validatorIndex uint64, expressQueue bool) (*api.ExitQueueResponse, error) {
+func exitQueue(c *cli.Context, validatorIndex uint32) (*api.ExitQueueResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -61,6 +90,11 @@ func exitQueue(c *cli.Context, validatorIndex uint64, expressQueue bool) (*api.E
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	// Get the node account
+	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
 	}
@@ -80,8 +114,20 @@ func exitQueue(c *cli.Context, validatorIndex uint64, expressQueue bool) (*api.E
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Burn rETH
-	hash, err := deposit.ExitQueue(rp, validatorIndex, expressQueue, opts)
+	// Get the megapool address
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load the megapool
+	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Request to exit
+	hash, err := mp.Dequeue(validatorIndex, opts)
 	if err != nil {
 		return nil, err
 	}

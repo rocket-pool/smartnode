@@ -59,8 +59,8 @@ func (c *Client) RepayDebt(amountWei *big.Int) (api.RepayDebtResponse, error) {
 }
 
 // Check whether the node can exit the megapool queue
-func (c *Client) CanExitQueue(validatorIndex uint64, expressQueue bool) (api.CanExitQueueResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-exit-queue %d %t", validatorIndex, expressQueue))
+func (c *Client) CanExitQueue(validatorIndex uint32) (api.CanExitQueueResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-exit-queue %d", validatorIndex))
 	if err != nil {
 		return api.CanExitQueueResponse{}, fmt.Errorf("Could not get can exit queue status: %w", err)
 	}
@@ -75,8 +75,8 @@ func (c *Client) CanExitQueue(validatorIndex uint64, expressQueue bool) (api.Can
 }
 
 // Exit the megapool queue
-func (c *Client) ExitQueue(validatorIndex uint64, expressQueue bool) (api.ExitQueueResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("megapool exit-queue %d %t", validatorIndex, expressQueue))
+func (c *Client) ExitQueue(validatorIndex uint32) (api.ExitQueueResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool exit-queue %d", validatorIndex))
 	if err != nil {
 		return api.ExitQueueResponse{}, fmt.Errorf("Could not exit queue: %w", err)
 	}

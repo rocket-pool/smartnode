@@ -17,12 +17,6 @@ func deployMegapool(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check if the node can deploy a megapool
-	canDeploy, err := rp.CanDeployMegapool()
-	if err != nil {
-		return err
-	}
-
 	// Check if Saturn is already deployed
 	saturnResp, err := rp.IsSaturnDeployed()
 	if err != nil {
@@ -31,6 +25,12 @@ func deployMegapool(c *cli.Context) error {
 	if !saturnResp.IsSaturnDeployed {
 		fmt.Println("This command is only available after the Saturn upgrade.")
 		return nil
+	}
+
+	// Check if the node can deploy a megapool
+	canDeploy, err := rp.CanDeployMegapool()
+	if err != nil {
+		return err
 	}
 
 	if !canDeploy.CanDeploy {

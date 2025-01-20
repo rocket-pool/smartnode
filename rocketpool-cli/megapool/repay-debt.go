@@ -23,6 +23,16 @@ func repayDebt(c *cli.Context, amount float64) error {
 	// Convert amount to wei
 	amountWei := eth.EthToWei(amount)
 
+	// Check if Saturn is already deployed
+	saturnResp, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if !saturnResp.IsSaturnDeployed {
+		fmt.Println("This command is only available after the Saturn upgrade.")
+		return nil
+	}
+
 	// Check megapool debt can be repaid
 	canRepay, err := rp.CanRepayDebt(amountWei)
 	if err != nil {

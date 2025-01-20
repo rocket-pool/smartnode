@@ -19,6 +19,16 @@ func exitQueue(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check if Saturn is already deployed
+	saturnResp, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if !saturnResp.IsSaturnDeployed {
+		fmt.Println("This command is only available after the Saturn upgrade.")
+		return nil
+	}
+
 	var validatorIndex uint64
 
 	// Check if the validator id flag is set
@@ -37,12 +47,8 @@ func exitQueue(c *cli.Context) error {
 		}
 	}
 
-	var expressQueue bool
-
-	expressQueue = c.Bool("express-queue")
-
 	// Check whether the validator can be exited
-	canExit, err := rp.CanExitQueue(validatorIndex, expressQueue)
+	canExit, err := rp.CanExitQueue(uint32(validatorIndex))
 	if err != nil {
 		return fmt.Errorf("Error checking if validator can be exited: %w", err)
 	}
@@ -58,7 +64,7 @@ func exitQueue(c *cli.Context) error {
 	}
 
 	// Request exit from the megapool queue
-	response, err := rp.ExitQueue(validatorIndex, expressQueue)
+	response, err := rp.ExitQueue(uint32(validatorIndex))
 	if err != nil {
 		return fmt.Errorf("Error requesting exit from the megapool queue: %w", err)
 	}

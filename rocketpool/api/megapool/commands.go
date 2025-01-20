@@ -117,28 +117,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-exit-queue",
 				Usage:     "Check whether the node can exit the megapool queue",
-				UsageText: "rocketpool api megapool can-exit-queue validator-index express-queue",
+				UsageText: "rocketpool api megapool can-exit-queue validator-index",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 
 					// Check the validator-index
-					validatorIndex, err := cliutils.ValidateUint("validator-index", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Check the express-queue value
-					expressQueue, err := cliutils.ValidateBool("express-queue", c.Args().Get(1))
+					validatorIndex, err := cliutils.ValidateUint32("validator-index", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canExitQueue(c, validatorIndex, expressQueue))
+					api.PrintResponse(canExitQueue(c, validatorIndex))
 					return nil
 
 				},
@@ -155,19 +149,13 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Check the validator-index
-					validatorIndex, err := cliutils.ValidatePositiveUint(c.Args().Get(0), "validator-index")
-					if err != nil {
-						return err
-					}
-
-					// Check the express-queue value
-					expressQueue, err := cliutils.ValidateBool(c.Args().Get(1), "express-queue")
+					validatorIndex, err := cliutils.ValidateUint32(c.Args().Get(0), "validator-index")
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(exitQueue(c, validatorIndex, expressQueue))
+					api.PrintResponse(exitQueue(c, validatorIndex))
 					return nil
 
 				},
