@@ -43,6 +43,10 @@ func canDeployMegapool(c *cli.Context) (*api.CanDeployMegapoolResponse, error) {
 		return nil, err
 	}
 	response.AlreadyDeployed = alreadyDeployed
+	if alreadyDeployed {
+		response.CanDeploy = false
+		return &response, nil
+	}
 
 	// Check if the node can deploy a megapool
 	gasInfo, err := node.EstimateDeployMegapool(rp, opts)
