@@ -30,6 +30,19 @@ type MegapoolV1 interface {
 	Megapool
 }
 
+type ValidatorInfo struct {
+	PubKey             []byte `abi:"pubKey"`
+	LastAssignmentTime uint32 `abi:"lastAssignmentTime"`
+	LastRequestedValue uint32 `abi:"lastRequestedValue"`
+	LastRequestedBond  uint32 `abi:"lastRequestedBond"`
+	Active             bool   `abi:"active"`
+	Exited             bool   `abi:"exited"`
+	InQueue            bool   `abi:"inQueue"`
+	InPrestake         bool   `abi:"inPrestake"`
+	ExpressUsed        bool   `abi:"expressUsed"`
+	Dissolved          bool   `abi:"dissolved"`
+}
+
 // Megapool contract
 type megapoolV1 struct {
 	Address    common.Address
@@ -94,7 +107,13 @@ func (mp *megapoolV1) GetValidatorCount(opts *bind.CallOpts) (uint64, error) {
 	return (*validatorCount).Uint64(), nil
 }
 
-//TODO func GetValidatorInfo()
+func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) (ValidatorInfo, error) {
+	validatorInfo := new(ValidatorInfo)
+	if err := mp.Contract.Call(opts, validatorInfo, "getValidatorInfo", validatorId); err != nil {
+		return ValidatorInfo{}, fmt.Errorf("error getting info for validator %d: %w", validatorId, err)
+	}
+	return *validatorInfo, nil
+}
 
 func (mp *megapoolV1) GetAssignedValue(opts *bind.CallOpts) (*big.Int, error) {
 	assignedValue := new(*big.Int)

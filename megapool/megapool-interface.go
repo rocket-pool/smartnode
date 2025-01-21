@@ -14,6 +14,7 @@ type Megapool interface {
 	GetAddress() common.Address
 	GetVersion() uint8
 	GetValidatorCount(opts *bind.CallOpts) (uint64, error)
+	GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) (ValidatorInfo, error)
 	GetAssignedValue(opts *bind.CallOpts) (*big.Int, error)
 	GetDebt(opts *bind.CallOpts) (*big.Int, error)
 	GetRefundValue(opts *bind.CallOpts) (*big.Int, error)
