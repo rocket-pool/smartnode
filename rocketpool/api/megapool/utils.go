@@ -1,6 +1,8 @@
 package megapool
 
 import (
+	"fmt"
+
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -55,6 +57,14 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 			if err == nil {
 				details.EffectiveDelegateAddress = effectiveDelegateAddress
 			}
+			megapoolDelegateExpiry, err := megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, nil)
+			if err == nil {
+				details.DelegateExpiry = megapoolDelegateExpiry
+			}
+			validatorDetails, err := GetMegapoolValidatorDetails(rp, mp, nodeAccount, uint32(details.ValidatorCount))
+			if err == nil {
+				details.Validators = validatorDetails
+			}
 		}
 		return err
 	})
@@ -75,22 +85,24 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return err
 	})
 
-	// wg.Go(func() error {
-	// 	megapoolDelegate, err := rp.GetContract("rocketMegapoolDelegate", nil)
-	// 	if err == nil {
-	// 		details.DelegateAddress = *megapoolDelegate.Address
-	// 	}
-
-	// 	megapoolDelegateExpiry, err := megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, nil)
-	// 	if err == nil {
-	// 		details.DelegateExpiry = megapoolDelegateExpiry
-	// 	}
-	// 	return err
-	// })
-
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return details, err
+	}
+
+	return details, nil
+}
+
+func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, mp megapool.Megapool, nodeAccount common.Address, validatorCount uint32) ([]megapool.ValidatorInfo, error) {
+
+	details := []megapool.ValidatorInfo{}
+
+	validatorDetails, err := mp.GetValidatorInfo(1, nil)
+	if err == nil {
+		details = append(details, validatorDetails)
+	} else {
+		return details, fmt.Errorf("error retrieving validatorDetails %v: %w", validatorDetails, err)
+
 	}
 
 	return details, nil
