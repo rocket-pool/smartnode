@@ -50,6 +50,8 @@ type NativeNodeDetails struct {
 	AverageNodeFee                   *big.Int       `json:"average_node_fee"` // Must call CalculateAverageFeeAndDistributorShares to get this
 	CollateralisationRatio           *big.Int       `json:"collateralisation_ratio"`
 	DistributorBalance               *big.Int       `json:"distributor_balance"`
+	MegapoolAddress                  common.Address `json:"megapool_address"`
+	MegapoolDeployed                 bool           `json:"megapool_deployed"`
 }
 
 func timeMax(a, b time.Time) time.Time {
@@ -350,4 +352,9 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	// Atlas
 	mc.AddCall(contracts.RocketNodeDeposit, &details.DepositCreditBalance, "getNodeDepositCredit", address)
 	mc.AddCall(contracts.RocketNodeStaking, &details.CollateralisationRatio, "getNodeETHCollateralisationRatio", address)
+
+	// Saturn
+	mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getMegapoolDeployed", address)
+	mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getExpectedAddress", address)
+
 }

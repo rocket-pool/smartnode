@@ -52,6 +52,9 @@ type NetworkContracts struct {
 	// Houston
 	RocketDAOProtocolProposal *rocketpool.Contract
 	RocketDAOProtocolVerifier *rocketpool.Contract
+
+	// Saturn
+	RocketMegapoolFactory *rocketpool.Contract
 }
 
 type contractArtifacts struct {
@@ -171,6 +174,12 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 	}, contractArtifacts{
 		name:     "rocketDAOProtocolVerifier",
 		contract: &contracts.RocketDAOProtocolVerifier,
+	})
+
+	// Saturn wrappers
+	wrappers = append(wrappers, contractArtifacts{
+		name:     "rocketMegapoolFactory",
+		contract: &contracts.RocketMegapoolFactory,
 	})
 
 	// Add the address and ABI getters to multicall
