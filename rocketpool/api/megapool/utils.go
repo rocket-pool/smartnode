@@ -76,14 +76,14 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		details.Deployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
 		return err
 	})
-	wg.Go(func() error {
-		var err error
-		details.Validators, err = GetMegapoolValidatorDetails(rp, mega, nodeAccount, uint32(details.ValidatorCount))
-		return err
-	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
+		return details, err
+	}
+
+	details.Validators, err = GetMegapoolValidatorDetails(rp, mega, nodeAccount, uint32(details.ValidatorCount))
+	if err != nil {
 		return details, err
 	}
 
@@ -94,12 +94,12 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, mp megapool.Megapool
 
 	details := []megapool.ValidatorInfo{}
 
-	validatorDetails, err := mp.GetValidatorInfo(1, nil)
-	if err == nil {
+	for i := uint32(0); i < validatorCount; i++ {
+		validatorDetails, err := mp.GetValidatorInfo(i, nil)
+		if err != nil {
+			fmt.Printf("Error retrieving validator %d details: %v\n", i, err)
+		}
 		details = append(details, validatorDetails)
-	} else {
-		return details, fmt.Errorf("error retrieving validatorDetails %v: %w", validatorDetails, err)
-
 	}
 
 	return details, nil
