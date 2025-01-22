@@ -114,6 +114,9 @@ type SmartnodeConfig struct {
 	// Threshold for automatic vote power initialization transactions
 	AutoInitVPThreshold config.Parameter `yaml:"autoInitVPThreshold,omitempty"`
 
+	// Delay for automatic queue assignment
+	AutoAssignmentDelay config.Parameter `yaml:"autoAssignmentDelay,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -335,6 +338,17 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				"A value of 0 will disable this task. Disable this if your node was registered post-houston or your vote power is already initialized.\n\n",
 			Type:               config.ParameterType_Float,
 			Default:            map[config.Network]interface{}{config.Network_All: float64(5)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		AutoAssignmentDelay: config.Parameter{
+			ID:                 "autoAssignmentDelay",
+			Name:               "Automatic queue assigment delay",
+			Description:        "The Smartnode will periodically check whether its megapool is next in the queue. It will wait for the number of hours specified by this parameter after the last assignment before performing the assignment automatically.\n\n",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: uint16(48)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,

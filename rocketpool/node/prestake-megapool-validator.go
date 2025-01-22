@@ -2,6 +2,7 @@ package node
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -22,16 +23,17 @@ import (
 
 // Prestake megapool validator task
 type prestakeMegapoolValidator struct {
-	c              *cli.Context
-	log            log.ColorLogger
-	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
-	rp             *rocketpool.RocketPool
-	d              *client.Client
-	gasThreshold   float64
-	maxFee         *big.Int
-	maxPriorityFee *big.Int
-	gasLimit       uint64
+	c                   *cli.Context
+	log                 log.ColorLogger
+	cfg                 *config.RocketPoolConfig
+	w                   *wallet.Wallet
+	rp                  *rocketpool.RocketPool
+	d                   *client.Client
+	gasThreshold        float64
+	maxFee              *big.Int
+	maxPriorityFee      *big.Int
+	gasLimit            uint64
+	autoAssignmentDelay uint16
 }
 
 // Create prestake megapool validator task
@@ -76,18 +78,21 @@ func newPrestakeMegapoolValidator(c *cli.Context, logger log.ColorLogger) (*pres
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
 
+	autoAssignmentDelay := cfg.Smartnode.AutoAssignmentDelay.Value.(uint16)
+
 	// Return task
 	return &prestakeMegapoolValidator{
-		c:              c,
-		log:            logger,
-		cfg:            cfg,
-		w:              w,
-		rp:             rp,
-		d:              d,
-		gasThreshold:   gasThreshold,
-		maxFee:         maxFee,
-		maxPriorityFee: priorityFee,
-		gasLimit:       0,
+		c:                   c,
+		log:                 logger,
+		cfg:                 cfg,
+		w:                   w,
+		rp:                  rp,
+		d:                   d,
+		gasThreshold:        gasThreshold,
+		maxFee:              maxFee,
+		maxPriorityFee:      priorityFee,
+		gasLimit:            0,
+		autoAssignmentDelay: autoAssignmentDelay,
 	}, nil
 
 }
@@ -138,8 +143,14 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	// Log
 	t.log.Printlnf("The next validator to be assigned belongs to this node's megapool")
 
-	// Call assign
-	t.assignDeposit(opts)
+	// Check when the last assignment happened and wait autoAssignmentDelay hours
+	// TODO fetch last assignment
+	lastAssignment := time.Now()
+
+	if lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour).Before(time.Now()) {
+		// Call assign
+		t.assignDeposit(opts)
+	}
 
 	// Return
 	return nil
