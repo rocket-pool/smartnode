@@ -2,6 +2,7 @@ package megapool
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/megapool"
@@ -94,12 +95,26 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, mp megapool.Megapool
 
 	details := []megapool.ValidatorInfo{}
 
+	var wg errgroup.Group
+	var lock sync.Mutex
+
 	for i := uint32(0); i < validatorCount; i++ {
-		validatorDetails, err := mp.GetValidatorInfo(i, nil)
-		if err != nil {
-			fmt.Printf("Error retrieving validator %d details: %v\n", i, err)
-		}
-		details = append(details, validatorDetails)
+		i := i
+		wg.Go(func() error {
+			validatorDetails, err := mp.GetValidatorInfo(i, nil)
+			if err != nil {
+				return fmt.Errorf("Error retrieving validator %d details: %v\n", i, err)
+			}
+			lock.Lock()
+			details = append(details, validatorDetails)
+			lock.Unlock()
+			return nil
+		})
+	}
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return details, err
 	}
 
 	return details, nil
