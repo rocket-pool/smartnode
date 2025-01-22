@@ -1,9 +1,11 @@
 package megapool
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -109,9 +111,22 @@ func (mp *megapoolV1) GetValidatorCount(opts *bind.CallOpts) (uint64, error) {
 
 func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) (ValidatorInfo, error) {
 	validatorInfo := new(ValidatorInfo)
-	if err := mp.Contract.Call(opts, validatorInfo, "getValidatorInfo", validatorId); err != nil {
-		return ValidatorInfo{}, fmt.Errorf("error getting info for validator %d: %w", validatorId, err)
+
+	callData, err := mp.Contract.ABI.Pack("getValidatorInfo", validatorId)
+	if err != nil {
+		return ValidatorInfo{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
 	}
+
+	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, nil)
+	if err != nil {
+		return ValidatorInfo{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
+	}
+
+	err = mp.Contract.ABI.UnpackIntoInterface(&validatorInfo, "getValidatorInfo", response)
+	if err != nil {
+		return ValidatorInfo{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
+	}
+
 	return *validatorInfo, nil
 }
 
