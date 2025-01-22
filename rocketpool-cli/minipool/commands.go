@@ -403,6 +403,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "minipool, m",
 						Usage: "The minipool/s to upgrade (address or 'all')",
 					},
+					cli.BoolFlag{
+						Name:  "include-finalized, f",
+						Usage: "Include finailized minipools in the list (default is to hide them).",
+					},
 				},
 				Action: func(c *cli.Context) error {
 
@@ -545,6 +549,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					cli.StringFlag{
 						Name:  "amount, a",
 						Usage: "The amount of ETH to deposit into the minipool",
+					},
+					cli.BoolFlag{
+						Name:  "no-send, n",
+						Usage: "Don't submit the transaction",
 					},
 				},
 				Action: func(c *cli.Context) error {
