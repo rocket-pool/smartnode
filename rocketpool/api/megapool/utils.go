@@ -15,73 +15,70 @@ import (
 // Get all node megapool details
 func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAccount common.Address) (api.MegapoolDetails, error) {
 
-	details := api.MegapoolDetails{}
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount, nil)
+	if err != nil {
+		return api.MegapoolDetails{}, err
+	}
+
+	// Load the megapool contract
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return api.MegapoolDetails{}, err
+	}
 
 	// Sync
 	var wg errgroup.Group
+	details := api.MegapoolDetails{Address: megapoolAddress}
 
 	wg.Go(func() error {
-		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount, nil)
-		if err == nil {
-			details.Address = megapoolAddress
-		}
-
-		// Load the megapool contract
-		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-		if err == nil {
-			debt, err := mp.GetDebt(nil)
-			if err == nil {
-				details.NodeDebt = debt
-			}
-			refund, err := mp.GetRefundValue(nil)
-			if err == nil {
-				details.RefundValue = refund
-			}
-			validatorCount, err := mp.GetValidatorCount(nil)
-			if err == nil {
-				details.ValidatorCount = uint16(validatorCount)
-			}
-			pendingRewards, err := mp.GetPendingRewards(nil)
-			if err == nil {
-				details.PendingRewards = pendingRewards
-			}
-			useLatest, err := mp.GetUseLatestDelegate(nil)
-			if err == nil {
-				details.UseLatestDelegate = useLatest
-			}
-			delegateAddress, err := mp.GetDelegate(nil)
-			if err == nil {
-				details.DelegateAddress = delegateAddress
-			}
-			effectiveDelegateAddress, err := mp.GetEffectiveDelegate(nil)
-			if err == nil {
-				details.EffectiveDelegateAddress = effectiveDelegateAddress
-			}
-			megapoolDelegateExpiry, err := megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, nil)
-			if err == nil {
-				details.DelegateExpiry = megapoolDelegateExpiry
-			}
-			validatorDetails, err := GetMegapoolValidatorDetails(rp, mp, nodeAccount, uint32(details.ValidatorCount))
-			if err == nil {
-				details.Validators = validatorDetails
-			}
-		}
+		var err error
+		details.NodeDebt, err = mega.GetDebt(nil)
 		return err
 	})
-
 	wg.Go(func() error {
-		expressTicketCount, err := node.GetExpressTicketCount(rp, nodeAccount, nil)
-		if err == nil {
-			details.NodeExpressTicketCount = expressTicketCount
-		}
+		var err error
+		details.RefundValue, err = mega.GetRefundValue(nil)
 		return err
 	})
-
 	wg.Go(func() error {
-		megapoolDepoyed, err := megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
-		if err == nil {
-			details.Deployed = megapoolDepoyed
-		}
+		var err error
+		details.ValidatorCount, err = mega.GetValidatorCount(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.PendingRewards, err = mega.GetPendingRewards(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.UseLatestDelegate, err = mega.GetUseLatestDelegate(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.DelegateAddress, err = mega.GetDelegate(nil)
+		details.DelegateExpiry, err = megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.EffectiveDelegateAddress, err = mega.GetEffectiveDelegate(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.NodeExpressTicketCount, err = node.GetExpressTicketCount(rp, nodeAccount, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.Deployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.Validators, err = GetMegapoolValidatorDetails(rp, mega, nodeAccount, uint32(details.ValidatorCount))
 		return err
 	})
 
