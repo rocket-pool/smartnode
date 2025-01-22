@@ -48,6 +48,12 @@ func canDeployMegapool(c *cli.Context) (*api.CanDeployMegapoolResponse, error) {
 		return &response, nil
 	}
 
+	expectedAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+	response.ExpectedAddress = expectedAddress
+
 	// Check if the node can deploy a megapool
 	gasInfo, err := node.EstimateDeployMegapool(rp, opts)
 	if err != nil {

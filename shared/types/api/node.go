@@ -673,6 +673,7 @@ type CanDeployMegapoolResponse struct {
 	Error           string             `json:"error"`
 	CanDeploy       bool               `json:"canDeploy"`
 	AlreadyDeployed bool               `json:"alreadyDeployed"`
+	ExpectedAddress common.Address     `json:"expectedAddress"`
 	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
 }
 

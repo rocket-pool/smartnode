@@ -35,8 +35,17 @@ func deployMegapool(c *cli.Context) error {
 
 	if !canDeploy.CanDeploy {
 		if canDeploy.AlreadyDeployed {
-			fmt.Println("The node already has a Megapool deployed.")
+			fmt.Println("The node already has a megapool deployed.")
 		}
+		return nil
+	}
+
+	fmt.Println("You're about to deploy a megapool contract. It will be used to manage your validators and be the destination for rewards. Both ongoing and upfront costs are reduced by megapools due to the efficiency savings achieved by using a single smart contract over multiple minipool contracts.")
+	fmt.Println()
+
+	// Prompt for confirmation
+	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to deploy a megapool contract?")) {
+		fmt.Println("Cancelled.")
 		return nil
 	}
 
@@ -46,23 +55,17 @@ func deployMegapool(c *cli.Context) error {
 		return err
 	}
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to deploy a Megapool?")) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
 	response, err := rp.DeployMegapool()
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Deploying Megapool...\n")
+	fmt.Printf("Deploying megapool...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
-	fmt.Println("Megapool deployed successfully!")
+	fmt.Printf("Megapool deployed successfully at address %s!", canDeploy.ExpectedAddress)
 	return nil
 }
