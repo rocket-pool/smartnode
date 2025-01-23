@@ -2,10 +2,11 @@ package api
 
 import (
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 )
 
 type MegapoolStatusResponse struct {
@@ -16,18 +17,32 @@ type MegapoolStatusResponse struct {
 }
 
 type MegapoolDetails struct {
-	Address                  common.Address           `json:"address"`
-	DelegateAddress          common.Address           `json:"delegate"`
-	EffectiveDelegateAddress common.Address           `json:"effectiveDelegateAddress"`
-	Deployed                 bool                     `json:"deployed"`
-	ValidatorCount           uint64                   `json:"validatorCount"`
-	NodeDebt                 *big.Int                 `json:"nodeDebt"`
-	RefundValue              *big.Int                 `json:"refundValue"`
-	DelegateExpiry           uint64                   `json:"delegateExpiry"`
-	PendingRewards           *big.Int                 `json:"pendingRewards"`
-	NodeExpressTicketCount   uint64                   `json:"nodeExpressTicketCount"`
-	UseLatestDelegate        bool                     `json:"useLatestDelegate"`
-	Validators               []megapool.ValidatorInfo `json:"validators"`
+	Address                  common.Address             `json:"address"`
+	DelegateAddress          common.Address             `json:"delegate"`
+	EffectiveDelegateAddress common.Address             `json:"effectiveDelegateAddress"`
+	Deployed                 bool                       `json:"deployed"`
+	ValidatorCount           uint64                     `json:"validatorCount"`
+	NodeDebt                 *big.Int                   `json:"nodeDebt"`
+	RefundValue              *big.Int                   `json:"refundValue"`
+	DelegateExpiry           uint64                     `json:"delegateExpiry"`
+	PendingRewards           *big.Int                   `json:"pendingRewards"`
+	NodeExpressTicketCount   uint64                     `json:"nodeExpressTicketCount"`
+	UseLatestDelegate        bool                       `json:"useLatestDelegate"`
+	Validators               []MegapoolValidatorDetails `json:"validators"`
+}
+
+type MegapoolValidatorDetails struct {
+	ValidatorId        uint32                `json:"validatorId"`
+	PubKey             types.ValidatorPubkey `json:"pubKey"`
+	LastAssignmentTime time.Time             `json:"lastAssignmentTime"`
+	LastRequestedValue uint32                `json:"lastRequestedValue"`
+	LastRequestedBond  uint32                `json:"lastRequestedBond"`
+	Active             bool                  `json:"active"`
+	Exited             bool                  `json:"exited"`
+	InQueue            bool                  `json:"inQueue"`
+	InPrestake         bool                  `json:"inPrestake"`
+	ExpressUsed        bool                  `json:"expressUsed"`
+	Dissolved          bool                  `json:"dissolved"`
 }
 
 type MegapoolCanDelegateUpgradeResponse struct {
