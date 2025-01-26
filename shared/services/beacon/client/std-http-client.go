@@ -16,15 +16,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
-	"github.com/prysmaticlabs/prysm/v5/beacon-chain/state"
-	state_native "github.com/prysmaticlabs/prysm/v5/beacon-chain/state/state-native"
 	"github.com/prysmaticlabs/prysm/v5/crypto/bls"
-	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	beacontypes "github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
@@ -980,7 +978,7 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 }
 
 // Get the Beacon state for a slot
-func (c *StandardHttpClient) GetBeaconState(slot uint64) (state.BeaconState, error) {
+func (c *StandardHttpClient) GetBeaconState(slot uint64) (*beacontypes.BeaconStateDeneb, error) {
 	responseBody, status, err := c.getRequestWithContentType(fmt.Sprintf(RequestBeaconStatePath, slot), RequestSSZContentType)
 	if err != nil {
 		return nil, fmt.Errorf("Could not get beacon state data: %w", err)
@@ -988,17 +986,12 @@ func (c *StandardHttpClient) GetBeaconState(slot uint64) (state.BeaconState, err
 	if status != http.StatusOK {
 		return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d; response body: '%s'", status, string(responseBody))
 	}
-	var beaconStateProto ethpb.BeaconStateDeneb
-	if err := beaconStateProto.UnmarshalSSZ(responseBody); err != nil {
+	var beaconState beacontypes.BeaconStateDeneb
+	if err := beaconState.UnmarshalSSZ(responseBody); err != nil {
 		return nil, fmt.Errorf("Could not decode beacon state data: %w", err)
 	}
 
-	var beaconState state.BeaconState
-	if beaconState, err = state_native.InitializeFromProtoDeneb(&beaconStateProto); err != nil {
-		return nil, fmt.Errorf("Could not convert the beacon state from proto representation: %w", err)
-	}
-
-	return beaconState, nil
+	return &beaconState, nil
 }
 
 // Get the specified beacon block header

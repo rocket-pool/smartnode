@@ -53,7 +53,12 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					if _, err := getBeaconStateForSlot(c, slotNumber); err != nil {
+					validatorIndex, err := cliutils.ValidatePositiveUint("validator index", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					if err := getBeaconStateForSlot(c, slotNumber, validatorIndex); err != nil {
 						fmt.Printf("An error occurred: %s\n", err)
 					}
 					return nil
