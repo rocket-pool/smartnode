@@ -58,6 +58,38 @@ func (c *Client) RepayDebt(amountWei *big.Int) (api.RepayDebtResponse, error) {
 	return response, nil
 }
 
+// Check whether the node can stake a megapool validator
+func (c *Client) CanStake(validatorId uint64) (api.CanStakeResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-stake %d", validatorId))
+	if err != nil {
+		return api.CanStakeResponse{}, fmt.Errorf("Could not get can stake status: %w", err)
+	}
+	var response api.CanStakeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanStakeResponse{}, fmt.Errorf("Could not decode can stake response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanStakeResponse{}, fmt.Errorf("Could not get can stake status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Stake a megapool validator
+func (c *Client) Stake(validatorId uint64) (api.StakeResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool stake %d", validatorId))
+	if err != nil {
+		return api.StakeResponse{}, fmt.Errorf("Could not stake megapool validator: %w", err)
+	}
+	var response api.StakeResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.StakeResponse{}, fmt.Errorf("Could not decode stake response: %w", err)
+	}
+	if response.Error != "" {
+		return api.StakeResponse{}, fmt.Errorf("Could not stake megapool validator: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can exit the megapool queue
 func (c *Client) CanExitQueue(validatorIndex uint32) (api.CanExitQueueResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-exit-queue %d", validatorIndex))

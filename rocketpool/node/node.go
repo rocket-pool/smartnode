@@ -46,6 +46,7 @@ const (
 	WarningColor                   = color.FgYellow
 	UpdateColor                    = color.FgHiWhite
 	PrestakeMegapoolValidatorColor = color.FgHiYellow
+	StakeMegapoolValidatorColor    = color.FgHiBlue
 )
 
 // Register node command
@@ -131,6 +132,10 @@ func run(c *cli.Context) error {
 		return err
 	}
 	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
+	if err != nil {
+		return err
+	}
+	stakeMegapoolValidators, err := newStakeMegapoolValidator(c, log.NewColorLogger(StakeMegapoolValidatorColor))
 	if err != nil {
 		return err
 	}
@@ -276,6 +281,12 @@ func run(c *cli.Context) error {
 
 			// Run the minipool stake check
 			if err := stakePrelaunchMinipools.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the megapool stake check
+			if err := stakeMegapoolValidators.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)

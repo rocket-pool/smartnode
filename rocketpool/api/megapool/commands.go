@@ -115,6 +115,53 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-stake",
+				Usage:     "Check if we can stake a megapool validator",
+				UsageText: "rocketpool api megapool can-stake validator-index",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get the validatorIndex
+					validatorIndex, err := cliutils.ValidateUint("validatorIndex", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canStake(c, validatorIndex))
+					return nil
+
+				},
+			},
+			{
+				Name:      "stake",
+				Aliases:   []string{"st"},
+				Usage:     "Stake a megapool validator",
+				UsageText: "rocketpool api megapool stake validator-index",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get validatorIndex
+					validatorIndex, err := cliutils.ValidateUint("validatorIndex", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(stake(c, validatorIndex))
+					return nil
+
+				},
+			},
+			{
 				Name:      "can-exit-queue",
 				Usage:     "Check whether the node can exit the megapool queue",
 				UsageText: "rocketpool api megapool can-exit-queue validator-index",

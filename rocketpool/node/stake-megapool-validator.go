@@ -5,9 +5,9 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	mp_api "github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	"github.com/urfave/cli"
@@ -23,17 +23,16 @@ import (
 
 // Stake megapool validator task
 type stakeMegapoolValidator struct {
-	c                   *cli.Context
-	log                 log.ColorLogger
-	cfg                 *config.RocketPoolConfig
-	w                   *wallet.Wallet
-	rp                  *rocketpool.RocketPool
-	d                   *client.Client
-	gasThreshold        float64
-	maxFee              *big.Int
-	maxPriorityFee      *big.Int
-	gasLimit            uint64
-	autoAssignmentDelay uint16
+	c              *cli.Context
+	log            log.ColorLogger
+	cfg            *config.RocketPoolConfig
+	w              *wallet.Wallet
+	rp             *rocketpool.RocketPool
+	d              *client.Client
+	gasThreshold   float64
+	maxFee         *big.Int
+	maxPriorityFee *big.Int
+	gasLimit       uint64
 }
 
 // Create stake megapool validator task
@@ -147,10 +146,8 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 			// Log
 			t.log.Printlnf("The validator %d needs to be staked", i)
 
-			// Calculate the validator proof
-
 			// Call Stake
-			t.stakeValidator(mp, i, opts)
+			t.stakeValidator(mp, i, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
 		}
 	}
 
@@ -159,7 +156,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 
 }
 
-func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorId uint32, callopts *bind.CallOpts) error {
+func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -167,8 +164,13 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 		return err
 	}
 
+	signature, depositDataRoot, proof, err := services.GetStakeValidatorInfo(t.c, t.w, state.BeaconConfig, mp, validatorPubkey)
+	if err != nil {
+		return err
+	}
+
 	// Get the gas limit
-	gasInfo, err := mp.EstimateStakeGas(validatorId, opts)
+	gasInfo, err := mp.EstimateStakeGas(validatorId, signature, depositDataRoot, proof, opts)
 	if err != nil {
 		return err
 	}
@@ -191,8 +193,8 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
-	// Call assign
-	hash, err := deposit.AssignMegapools(t.rp, 1, opts)
+	// Call stake
+	hash, err := mp.Stake(validatorId, signature, depositDataRoot, proof, opts)
 	if err != nil {
 		return err
 	}
