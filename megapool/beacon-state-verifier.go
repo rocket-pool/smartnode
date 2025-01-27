@@ -9,14 +9,14 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
-func verifyValidator(rp *rocketpool.RocketPool, proof validatorProof, opts *bind.CallOpts) (bool, error) {
+func verifyValidator(rp *rocketpool.RocketPool, proof ValidatorProof, opts *bind.CallOpts) (bool, error) {
 	beaconStateVerifier, err := getBeaconStateVerifier(rp, opts)
 	if err != nil {
 		return false, err
 	}
 	verifiedValidator := new(bool)
 	if err := beaconStateVerifier.Call(opts, verifiedValidator, "verifyValidator"); err != nil {
-		return false, fmt.Errorf("error verifying validatorindex %d at slot %d: %w", proof.validatorIndex, proof.slot, err)
+		return false, fmt.Errorf("error verifying validatorindex %d at slot %d: %w", proof.ValidatorIndex, proof.Slot, err)
 	}
 	return *verifiedValidator, nil
 }
