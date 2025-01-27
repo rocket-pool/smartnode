@@ -37,7 +37,7 @@ type Megapool interface {
 	GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, error)
 	EstimateRequestUnstakeRPL(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, error)
-	EstimateStakeGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	EstimateStakeGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof validatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	Stake(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof validatorProof, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error)
