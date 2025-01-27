@@ -291,8 +291,8 @@ func (mp *megapoolV1) RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, e
 }
 
 // Estimate the gas of Stake
-func (mp *megapoolV1) EstimateStakeGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorId, validatorSignature[:], depositDataRoot)
+func (mp *megapoolV1) EstimateStakeGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof validatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorId, validatorSignature[:], depositDataRoot, validatorProof)
 }
 
 // Progress the prelaunch megapool to staking
