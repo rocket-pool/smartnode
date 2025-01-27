@@ -13,12 +13,12 @@ import (
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 )
 
-type validatorProof struct {
-	slot                  uint64
-	validatorIndex        *big.Int
-	pubkey                []byte
-	withdrawalCredentials [32]byte
-	witnesses             [][32]byte
+type ValidatorProof struct {
+	Slot                  uint64
+	ValidatorIndex        *big.Int
+	Pubkey                []byte
+	WithdrawalCredentials [32]byte
+	Witnesses             [][32]byte
 }
 
 type withdrawal struct {
@@ -291,12 +291,12 @@ func (mp *megapoolV1) RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, e
 }
 
 // Estimate the gas of Stake
-func (mp *megapoolV1) EstimateStakeGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof validatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateStakeGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof ValidatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorId, validatorSignature[:], depositDataRoot, validatorProof)
 }
 
 // Progress the prelaunch megapool to staking
-func (mp *megapoolV1) Stake(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof validatorProof, opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *megapoolV1) Stake(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof ValidatorProof, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "stake", validatorSignature[:], depositDataRoot, validatorProof)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error staking megapool %s: %w", mp.Address.Hex(), err)
