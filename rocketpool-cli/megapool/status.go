@@ -53,8 +53,13 @@ func getStatus(c *cli.Context) error {
 	fmt.Printf("Megapool UseLatestDelegate: %t\n", status.Megapool.UseLatestDelegate)
 	fmt.Printf("Megapool Refund Value: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.RefundValue), 6))
 	fmt.Printf("Megapool Pending Rewards: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.PendingRewards), 6))
+	fmt.Printf("Megapool AssignedValue: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.AssignedValue), 6))
+	fmt.Printf("Megapool NodeCapital: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeCapital), 6))
+	fmt.Printf("Megapool NodeBond: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeBond), 6))
+	fmt.Printf("Megapool UserCapital: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.UserCapital), 6))
 	fmt.Printf("Megapool Validator Count: %d \n", status.Megapool.ValidatorCount)
 	fmt.Printf("Node Express Ticket Count: %d\n", status.Megapool.NodeExpressTicketCount)
+
 	// fmt.Printf("Validator Details %+v\n", status.Megapool.Validators)
 
 	fmt.Println()

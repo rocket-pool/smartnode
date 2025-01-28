@@ -28,6 +28,10 @@ type MegapoolDetails struct {
 	PendingRewards           *big.Int                   `json:"pendingRewards"`
 	NodeExpressTicketCount   uint64                     `json:"nodeExpressTicketCount"`
 	UseLatestDelegate        bool                       `json:"useLatestDelegate"`
+	AssignedValue            *big.Int                   `json:"assignedValue"`
+	NodeCapital              *big.Int                   `json:"nodeCapital"`
+	NodeBond                 *big.Int                   `json:"nodeBond"`
+	UserCapital              *big.Int                   `json:"userCapital"`
 	Validators               []MegapoolValidatorDetails `json:"validators"`
 }
 

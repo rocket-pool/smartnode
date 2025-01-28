@@ -79,6 +79,26 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		details.Deployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
 		return err
 	})
+	wg.Go(func() error {
+		var err error
+		details.AssignedValue, err = mega.GetAssignedValue(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.NodeCapital, err = mega.GetNodeCapital(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.NodeBond, err = mega.GetNodeBond(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.UserCapital, err = mega.GetUserCapital(nil)
+		return err
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
