@@ -3,11 +3,13 @@ package megapool
 import (
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"golang.org/x/sync/errgroup"
@@ -91,9 +93,9 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	return details, nil
 }
 
-func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, mp megapool.Megapool, nodeAccount common.Address, validatorCount uint32) ([]megapool.ValidatorInfo, error) {
+func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, mp megapool.Megapool, nodeAccount common.Address, validatorCount uint32) ([]api.MegapoolValidatorDetails, error) {
 
-	details := []megapool.ValidatorInfo{}
+	details := []api.MegapoolValidatorDetails{}
 
 	var wg errgroup.Group
 	var lock sync.Mutex
@@ -106,7 +108,21 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, mp megapool.Megapool
 				return fmt.Errorf("Error retrieving validator %d details: %v\n", i, err)
 			}
 			lock.Lock()
-			details = append(details, validatorDetails)
+			validator := api.MegapoolValidatorDetails{
+				ValidatorId:        i,
+				PubKey:             types.BytesToValidatorPubkey(validatorDetails.PubKey),
+				LastAssignmentTime: time.Unix(int64(validatorDetails.LastAssignmentTime), 0),
+				LastRequestedValue: validatorDetails.LastRequestedValue,
+				LastRequestedBond:  validatorDetails.LastRequestedBond,
+				Active:             validatorDetails.Active,
+				Exited:             validatorDetails.Exited,
+				InQueue:            validatorDetails.InQueue,
+				InPrestake:         validatorDetails.InPrestake,
+				ExpressUsed:        validatorDetails.ExpressUsed,
+				Dissolved:          validatorDetails.Dissolved,
+			}
+
+			details = append(details, validator)
 			lock.Unlock()
 			return nil
 		})
