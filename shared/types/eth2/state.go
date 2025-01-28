@@ -10,10 +10,10 @@ import (
 
 // Important indices for proof generation:
 // BeaconStateDenebValidatorsIndex is the field offset of the Validators field in the BeaconStateDeneb struct
-const BeaconStateDenebValidatorsIndex uint64 = 11
+const beaconStateDenebValidatorsIndex uint64 = 11
 
-// BeaconStateDenebValidatorWithdrawalCredentialsIndex is the field offset of the WithdrawalCredentials field in the Validator struct
-const BeaconStateDenebValidatorWithdrawalCredentialsIndex uint64 = 1
+// If this ever isn't a power of two, we need to round up to the next power of two
+const beaconStateValidatorsMaxLength uint64 = 1 << 40
 
 // See https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md for general index calculation and helpers
 
@@ -49,7 +49,7 @@ func getDenebStateChunkSize() uint64 {
 func getDenebGeneralizedIndexForValidators() uint64 {
 	// There's 28 fields, so rounding up to the next power of two is 32, a left-aligned node
 	// BeaconStateDenebValidatorsIndex is the 11th field, so its generalized index is 32 + 11 = 43
-	return getPowerOfTwoCeil(getDenebStateChunkSize()) + BeaconStateDenebValidatorsIndex
+	return getPowerOfTwoCeil(getDenebStateChunkSize()) + beaconStateDenebValidatorsIndex
 }
 
 func (state *BeaconStateDeneb) getGeneralizedIndexForValidator(index uint64) uint64 {
@@ -59,8 +59,7 @@ func (state *BeaconStateDeneb) getGeneralizedIndexForValidator(index uint64) uin
 	// `start` is `index * 32` and `pos` is `start / 32` so pos is just `index`
 	pos := index
 	baseIndex := uint64(2) // Lists have a base index of 2
-	listChunkSize := uint64((len(state.Validators)*32 + 31) / 32)
-	root = root*baseIndex*getPowerOfTwoCeil(listChunkSize) + pos
+	root = root*baseIndex*getPowerOfTwoCeil(beaconStateValidatorsMaxLength) + pos
 
 	// root is now the generalized index for the validator
 	return root
@@ -88,6 +87,7 @@ func (state *BeaconStateDeneb) ValidatorProof(index uint64) ([][]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not get proof for validator: %w", err)
 	}
+
 	return proof.Hashes, nil
 }
 
