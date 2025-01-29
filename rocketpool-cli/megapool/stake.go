@@ -49,7 +49,7 @@ func stake(c *cli.Context) error {
 	}
 
 	if !canStake.CanStake {
-		fmt.Println("The validator with index %d can't be staked.", validatorIndex)
+		fmt.Printf("The validator with index %d can't be staked.\n", validatorIndex)
 		return nil
 	}
 

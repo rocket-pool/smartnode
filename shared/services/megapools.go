@@ -5,12 +5,17 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
+	prdeposit "github.com/prysmaticlabs/prysm/v5/contracts/deposit"
+	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/types"
+	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	"github.com/urfave/cli"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
 func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, mp megapool.Megapool, validatorPubkey types.ValidatorPubkey) (types.ValidatorSignature, common.Hash, megapool.ValidatorProof, error) {
@@ -45,6 +50,11 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	}
 
 	validatorIndex64, err := strconv.ParseUint(validatorIndex, 10, 64)
+	if err != nil {
+		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+	}
+
+	err = validateDepositInfo(eth2Config, uint64(depositAmount), validatorPubkey, withdrawalCredentials, signature)
 	if err != nil {
 		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
 	}
@@ -91,4 +101,25 @@ func convertToFixedSize(proofBytes [][]byte) [][32]byte {
 		proofWithFixedSize = append(proofWithFixedSize, arr)
 	}
 	return proofWithFixedSize
+}
+
+func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey rptypes.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) error {
+
+	// Get the deposit domain based on the eth2 config
+	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
+	if err != nil {
+		return err
+	}
+
+	// Create the deposit struct
+	depositData := new(ethpb.Deposit_Data)
+	depositData.Amount = depositAmount
+	depositData.PublicKey = pubkey.Bytes()
+	depositData.WithdrawalCredentials = withdrawalCredentials.Bytes()
+	depositData.Signature = signature.Bytes()
+
+	// Validate the signature
+	err = prdeposit.VerifyDepositSignature(depositData, depositDomain)
+	return err
+
 }

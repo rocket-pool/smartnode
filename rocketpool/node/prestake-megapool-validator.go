@@ -136,7 +136,7 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 
 	// Check if the next megapool address is the same as the deployed megapool address
-	if nextAssignment.MegapoolAddress != megapoolAddress {
+	if nextAssignment.Receiver != megapoolAddress {
 		return nil
 	}
 
@@ -145,11 +145,26 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 
 	// Check when the last assignment happened and wait autoAssignmentDelay hours
 	// TODO fetch last assignment
-	lastAssignment := time.Now()
+	lastAssignment := time.Now().Add(-time.Duration(t.autoAssignmentDelay) * time.Hour)
 
 	if lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour).Before(time.Now()) {
+		t.log.Printlnf("%d hours have passed since the last assignment. Trying to assign", t.autoAssignmentDelay)
+
+		// Check if there is enough ETH to be assigned
+		balance, err := deposit.GetBalance(t.rp, opts)
+		if err != nil {
+			return err
+		}
+
+		balanceRequired := eth.EthToWei(20)
+		if balance.Cmp(balanceRequired) < 0 {
+			t.log.Printlnf("%f ETH available on the deposit pool, which is not enough to perform the assignment", eth.WeiToEth(balance))
+			return nil
+		}
 		// Call assign
 		t.assignDeposit(opts)
+	} else {
+		t.log.Printlnf("Waiting %d hours to pass since the last assignment", t.autoAssignmentDelay)
 	}
 
 	// Return
@@ -168,6 +183,7 @@ func (t *prestakeMegapoolValidator) assignDeposit(callopts *bind.CallOpts) error
 	// Get the gas limit
 	gasInfo, err := deposit.EstimateAssignMegapoolsGas(t.rp, 1, opts)
 	if err != nil {
+		t.log.Printlnf("error estimating assignment %w", err)
 		return err
 	}
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))

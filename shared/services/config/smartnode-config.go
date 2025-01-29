@@ -649,6 +649,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
 		&cfg.AutoInitVPThreshold,
+		&cfg.AutoAssignmentDelay,
 		&cfg.RewardsTreeMode,
 		&cfg.PriceBalanceSubmissionReferenceTimestamp,
 		&cfg.RewardsTreeCustomUrl,

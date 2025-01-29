@@ -99,9 +99,10 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 		return nil, err
 	}
 	gasInfo, err := mp.EstimateStakeGas(uint32(validatorId), signature, depositDataRoot, proof, opts)
-	if err == nil {
-		response.GasInfo = gasInfo
+	if err != nil {
+		return nil, err
 	}
+	response.GasInfo = gasInfo
 	response.CanStake = true
 
 	return &response, nil

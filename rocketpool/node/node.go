@@ -45,7 +45,7 @@ const (
 	ErrorColor                     = color.FgRed
 	WarningColor                   = color.FgYellow
 	UpdateColor                    = color.FgHiWhite
-	PrestakeMegapoolValidatorColor = color.FgHiYellow
+	PrestakeMegapoolValidatorColor = color.FgHiGreen
 	StakeMegapoolValidatorColor    = color.FgHiBlue
 )
 
