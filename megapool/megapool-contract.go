@@ -297,6 +297,19 @@ func (mp *megapoolV1) EstimateStakeGas(validatorId uint32, validatorSignature rp
 
 // Progress the prelaunch megapool to staking
 func (mp *megapoolV1) Stake(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof ValidatorProof, opts *bind.TransactOpts) (common.Hash, error) {
+	// callData, err := mp.Contract.ABI.Pack("stake", validatorId, validatorSignature[:], depositDataRoot, validatorProof)
+	// if err != nil {
+	// 	return common.Hash{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
+	// }
+
+	// fmt.Println("call data:\n")
+	// fmt.Printf("%s", hex.EncodeToString(callData))
+
+	// tx, err := mp.Contract.Contract.RawTransact(opts, callData)
+	// if err != nil {
+	// 	return common.Hash{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
+	// }
+
 	tx, err := mp.Contract.Transact(opts, "stake", validatorId, validatorSignature[:], depositDataRoot, validatorProof)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error staking megapool %s: %w", mp.Address.Hex(), err)
