@@ -703,6 +703,18 @@ type RepayDebtResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type CanStakeResponse struct {
+	Status   string             `json:"status"`
+	Error    string             `json:"error"`
+	CanStake bool               `json:"canStake"`
+	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+}
+type StakeResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type CanExitQueueResponse struct {
 	Status  string             `json:"status"`
 	Error   string             `json:"error"`

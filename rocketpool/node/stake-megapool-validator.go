@@ -2,14 +2,14 @@ package node
 
 import (
 	"math/big"
-	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/rocket-pool/rocketpool-go/deposit"
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	mp_api "github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -21,23 +21,22 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
-// Prestake megapool validator task
-type prestakeMegapoolValidator struct {
-	c                   *cli.Context
-	log                 log.ColorLogger
-	cfg                 *config.RocketPoolConfig
-	w                   *wallet.Wallet
-	rp                  *rocketpool.RocketPool
-	d                   *client.Client
-	gasThreshold        float64
-	maxFee              *big.Int
-	maxPriorityFee      *big.Int
-	gasLimit            uint64
-	autoAssignmentDelay uint16
+// Stake megapool validator task
+type stakeMegapoolValidator struct {
+	c              *cli.Context
+	log            log.ColorLogger
+	cfg            *config.RocketPoolConfig
+	w              *wallet.Wallet
+	rp             *rocketpool.RocketPool
+	d              *client.Client
+	gasThreshold   float64
+	maxFee         *big.Int
+	maxPriorityFee *big.Int
+	gasLimit       uint64
 }
 
-// Create prestake megapool validator task
-func newPrestakeMegapoolValidator(c *cli.Context, logger log.ColorLogger) (*prestakeMegapoolValidator, error) {
+// Create stake megapool validator task
+func newStakeMegapoolValidator(c *cli.Context, logger log.ColorLogger) (*stakeMegapoolValidator, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -78,30 +77,27 @@ func newPrestakeMegapoolValidator(c *cli.Context, logger log.ColorLogger) (*pres
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
 
-	autoAssignmentDelay := cfg.Smartnode.AutoAssignmentDelay.Value.(uint16)
-
 	// Return task
-	return &prestakeMegapoolValidator{
-		c:                   c,
-		log:                 logger,
-		cfg:                 cfg,
-		w:                   w,
-		rp:                  rp,
-		d:                   d,
-		gasThreshold:        gasThreshold,
-		maxFee:              maxFee,
-		maxPriorityFee:      priorityFee,
-		gasLimit:            0,
-		autoAssignmentDelay: autoAssignmentDelay,
+	return &stakeMegapoolValidator{
+		c:              c,
+		log:            logger,
+		cfg:            cfg,
+		w:              w,
+		rp:             rp,
+		d:              d,
+		gasThreshold:   gasThreshold,
+		maxFee:         maxFee,
+		maxPriorityFee: priorityFee,
+		gasLimit:       0,
 	}, nil
 
 }
 
 // Prestake megapool validator
-func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
+func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 
 	// Log
-	t.log.Println("Checking for megapool validators to pre-stake...")
+	t.log.Println("Checking for megapool validators to stake...")
 
 	// Get the latest state
 	opts := &bind.CallOpts{
@@ -129,42 +125,30 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 		return err
 	}
 
-	// Check the next megapool address to be assigned (at the top of the queue)
-	nextAssignment, err := deposit.GetQueueTop(t.rp, opts)
+	// Load the megapool
+	mp, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
 	if err != nil {
 		return err
 	}
 
-	// Check if the next megapool address is the same as the deployed megapool address
-	if nextAssignment.Receiver != megapoolAddress {
-		return nil
+	// Iterate over megapool validators checking whether they're ready to stake
+	validatorCount, err := mp.GetValidatorCount(nil)
+	if err != nil {
+		return err
+	}
+	validatorInfo, err := mp_api.GetMegapoolValidatorDetails(t.rp, mp, nodeAccount.Address, uint32(validatorCount))
+	if err != nil {
+		return err
 	}
 
-	// Log
-	t.log.Printlnf("The next validator to be assigned belongs to this node's megapool")
+	for i := uint32(0); i < uint32(validatorCount); i++ {
+		if validatorInfo[i].InPrestake {
+			// Log
+			t.log.Printlnf("The validator %d needs to be staked", i)
 
-	// Check when the last assignment happened and wait autoAssignmentDelay hours
-	// TODO fetch last assignment
-	lastAssignment := time.Now().Add(-time.Duration(t.autoAssignmentDelay) * time.Hour)
-
-	if lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour).Before(time.Now()) {
-		t.log.Printlnf("%d hours have passed since the last assignment. Trying to assign", t.autoAssignmentDelay)
-
-		// Check if there is enough ETH to be assigned
-		balance, err := deposit.GetBalance(t.rp, opts)
-		if err != nil {
-			return err
+			// Call Stake
+			t.stakeValidator(mp, i, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
 		}
-
-		balanceRequired := eth.EthToWei(20)
-		if balance.Cmp(balanceRequired) < 0 {
-			t.log.Printlnf("%f ETH available on the deposit pool, which is not enough to perform the assignment", eth.WeiToEth(balance))
-			return nil
-		}
-		// Call assign
-		t.assignDeposit(opts)
-	} else {
-		t.log.Printlnf("Waiting %d hours to pass since the last assignment", t.autoAssignmentDelay)
 	}
 
 	// Return
@@ -172,7 +156,7 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 
 }
 
-func (t *prestakeMegapoolValidator) assignDeposit(callopts *bind.CallOpts) error {
+func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -180,10 +164,14 @@ func (t *prestakeMegapoolValidator) assignDeposit(callopts *bind.CallOpts) error
 		return err
 	}
 
-	// Get the gas limit
-	gasInfo, err := deposit.EstimateAssignMegapoolsGas(t.rp, 1, opts)
+	signature, depositDataRoot, proof, err := services.GetStakeValidatorInfo(t.c, t.w, state.BeaconConfig, mp, validatorPubkey)
 	if err != nil {
-		t.log.Printlnf("error estimating assignment %w", err)
+		return err
+	}
+
+	// Get the gas limit
+	gasInfo, err := mp.EstimateStakeGas(validatorId, signature, depositDataRoot, proof, opts)
+	if err != nil {
 		return err
 	}
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
@@ -205,8 +193,8 @@ func (t *prestakeMegapoolValidator) assignDeposit(callopts *bind.CallOpts) error
 	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
-	// Call assign
-	hash, err := deposit.AssignMegapools(t.rp, 1, opts)
+	// Call stake
+	hash, err := mp.Stake(validatorId, signature, depositDataRoot, proof, opts)
 	if err != nil {
 		return err
 	}
@@ -218,7 +206,7 @@ func (t *prestakeMegapoolValidator) assignDeposit(callopts *bind.CallOpts) error
 	}
 
 	// Log
-	t.log.Println("Successfully assigned ETH to the next megapool validator.")
+	t.log.Printlnf("Successfully staked validator %d.", validatorId)
 
 	// Return
 	return nil

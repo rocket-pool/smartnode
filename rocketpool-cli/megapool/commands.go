@@ -111,6 +111,32 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "stake",
+				Aliases:   []string{"k"},
+				Usage:     "Stake a megapool validator",
+				UsageText: "rocketpool megapool stake",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+					cli.Uint64Flag{
+						Name:  "validator-index",
+						Usage: "The validator index to stake",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return stake(c)
+				},
+			},
+			{
 				Name:      "exit-queue",
 				Usage:     "Exit the megapool queue",
 				UsageText: "rocketpool megapool exit-queue",
