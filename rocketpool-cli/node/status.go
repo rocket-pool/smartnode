@@ -291,7 +291,7 @@ func getStatus(c *cli.Context) error {
 			leb16wei := new(big.Int)
 			leb16wei.SetString("16000000000000000000", 10)
 			for _, minipool := range status.Minipools {
-				if minipool.Node.DepositBalance.Cmp(leb16wei) < 0 && minipool.Node.Fee*100 < 10 {
+				if minipool.Node.DepositBalance.Cmp(leb16wei) < 0 && minipool.Node.Fee*100 < 10 && minipool.Validator.Active {
 					poolsWithMissingCommission++
 				}
 			}
@@ -303,7 +303,6 @@ func getStatus(c *cli.Context) error {
 				fmt.Printf("%sYou have %d minipools that would earn extra commission if you opted into the smoothing pool!%s\n", colorYellow, poolsWithMissingCommission, colorReset)
 				fmt.Println("See https://rpips.rocketpool.net/RPIPs/RPIP-62 for more information about bonus commission, or run `rocketpool node join-smoothing-pool` to opt in.")
 			}
-
 		}
 
 		fmt.Println()
