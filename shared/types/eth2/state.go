@@ -15,7 +15,7 @@ const beaconStateDenebValidatorsIndex uint64 = 11
 
 // If this ever isn't a power of two, we need to round up to the next power of two
 const beaconStateValidatorsMaxLength uint64 = 1 << 40
-const beaconBlockHeaderStateRootGeneralizedIndex uint64 = 9                      // Container with 8 fields, so gid 8 is the first field. We want the 2nd field, so gid 8 + 1 = 9
+const beaconBlockHeaderStateRootGeneralizedIndex uint64 = 11                     // Container with 5 fields, so gid 8 is the first field. We want the 4th field, so gid 8 + 3 = 11
 const beaconStateValidatorWithdrawalCredentialsPubkeyGeneralizedIndex uint64 = 4 // Container with 5 fields, so gid 8 is the first field. We want the parent of 1st field, so gid 8 / 2 = 4
 // See https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md for general index calculation and helpers
 
