@@ -37,7 +37,7 @@ type ValidatorInfo struct {
 	LastAssignmentTime uint32 `abi:"lastAssignmentTime"`
 	LastRequestedValue uint32 `abi:"lastRequestedValue"`
 	LastRequestedBond  uint32 `abi:"lastRequestedBond"`
-	Active             bool   `abi:"active"`
+	Staked             bool   `abi:"staked"`
 	Exited             bool   `abi:"exited"`
 	InQueue            bool   `abi:"inQueue"`
 	InPrestake         bool   `abi:"inPrestake"`
