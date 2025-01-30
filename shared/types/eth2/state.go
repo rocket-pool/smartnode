@@ -15,6 +15,7 @@ const beaconStateDenebValidatorsIndex uint64 = 11
 
 // If this ever isn't a power of two, we need to round up to the next power of two
 const beaconStateValidatorsMaxLength uint64 = 1 << 40
+const beaconBlockHeaderStateRootGeneralizedIndex uint64 = 11 // Container with 5 fields, so gid 8 is the first field. We want the 4th field, so gid 8 + 3 = 11
 
 // See https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md for general index calculation and helpers
 
@@ -66,13 +67,7 @@ func (state *BeaconStateDeneb) getGeneralizedIndexForValidator(index uint64) uin
 	return root
 }
 
-// ValidatorProof computes the merkle proof for a validator at a specific index
-// in the validator registry.
-func (state *BeaconStateDeneb) ValidatorProof(index uint64) ([][]byte, error) {
-
-	if index >= uint64(len(state.Validators)) {
-		return nil, errors.New("validator index out of bounds")
-	}
+func (state *BeaconStateDeneb) validatorStateProof(index uint64) ([][]byte, error) {
 
 	// Convert the state to a proof tree
 	root, err := state.GetTree()
@@ -99,6 +94,36 @@ func (state *BeaconStateDeneb) ValidatorProof(index uint64) ([][]byte, error) {
 	}
 
 	return proof.Hashes, nil
+
+}
+
+// ValidatorProof computes the merkle proof for a validator at a specific index
+// in the validator registry.
+func (state *BeaconStateDeneb) ValidatorProof(index uint64) ([][]byte, error) {
+
+	if index >= uint64(len(state.Validators)) {
+		return nil, errors.New("validator index out of bounds")
+	}
+
+	stateProof, err := state.validatorStateProof(index)
+	if err != nil {
+		return nil, fmt.Errorf("could not get validator state proof: %w", err)
+	}
+
+	// The EL proves against BeaconBlockHeader root, so we need to merge the state proof with that.
+	generalizedIndex := beaconBlockHeaderStateRootGeneralizedIndex
+	root, err := state.LatestBlockHeader.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get block header tree: %w", err)
+	}
+	proof, err := root.Prove(int(generalizedIndex))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for block header: %w", err)
+	}
+
+	out := append(stateProof, proof.Hashes...)
+
+	return out, nil
 }
 
 // Taken from https://github.com/prysmaticlabs/prysm/blob/ac1717f1e44bd218b0bd3af0c4dec951c075f462/proto/prysm/v1alpha1/beacon_state.pb.go#L1574
