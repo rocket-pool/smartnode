@@ -15,8 +15,8 @@ const beaconStateDenebValidatorsIndex uint64 = 11
 
 // If this ever isn't a power of two, we need to round up to the next power of two
 const beaconStateValidatorsMaxLength uint64 = 1 << 40
-const beaconBlockHeaderStateRootGeneralizedIndex uint64 = 11 // Container with 5 fields, so gid 8 is the first field. We want the 4th field, so gid 8 + 3 = 11
-
+const beaconBlockHeaderStateRootGeneralizedIndex uint64 = 9                      // Container with 8 fields, so gid 8 is the first field. We want the 2nd field, so gid 8 + 1 = 9
+const beaconStateValidatorWithdrawalCredentialsPubkeyGeneralizedIndex uint64 = 4 // Container with 5 fields, so gid 8 is the first field. We want the parent of 1st field, so gid 8 / 2 = 4
 // See https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md for general index calculation and helpers
 
 func getPowerOfTwoCeil(x uint64) uint64 {
@@ -97,12 +97,32 @@ func (state *BeaconStateDeneb) validatorStateProof(index uint64) ([][]byte, erro
 
 }
 
-// ValidatorProof computes the merkle proof for a validator at a specific index
-// in the validator registry.
-func (state *BeaconStateDeneb) ValidatorProof(index uint64) ([][]byte, error) {
+func (validator *Validator) validatorCredentialsPubkeyProof() ([][]byte, error) {
+	// Just get the portion of the proof for the validator's credentials.
+	generalizedIndex := beaconStateValidatorWithdrawalCredentialsPubkeyGeneralizedIndex
+	root, err := validator.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get validator tree: %w", err)
+	}
+	proof, err := root.Prove(int(generalizedIndex))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for validator credentials: %w", err)
+	}
+	return proof.Hashes, nil
+}
+
+// ValidatorCredentialsProof computes the merkle proof for a validator's credentials
+// at a specific index in the validator registry.
+func (state *BeaconStateDeneb) ValidatorCredentialsProof(index uint64) ([][]byte, error) {
 
 	if index >= uint64(len(state.Validators)) {
 		return nil, errors.New("validator index out of bounds")
+	}
+
+	// Get the validator's credentials proof
+	credentialsProof, err := state.Validators[index].validatorCredentialsPubkeyProof()
+	if err != nil {
+		return nil, fmt.Errorf("could not get validator credentials proof: %w", err)
 	}
 
 	stateProof, err := state.validatorStateProof(index)
@@ -116,12 +136,13 @@ func (state *BeaconStateDeneb) ValidatorProof(index uint64) ([][]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not get block header tree: %w", err)
 	}
-	proof, err := root.Prove(int(generalizedIndex))
+	blockHeaderProof, err := root.Prove(int(generalizedIndex))
 	if err != nil {
 		return nil, fmt.Errorf("could not get proof for block header: %w", err)
 	}
 
-	out := append(stateProof, proof.Hashes...)
+	out := append(credentialsProof, stateProof...)
+	out = append(out, blockHeaderProof.Hashes...)
 
 	return out, nil
 }

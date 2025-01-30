@@ -30,7 +30,7 @@ func getBeaconStateForSlot(c *cli.Context, slot uint64, validatorIndex uint64) e
 		return err
 	}
 
-	proof, err := beaconState.ValidatorProof(validatorIndex)
+	proof, err := beaconState.ValidatorCredentialsProof(validatorIndex)
 	if err != nil {
 		return err
 	}
