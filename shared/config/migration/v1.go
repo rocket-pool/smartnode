@@ -177,7 +177,7 @@ func upgradeFromV1(oldConfig map[string]any) (map[string]any, error) {
 	// Lighthouse BN
 	if legacyLighthouseConfig != nil {
 		newLighthouseBnConfig := map[string]any{}
-		newLighthouseBnConfig[nmc_ids.LighthouseQuicPortID] = legacyLighthouseConfig["p2pQuicPort"]
+		newLighthouseBnConfig[nmc_ids.BnQuicPortID] = legacyLighthouseConfig["p2pQuicPort"]
 		newLighthouseBnConfig[nmc_ids.MaxPeersID] = legacyLighthouseConfig["maxPeers"]
 		newLighthouseBnConfig[nmc_ids.ContainerTagID] = legacyLighthouseConfig["containerTag"]
 		newLighthouseBnConfig[nmc_ids.AdditionalFlagsID] = legacyLighthouseConfig["additionalBnFlags"]
