@@ -134,7 +134,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, mp megapool.Megapool
 				LastAssignmentTime: time.Unix(int64(validatorDetails.LastAssignmentTime), 0),
 				LastRequestedValue: validatorDetails.LastRequestedValue,
 				LastRequestedBond:  validatorDetails.LastRequestedBond,
-				Active:             validatorDetails.Active,
+				Staked:             validatorDetails.Staked,
 				Exited:             validatorDetails.Exited,
 				InQueue:            validatorDetails.InQueue,
 				InPrestake:         validatorDetails.InPrestake,

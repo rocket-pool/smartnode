@@ -41,7 +41,7 @@ type MegapoolValidatorDetails struct {
 	LastAssignmentTime time.Time             `json:"lastAssignmentTime"`
 	LastRequestedValue uint32                `json:"lastRequestedValue"`
 	LastRequestedBond  uint32                `json:"lastRequestedBond"`
-	Active             bool                  `json:"active"`
+	Staked             bool                  `json:"staked"`
 	Exited             bool                  `json:"exited"`
 	InQueue            bool                  `json:"inQueue"`
 	InPrestake         bool                  `json:"inPrestake"`

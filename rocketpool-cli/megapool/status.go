@@ -2,19 +2,114 @@ package megapool
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 	"github.com/urfave/cli"
 )
 
-const TimeFormat = "2006-01-02, 15:04 -0700 MST"
+const (
+	TimeFormat        = "2006-01-02, 15:04 -0700 MST"
+	colorBlue  string = "\033[36m"
+)
 
 func getStatus(c *cli.Context) error {
 
+	// Get RP client
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	if err != nil {
+		return err
+	}
+	defer rp.Close()
+
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
+	// Print what network we're on
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
+	if err != nil {
+		return err
+	}
+
+	// Check if Saturn is deployed
+	saturnResp, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if !saturnResp.IsSaturnDeployed {
+		fmt.Println("This command is only available after the Saturn upgrade.")
+		return nil
+	}
+
+	// Get Megapool status
+	status, err := rp.MegapoolStatus()
+	if err != nil {
+		return err
+	}
+
+	// Return if megapool isn't deployed
+	if !status.Megapool.Deployed {
+		fmt.Println("The node does not have a megapool.")
+		return nil
+	}
+
+	fmt.Printf("%s=== Megapool ===%s\n", colorGreen, colorReset)
+	fmt.Printf("The node has a megapool deployed at %s%s%s\n", colorBlue, status.Megapool.Address.Hex(), colorReset)
+	fmt.Printf("The node has %d express ticket(s).\n", status.Megapool.NodeExpressTicketCount)
+	fmt.Printf("The megapool has %d validators.\n", status.Megapool.ValidatorCount)
+	fmt.Println("")
+
+	fmt.Printf("%s=== Megapool Delegate ===%s\n", colorGreen, colorReset)
+	if status.Megapool.EffectiveDelegateAddress == status.LatestDelegate {
+		fmt.Printf("The megapool is using the latest delegate at %s%s%s\n", colorBlue, status.Megapool.DelegateAddress, colorReset)
+	} else {
+		fmt.Printf("The megapool can be upgraded to delegate %s!%s%s\n", colorBlue, status.LatestDelegate.Hex(), colorReset)
+	}
+	fmt.Printf("The megapool's effective delegate address is %s%s%s\n", colorBlue, status.Megapool.EffectiveDelegateAddress, colorReset)
+
+	if status.Megapool.UseLatestDelegate {
+		fmt.Println("The megapool is set to automatically upgrade to the latest delegate. You can toggle this setting using 'rocketpool megapool set-use-latest-delegate'.")
+	} else {
+		fmt.Println("The megapool has automatic delegate upgrades disabled. You can toggle this setting using 'rocketpool megapool set-use-latest-delegate'.")
+		if status.Megapool.DelegateExpiry > 0 {
+			fmt.Printf("Your current megapool delegate expires at %s block %d%s. Afterwards, it can be permissionlessly upgraded by other users.\n", colorBlue, status.Megapool.DelegateExpiry, colorReset)
+		}
+	}
+	fmt.Println("")
+
+	beaconBalance := new(big.Int)
+	beaconBalance.Add(status.Megapool.UserCapital, status.Megapool.NodeCapital)
+
+	fmt.Printf("%s=== Megapool Balance ===%s\n", colorGreen, colorReset)
+	fmt.Printf("The megapool has %6f node-bonded ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeBond), 6))
+	fmt.Printf("Beacon balance (CL): %6f ETH\n", math.RoundDown(eth.WeiToEth(beaconBalance), 6))
+	fmt.Printf("Your portion: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.UserCapital), 6))
+	if status.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
+		fmt.Printf("The megapool debt is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeDebt), 6))
+	}
+	if status.Megapool.RefundValue.Cmp(big.NewInt(0)) > 0 {
+		fmt.Printf("The megapool refund value is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.RefundValue), 6))
+	}
+	if status.Megapool.PendingRewards.Cmp(big.NewInt(0)) > 0 {
+		fmt.Printf("The megapool has %.6f ETH in pending rewards to claim\n", math.RoundDown(eth.WeiToEth(status.Megapool.PendingRewards), 6))
+	} else {
+		fmt.Println("The megapool does not have any pending rewards to claim")
+	}
+	fmt.Println("")
+
+	return nil
+
+}
+
+func getValidatorStatus(c *cli.Context) error {
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -44,28 +139,6 @@ func getStatus(c *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("Megapool Address: %s\n", status.Megapool.Address)
-	fmt.Printf("Megapool Delegate Address: %s\n", status.Megapool.DelegateAddress)
-	fmt.Printf("Megapool Effective Delegate Address: %s\n", status.Megapool.EffectiveDelegateAddress)
-	fmt.Printf("Megapool Latest Delegate Address %s\n", status.LatestDelegate)
-	fmt.Printf("Megapool Delegate Expiry Block: %d\n", status.Megapool.DelegateExpiry)
-	fmt.Printf("Megapool Deployed: %t\n", status.Megapool.Deployed)
-	fmt.Printf("Megapool UseLatestDelegate: %t\n", status.Megapool.UseLatestDelegate)
-	fmt.Printf("Megapool Refund Value: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.RefundValue), 6))
-	fmt.Printf("Megapool Pending Rewards: %.6f ETH. \n", math.RoundDown(eth.WeiToEth(status.Megapool.PendingRewards), 6))
-	fmt.Printf("Megapool AssignedValue: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.AssignedValue), 6))
-	fmt.Printf("Megapool NodeCapital: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeCapital), 6))
-	fmt.Printf("Megapool NodeBond: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeBond), 6))
-	fmt.Printf("Megapool UserCapital: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.UserCapital), 6))
-	fmt.Printf("Megapool Validator Count: %d \n", status.Megapool.ValidatorCount)
-	fmt.Printf("Node Express Ticket Count: %d\n", status.Megapool.NodeExpressTicketCount)
-
-	// fmt.Printf("Validator Details %+v\n", status.Megapool.Validators)
-
-	fmt.Println()
-	fmt.Println("============================")
-	fmt.Println()
-
 	statusValidators := map[string][]api.MegapoolValidatorDetails{
 		"active":     {},
 		"exited":     {},
@@ -77,7 +150,7 @@ func getStatus(c *cli.Context) error {
 
 	// Iterate over the validators and append them based on their statuses
 	for _, validator := range status.Megapool.Validators {
-		if validator.Active {
+		if validator.Staked {
 			statusValidators["active"] = append(statusValidators["active"], validator)
 		}
 		if validator.Exited {
@@ -113,12 +186,12 @@ func getStatus(c *cli.Context) error {
 func printValidatorDetails(validator api.MegapoolValidatorDetails) {
 
 	fmt.Printf("--------------------\n")
-	fmt.Printf("\n")
+	fmt.Println("")
 
 	// Main details
 	fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 	fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
-	if validator.Active {
+	if validator.Staked {
 		fmt.Printf("Validator active:             yes\n")
 	} else {
 		fmt.Printf("Validator active:             no\n")
@@ -128,17 +201,14 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails) {
 	} else {
 		fmt.Printf("Express Ticket Used:          no\n")
 	}
-	fmt.Printf("Validator LastRequestedBond:  %d\n", validator.LastRequestedBond)
-	fmt.Printf("Validator LastRequestedValue: %d\n", validator.LastRequestedValue)
+	fmt.Printf("Validator LastRequestedBond:  %d ETH\n", validator.LastRequestedBond/1000)
+	fmt.Printf("Validator LastRequestedValue: %d ETH\n", validator.LastRequestedValue/1000)
 	fmt.Printf("Validator LastAssignmentTime: %s\n", validator.LastAssignmentTime.Format(TimeFormat))
+	fmt.Printf("Validator Queue Position: \n")
 	fmt.Printf("Validator index: \n")
-	fmt.Printf("Validator fee: \n")
+	fmt.Printf("Validator fee:                5.000000%%\n")
 	fmt.Printf("Total EL rewards: \n")
 	fmt.Printf("Validator Balance (EL): \n")
-	fmt.Printf("Beacon balance (CL): \n")
-	fmt.Printf("Validator fee: \n")
-	fmt.Printf("Your Portion: \n")
-
-	fmt.Printf("\n")
+	fmt.Println("")
 
 }

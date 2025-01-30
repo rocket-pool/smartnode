@@ -126,7 +126,7 @@ func getStatus(c *cli.Context) error {
 				fmt.Println("The node does not have a megapool deployed yet.")
 				fmt.Println()
 			}
-			fmt.Printf("The node has %d express tickets.", status.ExpressTicketCount)
+			fmt.Printf("The node has %d express ticket(s).", status.ExpressTicketCount)
 			fmt.Println()
 			fmt.Println()
 		}

@@ -83,6 +83,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "validators",
+				Aliases:   []string{"v"},
+				Usage:     "Get a list of the megapool's validators",
+				UsageText: "rocketpool megapool validators",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return getValidatorStatus(c)
+
+				},
+			},
+			{
 				Name:      "repay-debt",
 				Aliases:   []string{"r"},
 				Usage:     "Repay megapool debt",
