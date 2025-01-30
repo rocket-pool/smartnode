@@ -2,7 +2,6 @@ package validator
 
 import (
 	"bytes"
-	"context"
 	"fmt"
 
 	"github.com/rocket-pool/node-manager-core/beacon"
@@ -41,7 +40,7 @@ type ValidatorManager struct {
 
 func NewValidatorManager(cfg *config.SmartNodeConfig, rp *rocketpool.RocketPool, walletImpl *wallet.Wallet, queryMgr *eth.QueryManager) (*ValidatorManager, error) {
 	// Make a validator manager
-	validatorManager := validator.NewValidatorManager(cfg.GetValidatorsFolderPath(), nil)
+	validatorManager := validator.NewValidatorManager(cfg.GetValidatorsFolderPath())
 
 	// Make a new mgr
 	mgr := &ValidatorManager{
@@ -85,7 +84,7 @@ func (m *ValidatorManager) GetValidatorKeyAt(index uint64) (*eth2types.BLSPrivat
 
 // Stores a validator key into all of the wallet's keystores
 func (m *ValidatorManager) StoreValidatorKey(key *eth2types.BLSPrivateKey, path string) error {
-	return m.keystoreManager.StoreKey(context.Background(), nil, key, path, nil, false)
+	return m.keystoreManager.StoreKey(key, path)
 }
 
 // Loads a validator key from the wallet's keystores
@@ -161,7 +160,7 @@ func (m *ValidatorManager) SaveValidatorKey(key ValidatorKey) error {
 	}
 
 	// Update keystores
-	err := m.keystoreManager.StoreKey(context.Background(), nil, key.PrivateKey, key.DerivationPath, nil, false)
+	err := m.keystoreManager.StoreKey(key.PrivateKey, key.DerivationPath)
 	if err != nil {
 		return fmt.Errorf("could not store validator %s key: %w", key.PublicKey.HexWithPrefix(), err)
 	}
@@ -207,7 +206,7 @@ func (m *ValidatorManager) RecoverValidatorKey(pubkey beacon.ValidatorPubkey, st
 	}
 
 	// Update keystores
-	err = m.keystoreManager.StoreKey(context.Background(), nil, validatorKey, derivationPath, nil, false)
+	err = m.keystoreManager.StoreKey(validatorKey, derivationPath)
 	if err != nil {
 		return 0, fmt.Errorf("error storing validator %s key: %w", pubkey.HexWithPrefix(), err)
 	}

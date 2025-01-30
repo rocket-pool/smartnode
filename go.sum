@@ -515,8 +515,8 @@ github.com/rocket-pool/batch-query v1.0.0 h1:5HejmT1n1fIdLIqUhTNwbkG2PGOPl3IVjCp
 github.com/rocket-pool/batch-query v1.0.0/go.mod h1:d1CmxShzk0fioJ4yX0eFGhz2an1odnW/LZ2cp3eDGIQ=
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd h1:p9KuetSKB9nte9I/MkkiM3pwKFVQgqxxPTQ0y56Ff6s=
 github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd/go.mod h1:UE9fof8P7iESVtLn1K9CTSkNRYVFHZHlf96RKbU33kA=
-github.com/rocket-pool/node-manager-core v0.5.2-0.20241107043357-0e1b8ab5d70f h1:CVIgrV128AFlc7EjRD0VpPqpBy0y+gFFL1RDARD2WV0=
-github.com/rocket-pool/node-manager-core v0.5.2-0.20241107043357-0e1b8ab5d70f/go.mod h1:/FFOK81WO/FZO+Y/9LeBRkVE17VkyyerAb9oBh9fpag=
+github.com/rocket-pool/node-manager-core v0.5.2-0.20241031175200-2488d6dc142f h1:TBw7JOyhiKfIexGpq1CQ7w1A+8iOcHMVJYjSe0T4tg8=
+github.com/rocket-pool/node-manager-core v0.5.2-0.20241031175200-2488d6dc142f/go.mod h1:/FFOK81WO/FZO+Y/9LeBRkVE17VkyyerAb9oBh9fpag=
 github.com/rocket-pool/rocketpool-go/v2 v2.0.0-b2.0.20240709170030-c27aeb5fb99b h1:39UmJzNR71/OMIzblEY9wq+3nojGa/gQOJJpLBa6XcE=
 github.com/rocket-pool/rocketpool-go/v2 v2.0.0-b2.0.20240709170030-c27aeb5fb99b/go.mod h1:pcY43H/m5pjr7zacrsKVaXnXfKKi1UV08VDPUwxbJkc=
 github.com/rogpeppe/go-internal v1.11.0 h1:cWPaGQEPrBb5/AsnsZesgZZ9yb1OQ+GOISoDNXVBh4M=
