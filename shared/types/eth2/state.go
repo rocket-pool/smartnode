@@ -1,6 +1,7 @@
 package eth2
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"math/bits"
@@ -86,6 +87,15 @@ func (state *BeaconStateDeneb) ValidatorProof(index uint64) ([][]byte, error) {
 	proof, err := root.Prove(int(generalizedIndex))
 	if err != nil {
 		return nil, fmt.Errorf("could not get proof for validator: %w", err)
+	}
+
+	// Sanity check that the proof leaf matches the expected validator
+	validatorHashTreeRoot, err := state.Validators[index].HashTreeRoot()
+	if err != nil {
+		return nil, fmt.Errorf("could not get hash tree root for validator: %w", err)
+	}
+	if !bytes.Equal(proof.Leaf, validatorHashTreeRoot[:]) {
+		return nil, fmt.Errorf("proof leaf does not match expected validator")
 	}
 
 	return proof.Hashes, nil
