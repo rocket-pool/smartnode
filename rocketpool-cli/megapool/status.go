@@ -189,8 +189,7 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 	fmt.Printf("--------------------\n")
 	fmt.Println("")
 
-	// Staking validators
-	if status == "Staking" || status == "Prelaunch" {
+	if status == "Prelaunch" {
 		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator active:             yes\n")
@@ -198,6 +197,14 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("RP ETH assignment time:       %s\n", validator.LastAssignmentTime.Format(TimeFormat))
 		fmt.Printf("Node deposit:                 %d ETH\n", validator.LastRequestedBond/1000)
 		fmt.Printf("RP deposit:                   %d ETH\n", (validator.LastRequestedValue-validator.LastRequestedBond)/1000)
+		fmt.Printf("Validator active:             yes\n")
+	}
+
+	if status == "Staking" {
+		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
+		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Validator active:             yes\n")
+		fmt.Printf("Validator index:              \n")
 		fmt.Printf("Validator active:             yes\n")
 	}
 
