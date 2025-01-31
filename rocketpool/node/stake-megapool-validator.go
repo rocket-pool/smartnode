@@ -144,10 +144,10 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	for i := uint32(0); i < uint32(validatorCount); i++ {
 		if validatorInfo[i].InPrestake {
 			// Log
-			t.log.Printlnf("The validator %d needs to be staked", i)
+			t.log.Printlnf("The validator %d needs to be staked", validatorInfo[i].ValidatorId)
 
 			// Call Stake
-			t.stakeValidator(mp, i, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
+			t.stakeValidator(mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
 		}
 	}
 
