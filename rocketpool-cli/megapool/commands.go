@@ -138,8 +138,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Usage: "Automatically confirm the action",
 					},
 					cli.Uint64Flag{
-						Name:  "validator-index",
-						Usage: "The validator index to stake",
+						Name:  "validator-id",
+						Usage: "The validator id to stake",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -163,8 +163,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Usage: "Automatically confirm the action",
 					},
 					cli.StringFlag{
-						Name:  "validator-index",
-						Usage: "The validator index to exit",
+						Name:  "validator-id",
+						Usage: "The validator id to exit",
 					},
 					cli.BoolFlag{
 						Name:  "express",

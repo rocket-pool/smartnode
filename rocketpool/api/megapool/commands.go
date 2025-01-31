@@ -117,7 +117,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-stake",
 				Usage:     "Check if we can stake a megapool validator",
-				UsageText: "rocketpool api megapool can-stake validator-index",
+				UsageText: "rocketpool api megapool can-stake validator-id",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -125,14 +125,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					// Get the validatorIndex
-					validatorIndex, err := cliutils.ValidateUint("validatorIndex", c.Args().Get(0))
+					// Get the validatorId
+					validatorId, err := cliutils.ValidateUint("validatorId", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canStake(c, validatorIndex))
+					api.PrintResponse(canStake(c, validatorId))
 					return nil
 
 				},
@@ -141,7 +141,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "stake",
 				Aliases:   []string{"st"},
 				Usage:     "Stake a megapool validator",
-				UsageText: "rocketpool api megapool stake validator-index",
+				UsageText: "rocketpool api megapool stake validator-id",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -149,14 +149,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					// Get validatorIndex
-					validatorIndex, err := cliutils.ValidateUint("validatorIndex", c.Args().Get(0))
+					// Get validatorId
+					validatorId, err := cliutils.ValidateUint("validatorId", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(stake(c, validatorIndex))
+					api.PrintResponse(stake(c, validatorId))
 					return nil
 
 				},
@@ -164,7 +164,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-exit-queue",
 				Usage:     "Check whether the node can exit the megapool queue",
-				UsageText: "rocketpool api megapool can-exit-queue validator-index",
+				UsageText: "rocketpool api megapool can-exit-queue validator-id",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -172,14 +172,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					// Check the validator-index
-					validatorIndex, err := cliutils.ValidateUint32("validator-index", c.Args().Get(0))
+					// Check the validator-id
+					validatorId, err := cliutils.ValidateUint32("validatorId", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canExitQueue(c, validatorIndex))
+					api.PrintResponse(canExitQueue(c, validatorId))
 					return nil
 
 				},
@@ -187,7 +187,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "exit-queue",
 				Usage:     "Exit the megapool queue",
-				UsageText: "rocketpool api megapool exit-queue validator-index express-queue",
+				UsageText: "rocketpool api megapool exit-queue validator-id express-queue",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -195,14 +195,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					// Check the validator-index
-					validatorIndex, err := cliutils.ValidateUint32(c.Args().Get(0), "validator-index")
+					// Check the validatorId
+					validatorId, err := cliutils.ValidateUint32(c.Args().Get(0), "validatorId")
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(exitQueue(c, validatorIndex))
+					api.PrintResponse(exitQueue(c, validatorId))
 					return nil
 
 				},

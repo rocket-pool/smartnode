@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/urfave/cli"
 )
@@ -29,42 +30,64 @@ func exitQueue(c *cli.Context) error {
 		return nil
 	}
 
-	var validatorIndex uint64
+	var validatorId uint64
 
 	// Check if the validator id flag is set
-	if c.String("validator-index") != "" {
+	if c.String("validator-id") != "" {
 		// Get selected lot index
-		validatorIndex, err = strconv.ParseUint(c.String("validator-index"), 10, 64)
+		validatorId, err = strconv.ParseUint(c.String("validator-id"), 10, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid validator index '%s': %w", c.String("validator-index"), err)
+			return fmt.Errorf("Invalid validator id '%s': %w", c.String("validator-id"), err)
 		}
 	} else {
-		// Ask for validator index
-		validatorIndexString := cliutils.Prompt("Which validator index do you want to exit from the queue?", "^\\d+$", "Invalid validator index")
-		validatorIndex, err = strconv.ParseUint(validatorIndexString, 0, 64)
+		// Get Megapool status
+		status, err := rp.MegapoolStatus()
 		if err != nil {
-			return fmt.Errorf("'%s' is not a valid validator index: %w.\n", validatorIndexString, err)
+			return err
+		}
+
+		validatorsInQueue := []api.MegapoolValidatorDetails{}
+
+		for _, validator := range status.Megapool.Validators {
+			if validator.InQueue {
+				validatorsInQueue = append(validatorsInQueue, validator)
+			}
+		}
+		if len(validatorsInQueue) > 0 {
+
+			options := make([]string, len(validatorsInQueue))
+			for vi, v := range validatorsInQueue {
+				options[vi] = fmt.Sprintf("Pubkey: 0x%s", v.PubKey.String())
+			}
+			selected, _ := cliutils.Select("Please select a validator to exit the queue:", options)
+
+			// Get validators
+			validatorId = uint64(validatorsInQueue[selected].ValidatorId)
+
+		} else {
+			fmt.Println("No validators can exit the queue at the moment")
+			return nil
 		}
 	}
 
 	// Check whether the validator can be exited
-	canExit, err := rp.CanExitQueue(uint32(validatorIndex))
+	canExit, err := rp.CanExitQueue(uint32(validatorId))
 	if err != nil {
 		return fmt.Errorf("Error checking if validator can be exited: %w", err)
 	}
 
 	if !canExit.CanExit {
-		return fmt.Errorf("Validator %d cannot be exited from the megapool queue", validatorIndex)
+		return fmt.Errorf("Validator %d cannot be exited from the megapool queue", validatorId)
 	}
 
 	// Ask for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to request to exit validator index %d from the megapool queue?", validatorIndex))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to request to exit validator index %d from the megapool queue?", validatorId))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Request exit from the megapool queue
-	response, err := rp.ExitQueue(uint32(validatorIndex))
+	response, err := rp.ExitQueue(uint32(validatorId))
 	if err != nil {
 		return fmt.Errorf("Error requesting exit from the megapool queue: %w", err)
 	}
@@ -75,6 +98,6 @@ func exitQueue(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("Successfully requested exit from the megapool queue for validator ID %d.\n", validatorIndex)
+	fmt.Printf("Successfully requested exit from the megapool queue for validator ID %d.\n", validatorId)
 	return nil
 }

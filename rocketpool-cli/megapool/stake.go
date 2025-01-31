@@ -32,8 +32,8 @@ func stake(c *cli.Context) error {
 	validatorId := uint64(0)
 
 	// check if the validator-id flag was used
-	if c.IsSet("validator-index") {
-		validatorId = c.Uint64("validator-index")
+	if c.IsSet("validator-id") {
+		validatorId = c.Uint64("validator-id")
 	} else {
 		// Get Megapool status
 		status, err := rp.MegapoolStatus()
@@ -61,6 +61,7 @@ func stake(c *cli.Context) error {
 
 		} else {
 			fmt.Println("No validators can be staked at the moment")
+			return nil
 		}
 
 	}
