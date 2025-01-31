@@ -158,6 +158,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 func (cfg *PrysmConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.MaxPeers,
+		&cfg.P2pQuicPort,
 		&cfg.RpcPort,
 		&cfg.OpenRpcPort,
 		&cfg.BnContainerTag,
