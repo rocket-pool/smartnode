@@ -71,7 +71,7 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
 	}
 
-	proofBytes, err := beaconState.ValidatorProof(validatorIndex64)
+	proofBytes, err := beaconState.ValidatorCredentialsProof(validatorIndex64)
 	if err != nil {
 		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
 	}
