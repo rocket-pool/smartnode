@@ -71,7 +71,7 @@ func getStatus(c *cli.Context) error {
 	if status.Megapool.EffectiveDelegateAddress == status.LatestDelegate {
 		fmt.Printf("The megapool is using the latest delegate at %s%s%s\n", colorBlue, status.Megapool.DelegateAddress, colorReset)
 	} else {
-		fmt.Printf("The megapool can be upgraded to delegate %s!%s%s\n", colorBlue, status.LatestDelegate.Hex(), colorReset)
+		fmt.Printf("The megapool can be upgraded to delegate %s%s%s\n", colorBlue, status.LatestDelegate.Hex(), colorReset)
 	}
 	fmt.Printf("The megapool's effective delegate address is %s%s%s\n", colorBlue, status.Megapool.EffectiveDelegateAddress, colorReset)
 
@@ -80,7 +80,7 @@ func getStatus(c *cli.Context) error {
 	} else {
 		fmt.Println("The megapool has automatic delegate upgrades disabled. You can toggle this setting using 'rocketpool megapool set-use-latest-delegate'.")
 		if status.Megapool.DelegateExpiry > 0 {
-			fmt.Printf("Your current megapool delegate expires at %s block %d%s. Afterwards, it can be permissionlessly upgraded by other users.\n", colorBlue, status.Megapool.DelegateExpiry, colorReset)
+			fmt.Printf("Your current megapool delegate expires at %s block %d%s.\n", colorBlue, status.Megapool.DelegateExpiry, colorReset)
 		}
 	}
 	fmt.Println("")
@@ -88,8 +88,13 @@ func getStatus(c *cli.Context) error {
 	beaconBalance := new(big.Int)
 	beaconBalance.Add(status.Megapool.UserCapital, status.Megapool.NodeCapital)
 
+	totalBond := new(big.Int).Mul(status.Megapool.NodeBond, big.NewInt(4))
+	rpBond := new(big.Int).Sub(totalBond, status.Megapool.NodeBond)
+
 	fmt.Printf("%s=== Megapool Balance ===%s\n", colorGreen, colorReset)
-	fmt.Printf("The megapool has %6f node-bonded ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeBond), 6))
+	fmt.Printf("The megapool has %6f node bonded ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeBond), 6))
+	fmt.Printf("The megapool has %6f RP ETH for a total of %6f bonded ETH.\n", math.RoundDown(eth.WeiToEth(rpBond), 6), math.RoundDown(eth.WeiToEth(totalBond), 6))
+
 	fmt.Printf("Beacon balance (CL): %6f ETH.\n", math.RoundDown(eth.WeiToEth(beaconBalance), 6))
 	fmt.Printf("Your portion: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.UserCapital), 6))
 	if status.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
@@ -194,10 +199,6 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator active:             yes\n")
 		fmt.Printf("Validator index:              \n")
-		fmt.Printf("RP ETH assignment time:       %s\n", validator.LastAssignmentTime.Format(TimeFormat))
-		fmt.Printf("Node deposit:                 %d ETH\n", validator.LastRequestedBond/1000)
-		fmt.Printf("RP deposit:                   %d ETH\n", (validator.LastRequestedValue-validator.LastRequestedBond)/1000)
-		fmt.Printf("Validator active:             yes\n")
 	}
 
 	if status == "Staking" {
@@ -205,7 +206,13 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator active:             yes\n")
 		fmt.Printf("Validator index:              \n")
-		fmt.Printf("Validator active:             yes\n")
+	}
+
+	if status == "Initialized" {
+		fmt.Printf("Expected pubkey:              0x%s\n", string(validator.PubKey.String()))
+		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Validator active:             no\n")
+		fmt.Printf("Validator Queue Position:     \n")
 	}
 
 	// Main details
@@ -215,13 +222,6 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Express Ticket Used:          no\n")
 	}
 
-	if status == "Initialized" {
-		fmt.Printf("Validator active:             no\n")
-		fmt.Printf("Expected pubkey:              0x%s\n", string(validator.PubKey.String()))
-		fmt.Printf("Validator Queue Position:     \n")
-		fmt.Printf("RP ETH requested:             %d ETH\n", (validator.LastRequestedValue-validator.LastRequestedBond)/1000)
-		fmt.Printf("Node deposit:                 %d ETH\n", validator.LastRequestedBond/1000)
-	}
 	fmt.Println("")
 
 }
