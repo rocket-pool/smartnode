@@ -207,7 +207,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		}
 
 		// calculte the withdrawal credentials (in case megapool is not deployed)
-		withdrawalCredentials = calculateWithdrawalCredentials(megapoolAddress)
+		withdrawalCredentials = services.CalculateMegapoolWithdrawalCredentials(megapoolAddress)
 
 	}
 
@@ -538,25 +538,5 @@ func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pub
 	// Validate the signature
 	err = prdeposit.VerifyDepositSignature(depositData, depositDomain)
 	return err
-
-}
-
-func calculateWithdrawalCredentials(megapoolAddress common.Address) common.Hash {
-	// Convert the address to a uint160 (20 bytes) and then to a uint256 (32 bytes)
-	addressBigInt := new(big.Int)
-	addressBigInt.SetString(megapoolAddress.Hex()[2:], 16) // Remove the "0x" prefix and convert from hex
-
-	// Shift 0x01 left by 248 bits
-	shiftedValue := new(big.Int).Lsh(big.NewInt(0x01), 248)
-
-	// Perform the bitwise OR operation
-	result := new(big.Int).Or(shiftedValue, addressBigInt)
-
-	// Convert the result to a 32-byte array (bytes32)
-	var bytes32 [32]byte
-	resultBytes := result.Bytes()
-	copy(bytes32[32-len(resultBytes):], resultBytes)
-
-	return common.BytesToHash(resultBytes)
 
 }

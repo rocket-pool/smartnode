@@ -164,7 +164,7 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 		return err
 	}
 
-	signature, depositDataRoot, proof, err := services.GetStakeValidatorInfo(t.c, t.w, state.BeaconConfig, mp, validatorPubkey)
+	signature, depositDataRoot, proof, err := services.GetStakeValidatorInfo(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
 	if err != nil {
 		return err
 	}
