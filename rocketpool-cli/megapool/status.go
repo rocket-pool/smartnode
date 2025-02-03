@@ -57,7 +57,7 @@ func getStatus(c *cli.Context) error {
 
 	// Return if megapool isn't deployed
 	if !status.Megapool.Deployed {
-		fmt.Println("The node does not have a megapool.")
+		fmt.Println("The node does not have a megapool. Please run 'rocketpool megapool deploy-megapool' and try again.")
 		return nil
 	}
 
@@ -122,6 +122,18 @@ func getValidatorStatus(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Get the config
+	cfg, isNew, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
+	// Print what network we're on
+	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
+	if err != nil {
+		return err
+	}
+
 	// Check if Saturn is deployed
 	saturnResp, err := rp.IsSaturnDeployed()
 	if err != nil {
@@ -140,7 +152,7 @@ func getValidatorStatus(c *cli.Context) error {
 
 	// Return if megapool isn't deployed
 	if !status.Megapool.Deployed {
-		fmt.Println("The node does not have a megapool.")
+		fmt.Println("The node does not have a megapool. Please run 'rocketpool megapool deploy-megapool' and try again.")
 		return nil
 	}
 

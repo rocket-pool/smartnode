@@ -23,15 +23,24 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return api.MegapoolDetails{}, err
 	}
 
+	// Sync
+	var wg errgroup.Group
+	details := api.MegapoolDetails{Address: megapoolAddress}
+
+	// Return if megapool isn't deployed
+	details.Deployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
+	if err != nil {
+		return api.MegapoolDetails{}, err
+	}
+	if !details.Deployed {
+		return details, nil
+	}
+
 	// Load the megapool contract
 	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
-
-	// Sync
-	var wg errgroup.Group
-	details := api.MegapoolDetails{Address: megapoolAddress}
 
 	wg.Go(func() error {
 		var err error
@@ -72,11 +81,6 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	wg.Go(func() error {
 		var err error
 		details.NodeExpressTicketCount, err = node.GetExpressTicketCount(rp, nodeAccount, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		details.Deployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
 		return err
 	})
 	wg.Go(func() error {
