@@ -97,7 +97,7 @@ func getStatus(c *cli.Context) error {
 	fmt.Printf("The megapool has %6f node bonded ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeBond), 6))
 	fmt.Printf("The megapool has %6f RP ETH for a total of %6f bonded ETH.\n", math.RoundDown(eth.WeiToEth(rpBond), 6), math.RoundDown(eth.WeiToEth(totalBond), 6))
 	fmt.Printf("Beacon balance (CL): %6f ETH.\n", math.RoundDown(eth.WeiToEth(beaconBalance), 6))
-	fmt.Printf("Your portion: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.UserCapital), 6))
+	fmt.Printf("Your portion: %6f ETH\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeCapital), 6))
 	if status.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("The megapool debt is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeDebt), 6))
 	}
@@ -189,7 +189,7 @@ func getValidatorStatus(c *cli.Context) error {
 		if validator.InPrestake {
 			statusValidators["Prelaunch"] = append(statusValidators["Prelaunch"], validator)
 		}
-		if validator.InPrestake {
+		if validator.Dissolved {
 			statusValidators["Dissolved"] = append(statusValidators["Dissolved"], validator)
 		}
 	}
