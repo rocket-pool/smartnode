@@ -13,8 +13,9 @@ type Megapool interface {
 	GetContract() *rocketpool.Contract
 	GetAddress() common.Address
 	GetVersion() uint8
-	GetValidatorCount(opts *bind.CallOpts) (uint64, error)
+	GetValidatorCount(opts *bind.CallOpts) (uint32, error)
 	GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) (ValidatorInfo, error)
+	GetLastDistributionBlock(opts *bind.CallOpts) (uint64, error)
 	GetAssignedValue(opts *bind.CallOpts) (*big.Int, error)
 	GetDebt(opts *bind.CallOpts) (*big.Int, error)
 	GetRefundValue(opts *bind.CallOpts) (*big.Int, error)

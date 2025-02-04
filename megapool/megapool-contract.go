@@ -54,7 +54,7 @@ type megapoolV1 struct {
 }
 
 const (
-	megapoolV1EncodedAbi string = "eJztWMlu2zAQ/ZXC56CHtM0ht2wFgiaF6yTtIQgMShw7hGlS5eIFQf+9I1mrRVlyLCU65JTIot4MH4dvlseXARFSrOfS6sHphHANRwMmAmvw8fEF/6WwAjo4NcpGbwwoQfj9OoDB6YBQqkDrwdFAkHn4wxymJJCS4y+muOTfUR2YxefjbycZ2IJwRomR6ppmeMmqAl7q925Aw/BPGekpXXAbu/87sXymNZsKyNmHBQgTWf/grZq3S/hrwX7wti9vV6KatwJLJcNfjjO748qd4KqceRJF93craEiptCY2gCu0IQZurSEe48yscXFA1sTjuf1MrPANk6LoXIbuE+5bjjAjWBK1ZcK5hwJ5QtLcl87TqDlOie8PQlBgnqsBnCwtGCz3oIgTNq+nHi/M3uxTCBT4iNQmfGuRRzf60E/fmNaSLyC9lB0dENNGMc+2e0IZ/hRMkr1wJ1tc18d+NwGPTl2CZ/riy9UqYIqEi8659Gd9cesnSt9Zmup2uFTKh4482J5L51LQPlF0QQJmCO+LS0MQlInp67JdZ16NABf1SwEeNKienV2q9RfSiveUp9ayWH5T12Iit/bky3kgBZaWTqPe2kBOVQLr/YB1Zm3zuqKCyjvLiY6T0BxN3ZfK4dDlZiijsGDQJstlh6HEUlYL4m16i6RexgNb5IxHb2u/ghUz+Yq+2VdM/IorpD0/G6LsGzJ7hZtBmDDwcu7ta1IxlT58KvVIWPNY33waYbYFk7Q/dxijZAo3ZI0h+nk7bEu3zNgAC6GWbv4fZp6pIkvCLxRQjFKGvd1uAYjCPx9aWzcjvogtCkBBbsYeBu/ZPBaq+rameFZjq+Fqc9T3LDyEBoddVINMgYbWmzXShUqEO5QGYqyCpiAFKcQeR2pmLokhIymN+xiSdhKWHRf0CvCTUnV7SC/dIBZIVRzk/YpE70FEsjAa3nTedRVdpBtKqh3UjqbgfZvB+gjWHQfuUV2KDl09+Zphai63WMa3jcYkmdxSWDVTlFJ5sIcM5IlYVoivgw031ONTAUygqkEZAFdVp6JUFYZKyknukIL4uZR1EsbjLPuWd6nBde/ilmfothMVyfAXoHT4+s0r8GZTaffgt9SGS04vgWN1Y3Jbd06mGwJi9joIcP/RdGLuIZgqQruf5E+UnLeztco70gVNV+Y5HDL7wBaHcOR2p1i5ReHsrNZa3hO2ADdoCkuGAIXRva0mNQ3h3CP+rHpCXYiwbvQkGjimF6cXo7TEn2j4CDUTtWIIOPqrNqagkwlEnW3fmEoDsZljHXFVT8BYFAa2DjLS7pyFJQ7T3dYNWx2fUzgK5fduol/nXgOFUBvdRGf+AyRlGdM="
+	megapoolV1EncodedAbi string = "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"
 )
 
 // The decoded ABI for megapools
@@ -101,12 +101,12 @@ func (mp *megapoolV1) GetVersion() uint8 {
 	return mp.Version
 }
 
-func (mp *megapoolV1) GetValidatorCount(opts *bind.CallOpts) (uint64, error) {
-	validatorCount := new(*big.Int)
-	if err := mp.Contract.Call(opts, validatorCount, "getValidatorCount"); err != nil {
+func (mp *megapoolV1) GetValidatorCount(opts *bind.CallOpts) (uint32, error) {
+	var validatorCount uint32
+	if err := mp.Contract.Call(opts, &validatorCount, "getValidatorCount"); err != nil {
 		return 0, fmt.Errorf("error getting megapool %s validator count: %w", mp.Address.Hex(), err)
 	}
-	return (*validatorCount).Uint64(), nil
+	return validatorCount, nil
 }
 
 func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) (ValidatorInfo, error) {
@@ -128,6 +128,14 @@ func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) 
 	}
 
 	return *validatorInfo, nil
+}
+
+func (mp *megapoolV1) GetLastDistributionBlock(opts *bind.CallOpts) (uint64, error) {
+	lastDistributionBlock := new(*big.Int)
+	if err := mp.Contract.Call(opts, lastDistributionBlock, "getLastDistributionBlock"); err != nil {
+		return 0, fmt.Errorf("error getting megapool %s lastDistributionBlock: %w", mp.Address.Hex(), err)
+	}
+	return (*lastDistributionBlock).Uint64(), nil
 }
 
 func (mp *megapoolV1) GetAssignedValue(opts *bind.CallOpts) (*big.Int, error) {
