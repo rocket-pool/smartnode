@@ -170,9 +170,10 @@ func getValidatorStatus(c *cli.Context) error {
 		"Exited":      {},
 		"Initialized": {},
 		"Prelaunch":   {},
+		"Dissolved":   {},
 	}
 
-	statusName := []string{"Staking", "Exited", "Prelaunch", "Initialized"}
+	statusName := []string{"Staking", "Exited", "Prelaunch", "Initialized", "Dissolved"}
 
 	// Iterate over the validators and append them based on their statuses
 	for _, validator := range status.Megapool.Validators {
@@ -187,6 +188,9 @@ func getValidatorStatus(c *cli.Context) error {
 		}
 		if validator.InPrestake {
 			statusValidators["Prelaunch"] = append(statusValidators["Prelaunch"], validator)
+		}
+		if validator.InPrestake {
+			statusValidators["Dissolved"] = append(statusValidators["Dissolved"], validator)
 		}
 	}
 
@@ -238,6 +242,11 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Expected pubkey:              0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             no\n")
 		fmt.Printf("Validator Queue Position:     \n")
+	}
+
+	if status == "Dissolved" {
+		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Validator active:             no\n")
 	}
 
 	// Main details
