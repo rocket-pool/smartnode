@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 )
@@ -21,7 +22,7 @@ type MegapoolDetails struct {
 	DelegateAddress          common.Address             `json:"delegate"`
 	EffectiveDelegateAddress common.Address             `json:"effectiveDelegateAddress"`
 	Deployed                 bool                       `json:"deployed"`
-	ValidatorCount           uint64                     `json:"validatorCount"`
+	ValidatorCount           uint32                     `json:"validatorCount"`
 	NodeDebt                 *big.Int                   `json:"nodeDebt"`
 	RefundValue              *big.Int                   `json:"refundValue"`
 	DelegateExpiry           uint64                     `json:"delegateExpiry"`
@@ -32,6 +33,9 @@ type MegapoolDetails struct {
 	NodeCapital              *big.Int                   `json:"nodeCapital"`
 	NodeBond                 *big.Int                   `json:"nodeBond"`
 	UserCapital              *big.Int                   `json:"userCapital"`
+	NodeShare                *big.Int                   `json:"nodeShare"`
+	RevenueSplit             network.RevenueSplit       `json:"revenueSplit"`
+	LastDistributionBlock    uint64                     `json:"lastDistributionBlock"`
 	Validators               []MegapoolValidatorDetails `json:"validators"`
 }
 

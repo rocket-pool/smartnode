@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/megapool"
+	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -41,7 +42,24 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
+	details.LastDistributionBlock, err = mega.GetLastDistributionBlock(nil)
+	if err != nil {
+		return api.MegapoolDetails{}, err
+	}
 
+	// Don't calculate the revenue split if there are no staked validators
+	if details.LastDistributionBlock != 0 {
+		wg.Go(func() error {
+			var err error
+			details.RevenueSplit, err = network.CalculateSplit(rp, details.LastDistributionBlock, nil)
+			return err
+		})
+	}
+	wg.Go(func() error {
+		var err error
+		details.NodeShare, err = network.GetCurrentNodeShare(rp, nil)
+		return err
+	})
 	wg.Go(func() error {
 		var err error
 		details.NodeDebt, err = mega.GetDebt(nil)

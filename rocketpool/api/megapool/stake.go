@@ -68,7 +68,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 		return nil, err
 	}
 
-	if validatorId >= validatorCount {
+	if validatorId >= uint64(validatorCount) {
 		response.CanStake = false
 		return &response, nil
 	}
