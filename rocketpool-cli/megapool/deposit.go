@@ -229,10 +229,12 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	fmt.Printf("The node deposit of %.6f ETH was made successfully!\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
 	fmt.Printf("The validator pubkey is: %s\n\n", response.ValidatorPubkey.Hex())
 
-	fmt.Println("The new megapool validator is now in Initialized status.")
-	fmt.Println("Once the remaining ETH has been assigned to your megapool validator from the staking pool, it will move to Prelaunch status.")
-	fmt.Printf("After that, it will move to Staking status once %s have passed.\n", response.ScrubPeriod)
-	fmt.Println("You can watch its progress using `rocketpool service logs node`.")
+	fmt.Println("The new megapool validator has been created.")
+	fmt.Println("Once your validator progresses through the queue, ETH will be assigned and a 1 ETH prestake submitted.")
+	fmt.Println("After the prestake, your node will automatically perform a stake transaction within around 12 hours, to complete the progress.")
+	fmt.Println("")
+	fmt.Println("To check status of your validators use `rocketpool megapool validators`")
+	fmt.Println("To monitor the stake transaction use `rocketpool service logs node`")
 
 	return nil
 

@@ -52,7 +52,7 @@ func stake(c *cli.Context) error {
 
 			options := make([]string, len(validatorsInPrestake))
 			for vi, v := range validatorsInPrestake {
-				options[vi] = fmt.Sprintf("Pubkey: 0x%s (Last assignment: %s)", v.PubKey.String(), v.LastAssignmentTime.Format("January 2, 2006"))
+				options[vi] = fmt.Sprintf("Pubkey: 0x%s (Last ETH assignment: %s)", v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
 			}
 			selected, _ := cliutils.Select("Please select a validator to stake:", options)
 
@@ -64,7 +64,12 @@ func stake(c *cli.Context) error {
 			return nil
 		}
 
+	// Warning reg the time necessary to build the proof
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("The stake operation will build a beacon chain proof that the validator deposit was correct. This will take several seconds to finish.\n Do you want to continue?", validatorId))) {
+		fmt.Println("Cancelled.")
+		return nil
 	}
+
 	// Check megapool validator can be staked
 	canStake, err := rp.CanStake(validatorId)
 	if err != nil {
