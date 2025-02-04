@@ -406,17 +406,8 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 			return nil, err
 		}
 
-		// Load the megapool
-		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-		if err != nil {
-			return nil, err
-		}
-
 		// Get the withdrawal credentials
-		withdrawalCredentials, err = mp.GetWithdrawalCredentials(nil)
-		if err != nil {
-			return nil, err
-		}
+		withdrawalCredentials = services.CalculateMegapoolWithdrawalCredentials(megapoolAddress)
 	}
 
 	// Get validator deposit data and associated parameters
