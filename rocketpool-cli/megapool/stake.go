@@ -64,7 +64,12 @@ func stake(c *cli.Context) error {
 			return nil
 		}
 
+	// Warning reg the time necessary to build the proof
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("The stake operation will build a beacon chain proof that the validator deposit was correct. This will take several seconds to finish.\n Do you want to continue?", validatorId))) {
+		fmt.Println("Cancelled.")
+		return nil
 	}
+
 	// Check megapool validator can be staked
 	canStake, err := rp.CanStake(validatorId)
 	if err != nil {
