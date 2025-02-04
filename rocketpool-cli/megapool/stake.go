@@ -65,7 +65,7 @@ func stake(c *cli.Context) error {
 		}
 
 		// Warning reg the time necessary to build the proof
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("The stake operation will build a beacon chain proof that the validator deposit was correct. This will take several seconds to finish.\nDo you want to continue?"))) {
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("The stake operation will construct a beacon state proof that the deposit for validator %d was correct. This will take several seconds to finish.\nDo you want to continue?", validatorId))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
