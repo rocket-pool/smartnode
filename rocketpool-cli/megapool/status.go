@@ -3,6 +3,7 @@ package megapool
 import (
 	"fmt"
 	"math/big"
+	"sort"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -190,19 +191,23 @@ func getValidatorStatus(c *cli.Context) error {
 	}
 
 	// Print validators by status
+	noValidators := true
 	for _, status := range statusName {
-		validators, ok := statusValidators[status]
-		if !ok || len(validators) == 0 {
-			continue
+		if validators := statusValidators[status]; len(validators) > 0 {
+			noValidators = false
+			sort.Slice(validators, func(i, j int) bool {
+				return validators[i].ValidatorId < validators[j].ValidatorId
+			})
+
+			fmt.Printf("%d %s validator(s):\n", len(validators), status)
+			fmt.Println("")
+			for _, validator := range validators {
+				printValidatorDetails(validator, status)
+			}
 		}
-
-		fmt.Printf("%d %s validator(s):\n", len(validators), status)
-		fmt.Println("")
-
-		for _, validator := range validators {
-			printValidatorDetails(validator, status)
-		}
-
+	}
+	if noValidators {
+		fmt.Println("The megapool does not have any validators yet.")
 	}
 
 	return nil
@@ -215,22 +220,22 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 	fmt.Println("")
 
 	if status == "Prelaunch" {
-		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             yes\n")
 		fmt.Printf("Validator index:              \n")
 	}
 
 	if status == "Staking" {
-		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             yes\n")
 		fmt.Printf("Validator index:              \n")
 	}
 
 	if status == "Initialized" {
-		fmt.Printf("Expected pubkey:              0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Expected pubkey:              0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             no\n")
 		fmt.Printf("Validator Queue Position:     \n")
 	}
