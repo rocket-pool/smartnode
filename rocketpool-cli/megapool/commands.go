@@ -183,6 +183,31 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "dissolve-validator",
+				Usage:     "Dissolve a megapool validator",
+				UsageText: "rocketpool megapool dissolve-validator",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+					cli.StringFlag{
+						Name:  "validator-id",
+						Usage: "The validator id to exit",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return dissolveValidator(c)
+				},
+			},
+			{
 				Name:      "set-use-latest-delegate",
 				Aliases:   []string{"l"},
 				Usage:     "Use this to enable or disable the \"use-latest-delegate\" flag on the node's megapool. If enabled, the megapool will ignore its current delegate contract and always use whatever the latest delegate is.",

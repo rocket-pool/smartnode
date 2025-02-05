@@ -90,6 +90,38 @@ func (c *Client) Stake(validatorId uint64) (api.StakeResponse, error) {
 	return response, nil
 }
 
+// Check whether the megapool validator can be disoolved
+func (c *Client) CanDissolveValidator(validatorId uint64) (api.CanDissolveValidatorResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-dissolve-validator %d", validatorId))
+	if err != nil {
+		return api.CanDissolveValidatorResponse{}, fmt.Errorf("Could not get can dissolve validator status: %w", err)
+	}
+	var response api.CanDissolveValidatorResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanDissolveValidatorResponse{}, fmt.Errorf("Could not decode can dissolve-validator response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanDissolveValidatorResponse{}, fmt.Errorf("Could not get can dissolve status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Dissolve a megapool validator
+func (c *Client) DissolveValidator(validatorId uint64) (api.DissolveValidatorResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool dissolve-validator %d", validatorId))
+	if err != nil {
+		return api.DissolveValidatorResponse{}, fmt.Errorf("Could not dissolve megapool validator: %w", err)
+	}
+	var response api.DissolveValidatorResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.DissolveValidatorResponse{}, fmt.Errorf("Could not decode dissolve response: %w", err)
+	}
+	if response.Error != "" {
+		return api.DissolveValidatorResponse{}, fmt.Errorf("Could not dissolve megapool validator: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can exit the megapool queue
 func (c *Client) CanExitQueue(validatorIndex uint32) (api.CanExitQueueResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-exit-queue %d", validatorIndex))

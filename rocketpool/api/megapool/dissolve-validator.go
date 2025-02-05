@@ -1,19 +1,16 @@
 package megapool
 
 import (
-	"context"
 	"fmt"
-	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/megapool"
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	"github.com/urfave/cli"
 )
 
-func canRepayDebt(c *cli.Context, amount *big.Int) (*api.CanRepayDebtResponse, error) {
+func canDissolveValidator(c *cli.Context, validatorId uint32) (*api.CanDissolveValidatorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -35,7 +32,7 @@ func canRepayDebt(c *cli.Context, amount *big.Int) (*api.CanRepayDebtResponse, e
 	}
 
 	// Response
-	response := api.CanRepayDebtResponse{}
+	response := api.CanDissolveValidatorResponse{}
 
 	// Check if the megapool is deployed
 	megapoolDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
@@ -43,7 +40,7 @@ func canRepayDebt(c *cli.Context, amount *big.Int) (*api.CanRepayDebtResponse, e
 		return nil, err
 	}
 	if !megapoolDeployed {
-		response.CanRepay = false
+		response.CanDissolve = false
 		return &response, nil
 	}
 
@@ -59,30 +56,14 @@ func canRepayDebt(c *cli.Context, amount *big.Int) (*api.CanRepayDebtResponse, e
 		return nil, err
 	}
 
-	// Get the megapool debt
-	debt, err := mp.GetDebt(nil)
+	validatorInfo, err := mp.GetValidatorInfo(validatorId, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if amount is greater than debt
-	if amount.Cmp(debt) > 0 {
-		response.CanRepay = false
-		response.NotEnoughDebt = true
-		return &response, nil
-	}
-
-	// Get call options block number
-	var blockNumber *big.Int
-
-	// Check if node has enough balance to repay debt
-	ethBalance, err := rp.Client.BalanceAt(context.Background(), nodeAccount.Address, blockNumber)
-	if err != nil {
-		return nil, err
-	}
-	if ethBalance.Cmp(amount) < 0 {
-		response.CanRepay = false
-		response.NotEnoughBalance = true
+	if !validatorInfo.InPrestake {
+		response.CanDissolve = false
+		response.NotInPrestake = true
 		return &response, nil
 	}
 
@@ -91,18 +72,18 @@ func canRepayDebt(c *cli.Context, amount *big.Int) (*api.CanRepayDebtResponse, e
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateRepayDebtGas(opts)
+	gasInfo, err := mp.EstimateDissolveValidatorGas(validatorId, opts)
 	if err != nil {
 		return nil, err
 	}
 	response.GasInfo = gasInfo
-	response.CanRepay = true
+	response.CanDissolve = true
 
 	return &response, nil
 
 }
 
-func repayDebt(c *cli.Context, amount *big.Int) (*api.RepayDebtResponse, error) {
+func dissolveValidator(c *cli.Context, validatorId uint32) (*api.DissolveValidatorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -124,7 +105,7 @@ func repayDebt(c *cli.Context, amount *big.Int) (*api.RepayDebtResponse, error) 
 	}
 
 	// Response
-	response := api.RepayDebtResponse{}
+	response := api.DissolveValidatorResponse{}
 
 	// Get the megapool address
 	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
@@ -138,24 +119,11 @@ func repayDebt(c *cli.Context, amount *big.Int) (*api.RepayDebtResponse, error) 
 		return nil, err
 	}
 
-	// Get the megapool debt
-	debt, err := mp.GetDebt(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if debt.Cmp(big.NewInt(0)) == 0 {
-		return nil, fmt.Errorf("no debt to repay")
-	}
-
-	// Get transactor
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
-
-	opts.Value = amount
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
@@ -164,7 +132,7 @@ func repayDebt(c *cli.Context, amount *big.Int) (*api.RepayDebtResponse, error) 
 	}
 
 	// Dissolve
-	hash, err := mp.RepayDebt(opts)
+	hash, err := mp.DissolveValidator(validatorId, opts)
 	if err != nil {
 		return nil, err
 	}
