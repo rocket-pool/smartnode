@@ -44,7 +44,8 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	}
 	details.LastDistributionBlock, err = mega.GetLastDistributionBlock(nil)
 	if err != nil {
-		return api.MegapoolDetails{}, err
+		// TODO: ignoring the error for now, uncomment for devnet1 as everyone will be on the latest delegate
+		//return api.MegapoolDetails{}, err
 	}
 
 	// Don't calculate the revenue split if there are no staked validators
