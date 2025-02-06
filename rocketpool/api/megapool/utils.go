@@ -128,7 +128,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return details, err
 	}
 
-	details.Validators, err = GetMegapoolValidatorDetails(rp, mega, nodeAccount, uint32(details.ValidatorCount))
+	details.Validators, err = GetMegapoolValidatorDetails(rp, bc, mega, nodeAccount, uint32(details.ValidatorCount))
 	if err != nil {
 		return details, err
 	}
@@ -136,7 +136,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	return details, nil
 }
 
-func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, mp megapool.Megapool, nodeAccount common.Address, validatorCount uint32) ([]api.MegapoolValidatorDetails, error) {
+func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, nodeAccount common.Address, validatorCount uint32) ([]api.MegapoolValidatorDetails, error) {
 
 	details := []api.MegapoolValidatorDetails{}
 
@@ -164,7 +164,12 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, mp megapool.Megapool
 				ExpressUsed:        validatorDetails.ExpressUsed,
 				Dissolved:          validatorDetails.Dissolved,
 			}
-
+			if validator.Staked {
+				validator.BeaconStatus, err = bc.GetValidatorStatus(validator.PubKey, nil)
+				if err != nil {
+					return fmt.Errorf("error getting beacon status for validator ID %d: %w", validator.ValidatorId, err)
+				}
+			}
 			details = append(details, validator)
 			lock.Unlock()
 			return nil

@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 )
 
 type MegapoolStatusResponse struct {
@@ -40,17 +41,18 @@ type MegapoolDetails struct {
 }
 
 type MegapoolValidatorDetails struct {
-	ValidatorId        uint32                `json:"validatorId"`
-	PubKey             types.ValidatorPubkey `json:"pubKey"`
-	LastAssignmentTime time.Time             `json:"lastAssignmentTime"`
-	LastRequestedValue uint32                `json:"lastRequestedValue"`
-	LastRequestedBond  uint32                `json:"lastRequestedBond"`
-	Staked             bool                  `json:"staked"`
-	Exited             bool                  `json:"exited"`
-	InQueue            bool                  `json:"inQueue"`
-	InPrestake         bool                  `json:"inPrestake"`
-	ExpressUsed        bool                  `json:"expressUsed"`
-	Dissolved          bool                  `json:"dissolved"`
+	ValidatorId        uint32                 `json:"validatorId"`
+	PubKey             types.ValidatorPubkey  `json:"pubKey"`
+	LastAssignmentTime time.Time              `json:"lastAssignmentTime"`
+	LastRequestedValue uint32                 `json:"lastRequestedValue"`
+	LastRequestedBond  uint32                 `json:"lastRequestedBond"`
+	Staked             bool                   `json:"staked"`
+	Exited             bool                   `json:"exited"`
+	InQueue            bool                   `json:"inQueue"`
+	InPrestake         bool                   `json:"inPrestake"`
+	ExpressUsed        bool                   `json:"expressUsed"`
+	Dissolved          bool                   `json:"dissolved"`
+	BeaconStatus       beacon.ValidatorStatus `json:"beaconStatus"`
 }
 
 type MegapoolCanDelegateUpgradeResponse struct {

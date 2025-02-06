@@ -136,7 +136,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := mp_api.GetMegapoolValidatorDetails(t.rp, mp, nodeAccount.Address, uint32(validatorCount))
+	validatorInfo, err := mp_api.GetMegapoolValidatorDetails(t.rp, nil, mp, nodeAccount.Address, uint32(validatorCount))
 	if err != nil {
 		return err
 	}
