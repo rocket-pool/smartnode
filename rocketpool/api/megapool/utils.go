@@ -42,12 +42,30 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
+
+	details.EffectiveDelegateAddress, err = mega.GetEffectiveDelegate(nil)
+	if err != nil {
+		return api.MegapoolDetails{}, err
+	}
+	details.DelegateAddress, err = mega.GetDelegate(nil)
+	if err != nil {
+		return api.MegapoolDetails{}, err
+	}
+
+	// Return if delegate is expired
+	details.DelegateExpired, err = mega.GetDelegateExpired(rp, nil)
+	if err != nil {
+		return api.MegapoolDetails{}, err
+	}
+	if details.DelegateExpired {
+		return details, nil
+	}
+
 	details.LastDistributionBlock, err = mega.GetLastDistributionBlock(nil)
 	if err != nil {
 		// TODO: ignoring the error for now, uncomment for devnet1 as everyone will be on the latest delegate
 		//return api.MegapoolDetails{}, err
 	}
-
 	// Don't calculate the revenue split if there are no staked validators
 	if details.LastDistributionBlock != 0 {
 		wg.Go(func() error {
@@ -88,13 +106,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	})
 	wg.Go(func() error {
 		var err error
-		details.DelegateAddress, err = mega.GetDelegate(nil)
 		details.DelegateExpiry, err = megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		details.EffectiveDelegateAddress, err = mega.GetEffectiveDelegate(nil)
 		return err
 	})
 	wg.Go(func() error {

@@ -27,6 +27,7 @@ type MegapoolDetails struct {
 	NodeDebt                 *big.Int                   `json:"nodeDebt"`
 	RefundValue              *big.Int                   `json:"refundValue"`
 	DelegateExpiry           uint64                     `json:"delegateExpiry"`
+	DelegateExpired          bool                       `json:"delegateExpired"`
 	PendingRewards           *big.Int                   `json:"pendingRewards"`
 	NodeExpressTicketCount   uint64                     `json:"nodeExpressTicketCount"`
 	UseLatestDelegate        bool                       `json:"useLatestDelegate"`
