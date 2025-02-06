@@ -44,6 +44,7 @@ type Megapool interface {
 	SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error)
 	GetUseLatestDelegate(opts *bind.CallOpts) (bool, error)
 	GetDelegate(opts *bind.CallOpts) (common.Address, error)
+	GetDelegateExpired(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error)
 	GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, error)
 	EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error)

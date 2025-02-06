@@ -366,6 +366,15 @@ func (mp *megapoolV1) GetEffectiveDelegate(opts *bind.CallOpts) (common.Address,
 	return *address, nil
 }
 
+// Returns true if the megapools current delegate has expired
+func (mp *megapoolV1) GetDelegateExpired(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	delegateExpired := new(bool)
+	if err := mp.Contract.Call(opts, delegateExpired, "getDelegateExpired"); err != nil {
+		return false, fmt.Errorf("error checking if the megapool's delegate has expired:, %w", err)
+	}
+	return *delegateExpired, nil
+}
+
 // Estimate the gas of DelegateUpgrade
 func (mp *megapoolV1) EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "delegateUpgrade")
