@@ -187,16 +187,16 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "exit-queue",
 				Usage:     "Exit the megapool queue",
-				UsageText: "rocketpool api megapool exit-queue validator-id express-queue",
+				UsageText: "rocketpool api megapool exit-queue validator-id",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
 
 					// Check the validatorId
-					validatorId, err := cliutils.ValidateUint32(c.Args().Get(0), "validatorId")
+					validatorId, err := cliutils.ValidateUint32("validatorId", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
