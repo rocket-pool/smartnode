@@ -2,6 +2,7 @@ package megapool
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -90,6 +91,11 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 
 	signature, depositDataRoot, proof, err := services.GetStakeValidatorInfo(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
 	if err != nil {
+		if strings.Contains(err.Error(), "index not found") {
+			response.CanStake = false
+			response.IndexNotFound = true
+			return &response, nil
+		}
 		return nil, err
 	}
 
