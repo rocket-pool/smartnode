@@ -344,6 +344,18 @@ type NodeWithdrawEthResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+type CanNodeWithdrawCreditResponse struct {
+	Status              string             `json:"status"`
+	Error               string             `json:"error"`
+	CanWithdraw         bool               `json:"canWithdraw"`
+	InsufficientBalance bool               `json:"insufficientBalance"`
+	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
+}
+type NodeWithdrawCreditResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
 type CanNodeWithdrawRplResponse struct {
 	Status                           string             `json:"status"`
 	Error                            string             `json:"error"`
@@ -717,10 +729,11 @@ type DissolveValidatorResponse struct {
 }
 
 type CanStakeResponse struct {
-	Status   string             `json:"status"`
-	Error    string             `json:"error"`
-	CanStake bool               `json:"canStake"`
-	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+	Status        string             `json:"status"`
+	Error         string             `json:"error"`
+	CanStake      bool               `json:"canStake"`
+	IndexNotFound bool               `json:"indexNotFound"`
+	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
 }
 type StakeResponse struct {
 	Status string      `json:"status"`
