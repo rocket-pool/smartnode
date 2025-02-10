@@ -58,6 +58,28 @@ func WithdrawEth(rp *rocketpool.RocketPool, nodeAccount common.Address, ethAmoun
 	return tx, nil
 }
 
+// Estimate the gas required to withdraw credit
+func EstimateWithdrawCreditGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketDepositPool.GetTransactionGasInfo(opts, "withdrawCredit", amount)
+}
+
+// Withdraws credit store on a node as rETH
+func WithdrawCredit(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := rocketDepositPool.Transact(opts, "withdrawCredit", amount)
+	if err != nil {
+		return nil, fmt.Errorf("error withdrawing credit: %w", err)
+	}
+	return tx, nil
+}
+
 // Estimate the gas of DepositWithCredit
 func EstimateDepositWithCreditGas(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
@@ -192,4 +214,12 @@ func getRocketNodeDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rock
 	rocketNodeDepositLock.Lock()
 	defer rocketNodeDepositLock.Unlock()
 	return rp.GetContract("rocketNodeDeposit", opts)
+}
+
+var rocketDepositPoolLock sync.Mutex
+
+func getRocketDepositPool(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
+	rocketDepositPoolLock.Lock()
+	defer rocketDepositPoolLock.Unlock()
+	return rp.GetContract("rocketDepositPool", opts)
 }
