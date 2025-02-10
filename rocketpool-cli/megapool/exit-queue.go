@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -78,6 +79,12 @@ func exitQueue(c *cli.Context) error {
 
 	if !canExit.CanExit {
 		return fmt.Errorf("Validator %d cannot be exited from the megapool queue", validatorId)
+	}
+
+	// Assign max fees
+	err = gas.AssignMaxFeeAndLimit(canExit.GasInfo, rp, c.Bool("yes"))
+	if err != nil {
+		return err
 	}
 
 	// Ask for confirmation
