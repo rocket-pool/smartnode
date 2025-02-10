@@ -10,9 +10,9 @@ import (
 )
 
 type RevenueSplit struct {
-	NodeShare  *big.Int
-	VoterShare *big.Int
-	RethShare  *big.Int
+	NodeShare  *big.Int `abi:"nodeShare"`
+	VoterShare *big.Int `abi:"voterShare"`
+	RethShare  *big.Int `abi:"rethShare"`
 }
 
 // Get the current node share
