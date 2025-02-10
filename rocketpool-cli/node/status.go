@@ -91,7 +91,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
 	}
 	fmt.Printf(
-		"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new minipools.\n",
+		"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new validators.\n",
 		math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
 		math.RoundDown(eth.WeiToEth(status.EthOnBehalfBalance), 6),
 		math.RoundDown(eth.WeiToEth(status.UsableCreditAndEthOnBehalfBalance), 6),
