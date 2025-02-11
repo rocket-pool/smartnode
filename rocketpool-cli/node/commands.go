@@ -502,6 +502,41 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "withdraw-credit",
+				Aliases:   []string{"wc"},
+				Usage:     "Withdraw ETH credit from the node as rETH",
+				UsageText: "rocketpool node withdraw-credit [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "amount, a",
+						Usage: "The amount of ETH to withdraw (or 'max')",
+					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm ETH withdrawal",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Validate flags
+					if c.String("amount") != "" && c.String("amount") != "max" {
+						if _, err := cliutils.ValidatePositiveEthAmount("withdrawal amount", c.String("amount")); err != nil {
+							return err
+						}
+					}
+
+					// Run
+					return nodeWithdrawCredit(c)
+
+				},
+			},
+
+			{
 				Name:      "deposit",
 				Aliases:   []string{"d"},
 				Usage:     "Make a deposit and create a minipool",

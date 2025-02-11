@@ -95,6 +95,9 @@ func newStakeMegapoolValidator(c *cli.Context, logger log.ColorLogger) (*stakeMe
 
 // Prestake megapool validator
 func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
+	if !state.IsSaturnDeployed {
+		return nil
+	}
 
 	// Log
 	t.log.Println("Checking for megapool validators to stake...")

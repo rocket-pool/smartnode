@@ -684,6 +684,49 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-withdraw-credit",
+				Usage:     "Check whether the node can withdraw credit",
+				UsageText: "rocketpool api node can-withdraw-credit amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNodeWithdrawCredit(c, amountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:      "withdraw-credit",
+				Aliases:   []string{"wc"},
+				Usage:     "Withdraw credit from the node",
+				UsageText: "rocketpool api node withdraw-credit amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeWithdrawCredit(c, amountWei))
+					return nil
+
+				},
+			},
+			{
 				Name:      "can-withdraw-eth",
 				Usage:     "Check whether the node can withdraw ETH staked on its behalf",
 				UsageText: "rocketpool api node can-withdraw-eth amount",

@@ -79,6 +79,10 @@ func stake(c *cli.Context) error {
 
 	if !canStake.CanStake {
 		fmt.Printf("The validator with index %d can't be staked.\n", validatorId)
+
+		if canStake.IndexNotFound {
+			fmt.Println("The validator deposit is still pending. Please wait until the deposit is processed before trying again.")
+		}
 		return nil
 	}
 

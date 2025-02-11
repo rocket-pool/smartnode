@@ -90,7 +90,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		}
 		amount = depositAmount
 	} else {
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to make a 4 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
+		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to create a new megapool validator with a 4 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

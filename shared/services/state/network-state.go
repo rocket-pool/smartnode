@@ -97,6 +97,7 @@ type NetworkState struct {
 	// Protocol DAO proposals
 	ProtocolDaoProposalDetails []protocol.ProtocolDaoProposalDetails `json:"protocol_dao_proposal_details,omitempty"`
 
+	IsSaturnDeployed bool
 	// Internal fields
 	log *log.ColorLogger
 }
@@ -191,7 +192,7 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, batchContracts.Multicaller, batchContracts.BalanceBatcher, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, state.IsSaturnDeployed, batchContracts.Multicaller, batchContracts.BalanceBatcher, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
@@ -305,6 +306,8 @@ func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
+	isSaturnDeployed, err := IsSaturnDeployed(rp, opts)
+
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -313,6 +316,7 @@ func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *
 		BeaconSlotNumber:         slotNumber,
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             *beaconConfig,
+		IsSaturnDeployed:         isSaturnDeployed,
 		log:                      log,
 	}
 
@@ -320,7 +324,7 @@ func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *
 	start := time.Now()
 
 	// Network contracts and details
-	contracts, err := rpstate.NewNetworkContracts(rp, batchContracts.Multicaller, batchContracts.BalanceBatcher, opts)
+	contracts, err := rpstate.NewNetworkContracts(rp, isSaturnDeployed, batchContracts.Multicaller, batchContracts.BalanceBatcher, opts)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
