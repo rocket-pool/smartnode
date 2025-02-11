@@ -10,9 +10,10 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/state"
+	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
+
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	rpservices "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/urfave/cli"
 )
@@ -47,15 +48,8 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 		return nil, err
 	}
 
-	// Get RP client
-	rps, err := rpservices.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return nil, err
-	}
-	defer rps.Close()
-
 	// Check if Saturn is already deployed
-	saturnResp, err := rps.IsSaturnDeployed()
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +66,7 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 	// Set up multicall
 	mcAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 	bbAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-	contracts, err := state.NewNetworkContracts(rp, saturnResp.IsSaturnDeployed, mcAddress, bbAddress, nil)
+	contracts, err := state.NewNetworkContracts(rp, saturnDeployed, mcAddress, bbAddress, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network contracts: %w", err)
 	}
