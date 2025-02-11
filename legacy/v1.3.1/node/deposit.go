@@ -65,3 +65,34 @@ func getRocketNodeDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rock
 	defer rocketNodeDepositLock.Unlock()
 	return rp.GetContract("rocketNodeDeposit", opts)
 }
+
+// Estimate the gas of AssignDeposits
+func EstimateAssignDepositsGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketDepositPool.GetTransactionGasInfo(opts, "assignDeposits")
+}
+
+// Assign deposits
+func AssignDeposits(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketDepositPool.Transact(opts, "assignDeposits")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error assigning deposits: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
+// Get contracts
+var rocketDepositPoolLock sync.Mutex
+
+func getRocketDepositPool(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
+	rocketDepositPoolLock.Lock()
+	defer rocketDepositPoolLock.Unlock()
+	return rp.GetContract("rocketDepositPool", opts)
+}
