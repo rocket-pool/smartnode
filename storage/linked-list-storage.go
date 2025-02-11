@@ -11,10 +11,29 @@ import (
 )
 
 type DepositQueueValue struct {
-	Receiver       common.Address
-	ValidatorID    uint32
-	SuppliedValue  uint32
-	RequestedValue uint32
+	Receiver       common.Address `abi:"receiver"`
+	ValidatorID    uint32         `abi:"validatorId"`
+	SuppliedValue  uint32         `abi:"suppliedValue"`
+	RequestedValue uint32         `abi:"requestedValue"`
+}
+
+type Chunk struct {
+	Entries   []DepositQueueValue `abi:"entries"`
+	NextIndex *big.Int            `abi:"nextIndex"`
+}
+
+// Returns a chunk of the queue along with the next index
+func Scan(rp *rocketpool.RocketPool, namespace [32]byte, startIndex *big.Int, count *big.Int, opts *bind.CallOpts) (Chunk, error) {
+	linkedListStorage, err := getLinkedListStorage(rp, opts)
+	if err != nil {
+		return Chunk{}, err
+	}
+
+	chunk := Chunk{}
+	if err := linkedListStorage.Call(opts, &chunk, "scan", namespace, startIndex, count); err != nil {
+		return Chunk{}, fmt.Errorf("error getting chunk for namespace %x: %w", namespace, err)
+	}
+	return chunk, nil
 }
 
 // Return the number of items in queue
