@@ -14,9 +14,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Usage:   "Manage the node's megapool",
 		Subcommands: []cli.Command{
 			{
-				Name:      "deploy-megapool",
-				Usage:     "Deploy a megapool for your node",
-				UsageText: "rocketpool node deploy-megapool",
+				Name:      "deploy",
+				Usage:     "Deploy a megapool contract for your node",
+				UsageText: "rocketpool node deploy",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",
