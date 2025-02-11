@@ -14,7 +14,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
-	rpservices "github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
+
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -54,15 +55,8 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		return nil, err
 	}
 
-	// Get RP client
-	rps, err := rpservices.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return nil, err
-	}
-	defer rps.Close()
-
 	// Check if Saturn is already deployed
-	saturnResp, err := rps.IsSaturnDeployed()
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +219,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 	wg.Go(func() error {
 		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		contracts, err := rpstate.NewNetworkContracts(rp, saturnResp.IsSaturnDeployed, multicallerAddress, balanceBatcherAddress, nil)
+		contracts, err := rpstate.NewNetworkContracts(rp, saturnDeployed, multicallerAddress, balanceBatcherAddress, nil)
 		if err != nil {
 			return fmt.Errorf("error creating network contract binding: %w", err)
 		}
