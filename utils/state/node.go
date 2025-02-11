@@ -354,7 +354,8 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	mc.AddCall(contracts.RocketNodeStaking, &details.CollateralisationRatio, "getNodeETHCollateralisationRatio", address)
 
 	// Saturn
-	mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolAddress, "getExpectedAddress", address)
-	mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getMegapoolDeployed", address)
-
+	if contracts.isSaturnDeployed() {
+		mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolAddress, "getExpectedAddress", address)
+		mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getMegapoolDeployed", address)
+	}
 }
