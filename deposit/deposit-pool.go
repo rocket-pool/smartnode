@@ -59,8 +59,9 @@ func AssignMegapools(rp *rocketpool.RocketPool, count uint64, opts *bind.Transac
 
 // Struct to hold queue top (address of the validator at the top of the queue and a boolean indicating if the assignment is possible)
 type QueueTop struct {
-	Receiver           common.Address
-	AssignmentPossible bool
+	Receiver           common.Address `abi:"receiver"`
+	AssignmentPossible bool           `abi:"assignmentPossible"`
+	HeadMovedBlock     *big.Int       `abi:"headMovedBlock"`
 }
 
 func GetQueueTop(rp *rocketpool.RocketPool, opts *bind.CallOpts) (QueueTop, error) {
