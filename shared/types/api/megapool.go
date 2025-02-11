@@ -38,6 +38,7 @@ type MegapoolDetails struct {
 	NodeShare                *big.Int                   `json:"nodeShare"`
 	RevenueSplit             network.RevenueSplit       `json:"revenueSplit"`
 	LastDistributionBlock    uint64                     `json:"lastDistributionBlock"`
+	QueueDetails             QueueDetails               `json:"queueDetails"`
 	Validators               []MegapoolValidatorDetails `json:"validators"`
 }
 
@@ -50,10 +51,18 @@ type MegapoolValidatorDetails struct {
 	Staked             bool                   `json:"staked"`
 	Exited             bool                   `json:"exited"`
 	InQueue            bool                   `json:"inQueue"`
+	QueuePosition      *big.Int               `json:"queuePosition"`
 	InPrestake         bool                   `json:"inPrestake"`
 	ExpressUsed        bool                   `json:"expressUsed"`
 	Dissolved          bool                   `json:"dissolved"`
 	BeaconStatus       beacon.ValidatorStatus `json:"beaconStatus"`
+}
+
+type QueueDetails struct {
+	ExpressQueueLength  *big.Int `json:"expressQueueLength"`
+	StandardQueueLength *big.Int `json:"standardQueueLength"`
+	QueueIndex          *big.Int `json:"queueIndex"`
+	ExpressQueueRate    uint64   `json:"expressQueueRate"`
 }
 
 type MegapoolCanDelegateUpgradeResponse struct {

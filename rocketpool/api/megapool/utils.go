@@ -2,14 +2,18 @@ package megapool
 
 import (
 	"fmt"
+	"math/big"
 	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/rocketpool-go/storage"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -140,7 +144,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return details, err
 	}
 
-	details.Validators, err = GetMegapoolValidatorDetails(rp, bc, mega, nodeAccount, uint32(details.ValidatorCount))
+	details.Validators, err = GetMegapoolValidatorDetails(rp, bc, mega, megapoolAddress, uint32(details.ValidatorCount))
 	if err != nil {
 		return details, err
 	}
@@ -148,12 +152,52 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	return details, nil
 }
 
-func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, nodeAccount common.Address, validatorCount uint32) ([]api.MegapoolValidatorDetails, error) {
+func GetMegapoolQueueDetails(rp *rocketpool.RocketPool) (api.QueueDetails, error) {
+
+	// Sync
+	var wg errgroup.Group
+	queueDetails := api.QueueDetails{}
+
+	wg.Go(func() error {
+		var err error
+		queueDetails.ExpressQueueLength, err = storage.GetListLength(rp, crypto.Keccak256Hash([]byte("deposit.queue.express")), nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		queueDetails.StandardQueueLength, err = storage.GetListLength(rp, crypto.Keccak256Hash([]byte("deposit.queue.standard")), nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		queueDetails.QueueIndex, err = rp.RocketStorage.GetUint(nil, crypto.Keccak256Hash([]byte("megapool.queue.index")))
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		queueDetails.ExpressQueueRate, err = protocol.GetExpressQueueRate(rp, nil)
+		return err
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
+		return queueDetails, err
+	}
+	return queueDetails, nil
+
+}
+
+func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, megapoolAddress common.Address, validatorCount uint32) ([]api.MegapoolValidatorDetails, error) {
 
 	details := []api.MegapoolValidatorDetails{}
 
 	var wg errgroup.Group
 	var lock sync.Mutex
+
+	queueDetails, err := GetMegapoolQueueDetails(rp)
+	if err != nil {
+		return details, fmt.Errorf("Error getting the megapool queue details: %w", err)
+	}
 
 	for i := uint32(0); i < validatorCount; i++ {
 		i := i
@@ -162,7 +206,6 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 			if err != nil {
 				return fmt.Errorf("Error retrieving validator %d details: %v\n", i, err)
 			}
-			lock.Lock()
 			validator := api.MegapoolValidatorDetails{
 				ValidatorId:        i,
 				PubKey:             types.BytesToValidatorPubkey(validatorDetails.PubKey),
@@ -182,6 +225,21 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 					return fmt.Errorf("error getting beacon status for validator ID %d: %w", validator.ValidatorId, err)
 				}
 			}
+
+			// Compute the queue position
+			if validator.InQueue {
+				var queueKey string
+				if validator.ExpressUsed {
+					queueKey = "deposit.queue.express"
+				} else {
+					queueKey = "deposit.queue.standard"
+				}
+				validator.QueuePosition, err = calculatePositionInQueue(rp, queueDetails, megapoolAddress, validator.ValidatorId, queueKey)
+				if err != nil {
+					return fmt.Errorf("error getting queue position for validator ID %d: %w", validator.ValidatorId, err)
+				}
+			}
+			lock.Lock()
 			details = append(details, validator)
 			lock.Unlock()
 			return nil
@@ -194,4 +252,68 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 	}
 
 	return details, nil
+
+}
+
+func findInQueue(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, queueKey string, indexOffset *big.Int, positionOffset *big.Int) (*big.Int, error) {
+	var maxSliceLength = big.NewInt(100)
+
+	chunk, err := storage.Scan(rp, crypto.Keccak256Hash([]byte(queueKey)), indexOffset, maxSliceLength, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, entry := range chunk.Entries {
+		if entry.Receiver == megapoolAddress {
+			if entry.ValidatorID == validatorId {
+				return positionOffset, err
+			} else {
+				positionOffset.Add(positionOffset, big.NewInt(1))
+			}
+		}
+	}
+	if chunk.NextIndex.Cmp(big.NewInt(0)) == 0 {
+		return nil, err
+	} else {
+		return findInQueue(rp, megapoolAddress, validatorId, queueKey, chunk.NextIndex, positionOffset)
+	}
+
+}
+
+func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueDetails, megapoolAddress common.Address, validatorId uint32, queueKey string) (*big.Int, error) {
+
+	position, err := findInQueue(rp, megapoolAddress, validatorId, queueKey, big.NewInt(0), big.NewInt(0))
+	if err != nil {
+		return nil, fmt.Errorf("Could not find position in queue %s for validatorId %d: %w", queueKey, validatorId, err)
+	}
+	if position == nil {
+		return nil, err
+	}
+
+	pos := position.Uint64()
+
+	queueIndex := queueDetails.QueueIndex.Uint64()
+	expressQueueLength := queueDetails.ExpressQueueLength.Uint64()
+	expressQueueRate := queueDetails.ExpressQueueRate
+	standardQueueLength := queueDetails.StandardQueueLength.Uint64()
+
+	queueInterval := expressQueueRate + 1
+
+	var overallPosition uint64
+	if queueKey == "deposit.queue.express" {
+		standardEntriesBefore := (pos + (queueIndex%queueInterval)/expressQueueRate)
+		if standardEntriesBefore > standardQueueLength {
+			standardEntriesBefore = standardQueueLength
+		}
+		overallPosition = pos + standardEntriesBefore
+	} else {
+		expressEntriesbefore := (pos*expressQueueLength + (expressQueueRate - (queueIndex % queueInterval)))
+		if expressEntriesbefore > expressQueueLength {
+			expressEntriesbefore = expressQueueLength
+		}
+		overallPosition = pos + expressEntriesbefore
+	}
+
+	return new(big.Int).SetUint64(overallPosition), err
+
 }

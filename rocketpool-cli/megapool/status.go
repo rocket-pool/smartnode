@@ -265,7 +265,7 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Expected pubkey:              0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             no\n")
-		fmt.Printf("Validator Queue Position:     \n")
+		fmt.Printf("Validator Queue Position:     %d\n", validator.QueuePosition)
 	}
 
 	if status == "Dissolved" {
