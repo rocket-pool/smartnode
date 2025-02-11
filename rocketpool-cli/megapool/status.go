@@ -58,7 +58,7 @@ func getStatus(c *cli.Context) error {
 
 	// Return if megapool isn't deployed
 	if !status.Megapool.Deployed {
-		fmt.Println("The node does not have a megapool. Please run 'rocketpool megapool deploy-megapool' and try again.")
+		fmt.Println("The node does not have a megapool. Please run 'rocketpool megapool deploy' and try again.")
 		return nil
 	}
 
@@ -178,7 +178,7 @@ func getValidatorStatus(c *cli.Context) error {
 
 	// Return if megapool isn't deployed
 	if !status.Megapool.Deployed {
-		fmt.Println("The node does not have a megapool. Please run 'rocketpool megapool deploy-megapool' and try again.")
+		fmt.Println("The node does not have a megapool. Please run 'rocketpool megapool deploy' and try again.")
 		return nil
 	}
 
