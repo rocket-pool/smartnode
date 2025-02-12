@@ -33,30 +33,6 @@ func ExitQueue(rp *rocketpool.RocketPool, validatorIndex uint64, expressQueue bo
 	return tx.Hash(), nil
 }
 
-// Estimate the gas required to assign megapools
-func EstimateAssignMegapoolsGas(rp *rocketpool.RocketPool, count uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	countBig := big.NewInt(int64(count))
-	rocketDepositPool, err := getRocketDepositPool(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketDepositPool.GetTransactionGasInfo(opts, "assignMegapools", countBig)
-}
-
-// Assign megapools
-func AssignMegapools(rp *rocketpool.RocketPool, count uint64, opts *bind.TransactOpts) (common.Hash, error) {
-	countBig := big.NewInt(int64(count))
-	rocketDepositPool, err := getRocketDepositPool(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketDepositPool.Transact(opts, "assignMegapools", countBig)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error assigning megapools: %w", err)
-	}
-	return tx.Hash(), nil
-}
-
 // Struct to hold queue top (address of the validator at the top of the queue and a boolean indicating if the assignment is possible)
 type QueueTop struct {
 	Receiver           common.Address `abi:"receiver"`
