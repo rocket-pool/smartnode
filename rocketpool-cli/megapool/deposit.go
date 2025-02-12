@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -33,6 +34,10 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return err
+	}
 
 	// Make sure ETH2 is on the correct chain
 	depositContractInfo, err := rp.DepositContractInfo()
@@ -231,9 +236,9 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	fmt.Println("The new megapool validator has been created.")
 	fmt.Println("Once your validator progresses through the queue, ETH will be assigned and a 1 ETH prestake submitted.")
-	fmt.Println("After the prestake, your node will automatically perform a stake transaction within around 12 hours, to complete the progress.")
+	fmt.Printf("After the prestake, your node will automatically perform a stake transaction within around %d hours, to complete the progress.", cfg.Smartnode.AutoAssignmentDelay.Value.(uint16))
 	fmt.Println("")
-	fmt.Println("To check status of your validators use `rocketpool megapool validators`")
+	fmt.Println("To check the status of your validators use `rocketpool megapool validators`")
 	fmt.Println("To monitor the stake transaction use `rocketpool service logs node`")
 
 	return nil
