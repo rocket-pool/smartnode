@@ -37,16 +37,21 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-process",
 				Usage:     "Check whether the deposit pool can be processed",
-				UsageText: "rocketpool api queue can-process",
+				UsageText: "rocketpool api queue can-process max-validators",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					max, err := cliutils.ValidatePositiveUint32("max-validators", c.Args().Get(0))
+					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canProcessQueue(c))
+					api.PrintResponse(canProcessQueue(c, int64(max)))
 					return nil
 
 				},
@@ -55,7 +60,29 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "process",
 				Aliases:   []string{"p"},
 				Usage:     "Process the deposit pool",
-				UsageText: "rocketpool api queue process",
+				UsageText: "rocketpool api queue process max-validators",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					max, err := cliutils.ValidatePositiveUint32("max-validators", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(processQueue(c, int64(max)))
+					return nil
+
+				},
+			},
+			{
+				Name:      "get-total-length",
+				Usage:     "Gets the total queue length. It considers legacy plus megapool (express and regular)",
+				UsageText: "rocketpool api queue get-total-length",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -64,7 +91,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(processQueue(c))
+					api.PrintResponse(getTotalQueueLength(c))
 					return nil
 
 				},

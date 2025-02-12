@@ -18,7 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
+func canProcessQueue(c *cli.Context, max int64) (*api.CanProcessQueueResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -66,7 +66,7 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 		if !saturnDeployed {
 			gasInfo, err = nodev131.EstimateAssignDepositsGas(rp, opts)
 		} else {
-			gasInfo, err = deposit.EstimateAssignDepositsGas(rp, big.NewInt(1), opts)
+			gasInfo, err = deposit.EstimateAssignDepositsGas(rp, big.NewInt(max), opts)
 		}
 		if err == nil {
 			response.GasInfo = gasInfo
@@ -85,7 +85,7 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 
 }
 
-func processQueue(c *cli.Context) (*api.ProcessQueueResponse, error) {
+func processQueue(c *cli.Context, max int64) (*api.ProcessQueueResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -127,7 +127,7 @@ func processQueue(c *cli.Context) (*api.ProcessQueueResponse, error) {
 	if !saturnDeployed {
 		hash, err = nodev131.AssignDeposits(rp, opts)
 	} else {
-		hash, err = deposit.AssignDeposits(rp, big.NewInt(1), opts)
+		hash, err = deposit.AssignDeposits(rp, big.NewInt(max), opts)
 	}
 
 	if err != nil {
@@ -136,6 +136,32 @@ func processQueue(c *cli.Context) (*api.ProcessQueueResponse, error) {
 	response.TxHash = hash
 
 	// Return response
+	return &response, nil
+
+}
+
+func getTotalQueueLength(c *cli.Context) (*api.GetTotalQueueLengthResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.GetTotalQueueLengthResponse{}
+
+	// Get data
+	totalLength, err := deposit.GetTotalQueueLength(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting total queue length: %w", err)
+	}
+
+	//Return response
+	response.TotalLength = totalLength
 	return &response, nil
 
 }

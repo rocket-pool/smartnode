@@ -29,3 +29,9 @@ type ProcessQueueResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type GetTotalQueueLengthResponse struct {
+	Status      string `json:"status"`
+	Error       string `json:"error"`
+	TotalLength uint32 `json:"totalLength"`
+}
