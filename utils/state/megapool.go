@@ -47,18 +47,6 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 				}
 			}
 
-			// var err error
-			// mc, err := multicall.NewMultiCaller(rp.Client, contracts.Multicaller.ContractAddress)
-			// if err != nil {
-			// 	return err
-			// }
-			// for j := i; j < max; j++ {
-			// 	mc.AddCall(contracts.RocketMegapoolManager, &validators[j], "getValidatorInfo", big.NewInt(int64(j)))
-			// }
-			// _, err = mc.FlexibleCall(true, opts)
-			// if err != nil {
-			// 	return fmt.Errorf("error executing multicall: %w", err)
-			// }
 			return nil
 		})
 	}

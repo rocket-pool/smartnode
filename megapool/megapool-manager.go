@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 )
 
@@ -43,10 +44,38 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
 	}
 
-	err = megapoolManager.ABI.UnpackIntoInterface(&validatorInfo, "getValidatorInfo", response)
+	// Both Call and UnpackIntoStruct were not working with this response (which contains a struct inside a struct)
+	// For the moment this was the only way for it to work. We should investigate further.
+	iface, err := megapoolManager.ABI.Unpack("getValidatorInfo", response)
 	if err != nil {
 		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
 	}
+
+
+	src := iface[0].(struct {
+		PubKey             []byte `json:"pubKey"`
+		LastAssignmentTime uint32 `json:"lastAssignmentTime"`
+		LastRequestedValue uint32 `json:"lastRequestedValue"`
+		LastRequestedBond  uint32 `json:"lastRequestedBond"`
+		Staked             bool   `json:"staked"`
+		Exited             bool   `json:"exited"`
+		InQueue            bool   `json:"inQueue"`
+		InPrestake         bool   `json:"inPrestake"`
+		ExpressUsed        bool   `json:"expressUsed"`
+		Dissolved          bool   `json:"dissolved"`
+	})
+	copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
+	validatorInfo.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
+	validatorInfo.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
+	validatorInfo.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
+	validatorInfo.ValidatorInfo.Staked = src.Staked
+	validatorInfo.ValidatorInfo.Exited = src.Exited
+	validatorInfo.ValidatorInfo.InQueue = src.InQueue
+	validatorInfo.ValidatorInfo.InPrestake = src.InPrestake
+	validatorInfo.ValidatorInfo.ExpressUsed = src.ExpressUsed
+	validatorInfo.ValidatorInfo.Dissolved = src.Dissolved
+	validatorInfo.MegapoolAddress = iface[1].(common.Address)
+	validatorInfo.ValidatorId = iface[2].(uint32)
 
 	return *validatorInfo, nil
 }

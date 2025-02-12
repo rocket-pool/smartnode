@@ -2,6 +2,7 @@ package protocol
 
 import (
 	"fmt"
+	"math/big"
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -14,17 +15,17 @@ const (
 	MegapoolSettingsContractName string = "rocketDAOProtocolSettingsMegapool"
 )
 
-// Megapool time before dissolved
+// Megapool time before dissolve
 func GetMegapoolTimeBeforeDissolve(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	minipoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
+	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
-	value := new(uint64)
-	if err := minipoolSettingsContract.Call(opts, value, "getSubmitWithdrawableEnabled"); err != nil {
-		return 0, fmt.Errorf("error getting minipool withdrawable submissions enabled status: %w", err)
+	value := new(*big.Int)
+	if err := megapoolSettingsContract.Call(opts, value, "getTimeBeforeDissolve"); err != nil {
+		return 0, fmt.Errorf("error getting megapool time before dissolve value: %w", err)
 	}
-	return *value, nil
+	return (*value).Uint64(), nil
 }
 
 // Get contracts
