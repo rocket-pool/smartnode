@@ -302,7 +302,7 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 // Creates a snapshot of the Rocket Pool network, but only for a single node
 // Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
 func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *rocketpool.RocketPool, bc beacon.Client, log *log.ColorLogger, slotNumber uint64, beaconConfig *beacon.Eth2Config, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
-	steps := 5
+	steps := 6
 	if calculateTotalEffectiveStake {
 		steps++
 	}

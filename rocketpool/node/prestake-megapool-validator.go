@@ -1,6 +1,8 @@
 package node
 
 import (
+	"context"
+	"fmt"
 	"math/big"
 	"time"
 
@@ -147,8 +149,12 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	t.log.Printlnf("The next validator to be assigned belongs to this node's megapool")
 
 	// Check when the last assignment happened and wait autoAssignmentDelay hours
-	// TODO fetch last assignment
-	lastAssignment := time.Now().Add(-time.Duration(t.autoAssignmentDelay) * time.Hour)
+	// Get the head moved block
+	block, err := t.rp.Client.HeaderByNumber(context.Background(), nextAssignment.HeadMovedBlock)
+	if err != nil {
+		return fmt.Errorf("Can't get the block time when the last assignment happened: %w", err)
+	}
+	lastAssignment := time.Unix(int64(block.Time), 0)
 
 	if lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour).Before(time.Now()) {
 		t.log.Printlnf("%d hours have passed since the last assignment. Trying to assign", t.autoAssignmentDelay)
@@ -167,7 +173,7 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 		// Call assign
 		t.assignDeposit(opts)
 	} else {
-		t.log.Printlnf("Waiting %d hours to pass since the last assignment", t.autoAssignmentDelay)
+		t.log.Printlnf("Waiting %d hours to pass since the last assignment: %s", t.autoAssignmentDelay, lastAssignment)
 	}
 
 	// Return
