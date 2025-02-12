@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
+	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -83,6 +84,10 @@ type NetworkState struct {
 
 	// Minipool details
 	MinipoolDetails []rpstate.NativeMinipoolDetails `json:"minipool_details"`
+
+	// Megapool validator details
+	MegapoolValidatorDetails []megapool.ValidatorInfoFromGlobalIndex `json:"megapool_validator_details"`
+
 	// These next two fields are indexes over MinipoolDetails and are ignored when marshaling to JSON
 	// they are rebuilt when unmarshaling from JSON.
 	MinipoolDetailsByAddress map[common.Address]*rpstate.NativeMinipoolDetails   `json:"-"`
@@ -177,6 +182,11 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 		BlockNumber: big.NewInt(0).SetUint64(elBlockNumber),
 	}
 
+	isSaturnDeployed, err := IsSaturnDeployed(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create the state wrapper
 	state := &NetworkState{
 		NodeDetailsByAddress:     map[common.Address]*rpstate.NativeNodeDetails{},
@@ -185,6 +195,7 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 		BeaconSlotNumber:         slotNumber,
 		ElBlockNumber:            elBlockNumber,
 		BeaconConfig:             *beaconConfig,
+		IsSaturnDeployed:         isSaturnDeployed,
 		log:                      log,
 	}
 
@@ -216,6 +227,11 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 	}
 	state.logLine("3/6 - Retrieved minipool details (%s so far)", time.Since(start))
 
+	// Megapool validators details
+	state.MegapoolValidatorDetails, err = rpstate.GetAllMegapoolValidators(rp, contracts)
+	if err != nil {
+		return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
+	}
 	// Create the node lookup
 	for i, details := range state.NodeDetails {
 		state.NodeDetailsByAddress[details.NodeAddress] = &state.NodeDetails[i]
@@ -307,6 +323,9 @@ func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *
 	}
 
 	isSaturnDeployed, err := IsSaturnDeployed(rp, opts)
+	if err != nil {
+		return nil, nil, err
+	}
 
 	// Create the state wrapper
 	state := &NetworkState{
