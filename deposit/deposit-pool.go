@@ -57,9 +57,9 @@ func GetTotalQueueLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint32
 	if err != nil {
 		return 0, err
 	}
-	totalLength := new(big.Int)
+	totalLength := new(*big.Int)
 	if err := rocketDepositPool.Call(opts, totalLength, "getTotalQueueLength"); err != nil {
 		return 0, fmt.Errorf("error getting total queue length: %w", err)
 	}
-	return uint32(totalLength.Uint64()), nil
+	return uint32((*totalLength).Uint64()), nil
 }
