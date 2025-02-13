@@ -63,3 +63,27 @@ func GetTotalQueueLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint32
 	}
 	return uint32((*totalLength).Uint64()), nil
 }
+
+func GetExpressQueueLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint32, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	length := new(*big.Int)
+	if err := rocketDepositPool.Call(opts, length, "getExpressQueueLength"); err != nil {
+		return 0, fmt.Errorf("error getting express queue length: %w", err)
+	}
+	return uint32((*length).Uint64()), nil
+}
+
+func GetStandardQueueLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint32, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	length := new(*big.Int)
+	if err := rocketDepositPool.Call(opts, length, "getStandardQueueLength"); err != nil {
+		return 0, fmt.Errorf("error getting standard queue length: %w", err)
+	}
+	return uint32((*length).Uint64()), nil
+}
