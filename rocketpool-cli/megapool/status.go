@@ -226,7 +226,6 @@ func getValidatorStatus(c *cli.Context) error {
 			sort.Slice(validators, func(i, j int) bool {
 				return validators[i].ValidatorId < validators[j].ValidatorId
 			})
-
 			fmt.Printf("%d %s validator(s):\n", len(validators), status)
 			fmt.Println("")
 			for _, validator := range validators {
@@ -250,14 +249,17 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 	if status == "Prelaunch" {
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
-		fmt.Printf("Validator active:             yes\n")
-		fmt.Printf("Validator index:              %s\n", validator.BeaconStatus.Index)
+		fmt.Printf("Validator active:             no\n")
 	}
 
 	if status == "Staking" {
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
-		fmt.Printf("Validator active:             yes\n")
+		if validator.Activated {
+			fmt.Printf("Validator active:             yes\n")
+		} else {
+			fmt.Printf("Validator active:             no\n")
+		}
 		fmt.Printf("Validator index:              %s\n", validator.BeaconStatus.Index)
 	}
 

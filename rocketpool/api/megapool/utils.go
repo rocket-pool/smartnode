@@ -192,10 +192,16 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 
 	var wg errgroup.Group
 	var lock sync.Mutex
+	var currentEpoch uint64
 
 	queueDetails, err := GetMegapoolQueueDetails(rp)
 	if err != nil {
 		return details, fmt.Errorf("Error getting the megapool queue details: %w", err)
+	}
+
+	head, err := bc.GetBeaconHead()
+	if err == nil {
+		currentEpoch = head.Epoch
 	}
 
 	for i := uint32(0); i < validatorCount; i++ {
@@ -222,6 +228,9 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 				validator.BeaconStatus, err = bc.GetValidatorStatus(validator.PubKey, nil)
 				if err != nil {
 					return fmt.Errorf("error getting beacon status for validator ID %d: %w", validator.ValidatorId, err)
+				}
+				if currentEpoch > validator.BeaconStatus.ActivationEpoch {
+					validator.Activated = true
 				}
 			}
 

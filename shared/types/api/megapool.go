@@ -55,6 +55,7 @@ type MegapoolValidatorDetails struct {
 	InPrestake         bool                   `json:"inPrestake"`
 	ExpressUsed        bool                   `json:"expressUsed"`
 	Dissolved          bool                   `json:"dissolved"`
+	Activated          bool                   `json:"validating"`
 	BeaconStatus       beacon.ValidatorStatus `json:"beaconStatus"`
 }
 
