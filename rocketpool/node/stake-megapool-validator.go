@@ -13,6 +13,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -28,6 +29,7 @@ type stakeMegapoolValidator struct {
 	cfg            *config.RocketPoolConfig
 	w              *wallet.Wallet
 	rp             *rocketpool.RocketPool
+	bc             beacon.Client
 	d              *client.Client
 	gasThreshold   float64
 	maxFee         *big.Int
@@ -52,6 +54,10 @@ func newStakeMegapoolValidator(c *cli.Context, logger log.ColorLogger) (*stakeMe
 		return nil, err
 	}
 	d, err := services.GetDocker(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -84,6 +90,7 @@ func newStakeMegapoolValidator(c *cli.Context, logger log.ColorLogger) (*stakeMe
 		cfg:            cfg,
 		w:              w,
 		rp:             rp,
+		bc:             bc,
 		d:              d,
 		gasThreshold:   gasThreshold,
 		maxFee:         maxFee,
@@ -139,7 +146,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := mp_api.GetMegapoolValidatorDetails(t.rp, nil, mp, megapoolAddress, uint32(validatorCount))
+	validatorInfo, err := mp_api.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount))
 	if err != nil {
 		return err
 	}
