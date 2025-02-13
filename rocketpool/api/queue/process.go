@@ -140,28 +140,3 @@ func processQueue(c *cli.Context, max int64) (*api.ProcessQueueResponse, error) 
 
 }
 
-func getTotalQueueLength(c *cli.Context) (*api.GetTotalQueueLengthResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.GetTotalQueueLengthResponse{}
-
-	// Get data
-	totalLength, err := deposit.GetTotalQueueLength(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting total queue length: %w", err)
-	}
-
-	//Return response
-	response.TotalLength = totalLength
-	return &response, nil
-
-}

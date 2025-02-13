@@ -6,6 +6,7 @@ import (
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -87,21 +88,58 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	useExpressTicket := false
 
-	expressTicketCount, err := rp.GetExpressTicketCount()
-	if err != nil {
+	var wg errgroup.Group
+	var expressTicketCount uint64
+	var expressQueueLength uint32
+	var standardQueueLength uint32
+	// Get the express ticket count
+	wg.Go(func() error {
+		expressTicket, err := rp.GetExpressTicketCount()
+		if err != nil {
+			return err
+		}
+		expressTicketCount = expressTicket.Count
+		return nil
+	})
+
+	//
+	wg.Go(func() error {
+		resp, err := rp.GetExpressQueueLength()
+		if err != nil {
+			return err
+		}
+		expressQueueLength = resp.Length
+		return nil
+	})
+
+	//
+	wg.Go(func() error {
+		resp, err := rp.GetStandardQueueLength()
+		if err != nil {
+			return err
+		}
+		standardQueueLength = resp.Length
+		return nil
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
 		return err
 	}
 
+	fmt.Printf("There are %d validator(s) on the express queue.\n", expressQueueLength)
+	fmt.Printf("There are %d validator(s) on the standard queue.\n\n", standardQueueLength)
+
 	if c.Bool("use-express-ticket") {
-		if expressTicketCount.Count > 0 {
+		if expressTicketCount > 0 {
 			useExpressTicket = true
 		} else {
 			fmt.Println("You do not have any express tickets available.")
 			return nil
 		}
 	} else {
-		if expressTicketCount.Count > 0 {
-			fmt.Printf("You have %d express tickets available.", expressTicketCount.Count)
+		if expressTicketCount > 0 {
+			fmt.Printf("You have %d express tickets available.", expressTicketCount)
 			fmt.Println()
 			// Prompt for confirmation
 			if c.Bool("yes") || cliutils.Confirm("Would you like to use an express ticket?") {
