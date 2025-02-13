@@ -63,47 +63,17 @@ func (c *Client) ProcessQueue(max uint32) (api.ProcessQueueResponse, error) {
 	return response, nil
 }
 
-func (c *Client) GetTotalQueueLength() (api.GetQueueLengthResponse, error) {
-	responseBytes, err := c.callAPI("queue get-total-length")
+func (c *Client) GetQueueDetails() (api.GetQueueDetailsResponse, error) {
+	responseBytes, err := c.callAPI("queue get-queue-details")
 	if err != nil {
-		return api.GetQueueLengthResponse{}, fmt.Errorf("Could not get total queue length: %w", err)
+		return api.GetQueueDetailsResponse{}, fmt.Errorf("Could not get total queue length: %w", err)
 	}
-	var response api.GetQueueLengthResponse
+	var response api.GetQueueDetailsResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetQueueLengthResponse{}, fmt.Errorf("Could not decode get total queue length response: %w", err)
+		return api.GetQueueDetailsResponse{}, fmt.Errorf("Could not decode get total queue length response: %w", err)
 	}
 	if response.Error != "" {
-		return api.GetQueueLengthResponse{}, fmt.Errorf("Could not get total queue length: %s", response.Error)
-	}
-	return response, nil
-}
-
-func (c *Client) GetExpressQueueLength() (api.GetQueueLengthResponse, error) {
-	responseBytes, err := c.callAPI("queue get-express-length")
-	if err != nil {
-		return api.GetQueueLengthResponse{}, fmt.Errorf("Could not get express queue length: %w", err)
-	}
-	var response api.GetQueueLengthResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetQueueLengthResponse{}, fmt.Errorf("Could not decode get express queue length response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GetQueueLengthResponse{}, fmt.Errorf("Could not get express queue length: %s", response.Error)
-	}
-	return response, nil
-}
-
-func (c *Client) GetStandardQueueLength() (api.GetQueueLengthResponse, error) {
-	responseBytes, err := c.callAPI("queue get-standard-length")
-	if err != nil {
-		return api.GetQueueLengthResponse{}, fmt.Errorf("Could not get standard queue length: %w", err)
-	}
-	var response api.GetQueueLengthResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetQueueLengthResponse{}, fmt.Errorf("Could not decode get standard queue length response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GetQueueLengthResponse{}, fmt.Errorf("Could not get standard queue length: %s", response.Error)
+		return api.GetQueueDetailsResponse{}, fmt.Errorf("Could not get total queue length: %s", response.Error)
 	}
 	return response, nil
 }

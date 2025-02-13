@@ -30,8 +30,11 @@ type ProcessQueueResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type GetQueueLengthResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-	Length uint32 `json:"length"`
+type GetQueueDetailsResponse struct {
+	Status         string `json:"status"`
+	Error          string `json:"error"`
+	TotalLength    uint32 `json:"totalLength"`
+	ExpressLength  uint32 `json:"expressLength"`
+	StandardLength uint32 `json:"standardLength"`
+	ExpressRate    uint64 `json:"expressRate"`
 }

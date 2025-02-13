@@ -80,9 +80,9 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "get-total-length",
-				Usage:     "Gets the total queue length. It considers legacy plus megapool (express and standard)",
-				UsageText: "rocketpool api queue get-total-length",
+				Name:      "get-queue-details",
+				Usage:     "Gets queue details.",
+				UsageText: "rocketpool api queue get-queue-details",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -91,41 +91,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(getTotalQueueLength(c))
-					return nil
-
-				},
-			},
-			{
-				Name:      "get-express-length",
-				Usage:     "Gets the express queue length.",
-				UsageText: "rocketpool api queue get-express-length",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getExpressQueueLength(c))
-					return nil
-
-				},
-			},
-			{
-				Name:      "get-standard-length",
-				Usage:     "Gets the standard queue length.",
-				UsageText: "rocketpool api queue get-standard-length",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(getStandardQueueLength(c))
+					api.PrintResponse(getQueueDetails(c))
 					return nil
 
 				},

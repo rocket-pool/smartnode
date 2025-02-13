@@ -10,6 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -90,8 +91,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	var wg errgroup.Group
 	var expressTicketCount uint64
-	var expressQueueLength uint32
-	var standardQueueLength uint32
+	var queueDetails api.GetQueueDetailsResponse
 	// Get the express ticket count
 	wg.Go(func() error {
 		expressTicket, err := rp.GetExpressTicketCount()
@@ -104,31 +104,23 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	//
 	wg.Go(func() error {
-		resp, err := rp.GetExpressQueueLength()
+		queueDetails, err = rp.GetQueueDetails()
 		if err != nil {
 			return err
 		}
-		expressQueueLength = resp.Length
 		return nil
 	})
 
 	//
-	wg.Go(func() error {
-		resp, err := rp.GetStandardQueueLength()
-		if err != nil {
-			return err
-		}
-		standardQueueLength = resp.Length
-		return nil
-	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return err
 	}
 
-	fmt.Printf("There are %d validator(s) on the express queue.\n", expressQueueLength)
-	fmt.Printf("There are %d validator(s) on the standard queue.\n\n", standardQueueLength)
+	fmt.Printf("There are %d validator(s) on the express queue.\n", queueDetails.ExpressLength)
+	fmt.Printf("There are %d validator(s) on the standard queue.\n", queueDetails.StandardLength)
+	fmt.Printf("The express queue rate is %d.\n\n", queueDetails.ExpressRate)
 
 	if c.Bool("use-express-ticket") {
 		if expressTicketCount > 0 {

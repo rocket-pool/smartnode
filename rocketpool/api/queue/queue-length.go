@@ -1,15 +1,15 @@
 package queue
 
 import (
-	"fmt"
-
 	"github.com/rocket-pool/rocketpool-go/deposit"
+	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 )
 
-func getTotalQueueLength(c *cli.Context) (*api.GetQueueLengthResponse, error) {
+func getQueueDetails(c *cli.Context) (*api.GetQueueDetailsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -21,68 +21,38 @@ func getTotalQueueLength(c *cli.Context) (*api.GetQueueLengthResponse, error) {
 	}
 
 	// Response
-	response := api.GetQueueLengthResponse{}
+	response := api.GetQueueDetailsResponse{}
 
 	// Get data
-	totalLength, err := deposit.GetTotalQueueLength(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting total queue length: %w", err)
-	}
+	var wg errgroup.Group
+	// Get the express ticket count
 
-	//Return response
-	response.Length = totalLength
-	return &response, nil
+	//
+	wg.Go(func() error {
+		response.ExpressLength, err = deposit.GetExpressQueueLength(rp, nil)
+		return err
+	})
 
-}
+	//
+	wg.Go(func() error {
+		response.StandardLength, err = deposit.GetStandardQueueLength(rp, nil)
+		return err
+	})
 
-func getExpressQueueLength(c *cli.Context) (*api.GetQueueLengthResponse, error) {
+	wg.Go(func() error {
+		response.TotalLength, err = deposit.GetTotalQueueLength(rp, nil)
+		return err
+	})
 
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
+	wg.Go(func() error {
+		response.ExpressRate, err = protocol.GetExpressQueueRate(rp, nil)
+		return err
+	})
+
+	// Wait for data
+	if err := wg.Wait(); err != nil {
 		return nil, err
 	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.GetQueueLengthResponse{}
-
-	// Get data
-	totalLength, err := deposit.GetExpressQueueLength(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting express queue length: %w", err)
-	}
-
-	//Return response
-	response.Length = totalLength
-	return &response, nil
-
-}
-
-func getStandardQueueLength(c *cli.Context) (*api.GetQueueLengthResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.GetQueueLengthResponse{}
-
-	// Get data
-	totalLength, err := deposit.GetStandardQueueLength(rp, nil)
-	if err != nil {
-		return nil, fmt.Errorf("Error getting standard queue length: %w", err)
-	}
-
-	//Return response
-	response.Length = totalLength
 	return &response, nil
 
 }

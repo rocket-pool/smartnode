@@ -28,15 +28,15 @@ func processQueue(c *cli.Context) error {
 	var maxValidators uint64
 
 	if saturnResp.IsSaturnDeployed {
-		queueLength, err := rp.GetTotalQueueLength()
+		queueLength, err := rp.GetQueueDetails()
 		if err != nil {
 			return err
 		}
-		if queueLength.Length == 0 {
+		if queueLength.TotalLength == 0 {
 			fmt.Println("There are no validators waiting to be processed")
 			return nil
 		}
-		maxValidatorsStr := cliutils.Prompt(fmt.Sprintf("There is a total of %d validators in the queue. How many do you want to process?", queueLength.Length), "^\\d+$", "Invalid number.")
+		maxValidatorsStr := cliutils.Prompt(fmt.Sprintf("There is a total of %d validators in the queue. How many do you want to process?", queueLength.TotalLength), "^\\d+$", "Invalid number.")
 		maxValidators, err = strconv.ParseUint(maxValidatorsStr, 0, 64)
 		if err != nil {
 			return fmt.Errorf("'%s' is not a valid number: %w.\n", maxValidatorsStr, err)
