@@ -33,10 +33,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Make a deposit and create a new validator on the megapool",
 				UsageText: "rocketpool node deposit [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of ETH to deposit",
-					},
 					cli.BoolFlag{
 						Name:  "yes, y",
 						Usage: "Automatically confirm deposit",
@@ -51,13 +47,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate flags
-					if c.String("amount") != "" {
-						if _, err := cliutils.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
-							return err
-						}
 					}
 
 					// Run

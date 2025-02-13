@@ -156,7 +156,8 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 	lastAssignment := time.Unix(int64(block.Time), 0)
 
-	if lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour).Before(time.Now()) {
+	remainingTime := lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour).Sub(time.Now())
+	if remainingTime < 0 {
 		t.log.Printlnf("%d hours have passed since the last assignment. Trying to assign", t.autoAssignmentDelay)
 
 		// Check if there is enough ETH to be assigned
@@ -173,7 +174,7 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 		// Call assign
 		t.assignDeposit(opts)
 	} else {
-		t.log.Printlnf("Waiting %d hours to pass since the last assignment: %s", t.autoAssignmentDelay, lastAssignment)
+		t.log.Printlnf("Time left until the automatic stake %s", remainingTime)
 	}
 
 	// Return

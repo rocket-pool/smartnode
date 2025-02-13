@@ -3,7 +3,6 @@ package megapool
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
@@ -79,23 +78,12 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 			return nil
 		}
 	*/
-	// Get deposit amount
-	var amount float64
 
-	if c.String("amount") != "" {
-		// Parse amount
-		depositAmount, err := strconv.ParseFloat(c.String("amount"), 64)
-		if err != nil {
-			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
-		}
-		amount = depositAmount
-	} else {
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to create a new megapool validator with a 4 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
-			fmt.Println("Cancelled.")
-			return nil
-		}
-		amount = 4
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to create a new megapool validator with a 4 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
+		fmt.Println("Cancelled.")
+		return nil
 	}
+	amount := 4.0
 
 	useExpressTicket := false
 
