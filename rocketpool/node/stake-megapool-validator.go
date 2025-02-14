@@ -174,10 +174,15 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 		return err
 	}
 
+	t.log.Printlnf("[STARTED] Crafting a proof that the correct credentials were used on the first beacon chain deposit. This process takes serveral seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
+
 	signature, depositDataRoot, proof, err := services.GetStakeValidatorInfo(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
 	if err != nil {
+		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
 	}
+
+	t.log.Printlnf("[FINISHED] The beacon state proof has been successfully created.")
 
 	// Get the gas limit
 	gasInfo, err := mp.EstimateStakeGas(validatorId, signature, depositDataRoot, proof, opts)
