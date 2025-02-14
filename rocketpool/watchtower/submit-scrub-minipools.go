@@ -290,7 +290,7 @@ func (t *submitScrubMinipools) verifyBeaconWithdrawalCredentials(state *state.Ne
 	for minipool, details := range t.it.minipools {
 		pubkey := details.pubkey
 
-		status := state.ValidatorDetails[pubkey]
+		status := state.MinipoolValidatorDetails[pubkey]
 		if status.Exists {
 			// This minipool's deposit has been seen on the Beacon Chain
 			expectedCreds := details.expectedWithdrawalCredentials

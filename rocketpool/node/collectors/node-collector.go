@@ -478,7 +478,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		pendingBorrowedEth.Add(pendingBorrowedEth, borrowed)
 		pendingBondedEth.Add(pendingBondedEth, bonded)
 
-		validator, exists := state.ValidatorDetails[mpd.Pubkey]
+		validator, exists := state.MinipoolValidatorDetails[mpd.Pubkey]
 		if !exists {
 			// Validator doesn't exist on Beacon yet
 			continue

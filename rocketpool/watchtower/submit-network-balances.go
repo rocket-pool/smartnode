@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
@@ -61,7 +62,7 @@ type networkBalances struct {
 	RETHSupply            *big.Int
 	NodeCreditBalance     *big.Int
 }
-type minipoolBalanceDetails struct {
+type validatorBalanceDetails struct {
 	IsStaking   bool
 	UserBalance *big.Int
 }
@@ -308,7 +309,8 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	// Data
 	var wg errgroup.Group
 	var depositPoolBalance *big.Int
-	var mpBalanceDetails []minipoolBalanceDetails
+	var mpBalanceDetails []validatorBalanceDetails
+	var megapoolBalanceDetails []validatorBalanceDetails
 	var distributorShares []*big.Int
 	var smoothingPoolShare *big.Int
 	rethContractBalance := state.NetworkDetails.RETHBalance
@@ -319,9 +321,18 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 	// Get minipool balance details
 	wg.Go(func() error {
-		mpBalanceDetails = make([]minipoolBalanceDetails, len(state.MinipoolDetails))
+		mpBalanceDetails = make([]validatorBalanceDetails, len(state.MinipoolDetails))
 		for i, mpd := range state.MinipoolDetails {
 			mpBalanceDetails[i] = t.getMinipoolBalanceDetails(&mpd, state, t.cfg)
+		}
+		return nil
+	})
+
+	// Get megapool balance details
+	wg.Go(func() error {
+		megapoolBalanceDetails = make([]validatorBalanceDetails, len(state.MegapoolValidators))
+		for i, mpValidator := range state.MegapoolValidators {
+			megapoolBalanceDetails[i] = t.getMegapoolBalanceDetails(&mpValidator, state, t.cfg)
 		}
 		return nil
 	})
@@ -413,32 +424,32 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 }
 
 // Get minipool balance details
-func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.RocketPoolConfig) minipoolBalanceDetails {
+func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, cfg *config.RocketPoolConfig) validatorBalanceDetails {
 
 	status := mpd.Status
 	userDepositBalance := mpd.UserDepositBalance
 	mpType := mpd.DepositType
-	validator := state.ValidatorDetails[mpd.Pubkey]
+	validator := state.MinipoolValidatorDetails[mpd.Pubkey]
 
 	blockEpoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
 
 	// Ignore vacant minipools
 	if mpd.IsVacant {
-		return minipoolBalanceDetails{
+		return validatorBalanceDetails{
 			UserBalance: big.NewInt(0),
 		}
 	}
 
 	// Dissolved minipools don't contribute to rETH
 	if status == rptypes.Dissolved {
-		return minipoolBalanceDetails{
+		return validatorBalanceDetails{
 			UserBalance: big.NewInt(0),
 		}
 	}
 
 	// Use user deposit balance if initialized or prelaunch
 	if status == rptypes.Initialized || status == rptypes.Prelaunch {
-		return minipoolBalanceDetails{
+		return validatorBalanceDetails{
 			UserBalance: userDepositBalance,
 		}
 	}
@@ -449,7 +460,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 		brokenBalance.Add(brokenBalance, eth.GweiToWei(float64(validator.Balance)))
 		brokenBalance.Sub(brokenBalance, mpd.NodeRefundBalance)
 		brokenBalance.Sub(brokenBalance, mpd.NodeDepositBalance)
-		return minipoolBalanceDetails{
+		return validatorBalanceDetails{
 			IsStaking:   (validator.Exists && validator.ActivationEpoch < blockEpoch && validator.ExitEpoch > blockEpoch),
 			UserBalance: brokenBalance,
 		}
@@ -457,7 +468,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 
 	// Use user deposit balance if validator not yet active on beacon chain at block
 	if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
-		return minipoolBalanceDetails{
+		return validatorBalanceDetails{
 			UserBalance: userDepositBalance,
 		}
 	}
@@ -465,17 +476,22 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 	// Here userBalance is CalculateUserShare(beaconBalance + minipoolBalance - refund)
 	userBalance := mpd.UserShareOfBalanceIncludingBeacon
 	if userDepositBalance.Cmp(big.NewInt(0)) == 0 && mpType == rptypes.Full {
-		return minipoolBalanceDetails{
+		return validatorBalanceDetails{
 			IsStaking:   (validator.ExitEpoch > blockEpoch),
 			UserBalance: big.NewInt(0).Sub(userBalance, eth.EthToWei(16)), // Remove 16 ETH from the user balance for full minipools in the refund queue
 		}
 	} else {
-		return minipoolBalanceDetails{
+		return validatorBalanceDetails{
 			IsStaking:   (validator.ExitEpoch > blockEpoch),
 			UserBalance: userBalance,
 		}
 	}
 
+}
+
+// Get minipool balance details
+func (t *submitNetworkBalances) getMegapoolBalanceDetails(mpd *megapool.ValidatorInfoFromGlobalIndex, state *state.NetworkState, cfg *config.RocketPoolConfig) validatorBalanceDetails {
+	return validatorBalanceDetails{}
 }
 
 // Submit network balances
