@@ -109,7 +109,7 @@ func getStatus(c *cli.Context) error {
 	// Balance and network commission
 	fmt.Printf("%s=== Megapool Balance ===%s\n", colorGreen, colorReset)
 	if !status.Megapool.DelegateExpired {
-		totalBond := new(big.Int).Mul(status.Megapool.NodeBond, big.NewInt(4))
+		totalBond := new(big.Int).Mul(status.Megapool.NodeBond, big.NewInt(8))
 		rpBond := new(big.Int).Sub(totalBond, status.Megapool.NodeBond)
 		fmt.Printf("The megapool has %6f node bonded ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.NodeBond), 6))
 		fmt.Printf("The megapool has %6f RP ETH for a total of %6f bonded ETH.\n", math.RoundDown(eth.WeiToEth(rpBond), 6), math.RoundDown(eth.WeiToEth(totalBond), 6))
@@ -313,6 +313,7 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 
 	if status == "Dissolved" {
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             no\n")
 	}
 
