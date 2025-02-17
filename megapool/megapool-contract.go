@@ -28,6 +28,12 @@ type withdrawal struct {
 	amountInGwei          *big.Int
 }
 
+type RewardSplit struct {
+	NodeRewards  *big.Int `abi:"nodeRewards"`
+	VoterRewards *big.Int `abi:"voterRewards"`
+	RethRewards  *big.Int `abi:"rethRewards"`
+}
+
 type MegapoolV1 interface {
 	Megapool
 }
@@ -192,7 +198,21 @@ func (mp *megapoolV1) GetUserCapital(opts *bind.CallOpts) (*big.Int, error) {
 	return *userCapital, nil
 }
 
-//TODO _calculateRewards is currently a view in RocketMegapoolDelegate.sol
+func (mp *megapoolV1) CalculatePendingRewards(opts *bind.CallOpts) (RewardSplit, error) {
+	rewardSplits := new(RewardSplit)
+	if err := mp.Contract.Call(opts, rewardSplits, "calculatePendingRewards"); err != nil {
+		return RewardSplit{}, fmt.Errorf("error calculating the pending rewards for megapool %s: %w", mp.Address.Hex(), err)
+	}
+	return *rewardSplits, nil
+}
+
+func (mp *megapoolV1) CalculateRewards(amount *big.Int, opts *bind.CallOpts) (RewardSplit, error) {
+	rewardSplits := new(RewardSplit)
+	if err := mp.Contract.Call(opts, rewardSplits, "calculateRewards", amount); err != nil {
+		return RewardSplit{}, fmt.Errorf("error calculating the rewards for amount %s: %w", amount, err)
+	}
+	return *rewardSplits, nil
+}
 
 func (mp *megapoolV1) GetPendingRewards(opts *bind.CallOpts) (*big.Int, error) {
 	pendingRewards := new(*big.Int)
