@@ -186,6 +186,49 @@ func GetMegapoolQueueDetails(rp *rocketpool.RocketPool) (api.QueueDetails, error
 
 }
 
+func CalculateRewards(rp *rocketpool.RocketPool, amount *big.Int, nodeAccount common.Address) (api.MegapoolRewardSplitResponse, error) {
+
+	rewards := api.MegapoolRewardSplitResponse{}
+
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount, nil)
+	if err != nil {
+		return api.MegapoolRewardSplitResponse{}, err
+	}
+
+	// Return if megapool isn't deployed
+	deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
+	if err != nil {
+		return api.MegapoolRewardSplitResponse{}, err
+	}
+	if !deployed {
+		return rewards, nil
+	}
+
+	// Load the megapool contract
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return rewards, err
+	}
+
+	// Return if delegate is expired
+	delegateExpired, err := mega.GetDelegateExpired(rp, nil)
+	if err != nil {
+		return api.MegapoolRewardSplitResponse{}, err
+	}
+	if delegateExpired {
+		return rewards, nil
+	}
+
+	// Get the rewards split
+	rewards.RewardSplit, err = mega.CalculateRewards(amount, nil)
+	if err != nil {
+		return rewards, err
+	}
+
+	return rewards, nil
+
+}
+
 func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, megapoolAddress common.Address, validatorCount uint32) ([]api.MegapoolValidatorDetails, error) {
 
 	details := []api.MegapoolValidatorDetails{}

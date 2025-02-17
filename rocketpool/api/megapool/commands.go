@@ -409,6 +409,28 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "calculate-rewards",
+				Usage:     "Calculate the rewards split given an eth amount",
+				UsageText: "rocketpool api megapool calculate-rewards amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					// Get amount
+					amount, err := cliutils.ValidatePositiveWeiAmount("amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(calculateRewards(c, amount))
+					return nil
+
+				},
+			},
 		},
 	})
 }
