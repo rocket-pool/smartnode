@@ -318,10 +318,9 @@ func findInQueue(rp *rocketpool.RocketPool, megapoolAddress common.Address, vali
 		if entry.Receiver == megapoolAddress {
 			if entry.ValidatorID == validatorId {
 				return positionOffset, err
-			} else {
-				positionOffset.Add(positionOffset, big.NewInt(1))
 			}
 		}
+		positionOffset.Add(positionOffset, big.NewInt(1))
 	}
 	if chunk.NextIndex.Cmp(big.NewInt(0)) == 0 {
 		return nil, err
