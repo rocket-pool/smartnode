@@ -17,23 +17,23 @@ type DepositQueueValue struct {
 	RequestedValue uint32         `abi:"requestedValue"`
 }
 
-type Chunk struct {
+type Slice struct {
 	Entries   []DepositQueueValue `abi:"entries"`
 	NextIndex *big.Int            `abi:"nextIndex"`
 }
 
-// Returns a chunk of the queue along with the next index
-func Scan(rp *rocketpool.RocketPool, namespace [32]byte, startIndex *big.Int, count *big.Int, opts *bind.CallOpts) (Chunk, error) {
+// Returns a slice of the specified queue along with the next index, starting at the supplied index
+func Scan(rp *rocketpool.RocketPool, namespace [32]byte, startIndex *big.Int, count *big.Int, opts *bind.CallOpts) (Slice, error) {
 	linkedListStorage, err := getLinkedListStorage(rp, opts)
 	if err != nil {
-		return Chunk{}, err
+		return Slice{}, err
 	}
 
-	chunk := Chunk{}
-	if err := linkedListStorage.Call(opts, &chunk, "scan", namespace, startIndex, count); err != nil {
-		return Chunk{}, fmt.Errorf("error getting chunk for namespace %x: %w", namespace, err)
+	slice := Slice{}
+	if err := linkedListStorage.Call(opts, &slice, "scan", namespace, startIndex, count); err != nil {
+		return Slice{}, fmt.Errorf("error getting slice of size %s for namespace %s starting at %s: %w", count, namespace, startIndex, err)
 	}
-	return chunk, nil
+	return slice, nil
 }
 
 // Return the number of items in queue
