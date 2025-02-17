@@ -309,12 +309,12 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 func findInQueue(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, queueKey string, indexOffset *big.Int, positionOffset *big.Int) (*big.Int, error) {
 	var maxSliceLength = big.NewInt(100)
 
-	chunk, err := storage.Scan(rp, crypto.Keccak256Hash([]byte(queueKey)), indexOffset, maxSliceLength, nil)
+	slice, err := storage.Scan(rp, crypto.Keccak256Hash([]byte(queueKey)), indexOffset, maxSliceLength, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, entry := range chunk.Entries {
+	for _, entry := range slice.Entries {
 		if entry.Receiver == megapoolAddress {
 			if entry.ValidatorID == validatorId {
 				return positionOffset, err
@@ -322,10 +322,10 @@ func findInQueue(rp *rocketpool.RocketPool, megapoolAddress common.Address, vali
 		}
 		positionOffset.Add(positionOffset, big.NewInt(1))
 	}
-	if chunk.NextIndex.Cmp(big.NewInt(0)) == 0 {
+	if slice.NextIndex.Cmp(big.NewInt(0)) == 0 {
 		return nil, err
 	} else {
-		return findInQueue(rp, megapoolAddress, validatorId, queueKey, chunk.NextIndex, positionOffset)
+		return findInQueue(rp, megapoolAddress, validatorId, queueKey, slice.NextIndex, positionOffset)
 	}
 
 }
