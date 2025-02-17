@@ -188,7 +188,7 @@ func getValidatorMapAndRewards(rp *rocketpool.Client, status api.MegapoolStatusR
 
 	// Get the node share of CL rewards
 	nodeShareOfCLBalance := big.NewInt(0)
-	if totalBeaconBalanceWei.Cmp(totalEffectiveBeaconBalanceWei) == -1 {
+	if totalBeaconBalanceWei.Cmp(totalEffectiveBeaconBalanceWei) <= 0 {
 		nodeShareOfCLBalance = big.NewInt(0)
 	} else {
 		toBeSkimmed := new(big.Int).Sub(totalBeaconBalanceWei, totalEffectiveBeaconBalanceWei)
