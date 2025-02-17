@@ -49,4 +49,5 @@ type Megapool interface {
 	GetEffectiveDelegate(opts *bind.CallOpts) (common.Address, error)
 	EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error)
+	GetMegapoolPubkeys(opts *bind.CallOpts) ([]rptypes.ValidatorPubkey, error)
 }

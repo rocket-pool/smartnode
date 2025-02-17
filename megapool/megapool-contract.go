@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"sync"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -11,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"golang.org/x/sync/errgroup"
 )
 
 type ValidatorProof struct {
@@ -413,6 +415,50 @@ func (mp *megapoolV1) DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, err
 		return common.Hash{}, fmt.Errorf("error upgrading delegate for megapool %s: %w", mp.Address.Hex(), err)
 	}
 	return tx.Hash(), nil
+}
+
+var ValidatorBatchSize = uint32(50)
+
+func (mp *megapoolV1) GetMegapoolPubkeys(opts *bind.CallOpts) ([]rptypes.ValidatorPubkey, error) {
+	validatorCount, err := mp.GetValidatorCount(opts)
+	if err != nil {
+		return []rptypes.ValidatorPubkey{}, err
+	}
+
+	// Load pubkeys in batches
+	var lock = sync.RWMutex{}
+	pubkeys := make([]rptypes.ValidatorPubkey, validatorCount)
+	for bsi := uint32(0); bsi < validatorCount; bsi += ValidatorBatchSize {
+
+		// Get batch start & end index
+		msi := bsi
+		mei := bsi + ValidatorBatchSize
+		if mei > validatorCount {
+			mei = validatorCount
+		}
+
+		// Load pubkeys
+		var wg errgroup.Group
+		for mi := msi; mi < mei; mi++ {
+			mi := mi
+			wg.Go(func() error {
+				validator, err := mp.GetValidatorInfo(mi, opts)
+				if err != nil {
+					return err
+				}
+				lock.Lock()
+				pubkeys[mi] = rptypes.BytesToValidatorPubkey(validator.PubKey)
+				lock.Unlock()
+				return nil
+			})
+		}
+		if err := wg.Wait(); err != nil {
+			return []rptypes.ValidatorPubkey{}, err
+		}
+
+	}
+	// Return
+	return pubkeys, nil
 }
 
 // Create a megapool contract directly from its ABI
