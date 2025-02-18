@@ -48,3 +48,13 @@ func IsHoustonHotfixDeployed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bo
 	constraint, _ := version.NewConstraint(">= 1.3.1")
 	return constraint.Check(currentVersion), nil
 }
+
+// Check if Saturn 1 has been deployed
+func IsSaturnDeployed(rp *rocketpool.RocketPool, opts *bind.CallOpts) (bool, error) {
+	currentVersion, err := rp.GetProtocolVersion(opts)
+	if err != nil {
+		return false, err
+	}
+	constraint, _ := version.NewConstraint(">= 1.4.0")
+	return constraint.Check(currentVersion), nil
+}

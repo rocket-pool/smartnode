@@ -2,6 +2,7 @@ package commands
 
 import (
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/auction"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/megapool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/minipool"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/network"
 	"github.com/rocket-pool/smartnode/v2/rocketpool-cli/commands/node"
@@ -17,6 +18,7 @@ import (
 func RegisterCommands(app *cli.App) {
 	auction.RegisterCommands(app, "auction", []string{"a"})
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
+	megapool.RegisterCommands(app, "megapool", []string{"g"})
 	network.RegisterCommands(app, "network", []string{"e"})
 	node.RegisterCommands(app, "node", []string{"n"})
 	odao.RegisterCommands(app, "odao", []string{"o"})
