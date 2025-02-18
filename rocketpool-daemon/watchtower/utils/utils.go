@@ -61,7 +61,7 @@ func FindNextSubmissionTarget(ctx context.Context, rp *rocketpool.RocketPool, et
 	if err != nil {
 		return 0, time.Time{}, nil, fmt.Errorf("can't get the latest submission block header: %w", err)
 	}
-	
+
 	// Get the time of the latest block
 	latestEth1Block, err := rp.Client.HeaderByNumber(context.Background(), nil)
 	if err != nil {

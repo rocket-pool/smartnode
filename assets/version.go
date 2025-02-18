@@ -8,6 +8,7 @@ import (
 // Using go-embed to import version means a build pipeline can use the .txt file to tag commits/containers
 // Id est, one can simply add $(jq -r .Version assets/version.json) to any command to reference the current version.
 // We use json because vim (and other editors) likes to add newlines to the end of files.
+//
 //go:embed version.json
 var versionJSON []byte
 

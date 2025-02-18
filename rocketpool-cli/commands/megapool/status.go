@@ -36,6 +36,16 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
+	// Check if Saturn is deployed
+	saturnResp, err := rp.Api.Network.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if !saturnResp.Data.IsSaturnDeployed {
+		fmt.Println("This command is only available after the Saturn upgrade.")
+		return nil
+	}
+
 	// rp.Api.Megapool.Status() will fail with an error, but we can short-circuit it here.
 	if !walletStatus.Address.HasAddress {
 		return errors.New("Node Wallet is not initialized.")
@@ -44,10 +54,12 @@ func getStatus(c *cli.Context) error {
 	fmt.Println("hello world")
 
 	// Get megapool status
-	// status, err := rp.Api.Megapool.Status()
-	// if err != nil {
-	// 	return err
-	// }
+	status, err := rp.Api.Node.Status()
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(status)
 
 	return nil
 }

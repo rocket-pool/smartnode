@@ -104,3 +104,7 @@ func (ndcid *NetworkDepositContractInfoData) PrintMismatch() bool {
 type NetworkHotfixDeployedData struct {
 	IsHoustonHotfixDeployed bool `json:"isHoustonHotfixDeployed"`
 }
+
+type NetworkSaturnDeployedData struct {
+	IsSaturnDeployed bool `json:"isSaturnDeployed"`
+}

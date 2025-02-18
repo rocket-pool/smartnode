@@ -95,3 +95,8 @@ func (r *NetworkRequester) TimezoneMap() (*types.ApiResponse[api.NetworkTimezone
 func (r *NetworkRequester) IsHoustonHotfixDeployed() (*types.ApiResponse[api.NetworkHotfixDeployedData], error) {
 	return client.SendGetRequest[api.NetworkHotfixDeployedData](r, "is-hotfix-deployed", "IsHoustonHotfixDeployed", nil)
 }
+
+// Check if Saturn 1.4 has been deployed
+func (r *NetworkRequester) IsSaturnDeployed() (*types.ApiResponse[api.NetworkSaturnDeployedData], error) {
+	return client.SendGetRequest[api.NetworkSaturnDeployedData](r, "is-saturn-deployed", "IsSaturnDeployed", nil)
+}
