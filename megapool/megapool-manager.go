@@ -51,7 +51,6 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
 	}
 
-
 	src := iface[0].(struct {
 		PubKey             []byte `json:"pubKey"`
 		LastAssignmentTime uint32 `json:"lastAssignmentTime"`
@@ -64,6 +63,7 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 		ExpressUsed        bool   `json:"expressUsed"`
 		Dissolved          bool   `json:"dissolved"`
 	})
+	validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
 	copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
 	validatorInfo.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
 	validatorInfo.ValidatorInfo.LastRequestedValue = src.LastRequestedValue

@@ -1,6 +1,7 @@
 package state
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
@@ -9,7 +10,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/tokens"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -18,24 +18,24 @@ const (
 )
 
 type NativeMegapoolDetails struct {
-	Address                  common.Address  `json:"address"`
-	DelegateAddress          common.Address  `json:"delegate"`
-	EffectiveDelegateAddress common.Address  `json:"effectiveDelegateAddress"`
-	Deployed                 bool            `json:"deployed"`
-	ValidatorCount           uint32          `json:"validatorCount"`
-	NodeDebt                 *big.Int        `json:"nodeDebt"`
-	RefundValue              *big.Int        `json:"refundValue"`
-	DelegateExpiry           uint64          `json:"delegateExpiry"`
-	DelegateExpired          bool            `json:"delegateExpired"`
-	NodeExpressTicketCount   uint64          `json:"nodeExpressTicketCount"`
-	UseLatestDelegate        bool            `json:"useLatestDelegate"`
-	AssignedValue            *big.Int        `json:"assignedValue"`
-	NodeCapital              *big.Int        `json:"nodeCapital"`
-	NodeBond                 *big.Int        `json:"nodeBond"`
-	UserCapital              *big.Int        `json:"userCapital"`
-	NodeShare                *big.Int        `json:"nodeShare"`
-	Balances                 tokens.Balances `json:"balances"`
-	LastDistributionBlock    uint64          `json:"lastDistributionBlock"`
+	Address                  common.Address `json:"address"`
+	DelegateAddress          common.Address `json:"delegate"`
+	EffectiveDelegateAddress common.Address `json:"effectiveDelegateAddress"`
+	Deployed                 bool           `json:"deployed"`
+	ValidatorCount           uint32         `json:"validatorCount"`
+	NodeDebt                 *big.Int       `json:"nodeDebt"`
+	RefundValue              *big.Int       `json:"refundValue"`
+	DelegateExpiry           uint64         `json:"delegateExpiry"`
+	DelegateExpired          bool           `json:"delegateExpired"`
+	NodeExpressTicketCount   uint64         `json:"nodeExpressTicketCount"`
+	UseLatestDelegate        bool           `json:"useLatestDelegate"`
+	AssignedValue            *big.Int       `json:"assignedValue"`
+	NodeCapital              *big.Int       `json:"nodeCapital"`
+	NodeBond                 *big.Int       `json:"nodeBond"`
+	UserCapital              *big.Int       `json:"userCapital"`
+	NodeShare                *big.Int       `json:"nodeShare"`
+	EthBalance               *big.Int       `json:"ethBalance"`
+	LastDistributionBlock    uint64         `json:"lastDistributionBlock"`
 }
 
 // Get all megapool validators using the multicaller
@@ -64,16 +64,16 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 			max = count
 		}
 
-		wg.Go(func() error {
-			for j := i; j < max; j++ {
+		for j := i; j < max; j++ {
+			j := j // Create a new variable `j` scoped to the loop iteration
+			wg.Go(func() error {
 				validators[j], err = megapool.GetValidatorInfo(rp, uint32(j), opts)
 				if err != nil {
 					return fmt.Errorf("error executing GetValidatorInfo with global index %d", j)
 				}
-			}
-
-			return nil
-		})
+				return nil
+			})
+		}
 	}
 
 	if err := wg.Wait(); err != nil {
@@ -179,6 +179,11 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 	wg.Go(func() error {
 		var err error
 		details.UserCapital, err = mega.GetUserCapital(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.EthBalance, err = rp.Client.BalanceAt(context.Background(), details.Address, nil)
 		return err
 	})
 
