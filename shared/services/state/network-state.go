@@ -85,8 +85,13 @@ type NetworkState struct {
 	// Minipool details
 	MinipoolDetails []rpstate.NativeMinipoolDetails `json:"minipool_details"`
 
-	// Megapool validator
-	MegapoolValidators []megapool.ValidatorInfoFromGlobalIndex `json:"megapool_validators"`
+	// Stores validator details from all megapools
+	MegapoolValidatorGlobalIndex []megapool.ValidatorInfoFromGlobalIndex `json:"megapool_validator_global_index"`
+
+	// Map megapool addresses to the pubkeys of its validators
+	MegapoolToPubkeysMap map[common.Address][]types.ValidatorPubkey `json:"-"`
+
+	MegapoolDetails map[common.Address]rpstate.NativeMegapoolDetails `json:"-"`
 
 	// These next two fields are indexes over MinipoolDetails and are ignored when marshaling to JSON
 	// they are rebuilt when unmarshaling from JSON.
@@ -228,13 +233,6 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 	}
 	state.logLine("Retrieved minipool details (%s so far)", time.Since(start))
 
-	if isSaturnDeployed {
-		// Megapool validators details
-		state.MegapoolValidators, err = rpstate.GetAllMegapoolValidators(rp, contracts)
-		if err != nil {
-			return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
-		}
-	}
 	// Create the node lookup
 	for i, details := range state.NodeDetails {
 		state.NodeDetailsByAddress[details.NodeAddress] = &state.NodeDetails[i]
@@ -242,7 +240,6 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 
 	// Create the minipool lookups
 	pubkeys := make([]types.ValidatorPubkey, 0, len(state.MinipoolDetails))
-	megapoolPubkeys := make([]types.ValidatorPubkey, 0, len(state.MegapoolValidators))
 	emptyPubkey := types.ValidatorPubkey{}
 	for i, details := range state.MinipoolDetails {
 		state.MinipoolDetailsByAddress[details.MinipoolAddress] = &state.MinipoolDetails[i]
@@ -259,12 +256,52 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
 	}
 
+	var megapoolPubkeys []types.ValidatorPubkey
 	if isSaturnDeployed {
-		// Create the megapool pubkey list
-		megapoolPubkeys := make([]types.ValidatorPubkey, 0, len(state.MegapoolValidators))
-		for _, details := range state.MegapoolValidators {
-			if types.ValidatorPubkey(details.ValidatorInfo.PubKey) != emptyPubkey {
-				megapoolPubkeys = append(megapoolPubkeys, types.ValidatorPubkey(details.ValidatorInfo.PubKey))
+		state.MegapoolValidatorGlobalIndex, err = rpstate.GetAllMegapoolValidators(rp, contracts)
+		if err != nil {
+			return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
+		}
+		// Megapool validators details
+		megapoolPubkeys = make([]types.ValidatorPubkey, len(state.MegapoolValidatorGlobalIndex))
+		// Iterate over the megapool validators to add their pubkey to the list of pubkeys
+		megapoolAddressMap := make(map[common.Address][]types.ValidatorPubkey)
+		for _, validator := range state.MegapoolValidatorGlobalIndex {
+			// Add the megapool address to a set
+			if len(validator.ValidatorInfo.PubKey) > 0 { // TODO CHECK  validators without a pubkey
+				megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], types.ValidatorPubkey(validator.ValidatorInfo.PubKey))
+				megapoolPubkeys = append(megapoolPubkeys, types.ValidatorPubkey(validator.ValidatorInfo.PubKey))
+			}
+		}
+		state.MegapoolToPubkeysMap = megapoolAddressMap
+
+		// initialize state.MegapoolDetails
+		state.MegapoolDetails = make(map[common.Address]rpstate.NativeMegapoolDetails)
+		// Sync
+		var wg errgroup.Group
+		// Iterate the maps and query megapool details
+		for megapoolAddress := range megapoolAddressMap {
+			megapoolAddress := megapoolAddress
+			wg.Go(func() error {
+
+				// Load the megapool
+				mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, opts)
+				if err != nil {
+					return err
+				}
+				nodeAddress, err := mp.GetNodeAddress(opts)
+				if err != nil {
+					return err
+				}
+				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(rp, nodeAddress)
+				if err != nil {
+					return err
+				}
+				state.MegapoolDetails[megapoolAddress] = megapoolDetails
+				return nil
+			})
+			if err := wg.Wait(); err != nil {
+				return nil, fmt.Errorf("error getting all megapool details: %w", err)
 			}
 		}
 	}
@@ -289,6 +326,7 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 		return nil, err
 	}
 	state.MinipoolValidatorDetails = statusMap
+
 	megapoolStatusMap, err := bc.GetValidatorStatuses(megapoolPubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &slotNumber,
 	})
