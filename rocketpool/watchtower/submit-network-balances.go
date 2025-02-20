@@ -32,7 +32,8 @@ import (
 )
 
 const (
-	networkBalanceSubmissionKey string = "network.balances.submitted.node"
+	networkBalanceSubmissionKey string  = "network.balances.submitted.node"
+	saturnBondInEth             float64 = 4
 )
 
 // Submit network balances task
@@ -56,6 +57,7 @@ type networkBalances struct {
 	DepositPool             *big.Int
 	MinipoolsTotal          *big.Int
 	MinipoolsStaking        *big.Int
+	MegapoolStaking         *big.Int
 	MegapoolsUserShareTotal *big.Int
 	DistributorShareTotal   *big.Int
 	SmoothingPoolShare      *big.Int
@@ -74,6 +76,7 @@ type megapoolBalanceDetail struct {
 	UserCapital        *big.Int
 	ContractBalance    *big.Int
 	RethRewards        *big.Int
+	StakingBalance     *big.Int
 }
 
 // Create submit network balances task
@@ -193,6 +196,8 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		t.log.Printlnf("Total minipool user balance: %s wei", balances.MinipoolsTotal.String())
 		t.log.Printlnf("Staking minipool user balance: %s wei", balances.MinipoolsStaking.String())
 		t.log.Printlnf("Fee distributor user balance: %s wei", balances.DistributorShareTotal.String())
+		t.log.Printlnf("Total megapool user balance: %s wei", balances.MegapoolsUserShareTotal.String())
+		t.log.Printlnf("Staking megapool user balance: %s wei", balances.MegapoolStaking.String())
 		t.log.Printlnf("Smoothing pool user balance: %s wei", balances.SmoothingPoolShare.String())
 		t.log.Printlnf("rETH contract balance: %s wei", balances.RETHContract.String())
 		t.log.Printlnf("rETH token supply: %s wei", balances.RETHSupply.String())
@@ -269,6 +274,7 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 	totalEth.Sub(totalEth, balances.NodeCreditBalance)
 	totalEth.Add(totalEth, balances.DepositPool)
 	totalEth.Add(totalEth, balances.MinipoolsTotal)
+	totalEth.Add(totalEth, balances.MegapoolsUserShareTotal)
 	totalEth.Add(totalEth, balances.RETHContract)
 	totalEth.Add(totalEth, balances.DistributorShareTotal)
 	totalEth.Add(totalEth, balances.SmoothingPoolShare)
@@ -409,6 +415,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		MinipoolsStaking:        big.NewInt(0),
 		DistributorShareTotal:   big.NewInt(0),
 		MegapoolsUserShareTotal: big.NewInt(0),
+		MegapoolStaking:         big.NewInt(0),
 		SmoothingPoolShare:      smoothingPoolShare,
 		RETHContract:            rethContractBalance,
 		RETHSupply:              rethTotalSupply,
@@ -427,7 +434,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	for _, mega := range megapoolBalanceDetails {
 		balances.MegapoolsUserShareTotal.Add(balances.MegapoolsUserShareTotal, mega.UserCapital)
 		balances.MegapoolsUserShareTotal.Add(balances.MegapoolsUserShareTotal, mega.RethRewards)
-
+		balances.MegapoolStaking.Add(balances.MegapoolStaking, mega.StakingBalance)
 	}
 
 	// Add node credits
@@ -450,14 +457,22 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	megapoolValidators := state.MegapoolToPubkeysMap[megapoolAddress]
 	// iterate the megapoolValidators array
 	megapoolBeaconBalanceTotal := big.NewInt(0)
+	megapoolStakingBalance := big.NewInt(0)
+	blockEpoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
+
 	for _, megapoolValidatorKey := range megapoolValidators {
 		// Grab the validator details from the pubkey
 		megapoolValidatorDetails := state.MegapoolValidatorDetails[megapoolValidatorKey]
 		if megapoolValidatorDetails.Exists {
 			megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+			if megapoolValidatorDetails.ActivationEpoch < blockEpoch && megapoolValidatorDetails.ExitEpoch > blockEpoch {
+				megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+				megapoolStakingBalance.Sub(megapoolStakingBalance, eth.EthToWei(saturnBondInEth))
+			}
 		}
 	}
 	megapoolBalanceDetails.BeaconBalanceTotal = megapoolBeaconBalanceTotal
+	megapoolBalanceDetails.StakingBalance = megapoolStakingBalance
 	megapoolBalanceDetails.NodeCapital = megapoolDetails.NodeCapital
 	megapoolBalanceDetails.UserCapital = megapoolDetails.UserCapital
 	megapoolBalanceDetails.ContractBalance = megapoolDetails.EthBalance
@@ -576,10 +591,11 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	if err != nil {
 		return fmt.Errorf("error getting node transactor: %w", err)
 	}
+	totalStaking := balances.MinipoolsStaking.Add(balances.MinipoolsStaking, balances.MegapoolStaking)
 
 	// Get the gas limit
 	var gasInfo rocketpool.GasInfo
-	gasInfo, err = network.EstimateSubmitBalancesGas(t.rp, balances.Block, balances.SlotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+	gasInfo, err = network.EstimateSubmitBalancesGas(t.rp, balances.Block, balances.SlotTimestamp, totalEth, totalStaking, balances.RETHSupply, opts)
 
 	if err != nil {
 		if enableSubmissionAfterConsensus_Balances && strings.Contains(err.Error(), "Network balances for an equal or higher block are set") {
@@ -606,7 +622,7 @@ func (t *submitNetworkBalances) submitBalances(balances networkBalances) error {
 	opts.GasLimit = gasInfo.SafeGasLimit
 	var hash common.Hash
 	// Submit balances
-	hash, err = network.SubmitBalances(t.rp, balances.Block, balances.SlotTimestamp, totalEth, balances.MinipoolsStaking, balances.RETHSupply, opts)
+	hash, err = network.SubmitBalances(t.rp, balances.Block, balances.SlotTimestamp, totalEth, totalStaking, balances.RETHSupply, opts)
 	if err != nil {
 		return fmt.Errorf("error submitting balances: %w", err)
 	}
