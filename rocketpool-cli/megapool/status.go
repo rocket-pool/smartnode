@@ -252,10 +252,20 @@ func getValidatorStatus(c *cli.Context) error {
 		return nil
 	}
 
+	// Get the number queue size and express queue rate
+	queueDetails, err := rp.GetQueueDetails()
+	if err != nil {
+		return err
+	}
+
 	statusValidators, _, _, err := getValidatorMapAndRewards(rp, status)
 	if err != nil {
 		return fmt.Errorf("Error while creating validator map %w:", err)
 	}
+
+	fmt.Printf("There are %d validator(s) on the express queue.\n", queueDetails.ExpressLength)
+	fmt.Printf("There are %d validator(s) on the standard queue.\n", queueDetails.StandardLength)
+	fmt.Printf("The express queue rate is %d.\n\n", queueDetails.ExpressRate)
 
 	statusName := []string{"Staking", "Exited", "Prelaunch", "Initialized", "Dissolved"}
 
