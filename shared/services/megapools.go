@@ -1,6 +1,7 @@
 package services
 
 import (
+	"fmt"
 	"math/big"
 	"strconv"
 
@@ -56,10 +57,23 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
 	}
 
-	// Get the finalized block
-	block, _, err := bc.GetBeaconBlock("finalized")
-	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+	// Get the finalized block, requesting the next one until we have an execution payload
+	blockToRequest := "finalized"
+	var block beacon.BeaconBlock
+	const maxAttempts = 10
+	for attempts := 0; attempts < maxAttempts; attempts++ {
+		block, _, err := bc.GetBeaconBlock(blockToRequest)
+		if err != nil {
+			return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		}
+
+		if block.HasExecutionPayload {
+			break
+		}
+		if attempts == maxAttempts-1 {
+			return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
+		}
+		blockToRequest = fmt.Sprintf("%d", block.Slot+1)
 	}
 
 	// Get the beacon state for that slot
