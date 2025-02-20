@@ -265,3 +265,20 @@ func (c *Client) GetEffectiveDelegate(address common.Address) (api.MegapoolGetEf
 	}
 	return response, nil
 }
+
+// Calculate Rewards split given an arbitrary amount
+func (c *Client) CalculateRewards(amountWei *big.Int) (api.MegapoolRewardSplitResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool calculate-rewards %s", amountWei.String()))
+	if err != nil {
+		return api.MegapoolRewardSplitResponse{}, fmt.Errorf("Could not calculate rewards: %w", err)
+	}
+	var response api.MegapoolRewardSplitResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.MegapoolRewardSplitResponse{}, fmt.Errorf("Could not decode calculate rewards response: %w", err)
+	}
+	if response.Error != "" {
+		return api.MegapoolRewardSplitResponse{}, fmt.Errorf("Could not get calculate rewards: %s", response.Error)
+	}
+
+	return response, nil
+}

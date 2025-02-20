@@ -81,18 +81,18 @@ type NodeStatusResponse struct {
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
-	Alerts                     []NodeAlert       `json:"alerts"`
-	SignallingAddress          common.Address    `json:"signallingAddress"`
-	SignallingAddressFormatted string            `json:"signallingAddressFormatted"`
-	Minipools                  []MinipoolDetails `json:"minipools"`
-	LatestDelegate             common.Address    `json:"latestDelegate"`
-	MegapoolDeployed           bool              `json:"megapoolDeployed"`
-	MegapoolAddress            common.Address    `json:"megapoolAddress"`
-	MegapoolValidatorCount     uint16            `json:"megapoolValidatorCount"`
-	MegapoolNodeDebt           *big.Int          `json:"megapoolNodeDebt"`
-	MegapoolRefundValue        *big.Int          `json:"megapoolRefundValue"`
-	IsSaturnDeployed           bool              `json:"isSaturnDeployed"`
-	ExpressTicketCount         uint64            `json:"expressTicketCount"`
+	Alerts                       []NodeAlert       `json:"alerts"`
+	SignallingAddress            common.Address    `json:"signallingAddress"`
+	SignallingAddressFormatted   string            `json:"signallingAddressFormatted"`
+	Minipools                    []MinipoolDetails `json:"minipools"`
+	LatestDelegate               common.Address    `json:"latestDelegate"`
+	MegapoolDeployed             bool              `json:"megapoolDeployed"`
+	MegapoolAddress              common.Address    `json:"megapoolAddress"`
+	MegapoolActiveValidatorCount uint16            `json:"megapoolValidatorCount"`
+	MegapoolNodeDebt             *big.Int          `json:"megapoolNodeDebt"`
+	MegapoolRefundValue          *big.Int          `json:"megapoolRefundValue"`
+	IsSaturnDeployed             bool              `json:"isSaturnDeployed"`
+	ExpressTicketCount           uint64            `json:"expressTicketCount"`
 }
 
 type NodeAlert struct {

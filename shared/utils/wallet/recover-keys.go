@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
@@ -28,7 +29,7 @@ const (
 	bucketLimit uint = 2000
 )
 
-func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address common.Address, w *wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
+func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress common.Address, w *wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -36,10 +37,29 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, address comm
 	}
 
 	// Get node's validating pubkeys
-	pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, address, nil)
+	pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAddress, nil)
 	if err != nil {
 		return nil, err
 	}
+
+	// Get the megapool address
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Load the megapool
+	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	megapoolPubkeys, err := mp.GetMegapoolPubkeys(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	pubkeys = append(pubkeys, megapoolPubkeys...)
 
 	// Remove zero pubkeys
 	zeroPubkey := types.ValidatorPubkey{}
