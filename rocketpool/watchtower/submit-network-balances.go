@@ -403,15 +403,16 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 	// Balances
 	balances := networkBalances{
-		Block:                 elBlockHeader.Number.Uint64(),
-		DepositPool:           depositPoolBalance,
-		MinipoolsTotal:        big.NewInt(0),
-		MinipoolsStaking:      big.NewInt(0),
-		DistributorShareTotal: big.NewInt(0),
-		SmoothingPoolShare:    smoothingPoolShare,
-		RETHContract:          rethContractBalance,
-		RETHSupply:            rethTotalSupply,
-		NodeCreditBalance:     big.NewInt(0),
+		Block:                   elBlockHeader.Number.Uint64(),
+		DepositPool:             depositPoolBalance,
+		MinipoolsTotal:          big.NewInt(0),
+		MinipoolsStaking:        big.NewInt(0),
+		DistributorShareTotal:   big.NewInt(0),
+		MegapoolsUserShareTotal: big.NewInt(0),
+		SmoothingPoolShare:      smoothingPoolShare,
+		RETHContract:            rethContractBalance,
+		RETHSupply:              rethTotalSupply,
+		NodeCreditBalance:       big.NewInt(0),
 	}
 
 	// Add minipool balances
@@ -468,9 +469,17 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	if err != nil {
 		return megapoolBalanceDetail{}, fmt.Errorf("error loading megapool contract: %w", err)
 	}
-	rewardsSplit, err := megapoolContract.CalculateRewards(rewards, nil)
-	if err != nil {
-		return megapoolBalanceDetail{}, fmt.Errorf("error calculating rewards split: %w, err")
+	rewardsSplit := megapool.RewardSplit{
+		NodeRewards:  big.NewInt(0),
+		VoterRewards: big.NewInt(0),
+		RethRewards:  big.NewInt(0),
+	}
+	if rewards.Cmp(big.NewInt(0)) > 0 {
+		rewardsSplit, err = megapoolContract.CalculateRewards(rewards, nil)
+
+		if err != nil {
+			return megapoolBalanceDetail{}, fmt.Errorf("error calculating rewards split: %w, err")
+		}
 	}
 	megapoolBalanceDetails.RethRewards = rewardsSplit.RethRewards
 	return megapoolBalanceDetails, nil
