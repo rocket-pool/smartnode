@@ -26,6 +26,7 @@ type MegapoolDetails struct {
 	EffectiveDelegateAddress common.Address             `json:"effectiveDelegateAddress"`
 	Deployed                 bool                       `json:"deployed"`
 	ValidatorCount           uint32                     `json:"validatorCount"`
+	ActiveValidatorCount     uint32                     `json:"activeValidatorCount"`
 	NodeDebt                 *big.Int                   `json:"nodeDebt"`
 	RefundValue              *big.Int                   `json:"refundValue"`
 	DelegateExpiry           uint64                     `json:"delegateExpiry"`

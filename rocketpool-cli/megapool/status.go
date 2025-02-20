@@ -76,7 +76,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Println("Upgrade your megapool delegate using 'rocketpool megapool delegate-upgrade' to view the express ticket and validator count.")
 	} else {
 		fmt.Printf("The node has %d express ticket(s).\n", status.Megapool.NodeExpressTicketCount)
-		fmt.Printf("The megapool has %d validators.\n", status.Megapool.ValidatorCount)
+		fmt.Printf("The megapool has %d validators.\n", status.Megapool.ActiveValidatorCount)
 	}
 	fmt.Println("")
 

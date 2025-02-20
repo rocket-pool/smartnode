@@ -117,9 +117,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 				if err == nil {
 					response.MegapoolRefundValue = refund
 				}
-				validatorCount, err := mp.GetValidatorCount(nil)
+				validatorCount, err := mp.GetActiveValidatorCount(nil)
 				if err == nil {
-					response.MegapoolValidatorCount = uint16(validatorCount)
+					response.MegapoolActiveValidatorCount = uint16(validatorCount)
 				}
 			}
 			return err
