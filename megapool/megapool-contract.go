@@ -68,7 +68,7 @@ type megapoolV1 struct {
 }
 
 const (
-	megapoolV1EncodedAbi string = "eJztWUtz0zAQ/itMzh0OBXrorTRlpkNhQmjh0OlkZGuTaqpIRlolzTD8d9ZJ/Irl2CF28aGn1pH87UOrbx++/z1gSqvVXDs7OJ8yaeFkIFTkkB7vf9O/HJ6BD87RuPUKglFM3q4iGJwPGOcGrB2cDBSbxz/MYcYirSX9gsUtf07qwBw9n344y8AWTArOUJtrnuEluwp4qd77AVHQnzLSQ7rhy1b9H4nkC2vFTEFOPixA4Vr6q9+q/TaEXw7cq98O9duVOtZvDVVjBES4L2PmGJbMcHspGe3s3jalOVy0aN9C03qbgAbwsU28pgcwFBaNCBz6D6Hg8pLEd6eZwEnlVaFdOblsTZ+fnOLxndUOtwJoh0WG8MUhC4QUuKLNEVuxQOYMmToVotCqqFyGHjIZOkkwI1BcqNnWyoIkrymlaMne9J5Gg/A4CiGOh2oAr7MWApZ1nqoXPKmkAY+XX91bGYgxsdUHOHHcwTHOITIQElKb8K3db75J8/3UTVir5QLS3NrRAaWc2g3+DDApQsmSHV/Xx343AU9KDSHAvuhy9RwJw+JNH6UOn/qi1g2zmKbcvin3NS6S0nJ6j0qlmttTa7en0keteJ9cdMkigUz2RaWjKp3OtBoDbeoXPd1ZMD07uzQRXW5rrhqt8knPm+harAr/JcHmTbpWU71jUajnkVbUW3iFBiuEHKdELvgMq0zaZrmiuMsrK4ljN/lxTqJuS41QrHIzlHFcy1jM0uxxKFsiqwUJNtOLLQQd6VO+OVuv1r4FzwIPf0uob9vi7cDXRkT6sZ6HqxnF6YKu5sG6JsVc6cWHUndM+daF+GZMuRYwGbB8pxhlM7hhKwrRt7thW7pk6CKq0Vq69z8FPnLDlkxeGuAUpYK6+v3Xfx3+/vufLHXaFgYUvPsHFHvOauIsXG2O+lbEh9DgsItskDHQyAVPjXihEuE7UQNDZ6ApSIEKqf3SVuCQIRtrjf5jSDpdWHbcaxigV0qF9zHDlHZGBGZDendqTQvj0U3nDWFRRb5xSbWC1tOv/N8+tT6CbceBe1KXomNVz97ncpPUO16m1UYTnIxuOTw3Y5RSeXAADeQdsawgX483/FD3DwUwRawGZQDaVZ2KUlYYGa2nuUOKts+lrJOvBl74LjW47l3c8gzddcIiGf4CjI2XX7wrOOYbR6kJ15IPQVJ1gznTvd++GgJS9joK8PCPEom4u2hmGO/+W+HU6Hk7pr3ox7MrfIzn3yGIRfvfzkrdB/qr+pZtohbghkRRyRARMfrNalLTMCkDFj5VD88LEdYNn6xnoenF6cUgLdFnPReFmnlaMQQ8/VUbA9rpFGjPAvrmqTQQmynWka/qHTBRhXGtxxlpdy7iEkfYbuuGnY7PSxyF8nu/o/9NvQYMYTa8Scr8BRItk48="
+	megapoolV1EncodedAbi string = "eJztWUtT2zAQ/iudnJkeaMuBGxA6wxQ6NEB7YBhGtjZBgyK50iohw/S/d504fsRy7DQ29YETOJK/Xa12v334/nXAlFaLqXZ2cDxm0sLBQKjIIT3ev9K/HF6AD47RuOUKglFM3i4iGBwPGOcGrB0cDBSbxj9MYcIirSX9gsUtfw7qwBw9H345ysBmTArOUJsLnuGtdxXwUr23A6KgP2Wkh3TDVaL+z7XkE2vFREFOPsxA4VL6u92q7TaE3w7cu912tdu52tduDVVjBES4b3PMEcyZ4fZMMtrZ/dmU5nDS4vlmmtbbBDSAT23iNb2AobBoRODQfwkFk5ckfjrMBD5WhgrtysllS/r86hSPY1Y7TATQDosM4cohC4QUuKDNEVuwQOYOMnYqRKFVUbkMPWQydJJgrkFxoSbJKQuSvEcpeUv2pvc2GrjHXgixP1QDeI01EzCvs1S94MdKGvBY+d28lY4YE1u9gxPH7ezjHCIDISG1Cd9afPNVmu+nbsJaLWeQ5taOLijl1G7wJ4AntCF3jrMkZGuiMG8zr5329fpYs6Q8Jt02vKA+KrsJRVJqCEED87yNLucvkTAs3nQqdfjcF7UumcW0GOibct/j8i0t9LeoVOoGPF1AeyqdasX7ZKIzFglksi8q7VWDdabVCGhTv+jpzoLp2d31JLW0lvrzR7pQY71xolBPI62o6/EKDRYIOU6JXPANFpm01XJF2ZlXVhLHrvLjlETdllq0WOVmKKO4yrKYpdn9UBIiqwUJVnOVBIKu9DnfNi5Xa9+CF4G7vyXUj6Ss3PG1ayL9WM/d1YzidEGhubOu6zKz9OJDqW+nfOtC/DCiXAu4Hv3ckI+yCVyyBbnox023LQUZuoiqx5bi/pfAJ27YnMkzA5y8VDBZQ91L9/fH/3qp04Y1IOfdPjrZclePzsL56qpvRXwJDS67yAYZA1274LkRL1Qi3BA1MHQGmoIUqJAaQ20FDhmykdbov4Z1Dw7zjrsgA/RKqfDeZ8zTwBf4Sl716MJ6moH/257Wu4ft2CsO6vJfrOrR5xzxS71hZVptNLjJuIzDS7NwLeXeHWIsb4h5BbN5rOGHun8ogCmiDCgD0K5qnk9D7tpoPc5dUpQ8lyg9n2q7idMZGBsvv3nhuc+Av9TnacmHICmBYu7o3g8/DQGJIPcC3H0ivxZ3F00M491/KBsbPW3naG/65egcn+Lhbwhi1v6Ho1KBi/7CseUzUZV5SaIs3kVED/5jNUmbTMqAhc/Vk+OCh3XDJ8txWxo4vZjVrPVZjt6gZmRTdAFPCd/GDHA8huUEt2+WSh2xmWId2areAI+qMBH0GCNtAEWc6IXt9ovERlPhJY5CEbrd0P+mXgOGMCveJGX+Ag4qOps="
 )
 
 // The decoded ABI for megapools
@@ -115,10 +115,20 @@ func (mp *megapoolV1) GetVersion() uint8 {
 	return mp.Version
 }
 
+// Get the count of all validators on a megapool
 func (mp *megapoolV1) GetValidatorCount(opts *bind.CallOpts) (uint32, error) {
 	var validatorCount uint32
 	if err := mp.Contract.Call(opts, &validatorCount, "getValidatorCount"); err != nil {
 		return 0, fmt.Errorf("error getting megapool %s validator count: %w", mp.Address.Hex(), err)
+	}
+	return validatorCount, nil
+}
+
+// Get the count of validators on a megapool, excluding inactive validators
+func (mp *megapoolV1) GetActiveValidatorCount(opts *bind.CallOpts) (uint32, error) {
+	var validatorCount uint32
+	if err := mp.Contract.Call(opts, &validatorCount, "getActiveValidatorCount"); err != nil {
+		return 0, fmt.Errorf("error getting megapool %s active validator count: %w", mp.Address.Hex(), err)
 	}
 	return validatorCount, nil
 }
