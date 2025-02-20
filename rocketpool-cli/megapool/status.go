@@ -88,7 +88,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("The megapool can be upgraded to delegate %s%s%s using 'rocketpool megapool delegate-upgrade'.\n", colorBlue, status.LatestDelegate, colorReset)
 	} else {
 		if status.Megapool.EffectiveDelegateAddress == status.LatestDelegate {
-			fmt.Printf("The megapool is using the latest delegate at %s%s%s\n", colorBlue, status.LatestDelegate, colorReset)
+			fmt.Println("The megapool is using the latest delegate.")
 		} else {
 			fmt.Printf("The megapool is using an outdated delegate at %s%s%s\n", colorBlue, status.Megapool.DelegateAddress, colorReset)
 			fmt.Printf("The megapool can be upgraded to delegate %s%s%s using 'rocketpool megapool delegate-upgrade'.\n", colorBlue, status.LatestDelegate, colorReset)
