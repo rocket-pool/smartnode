@@ -975,7 +975,7 @@ func (r *treeGeneratorImpl_v8) createMinipoolIndexMap() error {
 	for _, details := range r.nodeDetails {
 		if details.IsEligible {
 			for _, minipoolInfo := range details.Minipools {
-				status, exists := r.networkState.ValidatorDetails[minipoolInfo.ValidatorPubkey]
+				status, exists := r.networkState.MinipoolValidatorDetails[minipoolInfo.ValidatorPubkey]
 				if !exists {
 					// Remove minipools that don't have indices yet since they're not actually viable
 					//r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())

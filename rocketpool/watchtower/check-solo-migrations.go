@@ -172,7 +172,7 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 		totalCount += 1
 
 		// Scrub minipools that aren't seen on Beacon yet
-		validator := state.ValidatorDetails[mpd.Pubkey]
+		validator := state.MinipoolValidatorDetails[mpd.Pubkey]
 		if !validator.Exists {
 			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool %s (pubkey %s) did not exist on Beacon yet, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex()))
 			doesntExistCount += 1

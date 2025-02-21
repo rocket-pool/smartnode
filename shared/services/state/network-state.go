@@ -85,8 +85,13 @@ type NetworkState struct {
 	// Minipool details
 	MinipoolDetails []rpstate.NativeMinipoolDetails `json:"minipool_details"`
 
-	// Megapool validator details
-	MegapoolValidatorDetails []megapool.ValidatorInfoFromGlobalIndex `json:"megapool_validator_details"`
+	// Stores validator details from all megapools
+	MegapoolValidatorGlobalIndex []megapool.ValidatorInfoFromGlobalIndex `json:"megapool_validator_global_index"`
+
+	// Map megapool addresses to the pubkeys of its validators
+	MegapoolToPubkeysMap map[common.Address][]types.ValidatorPubkey `json:"-"`
+
+	MegapoolDetails map[common.Address]rpstate.NativeMegapoolDetails `json:"-"`
 
 	// These next two fields are indexes over MinipoolDetails and are ignored when marshaling to JSON
 	// they are rebuilt when unmarshaling from JSON.
@@ -94,7 +99,8 @@ type NetworkState struct {
 	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails `json:"-"`
 
 	// Validator details
-	ValidatorDetails ValidatorDetailsMap `json:"validator_details"`
+	MinipoolValidatorDetails ValidatorDetailsMap `json:"minipool_validator_details"`
+	MegapoolValidatorDetails ValidatorDetailsMap `json:"megapool_validator_details"`
 
 	// Oracle DAO details
 	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails `json:"oracle_dao_member_details"`
@@ -227,13 +233,6 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 	}
 	state.logLine("Retrieved minipool details (%s so far)", time.Since(start))
 
-	if isSaturnDeployed {
-		// Megapool validators details
-		state.MegapoolValidatorDetails, err = rpstate.GetAllMegapoolValidators(rp, contracts)
-		if err != nil {
-			return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
-		}
-	}
 	// Create the node lookup
 	for i, details := range state.NodeDetails {
 		state.NodeDetailsByAddress[details.NodeAddress] = &state.NodeDetails[i]
@@ -257,6 +256,56 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 		state.MinipoolDetailsByNode[details.NodeAddress] = nodeList
 	}
 
+	var megapoolPubkeys []types.ValidatorPubkey
+	if isSaturnDeployed {
+		state.MegapoolValidatorGlobalIndex, err = rpstate.GetAllMegapoolValidators(rp, contracts)
+		if err != nil {
+			return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
+		}
+		// Megapool validators details
+		megapoolPubkeys = make([]types.ValidatorPubkey, len(state.MegapoolValidatorGlobalIndex))
+		// Iterate over the megapool validators to add their pubkey to the list of pubkeys
+		megapoolAddressMap := make(map[common.Address][]types.ValidatorPubkey)
+		for _, validator := range state.MegapoolValidatorGlobalIndex {
+			// Add the megapool address to a set
+			if len(validator.ValidatorInfo.PubKey) > 0 { // TODO CHECK  validators without a pubkey
+				megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], types.ValidatorPubkey(validator.ValidatorInfo.PubKey))
+				megapoolPubkeys = append(megapoolPubkeys, types.ValidatorPubkey(validator.ValidatorInfo.PubKey))
+			}
+		}
+		state.MegapoolToPubkeysMap = megapoolAddressMap
+
+		// initialize state.MegapoolDetails
+		state.MegapoolDetails = make(map[common.Address]rpstate.NativeMegapoolDetails)
+		// Sync
+		var wg errgroup.Group
+		// Iterate the maps and query megapool details
+		for megapoolAddress := range megapoolAddressMap {
+			megapoolAddress := megapoolAddress
+			wg.Go(func() error {
+
+				// Load the megapool
+				mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, opts)
+				if err != nil {
+					return err
+				}
+				nodeAddress, err := mp.GetNodeAddress(opts)
+				if err != nil {
+					return err
+				}
+				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(rp, nodeAddress)
+				if err != nil {
+					return err
+				}
+				state.MegapoolDetails[megapoolAddress] = megapoolDetails
+				return nil
+			})
+			if err := wg.Wait(); err != nil {
+				return nil, fmt.Errorf("error getting all megapool details: %w", err)
+			}
+		}
+	}
+
 	// Calculate avg node fees and distributor shares
 	for _, details := range state.NodeDetails {
 		details.CalculateAverageFeeAndDistributorShares(state.MinipoolDetailsByNode[details.NodeAddress])
@@ -276,26 +325,34 @@ func createNetworkState(batchContracts config.StateManagerContracts, rp *rocketp
 	if err != nil {
 		return nil, err
 	}
-	state.ValidatorDetails = statusMap
+	state.MinipoolValidatorDetails = statusMap
+
+	megapoolStatusMap, err := bc.GetValidatorStatuses(megapoolPubkeys, &beacon.ValidatorStatusOptions{
+		Slot: &slotNumber,
+	})
+	if err != nil {
+		return nil, err
+	}
+	state.MegapoolValidatorDetails = megapoolStatusMap
 	state.logLine("Retrieved validator details (total time: %s)", time.Since(start))
 
 	// Get the complete node and user shares
 	mpds := make([]*rpstate.NativeMinipoolDetails, len(state.MinipoolDetails))
-	beaconBalances := make([]*big.Int, len(state.MinipoolDetails))
+	minipoolBeaconBalances := make([]*big.Int, len(state.MinipoolDetails))
 	for i, mpd := range state.MinipoolDetails {
 		mpds[i] = &state.MinipoolDetails[i]
-		validator := state.ValidatorDetails[mpd.Pubkey]
+		validator := state.MinipoolValidatorDetails[mpd.Pubkey]
 		if !validator.Exists {
-			beaconBalances[i] = big.NewInt(0)
+			minipoolBeaconBalances[i] = big.NewInt(0)
 		} else {
-			beaconBalances[i] = eth.GweiToWei(float64(validator.Balance))
+			minipoolBeaconBalances[i] = eth.GweiToWei(float64(validator.Balance))
 		}
 	}
-	err = rpstate.CalculateCompleteMinipoolShares(rp, contracts, mpds, beaconBalances)
+	err = rpstate.CalculateCompleteMinipoolShares(rp, contracts, mpds, minipoolBeaconBalances)
 	if err != nil {
 		return nil, err
 	}
-	state.ValidatorDetails = statusMap
+	state.MinipoolValidatorDetails = statusMap
 	state.logLine("Calculated complete node and user balance shares (total time: %s)", time.Since(start))
 
 	return state, nil
@@ -410,7 +467,7 @@ func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *
 	if err != nil {
 		return nil, nil, err
 	}
-	state.ValidatorDetails = statusMap
+	state.MinipoolValidatorDetails = statusMap
 	state.logLine("Retrieved validator details (total time: %s)", time.Since(start))
 
 	// Get the complete node and user shares
@@ -418,7 +475,7 @@ func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *
 	beaconBalances := make([]*big.Int, len(state.MinipoolDetails))
 	for i, mpd := range state.MinipoolDetails {
 		mpds[i] = &state.MinipoolDetails[i]
-		validator := state.ValidatorDetails[mpd.Pubkey]
+		validator := state.MinipoolValidatorDetails[mpd.Pubkey]
 		if !validator.Exists {
 			beaconBalances[i] = big.NewInt(0)
 		} else {
@@ -429,7 +486,7 @@ func createNetworkStateForNode(batchContracts config.StateManagerContracts, rp *
 	if err != nil {
 		return nil, nil, err
 	}
-	state.ValidatorDetails = statusMap
+	state.MinipoolValidatorDetails = statusMap
 	state.logLine("Calculated complete node and user balance shares (total time: %s)", time.Since(start))
 
 	// Get the protocol DAO proposals
@@ -570,7 +627,7 @@ func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *
 		}
 
 		// Doesn't exist on Beacon yet
-		validatorStatus, exists := s.ValidatorDetails[mpd.Pubkey]
+		validatorStatus, exists := s.MinipoolValidatorDetails[mpd.Pubkey]
 		if !exists {
 			//s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
 			continue
@@ -616,7 +673,7 @@ func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool, a
 				// It must exist and be staking
 				if mpd.Exists && mpd.Status == types.Staking {
 					// Doesn't exist on Beacon yet
-					validatorStatus, exists := s.ValidatorDetails[mpd.Pubkey]
+					validatorStatus, exists := s.MinipoolValidatorDetails[mpd.Pubkey]
 					if !exists {
 						//s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
 						continue

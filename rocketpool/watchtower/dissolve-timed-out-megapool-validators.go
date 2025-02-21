@@ -87,7 +87,7 @@ func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidators(state *s
 		return err
 	}
 
-	for _, validator := range state.MegapoolValidatorDetails {
+	for _, validator := range state.MegapoolValidatorGlobalIndex {
 		if validator.ValidatorInfo.InPrestake {
 			assignTime := time.Unix(int64(validator.ValidatorInfo.LastAssignmentTime), 0)
 			if time.Since(assignTime) >= time.Duration(timeBeforeDissolve)*time.Second {

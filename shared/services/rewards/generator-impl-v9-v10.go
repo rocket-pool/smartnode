@@ -883,7 +883,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 
 				// If the withdrawal is in or after the minipool's withdrawable epoch, adjust it.
 				withdrawalAmount := withdrawal.Amount
-				validatorInfo := r.networkState.ValidatorDetails[mpi.ValidatorPubkey]
+				validatorInfo := r.networkState.MinipoolValidatorDetails[mpi.ValidatorPubkey]
 				if slot >= r.networkState.BeaconConfig.FirstSlotOfEpoch(validatorInfo.WithdrawableEpoch) {
 					// Subtract 32 ETH from the withdrawal amount
 					withdrawalAmount = big.NewInt(0).Sub(withdrawalAmount, thirtyTwoEth)
@@ -1079,7 +1079,7 @@ func (r *treeGeneratorImpl_v9_v10) createMinipoolIndexMap() error {
 	for _, details := range r.nodeDetails {
 		if details.IsEligible {
 			for _, minipoolInfo := range details.Minipools {
-				status, exists := r.networkState.ValidatorDetails[minipoolInfo.ValidatorPubkey]
+				status, exists := r.networkState.MinipoolValidatorDetails[minipoolInfo.ValidatorPubkey]
 				if !exists {
 					// Remove minipools that don't have indices yet since they're not actually viable
 					//r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())

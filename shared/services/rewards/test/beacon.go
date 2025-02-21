@@ -112,7 +112,7 @@ func (m *MockBeaconClient) SetState(state *state.NetworkState) {
 	if m.validatorPubkeys == nil {
 		m.validatorPubkeys = make(map[validatorIndex]types.ValidatorPubkey)
 	}
-	for _, v := range state.ValidatorDetails {
+	for _, v := range state.MinipoolValidatorDetails {
 		if _, ok := m.validatorPubkeys[validatorIndex(v.Index)]; ok {
 			m.t.Fatalf("Validator %s already set", v.Index)
 		}
@@ -191,7 +191,7 @@ func (bc *MockBeaconClient) isValidatorActive(validator validatorIndex, e epoch)
 	if !ok {
 		return false, fmt.Errorf("validator %s not found", validator)
 	}
-	validatorDetails, ok := bc.state.ValidatorDetails[validatorPubkey]
+	validatorDetails, ok := bc.state.MinipoolValidatorDetails[validatorPubkey]
 	if !ok {
 		return false, fmt.Errorf("validator %s not found", validatorPubkey)
 	}

@@ -206,7 +206,7 @@ func GetMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *rpstate.
 	if err != nil {
 		return minipoolBalanceDetails{}, err
 	}
-	validator := state.ValidatorDetails[mpd.Pubkey]
+	validator := state.MinipoolValidatorDetails[mpd.Pubkey]
 	blockBalance := eth.GweiToWei(float64(validator.Balance))
 
 	// Data
