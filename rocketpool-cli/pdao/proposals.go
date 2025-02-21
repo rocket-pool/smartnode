@@ -116,6 +116,12 @@ func getProposal(c *cli.Context, id uint64) error {
 		return err
 	}
 
+	// Get the voting delegate info
+	votingDelegateInfo, err := rp.GetCurrentVotingDelegate()
+	if err != nil {
+		return err
+	}
+
 	// Find the proposal
 	var proposal *api.PDAOProposalWithNodeVoteDirection
 
@@ -170,12 +176,21 @@ func getProposal(c *cli.Context, id uint64) error {
 	vetoQuorum := utilsMath.RoundUp(eth.WeiToEth(proposal.VetoQuorum), 2)
 	fmt.Printf("Voting power for:       %.2f / %.2f (%.2f%%)\n", votingPowerFor, votingPowerRequired, votingPowerFor/votingPowerRequired*100)
 	fmt.Printf("Voting power against:   %.2f\n", utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerAgainst), 2))
-	fmt.Printf("   Against with veto:   %.2f / %2.f (%.2f%%)\n", votingPowerToVeto, vetoQuorum, votingPowerToVeto/vetoQuorum*100)
+	fmt.Printf("Against with veto:      %.2f / %2.f (%.2f%%)\n", votingPowerToVeto, vetoQuorum, votingPowerToVeto/vetoQuorum*100)
 	fmt.Printf("Voting power abstained: %.2f\n", utilsMath.RoundDown(eth.WeiToEth(proposal.VotingPowerAbstained), 2))
 	if proposal.NodeVoteDirection != types.VoteDirection_NoVote {
 		fmt.Printf("Node has voted:         %s\n", types.VoteDirections[proposal.NodeVoteDirection])
 	} else {
 		fmt.Printf("Node has voted:         no\n")
+	}
+
+	if votingDelegateInfo.VotingDelegate != votingDelegateInfo.AccountAddress && proposal.DelegateVoteDirection != types.VoteDirection_NoVote {
+		fmt.Printf("Delegate has voted:     %s\n", types.VoteDirections[proposal.DelegateVoteDirection])
+	} else if votingDelegateInfo.VotingDelegate != votingDelegateInfo.AccountAddress {
+		fmt.Printf("Delegate has voted:     no\n")
+	}
+	if votingDelegateInfo.VotingDelegate != votingDelegateInfo.AccountAddress {
+		fmt.Printf("Current Delegate:       %s", votingDelegateInfo.VotingDelegate.Hex())
 	}
 
 	return nil

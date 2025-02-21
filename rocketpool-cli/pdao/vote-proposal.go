@@ -38,6 +38,12 @@ func voteOnProposal(c *cli.Context) error {
 		}
 	}
 
+	// Get the voting delegate
+	votingDelegateInfo, err := rp.GetCurrentVotingDelegate()
+	if err != nil {
+		return err
+	}
+
 	// Check for votable proposals
 	if len(votableProposals) == 0 {
 		fmt.Println("No proposals can be voted on.")
@@ -94,6 +100,12 @@ func voteOnProposal(c *cli.Context) error {
 		selected, _ := cliutils.Select("Please select a proposal to vote on:", options)
 		selectedProposal = votableProposals[selected]
 
+	}
+
+	// Check if delegate has voted
+	if selectedProposal.DelegateVoteDirection != types.VoteDirection_NoVote && votingDelegateInfo.VotingDelegate != votingDelegateInfo.AccountAddress {
+		fmt.Printf("Your Delegate: %s has voted: %s\n", votingDelegateInfo.VotingDelegate.Hex(), types.VoteDirections[selectedProposal.DelegateVoteDirection])
+		fmt.Println()
 	}
 
 	// Get support status
