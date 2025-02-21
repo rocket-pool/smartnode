@@ -171,6 +171,8 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
+require golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8
+
 replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
 
 //replace github.com/rocket-pool/node-manager-core => ../node-manager-core

@@ -54,41 +54,56 @@ func rebuildWallet(c *cli.Context) error {
 		}(customKeyPasswordFile)
 	}
 
+	var enablePartialRebuildValue = false
+	if enablePartialRebuild.Name != "" {
+		enablePartialRebuildValue = c.Bool(enablePartialRebuild.Name)
+	}
+
 	// Log
 	fmt.Println("Rebuilding node validator keystores...")
+	fmt.Printf("Partial rebuild enabled: %s.\n", enablePartialRebuild.Value)
 
 	// Rebuild wallet
-	response, err := rp.Api.Wallet.Rebuild()
+	response, err := rp.Api.Wallet.Rebuild(enablePartialRebuildValue)
 	if err != nil {
 		return err
 	}
 
-	// Log & return
-	fmt.Println("The node wallet was successfully rebuilt.")
-	if len(response.Data.ValidatorKeys) > 0 {
+	// Handle and print failure reasons with associated public keys
+	if len(response.Data.FailureReasons) > 0 {
+		fmt.Println("Some keys could not be recovered. You may need to import them manually, as they are not " +
+			"associated with your node wallet mnemonic. See the documentation for more details.")
+		fmt.Println("Failure reasons:")
+		for pubkey, reason := range response.Data.FailureReasons {
+			fmt.Printf("Public Key: %s - Failure Reason: %s\n", pubkey.Hex(), reason)
+		}
+	} else {
+		fmt.Println("No failures reported.")
+	}
+
+	if len(response.Data.RebuiltValidatorKeys) > 0 {
 		fmt.Println("Validator keys:")
-		for _, key := range response.Data.ValidatorKeys {
+		for _, key := range response.Data.RebuiltValidatorKeys {
 			fmt.Println(key.Hex())
 		}
-		fmt.Println()
+
+		if !utils.Confirm("Would you like to restart your Validator Client now so it can attest with the recovered keys?") {
+			fmt.Println("Please restart the Validator Client manually at your earliest convenience to load the keys.")
+			return nil
+		}
+
+		// Restart the VC
+		fmt.Println("Restarting Validator Client...")
+		_, err = rp.Api.Service.RestartVc()
+		if err != nil {
+			fmt.Printf("Error restarting Validator Client: %s\n", err.Error())
+			fmt.Println("Please restart the Validator Client manually at your earliest convenience to load the keys.")
+			return nil
+		}
+		fmt.Println("Validator Client restarted successfully.")
 	} else {
 		fmt.Println("No validator keys were found.")
 	}
-
-	if !utils.Confirm("Would you like to restart your Validator Client now so it can attest with the recovered keys?") {
-		fmt.Println("Please restart the Validator Client manually at your earliest convenience to load the keys.")
-		return nil
-	}
-
-	// Restart the VC
-	fmt.Println("Restarting Validator Client...")
-	_, err = rp.Api.Service.RestartVc()
-	if err != nil {
-		fmt.Printf("Error restarting Validator Client: %s\n", err.Error())
-		fmt.Println("Please restart the Validator Client manually at your earliest convenience to load the keys.")
-		return nil
-	}
-	fmt.Println("Validator Client restarted successfully.")
 
 	return nil
 }

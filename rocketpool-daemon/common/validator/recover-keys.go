@@ -19,12 +19,6 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const (
-	bucketSize      uint64 = 20
-	bucketLimit     uint64 = 2000
-	pubkeyBatchSize int    = 500
-)
-
 func (m *ValidatorManager) RecoverMinipoolKeys(testOnly bool) ([]beacon.ValidatorPubkey, error) {
 	status, err := m.wallet.GetStatus()
 	if err != nil {

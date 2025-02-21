@@ -2,10 +2,11 @@ package wallet
 
 import (
 	"fmt"
-	"net/url"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/gorilla/mux"
+	"github.com/rocket-pool/node-manager-core/utils/input"
+	"github.com/rocket-pool/smartnode/v2/rocketpool-daemon/common/validator"
+	"net/url"
 
 	"github.com/rocket-pool/node-manager-core/api/server"
 	"github.com/rocket-pool/node-manager-core/api/types"
@@ -24,7 +25,9 @@ func (f *walletRebuildContextFactory) Create(args url.Values) (*walletRebuildCon
 	c := &walletRebuildContext{
 		handler: f.handler,
 	}
-	return c, nil
+	inputError := server.ValidateOptionalArg("enable-partial-rebuild", args, input.ValidateBool, &c.enablePartialRebuild, nil)
+
+	return c, inputError
 }
 
 func (f *walletRebuildContextFactory) RegisterRoute(router *mux.Router) {
@@ -38,12 +41,14 @@ func (f *walletRebuildContextFactory) RegisterRoute(router *mux.Router) {
 // ===============
 
 type walletRebuildContext struct {
-	handler *WalletHandler
+	handler              *WalletHandler
+	enablePartialRebuild bool
 }
 
 func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bind.TransactOpts) (types.ResponseStatus, error) {
 	sp := c.handler.serviceProvider
 	vMgr := sp.GetValidatorManager()
+	keyRecoveryManager := validator.NewKeyRecoveryManager(vMgr, c.enablePartialRebuild, false)
 
 	// Requirements
 	err := sp.RequireWalletReady()
@@ -56,7 +61,7 @@ func (c *walletRebuildContext) PrepareData(data *api.WalletRebuildData, opts *bi
 	}
 
 	// Recover validator keys
-	data.ValidatorKeys, err = vMgr.RecoverMinipoolKeys(false)
+	data.RebuiltValidatorKeys, data.FailureReasons, err = keyRecoveryManager.RecoverMinipoolKeys()
 	if err != nil {
 		return types.ResponseStatus_Error, fmt.Errorf("error recovering minipool keys: %w", err)
 	}
