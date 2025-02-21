@@ -2,6 +2,7 @@ package megapool
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -53,5 +54,43 @@ func getStatus(c *cli.Context) (*api.MegapoolStatusResponse, error) {
 	response.LatestDelegate = *delegate.Address
 
 	// Return response
+	return &response, nil
+}
+
+func calculateRewards(c *cli.Context, amount *big.Int) (*api.MegapoolRewardSplitResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	if err := services.RequireBeaconClientSynced(c); err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.MegapoolRewardSplitResponse{}
+
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate the rewards split for a given amount
+	response, err = CalculateRewards(rp, amount, nodeAccount.Address)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting rewards split for amount %s: %w", amount, err)
+	}
+
+	//Return response
 	return &response, nil
 }

@@ -99,6 +99,11 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	})
 	wg.Go(func() error {
 		var err error
+		details.ActiveValidatorCount, err = mega.GetActiveValidatorCount(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
 		details.PendingRewards, err = mega.GetPendingRewards(nil)
 		return err
 	})
@@ -186,6 +191,49 @@ func GetMegapoolQueueDetails(rp *rocketpool.RocketPool) (api.QueueDetails, error
 
 }
 
+func CalculateRewards(rp *rocketpool.RocketPool, amount *big.Int, nodeAccount common.Address) (api.MegapoolRewardSplitResponse, error) {
+
+	rewards := api.MegapoolRewardSplitResponse{}
+
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount, nil)
+	if err != nil {
+		return api.MegapoolRewardSplitResponse{}, err
+	}
+
+	// Return if megapool isn't deployed
+	deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
+	if err != nil {
+		return api.MegapoolRewardSplitResponse{}, err
+	}
+	if !deployed {
+		return rewards, nil
+	}
+
+	// Load the megapool contract
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return rewards, err
+	}
+
+	// Return if delegate is expired
+	delegateExpired, err := mega.GetDelegateExpired(rp, nil)
+	if err != nil {
+		return api.MegapoolRewardSplitResponse{}, err
+	}
+	if delegateExpired {
+		return rewards, nil
+	}
+
+	// Get the rewards split
+	rewards.RewardSplit, err = mega.CalculateRewards(amount, nil)
+	if err != nil {
+		return rewards, err
+	}
+
+	return rewards, nil
+
+}
+
 func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, megapoolAddress common.Address, validatorCount uint32) ([]api.MegapoolValidatorDetails, error) {
 
 	details := []api.MegapoolValidatorDetails{}
@@ -266,24 +314,23 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 func findInQueue(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, queueKey string, indexOffset *big.Int, positionOffset *big.Int) (*big.Int, error) {
 	var maxSliceLength = big.NewInt(100)
 
-	chunk, err := storage.Scan(rp, crypto.Keccak256Hash([]byte(queueKey)), indexOffset, maxSliceLength, nil)
+	slice, err := storage.Scan(rp, crypto.Keccak256Hash([]byte(queueKey)), indexOffset, maxSliceLength, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	for _, entry := range chunk.Entries {
+	for _, entry := range slice.Entries {
 		if entry.Receiver == megapoolAddress {
 			if entry.ValidatorID == validatorId {
 				return positionOffset, err
-			} else {
-				positionOffset.Add(positionOffset, big.NewInt(1))
 			}
 		}
+		positionOffset.Add(positionOffset, big.NewInt(1))
 	}
-	if chunk.NextIndex.Cmp(big.NewInt(0)) == 0 {
+	if slice.NextIndex.Cmp(big.NewInt(0)) == 0 {
 		return nil, err
 	} else {
-		return findInQueue(rp, megapoolAddress, validatorId, queueKey, chunk.NextIndex, positionOffset)
+		return findInQueue(rp, megapoolAddress, validatorId, queueKey, slice.NextIndex, positionOffset)
 	}
 
 }

@@ -112,7 +112,7 @@ func getStatus(c *cli.Context) error {
 			if status.MegapoolDeployed {
 				fmt.Printf("The node has a megapool deployed at %s%s%s.", colorBlue, status.MegapoolAddress.Hex(), colorReset)
 				fmt.Println()
-				fmt.Printf("The megapool has %d validators.", status.MegapoolValidatorCount)
+				fmt.Printf("The megapool has %d validators.", status.MegapoolActiveValidatorCount)
 				fmt.Println()
 				if status.MegapoolNodeDebt.Cmp(big.NewInt(0)) > 0 {
 					fmt.Printf("The megapool debt is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
