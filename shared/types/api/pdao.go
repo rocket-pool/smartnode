@@ -12,7 +12,8 @@ import (
 
 type PDAOProposalWithNodeVoteDirection struct {
 	protocol.ProtocolDaoProposalDetails
-	NodeVoteDirection types.VoteDirection `json:"nodeVoteDirection"`
+	NodeVoteDirection     types.VoteDirection `json:"nodeVoteDirection"`
+	DelegateVoteDirection types.VoteDirection `json:"delegateVoteDirection"`
 }
 
 type PDAOProposalsResponse struct {
