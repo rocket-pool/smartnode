@@ -62,7 +62,7 @@ func (cfg *RescueNodeConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *RescueNodeConfig) GetConfigTitle() string {
 	return cfg.Title
 }

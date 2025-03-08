@@ -774,7 +774,7 @@ func (config *SmartnodeConfig) GetSnapshotID() string {
 	return SnapshotID
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *SmartnodeConfig) GetConfigTitle() string {
 	return cfg.Title
 }

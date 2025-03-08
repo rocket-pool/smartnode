@@ -188,7 +188,7 @@ func (cfg *PrysmConfig) GetName() string {
 	return "Prysm"
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *PrysmConfig) GetConfigTitle() string {
 	return cfg.Title
 }

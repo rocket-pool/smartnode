@@ -151,7 +151,7 @@ func (cfg *ConsensusCommonConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *ConsensusCommonConfig) GetConfigTitle() string {
 	return cfg.Title
 }

@@ -663,32 +663,32 @@ func (cfg *ExternalTekuConfig) GetName() string {
 	return "Teku"
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *ExternalExecutionConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *ExternalLighthouseConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *ExternalLodestarConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *ExternalNimbusConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *ExternalPrysmConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *ExternalTekuConfig) GetConfigTitle() string {
 	return cfg.Title
 }
