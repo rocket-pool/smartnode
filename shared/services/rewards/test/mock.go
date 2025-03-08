@@ -633,7 +633,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			out.MinipoolDetailsByAddress[minipool.Address] = minipoolPtr
 			out.MinipoolDetailsByNode[minipool.NodeAddress] = append(out.MinipoolDetailsByNode[minipool.NodeAddress], minipoolPtr)
 
-			// Finally, populate the the ValidatorDetails map
+			// Finally, populate The ValidatorDetails map
 			pubkey := minipool.Pubkey
 			withdrawableEpoch := FarFutureEpoch
 			exitEpoch := FarFutureEpoch

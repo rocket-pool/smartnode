@@ -277,7 +277,7 @@ func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *NethermindConfig) GetConfigTitle() string {
 	return cfg.Title
 }

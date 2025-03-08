@@ -127,7 +127,7 @@ func (cfg *GraffitiWallWriterConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *GraffitiWallWriterConfig) GetConfigTitle() string {
 	return cfg.Title
 }

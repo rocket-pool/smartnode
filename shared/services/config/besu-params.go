@@ -146,7 +146,7 @@ func (cfg *BesuConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *BesuConfig) GetConfigTitle() string {
 	return cfg.Title
 }

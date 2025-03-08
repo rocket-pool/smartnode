@@ -73,7 +73,7 @@ func (cfg *BitflyNodeMetricsConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *BitflyNodeMetricsConfig) GetConfigTitle() string {
 	return cfg.Title
 }

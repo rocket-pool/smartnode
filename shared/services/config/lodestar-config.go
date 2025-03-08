@@ -115,7 +115,7 @@ func (cfg *LodestarConfig) GetName() string {
 	return "Lodestar"
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *LodestarConfig) GetConfigTitle() string {
 	return cfg.Title
 }

@@ -115,12 +115,12 @@ func (cfg *FallbackPrysmConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (config *FallbackNormalConfig) GetConfigTitle() string {
 	return config.Title
 }
 
-// The the title for the config
+// The title for the config
 func (config *FallbackPrysmConfig) GetConfigTitle() string {
 	return config.Title
 }

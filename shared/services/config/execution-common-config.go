@@ -161,7 +161,7 @@ func (cfg *ExecutionCommonConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *ExecutionCommonConfig) GetConfigTitle() string {
 	return cfg.Title
 }

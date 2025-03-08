@@ -1002,7 +1002,7 @@ func (cfg *RocketPoolConfig) CustomGraffiti() (string, error) {
 }
 
 // Used by text/template to format validator.yml
-// Only returns the the prefix
+// Only returns The prefix
 func (cfg *RocketPoolConfig) GraffitiPrefix() string {
 	// Graffiti
 	identifier := ""
@@ -1373,7 +1373,7 @@ func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *RocketPoolConfig) GetConfigTitle() string {
 	return cfg.Title
 }

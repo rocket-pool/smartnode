@@ -73,7 +73,7 @@ func (cfg *ExporterConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *ExporterConfig) GetConfigTitle() string {
 	return cfg.Title
 }

@@ -167,7 +167,7 @@ func (cfg *NimbusConfig) GetName() string {
 	return "Nimbus"
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *NimbusConfig) GetConfigTitle() string {
 	return cfg.Title
 }
