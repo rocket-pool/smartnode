@@ -266,6 +266,22 @@ func (c *Client) GetEffectiveDelegate(address common.Address) (api.MegapoolGetEf
 	return response, nil
 }
 
+// Calculate the megapool pending rewards
+func (c *Client) CalculatePendingRewards() (api.MegapoolRewardSplitResponse, error) {
+	responseBytes, err := c.callAPI("megapool pending-rewards")
+	if err != nil {
+		return api.MegapoolRewardSplitResponse{}, fmt.Errorf("Could not get pending rewards: %w", err)
+	}
+	var response api.MegapoolRewardSplitResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.MegapoolRewardSplitResponse{}, fmt.Errorf("Could not decode pending rewards response: %w", err)
+	}
+	if response.Error != "" {
+		return api.MegapoolRewardSplitResponse{}, fmt.Errorf("Could not get pending rewards: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Calculate Rewards split given an arbitrary amount
 func (c *Client) CalculateRewards(amountWei *big.Int) (api.MegapoolRewardSplitResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool calculate-rewards %s", amountWei.String()))
@@ -280,5 +296,37 @@ func (c *Client) CalculateRewards(amountWei *big.Int) (api.MegapoolRewardSplitRe
 		return api.MegapoolRewardSplitResponse{}, fmt.Errorf("Could not get calculate rewards: %s", response.Error)
 	}
 
+	return response, nil
+}
+
+// Check if the node can distribute megapool rewards
+func (c *Client) CanDistributeMegapool() (api.CanDistributeMegapoolResponse, error) {
+	responseBytes, err := c.callAPI("megapool can-distribute-megapool")
+	if err != nil {
+		return api.CanDistributeMegapoolResponse{}, fmt.Errorf("Could not get can-distribute-megapool response: %w", err)
+	}
+	var response api.CanDistributeMegapoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanDistributeMegapoolResponse{}, fmt.Errorf("Could not decode can-distribute-megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanDistributeMegapoolResponse{}, fmt.Errorf("Could not get can-distribute-megapool response: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Distribute megapool rewards
+func (c *Client) DistributeMegapool() (api.DistributeMegapoolResponse, error) {
+	responseBytes, err := c.callAPI("megapool distribute-megapool")
+	if err != nil {
+		return api.DistributeMegapoolResponse{}, fmt.Errorf("Could not get distribute-megapool response: %w", err)
+	}
+	var response api.DistributeMegapoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.DistributeMegapoolResponse{}, fmt.Errorf("Could not decode distribute-megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.DistributeMegapoolResponse{}, fmt.Errorf("Could not get distribute-megapool response: %s", response.Error)
+	}
 	return response, nil
 }

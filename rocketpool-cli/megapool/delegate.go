@@ -18,6 +18,16 @@ func delegateUpgradeMegapool(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check if Saturn is already deployed
+	saturnResp, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if !saturnResp.IsSaturnDeployed {
+		fmt.Println("This command is only available after the Saturn upgrade.")
+		return nil
+	}
+
 	// Get megapool status
 	status, err := rp.MegapoolStatus()
 	if err != nil {
@@ -73,6 +83,16 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 		return err
 	}
 	defer rp.Close()
+
+	// Check if Saturn is already deployed
+	saturnResp, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if !saturnResp.IsSaturnDeployed {
+		fmt.Println("This command is only available after the Saturn upgrade.")
+		return nil
+	}
 
 	// Get megapool status
 	status, err := rp.MegapoolStatus()

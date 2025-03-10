@@ -144,6 +144,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 			{
 				Name:      "exit-queue",
+				Aliases:   []string{"x"},
 				Usage:     "Exit the megapool queue",
 				UsageText: "rocketpool megapool exit-queue",
 				Flags: []cli.Flag{
@@ -194,6 +195,28 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return dissolveValidator(c)
+				},
+			},
+			{
+				Name:      "distribute",
+				Aliases:   []string{"b"},
+				Usage:     "Distribute any accrued execution layer rewards sent to this megapool",
+				UsageText: "rocketpool megapool distribute",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return distribute(c)
 				},
 			},
 			{

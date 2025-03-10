@@ -116,3 +116,16 @@ type MegapoolGetEffectiveDelegateResponse struct {
 	Error   string         `json:"error"`
 	Address common.Address `json:"address"`
 }
+
+type CanDistributeMegapoolResponse struct {
+	Status        string             `json:"status"`
+	Error         string             `json:"error"`
+	CanDistribute bool               `json:"canDistribute"`
+	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type DistributeMegapoolResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}

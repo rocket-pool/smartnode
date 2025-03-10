@@ -50,6 +50,41 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-distribute-megapool",
+				Usage:     "Check if can distribute megapool rewards",
+				UsageText: "rocketpool api node can-distribute-megapool",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canDistributeMegapool(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "distribute-megapool",
+				Usage:     "Distribute megapool rewards",
+				UsageText: "rocketpool api node distribute-megapool",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(distributeMegapool(c))
+					return nil
+
+				},
+			},
+			{
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get the node's megapool status",
@@ -427,6 +462,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(calculateRewards(c, amount))
+					return nil
+
+				},
+			},
+			{
+				Name:      "pending-rewards",
+				Usage:     "Calculate the pending rewards split",
+				UsageText: "rocketpool api megapool pending-rewards",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(calculatePendingRewards(c))
 					return nil
 
 				},
