@@ -31,6 +31,8 @@ type Megapool interface {
 	NewValidator(bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateDequeueGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	Dequeue(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error)
+	EstimateDistributeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	Distribute(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateAssignFundsGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	AssignFunds(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateDissolveValidatorGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
