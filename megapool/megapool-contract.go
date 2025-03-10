@@ -363,6 +363,20 @@ func (mp *megapoolV1) Stake(validatorId uint32, validatorSignature rptypes.Valid
 	return tx.Hash(), nil
 }
 
+// Estimate the gas required to distribute megapool rewards
+func (mp *megapoolV1) EstimateDistributeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "distribute")
+}
+
+// Distribute megapool rewards
+func (mp *megapoolV1) Distribute(opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "distribute")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error distributing megapool rewards: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
 // Estimate the gas of SetUseLatestDelegate
 func (mp *megapoolV1) EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "setUseLatestDelegate", setting)
