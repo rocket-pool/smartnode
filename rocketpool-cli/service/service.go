@@ -130,10 +130,6 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smart Node v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
-	fmt.Printf("%s=== Ready for Houston! ===%s\n", colorGreen, colorReset)
-	fmt.Println("Version 1.13.0 has all the features required for the transition from Atlas into the next Rocket Pool upgrade, Houston!\n This includes features like pDAO On-Chain governance, Stake ETH on Behalf of node, a separate RPL withdrawal address, and Time-based Balance and RPL Price Submissions.\nCheck https://docs.rocketpool.net/guides/houston/whats-new for details.")
-	fmt.Println("")
-
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
