@@ -88,3 +88,8 @@ type PurgeResponse struct {
 	Status string `json:"status"`
 	Error  string `json:"error"`
 }
+
+type MasqueradeResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
