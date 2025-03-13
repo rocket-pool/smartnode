@@ -37,6 +37,7 @@ type Wallet struct {
 	// Core
 	walletPath string
 	pm         *passwords.PasswordManager
+	am         *AddressManager
 	encryptor  *eth2ks.Encryptor
 	chainID    *big.Int
 
@@ -75,12 +76,13 @@ type walletStore struct {
 }
 
 // Create new wallet
-func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager) (*Wallet, error) {
+func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager, addressManager *AddressManager) (*Wallet, error) {
 
 	// Initialize wallet
 	w := &Wallet{
 		walletPath:     walletPath,
 		pm:             passwordManager,
+		am:             addressManager,
 		encryptor:      eth2ks.New(),
 		chainID:        big.NewInt(int64(chainId)),
 		validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
