@@ -130,6 +130,8 @@ ______           _        _    ______           _
 	fmt.Printf("%s=== Smart Node v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
 	fmt.Printf("Changes you should be aware of before starting:\n\n")
 
+	fmt.Println("")
+
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard

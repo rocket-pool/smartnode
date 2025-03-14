@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	prysmBnTest             string = "rocketpool/prysm:v5.1.2"
-	prysmBnProd             string = "rocketpool/prysm:v5.1.2"
-	prysmVcTest             string = "rocketpool/prysm:v5.1.2"
-	prysmVcProd             string = "rocketpool/prysm:v5.1.2"
+	prysmBnTest             string = "rocketpool/prysm:v5.3.0"
+	prysmBnProd             string = "rocketpool/prysm:v5.3.0"
+	prysmVcTest             string = "rocketpool/prysm:v5.3.0"
+	prysmVcProd             string = "rocketpool/prysm:v5.3.0"
 	defaultPrysmRpcPort     uint16 = 5053
 	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers    uint16 = 70
@@ -29,6 +29,9 @@ type PrysmConfig struct {
 
 	// Toggle for forwarding the RPC API outside of Docker
 	OpenRpcPort config.Parameter `yaml:"openRpcPort,omitempty"`
+
+	// The port to use for gossip traffic using the QUIC protocol
+	P2pQuicPort config.Parameter `yaml:"p2pQuicPort,omitempty"`
 
 	// The Docker Hub tag for the Prysm BN
 	BnContainerTag config.Parameter `yaml:"bnContainerTag,omitempty"`
@@ -84,6 +87,17 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options:            rpcPortModes,
+		},
+
+		P2pQuicPort: config.Parameter{
+			ID:                 P2pQuicPortID,
+			Name:               "P2P QUIC Port",
+			Description:        "The port to use for P2P (blockchain) traffic using the QUIC protocol.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultP2pQuicPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		BnContainerTag: config.Parameter{
@@ -144,6 +158,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 func (cfg *PrysmConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.MaxPeers,
+		&cfg.P2pQuicPort,
 		&cfg.RpcPort,
 		&cfg.OpenRpcPort,
 		&cfg.BnContainerTag,
