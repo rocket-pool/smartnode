@@ -38,7 +38,7 @@ func masquerade(c *cli.Context) error {
 		return fmt.Errorf("error running masquerade: %w", err)
 	}
 
-	fmt.Printf("Your node is now masquerading as address %s%s%s.\n\n", colorBlue, addressString, colorReset)
+	fmt.Printf("Your node is now masquerading as address %s%s%s.\n", colorBlue, addressString, colorReset)
 
 	return nil
 }

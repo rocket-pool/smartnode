@@ -319,6 +319,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "restore-address",
+				Usage:     "Restore your node's effective address back to your wallet address, ending a masquerade if you have one active. This will take it out of read-only mode.",
+				UsageText: "rocketpool api wallet restore-address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(restoreAddress(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }

@@ -228,3 +228,19 @@ func (c *Client) Masquerade(address common.Address) (api.MasqueradeResponse, err
 	}
 	return response, nil
 }
+
+// Set the node address back to the wallet address
+func (c *Client) RestoreAddress() (api.RestoreAddressResponse, error) {
+	responseBytes, err := c.callAPI("wallet restore-address")
+	if err != nil {
+		return api.RestoreAddressResponse{}, fmt.Errorf("Could not restore address: %w", err)
+	}
+	var response api.RestoreAddressResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.RestoreAddressResponse{}, fmt.Errorf("Could not decode restore address response: %w", err)
+	}
+	if response.Error != "" {
+		return api.RestoreAddressResponse{}, fmt.Errorf("Could not restore address: %s", response.Error)
+	}
+	return response, nil
+}

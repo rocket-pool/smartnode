@@ -34,8 +34,9 @@ func getStatus(c *cli.Context) (*api.WalletStatusResponse, error) {
 		if err != nil {
 			return nil, err
 		}
+		//TODO refactor AccountAddress to WalletAddress
 		response.AccountAddress = nodeAccount.Address
-
+		response.NodeAddress, response.HasAddress, _ = w.LoadAddress()
 	}
 
 	// Return response
