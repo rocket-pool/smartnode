@@ -1,0 +1,105 @@
+package megapool
+
+import (
+	"fmt"
+
+	"github.com/rocket-pool/smartnode/shared/services/gas"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/urfave/cli"
+)
+
+func exitValidator(c *cli.Context) error {
+
+	// Get RP client
+	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	if err != nil {
+		return err
+	}
+	defer rp.Close()
+
+	// Check if Saturn is already deployed
+	saturnResp, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if !saturnResp.IsSaturnDeployed {
+		fmt.Println("This command is only available after the Saturn upgrade.")
+		return nil
+	}
+
+	// List the validators that can be exited
+	var validatorId uint64
+
+	if c.IsSet("validator-id") {
+		validatorId = c.Uint64("validator-id")
+	} else {
+		// Get Megapool status
+		status, err := rp.MegapoolStatus()
+		if err != nil {
+			return err
+		}
+
+		activeValidators := []api.MegapoolValidatorDetails{}
+
+		for _, validator := range status.Megapool.Validators {
+			if validator.Activated {
+				activeValidators = append(activeValidators, validator)
+			}
+		}
+		if len(activeValidators) > 0 {
+
+			options := make([]string, len(activeValidators))
+			for vi, v := range activeValidators {
+				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+			}
+			selected, _ := cliutils.Select("Please select a validator to EXIT:", options)
+
+			// Get validators
+			validatorId = uint64(activeValidators[selected].ValidatorId)
+
+		} else {
+			fmt.Println("No validators can be exited at the moment")
+			return nil
+		}
+	}
+
+	response, err := rp.CanExitValidator(validatorId)
+	if err != nil {
+		return err
+	}
+
+	if !response.CanExit {
+		return nil
+	}
+
+	// Assign max fees
+	err = gas.AssignMaxFeeAndLimit(response.GasInfo, rp, c.Bool("yes"))
+	if err != nil {
+		return err
+	}
+
+	// Prompt for confirmation
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to EXIT validator id %d?", validatorId))) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
+	// Exit the validator
+	resp, err := rp.ExitValidator(validatorId)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("Exiting megapool validator...\n")
+	cliutils.PrintTransactionHash(rp, resp.TxHash)
+	if _, err = rp.WaitForTransaction(resp.TxHash); err != nil {
+		return err
+	}
+
+	// Log & return
+	fmt.Printf("Successfully requested to exit vaildator id %d.\n", validatorId)
+	return nil
+
+}

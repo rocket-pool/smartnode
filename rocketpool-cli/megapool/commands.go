@@ -198,6 +198,31 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "exit-validator",
+				Usage:     "Request to exit a megapool validator",
+				UsageText: "rocketpool megapool exit-validator",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+					cli.StringFlag{
+						Name:  "validator-id",
+						Usage: "The validator id to exit",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return exitValidator(c)
+				},
+			},
+			{
 				Name:      "distribute",
 				Aliases:   []string{"b"},
 				Usage:     "Distribute any accrued execution layer rewards sent to this megapool",
