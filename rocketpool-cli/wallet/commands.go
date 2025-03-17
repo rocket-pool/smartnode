@@ -252,7 +252,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "masquerade",
 				Aliases:   []string{"m"},
 				Usage:     "Change your node's effective address to a different one, so your daemon will act as though you were that address. Your node will be in read-only mode while masquerading since you don't have the corresponding wallet's private key.",
-				UsageText: "rocketpool wallet m",
+				UsageText: "rocketpool wallet m [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -273,6 +273,31 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return masquerade(c)
+
+				},
+			},
+
+			{
+				Name:      "restore-address",
+				Aliases:   []string{"ra"},
+				Usage:     "Restore your node's effective address back to your wallet address, ending a masquerade if you have one active. This will take it out of read-only mode.",
+				UsageText: "rocketpool wallet restore-address [options]",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm all interactive questions",
+					},
+				},
+
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return restoreAddress(c)
 
 				},
 			},
