@@ -103,6 +103,11 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 
 }
 
+// Load the node address
+func (w *Wallet) LoadAddress() (common.Address, bool, error) {
+	return w.am.LoadAddress()
+}
+
 // Gets the node address, if one is loaded
 func (w *Wallet) GetAddress() (common.Address, bool) {
 	return w.am.GetAddress()
@@ -386,6 +391,12 @@ func (w *Wallet) loadStore() (bool, error) {
 	w.mk, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
 	if err != nil {
 		return false, fmt.Errorf("Could not create wallet master key: %w", err)
+	}
+
+	// Load the node address
+	_, _, err = w.am.LoadAddress()
+	if err != nil {
+		return false, fmt.Errorf("Could not load node address: %w", err)
 	}
 
 	// Return
