@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
@@ -100,6 +101,30 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 	// Return
 	return w, nil
 
+}
+
+// Gets the node address, if one is loaded
+func (w *Wallet) GetAddress() (common.Address, bool) {
+	return w.am.GetAddress()
+}
+
+// Masquerade as another node address, running all node functions as that address (in read only mode)
+func (w *Wallet) MasqueradeAsAddress(newAddress common.Address) error {
+	return w.masqueradeImpl(newAddress)
+}
+
+// End masquerading as another node address, and use the wallet's address (returning to read/write mode)
+func (w *Wallet) RestoreAddressToWallet() error {
+	if w.am == nil {
+		return errors.New("wallet is not loaded")
+	}
+
+	wallet, err := w.GetNodeAccount()
+	if err != nil {
+		return fmt.Errorf("error getting wallet address: %w", err)
+	}
+
+	return w.masqueradeImpl(wallet.Address)
 }
 
 // Gets the wallet's chain ID
@@ -407,4 +432,9 @@ func (w *Wallet) initializeStore(derivationPath string, walletIndex uint, mnemon
 	// Return
 	return nil
 
+}
+
+// Masquerade as another node address, running all node functions as that address (in read only mode)
+func (w *Wallet) masqueradeImpl(newAddress common.Address) error {
+	return w.am.SetAndSaveAddress(newAddress)
 }
