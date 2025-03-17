@@ -91,7 +91,7 @@ func (cfg *PrometheusConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *PrometheusConfig) GetConfigTitle() string {
 	return cfg.Title
 }
