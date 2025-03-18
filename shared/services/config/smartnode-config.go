@@ -417,7 +417,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
-			config.Network_Devnet:  "https://holesky.etherscan.io/tx",
+			config.Network_Devnet:  "https://hoodi.etherscan.io/tx",
 			config.Network_Holesky: "https://holesky.etherscan.io/tx",
 		},
 
@@ -428,38 +428,38 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		chainID: map[config.Network]uint{
-			config.Network_Mainnet: 1,     // Mainnet
-			config.Network_Devnet:  17000, // Also Holesky
-			config.Network_Holesky: 17000, // Holesky
+			config.Network_Mainnet: 1,      // Mainnet
+			config.Network_Devnet:  560048, // Hoodi
+			config.Network_Holesky: 17000,  // Holesky
 		},
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0xf04de123993761Bb9F08c9C39112b0E0b0eccE50",
+			config.Network_Devnet:  "", // TODO: Update this
 			config.Network_Holesky: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
 		rocketSignerRegistryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
-			config.Network_Devnet:  "0x15Da69Dde70998FC045a260f84ad4aB0A2204e76",
+			config.Network_Devnet:  "", // TODO
 			config.Network_Holesky: "0x657FDE6B4764E26A81A323dbb79791A11B90dD91",
 		},
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0x59A1a7AebCbF103B3C4f85261fbaC166117E1979",
+			config.Network_Devnet:  "", // TODO
 			config.Network_Holesky: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  "0x4be7161080b5d890500194cee2c40B1428002Bd3",
+			config.Network_Devnet:  "", // TODO
 			config.Network_Holesky: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
 		v1_0_0_RewardsPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
-			config.Network_Devnet:  "0x4A1b5Ab9F6C36E7168dE5F994172028Ca8554e02",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 
@@ -513,13 +513,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		v1_2_0_NetworkPricesAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x751826b107672360b764327631cC5764515fFC37",
-			config.Network_Devnet:  "0xBba3FBCD4Bdbfc79118B1B31218602E5A71B426c",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "0x029d946F28F93399a5b0D09c879FC8c94E596AEb",
 		},
 
 		v1_2_0_NetworkBalancesAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4",
-			config.Network_Devnet:  "0xBe8Dc8CA5f339c196Aef634DfcDFbA61E30DC743",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8",
 		},
 
@@ -534,9 +534,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
 			},
-			config.Network_Devnet: {
-				common.HexToAddress("0x4d581a552490fb6fce5F978e66560C8b7E481818"),
-			},
+			config.Network_Devnet: {},
 			config.Network_Holesky: {
 				common.HexToAddress("0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"),
 			},
@@ -598,25 +596,25 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Devnet:  "0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d",
+			config.Network_Devnet:  "", // TODO
 			config.Network_Holesky: "0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d",
 		},
 
 		multicallAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:  "0x0540b786f03c9491f3a2ab4b0e3ae4ecd4f63ce7",
+			config.Network_Devnet:  "", // TODO
 			config.Network_Holesky: "0x0540b786f03c9491f3a2ab4b0e3ae4ecd4f63ce7",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
-			config.Network_Devnet:  "0xfAa2e7C84eD801dd9D27Ac1ed957274530796140",
+			config.Network_Devnet:  "", // TODO
 			config.Network_Holesky: "0xfAa2e7C84eD801dd9D27Ac1ed957274530796140",
 		},
 
 		flashbotsProtectUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://rpc.flashbots.net/",
-			config.Network_Devnet:  "https://rpc-holesky.flashbots.net/",
+			config.Network_Devnet:  "",
 			config.Network_Holesky: "",
 		},
 	}
