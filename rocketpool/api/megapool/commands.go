@@ -337,6 +337,53 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-notify-validator-exit",
+				Usage:     "Check if we can notify the exit of a megapool validator",
+				UsageText: "rocketpool api megapool can-notify-validator-exit validator-id",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get the validatorId
+					validatorId, err := cliutils.ValidateUint32("validatorId", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNotifyValidatorExit(c, validatorId))
+					return nil
+
+				},
+			},
+			{
+				Name:      "notify-validator-exit",
+				Aliases:   []string{"ev"},
+				Usage:     "Notify a megapool validator exit",
+				UsageText: "rocketpool api megapool notify-validator-exit validator-id",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get validatorId
+					validatorId, err := cliutils.ValidateUint32("validatorId", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(notifyValidatorExit(c, validatorId))
+					return nil
+
+				},
+			},
+			{
 				Name:      "get-use-latest-delegate",
 				Usage:     "Gets the current setting of the 'always use latest delegate' toggle",
 				UsageText: "rocketpool api megapool get-use-latest-delegate megapool-address",

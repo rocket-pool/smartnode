@@ -154,6 +154,38 @@ func (c *Client) ExitValidator(validatorId uint64) (api.ExitValidatorResponse, e
 	return response, nil
 }
 
+// Check whether we can notify a validator exit
+func (c *Client) CanNotifyValidatorExit(validatorId uint64) (api.CanNotifyValidatorExitResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-notify-validator-exit %d", validatorId))
+	if err != nil {
+		return api.CanNotifyValidatorExitResponse{}, fmt.Errorf("Could not get can notify validator exit status: %w", err)
+	}
+	var response api.CanNotifyValidatorExitResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNotifyValidatorExitResponse{}, fmt.Errorf("Could not decode can notify-validator-exit response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNotifyValidatorExitResponse{}, fmt.Errorf("Could not get can notify validator exit status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Notify exit of a megapool validator
+func (c *Client) NotifyValidatorExit(validatorId uint64) (api.NotifyValidatorExitResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool notify-validator-exit %d", validatorId))
+	if err != nil {
+		return api.NotifyValidatorExitResponse{}, fmt.Errorf("Could not notify validator exit: %w", err)
+	}
+	var response api.NotifyValidatorExitResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NotifyValidatorExitResponse{}, fmt.Errorf("Could not decode notify-validator-exit response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NotifyValidatorExitResponse{}, fmt.Errorf("Could not get notify-validator-exit status: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can exit the megapool queue
 func (c *Client) CanExitQueue(validatorIndex uint32) (api.CanExitQueueResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-exit-queue %d", validatorIndex))

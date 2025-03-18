@@ -14,6 +14,7 @@ import (
 	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -99,6 +100,69 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	}
 
 	return signature, depositDataRoot, proof, err
+}
+
+func GetExitEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (api.ValidatorExitEpochProof, error) {
+	bc, err := GetBeaconClient(c)
+	if err != nil {
+		return api.ValidatorExitEpochProof{}, err
+	}
+
+	// Get the validator index on the beacon chain
+	validatorIndex, err := bc.GetValidatorIndex(validatorPubkey)
+	if err != nil {
+		return api.ValidatorExitEpochProof{}, err
+	}
+
+	validatorIndex64, err := strconv.ParseUint(validatorIndex, 10, 64)
+	if err != nil {
+		return api.ValidatorExitEpochProof{}, err
+	}
+
+	// Get the finalized block, requesting the next one until we have an execution payload
+	blockToRequest := "finalized"
+	var block beacon.BeaconBlock
+	const maxAttempts = 10
+	for attempts := 0; attempts < maxAttempts; attempts++ {
+		block, _, err := bc.GetBeaconBlock(blockToRequest)
+		if err != nil {
+			return api.ValidatorExitEpochProof{}, err
+		}
+
+		if block.HasExecutionPayload {
+			break
+		}
+		if attempts == maxAttempts-1 {
+			return api.ValidatorExitEpochProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
+		}
+		blockToRequest = fmt.Sprintf("%d", block.Slot+1)
+	}
+
+	// Get the beacon state for that slot
+	beaconState, err := bc.GetBeaconState(block.Slot)
+	if err != nil {
+		return api.ValidatorExitEpochProof{}, err
+	}
+
+	exitEpoch := beaconState.Validators[validatorIndex64].ExitEpoch
+
+	proofBytes, err := beaconState.ValidatorExitEpochProof(validatorIndex64)
+	if err != nil {
+		return api.ValidatorExitEpochProof{}, err
+	}
+
+	// Convert [][]byte to [][32]byte
+	proofWithFixedSize := convertToFixedSize(proofBytes)
+
+	proof := api.ValidatorExitEpochProof{
+		Slot:           block.Slot,
+		ValidatorIndex: new(big.Int).SetUint64(validatorIndex64),
+		Pubkey:         validatorPubkey[:],
+		ExitEpoch:      exitEpoch,
+		Witnesses:      proofWithFixedSize,
+	}
+
+	return proof, err
 }
 
 func convertToFixedSize(proofBytes [][]byte) [][32]byte {

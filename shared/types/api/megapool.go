@@ -129,3 +129,11 @@ type DistributeMegapoolResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type ValidatorExitEpochProof struct {
+	Slot           uint64
+	ValidatorIndex *big.Int
+	Pubkey         []byte
+	ExitEpoch      uint64
+	Witnesses      [][32]byte
+}

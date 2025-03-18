@@ -741,6 +741,19 @@ type ExitValidatorResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type CanNotifyValidatorExitResponse struct {
+	Status        string             `json:"status"`
+	Error         string             `json:"error"`
+	CanExit       bool               `json:"canExit"`
+	InvalidStatus bool               `json:"invalidStatus"`
+	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+}
+type NotifyValidatorExitResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type CanStakeResponse struct {
 	Status        string             `json:"status"`
 	Error         string             `json:"error"`
