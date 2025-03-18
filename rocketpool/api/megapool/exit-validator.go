@@ -34,7 +34,7 @@ func canExitValidator(c *cli.Context, validatorId uint32) (*api.CanExitValidator
 		return nil, err
 	}
 
-	// Get the megapool addres
+	// Get the megapool address
 	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func exitValidator(c *cli.Context, validatorId uint32) (*api.ExitValidatorRespon
 	// Response
 	response := api.ExitValidatorResponse{}
 
-	// Get the megapool addres
+	// Get the megapool address
 	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
