@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	nethermindTagProd          string = "nethermind/nethermind:1.31.5"
-	nethermindTagTest          string = "nethermind/nethermind:1.31.5"
+	nethermindTagProd          string = "nethermind/nethermind:1.31.6"
+	nethermindTagTest          string = "nethermind/nethermind:1.31.6"
 	nethermindEventLogInterval int    = 1000
 	nethermindStopSignal       string = "SIGTERM"
 )
