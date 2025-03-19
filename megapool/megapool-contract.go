@@ -363,6 +363,20 @@ func (mp *megapoolV1) Stake(validatorId uint32, validatorSignature rptypes.Valid
 	return tx.Hash(), nil
 }
 
+// Estimate the gas to call NotifyExit
+func (mp *megapoolV1) EstimateNotifyExitGas(validatorId uint32, withdrawalEpoch *big.Int, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "notifyExit", validatorId, withdrawalEpoch, slot, exitProof)
+}
+
+// Notify the megapool that one of its validators is exiting
+func (mp *megapoolV1) NotifyExit(validatorId uint32, withdrawalEpoch *big.Int, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "notifyExit", validatorId, withdrawalEpoch, slot, exitProof)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error calling notify exit: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
 // Estimate the gas required to distribute megapool rewards
 func (mp *megapoolV1) EstimateDistributeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "distribute")
