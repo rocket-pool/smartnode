@@ -1,10 +1,14 @@
 package megapool
 
 import (
+	"fmt"
+	"math/big"
+
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli"
 )
 
@@ -114,12 +118,29 @@ func notifyValidatorExit(c *cli.Context, validatorId uint32) (*api.NotifyValidat
 		return nil, err
 	}
 
-	_, err = services.GetExitEpochProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
+	proof, err := services.GetWithdrawableEpochProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
 	if err != nil {
 		return nil, err
 	}
 
-	// TODO make the Smart Contract call
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	}
+
+	// Notify the validator exit
+	hash, err := mp.NotifyExit(validatorId, big.NewInt(int64(proof.WithdrawableEpoch)), proof.Slot, proof.Witnesses, opts)
+	if err != nil {
+		return nil, err
+	}
+	response.TxHash = hash
 
 	// Return response
 	return &response, nil

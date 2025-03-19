@@ -130,10 +130,10 @@ type DistributeMegapoolResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type ValidatorExitEpochProof struct {
-	Slot           uint64
-	ValidatorIndex *big.Int
-	Pubkey         []byte
-	ExitEpoch      uint64
-	Witnesses      [][32]byte
+type ValidatorWithdrawableEpochProof struct {
+	Slot              uint64
+	ValidatorIndex    *big.Int
+	Pubkey            []byte
+	WithdrawableEpoch uint64
+	Witnesses         [][32]byte
 }

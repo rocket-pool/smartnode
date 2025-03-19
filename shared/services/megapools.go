@@ -102,21 +102,21 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	return signature, depositDataRoot, proof, err
 }
 
-func GetExitEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (api.ValidatorExitEpochProof, error) {
+func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (api.ValidatorWithdrawableEpochProof, error) {
 	bc, err := GetBeaconClient(c)
 	if err != nil {
-		return api.ValidatorExitEpochProof{}, err
+		return api.ValidatorWithdrawableEpochProof{}, err
 	}
 
 	// Get the validator index on the beacon chain
 	validatorIndex, err := bc.GetValidatorIndex(validatorPubkey)
 	if err != nil {
-		return api.ValidatorExitEpochProof{}, err
+		return api.ValidatorWithdrawableEpochProof{}, err
 	}
 
 	validatorIndex64, err := strconv.ParseUint(validatorIndex, 10, 64)
 	if err != nil {
-		return api.ValidatorExitEpochProof{}, err
+		return api.ValidatorWithdrawableEpochProof{}, err
 	}
 
 	// Get the finalized block, requesting the next one until we have an execution payload
@@ -126,14 +126,14 @@ func GetExitEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.
 	for attempts := 0; attempts < maxAttempts; attempts++ {
 		block, _, err := bc.GetBeaconBlock(blockToRequest)
 		if err != nil {
-			return api.ValidatorExitEpochProof{}, err
+			return api.ValidatorWithdrawableEpochProof{}, err
 		}
 
 		if block.HasExecutionPayload {
 			break
 		}
 		if attempts == maxAttempts-1 {
-			return api.ValidatorExitEpochProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
+			return api.ValidatorWithdrawableEpochProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
 		}
 		blockToRequest = fmt.Sprintf("%d", block.Slot+1)
 	}
@@ -141,25 +141,25 @@ func GetExitEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.
 	// Get the beacon state for that slot
 	beaconState, err := bc.GetBeaconState(block.Slot)
 	if err != nil {
-		return api.ValidatorExitEpochProof{}, err
+		return api.ValidatorWithdrawableEpochProof{}, err
 	}
 
-	exitEpoch := beaconState.Validators[validatorIndex64].ExitEpoch
+	withdrawableEpoch := beaconState.Validators[validatorIndex64].WithdrawableEpoch
 
-	proofBytes, err := beaconState.ValidatorExitEpochProof(validatorIndex64)
+	proofBytes, err := beaconState.ValidatorWithdrawableEpochProof(validatorIndex64)
 	if err != nil {
-		return api.ValidatorExitEpochProof{}, err
+		return api.ValidatorWithdrawableEpochProof{}, err
 	}
 
 	// Convert [][]byte to [][32]byte
 	proofWithFixedSize := convertToFixedSize(proofBytes)
 
-	proof := api.ValidatorExitEpochProof{
-		Slot:           block.Slot,
-		ValidatorIndex: new(big.Int).SetUint64(validatorIndex64),
-		Pubkey:         validatorPubkey[:],
-		ExitEpoch:      exitEpoch,
-		Witnesses:      proofWithFixedSize,
+	proof := api.ValidatorWithdrawableEpochProof{
+		Slot:              block.Slot,
+		ValidatorIndex:    new(big.Int).SetUint64(validatorIndex64),
+		Pubkey:            validatorPubkey[:],
+		WithdrawableEpoch: withdrawableEpoch,
+		Witnesses:         proofWithFixedSize,
 	}
 
 	return proof, err

@@ -149,7 +149,6 @@ func repayDebt(c *cli.Context, amount *big.Int) (*api.RepayDebtResponse, error) 
 	}
 
 	// Get transactor
-	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
