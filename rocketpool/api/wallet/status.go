@@ -36,7 +36,8 @@ func getStatus(c *cli.Context) (*api.WalletStatusResponse, error) {
 		}
 		//TODO refactor AccountAddress to WalletAddress
 		response.AccountAddress = nodeAccount.Address
-		response.NodeAddress, response.HasAddress, _ = w.LoadAddress()
+		response.NodeAddress, response.HasAddress = w.GetAddress()
+
 	}
 
 	// Return response
