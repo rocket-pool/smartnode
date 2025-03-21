@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	nethermindTagProd          string = "nethermind/nethermind:1.31.0"
-	nethermindTagTest          string = "nethermind/nethermind:1.31.0"
+	nethermindTagProd          string = "nethermind/nethermind:1.31.6"
+	nethermindTagTest          string = "nethermind/nethermind:1.31.6"
 	nethermindEventLogInterval int    = 1000
 	nethermindStopSignal       string = "SIGTERM"
 )
@@ -277,7 +277,7 @@ func (cfg *NethermindConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *NethermindConfig) GetConfigTitle() string {
 	return cfg.Title
 }

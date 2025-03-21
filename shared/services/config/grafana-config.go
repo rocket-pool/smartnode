@@ -58,7 +58,7 @@ func (cfg *GrafanaConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *GrafanaConfig) GetConfigTitle() string {
 	return cfg.Title
 }

@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v1.2.0"
-	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v1.2.0"
+	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v1.3.3"
+	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v1.3.3"
 	rethEventLogInterval int    = 1000
 	rethStopSignal       string = "SIGTERM"
 )
@@ -177,7 +177,7 @@ func (cfg *RethConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *RethConfig) GetConfigTitle() string {
 	return cfg.Title
 }
