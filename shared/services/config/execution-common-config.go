@@ -104,7 +104,7 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 			ID:                 "suggestedBlockGasLimit",
 			Name:               "Suggested Block Gas Limit",
 			Description:        "The block gas limit that should be used for locally built blocks. Leave blank to follow the Execution Client's default.",
-			Type:               config.ParameterType_Uint,
+			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         true,
