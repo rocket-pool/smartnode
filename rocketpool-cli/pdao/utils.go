@@ -35,7 +35,7 @@ func parseFloat(c *cli.Context, name string, value string, isFraction bool) (*bi
 	trueVal := eth.EthToWei(floatValue)
 	fmt.Printf("Your value will be multiplied by 10^18 to be used in the contracts, which results in:\n\n\t[%s]\n\n", trueVal.String())
 	if !(c.Bool("yes") || cliutils.Confirm("Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?")) {
-		value = cliutils.Prompt("Please enter an amount as wei:", "^[0-9]+$", "Invalid amount")
+		value = cliutils.Prompt("Please enter the wei amount:", "^[0-9]+$", "Invalid amount")
 		val, err := cliutils.ValidatePositiveWeiAmount(name, value)
 		if err != nil {
 			return nil, err
