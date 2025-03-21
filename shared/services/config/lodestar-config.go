@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	lodestarTagTest         string = "chainsafe/lodestar:v1.27.0"
-	lodestarTagProd         string = "chainsafe/lodestar:v1.27.0"
+	lodestarTagTest         string = "chainsafe/lodestar:v1.28.1"
+	lodestarTagProd         string = "chainsafe/lodestar:v1.28.1"
 	defaultLodestarMaxPeers uint16 = 100
 )
 
@@ -115,7 +115,7 @@ func (cfg *LodestarConfig) GetName() string {
 	return "Lodestar"
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *LodestarConfig) GetConfigTitle() string {
 	return cfg.Title
 }

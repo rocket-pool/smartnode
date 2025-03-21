@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	lighthouseTagPortableTest string = "sigp/lighthouse:v7.0.0-beta.0"
+	lighthouseTagPortableTest string = "sigp/lighthouse:v7.0.0-beta.4"
 	lighthouseTagPortableProd string = "sigp/lighthouse:v6.0.1"
 	defaultLhMaxPeers         uint16 = 100
 )
@@ -129,7 +129,7 @@ func (cfg *LighthouseConfig) GetName() string {
 	return "Lighthouse"
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *LighthouseConfig) GetConfigTitle() string {
 	return cfg.Title
 }

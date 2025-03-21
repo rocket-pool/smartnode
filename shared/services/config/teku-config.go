@@ -172,7 +172,7 @@ func (cfg *TekuConfig) GetName() string {
 	return "Teku"
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *TekuConfig) GetConfigTitle() string {
 	return cfg.Title
 }

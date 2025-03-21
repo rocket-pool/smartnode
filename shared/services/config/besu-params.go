@@ -6,8 +6,8 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:25.2.0"
-	besuTagProd          string = "hyperledger/besu:25.2.0"
+	besuTagTest          string = "hyperledger/besu:25.3.0"
+	besuTagProd          string = "hyperledger/besu:25.3.0"
 	besuEventLogInterval int    = 1000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"
@@ -146,7 +146,7 @@ func (cfg *BesuConfig) GetParameters() []*config.Parameter {
 	}
 }
 
-// The the title for the config
+// The title for the config
 func (cfg *BesuConfig) GetConfigTitle() string {
 	return cfg.Title
 }
