@@ -17,7 +17,7 @@ func upgradeFromV1153(serializedConfig map[string]map[string]string) error {
 
 	// If using the previous or current defaults, change to the new one
 	if config == "30000000" || config == "36000000" {
-		executionCommonSettings["suggestedBlockGasLimit"] = "0"
+		executionCommonSettings["suggestedBlockGasLimit"] = ""
 	}
 
 	serializedConfig["executionCommon"] = executionCommonSettings
