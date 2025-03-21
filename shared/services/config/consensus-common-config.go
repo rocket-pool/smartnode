@@ -83,11 +83,11 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 		SuggestedBlockGasLimit: config.Parameter{
 			ID:                 "suggestedBlockGasLimit",
 			Name:               "Suggested Block Gas Limit",
-			Description:        "The block gas limit that should be used for externally built blocks.",
+			Description:        "The block gas limit that should be used for externally built blocks. Leave blank to use the Consensus Client default.",
 			Type:               config.ParameterType_Uint,
-			Default:            map[config.Network]interface{}{config.Network_All: defaultSuggestedBlockLimit},
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
-			CanBeBlank:         false,
+			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
 
