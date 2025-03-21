@@ -72,7 +72,7 @@ func dissolveValidator(c *cli.Context) error {
 
 	if !canDissolve.CanDissolve {
 		if canDissolve.NotInPrestake {
-			fmt.Println("Validator %d is not in the prestake status.")
+			fmt.Printf("Validator %d is not in the prestake status.", validatorId)
 		}
 		return nil
 	}
