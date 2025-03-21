@@ -17,7 +17,7 @@ const beaconStateDenebValidatorsIndex uint64 = 11
 const beaconStateValidatorsMaxLength uint64 = 1 << 40
 const beaconBlockHeaderStateRootGeneralizedIndex uint64 = 11                     // Container with 5 fields, so gid 8 is the first field. We want the 4th field, so gid 8 + 3 = 11
 const beaconStateValidatorWithdrawalCredentialsPubkeyGeneralizedIndex uint64 = 4 // Container with 8 fields, so gid 8 is the first field. We want the parent of 1st field, so gid 8 / 2 = 4
-const beaconStateValidatorWithdrawableEpochGeneralizedIndex uint64 = 14                  // Container with 8 fields, so gid 8 is the first field. We want the 8th field, so gid 8 + 7 = 15
+const beaconStateValidatorWithdrawableEpochGeneralizedIndex uint64 = 14          // Container with 8 fields, so gid 8 is the first field. We want the 8th field, so gid 8 + 7 = 15
 // See https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md for general index calculation and helpers
 
 func getPowerOfTwoCeil(x uint64) uint64 {

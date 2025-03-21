@@ -139,4 +139,3 @@ func processQueue(c *cli.Context, max int64) (*api.ProcessQueueResponse, error) 
 	return &response, nil
 
 }
-
