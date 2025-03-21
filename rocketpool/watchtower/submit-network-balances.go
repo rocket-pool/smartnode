@@ -493,7 +493,7 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 		rewardsSplit, err = megapoolContract.CalculateRewards(rewards, nil)
 
 		if err != nil {
-			return megapoolBalanceDetail{}, fmt.Errorf("error calculating rewards split: %w, err")
+			return megapoolBalanceDetail{}, fmt.Errorf("error calculating rewards split: %w", err)
 		}
 	}
 	megapoolBalanceDetails.RethRewards = rewardsSplit.RethRewards

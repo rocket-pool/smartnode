@@ -16,7 +16,8 @@ const beaconStateDenebValidatorsIndex uint64 = 11
 // If this ever isn't a power of two, we need to round up to the next power of two
 const beaconStateValidatorsMaxLength uint64 = 1 << 40
 const beaconBlockHeaderStateRootGeneralizedIndex uint64 = 11                     // Container with 5 fields, so gid 8 is the first field. We want the 4th field, so gid 8 + 3 = 11
-const beaconStateValidatorWithdrawalCredentialsPubkeyGeneralizedIndex uint64 = 4 // Container with 5 fields, so gid 8 is the first field. We want the parent of 1st field, so gid 8 / 2 = 4
+const beaconStateValidatorWithdrawalCredentialsPubkeyGeneralizedIndex uint64 = 4 // Container with 8 fields, so gid 8 is the first field. We want the parent of 1st field, so gid 8 / 2 = 4
+const beaconStateValidatorWithdrawableEpochGeneralizedIndex uint64 = 14          // Container with 8 fields, so gid 8 is the first field. We want the 8th field, so gid 8 + 7 = 15
 // See https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md for general index calculation and helpers
 
 func getPowerOfTwoCeil(x uint64) uint64 {
@@ -95,6 +96,56 @@ func (state *BeaconStateDeneb) validatorStateProof(index uint64) ([][]byte, erro
 
 	return proof.Hashes, nil
 
+}
+
+func (validator *Validator) validatorWithdrawableEpochProof() ([][]byte, error) {
+	// Just get the portion of the proof for the validator ExitEpoch.
+	generalizedIndex := beaconStateValidatorWithdrawableEpochGeneralizedIndex
+	root, err := validator.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get validator tree: %w", err)
+	}
+	proof, err := root.Prove(int(generalizedIndex))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for validator withdrawable epoch: %w", err)
+	}
+	return proof.Hashes, nil
+}
+
+// ValidatorWithdrawableEpochProof computes the merkle proof for a validator's withdrawable epoch
+// at a specific index in the validator registry.
+func (state *BeaconStateDeneb) ValidatorWithdrawableEpochProof(index uint64) ([][]byte, error) {
+
+	if index >= uint64(len(state.Validators)) {
+		return nil, errors.New("validator index out of bounds")
+	}
+
+	// Get the validator's withdrawable epoch proof
+	withdrawableEpochProof, err := state.Validators[index].validatorWithdrawableEpochProof()
+	if err != nil {
+		return nil, fmt.Errorf("could not get validator withdrawable epoch proof: %w", err)
+	}
+
+	stateProof, err := state.validatorStateProof(index)
+	if err != nil {
+		return nil, fmt.Errorf("could not get validator state proof: %w", err)
+	}
+
+	// The EL proves against BeaconBlockHeader root, so we need to merge the state proof with that.
+	generalizedIndex := beaconBlockHeaderStateRootGeneralizedIndex
+	root, err := state.LatestBlockHeader.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get block header tree: %w", err)
+	}
+	blockHeaderProof, err := root.Prove(int(generalizedIndex))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for block header: %w", err)
+	}
+
+	out := append(withdrawableEpochProof, stateProof...)
+	out = append(out, blockHeaderProof.Hashes...)
+
+	return out, nil
 }
 
 func (validator *Validator) validatorCredentialsPubkeyProof() ([][]byte, error) {

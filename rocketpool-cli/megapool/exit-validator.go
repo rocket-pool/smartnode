@@ -10,7 +10,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func dissolveValidator(c *cli.Context) error {
+func exitValidator(c *cli.Context) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -29,6 +29,7 @@ func dissolveValidator(c *cli.Context) error {
 		return nil
 	}
 
+	// List the validators that can be exited
 	var validatorId uint64
 
 	if c.IsSet("validator-id") {
@@ -40,69 +41,65 @@ func dissolveValidator(c *cli.Context) error {
 			return err
 		}
 
-		validatorsInPrestake := []api.MegapoolValidatorDetails{}
+		activeValidators := []api.MegapoolValidatorDetails{}
 
 		for _, validator := range status.Megapool.Validators {
-			if validator.InPrestake {
-				validatorsInPrestake = append(validatorsInPrestake, validator)
+			if validator.Activated {
+				activeValidators = append(activeValidators, validator)
 			}
 		}
-		if len(validatorsInPrestake) > 0 {
+		if len(activeValidators) > 0 {
 
-			options := make([]string, len(validatorsInPrestake))
-			for vi, v := range validatorsInPrestake {
+			options := make([]string, len(activeValidators))
+			for vi, v := range activeValidators {
 				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
 			}
-			selected, _ := cliutils.Select("Please select a validator to DISSOLVE:", options)
+			selected, _ := cliutils.Select("Please select a validator to EXIT:", options)
 
 			// Get validators
-			validatorId = uint64(validatorsInPrestake[selected].ValidatorId)
+			validatorId = uint64(activeValidators[selected].ValidatorId)
 
 		} else {
-			fmt.Println("No validators can be dissolved at the moment")
+			fmt.Println("No validators can be exited at the moment")
 			return nil
 		}
 	}
 
-	// Check megapool validator can be dissolved
-	canDissolve, err := rp.CanDissolveValidator(validatorId)
+	response, err := rp.CanExitValidator(validatorId)
 	if err != nil {
 		return err
 	}
 
-	if !canDissolve.CanDissolve {
-		if canDissolve.NotInPrestake {
-			fmt.Printf("Validator %d is not in the prestake status.", validatorId)
-		}
+	if !response.CanExit {
 		return nil
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canDissolve.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(response.GasInfo, rp, c.Bool("yes"))
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to DISSOLVE megapool validator ID: %d?", validatorId))) {
+	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to EXIT validator id %d?", validatorId))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
-	// Dissolve
-	response, err := rp.DissolveValidator(validatorId)
+	// Exit the validator
+	resp, err := rp.ExitValidator(validatorId)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Dissolving megapool validator...\n")
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+	fmt.Printf("Exiting megapool validator...\n")
+	cliutils.PrintTransactionHash(rp, resp.TxHash)
+	if _, err = rp.WaitForTransaction(resp.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully dissolved megapool validator ID: %d.\n", validatorId)
+	fmt.Printf("Successfully requested to exit vaildator id %d.\n", validatorId)
 	return nil
 
 }
