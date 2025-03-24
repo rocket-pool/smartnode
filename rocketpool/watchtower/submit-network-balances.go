@@ -72,7 +72,6 @@ type validatorBalanceDetails struct {
 
 type megapoolBalanceDetail struct {
 	BeaconBalanceTotal *big.Int
-	NodeCapital        *big.Int
 	UserCapital        *big.Int
 	ContractBalance    *big.Int
 	RethRewards        *big.Int
@@ -473,10 +472,9 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	}
 	megapoolBalanceDetails.BeaconBalanceTotal = megapoolBeaconBalanceTotal
 	megapoolBalanceDetails.StakingBalance = megapoolStakingBalance
-	megapoolBalanceDetails.NodeCapital = megapoolDetails.NodeCapital
 	megapoolBalanceDetails.UserCapital = megapoolDetails.UserCapital
 	megapoolBalanceDetails.ContractBalance = megapoolDetails.EthBalance
-	capitalTotal := megapoolDetails.NodeCapital.Add(megapoolDetails.NodeCapital, megapoolDetails.UserCapital)
+	capitalTotal := megapoolDetails.UserCapital
 	balanceTotal := megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, megapoolDetails.EthBalance)
 	rewards := balanceTotal.Sub(balanceTotal, capitalTotal)
 	// Load the megapool

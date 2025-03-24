@@ -35,7 +35,6 @@ type MegapoolDetails struct {
 	NodeExpressTicketCount   uint64                     `json:"nodeExpressTicketCount"`
 	UseLatestDelegate        bool                       `json:"useLatestDelegate"`
 	AssignedValue            *big.Int                   `json:"assignedValue"`
-	NodeCapital              *big.Int                   `json:"nodeCapital"`
 	NodeBond                 *big.Int                   `json:"nodeBond"`
 	UserCapital              *big.Int                   `json:"userCapital"`
 	NodeShare                *big.Int                   `json:"nodeShare"`

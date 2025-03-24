@@ -129,11 +129,6 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	})
 	wg.Go(func() error {
 		var err error
-		details.NodeCapital, err = mega.GetNodeCapital(nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
 		details.NodeBond, err = mega.GetNodeBond(nil)
 		return err
 	})
