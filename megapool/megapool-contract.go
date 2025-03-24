@@ -154,6 +154,24 @@ func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) 
 	return *validatorInfo, nil
 }
 
+// Get the number of validators currently exiting
+func (mp *megapoolV1) GetExitingValidatorCount(opts *bind.CallOpts) (uint32, error) {
+	var exitingValidatorCount uint32
+	if err := mp.Contract.Call(opts, &exitingValidatorCount, "getExitingValidatorCount"); err != nil {
+		return 0, fmt.Errorf("error getting megapool %s exiting validator count: %w", mp.Address.Hex(), err)
+	}
+	return exitingValidatorCount, nil
+}
+
+// Gets the soonest epoch a validator within this megapool can be withdrawn
+func (mp *megapoolV1) GetSoonestWithdrawableEpoch(opts *bind.CallOpts) (uint32, error) {
+	var soonestWithdrawableEpoch uint32
+	if err := mp.Contract.Call(opts, &soonestWithdrawableEpoch, "getSoonestWithdrawableEpoch"); err != nil {
+		return 0, fmt.Errorf("error getting megapool %s soonest withdrawable epoch: %w", mp.Address.Hex(), err)
+	}
+	return soonestWithdrawableEpoch, nil
+}
+
 func (mp *megapoolV1) GetLastDistributionBlock(opts *bind.CallOpts) (uint64, error) {
 	lastDistributionBlock := new(*big.Int)
 	if err := mp.Contract.Call(opts, lastDistributionBlock, "getLastDistributionBlock"); err != nil {
