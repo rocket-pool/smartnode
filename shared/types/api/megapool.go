@@ -52,6 +52,7 @@ type MegapoolValidatorDetails struct {
 	LastAssignmentTime time.Time              `json:"lastAssignmentTime"`
 	LastRequestedValue uint32                 `json:"lastRequestedValue"`
 	LastRequestedBond  uint32                 `json:"lastRequestedBond"`
+	DepositValue       uint32                 `json:"DepositValue"`
 	Staked             bool                   `json:"staked"`
 	Exited             bool                   `json:"exited"`
 	InQueue            bool                   `json:"inQueue"`
@@ -59,6 +60,9 @@ type MegapoolValidatorDetails struct {
 	InPrestake         bool                   `json:"inPrestake"`
 	ExpressUsed        bool                   `json:"expressUsed"`
 	Dissolved          bool                   `json:"dissolved"`
+	Exiting            bool                   `json:"exiting"`
+	ValidatorIndex     uint64                 `json:"validatorIndex"`
+	ExitBalance        uint64                 `json:"exitBalance"`
 	Activated          bool                   `json:"activated"`
 	BeaconStatus       beacon.ValidatorStatus `json:"beaconStatus"`
 }

@@ -265,12 +265,16 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 				LastAssignmentTime: time.Unix(int64(validatorDetails.LastAssignmentTime), 0),
 				LastRequestedValue: validatorDetails.LastRequestedValue,
 				LastRequestedBond:  validatorDetails.LastRequestedBond,
+				DepositValue:       validatorDetails.DepositValue,
 				Staked:             validatorDetails.Staked,
 				Exited:             validatorDetails.Exited,
 				InQueue:            validatorDetails.InQueue,
 				InPrestake:         validatorDetails.InPrestake,
 				ExpressUsed:        validatorDetails.ExpressUsed,
 				Dissolved:          validatorDetails.Dissolved,
+				Exiting:            validatorDetails.Exiting,
+				ValidatorIndex:     validatorDetails.ValidatorIndex,
+				ExitBalance:        validatorDetails.ExitBalance,
 			}
 			if validator.Staked {
 				validator.BeaconStatus, err = bc.GetValidatorStatus(validator.PubKey, nil)
