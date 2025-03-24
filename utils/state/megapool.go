@@ -30,7 +30,6 @@ type NativeMegapoolDetails struct {
 	NodeExpressTicketCount   uint64         `json:"nodeExpressTicketCount"`
 	UseLatestDelegate        bool           `json:"useLatestDelegate"`
 	AssignedValue            *big.Int       `json:"assignedValue"`
-	NodeCapital              *big.Int       `json:"nodeCapital"`
 	NodeBond                 *big.Int       `json:"nodeBond"`
 	UserCapital              *big.Int       `json:"userCapital"`
 	NodeShare                *big.Int       `json:"nodeShare"`
@@ -164,11 +163,6 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 	wg.Go(func() error {
 		var err error
 		details.AssignedValue, err = mega.GetAssignedValue(nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		details.NodeCapital, err = mega.GetNodeCapital(nil)
 		return err
 	})
 	wg.Go(func() error {

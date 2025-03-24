@@ -20,7 +20,6 @@ type Megapool interface {
 	GetAssignedValue(opts *bind.CallOpts) (*big.Int, error)
 	GetDebt(opts *bind.CallOpts) (*big.Int, error)
 	GetRefundValue(opts *bind.CallOpts) (*big.Int, error)
-	GetNodeCapital(opts *bind.CallOpts) (*big.Int, error)
 	GetNodeBond(opts *bind.CallOpts) (*big.Int, error)
 	GetUserCapital(opts *bind.CallOpts) (*big.Int, error)
 	CalculatePendingRewards(opts *bind.CallOpts) (RewardSplit, error)

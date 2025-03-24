@@ -186,14 +186,6 @@ func (mp *megapoolV1) GetRefundValue(opts *bind.CallOpts) (*big.Int, error) {
 	return *refundValue, nil
 }
 
-func (mp *megapoolV1) GetNodeCapital(opts *bind.CallOpts) (*big.Int, error) {
-	nodeCapital := new(*big.Int)
-	if err := mp.Contract.Call(opts, nodeCapital, "getNodeCapital"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s node capital: %w", mp.Address.Hex(), err)
-	}
-	return *nodeCapital, nil
-}
-
 func (mp *megapoolV1) GetNodeBond(opts *bind.CallOpts) (*big.Int, error) {
 	nodeBond := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeBond, "getNodeBond"); err != nil {
