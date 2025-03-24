@@ -24,7 +24,7 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	// Get the contract name
 	contractName := c.String("contract-name")
 	if contractName == "" {
-		contractName = cliutils.Prompt("Please enter a contract name for this recurring payment: (no spaces)", "^\\S+$", "Invalid ID")
+		contractName = cliutils.Prompt("Please enter a contract name for this recurring payment: ", "^\\s*\\S+\\s*$", "Invalid ID")
 	}
 
 	// Get the recipient
