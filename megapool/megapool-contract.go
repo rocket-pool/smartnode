@@ -45,12 +45,16 @@ type ValidatorInfo struct {
 	LastAssignmentTime uint32 `abi:"lastAssignmentTime"`
 	LastRequestedValue uint32 `abi:"lastRequestedValue"`
 	LastRequestedBond  uint32 `abi:"lastRequestedBond"`
+	DepositValue       uint32 `abi:"depositValue"`
 	Staked             bool   `abi:"staked"`
 	Exited             bool   `abi:"exited"`
 	InQueue            bool   `abi:"inQueue"`
 	InPrestake         bool   `abi:"inPrestake"`
 	ExpressUsed        bool   `abi:"expressUsed"`
 	Dissolved          bool   `abi:"dissolved"`
+	Exiting            bool   `abi:"exiting"`
+	ValidatorIndex     uint64 `abi:"validatorIndex"`
+	ExitBalance        uint64 `abi:"exitBalance"`
 }
 
 type ValidatorInfoFromGlobalIndex struct {
