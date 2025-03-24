@@ -13,7 +13,7 @@ import (
 func parseFloat(c *cli.Context, name string, value string, isFraction bool) (*big.Int, error) {
 	var floatValue float64
 	if c.Bool("raw") {
-		val, err := cliutils.ValidateBigInt(name, value)
+		val, err := cliutils.ValidatePositiveWeiAmount(name, value)
 		if err != nil {
 			return nil, err
 		}
@@ -35,8 +35,12 @@ func parseFloat(c *cli.Context, name string, value string, isFraction bool) (*bi
 	trueVal := eth.EthToWei(floatValue)
 	fmt.Printf("Your value will be multiplied by 10^18 to be used in the contracts, which results in:\n\n\t[%s]\n\n", trueVal.String())
 	if !(c.Bool("yes") || cliutils.Confirm("Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?")) {
-		fmt.Println("Cancelled. Please try again with the '--raw' flag and provide an explicit value instead.")
-		return nil, nil
+		value = cliutils.Prompt("Please enter the wei amount:", "^[0-9]+$", "Invalid amount")
+		val, err := cliutils.ValidatePositiveWeiAmount(name, value)
+		if err != nil {
+			return nil, err
+		}
+		return val, nil
 	}
 	return trueVal, nil
 }
