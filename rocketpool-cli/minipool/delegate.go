@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func delegateUpgradeMinipools(c *cli.Context) error {
@@ -63,7 +64,7 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 			for mi, minipool := range minipools {
 				options[mi+1] = fmt.Sprintf("%s (using delegate %s)", minipool.Address.Hex(), minipool.Delegate.Hex())
 			}
-			selected, _ := cliutils.Select("Please select a minipool to upgrade:", options)
+			selected, _ := prompt.Select("Please select a minipool to upgrade:", options)
 
 			// Get minipools
 			if selected == 0 {
@@ -109,7 +110,7 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to upgrade %d minipools?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to upgrade %d minipools?", len(selectedMinipools)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -171,7 +172,7 @@ func delegateRollbackMinipools(c *cli.Context) error {
 			for mi, minipool := range minipools {
 				options[mi+1] = fmt.Sprintf("%s (using delegate %s)", minipool.Address.Hex(), minipool.Delegate.Hex())
 			}
-			selected, _ := cliutils.Select("Please select a minipool to rollback the delegate for:", options)
+			selected, _ := prompt.Select("Please select a minipool to rollback the delegate for:", options)
 
 			// Get minipools
 			if selected == 0 {
@@ -216,7 +217,7 @@ func delegateRollbackMinipools(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to rollback %d minipools?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to rollback %d minipools?", len(selectedMinipools)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -289,7 +290,7 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 		} else {
 			action = "disable"
 		}
-		selected, _ := cliutils.Select(fmt.Sprintf("Please select a minipool to %s the flag for:", action), options)
+		selected, _ := prompt.Select(fmt.Sprintf("Please select a minipool to %s the flag for:", action), options)
 
 		// Get minipools
 		if selected == 0 {
@@ -343,7 +344,7 @@ func setUseLatestDelegateMinipools(c *cli.Context, setting bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to change the auto-upgrade setting for %d minipools to %t?", len(selectedMinipools), setting))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to change the auto-upgrade setting for %d minipools to %t?", len(selectedMinipools), setting))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

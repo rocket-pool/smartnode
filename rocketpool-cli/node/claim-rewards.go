@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 const (
@@ -61,7 +62,7 @@ func nodeClaimRewards(c *cli.Context) error {
 	if len(missingIntervals) > 0 || len(invalidIntervals) > 0 {
 		fmt.Println()
 		fmt.Printf("%sNOTE: If you would like to regenerate these tree files manually, please answer `n` to the prompt below and run `rocketpool network generate-rewards-tree` before claiming your rewards.%s\n", colorBlue, colorReset)
-		if !cliutils.Confirm("Would you like to download all missing rewards tree files now?") {
+		if !prompt.Confirm("Would you like to download all missing rewards tree files now?") {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -134,7 +135,7 @@ func nodeClaimRewards(c *cli.Context) error {
 	for {
 		indexSelection := ""
 		if !c.Bool("yes") {
-			indexSelection = cliutils.Prompt("Which intervals would you like to claim? Use a comma separated list (such as '1,2,3') or leave it blank to claim all intervals at once.", "^$|^\\d+(,\\d+)*$", "Invalid index selection")
+			indexSelection = prompt.Prompt("Which intervals would you like to claim? Use a comma separated list (such as '1,2,3') or leave it blank to claim all intervals at once.", "^$|^\\d+(,\\d+)*$", "Invalid index selection")
 		}
 
 		indices = []uint64{}
@@ -227,7 +228,7 @@ func nodeClaimRewards(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to claim your rewards?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to claim your rewards?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -317,7 +318,7 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 			collateralString,
 			"A custom amount",
 		}
-		selected, _ := cliutils.Select("Please choose an amount to restake here:", amountOptions)
+		selected, _ := prompt.Select("Please choose an amount to restake here:", amountOptions)
 		switch selected {
 		case 0:
 			restakeAmountWei = nil
@@ -325,7 +326,7 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 			restakeAmountWei = claimRpl
 		case 2:
 			for {
-				inputAmount := cliutils.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+				inputAmount := prompt.Prompt("Please enter an amount of RPL to stake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 				stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
 				if err != nil {
 					fmt.Printf("Invalid stake amount '%s': %s\n", inputAmount, err.Error())

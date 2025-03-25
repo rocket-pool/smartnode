@@ -23,6 +23,7 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	sharedConfig "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/shirou/gopsutil/v3/disk"
 )
 
@@ -57,7 +58,7 @@ func installService(c *cli.Context) error {
 	dataPath := ""
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
 		"The Rocket Pool service will be installed --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
 		c.String("version"), colorGreen, colorReset,
 	))) {
@@ -138,7 +139,7 @@ ______           _        _    ______           _
 func installUpdateTracker(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(
+	if !(c.Bool("yes") || prompt.Confirm(
 		"This will add the ability to display any available Operating System updates or new Rocket Pool versions on the metrics dashboard. "+
 			"Are you sure you want to install the update tracker?")) {
 		fmt.Println("Cancelled.")
@@ -278,7 +279,7 @@ func configureService(c *cli.Context) error {
 
 			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed. If you had a Checkpoint Sync URL provided for your Consensus client, it will be removed and you will need to specify a different one that supports the new network.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
 
-			if !cliutils.Confirm("Would you like the Smart Node to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
+			if !prompt.Confirm("Would you like the Smart Node to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
 				fmt.Println("To change networks manually, please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).")
 				return nil
 			}
@@ -292,7 +293,7 @@ func configureService(c *cli.Context) error {
 
 		// Query for service start if this is a new installation
 		if isNew {
-			if !cliutils.Confirm("Would you like to start the Smart Node services automatically now?") {
+			if !prompt.Confirm("Would you like to start the Smart Node services automatically now?") {
 				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
 				return nil
 			}
@@ -305,7 +306,7 @@ func configureService(c *cli.Context) error {
 			for _, container := range md.ContainersToRestart {
 				fmt.Printf("\t%s_%s\n", prefix, container)
 			}
-			if !cliutils.Confirm("Would you like to restart them automatically now?") {
+			if !prompt.Confirm("Would you like to restart them automatically now?") {
 				fmt.Println("Please run `rocketpool service start` when you are ready to apply the changes.")
 				return nil
 			}
@@ -498,7 +499,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		return fmt.Errorf("error checking for first-run status: %w", err)
 	}
 	if isUpdate && !ignoreConfigSuggestion {
-		if c.Bool("yes") || cliutils.Confirm("Smart Node upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
+		if c.Bool("yes") || prompt.Confirm("Smart Node upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
 			err = cfg.UpdateDefaults()
 			if err != nil {
 				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
@@ -551,7 +552,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			fmt.Println()
 			fmt.Println("**If you did NOT change clients, you can safely ignore this warning.**")
 			fmt.Println()
-			if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+			if !prompt.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -627,7 +628,7 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 		fmt.Printf("%sWARNING: Couldn't determine previous Smart Node version from backup settings: %s%s\n", colorYellow, err.Error(), colorReset)
 		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smart Node v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
 		fmt.Println()
-		if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+		if !prompt.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 			fmt.Println("Cancelled.")
 			return false, nil
 		}
@@ -638,7 +639,7 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 		fmt.Printf("%sWARNING: Couldn't determine previous Smart Node version from backup settings because the backup configuration didn't exist.%s\n", colorYellow, colorReset)
 		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smart Node v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
 		fmt.Println()
-		if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+		if !prompt.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 			fmt.Println("Cancelled.")
 			return false, nil
 		}
@@ -650,7 +651,7 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 		fmt.Printf("%sWARNING: Backup configuration states the previous Smart Node installation used version %s, which is not a valid version%s\n", colorYellow, previousVersion, colorReset)
 		fmt.Printf("%sYou are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade.\n\nIf you were previously running Smart Node v1.7.5 or earlier, you **MUST** shut down the Docker containers with `rocketpool service stop` and wait **at least 15 minutes** to ensure that you've missed at least two attestations before proceeding to prevent being slashed. Please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
 		fmt.Println()
-		if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+		if !prompt.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 			fmt.Println("Cancelled.")
 			return false, nil
 		}
@@ -662,7 +663,7 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 		fmt.Println()
 		fmt.Printf("%sNOTE: You are configured to use Nimbus in local mode. Starting with v1.9.0, Nimbus is now configured to use a split-process configuration, which means the Beacon Node (the `eth2` container) no longer loads your validator keys - now the `validator` container does.\n\nDue to this, we must restart Nimbus as part of the upgrade. Your client's slashing database will be moved from the `eth2` container to the `validator` container automatically to ensure your node doesn't attest to the same duty twice and get slashed.\n\nIf you have *any concern at all* about this process, you may want to voluntarily shut down the Docker containers with `rocketpool service stop` and wait 15 minutes to ensure that you've missed at least two attestations before proceeding. If you do this, please use an explorer such as https://beaconcha.in to confirm at least one of the missed attestations has been finalized before proceeding.%s\n\n", colorYellow, colorReset)
 		fmt.Println()
-		if !cliutils.Confirm("Do you want to continue starting the service?") {
+		if !prompt.Confirm("Do you want to continue starting the service?") {
 			fmt.Println("Cancelled.")
 			return false, nil
 		}
@@ -710,7 +711,7 @@ func handleNimbusSplitConversion(rp *rocketpool.Client, cfg *config.RocketPoolCo
 			fmt.Println()
 			fmt.Printf("%sWARNING: Some of the Nimbus containers couldn't be shut down safely.\nThe Smart Node can't guarantee the safe transfer of the slashing database. If you have active validators, you **must ensure** you have waited 15 minutes since your last attestation and **missed at least two attestations** before continuing.\nIf you don't, you %sMAY BE SLASHED!%s\n\n", colorYellow, colorRed, colorReset)
 			fmt.Println()
-			if !cliutils.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+			if !prompt.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
 				fmt.Println("Cancelled.")
 				return false, nil
 			}
@@ -1006,7 +1007,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to prune your main execution client?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to prune your main execution client?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1208,7 +1209,7 @@ func pauseService(c *cli.Context) (bool, error) {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
 		fmt.Println("Cancelled.")
 		return false, nil
 	}
@@ -1223,7 +1224,7 @@ func pauseService(c *cli.Context) (bool, error) {
 func terminateService(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1444,7 +1445,7 @@ func resyncEth1(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1565,7 +1566,7 @@ func resyncEth2(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH2 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH2 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

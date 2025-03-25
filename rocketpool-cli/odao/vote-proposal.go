@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func voteOnProposal(c *cli.Context) error {
@@ -95,7 +96,7 @@ func voteOnProposal(c *cli.Context) error {
 				memberID,
 				proposal.ProposerAddress)
 		}
-		selected, _ := cliutils.Select("Please select a proposal to vote on:", options)
+		selected, _ := prompt.Select("Please select a proposal to vote on:", options)
 		selectedProposal = votableProposals[selected]
 
 	}
@@ -115,7 +116,7 @@ func voteOnProposal(c *cli.Context) error {
 	} else {
 
 		// Prompt for support status
-		support = cliutils.Confirm("Would you like to vote in support of the proposal?")
+		support = prompt.Confirm("Would you like to vote in support of the proposal?")
 
 	}
 	if support {
@@ -144,7 +145,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

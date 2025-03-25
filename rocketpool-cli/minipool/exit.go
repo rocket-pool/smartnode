@@ -10,7 +10,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func exitMinipools(c *cli.Context) error {
@@ -56,7 +56,7 @@ func exitMinipools(c *cli.Context) error {
 				options[mi+1] = fmt.Sprintf("%s (dissolved since %s)", minipool.Address.Hex(), minipool.Status.StatusTime.Format(TimeFormat))
 			}
 		}
-		selected, _ := cliutils.Select("Please select a minipool to exit:", options)
+		selected, _ := prompt.Select("Please select a minipool to exit:", options)
 
 		// Get minipools
 		if selected == 0 {
@@ -93,7 +93,7 @@ func exitMinipools(c *cli.Context) error {
 	fmt.Printf("Once your funds have been withdrawn, you can run `rocketpool minipool close` to distribute them to your withdrawal address and close the minipool.\n\n%s", colorReset)
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.ConfirmWithIAgree(fmt.Sprintf("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.ConfirmWithIAgree(fmt.Sprintf("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

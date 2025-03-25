@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -29,7 +30,7 @@ func initializeVotingPrompt(c *cli.Context) error {
 	fmt.Printf("Learn more about how this all works via: %s\n", "https://docs.rocketpool.net/guides/houston/participate#participating-in-on-chain-pdao-proposals")
 	fmt.Println("")
 
-	inputString := cliutils.Prompt("Please type `direct` or `delegate` to continue:", "^(?i)(direct|delegate)$", "Please type `direct` or `delegate` to continue:")
+	inputString := prompt.Prompt("Please type `direct` or `delegate` to continue:", "^(?i)(direct|delegate)$", "Please type `direct` or `delegate` to continue:")
 	switch strings.ToLower(inputString) {
 	case "direct":
 		return initializeVoting(c)
@@ -66,7 +67,7 @@ func initializeVoting(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to initialize voting?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to initialize voting?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

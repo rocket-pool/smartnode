@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas/etherchain"
 	"github.com/rocket-pool/smartnode/shared/services/gas/etherscan"
 	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -225,7 +225,7 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 	fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
 
 	for {
-		desiredPrice := cliutils.Prompt(
+		desiredPrice := prompt.Prompt(
 			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
 			"^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
 			"Not a valid gas price, try again:")
@@ -304,7 +304,7 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 	fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
 
 	for {
-		desiredPrice := cliutils.Prompt(
+		desiredPrice := prompt.Prompt(
 			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
 			"^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
 			"Not a valid gas price, try again:")

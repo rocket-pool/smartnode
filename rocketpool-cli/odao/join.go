@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -37,7 +38,7 @@ func join(c *cli.Context) error {
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 
 		// Confirm swapping RPL
-		if c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))) {
+		if c.Bool("swap") || prompt.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))) {
 
 			// Check allowance
 			allowance, err := rp.GetNodeSwapRplAllowance()
@@ -71,7 +72,7 @@ func join(c *cli.Context) error {
 				}
 
 				// Prompt for confirmation
-				if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Do you want to let the new RPL contract interact with your legacy RPL?"))) {
+				if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Do you want to let the new RPL contract interact with your legacy RPL?"))) {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -115,7 +116,7 @@ func join(c *cli.Context) error {
 			}
 
 			// Prompt for confirmation
-			if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
+			if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -171,7 +172,7 @@ func join(c *cli.Context) error {
 	rp.PrintMultiTxWarning()
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

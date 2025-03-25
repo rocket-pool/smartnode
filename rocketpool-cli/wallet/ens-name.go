@@ -6,6 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -32,7 +33,7 @@ func setEnsName(c *cli.Context, name string) error {
 		return err
 	}
 
-	if !cliutils.Confirm("Are you sure you want to confirm your node's ENS name?") {
+	if !promptcli.Confirm("Are you sure you want to confirm your node's ENS name?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -132,7 +133,7 @@ func rescueDissolved(c *cli.Context) error {
 			rescueAmountFloats[mi] = math.RoundDown(eth.WeiToEth(localRescueAmount), 6)
 			options[mi] = fmt.Sprintf("%s (requires %.6f more ETH)", minipool.Address.Hex(), rescueAmountFloats[mi])
 		}
-		selected, _ := cliutils.Select("Please select a minipool to refund ETH from:", options)
+		selected, _ := prompt.Select("Please select a minipool to refund ETH from:", options)
 
 		// Get minipool
 		selectedMinipool = &rescuableMinipools[selected]
@@ -170,7 +171,7 @@ func rescueDissolved(c *cli.Context) error {
 			"1 ETH",
 			"A custom amount",
 		}
-		selected, _ := cliutils.Select("Please select an amount of ETH to deposit:", options)
+		selected, _ := prompt.Select("Please select an amount of ETH to deposit:", options)
 
 		switch selected {
 		case 0:
@@ -185,7 +186,7 @@ func rescueDissolved(c *cli.Context) error {
 
 	// Prompt for custom amount
 	if depositAmount == nil {
-		inputAmount := cliutils.Prompt("Please enter an amount of ETH to deposit:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+		inputAmount := prompt.Prompt("Please enter an amount of ETH to deposit:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		depositAmountEth, err := strconv.ParseFloat(inputAmount, 64)
 		if err != nil {
 			return fmt.Errorf("Invalid deposit amount '%s': %w", inputAmount, err)
@@ -204,7 +205,7 @@ func rescueDissolved(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

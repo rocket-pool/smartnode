@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 	"github.com/urfave/cli"
 )
@@ -54,7 +55,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 	newBondAmount := eth.EthToWei(8)
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Do you understand how the bond reduction process will work?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Do you understand how the bond reduction process will work?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -103,7 +104,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 		for mi, minipool := range reduceableMinipools {
 			options[mi+1] = fmt.Sprintf("%s (Current bond: %d ETH, commission: %.2f%%)", minipool.Address.Hex(), int(eth.WeiToEth(minipool.Node.DepositBalance)), minipool.Node.Fee*100)
 		}
-		selected, _ := cliutils.Select("Please select a minipool to begin the ETH bond reduction for:", options)
+		selected, _ := prompt.Select("Please select a minipool to begin the ETH bond reduction for:", options)
 
 		// Get minipools
 		if selected == 0 {
@@ -186,7 +187,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to begin bond reduction for %d minipools from 16 ETH to 8 ETH?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to begin bond reduction for %d minipools from 16 ETH to 8 ETH?", len(selectedMinipools)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -268,7 +269,7 @@ func reduceBondAmount(c *cli.Context) error {
 		for mi, minipool := range reduceableMinipools {
 			options[mi+1] = fmt.Sprintf("%s (Current bond: %d ETH)", minipool.Address.Hex(), int(eth.WeiToEth(minipool.Node.DepositBalance)))
 		}
-		selected, _ := cliutils.Select("Please select a minipool to reduce the ETH bond for:", options)
+		selected, _ := prompt.Select("Please select a minipool to reduce the ETH bond for:", options)
 
 		// Get minipools
 		if selected == 0 {
@@ -325,7 +326,7 @@ func reduceBondAmount(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to reduce the bond for %d minipools from 16 ETH to 8 ETH?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to reduce the bond for %d minipools from 16 ETH to 8 ETH?", len(selectedMinipools)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -381,7 +382,7 @@ func forceFeeDistribution(c *cli.Context, rp *rocketpool.Client) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to distribute the ETH from your node's fee distributor?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to distribute the ETH from your node's fee distributor?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

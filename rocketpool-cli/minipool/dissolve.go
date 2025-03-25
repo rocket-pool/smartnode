@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -56,7 +57,7 @@ func dissolveMinipools(c *cli.Context) error {
 		for mi, minipool := range initializedMinipools {
 			options[mi+1] = fmt.Sprintf("%s (%.6f ETH deposited)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
 		}
-		selected, _ := cliutils.Select("Please select a minipool to dissolve:", options)
+		selected, _ := prompt.Select("Please select a minipool to dissolve:", options)
 
 		// Get minipools
 		if selected == 0 {
@@ -110,7 +111,7 @@ func dissolveMinipools(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to dissolve %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to dissolve %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

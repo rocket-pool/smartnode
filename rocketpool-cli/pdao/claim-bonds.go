@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func claimBonds(c *cli.Context) error {
@@ -73,7 +74,7 @@ func claimBonds(c *cli.Context) error {
 		for pi, bond := range claimableBonds {
 			options[pi+1] = fmt.Sprintf("Proposal %d (proposer: %t, unlockable: %.2f RPL, rewards: %.2f RPL)", bond.ProposalID, bond.IsProposer, eth.WeiToEth(bond.UnlockAmount), eth.WeiToEth(bond.RewardAmount))
 		}
-		selected, _ := cliutils.Select("Please select a proposal to unlock bonds / claim rewards from:", options)
+		selected, _ := prompt.Select("Please select a proposal to unlock bonds / claim rewards from:", options)
 
 		// Get proposals
 		if selected == 0 {
@@ -109,7 +110,7 @@ func claimBonds(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to claim bonds and rewards from %d proposals?", len(selectedClaims)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to claim bonds and rewards from %d proposals?", len(selectedClaims)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

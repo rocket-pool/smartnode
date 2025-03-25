@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -71,13 +72,13 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(canSend.Balance), canSend.TokenSymbol)
 		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
 
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f of %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.6f of %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	} else {
 		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(canSend.Balance), token)
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

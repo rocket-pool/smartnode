@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func setRPLLockingAllowed(c *cli.Context, allowedToLock bool) error {
@@ -37,7 +38,7 @@ func setRPLLockingAllowed(c *cli.Context, allowedToLock bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(allowString)) {
+	if !(c.Bool("yes") || prompt.Confirm(allowString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

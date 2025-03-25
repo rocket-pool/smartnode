@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	 promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func recoverWallet(c *cli.Context) error {
@@ -58,7 +58,7 @@ func recoverWallet(c *cli.Context) error {
 	if !skipValidatorKeyRecovery && !ready {
 		fmt.Printf("%sEth Clients are not available.%s Validator keys cannot be recovered until they are synced and ready.\n", colorYellow, colorReset)
 		fmt.Println("You can recover them later with 'rocketpool wallet rebuild'")
-		if !cliutils.Confirm("Would you like to skip recovering the validator keys, and recover the node wallet only?") {
+		if !promptcli.Confirm("Would you like to skip recovering the validator keys, and recover the node wallet only?") {
 			fmt.Println("Cancelled.")
 			return nil
 		}

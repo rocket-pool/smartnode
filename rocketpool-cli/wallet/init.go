@@ -6,7 +6,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/term"
 )
 
@@ -28,7 +28,7 @@ func initWallet(c *cli.Context) error {
 
 	// Prompt for user confirmation before printing sensitive information
 	if !(c.GlobalBool("secure-session") ||
-		cliutils.ConfirmSecureSession("Creating a wallet will print sensitive information to your screen.")) {
+		promptcli.ConfirmSecureSession("Creating a wallet will print sensitive information to your screen.")) {
 		return nil
 	}
 

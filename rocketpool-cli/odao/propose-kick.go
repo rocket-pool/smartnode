@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -55,7 +56,7 @@ func proposeKick(c *cli.Context) error {
 		for mi, member := range members.Members {
 			options[mi] = fmt.Sprintf("%s (URL: %s, node: %s)", member.ID, member.Url, member.Address)
 		}
-		selected, _ := cliutils.Select("Please select a member to propose kicking:", options)
+		selected, _ := prompt.Select("Please select a member to propose kicking:", options)
 		selectedMember = members.Members[selected]
 
 	}
@@ -79,7 +80,7 @@ func proposeKick(c *cli.Context) error {
 	} else {
 
 		// Prompt for custom amount
-		inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an RPL fine amount to propose (max %.6f RPL):", math.RoundDown(eth.WeiToEth(selectedMember.RPLBondAmount), 6)), "^\\d+(\\.\\d+)?$", "Invalid amount")
+		inputAmount := prompt.Prompt(fmt.Sprintf("Please enter an RPL fine amount to propose (max %.6f RPL):", math.RoundDown(eth.WeiToEth(selectedMember.RPLBondAmount), 6)), "^\\d+(\\.\\d+)?$", "Invalid amount")
 		fineAmount, err := strconv.ParseFloat(inputAmount, 64)
 		if err != nil {
 			return fmt.Errorf("Invalid fine amount '%s': %w", inputAmount, err)
@@ -111,7 +112,7 @@ func proposeKick(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
@@ -41,7 +42,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -93,7 +94,7 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -145,7 +146,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -204,7 +205,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan str
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -263,7 +264,7 @@ func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan str
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -322,7 +323,7 @@ func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimesp
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -381,7 +382,7 @@ func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimesp
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -440,7 +441,7 @@ func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -499,7 +500,7 @@ func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod string) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -558,7 +559,7 @@ func proposeSettingPromotionScrubPeriod(c *cli.Context, scrubPeriod string) erro
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -610,7 +611,7 @@ func proposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -669,7 +670,7 @@ func proposeSettingBondReductionWindowStart(c *cli.Context, windowStart string) 
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -728,7 +729,7 @@ func proposeSettingBondReductionWindowLength(c *cli.Context, windowLength string
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

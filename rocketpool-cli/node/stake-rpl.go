@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -51,7 +52,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 
 		// Confirm swapping RPL
-		if c.Bool("swap") || cliutils.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before staking?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))) {
+		if c.Bool("swap") || prompt.Confirm(fmt.Sprintf("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before staking?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))) {
 
 			// Check allowance
 			allowance, err := rp.GetNodeSwapRplAllowance()
@@ -85,7 +86,7 @@ func nodeStakeRpl(c *cli.Context) error {
 				}
 
 				// Prompt for confirmation
-				if !(c.Bool("yes") || cliutils.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
+				if !(c.Bool("yes") || prompt.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -129,7 +130,7 @@ func nodeStakeRpl(c *cli.Context) error {
 			}
 
 			// Prompt for confirmation
-			if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
+			if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)))) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -203,7 +204,7 @@ func nodeStakeRpl(c *cli.Context) error {
 			fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&rplBalance), 6)),
 			"A custom amount",
 		}
-		selected, _ := cliutils.Select("Please choose an amount of RPL to stake:", amountOptions)
+		selected, _ := prompt.Select("Please choose an amount of RPL to stake:", amountOptions)
 
 		switch selected {
 		case 0:
@@ -218,7 +219,7 @@ func nodeStakeRpl(c *cli.Context) error {
 
 		// Prompt for custom amount or percentage
 		if amountWei == nil {
-			inputAmountOrPercent := cliutils.Prompt("Please enter an amount of RPL or percentage of borrowed ETH to stake. (e.g '50' for 50 RPL or '5%' for 5% borrowed ETH as RPL):", "^(0|[1-9]\\d*)(\\.\\d+)?%?$", "Invalid amount")
+			inputAmountOrPercent := prompt.Prompt("Please enter an amount of RPL or percentage of borrowed ETH to stake. (e.g '50' for 50 RPL or '5%' for 5% borrowed ETH as RPL):", "^(0|[1-9]\\d*)(\\.\\d+)?%?$", "Invalid amount")
 			if strings.HasSuffix(inputAmountOrPercent, "%") {
 				fmt.Sscanf(inputAmountOrPercent, "%f%%", &stakePercent)
 				amountWei = rplStakeForLEB8(eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
@@ -264,7 +265,7 @@ func nodeStakeRpl(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm("Do you want to let the staking contract interact with your RPL?")) {
+		if !(c.Bool("yes") || prompt.Confirm("Do you want to let the staking contract interact with your RPL?")) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -309,7 +310,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach %.6f staked RPL (%.0f%% of bonded eth)!",
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach %.6f staked RPL (%.0f%% of bonded eth)!",
 		math.RoundDown(eth.WeiToEth(amountWei), 6),
 		math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6),
 		status.MaximumStakeFraction*100))) {

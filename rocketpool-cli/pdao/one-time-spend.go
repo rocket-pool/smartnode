@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -24,13 +25,13 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	// Get the invoice ID
 	invoiceID := c.String("invoice-id")
 	if invoiceID == "" {
-		invoiceID = cliutils.Prompt("Please enter an invoice ID for this spend: (no spaces)", "^\\S+$", "Invalid ID")
+		invoiceID = prompt.Prompt("Please enter an invoice ID for this spend: (no spaces)", "^\\S+$", "Invalid ID")
 	}
 
 	// Get the recipient
 	recipientString := c.String("recipient")
 	if recipientString == "" {
-		recipientString = cliutils.Prompt("Please enter a recipient address for this spend:", "^0x[0-9a-fA-F]{40}$", "Invalid recipient address")
+		recipientString = prompt.Prompt("Please enter a recipient address for this spend:", "^0x[0-9a-fA-F]{40}$", "Invalid recipient address")
 	}
 	recipient, err := cliutils.ValidateAddress("recipient", recipientString)
 	if err != nil {
@@ -41,9 +42,9 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	amountString := c.String("amount")
 	if amountString == "" {
 		if rawEnabled {
-			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
+			amountString = prompt.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
 		} else {
-			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
+			amountString = prompt.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
 		}
 	}
 
@@ -78,7 +79,7 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to propose this one-time spend of the Protocol DAO treasury?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose this one-time spend of the Protocol DAO treasury?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

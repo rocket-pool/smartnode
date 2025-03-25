@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -80,7 +81,7 @@ func recoverRplFromLot(c *cli.Context) error {
 		for li, lot := range recoverableLots {
 			options[li+1] = fmt.Sprintf("lot %d (%.6f RPL unclaimed)", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6))
 		}
-		selected, _ := cliutils.Select("Please select a lot to recover unclaimed RPL from:", options)
+		selected, _ := prompt.Select("Please select a lot to recover unclaimed RPL from:", options)
 
 		// Get lots
 		if selected == 0 {
@@ -114,7 +115,7 @@ func recoverRplFromLot(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to recover %d lots?", len(selectedLots)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to recover %d lots?", len(selectedLots)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

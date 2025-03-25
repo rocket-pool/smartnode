@@ -16,6 +16,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func findVanitySalt(c *cli.Context) error {
@@ -30,7 +31,7 @@ func findVanitySalt(c *cli.Context) error {
 	// Get the target prefix
 	prefix := c.String("prefix")
 	if prefix == "" {
-		prefix = cliutils.Prompt("Please specify the address prefix you would like to search for (must start with 0x):", "^0x[0-9a-fA-F]+$", "Invalid hex string")
+		prefix = prompt.Prompt("Please specify the address prefix you would like to search for (must start with 0x):", "^0x[0-9a-fA-F]+$", "Invalid hex string")
 	}
 	if !strings.HasPrefix(prefix, "0x") {
 		return fmt.Errorf("Prefix must start with 0x.")
@@ -83,7 +84,7 @@ func findVanitySalt(c *cli.Context) error {
 		}
 
 		// Prompt for amount
-		selected, _ := cliutils.Select("Please choose a deposit type to search for:", amountOptions)
+		selected, _ := prompt.Select("Please choose a deposit type to search for:", amountOptions)
 		switch selected {
 		case 0:
 			amount = 8

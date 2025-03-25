@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func executeProposal(c *cli.Context) error {
@@ -84,7 +85,7 @@ func executeProposal(c *cli.Context) error {
 			proposal.Message = strings.Sanitize(proposal.Message)
 			options[pi+1] = fmt.Sprintf("proposal %d (message: '%s', payload: %s)", proposal.ID, proposal.Message, proposal.PayloadStr)
 		}
-		selected, _ := cliutils.Select("Please select a proposal to execute:", options)
+		selected, _ := prompt.Select("Please select a proposal to execute:", options)
 
 		// Get proposals
 		if selected == 0 {
@@ -120,7 +121,7 @@ func executeProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to execute %d proposals?", len(selectedProposals)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to execute %d proposals?", len(selectedProposals)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
