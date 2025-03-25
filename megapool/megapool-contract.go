@@ -23,7 +23,7 @@ type ValidatorProof struct {
 	Witnesses             [][32]byte
 }
 
-type withdrawal struct {
+type Withdrawal struct {
 	index                 *big.Int
 	validatorIndex        *big.Int
 	withdrawalCredentials [32]byte
@@ -387,6 +387,20 @@ func (mp *megapoolV1) NotifyExit(validatorId uint32, withdrawalEpoch *big.Int, s
 	tx, err := mp.Contract.Transact(opts, "notifyExit", validatorId, withdrawalEpoch, slot, exitProof)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error calling notify exit: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
+// Estimate the gas to call NotifyFinalBalance
+func (mp *megapoolV1) EstimateNotifyFinalBalance(validatorId uint32, withdrawalSlot *big.Int, withdrawalNum *big.Int, withdrawal Withdrawal, slot *big.Int, exitProof [][32]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "notifyFinalBalance", validatorId, withdrawalSlot, withdrawalNum, withdrawal, slot, exitProof)
+}
+
+// Notify the megapool of the final balance of an exited validator
+func (mp *megapoolV1) NotifyFinalBalance(validatorId uint32, withdrawalSlot *big.Int, withdrawalNum *big.Int, withdrawal Withdrawal, slot *big.Int, exitProof [][32]byte, opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "notifyFinalBalance", validatorId, withdrawalSlot, withdrawalNum, withdrawal, slot, exitProof)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error calling notify final balance: %w", err)
 	}
 	return tx.Hash(), nil
 }

@@ -33,7 +33,7 @@ func verifyExit(rp *rocketpool.RocketPool, validatorIndex *big.Int, withdrawable
 	return *verifiedExit, nil
 }
 
-func verifyWithdrawal(rp *rocketpool.RocketPool, validatorIndex *big.Int, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal withdrawal, slot uint64, proof [][32]byte, opts *bind.CallOpts) (bool, error) {
+func verifyWithdrawal(rp *rocketpool.RocketPool, validatorIndex *big.Int, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal Withdrawal, slot uint64, proof [][32]byte, opts *bind.CallOpts) (bool, error) {
 	beaconStateVerifier, err := getBeaconStateVerifier(rp, opts)
 	if err != nil {
 		return false, err

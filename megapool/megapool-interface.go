@@ -47,6 +47,8 @@ type Megapool interface {
 	Stake(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof ValidatorProof, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateNotifyExitGas(validatorId uint32, withdrawalEpoch *big.Int, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	NotifyExit(validatorId uint32, withdrawalEpoch *big.Int, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (common.Hash, error)
+	EstimateNotifyFinalBalance(validatorId uint32, withdrawalSlot *big.Int, withdrawalNum *big.Int, withdrawal Withdrawal, slot *big.Int, exitProof [][32]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	NotifyFinalBalance(validatorId uint32, withdrawalSlot *big.Int, withdrawalNum *big.Int, withdrawal Withdrawal, slot *big.Int, exitProof [][32]byte, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error)
 	GetUseLatestDelegate(opts *bind.CallOpts) (bool, error)
