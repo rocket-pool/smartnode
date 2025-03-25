@@ -25,7 +25,7 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	// Get the invoice ID
 	invoiceID := c.String("invoice-id")
 	if invoiceID == "" {
-		invoiceID = prompt.Prompt("Please enter an invoice ID for this spend: (no spaces)", "^\\S+$", "Invalid ID")
+		invoiceID = prompt.Prompt("Please enter an invoice ID for this spend: ", "^\\s*\\S+\\s*$", "Invalid ID")
 	}
 
 	// Get the recipient
