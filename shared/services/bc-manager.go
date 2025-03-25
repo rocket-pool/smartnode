@@ -195,6 +195,17 @@ func (m *BeaconClientManager) GetBeaconState(slot uint64) (*eth2.BeaconStateDene
 	return result.(*eth2.BeaconStateDeneb), nil
 }
 
+// Get deneb beacon block by slot
+func (m *BeaconClientManager) GetBeaconBlockDeneb(slot uint64) (*eth2.SignedBeaconBlockDeneb, bool, error) {
+	result1, result2, err := m.runFunction2(func(client beacon.Client) (interface{}, interface{}, error) {
+		return client.GetBeaconBlockDeneb(slot)
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return result1.(*eth2.SignedBeaconBlockDeneb), result2.(bool), nil
+}
+
 // Get a validator's status by its index
 func (m *BeaconClientManager) GetValidatorStatusByIndex(index string, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {

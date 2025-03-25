@@ -18,7 +18,16 @@ const beaconStateValidatorsMaxLength uint64 = 1 << 40
 const beaconBlockHeaderStateRootGeneralizedIndex uint64 = 11                     // Container with 5 fields, so gid 8 is the first field. We want the 4th field, so gid 8 + 3 = 11
 const beaconStateValidatorWithdrawalCredentialsPubkeyGeneralizedIndex uint64 = 4 // Container with 8 fields, so gid 8 is the first field. We want the parent of 1st field, so gid 8 / 2 = 4
 const beaconStateValidatorWithdrawableEpochGeneralizedIndex uint64 = 14          // Container with 8 fields, so gid 8 is the first field. We want the 8th field, so gid 8 + 7 = 15
+
+const beaconStateChunkCeil uint64 = 32
+const beaconStateHistoricalSummariesFieldIndex uint64 = 27
+const beaconStateHistoricalSummariesMaxLength uint64 = 1 << 24
+const beaconStateBlockRootsMaxLength uint64 = 1 << 13
+const beaconStateBlockRootsFieldIndex uint64 = 5
+
 // See https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md for general index calculation and helpers
+
+const slotsPerHistoricalRoot uint64 = 8192
 
 func getPowerOfTwoCeil(x uint64) uint64 {
 	// Base case
@@ -162,6 +171,19 @@ func (validator *Validator) validatorCredentialsPubkeyProof() ([][]byte, error) 
 	return proof.Hashes, nil
 }
 
+func (state *BeaconStateDeneb) blockHeaderToStateProof(blockHeader *BeaconBlockHeader) ([][]byte, error) {
+	generalizedIndex := beaconBlockHeaderStateRootGeneralizedIndex
+	root, err := blockHeader.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get block header tree: %w", err)
+	}
+	blockHeaderProof, err := root.Prove(int(generalizedIndex))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for block header: %w", err)
+	}
+	return blockHeaderProof.Hashes, nil
+}
+
 // ValidatorCredentialsProof computes the merkle proof for a validator's credentials
 // at a specific index in the validator registry.
 func (state *BeaconStateDeneb) ValidatorCredentialsProof(index uint64) ([][]byte, error) {
@@ -182,20 +204,55 @@ func (state *BeaconStateDeneb) ValidatorCredentialsProof(index uint64) ([][]byte
 	}
 
 	// The EL proves against BeaconBlockHeader root, so we need to merge the state proof with that.
-	generalizedIndex := beaconBlockHeaderStateRootGeneralizedIndex
-	root, err := state.LatestBlockHeader.GetTree()
+	blockHeaderProof, err := state.blockHeaderToStateProof(state.LatestBlockHeader)
 	if err != nil {
-		return nil, fmt.Errorf("could not get block header tree: %w", err)
-	}
-	blockHeaderProof, err := root.Prove(int(generalizedIndex))
-	if err != nil {
-		return nil, fmt.Errorf("could not get proof for block header: %w", err)
+		return nil, fmt.Errorf("could not get block header proof: %w", err)
 	}
 
 	out := append(credentialsProof, stateProof...)
-	out = append(out, blockHeaderProof.Hashes...)
+	out = append(out, blockHeaderProof...)
 
 	return out, nil
+}
+
+func (state *BeaconStateDeneb) BlockRootProof(slot uint64) ([][]byte, error) {
+	tree, err := state.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+	isHistorical := slot+slotsPerHistoricalRoot <= state.Slot
+
+	gid := uint64(1)
+
+	if isHistorical {
+		// Navigate to the historical_summaries
+		gid = gid*beaconStateChunkCeil + beaconStateHistoricalSummariesFieldIndex
+		// Navigate into the historical summaries array.
+		arrayIndex := (slot / slotsPerHistoricalRoot)
+		gid = gid*2*beaconStateHistoricalSummariesMaxLength + arrayIndex
+
+		gid = gid*2 + 0 // First field of the HistoricalSummary struct (2 fields)
+
+	} else {
+		// Navigate to the block_roots
+		gid = gid*beaconStateChunkCeil + beaconStateBlockRootsFieldIndex
+	}
+	// We're now at the block_summary_root or block_roots bector, which is the root of a slotsPerHistoricalRoot slots vector.
+	// The index we care about is given by slot % slotsPerHistoricalRoot.
+	gid = gid*2*beaconStateBlockRootsMaxLength + (slot % slotsPerHistoricalRoot)
+
+	proof, err := tree.Prove(int(gid))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for block root: %w", err)
+	}
+
+	// Finally, prove from the block header to the state root.
+	blockHeaderProof, err := state.blockHeaderToStateProof(state.LatestBlockHeader)
+	if err != nil {
+		return nil, fmt.Errorf("could not get block header proof: %w", err)
+	}
+
+	return append(proof.Hashes, blockHeaderProof...), nil
 }
 
 // Taken from https://github.com/prysmaticlabs/prysm/blob/ac1717f1e44bd218b0bd3af0c4dec951c075f462/proto/prysm/v1alpha1/beacon_state.pb.go#L1574

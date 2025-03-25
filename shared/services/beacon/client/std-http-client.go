@@ -977,7 +977,7 @@ func (c *StandardHttpClient) getAttestations(blockId string) (AttestationsRespon
 
 // Get the target beacon block
 func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse, bool, error) {
-	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, fmt.Sprint(blockId)))
 	if err != nil {
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: %w", err)
 	}
@@ -1009,6 +1009,25 @@ func (c *StandardHttpClient) GetBeaconState(slot uint64) (*beacontypes.BeaconSta
 	}
 
 	return &beaconState, nil
+}
+
+// Get a deneb block by slot
+func (c *StandardHttpClient) GetBeaconBlockDeneb(slot uint64) (*beacontypes.SignedBeaconBlockDeneb, bool, error) {
+	responseBody, status, err := c.getRequestWithContentType(fmt.Sprintf(RequestBeaconBlockPath, slot), RequestSSZContentType)
+	if status == http.StatusNotFound {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, fmt.Errorf("Could not get beacon block data: %w", err)
+	}
+	if status != http.StatusOK {
+		return nil, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", status, string(responseBody))
+	}
+	var beaconBlock beacontypes.SignedBeaconBlockDeneb
+	if err := beaconBlock.UnmarshalSSZ(responseBody); err != nil {
+		return nil, false, fmt.Errorf("Could not decode beacon block data: %w", err)
+	}
+	return &beaconBlock, true, nil
 }
 
 // Get the specified beacon block header
