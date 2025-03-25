@@ -65,8 +65,8 @@ type Wallet interface {
 	TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error
 }
 
-// HDWallet
-type HDWallet struct {
+// hdWallet
+type hdWallet struct {
 
 	// Core
 	walletPath string
@@ -113,7 +113,7 @@ type walletStore struct {
 func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager, addressManager *AddressManager) (Wallet, error) {
 
 	// Initialize wallet
-	w := &HDWallet{
+	w := &hdWallet{
 		walletPath:     walletPath,
 		pm:             passwordManager,
 		am:             addressManager,
@@ -137,22 +137,22 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 }
 
 // Load the node address
-func (w *HDWallet) LoadAddress() (common.Address, bool, error) {
+func (w *hdWallet) LoadAddress() (common.Address, bool, error) {
 	return w.am.LoadAddress()
 }
 
 // Gets the node address, if one is loaded
-func (w *HDWallet) GetAddress() (common.Address, bool) {
+func (w *hdWallet) GetAddress() (common.Address, bool) {
 	return w.am.GetAddress()
 }
 
 // Masquerade as another node address, running all node functions as that address (in read only mode)
-func (w *HDWallet) MasqueradeAsAddress(newAddress common.Address) error {
+func (w *hdWallet) MasqueradeAsAddress(newAddress common.Address) error {
 	return w.masqueradeImpl(newAddress)
 }
 
 // End masquerading as another node address, and use the wallet's address (returning to read/write mode)
-func (w *HDWallet) RestoreAddressToWallet() error {
+func (w *hdWallet) RestoreAddressToWallet() error {
 	if w.am == nil {
 		return errors.New("wallet is not loaded")
 	}
@@ -166,23 +166,23 @@ func (w *HDWallet) RestoreAddressToWallet() error {
 }
 
 // Gets the wallet's chain ID
-func (w *HDWallet) GetChainID() *big.Int {
+func (w *hdWallet) GetChainID() *big.Int {
 	copy := big.NewInt(0).Set(w.chainID)
 	return copy
 }
 
 // Add a keystore to the wallet
-func (w *HDWallet) AddKeystore(name string, ks keystore.Keystore) {
+func (w *hdWallet) AddKeystore(name string, ks keystore.Keystore) {
 	w.keystores[name] = ks
 }
 
 // Check if the wallet has been initialized
-func (w *HDWallet) IsInitialized() bool {
+func (w *hdWallet) IsInitialized() bool {
 	return (w.ws != nil && w.seed != nil && w.mk != nil)
 }
 
 // Attempt to initialize the wallet if not initialized and return status
-func (w *HDWallet) GetInitialized() (bool, error) {
+func (w *hdWallet) GetInitialized() (bool, error) {
 	if w.IsInitialized() {
 		return true, nil
 	}
@@ -190,7 +190,7 @@ func (w *HDWallet) GetInitialized() (bool, error) {
 }
 
 // Serialize the wallet to a JSON string
-func (w *HDWallet) String() (string, error) {
+func (w *hdWallet) String() (string, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -209,7 +209,7 @@ func (w *HDWallet) String() (string, error) {
 }
 
 // Initialize the wallet from a random seed
-func (w *HDWallet) Initialize(derivationPath string, walletIndex uint) (string, error) {
+func (w *hdWallet) Initialize(derivationPath string, walletIndex uint) (string, error) {
 
 	// Check wallet is not initialized
 	if w.IsInitialized() {
@@ -239,7 +239,7 @@ func (w *HDWallet) Initialize(derivationPath string, walletIndex uint) (string, 
 }
 
 // Recover a wallet from a mnemonic
-func (w *HDWallet) Recover(derivationPath string, walletIndex uint, mnemonic string) error {
+func (w *hdWallet) Recover(derivationPath string, walletIndex uint, mnemonic string) error {
 
 	// Check wallet is not initialized
 	if w.IsInitialized() {
@@ -262,7 +262,7 @@ func (w *HDWallet) Recover(derivationPath string, walletIndex uint, mnemonic str
 }
 
 // Recover a wallet from a mnemonic - only used for testing mnemonics
-func (w *HDWallet) TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error {
+func (w *hdWallet) TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error {
 
 	// Check mnemonic
 	if !bip39.IsMnemonicValid(mnemonic) {
@@ -295,7 +295,7 @@ func (w *HDWallet) TestRecovery(derivationPath string, walletIndex uint, mnemoni
 }
 
 // Save the wallet store to disk
-func (w *HDWallet) Save() error {
+func (w *hdWallet) Save() error {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -319,7 +319,7 @@ func (w *HDWallet) Save() error {
 }
 
 // Delete the wallet store from disk
-func (w *HDWallet) Delete() error {
+func (w *hdWallet) Delete() error {
 
 	// Check if it exists
 	_, err := os.Stat(w.walletPath)
@@ -336,7 +336,7 @@ func (w *HDWallet) Delete() error {
 }
 
 // Signs a serialized TX using the wallet's private key
-func (w *HDWallet) Sign(serializedTx []byte) ([]byte, error) {
+func (w *hdWallet) Sign(serializedTx []byte) ([]byte, error) {
 	// Get private key
 	privateKey, _, err := w.getNodePrivateKey()
 	if err != nil {
@@ -364,7 +364,7 @@ func (w *HDWallet) Sign(serializedTx []byte) ([]byte, error) {
 }
 
 // Signs an arbitrary message using the wallet's private key
-func (w *HDWallet) SignMessage(message string) ([]byte, error) {
+func (w *hdWallet) SignMessage(message string) ([]byte, error) {
 	// Get the wallet's private key
 	privateKey, _, err := w.getNodePrivateKey()
 	if err != nil {
@@ -383,13 +383,13 @@ func (w *HDWallet) SignMessage(message string) ([]byte, error) {
 }
 
 // Reloads wallet from disk
-func (w *HDWallet) Reload() error {
+func (w *hdWallet) Reload() error {
 	_, err := w.loadStore()
 	return err
 }
 
 // Load the wallet store from disk and decrypt it
-func (w *HDWallet) loadStore() (bool, error) {
+func (w *hdWallet) loadStore() (bool, error) {
 
 	// Read wallet store from disk; cancel if not found
 	wsBytes, err := os.ReadFile(w.walletPath)
@@ -438,7 +438,7 @@ func (w *HDWallet) loadStore() (bool, error) {
 }
 
 // Initialize the encrypted wallet store from a mnemonic
-func (w *HDWallet) initializeStore(derivationPath string, walletIndex uint, mnemonic string) error {
+func (w *hdWallet) initializeStore(derivationPath string, walletIndex uint, mnemonic string) error {
 
 	// Generate seed
 	w.seed = bip39.NewSeed(mnemonic, "")
@@ -479,6 +479,6 @@ func (w *HDWallet) initializeStore(derivationPath string, walletIndex uint, mnem
 }
 
 // Masquerade as another node address, running all node functions as that address (in read only mode)
-func (w *HDWallet) masqueradeImpl(newAddress common.Address) error {
+func (w *hdWallet) masqueradeImpl(newAddress common.Address) error {
 	return w.am.SetAndSaveAddress(newAddress)
 }
