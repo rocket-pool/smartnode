@@ -36,7 +36,7 @@ type checkSoloMigrations struct {
 	log              log.ColorLogger
 	errLog           log.ColorLogger
 	cfg              *config.RocketPoolConfig
-	w                *wallet.Wallet
+	w                wallet.Wallet
 	rp               *rocketpool.RocketPool
 	ec               rocketpool.ExecutionClient
 	bc               beacon.Client
