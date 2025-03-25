@@ -29,7 +29,7 @@ type dissolveTimedOutMinipools struct {
 	c   *cli.Context
 	log log.ColorLogger
 	cfg *config.RocketPoolConfig
-	w   *wallet.Wallet
+	w   wallet.Wallet
 	ec  rocketpool.ExecutionClient
 	rp  *rocketpool.RocketPool
 }

@@ -45,27 +45,6 @@ func RequireNodePassword(c *cli.Context) error {
 	return nil
 }
 
-func RequireNotMasquerading(c *cli.Context) error {
-	if err := RequireNodePassword(c); err != nil {
-		return err
-	}
-	w, err := GetWallet(c)
-	if err != nil {
-		return err
-	}
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
-
-	nodeAddress, _ := w.GetAddress()
-	if nodeAccount.Address != nodeAddress {
-		return errors.New("The node's wallet keystore does not match the node address. Please run 'rocketpool wallet restore-address' and try again.")
-	}
-	return nil
-}
-
 func RequireNodeWallet(c *cli.Context) error {
 	if err := RequireNodePassword(c); err != nil {
 		return err

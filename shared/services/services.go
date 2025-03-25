@@ -36,7 +36,7 @@ var (
 	cfg                  *config.RocketPoolConfig
 	passwordManager      *passwords.PasswordManager
 	addressManager       *wallet.AddressManager
-	nodeWallet           *wallet.Wallet
+	nodeWallet           wallet.Wallet
 	ecManager            *ExecutionClientManager
 	bcManager            *BeaconClientManager
 	rocketPool           *rocketpool.RocketPool
@@ -73,7 +73,7 @@ func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
 	return getPasswordManager(cfg), nil
 }
 
-func GetWallet(c *cli.Context) (*wallet.Wallet, error) {
+func GetWallet(c *cli.Context) (wallet.Wallet, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func getAddressManager(cfg *config.RocketPoolConfig) *wallet.AddressManager {
 	return addressManager
 }
 
-func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager, am *wallet.AddressManager) (*wallet.Wallet, error) {
+func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager, am *wallet.AddressManager) (wallet.Wallet, error) {
 	var err error
 	initNodeWallet.Do(func() {
 		var maxFee *big.Int
