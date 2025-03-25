@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func voteOnProposal(c *cli.Context) error {
@@ -97,7 +98,7 @@ func voteOnProposal(c *cli.Context) error {
 				eth.WeiToEth(proposal.VotingPowerToVeto),
 				proposal.ProposerAddress)
 		}
-		selected, _ := cliutils.Select("Please select a proposal to vote on:", options)
+		selected, _ := prompt.Select("Please select a proposal to vote on:", options)
 		selectedProposal = votableProposals[selected]
 
 	}
@@ -128,7 +129,7 @@ func voteOnProposal(c *cli.Context) error {
 			"Veto",
 		}
 		var selected int
-		selected, voteDirectionLabel = cliutils.Select("How would you like to vote on the proposal?", options)
+		selected, voteDirectionLabel = prompt.Select("How would you like to vote on the proposal?", options)
 		voteDirection = types.VoteDirection(selected + 1)
 	}
 	canVote := api.CanVoteOnPDAOProposalResponse{}
@@ -171,7 +172,7 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to %s with a vote for '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to %s with a vote for '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

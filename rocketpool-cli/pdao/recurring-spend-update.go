@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -24,13 +25,13 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	// Get the contract name
 	contractName := c.String("contract-name")
 	if contractName == "" {
-		contractName = cliutils.Prompt("Please enter a contract name for this recurring payment: ", "^\\s*\\S+\\s*$", "Invalid ID")
+		contractName = prompt.Prompt("Please enter a contract name for this recurring payment: ", "^\\s*\\S+\\s*$", "Invalid ID")
 	}
 
 	// Get the recipient
 	recipientString := c.String("recipient")
 	if recipientString == "" {
-		recipientString = cliutils.Prompt("Please enter a recipient address for this recurring payment:", "^0x[0-9a-fA-F]{40}$", "Invalid recipient address")
+		recipientString = prompt.Prompt("Please enter a recipient address for this recurring payment:", "^0x[0-9a-fA-F]{40}$", "Invalid recipient address")
 	}
 	recipient, err := cliutils.ValidateAddress("recipient", recipientString)
 	if err != nil {
@@ -41,9 +42,9 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	amountString := c.String("amount-per-period")
 	if amountString == "" {
 		if rawEnabled {
-			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
+			amountString = prompt.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period as a wei amount:", recipientString), "^[0-9]+$", "Invalid amount")
 		} else {
-			amountString = cliutils.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
+			amountString = prompt.Prompt(fmt.Sprintf("Please enter an amount of RPL to send to %s per period:", recipientString), "^[0-9]+(\\.[0-9]+)?$", "Invalid amount")
 		}
 	}
 
@@ -61,7 +62,7 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	// Get the period length
 	periodLengthString := c.String("period-length")
 	if periodLengthString == "" {
-		periodLengthString = cliutils.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^.+$", "Invalid period length")
+		periodLengthString = prompt.Prompt("Please enter the length of each payment period in hours / minutes / seconds (e.g., 168h0m0s):", "^.+$", "Invalid period length")
 	}
 	periodLength, err := cliutils.ValidateDuration("period-length", periodLengthString)
 	if err != nil {
@@ -71,7 +72,7 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	// Get the number of periods
 	numPeriods := c.Uint64("number-of-periods")
 	if !c.IsSet("number-of-periods") {
-		numPeriodsString := cliutils.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
+		numPeriodsString := prompt.Prompt("Please enter the total number of payment periods:", "^[0-9]+$", "Invalid number of periods")
 		numPeriods, err = cliutils.ValidateUint("number-of-periods", numPeriodsString)
 		if err != nil {
 			return err
@@ -98,7 +99,7 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to propose updating this recurring spend of the Protocol DAO treasury?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose updating this recurring spend of the Protocol DAO treasury?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

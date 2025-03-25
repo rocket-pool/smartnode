@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -74,7 +75,7 @@ func bidOnLot(c *cli.Context) error {
 		for li, lot := range openLots {
 			options[li] = fmt.Sprintf("lot %d (%.6f RPL available @ %.6f ETH per RPL)", lot.Details.Index, math.RoundDown(eth.WeiToEth(lot.Details.RemainingRPLAmount), 6), math.RoundDown(eth.WeiToEth(lot.Details.CurrentPrice), 6))
 		}
-		selected, _ := cliutils.Select("Please select a lot to bid on:", options)
+		selected, _ := prompt.Select("Please select a lot to bid on:", options)
 		selectedLot = openLots[selected]
 
 	}
@@ -108,12 +109,12 @@ func bidOnLot(c *cli.Context) error {
 		maxAmount.Quo(&tmp, eth.EthToWei(1))
 
 		// Prompt for maximum amount
-		if cliutils.Confirm(fmt.Sprintf("Would you like to bid the maximum amount of ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
+		if prompt.Confirm(fmt.Sprintf("Would you like to bid the maximum amount of ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
 			amountWei = &maxAmount
 		} else {
 
 			// Prompt for custom amount
-			inputAmount := cliutils.Prompt("Please enter an amount of ETH to bid:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+			inputAmount := prompt.Prompt("Please enter an amount of ETH to bid:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 			bidAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
 				return fmt.Errorf("Invalid bid amount '%s': %w", inputAmount, err)
@@ -144,7 +145,7 @@ func bidOnLot(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Details.Index))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Details.Index))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
@@ -77,8 +78,8 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 
 	if confirm {
 		// Prompt for a test transaction
-		if cliutils.Confirm("Would you like to send a test transaction to make sure you have the correct address?") {
-			inputAmount := cliutils.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddressString), "^\\d+(\\.\\d+)?$", "Invalid amount")
+		if prompt.Confirm("Would you like to send a test transaction to make sure you have the correct address?") {
+			inputAmount := prompt.Prompt(fmt.Sprintf("Please enter an amount of ETH to send to %s:", withdrawalAddressString), "^\\d+(\\.\\d+)?$", "Invalid amount")
 			testAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
 				return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
@@ -95,7 +96,7 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 				return err
 			}
 
-			if !cliutils.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString)) {
+			if !prompt.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -125,7 +126,7 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 	if canResponse.RPLStake.Cmp(common.Big0) == 1 {
 		fmt.Printf("%sNOTE: You currently have %.6f RPL staked. Withdrawing it will *no longer* send it to your primary withdrawal address. It will be sent to the new RPL withdrawal address instead. Please verify you have control over that address before confirming this!%s\n", colorYellow, eth.WeiToEth(canResponse.RPLStake), colorReset)
 	}
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -191,7 +192,7 @@ func confirmRPLWithdrawalAddress(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to confirm your node's address as the new RPL withdrawal address?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to confirm your node's address as the new RPL withdrawal address?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -1,4 +1,6 @@
-package cli
+package prompt
+
+// Creating this package to avoid import cycles that often happen when using the cli package
 
 import (
 	"bufio"
@@ -8,6 +10,12 @@ import (
 	"strconv"
 	"strings"
 )
+
+const colorReset string = "\033[0m"
+const colorRed string = "\033[31m"
+const colorGreen string = "\033[32m"
+const colorYellow string = "\033[33m"
+const colorLightBlue string = "\033[36m"
 
 // Prompt for user input
 func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {

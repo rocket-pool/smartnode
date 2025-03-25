@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -34,7 +35,7 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 		for i, member := range membersResponse.Members {
 			options[i] = fmt.Sprintf("%d: %s (%s), joined %s\n", i+1, member.ID, member.Address, time.Unix(int64(member.JoinedTime), 0))
 		}
-		selection, _ := cliutils.Select("Which member would you like to replace?", options)
+		selection, _ := prompt.Select("Which member would you like to replace?", options)
 		member := membersResponse.Members[selection]
 		oldID = member.ID
 		oldAddress = member.Address
@@ -59,7 +60,7 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	// Get the new ID
 	newID := c.String("new-id")
 	if newID == "" {
-		newID = cliutils.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
+		newID = prompt.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
 	}
 	newID, err = cliutils.ValidateDAOMemberID("id", newID)
 	if err != nil {
@@ -69,7 +70,7 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	// Get the new address
 	newAddressString := c.String("new-address")
 	if newAddressString == "" {
-		newAddressString = cliutils.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
+		newAddressString = prompt.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
 	}
 	newAddress, err := cliutils.ValidateAddress("address", newAddressString)
 	if err != nil {
@@ -96,7 +97,7 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex()))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex()))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

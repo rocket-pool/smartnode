@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -45,7 +45,7 @@ func generateRewardsTree(c *cli.Context) error {
 	if c.IsSet("index") {
 		index = c.Uint64("index")
 	} else {
-		indexString := cliutils.Prompt("Which interval would you like to generate the Merkle rewards tree for?", "^\\d+$", "Invalid interval. Please provide a number.")
+		indexString := prompt.Prompt("Which interval would you like to generate the Merkle rewards tree for?", "^\\d+$", "Invalid interval. Please provide a number.")
 		index, err = strconv.ParseUint(indexString, 0, 64)
 		if err != nil {
 			return fmt.Errorf("'%s' is not a valid interval: %w.\n", indexString, err)
@@ -65,7 +65,7 @@ func generateRewardsTree(c *cli.Context) error {
 	if canResponse.TreeFileExists {
 		if c.Bool("yes") {
 			fmt.Println("Overwriting existing rewards file.")
-		} else if !cliutils.Confirm("You already have a rewards file for this interval. Would you like to overwrite it?") {
+		} else if !prompt.Confirm("You already have a rewards file for this interval. Would you like to overwrite it?") {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -79,7 +79,7 @@ func generateRewardsTree(c *cli.Context) error {
 
 	fmt.Printf("Your request to generate the rewards tree for interval %d has been applied, and your `watchtower` container will begin the process during its next duty check (typically 5 minutes).\nYou can follow its progress with %s`rocketpool service logs watchtower`%s.\n\n", index, colorGreen, colorReset)
 
-	if c.Bool("yes") || cliutils.Confirm("Would you like to restart the watchtower container now, so it starts generating the file immediately?") {
+	if c.Bool("yes") || prompt.Confirm("Would you like to restart the watchtower container now, so it starts generating the file immediately?") {
 		container := fmt.Sprintf("%s_watchtower", cfg.Smartnode.ProjectName.Value.(string))
 		response, err := rp.RestartContainer(container)
 		if err != nil {

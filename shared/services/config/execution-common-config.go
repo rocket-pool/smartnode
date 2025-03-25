@@ -12,12 +12,11 @@ const (
 	ecOpenRpcPortsID string = "openRpcPorts"
 
 	// Defaults
-	defaultSuggestedBlockLimit uint64 = 30000000
-	defaultEcP2pPort           uint16 = 30303
-	defaultEcHttpPort          uint16 = 8545
-	defaultEcWsPort            uint16 = 8546
-	defaultEcEnginePort        uint16 = 8551
-	defaultOpenEcApiPort       string = string(config.RPC_Closed)
+	defaultEcP2pPort     uint16 = 30303
+	defaultEcHttpPort    uint16 = 8545
+	defaultEcWsPort      uint16 = 8546
+	defaultEcEnginePort  uint16 = 8551
+	defaultOpenEcApiPort string = string(config.RPC_Closed)
 )
 
 // Configuration for the Execution client
@@ -104,11 +103,11 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 		SuggestedBlockGasLimit: config.Parameter{
 			ID:                 "suggestedBlockGasLimit",
 			Name:               "Suggested Block Gas Limit",
-			Description:        "The block gas limit that should be used for locally built blocks.",
-			Type:               config.ParameterType_Uint,
-			Default:            map[config.Network]interface{}{config.Network_All: defaultSuggestedBlockLimit},
+			Description:        "The block gas limit that should be used for locally built blocks. Leave blank to follow the Execution Client's default.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
-			CanBeBlank:         false,
+			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
 

@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -41,7 +42,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		for {
-			indexSelection := cliutils.Prompt("Which members would you like to kick? Use a comma separated list (such as '1,2,3') to select multiple members.", "^\\d+(,\\d+)*$", "Invalid index selection")
+			indexSelection := prompt.Prompt("Which members would you like to kick? Use a comma separated list (such as '1,2,3') to select multiple members.", "^\\d+(,\\d+)*$", "Invalid index selection")
 			elements := strings.Split(indexSelection, ",")
 			allValid := true
 			indices := []uint64{}
@@ -117,7 +118,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex()))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex()))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -164,7 +165,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to propose kicking these members from the security council?\n%s", kickString))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to propose kicking these members from the security council?\n%s", kickString))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func defeatProposal(c *cli.Context, proposalID uint64, challengedIndex uint64) error {
@@ -47,7 +48,7 @@ func defeatProposal(c *cli.Context, proposalID uint64, challengedIndex uint64) e
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to defeat proposal %d?", proposalID))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to defeat proposal %d?", proposalID))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func initializeFeeDistributor(c *cli.Context) error {
@@ -47,7 +48,7 @@ func initializeFeeDistributor(c *cli.Context) error {
 	fmt.Printf("Your node's fee distributor contract will be created at address %s.\n", gasResponse.Distributor.Hex())
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to initialize your fee distributor contract?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to initialize your fee distributor contract?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -114,7 +115,7 @@ func distribute(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to distribute the ETH from your node's fee distributor?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to distribute the ETH from your node's fee distributor?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

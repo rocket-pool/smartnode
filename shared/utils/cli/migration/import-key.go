@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -21,7 +21,7 @@ func ImportKey(c *cli.Context, rp *rocketpool.Client, minipoolAddress common.Add
 
 	// Print a warning and prompt for confirmation of anti-slashing
 	fmt.Printf("%sWARNING:\nBefore doing this, you **MUST** do the following:\n1. Remove this key from your existing Validator Client used for solo staking\n2. Restart it so that it is no longer validating with that key\n3. Wait for 15 minutes so it has missed at least two attestations\nFailure to do this **will result in your validator being SLASHED**.%s\n\n", colorRed, colorReset)
-	if !cliutils.Confirm("Have you removed the key from your own Validator Client, restarted it, and waited long enough for your validator to miss at least two attestations?") {
+	if !prompt.Confirm("Have you removed the key from your own Validator Client, restarted it, and waited long enough for your validator to miss at least two attestations?") {
 		fmt.Println("Cancelled.")
 		return false
 	}
@@ -44,7 +44,7 @@ func ImportKey(c *cli.Context, rp *rocketpool.Client, minipoolAddress common.Add
 	if c.Bool("no-restart") {
 		return true
 	}
-	if c.Bool("yes") || cliutils.Confirm("Would you like to restart the Smartnode's Validator Client now so it loads your validator's key?") {
+	if c.Bool("yes") || prompt.Confirm("Would you like to restart the Smartnode's Validator Client now so it loads your validator's key?") {
 		// Restart the VC
 		fmt.Print("Restarting Validator Client... ")
 		_, err := rp.RestartVc()

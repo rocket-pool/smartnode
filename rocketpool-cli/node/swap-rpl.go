@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -53,12 +54,12 @@ func nodeSwapRpl(c *cli.Context) error {
 		entireAmount := status.AccountBalances.FixedSupplyRPL
 
 		// Prompt for entire amount
-		if cliutils.Confirm(fmt.Sprintf("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(entireAmount), 6))) {
+		if prompt.Confirm(fmt.Sprintf("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(entireAmount), 6))) {
 			amountWei = entireAmount
 		} else {
 
 			// Prompt for custom amount
-			inputAmount := cliutils.Prompt("Please enter an amount of old RPL to swap:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+			inputAmount := prompt.Prompt("Please enter an amount of old RPL to swap:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 			swapAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
 				return fmt.Errorf("Invalid swap amount '%s': %w", inputAmount, err)
@@ -101,7 +102,7 @@ func nodeSwapRpl(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || cliutils.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
+		if !(c.Bool("yes") || prompt.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -145,7 +146,7 @@ func nodeSwapRpl(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

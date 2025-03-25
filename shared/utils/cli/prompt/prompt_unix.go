@@ -1,7 +1,7 @@
 //go:build !windows
 // +build !windows
 
-package cli
+package prompt
 
 import (
 	"fmt"
