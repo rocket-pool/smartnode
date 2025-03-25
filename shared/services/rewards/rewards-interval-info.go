@@ -20,7 +20,7 @@ func (r *rewardsIntervalInfo) GetStartInterval(network cfgtypes.Network) (uint64
 		return r.mainnetStartInterval, nil
 	case cfgtypes.Network_Devnet:
 		return r.devnetStartInterval, nil
-	case cfgtypes.Network_Holesky:
+	case cfgtypes.Network_Testnet:
 		return r.holeskyStartInterval, nil
 	default:
 		return 0, fmt.Errorf("unknown network: %s", string(network))

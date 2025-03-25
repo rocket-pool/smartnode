@@ -101,7 +101,7 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: gethTagProd,
 				config.Network_Devnet:  gethTagTest,
-				config.Network_Holesky: gethTagTest,
+				config.Network_Testnet: gethTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,

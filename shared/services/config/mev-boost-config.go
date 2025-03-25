@@ -178,7 +178,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: mevBoostTagProd,
 				config.Network_Devnet:  mevBoostTagTest,
-				config.Network_Holesky: mevBoostTagTest,
+				config.Network_Testnet: mevBoostTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_MevBoost},
 			CanBeBlank:         false,
@@ -367,7 +367,7 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Flashbots is the developer of MEV-Boost, and one of the best-known and most trusted relays in the space.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net?id=rocketpool",
-				config.Network_Holesky: "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-holesky.flashbots.net?id=rocketpool",
+				config.Network_Testnet: "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-holesky.flashbots.net?id=rocketpool",
 				config.Network_Devnet:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@builder-relay-goerli.flashbots.net?id=rocketpool",
 			},
 			Regulated: true,
@@ -415,7 +415,7 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "The Aestus MEV-Boost Relay is an independent and non-censoring relay. It is committed to neutrality and the development of a healthy MEV-Boost ecosystem.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live?id=rocketpool",
-				config.Network_Holesky: "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@holesky.aestus.live?id=rocketpool",
+				config.Network_Testnet: "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@holesky.aestus.live?id=rocketpool",
 				config.Network_Devnet:  "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@goerli.aestus.live?id=rocketpool",
 			},
 			Regulated: false,
@@ -440,7 +440,7 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Titan Relay is a neutral, Rust-based MEV-Boost Relay optimized for low latency throughput, geographical distribution, and robustness. Select this to enable the \"filtering\" relay from Titan.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
-				config.Network_Holesky: "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@holesky.titanrelay.xyz",
+				config.Network_Testnet: "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@holesky.titanrelay.xyz",
 				config.Network_Devnet:  "",
 			},
 			Regulated: true,
@@ -481,7 +481,7 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 	holeskyRelays := []string{}
 	holeskyDescription := description + "\n\nRelays: "
 	for _, relay := range relays {
-		_, exists := relay.Urls[config.Network_Holesky]
+		_, exists := relay.Urls[config.Network_Testnet]
 		if !exists {
 			continue
 		}
@@ -502,7 +502,7 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 		OverwriteOnUpgrade: false,
 		DescriptionsByNetwork: map[config.Network]string{
 			config.Network_Mainnet: mainnetDescription,
-			config.Network_Holesky: holeskyDescription,
+			config.Network_Testnet: holeskyDescription,
 		},
 	}
 }

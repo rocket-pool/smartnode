@@ -34,8 +34,8 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	}
 
 	back := func() {
-		if wiz.md.Config.Smartnode.Network.Value == config.Network_Holesky || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
-			// Skip MEV for Holesky
+		if wiz.md.Config.Smartnode.Network.Value == config.Network_Testnet || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
+			// Skip MEV for testnet/devnet
 			wiz.metricsModal.show()
 		} else {
 			wiz.mevModeModal.show()

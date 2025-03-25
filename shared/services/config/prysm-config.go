@@ -108,7 +108,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: prysmBnProd,
 				config.Network_Devnet:  prysmBnTest,
-				config.Network_Holesky: prysmBnTest,
+				config.Network_Testnet: prysmBnTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         false,
@@ -123,7 +123,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: prysmVcProd,
 				config.Network_Devnet:  prysmVcTest,
-				config.Network_Holesky: prysmVcTest,
+				config.Network_Testnet: prysmVcTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,

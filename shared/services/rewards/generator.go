@@ -82,7 +82,7 @@ func GetRulesetVersion(network cfgtypes.Network, interval uint64) uint64 {
 	switch network {
 	case cfgtypes.Network_Mainnet:
 		return GetMainnetRulesetVersion(interval)
-	case cfgtypes.Network_Holesky:
+	case cfgtypes.Network_Testnet:
 		return GetHoleskyRulesetVersion(interval)
 	case cfgtypes.Network_Devnet:
 		return 10

@@ -37,7 +37,7 @@ func main() {
 	case "mainnet":
 		sn.Network.Value = cfgtypes.Network_Mainnet
 	case "holesky":
-		sn.Network.Value = cfgtypes.Network_Holesky
+		sn.Network.Value = cfgtypes.Network_Testnet
 	default:
 		fmt.Fprintf(os.Stderr, "Invalid network: %s\n", *networkFlag)
 		fmt.Fprintf(os.Stderr, "Valid networks are: mainnet, holesky\n")

@@ -418,115 +418,115 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
 			config.Network_Devnet:  "https://hoodi.etherscan.io/tx",
-			config.Network_Holesky: "https://holesky.etherscan.io/tx",
+			config.Network_Testnet: "https://holesky.etherscan.io/tx",
 		},
 
 		stakeUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://stake.rocketpool.net",
 			config.Network_Devnet:  "TBD",
-			config.Network_Holesky: "https://testnet.rocketpool.net",
+			config.Network_Testnet: "https://testnet.rocketpool.net",
 		},
 
 		chainID: map[config.Network]uint{
 			config.Network_Mainnet: 1,      // Mainnet
 			config.Network_Devnet:  560048, // Hoodi
-			config.Network_Holesky: 17000,  // Holesky
+			config.Network_Testnet: 17000,  // Holesky
 		},
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
 			config.Network_Devnet:  "", // TODO: Update this
-			config.Network_Holesky: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
+			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
 		rocketSignerRegistryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
 			config.Network_Devnet:  "", // TODO
-			config.Network_Holesky: "0x657FDE6B4764E26A81A323dbb79791A11B90dD91",
+			config.Network_Testnet: "0x657FDE6B4764E26A81A323dbb79791A11B90dD91",
 		},
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
 			config.Network_Devnet:  "", // TODO
-			config.Network_Holesky: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
+			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
 			config.Network_Devnet:  "", // TODO
-			config.Network_Holesky: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
+			config.Network_Testnet: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
 		v1_0_0_RewardsPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xA3a18348e6E2d3897B6f2671bb8c120e36554802",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		v1_0_0_ClaimNodeAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x899336A2a86053705E65dB61f52C686dcFaeF548",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		v1_0_0_ClaimTrustedNodeAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6af730deB0463b432433318dC8002C0A4e9315e8",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		v1_0_0_MinipoolManagerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6293B8abC1F36aFB22406Be5f96D893072A8cF3a",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		v1_1_0_NetworkPricesAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xd3f500F550F46e504A4D2153127B47e007e11166",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		v1_1_0_NodeStakingAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x0d8D8f8541B12A0e1194B7CC4b6D954b90AB82ec",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		v1_1_0_NodeDepositAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		v1_1_0_MinipoolQueueAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x5870dA524635D1310Dc0e6F256Ce331012C9C19E",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		v1_1_0_MinipoolFactoryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x54705f80D7C51Fcffd9C659ce3f3C9a7dCCf5788",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		v1_2_0_NetworkPricesAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x751826b107672360b764327631cC5764515fFC37",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "0x029d946F28F93399a5b0D09c879FC8c94E596AEb",
+			config.Network_Testnet: "",
 		},
 
 		v1_2_0_NetworkBalancesAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x07FCaBCbe4ff0d80c2b1eb42855C0131b6cba2F4",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8",
+			config.Network_Testnet: "0x9294Fc6F03c64Cc217f5BE8697EA3Ed2De77e2F8",
 		},
 
 		snapshotApiDomain: map[config.Network]string{
 			config.Network_Mainnet: "hub.snapshot.org",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "hub.snapshot.org",
+			config.Network_Testnet: "hub.snapshot.org",
 		},
 
 		previousRewardsPoolAddresses: map[config.Network][]common.Address{
@@ -535,7 +535,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
 			},
 			config.Network_Devnet: {},
-			config.Network_Holesky: {
+			config.Network_Testnet: {
 				common.HexToAddress("0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"),
 			},
 		},
@@ -543,79 +543,79 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		previousRocketDAOProtocolVerifier: map[config.Network][]common.Address{
 			config.Network_Mainnet: {},
 			config.Network_Devnet:  {},
-			config.Network_Holesky: {},
+			config.Network_Testnet: {},
 		},
 
 		optimismPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x12759f8Df234f8f2cDdb3d2Ed5604adF9ACCfc9F",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		polygonPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1029Ac2Be4e08516697093e2AFeC435057f3511",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		arbitrumPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x05330300f829AD3fC8f33838BC88CFC4093baD53",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		arbitrumPriceMessengerAddressV2: map[config.Network]string{
 			config.Network_Mainnet: "0x312FcFB03eC9B1Ea38CB7BFCd26ee7bC3b505aB1",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		zkSyncEraPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x6cf6CB29754aEBf88AF12089224429bD68b0b8c8",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		basePriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x64A5856869C06B0188C84A5F83d712bbAc03517d",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		scrollPriceMessengerAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x0f22dc9b9c03757d4676539203d7549c8f22c15c",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		scrollFeeEstimatorAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x0d7E906BD9cAFa154b048cFa766Cc1E54E39AF9B",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "",
 		},
 
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
 			config.Network_Devnet:  "", // TODO
-			config.Network_Holesky: "0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d",
+			config.Network_Testnet: "0x7bb10d2a3105ed5cc150c099a06cafe43d8aa15d",
 		},
 
 		multicallAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:  "", // TODO
-			config.Network_Holesky: "0x0540b786f03c9491f3a2ab4b0e3ae4ecd4f63ce7",
+			config.Network_Devnet:  "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7",
+			config.Network_Testnet: "0x0540b786f03c9491f3a2ab4b0e3ae4ecd4f63ce7",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
-			config.Network_Devnet:  "", // TODO
-			config.Network_Holesky: "0xfAa2e7C84eD801dd9D27Ac1ed957274530796140",
+			config.Network_Devnet:  "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce",
+			config.Network_Testnet: "0xfAa2e7C84eD801dd9D27Ac1ed957274530796140",
 		},
 
 		flashbotsProtectUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://rpc.flashbots.net/",
 			config.Network_Devnet:  "",
-			config.Network_Holesky: "",
+			config.Network_Testnet: "https://rpc-holesky.flashbots.net/",
 		},
 	}
 
@@ -964,7 +964,7 @@ func getNetworkOptions() []config.ParameterOption {
 		}, {
 			Name:        "Holesky Testnet",
 			Description: "This is the Holešky (Holešovice) test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to Mainnet.",
-			Value:       config.Network_Holesky,
+			Value:       config.Network_Testnet,
 		},
 	}
 
