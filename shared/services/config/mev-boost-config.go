@@ -478,18 +478,18 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 	mainnetDescription += strings.Join(mainnetRelays, ", ")
 
 	// Generate the Testnet description
-	holeskyRelays := []string{}
-	holeskyDescription := description + "\n\nRelays: "
+	testnetRelays := []string{}
+	testnetDescription := description + "\n\nRelays: "
 	for _, relay := range relays {
 		_, exists := relay.Urls[config.Network_Testnet]
 		if !exists {
 			continue
 		}
 		if relay.Regulated == regulated {
-			holeskyRelays = append(holeskyRelays, relay.Name)
+			testnetRelays = append(testnetRelays, relay.Name)
 		}
 	}
-	holeskyDescription += strings.Join(holeskyRelays, ", ")
+	testnetDescription += strings.Join(testnetRelays, ", ")
 
 	return config.Parameter{
 		ID:                 id,
@@ -502,7 +502,7 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 		OverwriteOnUpgrade: false,
 		DescriptionsByNetwork: map[config.Network]string{
 			config.Network_Mainnet: mainnetDescription,
-			config.Network_Testnet: holeskyDescription,
+			config.Network_Testnet: testnetDescription,
 		},
 	}
 }
