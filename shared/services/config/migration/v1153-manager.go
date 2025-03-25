@@ -2,8 +2,10 @@ package migration
 
 import "fmt"
 
+const previousGasLimitDefault = "36000000"
+
 func upgradeFromV1153(serializedConfig map[string]map[string]string) error {
-	// v1.15.3 had the max block gas default as 30M. We're changing the default to mean the SN will use the EC default.
+	// If the gas limit setting is 36M we're changing the default to mean the SN will use the EC default.
 
 	executionCommonSettings, exists := serializedConfig["executionCommon"]
 	if !exists {
@@ -15,12 +17,29 @@ func upgradeFromV1153(serializedConfig map[string]map[string]string) error {
 		return nil
 	}
 
-	// If using the previous or current defaults, change to the new one
-	if config == "30000000" || config == "36000000" {
+	// If using the current default, change to blank (to use the clients default)
+	if config == previousGasLimitDefault {
 		executionCommonSettings["suggestedBlockGasLimit"] = ""
 	}
 
 	serializedConfig["executionCommon"] = executionCommonSettings
+
+	consensusCommonSettings, exists := serializedConfig["consensusCommon"]
+	if !exists {
+		return fmt.Errorf("expected a section called `consensusCommon` but it didn't exist")
+	}
+
+	config, exists = consensusCommonSettings["suggestedBlockGasLimit"]
+	if !exists {
+		return nil
+	}
+
+	// If using the current default, change to blank (to use the clients default)
+	if config == previousGasLimitDefault {
+		consensusCommonSettings["suggestedBlockGasLimit"] = ""
+	}
+
+	serializedConfig["consensusCommon"] = consensusCommonSettings
 
 	return nil
 }
