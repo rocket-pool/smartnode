@@ -140,6 +140,7 @@ type Client interface {
 	GetBeaconBlockHeader(blockId string) (BeaconBlockHeader, bool, error)
 	GetBeaconHead() (BeaconHead, error)
 	GetBeaconState(slot uint64) (*eth2.BeaconStateDeneb, error)
+	GetBeaconBlockDeneb(slot uint64) (*eth2.SignedBeaconBlockDeneb, bool, error)
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
