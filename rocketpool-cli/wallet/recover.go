@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	 promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
+	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func recoverWallet(c *cli.Context) error {
