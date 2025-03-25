@@ -28,7 +28,7 @@ type ValidatorKey struct {
 }
 
 // Get the number of validator keys recorded in the wallet
-func (w *HDWallet) GetValidatorKeyCount() (uint, error) {
+func (w *hdWallet) GetValidatorKeyCount() (uint, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -41,7 +41,7 @@ func (w *HDWallet) GetValidatorKeyCount() (uint, error) {
 }
 
 // Get a validator key by index
-func (w *HDWallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error) {
+func (w *hdWallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -55,7 +55,7 @@ func (w *HDWallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, erro
 }
 
 // Get a validator key by public key
-func (w *HDWallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+func (w *hdWallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -68,7 +68,7 @@ func (w *HDWallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth
 }
 
 // Create a new validator key
-func (w *HDWallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
+func (w *hdWallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -97,7 +97,7 @@ func (w *HDWallet) CreateValidatorKey() (*eth2types.BLSPrivateKey, error) {
 }
 
 // Stores a validator key into all of the wallet's keystores
-func (w *HDWallet) StoreValidatorKey(key *eth2types.BLSPrivateKey, path string) error {
+func (w *hdWallet) StoreValidatorKey(key *eth2types.BLSPrivateKey, path string) error {
 
 	for name := range w.keystores {
 		// Update the keystore in the wallet - using an iterator variable only runs it on the local copy
@@ -112,7 +112,7 @@ func (w *HDWallet) StoreValidatorKey(key *eth2types.BLSPrivateKey, path string) 
 }
 
 // Loads a validator key from the wallet's keystores
-func (w *HDWallet) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+func (w *hdWallet) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
 
 	errors := []string{}
 	// Try loading the key from all of the keystores, caching errors but not breaking on them
@@ -137,7 +137,7 @@ func (w *HDWallet) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BL
 }
 
 // Deletes all of the keystore directories and persistent VC storage
-func (w *HDWallet) DeleteValidatorStores() error {
+func (w *hdWallet) DeleteValidatorStores() error {
 
 	for name := range w.keystores {
 		keystorePath := w.keystores[name].GetKeystoreDir()
@@ -152,7 +152,7 @@ func (w *HDWallet) DeleteValidatorStores() error {
 }
 
 // Returns the next validator key that will be generated without saving it
-func (w *HDWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
+func (w *hdWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -174,7 +174,7 @@ func (w *HDWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
 }
 
 // Recover a set of validator keys by their public key
-func (w *HDWallet) GetValidatorKeys(startIndex uint, length uint) ([]ValidatorKey, error) {
+func (w *hdWallet) GetValidatorKeys(startIndex uint, length uint) ([]ValidatorKey, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -201,7 +201,7 @@ func (w *HDWallet) GetValidatorKeys(startIndex uint, length uint) ([]ValidatorKe
 }
 
 // Save a validator key
-func (w *HDWallet) SaveValidatorKey(key ValidatorKey) error {
+func (w *hdWallet) SaveValidatorKey(key ValidatorKey) error {
 
 	// Update account index
 	if key.WalletIndex >= w.ws.NextAccount {
@@ -222,7 +222,7 @@ func (w *HDWallet) SaveValidatorKey(key ValidatorKey) error {
 }
 
 // Recover a validator key by public key
-func (w *HDWallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
+func (w *hdWallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -268,7 +268,7 @@ func (w *HDWallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startInde
 }
 
 // Test recovery of a validator key by public key
-func (w *HDWallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
+func (w *hdWallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -298,7 +298,7 @@ func (w *HDWallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, start
 }
 
 // Get a validator private key by index
-func (w *HDWallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, string, error) {
+func (w *hdWallet) getValidatorPrivateKey(index uint) (*eth2types.BLSPrivateKey, string, error) {
 
 	// Get derivation path
 	derivationPath := fmt.Sprintf(validator.ValidatorKeyPath, index)

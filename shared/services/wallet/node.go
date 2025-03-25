@@ -13,7 +13,7 @@ import (
 )
 
 // Get the node account
-func (w *HDWallet) GetNodeAccount() (accounts.Account, error) {
+func (w *hdWallet) GetNodeAccount() (accounts.Account, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -45,7 +45,7 @@ func (w *HDWallet) GetNodeAccount() (accounts.Account, error) {
 }
 
 // Get a transactor for the node account
-func (w *HDWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
+func (w *hdWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -69,7 +69,7 @@ func (w *HDWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
 }
 
 // Get the node account private key bytes
-func (w *HDWallet) GetNodePrivateKeyBytes() ([]byte, error) {
+func (w *hdWallet) GetNodePrivateKeyBytes() ([]byte, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -88,7 +88,7 @@ func (w *HDWallet) GetNodePrivateKeyBytes() ([]byte, error) {
 }
 
 // Get the node private key
-func (w *HDWallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
+func (w *hdWallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 
 	// Check for cached node key
 	if w.nodeKey != nil {
@@ -118,7 +118,7 @@ func (w *HDWallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 }
 
 // Get the derived key & derivation path for the node account at the index
-func (w *HDWallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
+func (w *hdWallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
 
 	// Get derivation path
 	if w.ws.DerivationPath == "" {
