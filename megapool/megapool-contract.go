@@ -351,12 +351,12 @@ func (mp *megapoolV1) RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, e
 }
 
 // Estimate the gas of Stake
-func (mp *megapoolV1) EstimateStakeGas(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof ValidatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorId, validatorSignature[:], depositDataRoot, validatorProof)
+func (mp *megapoolV1) EstimateStakeGas(validatorId uint32, validatorProof ValidatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorId, validatorProof)
 }
 
 // Progress the prelaunch megapool to staking
-func (mp *megapoolV1) Stake(validatorId uint32, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, validatorProof ValidatorProof, opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *megapoolV1) Stake(validatorId uint32, validatorProof ValidatorProof, opts *bind.TransactOpts) (common.Hash, error) {
 	// callData, err := mp.Contract.ABI.Pack("stake", validatorId, validatorSignature[:], depositDataRoot, validatorProof)
 	// if err != nil {
 	// 	return common.Hash{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
@@ -370,7 +370,7 @@ func (mp *megapoolV1) Stake(validatorId uint32, validatorSignature rptypes.Valid
 	// 	return common.Hash{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
 	// }
 
-	tx, err := mp.Contract.Transact(opts, "stake", validatorId, validatorSignature[:], depositDataRoot, validatorProof)
+	tx, err := mp.Contract.Transact(opts, "stake", validatorId, validatorProof)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error staking megapool %s: %w", mp.Address.Hex(), err)
 	}
