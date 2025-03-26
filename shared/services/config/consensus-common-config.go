@@ -71,7 +71,7 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 			ID:   CheckpointSyncUrlID,
 			Name: "Checkpoint Sync URL",
 			Description: "If you would like to instantly sync using an existing Beacon node, enter its URL.\n" +
-				"Example: https://checkpoint-sync.holesky.ethpandaops.io (for the Holesky Testnet).\n" +
+				"Example: https://checkpoint-sync.hoodi.ethpandaops.io (for the Hoodi Testnet).\n" +
 				"Leave this blank if you want to sync normally from the start of the chain.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultCheckpointSyncProvider},
