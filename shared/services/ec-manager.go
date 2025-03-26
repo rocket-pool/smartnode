@@ -378,8 +378,8 @@ func getNetworkNameFromId(networkId uint) string {
 	switch networkId {
 	case 1:
 		return "Ethereum Mainnet"
-	case 17000:
-		return "Holesky Testnet"
+	case 560048:
+		return "Hoodi Testnet"
 	default:
 		return "Unknown Network"
 	}

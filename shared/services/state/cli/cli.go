@@ -23,7 +23,7 @@ import (
 var bnFlag = flag.String("b", "http://localhost:5052", "The beacon node URL")
 var elFlag = flag.String("e", "http://localhost:8545", "The execution node URL")
 var slotFlag = flag.Uint64("slot", 0, "The slot number to get the state for")
-var networkFlag = flag.String("network", "mainnet", "The network to get the state for, i.e. 'mainnet' or 'holesky'")
+var networkFlag = flag.String("network", "mainnet", "The network to get the state for, i.e. 'mainnet' or 'testnet'")
 var prettyFlag = flag.Bool("p", false, "Pretty print the output")
 var inputFlag = flag.Bool("i", false, "Parse a network state from stdin instead of retrieving it from the network")
 var criticalDutiesSlotsFlag = flag.Bool("critical-duties-slots", false, "If passed, output a list of critical duties slots for the given state as if it were the final state in a 6300 epoch interval. This is outputted instead of the state json.")
@@ -36,11 +36,13 @@ func main() {
 	switch *networkFlag {
 	case "mainnet":
 		sn.Network.Value = cfgtypes.Network_Mainnet
-	case "holesky":
-		sn.Network.Value = cfgtypes.Network_Holesky
+	case "testnet":
+		sn.Network.Value = cfgtypes.Network_Testnet
+	case "devnet":
+		sn.Network.Value = cfgtypes.Network_Devnet
 	default:
 		fmt.Fprintf(os.Stderr, "Invalid network: %s\n", *networkFlag)
-		fmt.Fprintf(os.Stderr, "Valid networks are: mainnet, holesky\n")
+		fmt.Fprintf(os.Stderr, "Valid networks are: mainnet, testnet, devnet\n")
 		os.Exit(1)
 	}
 
