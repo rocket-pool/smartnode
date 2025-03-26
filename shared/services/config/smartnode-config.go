@@ -435,19 +435,19 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "", 
+			config.Network_Devnet:  "",
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
 		rocketSignerRegistryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
-			config.Network_Devnet:  "", 
+			config.Network_Devnet:  "",
 			config.Network_Testnet: "",
 		},
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "", 
+			config.Network_Devnet:  "",
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
