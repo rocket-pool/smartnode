@@ -24,10 +24,10 @@ type ValidatorProof struct {
 }
 
 type Withdrawal struct {
-	index                 *big.Int
-	validatorIndex        *big.Int
-	withdrawalCredentials [32]byte
-	amountInGwei          *big.Int
+	Index                 uint64
+	ValidatorIndex        *big.Int
+	WithdrawalCredentials [20]byte
+	AmountInGwei          uint64
 }
 
 type RewardSplit struct {
