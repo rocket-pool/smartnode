@@ -20,42 +20,42 @@ import (
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
-func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (types.ValidatorSignature, common.Hash, megapool.ValidatorProof, error) {
+func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, error) {
 	// Get validator private key
 	validatorKey, err := wallet.GetValidatorKeyByPubkey(validatorPubkey)
 	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		return megapool.ValidatorProof{}, err
 	}
 
 	withdrawalCredentials := CalculateMegapoolWithdrawalCredentials(megapoolAddress)
 
 	depositAmount := uint64(31e9) // 31 ETH in gwei
 
-	depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
+	depositData, _, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
 	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		return megapool.ValidatorProof{}, err
 	}
 	signature := types.BytesToValidatorSignature(depositData.Signature)
 
 	bc, err := GetBeaconClient(c)
 	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		return megapool.ValidatorProof{}, err
 	}
 
 	// Get the validator index on the beacon chain
 	validatorIndex, err := bc.GetValidatorIndex(validatorPubkey)
 	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		return megapool.ValidatorProof{}, err
 	}
 
 	validatorIndex64, err := strconv.ParseUint(validatorIndex, 10, 64)
 	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		return megapool.ValidatorProof{}, err
 	}
 
 	err = validateDepositInfo(eth2Config, uint64(depositAmount), validatorPubkey, withdrawalCredentials, signature)
 	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		return megapool.ValidatorProof{}, err
 	}
 
 	// Get the finalized block, requesting the next one until we have an execution payload
@@ -65,14 +65,14 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	for attempts := 0; attempts < maxAttempts; attempts++ {
 		block, _, err := bc.GetBeaconBlock(blockToRequest)
 		if err != nil {
-			return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+			return megapool.ValidatorProof{}, err
 		}
 
 		if block.HasExecutionPayload {
 			break
 		}
 		if attempts == maxAttempts-1 {
-			return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
+			return megapool.ValidatorProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
 		}
 		blockToRequest = fmt.Sprintf("%d", block.Slot+1)
 	}
@@ -80,12 +80,12 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	// Get the beacon state for that slot
 	beaconState, err := bc.GetBeaconState(block.Slot)
 	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		return megapool.ValidatorProof{}, err
 	}
 
 	proofBytes, err := beaconState.ValidatorCredentialsProof(validatorIndex64)
 	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		return megapool.ValidatorProof{}, err
 	}
 
 	// Convert [][]byte to [][32]byte
@@ -99,7 +99,7 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 		Witnesses:             proofWithFixedSize,
 	}
 
-	return signature, depositDataRoot, proof, err
+	return proof, err
 }
 
 func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (api.ValidatorWithdrawableEpochProof, error) {

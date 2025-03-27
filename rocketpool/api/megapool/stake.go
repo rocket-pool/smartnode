@@ -89,7 +89,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 		return nil, err
 	}
 
-	signature, depositDataRoot, proof, err := services.GetStakeValidatorInfo(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
+	proof, err := services.GetStakeValidatorInfo(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
 	if err != nil {
 		if strings.Contains(err.Error(), "index not found") {
 			response.CanStake = false
@@ -104,7 +104,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateStakeGas(uint32(validatorId), signature, depositDataRoot, proof, opts)
+	gasInfo, err := mp.EstimateStakeGas(uint32(validatorId), proof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 		return nil, err
 	}
 
-	signature, depositDataRoot, proof, err := services.GetStakeValidatorInfo(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
+	proof, err := services.GetStakeValidatorInfo(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 	}
 
 	// Stake
-	hash, err := mp.Stake(uint32(validatorId), signature, depositDataRoot, proof, opts)
+	hash, err := mp.Stake(uint32(validatorId), proof, opts)
 	if err != nil {
 		return nil, err
 	}
