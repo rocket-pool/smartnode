@@ -63,6 +63,9 @@ type Wallet interface {
 	String() (string, error)
 	TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error)
 	TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error
+	MasqueradeAsAddress(address common.Address) error
+	RestoreAddressToWallet() error
+	GetAddress() (common.Address, bool)
 }
 
 // hdWallet
@@ -134,11 +137,6 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 	// Return
 	return w, nil
 
-}
-
-// Load the node address
-func (w *hdWallet) LoadAddress() (common.Address, bool, error) {
-	return w.am.LoadAddress()
 }
 
 // Gets the node address, if one is loaded
