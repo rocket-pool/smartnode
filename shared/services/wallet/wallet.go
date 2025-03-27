@@ -65,7 +65,7 @@ type Wallet interface {
 	TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error
 	MasqueradeAsAddress(address common.Address) error
 	RestoreAddressToWallet() error
-	GetAddress() (common.Address, bool)
+	GetAddress() common.Address
 }
 
 // hdWallet
@@ -140,7 +140,7 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 }
 
 // Gets the node address, if one is loaded
-func (w *hdWallet) GetAddress() (common.Address, bool) {
+func (w *hdWallet) GetAddress() common.Address {
 	return w.am.GetAddress()
 }
 
