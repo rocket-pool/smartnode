@@ -49,8 +49,8 @@ func (m *AddressManager) LoadAddress() (common.Address, bool, error) {
 }
 
 // Get the cached address
-func (m *AddressManager) GetAddress() (common.Address, bool) {
-	return m.address, m.isLoaded
+func (m *AddressManager) GetAddress() common.Address {
+	return m.address
 }
 
 // Sets the node address without saving it to disk
