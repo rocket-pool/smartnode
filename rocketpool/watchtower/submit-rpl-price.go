@@ -381,8 +381,12 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 
 	// Check if the node has submitted prices for the latest block
 	if lastSubmissionBlock != 0 {
+		// Create context with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+		defer cancel()
+
 		// Get the lastSubmissionBlock timestamp
-		lastSubmissionBlockHeader, err = t.rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(lastSubmissionBlock)))
+		lastSubmissionBlockHeader, err = t.rp.Client.HeaderByNumber(ctx, big.NewInt(int64(lastSubmissionBlock)))
 		if err != nil {
 			t.log.Printlnf("Error getting the latest submission block header: %s", err.Error())
 			return err
@@ -392,22 +396,23 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			t.log.Printlnf("Error checking if node has submitted prices for block %d: %s", lastSubmissionBlock, err.Error())
 			return err
 		}
+		if hasSubmittedPastBlock {
+			// If the node participated in consensus, find the next submission target
+			var targetBlockHeader *types.Header
+			_, nextSubmissionTime, targetBlockHeader, err = utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
+			if err != nil {
+				return err
+			}
+			targetBlockNumber = targetBlockHeader.Number.Uint64()
+		}
 	}
 
-	if !hasSubmittedPastBlock {
+	if targetBlockNumber == 0 {
 		// If the node didn't participate in consensus, use the last submission block as the target block as a health check
 		t.log.Printlnf("Node has not participated on the consensus for block %d, using it as the target block.", lastSubmissionBlock)
 		targetBlockNumber = lastSubmissionBlock
 		nextSubmissionTime = time.Unix(int64(lastSubmissionBlockHeader.Time), 0)
 
-	} else {
-		// If it did participate, find the next submission target
-		var targetBlockHeader *types.Header
-		_, nextSubmissionTime, targetBlockHeader, err = utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
-		if err != nil {
-			return err
-		}
-		targetBlockNumber = targetBlockHeader.Number.Uint64()
 	}
 
 	// Check if the process is already running
