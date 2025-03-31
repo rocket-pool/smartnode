@@ -198,7 +198,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 			t.generatorImpl = info.generator
 			foundGenerator = true
 		}
-		if !foundApproximator && startInterval < t.index {
+		if !foundApproximator && (startInterval < t.index || t.index == 0) {
 			t.approximatorImpl = info.generator
 			foundApproximator = true
 		}
