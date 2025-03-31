@@ -7,9 +7,11 @@ import (
 	"math/big"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/accounts/abi"
+	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -367,15 +369,51 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	lastSubmissionBlock := state.NetworkDetails.PricesBlock
 
 	referenceTimestamp := t.cfg.Smartnode.PriceBalanceSubmissionReferenceTimestamp.Value.(int64)
+
 	// Get the duration in seconds for the interval between submissions
 	submissionIntervalInSeconds := int64(state.NetworkDetails.PricesSubmissionFrequency)
 	eth2Config := state.BeaconConfig
 
-	_, nextSubmissionTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
-	if err != nil {
-		return err
+	var hasSubmittedPastBlock bool
+	var nextSubmissionTime time.Time
+	var targetBlockNumber uint64
+	var lastSubmissionBlockHeader *types.Header
+
+	// Check if the node has submitted prices for the latest block
+	if lastSubmissionBlock != 0 {
+		// Create context with timeout
+		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
+		defer cancel()
+
+		// Get the lastSubmissionBlock timestamp
+		lastSubmissionBlockHeader, err = t.rp.Client.HeaderByNumber(ctx, big.NewInt(int64(lastSubmissionBlock)))
+		if err != nil {
+			t.log.Printlnf("Error getting the latest submission block header: %s", err.Error())
+			return err
+		}
+		hasSubmittedPastBlock, err = t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, lastSubmissionBlock, lastSubmissionBlockHeader.Time, state.NetworkDetails.RplPrice)
+		if err != nil {
+			t.log.Printlnf("Error checking if node has submitted prices for block %d: %s", lastSubmissionBlock, err.Error())
+			return err
+		}
 	}
-	targetBlockNumber := targetBlockHeader.Number.Uint64()
+	if hasSubmittedPastBlock || lastSubmissionBlock == 0 {
+		// If the node participated in consensus, find the next submission target
+		var targetBlockHeader *types.Header
+		_, nextSubmissionTime, targetBlockHeader, err = utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
+		if err != nil {
+			return err
+		}
+		targetBlockNumber = targetBlockHeader.Number.Uint64()
+	}
+
+	if targetBlockNumber == 0 {
+		// If the node didn't participate in consensus, use the last submission block as the target block as a health check
+		t.log.Printlnf("Node has not participated on the consensus for block %d, using it as the target block.", lastSubmissionBlock)
+		targetBlockNumber = lastSubmissionBlock
+		nextSubmissionTime = time.Unix(int64(lastSubmissionBlockHeader.Time), 0)
+
+	}
 
 	// Check if the process is already running
 	t.lock.Lock()

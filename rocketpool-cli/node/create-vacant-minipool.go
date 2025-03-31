@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/migration"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -65,7 +66,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Post a warning about fee distribution
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -85,7 +86,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 		amount = depositAmount
 
 	} else {
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: Your new minipool will use an 8 ETH deposit (this will become your share of the balance, and the remainder will become the pool stakers' share):%s\nWould you like to continue?", colorYellow, colorReset))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: Your new minipool will use an 8 ETH deposit (this will become your share of the balance, and the remainder will become the pool stakers' share):%s\nWould you like to continue?", colorYellow, colorReset))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -207,7 +208,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
 		"You are about to create a new, vacant minipool with a minimum possible commission rate of %f%%. Once created, you will be able to migrate your existing validator into this minipool.\n"+
 			"%sAre you sure you want to do this?%s",
 		minNodeFee*100,
@@ -242,7 +243,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	} else if !c.Bool("yes") {
 		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, the Smartnode will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.")
 		fmt.Println()
-		if cliutils.Confirm("Would you like to import your key and automatically migrate your withdrawal credentials?") {
+		if prompt.Confirm("Would you like to import your key and automatically migrate your withdrawal credentials?") {
 			mnemonic = wallet.PromptMnemonic()
 		}
 	}

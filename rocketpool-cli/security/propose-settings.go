@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func proposeSettingAuctionIsCreateLotEnabled(c *cli.Context, value bool) error {
@@ -98,7 +99,7 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -20,6 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	addontypes "github.com/rocket-pool/smartnode/shared/types/addons"
 	"github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"gopkg.in/yaml.v2"
 )
 
@@ -48,6 +49,7 @@ const defaultNodeMetricsPort uint16 = 9102
 const defaultExporterMetricsPort uint16 = 9103
 const defaultWatchtowerMetricsPort uint16 = 9104
 const defaultEcMetricsPort uint16 = 9105
+const oldBlockGasLimit = "30000000"
 
 // The master configuration struct
 type RocketPoolConfig struct {
@@ -1376,6 +1378,24 @@ func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 // The title for the config
 func (cfg *RocketPoolConfig) GetConfigTitle() string {
 	return cfg.Title
+}
+
+func (cfg *RocketPoolConfig) ConfirmUpdateSuggestedSettings() {
+
+	// If using the old consensus block gas limit, ask the user if they want to update it
+	if cfg.ConsensusCommon.SuggestedBlockGasLimit.Value == oldBlockGasLimit {
+		if prompt.Confirm("Your consensus block gas limit setting is currently '" + oldBlockGasLimit + "'. The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?") {
+			cfg.ConsensusCommon.SuggestedBlockGasLimit.Value = ""
+		}
+	}
+
+	// If using the old execution block gas limit, ask the user if they want to update it
+	if cfg.ExecutionCommon.SuggestedBlockGasLimit.Value == oldBlockGasLimit {
+		if prompt.Confirm("Your execution block gas limit setting is currently '" + oldBlockGasLimit + "'. The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?") {
+			cfg.ExecutionCommon.SuggestedBlockGasLimit.Value = ""
+		}
+	}
+
 }
 
 // Update the default settings for all overwrite-on-upgrade parameters

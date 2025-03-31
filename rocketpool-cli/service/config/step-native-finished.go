@@ -33,8 +33,8 @@ func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *cho
 	}
 
 	back := func() {
-		if wiz.md.Config.Smartnode.Network.Value == config.Network_Holesky || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
-			// Skip MEV for Holesky
+		if wiz.md.Config.Smartnode.Network.Value == config.Network_Testnet || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
+			// Skip MEV for Testnet/Devnet
 			wiz.nativeMetricsModal.show()
 		} else {
 			wiz.nativeMevModal.show()

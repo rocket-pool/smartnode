@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func pdaoSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
@@ -50,7 +51,7 @@ func pdaoSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want %s to represent your node in Rocket Pool on-chain governance proposals?", addressString))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want %s to represent your node in Rocket Pool on-chain governance proposals?", addressString))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

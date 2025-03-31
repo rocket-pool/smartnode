@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func joinSmoothingPool(c *cli.Context) error {
@@ -58,7 +59,7 @@ func joinSmoothingPool(c *cli.Context) error {
 	fmt.Printf("%sNOTE: This process will restart your node's validator client.\nYou may miss an attestation if you are currently scheduled to produce one.%s\n\n", colorYellow, colorReset)
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to join the Smoothing Pool?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to join the Smoothing Pool?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -127,7 +128,7 @@ func leaveSmoothingPool(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to leave the Smoothing Pool?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to leave the Smoothing Pool?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

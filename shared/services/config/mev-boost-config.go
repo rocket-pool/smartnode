@@ -10,7 +10,7 @@ import (
 // Constants
 const (
 	mevBoostTagProd             string = "flashbots/mev-boost:1.8"
-	mevBoostTagTest             string = "flashbots/mev-boost:1.9rc2"
+	mevBoostTagTest             string = "flashbots/mev-boost:1.9rc3"
 	mevDocsUrl                  string = "https://docs.rocketpool.net/guides/node/mev.html"
 	RegulatedRelayDescription   string = "Select this to enable the relays that comply with government regulations (e.g. OFAC sanctions), "
 	UnregulatedRelayDescription string = "Select this to enable the relays that do not follow any sanctions lists (do not censor transactions), "
@@ -178,7 +178,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: mevBoostTagProd,
 				config.Network_Devnet:  mevBoostTagTest,
-				config.Network_Holesky: mevBoostTagTest,
+				config.Network_Testnet: mevBoostTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_MevBoost},
 			CanBeBlank:         false,
@@ -367,8 +367,8 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Flashbots is the developer of MEV-Boost, and one of the best-known and most trusted relays in the space.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xac6e77dfe25ecd6110b8e780608cce0dab71fdd5ebea22a16c0205200f2f8e2e3ad3b71d3499c54ad14d6c21b41a37ae@boost-relay.flashbots.net?id=rocketpool",
-				config.Network_Holesky: "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-holesky.flashbots.net?id=rocketpool",
-				config.Network_Devnet:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@builder-relay-goerli.flashbots.net?id=rocketpool",
+				config.Network_Testnet: "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool",
+				config.Network_Devnet:  "https://0xafa4c6985aa049fb79dd37010438cfebeb0f2bd42b115b89dd678dab0670c1de38da0c4e9138c9290a398ecd9a0b3110@boost-relay-hoodi.flashbots.net?id=rocketpool",
 			},
 			Regulated: true,
 		},
@@ -380,7 +380,8 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Select this to enable the relay from bloXroute (formerly) known as \"Max Profit\". (Both bloXroute relays propagate the same transactions...)",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com?id=rocketpool",
-				config.Network_Devnet:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.goerli.blxrbdn.com?id=rocketpool",
+				config.Network_Testnet: "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.hoodi.blxrbdn.com?id=rocketpool",
+				config.Network_Devnet:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.hoodi.blxrbdn.com?id=rocketpool",
 			},
 			Regulated: true,
 		},
@@ -403,6 +404,7 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "The ultra sound relay is a credibly-neutral and permissionless relay — a public good from the ultrasound.money team.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money?id=rocketpool",
+				config.Network_Testnet: "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
 				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
 			},
 			Regulated: false,
@@ -415,8 +417,8 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "The Aestus MEV-Boost Relay is an independent and non-censoring relay. It is committed to neutrality and the development of a healthy MEV-Boost ecosystem.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xa15b52576bcbf1072f4a011c0f99f9fb6c66f3e1ff321f11f461d15e31b1cb359caa092c71bbded0bae5b5ea401aab7e@aestus.live?id=rocketpool",
-				config.Network_Holesky: "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@holesky.aestus.live?id=rocketpool",
-				config.Network_Devnet:  "https://0xab78bf8c781c58078c3beb5710c57940874dd96aef2835e7742c866b4c7c0406754376c2c8285a36c630346aa5c5f833@goerli.aestus.live?id=rocketpool",
+				config.Network_Testnet: "https://0x98f0ef62f00780cf8eb06701a7d22725b9437d4768bb19b363e882ae87129945ec206ec2dc16933f31d983f8225772b6@hoodi.aestus.live?id=rocketpool",
+				config.Network_Devnet:  "https://0x98f0ef62f00780cf8eb06701a7d22725b9437d4768bb19b363e882ae87129945ec206ec2dc16933f31d983f8225772b6@hoodi.aestus.live?id=rocketpool",
 			},
 			Regulated: false,
 		},
@@ -428,7 +430,8 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Titan Relay is a neutral, Rust-based MEV-Boost Relay optimized for low latency throughput, geographical distribution, and robustness. Select this to enable the \"non-filtering\" relay from Titan.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@global.titanrelay.xyz",
-				config.Network_Devnet:  "",
+				config.Network_Testnet: "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
+				config.Network_Devnet:  "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
 			},
 			Regulated: false,
 		},
@@ -440,8 +443,8 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Titan Relay is a neutral, Rust-based MEV-Boost Relay optimized for low latency throughput, geographical distribution, and robustness. Select this to enable the \"filtering\" relay from Titan.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
-				config.Network_Holesky: "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@holesky.titanrelay.xyz",
-				config.Network_Devnet:  "",
+				config.Network_Testnet: "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
+				config.Network_Devnet:  "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
 			},
 			Regulated: true,
 		},
@@ -478,18 +481,18 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 	mainnetDescription += strings.Join(mainnetRelays, ", ")
 
 	// Generate the Testnet description
-	holeskyRelays := []string{}
-	holeskyDescription := description + "\n\nRelays: "
+	testnetRelays := []string{}
+	testnetDescription := description + "\n\nRelays: "
 	for _, relay := range relays {
-		_, exists := relay.Urls[config.Network_Holesky]
+		_, exists := relay.Urls[config.Network_Testnet]
 		if !exists {
 			continue
 		}
 		if relay.Regulated == regulated {
-			holeskyRelays = append(holeskyRelays, relay.Name)
+			testnetRelays = append(testnetRelays, relay.Name)
 		}
 	}
-	holeskyDescription += strings.Join(holeskyRelays, ", ")
+	testnetDescription += strings.Join(testnetRelays, ", ")
 
 	return config.Parameter{
 		ID:                 id,
@@ -502,7 +505,7 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 		OverwriteOnUpgrade: false,
 		DescriptionsByNetwork: map[config.Network]string{
 			config.Network_Mainnet: mainnetDescription,
-			config.Network_Holesky: holeskyDescription,
+			config.Network_Testnet: testnetDescription,
 		},
 	}
 }

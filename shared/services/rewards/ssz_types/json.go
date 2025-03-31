@@ -12,7 +12,7 @@ import (
 
 var networkMap = map[string]Network{
 	"mainnet": 1,
-	"holesky": 17000,
+	"testnet": 560048,
 }
 
 // internal use only

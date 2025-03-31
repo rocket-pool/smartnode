@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func processQueue(c *cli.Context) error {
@@ -63,7 +64,7 @@ func processQueue(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Do you accept this gas fee?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Do you accept this gas fee?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

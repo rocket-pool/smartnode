@@ -13,6 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -55,7 +56,7 @@ func refundMinipools(c *cli.Context) error {
 		for mi, minipool := range refundableMinipools {
 			options[mi+1] = fmt.Sprintf("%s (%.6f ETH to claim)", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Node.RefundBalance), 6))
 		}
-		selected, _ := cliutils.Select("Please select a minipool to refund ETH from:", options)
+		selected, _ := prompt.Select("Please select a minipool to refund ETH from:", options)
 
 		// Get minipools
 		if selected == 0 {
@@ -109,7 +110,7 @@ func refundMinipools(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to refund %d minipools?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to refund %d minipools?", len(selectedMinipools)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

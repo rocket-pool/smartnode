@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func registerNode(c *cli.Context) error {
@@ -50,7 +51,7 @@ func registerNode(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to register this node?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to register this node?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

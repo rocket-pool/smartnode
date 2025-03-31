@@ -6,8 +6,8 @@ import (
 )
 
 const (
-	tekuTagTest         string = "consensys/teku:25.2.0"
-	tekuTagProd         string = "consensys/teku:25.2.0"
+	tekuTagTest         string = "consensys/teku:25.3.0"
+	tekuTagProd         string = "consensys/teku:25.3.0"
 	defaultTekuMaxPeers uint16 = 100
 )
 
@@ -88,7 +88,7 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: tekuTagProd,
 				config.Network_Devnet:  tekuTagTest,
-				config.Network_Holesky: tekuTagTest,
+				config.Network_Testnet: tekuTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,

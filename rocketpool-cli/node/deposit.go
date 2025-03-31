@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -72,14 +73,14 @@ func nodeDeposit(c *cli.Context) error {
 	fmt.Println()
 
 	// Post a warning about ETH only minipools
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: We're excited to announce that newly launched Saturn 0 minipools will feature a commission structure ranging from 5%% to 14%%.\n\n- 5%% base commission\n- 5%% dynamic commission boost until Saturn 1\n- Up to 4%% boost for staked RPL valued at ≥10%% of borrowed ETH\n\n- Smoothing pool participation is required to benefit from dynamic commission\n- Dynamic commission starts when reward tree v10 is released (currently in development)\n- Dynamic commission ends soon after Saturn 1 is released\n\nNewly launched minipools with no RPL staked receive 10%% commission while newly launched minipools with ≥10%% of borrowed ETH staked receive 14%% commission.\n\nTo learn more about Saturn 0 and how it affects newly launched minipools, visit: https://rpips.rocketpool.net/tokenomics-explainers/005-rework-prelude%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: We’re excited to announce that newly launched Saturn 0 minipools will feature a commission structure ranging from 5%% to 14%%.\n\n- 5%% base commission\n- 5%% dynamic commission boost until the 5th reward snapshot after Saturn 1\n- Up to 4%% boost for staked RPL valued at ≥10%% of borrowed ETH\n- Smoothing pool participation is required to benefit from dynamic commission\n\nNewly launched minipools with no RPL staked receive 10%% commission while newly launched minipools with ≥10%% of borrowed ETH staked receive 14%% commission.\n\nTo learn more about Saturn 0 and how it affects newly launched minipools, visit: https://rpips.rocketpool.net/tokenomics-explainers/005-rework-prelude%s\nWould you like to continue?", colorYellow, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Post a final warning about the dynamic comission boost
 	if !smoothie.NodeRegistered {
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sWARNING: Your node is not opted into the smoothing pool, which means newly launched minipools will not benefit from the 5-9%% dynamic commission boost. You can join the smoothing pool using: 'rocketpool node join-smoothing-pool'.\n%sAre you sure you'd like to continue without opting into the smoothing pool?", colorRed, colorReset))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sWARNING: Your node is not opted into the smoothing pool, which means newly launched minipools will not benefit from the 5-9%% dynamic commission boost. You can join the smoothing pool using: 'rocketpool node join-smoothing-pool'.\n%sAre you sure you'd like to continue without opting into the smoothing pool?", colorRed, colorReset))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -102,7 +103,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Post a warning about fee distribution
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: By creating a new minipool, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -118,7 +119,7 @@ func nodeDeposit(c *cli.Context) error {
 		}
 		amount = depositAmount
 	} else {
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to make an 8 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: You are about to make an 8 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -229,7 +230,7 @@ func nodeDeposit(c *cli.Context) error {
 		}
 	}
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Would you like to continue?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Would you like to continue?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -267,7 +268,7 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
 		"You are about to deposit %.6f ETH to create a minipool with a minimum possible commission rate of %f%%.\n"+
 			"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this minipool and retrieving your capital cannot be done until your minipool has been *active* on the Beacon Chain for 256 epochs (approx. 27 hours).%s\n",
 		math.RoundDown(eth.WeiToEth(amountWei), 6),

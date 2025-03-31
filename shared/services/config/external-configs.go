@@ -194,7 +194,7 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: lighthouseTagPortableProd,
 				config.Network_Devnet:  lighthouseTagPortableTest,
-				config.Network_Holesky: lighthouseTagPortableTest,
+				config.Network_Testnet: lighthouseTagPortableTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
@@ -261,7 +261,7 @@ func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: lodestarTagProd,
 				config.Network_Devnet:  lodestarTagTest,
-				config.Network_Holesky: lodestarTagTest,
+				config.Network_Testnet: lodestarTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
@@ -329,7 +329,7 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: nimbusVcTagProd,
 				config.Network_Devnet:  nimbusVcTagTest,
-				config.Network_Holesky: nimbusVcTagTest,
+				config.Network_Testnet: nimbusVcTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
@@ -407,7 +407,7 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: prysmVcProd,
 				config.Network_Devnet:  prysmVcTest,
-				config.Network_Holesky: prysmVcTest,
+				config.Network_Testnet: prysmVcTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
@@ -474,7 +474,7 @@ func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: tekuTagProd,
 				config.Network_Devnet:  tekuTagTest,
-				config.Network_Holesky: tekuTagTest,
+				config.Network_Testnet: tekuTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,

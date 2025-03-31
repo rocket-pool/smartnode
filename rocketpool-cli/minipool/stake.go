@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 func stakeMinipools(c *cli.Context) error {
@@ -53,7 +54,7 @@ func stakeMinipools(c *cli.Context) error {
 		for mi, minipool := range stakeableMinipools {
 			options[mi+1] = fmt.Sprintf("%s (%s until dissolved)", minipool.Address.Hex(), minipool.TimeUntilDissolve)
 		}
-		selected, _ := cliutils.Select("Please select a minipool to stake:", options)
+		selected, _ := prompt.Select("Please select a minipool to stake:", options)
 
 		// Get minipools
 		if selected == 0 {
@@ -113,7 +114,7 @@ func stakeMinipools(c *cli.Context) error {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake %d minipools?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake %d minipools?", len(selectedMinipools)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

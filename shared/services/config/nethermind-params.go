@@ -125,7 +125,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Name:               "Prune threshold (MB)",
 			Description:        "When the volume free space (in MB) hits this level, Nethermind will automatically start full pruning to reclaim disk space.",
 			Type:               config.ParameterType_Uint,
-			Default:            map[config.Network]interface{}{config.Network_Mainnet: uint64(375809), config.Network_Holesky: uint64(51200), config.Network_Devnet: uint64(51200)},
+			Default:            map[config.Network]interface{}{config.Network_Mainnet: uint64(375809), config.Network_Testnet: uint64(51200), config.Network_Devnet: uint64(51200)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -172,7 +172,7 @@ func NewNethermindConfig(cfg *RocketPoolConfig) *NethermindConfig {
 			Default: map[config.Network]interface{}{
 				config.Network_Mainnet: nethermindTagProd,
 				config.Network_Devnet:  nethermindTagTest,
-				config.Network_Holesky: nethermindTagTest,
+				config.Network_Testnet: nethermindTagTest,
 			},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
 			CanBeBlank:         false,

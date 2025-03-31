@@ -71,7 +71,7 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 			ID:   CheckpointSyncUrlID,
 			Name: "Checkpoint Sync URL",
 			Description: "If you would like to instantly sync using an existing Beacon node, enter its URL.\n" +
-				"Example: https://checkpoint-sync.holesky.ethpandaops.io (for the Holesky Testnet).\n" +
+				"Example: https://checkpoint-sync.hoodi.ethpandaops.io (for the Hoodi Testnet).\n" +
 				"Leave this blank if you want to sync normally from the start of the chain.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultCheckpointSyncProvider},
@@ -83,11 +83,11 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 		SuggestedBlockGasLimit: config.Parameter{
 			ID:                 "suggestedBlockGasLimit",
 			Name:               "Suggested Block Gas Limit",
-			Description:        "The block gas limit that should be used for externally built blocks.",
-			Type:               config.ParameterType_Uint,
-			Default:            map[config.Network]interface{}{config.Network_All: defaultSuggestedBlockLimit},
+			Description:        "The block gas limit that should be used for externally built blocks. Leave blank to use the Consensus Client default.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Validator},
-			CanBeBlank:         false,
+			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
 

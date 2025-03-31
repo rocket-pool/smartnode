@@ -23,19 +23,13 @@ const (
 // Get the max fee for watchtower transactions
 func GetWatchtowerMaxFee(cfg *config.RocketPoolConfig) float64 {
 	setting := cfg.Smartnode.WatchtowerMaxFeeOverride.Value.(float64)
-	if setting < MinWatchtowerMaxFee {
-		return MinWatchtowerMaxFee
-	}
-	return setting
+	return max(MinWatchtowerMaxFee, setting)
 }
 
 // Get the priority fee for watchtower transactions
 func GetWatchtowerPrioFee(cfg *config.RocketPoolConfig) float64 {
 	setting := cfg.Smartnode.WatchtowerPrioFeeOverride.Value.(float64)
-	if setting < MinWatchtowerPriorityFee {
-		return MinWatchtowerPriorityFee
-	}
-	return setting
+	return max(MinWatchtowerPriorityFee, setting)
 }
 
 func FindLastBlockWithExecutionPayload(bc beacon.Client, slotNumber uint64) (beacon.BeaconBlock, error) {

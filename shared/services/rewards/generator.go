@@ -52,10 +52,8 @@ const (
 	MainnetV10Interval uint64 = 30
 	// Devnet intervals
 
-	// Holesky intervals
-	HoleskyV8Interval  uint64 = 93
-	HoleskyV9Interval  uint64 = 276
-	HoleskyV10Interval uint64 = 277
+	// Testnet intervals
+	TestnetV10Interval uint64 = 0
 )
 
 func GetMainnetRulesetVersion(interval uint64) uint64 {
@@ -68,22 +66,12 @@ func GetMainnetRulesetVersion(interval uint64) uint64 {
 	return 8
 }
 
-func GetHoleskyRulesetVersion(interval uint64) uint64 {
-	if interval >= HoleskyV10Interval {
-		return 10
-	}
-	if interval >= HoleskyV9Interval {
-		return 9
-	}
-	return 8
-}
-
 func GetRulesetVersion(network cfgtypes.Network, interval uint64) uint64 {
 	switch network {
 	case cfgtypes.Network_Mainnet:
 		return GetMainnetRulesetVersion(interval)
-	case cfgtypes.Network_Holesky:
-		return GetHoleskyRulesetVersion(interval)
+	case cfgtypes.Network_Testnet:
+		return 10
 	case cfgtypes.Network_Devnet:
 		return 10
 	default:
@@ -154,19 +142,19 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 		{
 			rewardsRulesetVersion: 10,
 			mainnetStartInterval:  MainnetV10Interval,
-			holeskyStartInterval:  HoleskyV10Interval,
+			testnetStartInterval:  TestnetV10Interval,
 			generator:             v10_generator,
 		},
 		{
 			rewardsRulesetVersion: 9,
 			mainnetStartInterval:  MainnetV9Interval,
-			holeskyStartInterval:  HoleskyV9Interval,
+			testnetStartInterval:  0,
 			generator:             v9_generator,
 		},
 		{
 			rewardsRulesetVersion: 8,
 			mainnetStartInterval:  MainnetV8Interval,
-			holeskyStartInterval:  HoleskyV8Interval,
+			testnetStartInterval:  0,
 			generator:             v8_generator,
 		},
 	}
@@ -198,8 +186,6 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 	})
 
 	// The first ruleset whose startInterval is at most t.index is the one to use
-	// for treegen, and for some reason, the first ruleset whose start interval is less than t.index
-	// is the one to use for approximations
 	for _, info := range rewardsIntervalInfos {
 
 		startInterval, err := info.GetStartInterval(network)
@@ -210,7 +196,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 			t.generatorImpl = info.generator
 			foundGenerator = true
 		}
-		if !foundApproximator && startInterval < t.index {
+		if !foundApproximator && startInterval <= t.index {
 			t.approximatorImpl = info.generator
 			foundApproximator = true
 		}

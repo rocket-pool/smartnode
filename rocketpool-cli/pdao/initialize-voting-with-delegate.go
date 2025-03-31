@@ -6,6 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -20,7 +21,7 @@ func initializeVotingWithDelegate(c *cli.Context) error {
 	// Get the address
 	delegateAddressString := c.String("address")
 	if delegateAddressString == "" {
-		delegateAddressString = cliutils.Prompt("Please enter the delegate's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
+		delegateAddressString = prompt.Prompt("Please enter the delegate's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
 	}
 	delegateAddress, err := cliutils.ValidateAddress("delegateAddress", delegateAddressString)
 	if err != nil {
@@ -44,7 +45,7 @@ func initializeVotingWithDelegate(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to initialize voting?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to initialize voting?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

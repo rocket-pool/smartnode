@@ -1,7 +1,7 @@
 //go:build windows
 // +build windows
 
-package cli
+package prompt
 
 // Prompt for password input
 func PromptPassword(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {
