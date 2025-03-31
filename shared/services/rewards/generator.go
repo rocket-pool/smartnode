@@ -186,8 +186,6 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 	})
 
 	// The first ruleset whose startInterval is at most t.index is the one to use
-	// for treegen, and for some reason, the first ruleset whose start interval is less than t.index
-	// is the one to use for approximations
 	for _, info := range rewardsIntervalInfos {
 
 		startInterval, err := info.GetStartInterval(network)
@@ -198,7 +196,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 			t.generatorImpl = info.generator
 			foundGenerator = true
 		}
-		if !foundApproximator && (startInterval < t.index || t.index == 0) {
+		if !foundApproximator && startInterval <= t.index {
 			t.approximatorImpl = info.generator
 			foundApproximator = true
 		}
