@@ -396,15 +396,15 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			t.log.Printlnf("Error checking if node has submitted prices for block %d: %s", lastSubmissionBlock, err.Error())
 			return err
 		}
-		if hasSubmittedPastBlock {
-			// If the node participated in consensus, find the next submission target
-			var targetBlockHeader *types.Header
-			_, nextSubmissionTime, targetBlockHeader, err = utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
-			if err != nil {
-				return err
-			}
-			targetBlockNumber = targetBlockHeader.Number.Uint64()
+	}
+	if hasSubmittedPastBlock || lastSubmissionBlock == 0 {
+		// If the node participated in consensus, find the next submission target
+		var targetBlockHeader *types.Header
+		_, nextSubmissionTime, targetBlockHeader, err = utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
+		if err != nil {
+			return err
 		}
+		targetBlockNumber = targetBlockHeader.Number.Uint64()
 	}
 
 	if targetBlockNumber == 0 {
