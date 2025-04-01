@@ -5,6 +5,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -18,7 +19,7 @@ func masquerade(c *cli.Context) error {
 	// Get address
 	addressString := c.String("address")
 	if addressString == "" {
-		addressString = cliutils.Prompt("Please enter an address to masquerade as:", "^0x[0-9a-fA-F]{40}$", "Invalid address")
+		addressString = prompt.Prompt("Please enter an address to masquerade as:", "^0x[0-9a-fA-F]{40}$", "Invalid address")
 	}
 
 	address, err := cliutils.ValidateAddress("address", addressString)
@@ -27,7 +28,7 @@ func masquerade(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to masquerade as %s%s%s?", colorBlue, addressString, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to masquerade as %s%s%s?", colorBlue, addressString, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
