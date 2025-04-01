@@ -70,3 +70,13 @@ func (m *AddressManager) SetAndSaveAddress(newAddress common.Address) error {
 	}
 	return nil
 }
+
+func (m *AddressManager) DeleteAddressFile() error {
+	err := os.Remove(m.path)
+	if err != nil {
+		return fmt.Errorf("error deleting address file [%s]: %w", m.path, err)
+	}
+	m.address = common.Address{}
+	m.isLoaded = false
+	return nil
+}

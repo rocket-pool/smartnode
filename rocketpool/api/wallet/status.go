@@ -35,7 +35,7 @@ func getStatus(c *cli.Context) (*api.WalletStatusResponse, error) {
 			return nil, err
 		}
 		response.AccountAddress = nodeAccount.Address
-		response.NodeAddress = w.GetAddress()
+		response.MasqueradeAddress = w.GetAddress()
 	}
 
 	// Return response
