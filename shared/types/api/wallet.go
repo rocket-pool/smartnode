@@ -23,7 +23,7 @@ type WalletStatusResponse struct {
 	PasswordSet       bool           `json:"passwordSet"`
 	WalletInitialized bool           `json:"walletInitialized"`
 	AccountAddress    common.Address `json:"accountAddress"`
-	MasqueradeAddress common.Address `json:"masqueradeAddress"`
+	NodeAddress       common.Address `json:"nodeAddress"`
 	HasAddress        bool           `json:"hasAddress"`
 }
 
