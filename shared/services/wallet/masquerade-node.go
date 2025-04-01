@@ -17,30 +17,12 @@ import (
 // Get the node account
 func (w *masqueradeWallet) GetNodeAccount() (accounts.Account, error) {
 
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return accounts.Account{}, errors.New("Wallet is not initialized")
-	}
-
-	// Get private key
-	privateKey, path, err := w.getNodePrivateKey()
-	if err != nil {
-		return accounts.Account{}, err
-	}
-
-	// Get public key
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return accounts.Account{}, errors.New("Could not get node public key")
-	}
-
 	// Create & return account
 	return accounts.Account{
-		Address: crypto.PubkeyToAddress(*publicKeyECDSA),
+		Address: w.am.GetAddress(),
 		URL: accounts.URL{
 			Scheme: "",
-			Path:   path,
+			Path:   "",
 		},
 	}, nil
 
