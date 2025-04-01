@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -34,7 +34,7 @@ func restoreAddress(c *cli.Context) error {
 	fmt.Printf("Your node wallet is %s%s%s. If you restore it, you will no longer be masquerading as %s%s%s.\n\n", colorBlue, status.AccountAddress.Hex(), colorReset, colorBlue, status.NodeAddress, colorReset)
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to end your masquerade and restore your node address to your wallet address?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to end your masquerade and restore your node address to your wallet address?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
