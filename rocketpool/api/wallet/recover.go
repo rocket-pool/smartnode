@@ -128,7 +128,7 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 	for i := uint(0); i < findIterations; i++ {
 		for j := 0; j < len(paths); j++ {
 			derivationPath := paths[j]
-			recoveredWallet, err := wallet.NewWallet("", uint(w.GetChainID().Uint64()), nil, nil, 0, nil, nil)
+			recoveredWallet, err := wallet.NewWallet("", "", uint(w.GetChainID().Uint64()), nil, nil, 0, nil, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error generating new wallet: %w", err)
 			}

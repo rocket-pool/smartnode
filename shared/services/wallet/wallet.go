@@ -113,24 +113,48 @@ type walletStore struct {
 }
 
 // Create new wallet
-func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager, addressManager *AddressManager) (Wallet, error) {
+func NewWallet(addressPath string, walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager, addressManager *AddressManager) (Wallet, error) {
 
-	// Initialize wallet
-	w := &hdWallet{
-		walletPath:     walletPath,
-		pm:             passwordManager,
-		am:             addressManager,
-		encryptor:      eth2ks.New(),
-		chainID:        big.NewInt(int64(chainId)),
-		validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
-		keystores:      map[string]keystore.Keystore{},
-		maxFee:         maxFee,
-		maxPriorityFee: maxPriorityFee,
-		gasLimit:       gasLimit,
+	// Check if the address file exists
+	_, err := os.Stat(addressPath)
+	masquerading := !os.IsNotExist(err)
+
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("error checking address file path: %w", err)
+	}
+
+	// Initialize Wallet
+	var w Wallet
+	if masquerading {
+		w = &masqueradeWallet{
+			walletPath:     walletPath,
+			pm:             passwordManager,
+			am:             addressManager,
+			encryptor:      eth2ks.New(),
+			chainID:        big.NewInt(int64(chainId)),
+			validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
+			keystores:      map[string]keystore.Keystore{},
+			maxFee:         maxFee,
+			maxPriorityFee: maxPriorityFee,
+			gasLimit:       gasLimit,
+		}
+	} else {
+		w = &hdWallet{
+			walletPath:     walletPath,
+			pm:             passwordManager,
+			am:             addressManager,
+			encryptor:      eth2ks.New(),
+			chainID:        big.NewInt(int64(chainId)),
+			validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
+			keystores:      map[string]keystore.Keystore{},
+			maxFee:         maxFee,
+			maxPriorityFee: maxPriorityFee,
+			gasLimit:       gasLimit,
+		}
 	}
 
 	// Load & decrypt wallet store
-	if _, err := w.loadStore(); err != nil {
+	if err := w.Reload(); err != nil {
 		return nil, err
 	}
 

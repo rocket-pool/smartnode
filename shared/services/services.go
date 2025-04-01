@@ -195,7 +195,7 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 
 		chainId := cfg.Smartnode.GetChainID()
 
-		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm, am)
+		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetNodeAddressPath()), os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm, am)
 		if err != nil {
 			return
 		}
