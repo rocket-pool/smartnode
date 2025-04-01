@@ -25,13 +25,13 @@ func restoreAddress(c *cli.Context) error {
 		return nil
 	}
 
-	// Compare wallet address with node address
-	if status.AccountAddress == status.NodeAddress {
+	// Compare wallet address with masquerade address
+	if status.AccountAddress == status.MasqueradeAddress {
 		fmt.Println("Your node address is set to your wallet address; you are not currently masquerading.")
 		return nil
 	}
 
-	fmt.Printf("Your node wallet is %s%s%s. If you restore it, you will no longer be masquerading as %s%s%s.\n\n", colorBlue, status.AccountAddress.Hex(), colorReset, colorBlue, status.NodeAddress, colorReset)
+	fmt.Printf("Your node wallet is %s%s%s. If you restore it, you will no longer be masquerading as %s%s%s.\n\n", colorBlue, status.AccountAddress.Hex(), colorReset, colorBlue, status.MasqueradeAddress, colorReset)
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to end your masquerade and restore your node address to your wallet address?")) {

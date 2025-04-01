@@ -73,12 +73,7 @@ func (w *masqueradeWallet) RestoreAddressToWallet() error {
 		return errors.New("wallet is not loaded")
 	}
 
-	wallet, err := w.GetNodeAccount()
-	if err != nil {
-		return fmt.Errorf("error getting wallet address: %w", err)
-	}
-
-	return w.masqueradeImpl(wallet.Address)
+	return w.am.DeleteAddressFile()
 }
 
 // Gets the wallet's chain ID
