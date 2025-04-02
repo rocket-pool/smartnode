@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -75,13 +76,13 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		}
 
 		// Post a warning about fee distribution
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new validator, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: By creating a new validator, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	*/
 
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: You are about to create a new megapool validator with a 4 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: You are about to create a new megapool validator with a 4 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -134,7 +135,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 			fmt.Printf("You have %d express tickets available.", expressTicketCount)
 			fmt.Println()
 			// Prompt for confirmation
-			if c.Bool("yes") || cliutils.Confirm("Would you like to use an express ticket?") {
+			if c.Bool("yes") || prompt.Confirm("Would you like to use an express ticket?") {
 				useExpressTicket = true
 			}
 		}
@@ -185,7 +186,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		}
 	}
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Would you like to continue?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Would you like to continue?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -219,7 +220,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf(
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
 		"You are about to deposit %.6f ETH to create a new megapool validator.\n"+
 			"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this validator and retrieving your capital cannot be done until the validator has been *active* on the Beacon Chain for 256 epochs (approx. 27 hours).%s\n",
 		math.RoundDown(eth.WeiToEth(amountWei), 6),

@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -54,7 +55,7 @@ func stake(c *cli.Context) error {
 			for vi, v := range validatorsInPrestake {
 				options[vi] = fmt.Sprintf("Pubkey: 0x%s (Last ETH assignment: %s)", v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
 			}
-			selected, _ := cliutils.Select("Please select a validator to stake:", options)
+			selected, _ := prompt.Select("Please select a validator to stake:", options)
 
 			// Get validators
 			validatorId = uint64(validatorsInPrestake[selected].ValidatorId)
@@ -65,7 +66,7 @@ func stake(c *cli.Context) error {
 		}
 
 		// Warning reg the time necessary to build the proof
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("The stake operation will construct a beacon state proof that the deposit for validator ID %d was correct. This will take several seconds to finish.\nDo you want to continue?", validatorId))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("The stake operation will construct a beacon state proof that the deposit for validator ID %d was correct. This will take several seconds to finish.\nDo you want to continue?", validatorId))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -93,7 +94,7 @@ func stake(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake validator id %d", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake validator id %d", validatorId))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
