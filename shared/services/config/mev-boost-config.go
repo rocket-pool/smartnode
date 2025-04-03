@@ -380,8 +380,8 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Select this to enable the relay from bloXroute (formerly) known as \"Max Profit\". (Both bloXroute relays propagate the same transactions...)",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8b5d2e73e2a3a55c6c87b8b6eb92e0149a125c852751db1422fa951e42a09b82c142c3ea98d0d9930b056a3bc9896b8f@bloxroute.max-profit.blxrbdn.com?id=rocketpool",
-				config.Network_Testnet: "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.hoodi.blxrbdn.com?id=rocketpool",
-				config.Network_Devnet:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.max-profit.builder.hoodi.blxrbdn.com?id=rocketpool",
+				config.Network_Testnet: "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.hoodi.blxrbdn.com?id=rocketpool",
+				config.Network_Devnet:  "https://0x821f2a65afb70e7f2e820a925a9b4c80a159620582c1766b1b09729fec178b11ea22abb3a51f07b288be815a1a2ff516@bloxroute.hoodi.blxrbdn.com?id=rocketpool",
 			},
 			Regulated: true,
 		},
