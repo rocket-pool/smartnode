@@ -127,16 +127,11 @@ func NewWallet(addressPath string, walletPath string, chainId uint, maxFee *big.
 	var w Wallet
 	if masquerading {
 		w = &masqueradeWallet{
-			walletPath:     walletPath,
-			pm:             passwordManager,
-			am:             addressManager,
-			encryptor:      eth2ks.New(),
-			chainID:        big.NewInt(int64(chainId)),
-			validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
-			keystores:      map[string]keystore.Keystore{},
-			maxFee:         maxFee,
-			maxPriorityFee: maxPriorityFee,
-			gasLimit:       gasLimit,
+			walletPath: walletPath,
+			pm:         passwordManager,
+			am:         addressManager,
+			encryptor:  eth2ks.New(),
+			chainID:    big.NewInt(int64(chainId)),
 		}
 	} else {
 		w = &hdWallet{

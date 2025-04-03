@@ -1,7 +1,6 @@
 package wallet
 
 import (
-	"context"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
@@ -9,10 +8,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/crypto"
 )
-
-//TODO receivers that should be inaccessible while masquerading should return an error
 
 // Get the node account
 func (w *masqueradeWallet) GetNodeAccount() (accounts.Account, error) {
@@ -30,44 +26,13 @@ func (w *masqueradeWallet) GetNodeAccount() (accounts.Account, error) {
 
 // Get a transactor for the node account
 func (w *masqueradeWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
-	}
-
-	// Get private key
-	privateKey, _, err := w.getNodePrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
-	// Create & return transactor
-	transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, w.chainID)
-	transactor.GasFeeCap = w.maxFee
-	transactor.GasTipCap = w.maxPriorityFee
-	transactor.GasLimit = w.gasLimit
-	transactor.Context = context.Background()
-	return transactor, err
+	return nil, errors.New("The node is currently masquerading. Restore the node wallet using 'rocketpool wallet restore-address' to submit transactions")
 
 }
 
 // Get the node account private key bytes
 func (w *masqueradeWallet) GetNodePrivateKeyBytes() ([]byte, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
-	}
-
-	// Get private key
-	privateKey, _, err := w.getNodePrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
-	// Return private key bytes
-	return crypto.FromECDSA(privateKey), nil
+	return nil, ErrIsMasquerading
 
 }
 
