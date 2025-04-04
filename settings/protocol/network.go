@@ -17,20 +17,21 @@ import (
 
 // Config
 const (
-	NetworkSettingsContractName         string = "rocketDAOProtocolSettingsNetwork"
-	NodeConsensusThresholdSettingPath   string = "network.consensus.threshold"
-	SubmitBalancesEnabledSettingPath    string = "network.submit.balances.enabled"
-	SubmitBalancesFrequencySettingPath  string = "network.submit.balances.frequency"
-	SubmitPricesEnabledSettingPath      string = "network.submit.prices.enabled"
-	SubmitPricesFrequencySettingPath    string = "network.submit.prices.frequency"
-	MinimumNodeFeeSettingPath           string = "network.node.fee.minimum"
-	TargetNodeFeeSettingPath            string = "network.node.fee.target"
-	MaximumNodeFeeSettingPath           string = "network.node.fee.maximum"
-	NodeFeeDemandRangeSettingPath       string = "network.node.fee.demand.range"
-	TargetRethCollateralRateSettingPath string = "network.reth.collateral.target"
-	NetworkPenaltyThresholdSettingPath  string = "network.penalty.threshold"
-	NetworkPenaltyPerRateSettingPath    string = "network.penalty.per.rate"
-	SubmitRewardsEnabledSettingPath     string = "network.submit.rewards.enabled"
+	NetworkSettingsContractName            string = "rocketDAOProtocolSettingsNetwork"
+	NodeConsensusThresholdSettingPath      string = "network.consensus.threshold"
+	SubmitBalancesEnabledSettingPath       string = "network.submit.balances.enabled"
+	SubmitBalancesFrequencySettingPath     string = "network.submit.balances.frequency"
+	SubmitPricesEnabledSettingPath         string = "network.submit.prices.enabled"
+	SubmitPricesFrequencySettingPath       string = "network.submit.prices.frequency"
+	MinimumNodeFeeSettingPath              string = "network.node.fee.minimum"
+	TargetNodeFeeSettingPath               string = "network.node.fee.target"
+	MaximumNodeFeeSettingPath              string = "network.node.fee.maximum"
+	NodeFeeDemandRangeSettingPath          string = "network.node.fee.demand.range"
+	NodeComissionShareSecurityCouncilAdder string = "network.node.commission.share.security.council.adder"
+	TargetRethCollateralRateSettingPath    string = "network.reth.collateral.target"
+	NetworkPenaltyThresholdSettingPath     string = "network.penalty.threshold"
+	NetworkPenaltyPerRateSettingPath       string = "network.penalty.per.rate"
+	SubmitRewardsEnabledSettingPath        string = "network.submit.rewards.enabled"
 )
 
 // The threshold of trusted nodes that must reach consensus on oracle data to commit it

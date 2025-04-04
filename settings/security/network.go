@@ -2,6 +2,7 @@ package security
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -29,4 +30,11 @@ func ProposeSubmitRewardsEnabled(rp *rocketpool.RocketPool, value bool, opts *bi
 }
 func EstimateProposeSubmitRewardsEnabledGas(rp *rocketpool.RocketPool, value bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return security.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", psettings.SubmitRewardsEnabledSettingPath), networkNamespace, psettings.SubmitRewardsEnabledSettingPath, value, opts)
+}
+
+func ProposeNodeComissionShareSecurityCouncilAdder(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return security.ProposeSetUint(rp, fmt.Sprintf("set %s", psettings.NodeComissionShareSecurityCouncilAdder), networkNamespace, psettings.NodeComissionShareSecurityCouncilAdder, value, opts)
+}
+func EstimateProposeMaximumNodeFeeGas(rp *rocketpool.RocketPool, value *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return security.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", psettings.NodeComissionShareSecurityCouncilAdder), networkNamespace, psettings.NodeComissionShareSecurityCouncilAdder, value, opts)
 }
