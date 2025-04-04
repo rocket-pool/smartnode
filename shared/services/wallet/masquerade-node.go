@@ -1,6 +1,7 @@
 package wallet
 
 import (
+	"context"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
@@ -26,8 +27,33 @@ func (w *masqueradeWallet) GetNodeAccount() (accounts.Account, error) {
 
 // Get a transactor for the node account
 func (w *masqueradeWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
-	return nil, errors.New("The node is currently masquerading. Restore the node wallet using 'rocketpool wallet restore-address' to submit transactions")
 
+	// Check wallet is initialized
+	if !w.IsInitialized() {
+		return nil, errors.New("Wallet is not initialized")
+	}
+
+	// Get private key
+	privateKey, _, err := w.getNodePrivateKey()
+	if err != nil {
+		return nil, err
+	}
+
+	// Masqueraded account
+	account, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Create & return transactor
+	transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, w.chainID)
+	transactor.GasFeeCap = w.maxFee
+	transactor.GasTipCap = w.maxPriorityFee
+	transactor.GasLimit = w.gasLimit
+	transactor.Context = context.Background()
+	transactor.NoSend = true
+	transactor.From = account.Address
+	return transactor, err
 }
 
 // Get the node account private key bytes
