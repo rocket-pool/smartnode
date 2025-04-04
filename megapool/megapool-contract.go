@@ -326,6 +326,20 @@ func (mp *megapoolV1) RepayDebt(opts *bind.TransactOpts) (common.Hash, error) {
 	return tx.Hash(), nil
 }
 
+// Estimate the gas required to claim a megapool refund
+func (mp *megapoolV1) EstimateClaimRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "claim")
+}
+
+// Claim megapool rewards that were distributed but not yet claimed
+func (mp *megapoolV1) ClaimRefund(opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "claim")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error claiming megapool refund %s: %w", mp.Address.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get the expected withdrawal credentials for any validator within this megapool
 func (mp *megapoolV1) GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, error) {
 	withdrawalCredentials := new(common.Hash)
