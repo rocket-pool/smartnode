@@ -41,7 +41,7 @@ func getStatus(c *cli.Context) (*api.MegapoolStatusResponse, error) {
 		return nil, err
 	}
 
-	details, err := GetNodeMegapoolDetails(rp, bc, nodeAccount.Address)
+	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
@@ -87,7 +87,7 @@ func calculateRewards(c *cli.Context, amount *big.Int) (*api.MegapoolRewardSplit
 	}
 
 	// Calculate the rewards split for a given amount
-	response, err = CalculateRewards(rp, amount, nodeAccount.Address)
+	response, err = services.CalculateRewards(rp, amount, nodeAccount.Address)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting rewards split for amount %s: %w", amount, err)
 	}

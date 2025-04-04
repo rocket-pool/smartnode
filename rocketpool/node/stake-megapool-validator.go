@@ -9,7 +9,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	mp_api "github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -146,7 +145,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := mp_api.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount))
+	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount))
 	if err != nil {
 		return err
 	}

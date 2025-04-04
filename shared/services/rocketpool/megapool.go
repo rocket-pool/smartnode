@@ -27,6 +27,38 @@ func (c *Client) MegapoolStatus() (api.MegapoolStatusResponse, error) {
 }
 
 // Check whether the node can repay megapool debt
+func (c *Client) CanClaimMegapoolRefund() (api.CanClaimRefundResponse, error) {
+	responseBytes, err := c.callAPI("megapool can-claim-refund")
+	if err != nil {
+		return api.CanClaimRefundResponse{}, fmt.Errorf("Could not get can claim refund status: %w", err)
+	}
+	var response api.CanClaimRefundResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanClaimRefundResponse{}, fmt.Errorf("Could not decode can claim refund response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanClaimRefundResponse{}, fmt.Errorf("Could not get can claim refund status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Repay megapool debt
+func (c *Client) ClaimMegapoolRefund() (api.ClaimRefundResponse, error) {
+	responseBytes, err := c.callAPI("megapool claim-refund")
+	if err != nil {
+		return api.ClaimRefundResponse{}, fmt.Errorf("Could not claim refund: %w", err)
+	}
+	var response api.ClaimRefundResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ClaimRefundResponse{}, fmt.Errorf("Could not decode claim refund response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ClaimRefundResponse{}, fmt.Errorf("Could not get claim refund status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can repay megapool debt
 func (c *Client) CanRepayDebt(amountWei *big.Int) (api.CanRepayDebtResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-repay-debt %s", amountWei.String()))
 	if err != nil {

@@ -150,6 +150,41 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-claim-refund",
+				Usage:     "Check if we can claim a megapool refund",
+				UsageText: "rocketpool api megapool can-claim-refund",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canClaimRefund(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "claim-refund",
+				Aliases:   []string{"cr"},
+				Usage:     "Claim a megapool refund",
+				UsageText: "rocketpool api megapool claim-refund",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(claimRefund(c))
+					return nil
+
+				},
+			},
+			{
 				Name:      "can-stake",
 				Usage:     "Check if we can stake a megapool validator",
 				UsageText: "rocketpool api megapool can-stake validator-id",
