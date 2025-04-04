@@ -38,6 +38,8 @@ type Megapool interface {
 	AssignFunds(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error)
 	EstimateDissolveValidatorGas(validatorId uint32, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	DissolveValidator(validatorId uint32, opts *bind.TransactOpts) (common.Hash, error)
+	EstimateClaimRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	ClaimRefund(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateRepayDebtGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	RepayDebt(opts *bind.TransactOpts) (common.Hash, error)
 	GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, error)
