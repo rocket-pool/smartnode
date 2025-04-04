@@ -41,6 +41,11 @@ type masqueradeWallet struct {
 	// Node key cache
 	nodeKey     *ecdsa.PrivateKey
 	nodeKeyPath string
+
+	// Desired gas price & limit from config
+	maxFee         *big.Int
+	maxPriorityFee *big.Int
+	gasLimit       uint64
 }
 
 // Gets the derived wallet address, if one is loaded
