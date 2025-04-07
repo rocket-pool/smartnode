@@ -23,7 +23,7 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *colle
 	if err != nil {
 		return err
 	}
-	w, err := services.GetWallet(c)
+	w, err := services.GetHdWallet(c)
 	if err != nil {
 		return err
 	}

@@ -48,7 +48,7 @@ func newPromoteMinipools(c *cli.Context, logger log.ColorLogger) (*promoteMinipo
 	if err != nil {
 		return nil, err
 	}
-	w, err := services.GetWallet(c)
+	w, err := services.GetHdWallet(c)
 	if err != nil {
 		return nil, err
 	}

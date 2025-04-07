@@ -39,7 +39,7 @@ func newManageFeeRecipient(c *cli.Context, logger log.ColorLogger) (*manageFeeRe
 	if err != nil {
 		return nil, err
 	}
-	w, err := services.GetWallet(c)
+	w, err := services.GetHdWallet(c)
 	if err != nil {
 		return nil, err
 	}
