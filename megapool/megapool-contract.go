@@ -326,6 +326,20 @@ func (mp *megapoolV1) RepayDebt(opts *bind.TransactOpts) (common.Hash, error) {
 	return tx.Hash(), nil
 }
 
+// Estimate the gas required to reduce a megapool bond
+func (mp *megapoolV1) EstimateReduceBondGas(amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "reduceBond", amount)
+}
+
+// If the megapool is overbonded, reduce the bond by the specified amount
+func (mp *megapoolV1) ReduceBond(amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "reduceBond", amount)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error reducing the megapool bond %s: %w", mp.Address.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
 // Estimate the gas required to claim a megapool refund
 func (mp *megapoolV1) EstimateClaimRefundGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "claim")

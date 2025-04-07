@@ -42,6 +42,8 @@ type Megapool interface {
 	ClaimRefund(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateRepayDebtGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	RepayDebt(opts *bind.TransactOpts) (common.Hash, error)
+	EstimateReduceBondGas(amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	ReduceBond(amount *big.Int, opts *bind.TransactOpts) (common.Hash, error)
 	GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, error)
 	EstimateRequestUnstakeRPL(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, error)
