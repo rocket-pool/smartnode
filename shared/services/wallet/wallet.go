@@ -126,29 +126,32 @@ func NewWallet(addressPath string, walletPath string, chainId uint, maxFee *big.
 	// Initialize Wallet
 	var w Wallet
 	if masquerading {
-		w = &masqueradeWallet{
-			walletPath:     walletPath,
-			pm:             passwordManager,
-			am:             addressManager,
-			encryptor:      eth2ks.New(),
-			chainID:        big.NewInt(int64(chainId)),
-			maxFee:         maxFee,
-			maxPriorityFee: maxPriorityFee,
-			gasLimit:       gasLimit,
-		}
+		w, err = NewMasqueradeWallet(walletPath, chainId, maxFee, maxPriorityFee, gasLimit, passwordManager, addressManager)
 	} else {
-		w = &hdWallet{
-			walletPath:     walletPath,
-			pm:             passwordManager,
-			am:             addressManager,
-			encryptor:      eth2ks.New(),
-			chainID:        big.NewInt(int64(chainId)),
-			validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
-			keystores:      map[string]keystore.Keystore{},
-			maxFee:         maxFee,
-			maxPriorityFee: maxPriorityFee,
-			gasLimit:       gasLimit,
-		}
+		w, err = NewHdWallet(walletPath, chainId, maxFee, maxPriorityFee, gasLimit, passwordManager, addressManager)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Return
+	return w, nil
+}
+
+// Create new hdWallet
+func NewHdWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager, addressManager *AddressManager) (Wallet, error) {
+	// Initialize wallet
+	w := &hdWallet{
+		walletPath:     walletPath,
+		pm:             passwordManager,
+		am:             addressManager,
+		encryptor:      eth2ks.New(),
+		chainID:        big.NewInt(int64(chainId)),
+		validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
+		keystores:      map[string]keystore.Keystore{},
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
+		gasLimit:       gasLimit,
 	}
 
 	// Load & decrypt wallet store
@@ -158,7 +161,29 @@ func NewWallet(addressPath string, walletPath string, chainId uint, maxFee *big.
 
 	// Return
 	return w, nil
+}
 
+// Create new masqueradeWallet
+func NewMasqueradeWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager, addressManager *AddressManager) (Wallet, error) {
+	// Initialize wallet
+	w := &masqueradeWallet{
+		walletPath:     walletPath,
+		pm:             passwordManager,
+		am:             addressManager,
+		encryptor:      eth2ks.New(),
+		chainID:        big.NewInt(int64(chainId)),
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
+		gasLimit:       gasLimit,
+	}
+
+	// Load & decrypt wallet store
+	if err := w.Reload(); err != nil {
+		return nil, err
+	}
+
+	// Return
+	return w, nil
 }
 
 // Returns the wallet address since we're not masquerading

@@ -91,7 +91,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	w, err := services.GetWallet(c)
+	w, err := services.GetHdWallet(c)
 	if err != nil {
 		return err
 	}

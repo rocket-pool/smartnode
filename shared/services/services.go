@@ -80,7 +80,17 @@ func GetWallet(c *cli.Context) (wallet.Wallet, error) {
 	}
 	pm := getPasswordManager(cfg)
 	am := getAddressManager(cfg)
-	return getWallet(c, cfg, pm, am)
+	return getWallet(c, cfg, pm, am, false)
+}
+
+func GetHdWallet(c *cli.Context) (wallet.Wallet, error) {
+	cfg, err := getConfig(c)
+	if err != nil {
+		return nil, err
+	}
+	pm := getPasswordManager(cfg)
+	am := getAddressManager(cfg)
+	return getWallet(c, cfg, pm, am, true)
 }
 
 func GetEthClient(c *cli.Context) (*ExecutionClientManager, error) {
@@ -172,7 +182,7 @@ func getAddressManager(cfg *config.RocketPoolConfig) *wallet.AddressManager {
 	return addressManager
 }
 
-func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager, am *wallet.AddressManager) (wallet.Wallet, error) {
+func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager, am *wallet.AddressManager, ignoreMasquerade bool) (wallet.Wallet, error) {
 	var err error
 	initNodeWallet.Do(func() {
 		var maxFee *big.Int
@@ -195,7 +205,11 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 
 		chainId := cfg.Smartnode.GetChainID()
 
-		nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetNodeAddressPath()), os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm, am)
+		if ignoreMasquerade {
+			nodeWallet, err = wallet.NewHdWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm, am)
+		} else {
+			nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetNodeAddressPath()), os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm, am)
+		}
 		if err != nil {
 			return
 		}
