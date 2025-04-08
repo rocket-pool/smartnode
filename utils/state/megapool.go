@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"golang.org/x/sync/errgroup"
 )
@@ -23,6 +24,7 @@ type NativeMegapoolDetails struct {
 	EffectiveDelegateAddress common.Address `json:"effectiveDelegateAddress"`
 	Deployed                 bool           `json:"deployed"`
 	ValidatorCount           uint32         `json:"validatorCount"`
+	ActiveValidatorCount     uint32         `json:"activeValidatorCount"`
 	NodeDebt                 *big.Int       `json:"nodeDebt"`
 	RefundValue              *big.Int       `json:"refundValue"`
 	DelegateExpiry           uint64         `json:"delegateExpiry"`
@@ -33,6 +35,7 @@ type NativeMegapoolDetails struct {
 	NodeBond                 *big.Int       `json:"nodeBond"`
 	UserCapital              *big.Int       `json:"userCapital"`
 	NodeShare                *big.Int       `json:"nodeShare"`
+	BondRequirement          *big.Int       `json:"bondRequirement"`
 	EthBalance               *big.Int       `json:"ethBalance"`
 	LastDistributionBlock    uint64         `json:"lastDistributionBlock"`
 }
@@ -152,6 +155,11 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 	})
 	wg.Go(func() error {
 		var err error
+		details.ActiveValidatorCount, err = mega.GetActiveValidatorCount(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
 		details.UseLatestDelegate, err = mega.GetUseLatestDelegate(nil)
 		return err
 	})
@@ -186,5 +194,9 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 		return details, err
 	}
 
+	details.BondRequirement, err = node.GetBondRequirement(rp, big.NewInt(int64(details.ActiveValidatorCount)), nil)
+	if err != nil {
+		return details, err
+	}
 	return details, nil
 }
