@@ -52,6 +52,9 @@ func repayDebt(c *cli.Context) error {
 	}
 
 	megapoolDetails, err := services.GetNodeMegapoolDetails(rpServ, bc, nodeAccount.Address)
+	if err != nil {
+		return err
+	}
 	if megapoolDetails.NodeDebt != nil {
 		fmt.Printf("You have %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.NodeDebt), 6))
 	} else {
@@ -66,7 +69,7 @@ func repayDebt(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("Invalid test amount '%s': %w\n", amountStr, err)
 	}
-	
+
 	amountWei := eth.EthToWei(amount)
 	// Check megapool debt can be repaid
 	canRepay, err := rp.CanRepayDebt(amountWei)
