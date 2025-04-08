@@ -111,6 +111,28 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "reduce-bond",
+				Aliases:   []string{"e"},
+				Usage:     "Reduce the megapool bond",
+				UsageText: "rocketpool megapool reduce-bond",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return reduceBond(c)
+				},
+			},
+			{
 				Name:      "claim",
 				Aliases:   []string{"r"},
 				Usage:     "Claim any megapool rewards that were distributed but not yet claimed",

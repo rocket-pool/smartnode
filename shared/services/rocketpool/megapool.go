@@ -90,6 +90,38 @@ func (c *Client) RepayDebt(amountWei *big.Int) (api.RepayDebtResponse, error) {
 	return response, nil
 }
 
+// Check whether the node can reduce the megapool bond
+func (c *Client) CanReduceBond(amountWei *big.Int) (api.CanReduceBondResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-reduce-bond %s", amountWei.String()))
+	if err != nil {
+		return api.CanReduceBondResponse{}, fmt.Errorf("Could not get can reduce bond status: %w", err)
+	}
+	var response api.CanReduceBondResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanReduceBondResponse{}, fmt.Errorf("Could not decode can reduce bond response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanReduceBondResponse{}, fmt.Errorf("Could not get can reduce bond status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Reduce megapool bond
+func (c *Client) ReduceBond(amountWei *big.Int) (api.ReduceBondResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool reduce-bond %s", amountWei.String()))
+	if err != nil {
+		return api.ReduceBondResponse{}, fmt.Errorf("Could not reduce bond: %w", err)
+	}
+	var response api.ReduceBondResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ReduceBondResponse{}, fmt.Errorf("Could not decode reduce bond response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ReduceBondResponse{}, fmt.Errorf("Could not reduce bond: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can stake a megapool validator
 func (c *Client) CanStake(validatorId uint64) (api.CanStakeResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-stake %d", validatorId))

@@ -38,6 +38,7 @@ type MegapoolDetails struct {
 	NodeBond                 *big.Int                   `json:"nodeBond"`
 	UserCapital              *big.Int                   `json:"userCapital"`
 	NodeShare                *big.Int                   `json:"nodeShare"`
+	BondRequirement          *big.Int                   `json:"bondRequirement"`
 	RevenueSplit             network.RevenueSplit       `json:"revenueSplit"`
 	Balances                 tokens.Balances            `json:"balances"`
 	LastDistributionBlock    uint64                     `json:"lastDistributionBlock"`

@@ -67,7 +67,7 @@ func repayDebt(c *cli.Context) error {
 
 	amount, err := strconv.ParseFloat(amountStr, 64)
 	if err != nil {
-		return fmt.Errorf("Invalid test amount '%s': %w\n", amountStr, err)
+		return fmt.Errorf("Invalid amount '%s': %w\n", amountStr, err)
 	}
 
 	amountWei := eth.EthToWei(amount)
