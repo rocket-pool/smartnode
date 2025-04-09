@@ -12,10 +12,6 @@ import (
 func masquerade(c *cli.Context, address common.Address) (*api.MasqueradeResponse, error) {
 
 	// Get services
-	if err := services.RequireNodePassword(c); err != nil {
-		return nil, err
-	}
-
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err

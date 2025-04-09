@@ -19,12 +19,6 @@ func restoreAddress(c *cli.Context) error {
 		return err
 	}
 
-	// Check if node wallet is loaded
-	if !status.WalletInitialized {
-		fmt.Println("You do not currently have a node wallet loaded, so there is no address to restore. Please see `rocketpool wallet status` for more details.")
-		return nil
-	}
-
 	// Compare wallet address with masquerade address
 	if status.AccountAddress == status.NodeAddress {
 		fmt.Println("Your node address is set to your wallet address; you are not currently masquerading.")
