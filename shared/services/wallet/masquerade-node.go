@@ -13,10 +13,14 @@ import (
 
 // Get the node account
 func (w *masqueradeWallet) GetNodeAccount() (accounts.Account, error) {
+	address, err := w.am.LoadAddress()
+	if err != nil {
+		return accounts.Account{}, fmt.Errorf("Could not load node address: %w", err)
+	}
 
 	// Create & return account
 	return accounts.Account{
-		Address: w.am.GetAddress(),
+		Address: address,
 		URL: accounts.URL{
 			Scheme: "",
 			Path:   "",
