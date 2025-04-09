@@ -11,10 +11,6 @@ import (
 func restoreAddress(c *cli.Context) (*api.RestoreAddressResponse, error) {
 
 	// Get services
-	if err := services.RequireNodePassword(c); err != nil {
-		return nil, err
-	}
-
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
