@@ -48,25 +48,25 @@ type masqueradeWallet struct {
 	gasLimit       uint64
 }
 
-// Gets the derived wallet address, if one is loaded
+// Gets the derived wallet address, if one is loaded. Returns empty address if wallet isn't loaded.
 func (w *masqueradeWallet) GetAddress() (common.Address, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
-		return common.Address{}, errors.New("wallet is not initialized")
+		return common.Address{}, nil
 	}
 
 	// Get private key
 	privateKey, _, err := w.getNodePrivateKey()
 	if err != nil {
-		return common.Address{}, errors.New("Could not get node private key")
+		return common.Address{}, nil
 	}
 
 	// Get public key
 	publicKey := privateKey.Public()
 	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
 	if !ok {
-		return common.Address{}, errors.New("Could not get node public key)")
+		return common.Address{}, nil
 	}
 	return crypto.PubkeyToAddress(*publicKeyECDSA), nil
 }
@@ -225,7 +225,7 @@ func (w *masqueradeWallet) loadStore() (bool, error) {
 	}
 
 	// Load the node address
-	_, _, err = w.am.LoadAddress()
+	_, err = w.am.LoadAddress()
 	if err != nil {
 		return false, fmt.Errorf("Could not load node address: %w", err)
 	}
