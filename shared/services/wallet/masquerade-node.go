@@ -3,7 +3,6 @@ package wallet
 import (
 	"context"
 	"crypto/ecdsa"
-	"errors"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
@@ -29,20 +28,8 @@ func (w *masqueradeWallet) GetNodeAccount() (accounts.Account, error) {
 
 }
 
-// Get a transactor for the node account
+// Get a transactor for the masqueraded node account. There is no private key so transactions will fail
 func (w *masqueradeWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
-	}
-
-	// Get private key
-	privateKey, _, err := w.getNodePrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
 	// Masqueraded account
 	account, err := w.GetNodeAccount()
 	if err != nil {
@@ -50,7 +37,7 @@ func (w *masqueradeWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error
 	}
 
 	// Create & return transactor
-	transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, w.chainID)
+	transactor := &bind.TransactOpts{}
 	transactor.GasFeeCap = w.maxFee
 	transactor.GasTipCap = w.maxPriorityFee
 	transactor.GasLimit = w.gasLimit
