@@ -472,7 +472,7 @@ func (w *hdWallet) loadStore() (bool, error) {
 	}
 
 	// Load the node address
-	_, _, err = w.am.LoadAddress()
+	_, err = w.am.LoadAddress()
 	if err != nil {
 		return false, fmt.Errorf("Could not load node address: %w", err)
 	}

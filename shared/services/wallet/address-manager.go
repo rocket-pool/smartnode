@@ -15,9 +15,8 @@ const (
 
 // Simple class to wrap the node's address file
 type AddressManager struct {
-	path     string
-	address  common.Address
-	isLoaded bool
+	path    string
+	address common.Address
 }
 
 // Creates a new address manager
@@ -28,24 +27,22 @@ func NewAddressManager(path string) *AddressManager {
 }
 
 // Gets the address saved on disk. Returns false if the address file doesn't exist.
-func (m *AddressManager) LoadAddress() (common.Address, bool, error) {
+func (m *AddressManager) LoadAddress() (common.Address, error) {
 	m.address = common.Address{}
-	m.isLoaded = false
 
 	_, err := os.Stat(m.path)
 	if errors.Is(err, fs.ErrNotExist) {
-		return common.Address{}, false, nil
+		return common.Address{}, nil
 	} else if err != nil {
-		return common.Address{}, false, fmt.Errorf("error checking if address file exists: %w", err)
+		return common.Address{}, fmt.Errorf("error checking if address file exists: %w", err)
 	}
 
 	bytes, err := os.ReadFile(m.path)
 	if err != nil {
-		return common.Address{}, false, fmt.Errorf("error loading address file [%s]: %w", m.path, err)
+		return common.Address{}, fmt.Errorf("error loading address file [%s]: %w", m.path, err)
 	}
 	m.address = common.HexToAddress(string(bytes))
-	m.isLoaded = true
-	return m.address, true, nil
+	return m.address, nil
 }
 
 // Get the cached address
@@ -56,13 +53,11 @@ func (m *AddressManager) GetAddress() common.Address {
 // Sets the node address without saving it to disk
 func (m *AddressManager) SetAddress(newAddress common.Address) {
 	m.address = newAddress
-	m.isLoaded = true
 }
 
 // Sets the node address and saves it to disk
 func (m *AddressManager) SetAndSaveAddress(newAddress common.Address) error {
 	m.address = newAddress
-	m.isLoaded = true
 	bytes := []byte(newAddress.Hex())
 	err := os.WriteFile(m.path, bytes, addressFileMode)
 	if err != nil {
@@ -77,6 +72,5 @@ func (m *AddressManager) DeleteAddressFile() error {
 		return fmt.Errorf("error deleting address file [%s]: %w", m.path, err)
 	}
 	m.address = common.Address{}
-	m.isLoaded = false
 	return nil
 }
