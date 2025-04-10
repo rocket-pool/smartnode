@@ -66,6 +66,7 @@ type Wallet interface {
 	MasqueradeAsAddress(address common.Address) error
 	RestoreAddressToWallet() error
 	GetAddress() (common.Address, error)
+	IsNodeMasquerading() bool
 }
 
 // hdWallet
@@ -184,6 +185,11 @@ func NewMasqueradeWallet(walletPath string, chainId uint, maxFee *big.Int, maxPr
 
 	// Return
 	return w, nil
+}
+
+// Getter to check if node is masquerading
+func (w *hdWallet) IsNodeMasquerading() bool {
+	return false
 }
 
 // Returns the wallet address since we're not masquerading

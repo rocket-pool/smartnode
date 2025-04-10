@@ -25,6 +25,7 @@ type WalletStatusResponse struct {
 	AccountAddress    common.Address `json:"accountAddress"`
 	NodeAddress       common.Address `json:"nodeAddress"`
 	HasAddress        bool           `json:"hasAddress"`
+	IsMasquerading    bool           `json:"isMasquerading"`
 }
 
 type SetPasswordResponse struct {
