@@ -48,11 +48,16 @@ type masqueradeWallet struct {
 	gasLimit       uint64
 }
 
+// Getter to check if node is masquerading
+func (w *masqueradeWallet) IsNodeMasquerading() bool {
+	return true
+}
+
 // Gets the derived wallet address, if one is loaded. Returns empty address if wallet isn't loaded.
 func (w *masqueradeWallet) GetAddress() (common.Address, error) {
 
-	// Check wallet is initialized
-	if !w.IsInitialized() {
+	// Return if wallet is uninitialized
+	if !(w.ws != nil && w.seed != nil && w.mk != nil) {
 		return common.Address{}, nil
 	}
 
@@ -96,9 +101,9 @@ func (w *masqueradeWallet) AddKeystore(name string, ks keystore.Keystore) {
 	return
 }
 
-// Check if the wallet has been initialized
+// Always return true as we're masquerading
 func (w *masqueradeWallet) IsInitialized() bool {
-	return (w.ws != nil && w.seed != nil && w.mk != nil)
+	return true
 }
 
 // Attempt to initialize the wallet if not initialized and return status
