@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -22,24 +21,6 @@ func repayDebt(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return err
-	}
-	rpServ, err := services.GetRocketPool(c)
-	if err != nil {
-		return err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return err
-	}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
 
 	// Check if Saturn is already deployed
 	saturnResp, err := rp.IsSaturnDeployed()
@@ -51,12 +32,12 @@ func repayDebt(c *cli.Context) error {
 		return nil
 	}
 
-	megapoolDetails, err := services.GetNodeMegapoolDetails(rpServ, bc, nodeAccount.Address)
+	megapoolDetails, err := rp.MegapoolStatus()
 	if err != nil {
 		return err
 	}
-	if megapoolDetails.NodeDebt != nil {
-		fmt.Printf("You have %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.NodeDebt), 6))
+	if megapoolDetails.Megapool.NodeDebt != nil {
+		fmt.Printf("You have %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
 	} else {
 		fmt.Println("You have no megapool debt.")
 		return nil

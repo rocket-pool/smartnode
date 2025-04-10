@@ -5,7 +5,6 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -22,24 +21,6 @@ func reduceBond(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return err
-	}
-	rpServ, err := services.GetRocketPool(c)
-	if err != nil {
-		return err
-	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return err
-	}
-
-	// Get node account
-	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return err
-	}
 
 	// Check if Saturn is already deployed
 	saturnResp, err := rp.IsSaturnDeployed()
@@ -51,19 +32,19 @@ func reduceBond(c *cli.Context) error {
 		return nil
 	}
 
-	megapoolDetails, err := services.GetNodeMegapoolDetails(rpServ, bc, nodeAccount.Address)
+	megapoolDetails, err := rp.MegapoolStatus()
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Current active validators:                       %d\n", megapoolDetails.ActiveValidatorCount)
-	fmt.Printf("Current megapool bond:                           %.6f ETH\n", math.RoundDown(eth.WeiToEth(megapoolDetails.NodeBond), 6))
-	fmt.Printf("Current bond requirements for active validators: %.6f ETH\n", math.RoundDown(eth.WeiToEth(megapoolDetails.BondRequirement), 6))
+	fmt.Printf("Current active validators:                       %d\n", megapoolDetails.Megapool.ActiveValidatorCount)
+	fmt.Printf("Current megapool bond:                           %.6f ETH\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.NodeBond), 6))
+	fmt.Printf("Current bond requirements for active validators: %.6f ETH\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.BondRequirement), 6))
 
 	var amount float64
 	// If current node bond is higher than the bond requirement, ask if the user wants to reduce the bond
-	if megapoolDetails.NodeBond.Cmp(megapoolDetails.BondRequirement) > 0 {
-		maxAmountInEth := eth.WeiToEth(megapoolDetails.NodeBond.Sub(megapoolDetails.NodeBond, megapoolDetails.BondRequirement))
+	if megapoolDetails.Megapool.NodeBond.Cmp(megapoolDetails.Megapool.BondRequirement) > 0 {
+		maxAmountInEth := eth.WeiToEth(megapoolDetails.Megapool.NodeBond.Sub(megapoolDetails.Megapool.NodeBond, megapoolDetails.Megapool.BondRequirement))
 		fmt.Printf("You have %.6f of excess bond.\n", maxAmountInEth)
 		if prompt.Confirm(fmt.Sprintf("Do you want to reduce %.6f ETH of your node bond?", maxAmountInEth)) {
 			// Convert maxAmountInEth to string
