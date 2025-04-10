@@ -21,9 +21,6 @@ const (
 func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse, error) {
 
 	// Get services
-	if err := services.RequireNodePassword(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -93,9 +90,6 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Address) (*api.SearchAndRecoverWalletResponse, error) {
 
 	// Get services
-	if err := services.RequireNodePassword(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err

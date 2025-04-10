@@ -34,21 +34,7 @@ var ethClientStatusRefreshInterval, _ = time.ParseDuration("60s")
 // Service requirements
 //
 
-func RequireNodePassword(c *cli.Context) error {
-	nodePasswordSet, err := getNodePasswordSet(c)
-	if err != nil {
-		return err
-	}
-	if !nodePasswordSet {
-		return errors.New("The node password has not been set. Please run 'rocketpool wallet init' and try again.")
-	}
-	return nil
-}
-
 func RequireNodeWallet(c *cli.Context) error {
-	if err := RequireNodePassword(c); err != nil {
-		return err
-	}
 	nodeWalletInitialized, err := getNodeWalletInitialized(c)
 	if err != nil {
 		return err
