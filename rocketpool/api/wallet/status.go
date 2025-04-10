@@ -22,14 +22,20 @@ func getStatus(c *cli.Context) (*api.WalletStatusResponse, error) {
 	// Response
 	response := api.WalletStatusResponse{}
 
+	// Get wallet type
+	response.IsMasquerading = w.IsNodeMasquerading()
+
 	// Get wallet status
-	response.PasswordSet = pm.IsPasswordSet()
-	response.WalletInitialized = w.IsInitialized()
+	if response.IsMasquerading {
+		response.PasswordSet = true
+		response.WalletInitialized = true
+	} else {
+		response.PasswordSet = pm.IsPasswordSet()
+		response.WalletInitialized = w.IsInitialized()
+	}
 
 	// Get accounts if initialized
 	if response.WalletInitialized {
-
-		// Get node account
 		nodeAccount, err := w.GetNodeAccount()
 		if err != nil {
 			return nil, err
