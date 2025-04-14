@@ -39,10 +39,10 @@ func getStatus(c *cli.Context) error {
 	if status.IsMasquerading && status.NodeAddress != emptyAddress {
 		fmt.Printf("The node wallet is initialized, but you are currently masquerading as %s%s%s\n", colorBlue, status.AccountAddress, colorReset)
 		fmt.Printf("Wallet Address: %s\n", status.NodeAddress)
-		fmt.Printf("%sDue to this mismatch, the node cannot submit transactions. Use the command 'rocketpool wallet restore-address' to end masquerading and restore your wallet address.%s", colorYellow, colorReset)
+		fmt.Printf("%sDue to this mismatch, the node cannot submit transactions. Use the command 'rocketpool wallet end-masquerade' to end masquerading and restore your wallet address.%s", colorYellow, colorReset)
 	} else if status.IsMasquerading {
 		fmt.Printf("The node wallet has not been initialized, but you are currently masquerading as %s%s%s\n", colorBlue, status.AccountAddress, colorReset)
-		fmt.Printf("%sThe node cannot submit transactions. Use the command 'rocketpool wallet restore-address' to end masquerading.%s", colorYellow, colorReset)
+		fmt.Printf("%sThe node cannot submit transactions. Use the command 'rocketpool wallet end-masquerade' to end masquerading.%s", colorYellow, colorReset)
 	}
 
 	// Not Masquerading

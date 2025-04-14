@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func restoreAddress(c *cli.Context) (*api.RestoreAddressResponse, error) {
+func endMasquerade(c *cli.Context) (*api.EndMasqueradeResponse, error) {
 
 	// Get services
 	w, err := services.GetWallet(c)
@@ -16,12 +16,12 @@ func restoreAddress(c *cli.Context) (*api.RestoreAddressResponse, error) {
 		return nil, err
 	}
 
-	err = w.RestoreAddressToWallet()
+	err = w.EndMasquerade()
 	if err != nil {
-		return nil, fmt.Errorf("Error restoring address")
+		return nil, fmt.Errorf("Error ending masquerade mode")
 	}
 
-	response := api.RestoreAddressResponse{}
+	response := api.EndMasqueradeResponse{}
 
 	return &response, nil
 }
