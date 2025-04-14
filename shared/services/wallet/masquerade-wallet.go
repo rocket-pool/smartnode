@@ -78,7 +78,7 @@ func (w *masqueradeWallet) GetAddress() (common.Address, error) {
 
 // Change the node's effective address to a different one. Node and watchtower tasks will continue to run normally using the loaded wallet.
 func (w *masqueradeWallet) MasqueradeAsAddress(newAddress common.Address) error {
-	return w.masqueradeImpl(newAddress)
+	return w.am.SetAndSaveAddress(newAddress)
 }
 
 // End a masquerade, restoring your node's effective address back to your wallet address if one is loaded
@@ -243,9 +243,4 @@ func (w *masqueradeWallet) loadStore() (bool, error) {
 // Initialize the encrypted wallet store from a mnemonic
 func (w *masqueradeWallet) initializeStore(_ string, _ uint, _ string) error {
 	return ErrIsMasquerading
-}
-
-// Masquerade as another node address, running all node functions as that address (in read only mode)
-func (w *masqueradeWallet) masqueradeImpl(newAddress common.Address) error {
-	return w.am.SetAndSaveAddress(newAddress)
 }

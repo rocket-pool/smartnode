@@ -204,7 +204,7 @@ func (w *hdWallet) GetAddress() (common.Address, error) {
 
 // Change the node's effective address to a different one. Node and watchtower tasks will continue to run normally using the loaded wallet.
 func (w *hdWallet) MasqueradeAsAddress(newAddress common.Address) error {
-	return w.masqueradeImpl(newAddress)
+	return w.am.SetAndSaveAddress(newAddress)
 }
 
 // End a masquerade, restoring your node's effective address back to your wallet address if one is loaded
@@ -527,9 +527,4 @@ func (w *hdWallet) initializeStore(derivationPath string, walletIndex uint, mnem
 	// Return
 	return nil
 
-}
-
-// Masquerade as another node address, running all node functions as that address (in read only mode)
-func (w *hdWallet) masqueradeImpl(newAddress common.Address) error {
-	return w.am.SetAndSaveAddress(newAddress)
 }
