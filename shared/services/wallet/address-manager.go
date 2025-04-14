@@ -50,11 +50,6 @@ func (m *AddressManager) GetAddress() common.Address {
 	return m.address
 }
 
-// Sets the node address without saving it to disk
-func (m *AddressManager) SetAddress(newAddress common.Address) {
-	m.address = newAddress
-}
-
 // Sets the node address and saves it to disk
 func (m *AddressManager) SetAndSaveAddress(newAddress common.Address) error {
 	m.address = newAddress
@@ -66,6 +61,7 @@ func (m *AddressManager) SetAndSaveAddress(newAddress common.Address) error {
 	return nil
 }
 
+// Delete the saved address file from disk
 func (m *AddressManager) DeleteAddressFile() error {
 	err := os.Remove(m.path)
 	if err != nil {
