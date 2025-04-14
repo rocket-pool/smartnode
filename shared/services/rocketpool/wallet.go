@@ -229,18 +229,18 @@ func (c *Client) Masquerade(address common.Address) (api.MasqueradeResponse, err
 	return response, nil
 }
 
-// Set the node address back to the wallet address
-func (c *Client) RestoreAddress() (api.RestoreAddressResponse, error) {
-	responseBytes, err := c.callAPI("wallet restore-address")
+// Delete the address file, ending a masquerade
+func (c *Client) EndMasquerade() (api.EndMasqueradeResponse, error) {
+	responseBytes, err := c.callAPI("wallet end-masquerade")
 	if err != nil {
-		return api.RestoreAddressResponse{}, fmt.Errorf("Could not restore address: %w", err)
+		return api.EndMasqueradeResponse{}, fmt.Errorf("Could not end masquerade: %w", err)
 	}
-	var response api.RestoreAddressResponse
+	var response api.EndMasqueradeResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.RestoreAddressResponse{}, fmt.Errorf("Could not decode restore address response: %w", err)
+		return api.EndMasqueradeResponse{}, fmt.Errorf("Could not decode end masquerade response: %w", err)
 	}
 	if response.Error != "" {
-		return api.RestoreAddressResponse{}, fmt.Errorf("Could not restore address: %s", response.Error)
+		return api.EndMasqueradeResponse{}, fmt.Errorf("Could not end masquerade: %s", response.Error)
 	}
 	return response, nil
 }

@@ -64,7 +64,7 @@ type Wallet interface {
 	TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error)
 	TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error
 	MasqueradeAsAddress(address common.Address) error
-	RestoreAddressToWallet() error
+	EndMasquerade() error
 	GetAddress() (common.Address, error)
 	IsNodeMasquerading() bool
 }
@@ -202,15 +202,15 @@ func (w *hdWallet) GetAddress() (common.Address, error) {
 	return nodeAccount.Address, nil
 }
 
-// Masquerade as another node address, running all node functions as that address (in read only mode)
+// Change the node's effective address to a different one. Node and watchtower tasks will continue to run normally using the loaded wallet.
 func (w *hdWallet) MasqueradeAsAddress(newAddress common.Address) error {
 	return w.masqueradeImpl(newAddress)
 }
 
-// End masquerading as another node address, and use the wallet's address (returning to read/write mode)
-func (w *hdWallet) RestoreAddressToWallet() error {
+// End a masquerade, restoring your node's effective address back to your wallet address if one is loaded
+func (w *hdWallet) EndMasquerade() error {
 	if w.am == nil {
-		return errors.New("wallet is not loaded")
+		return errors.New("node is not masquerading")
 	}
 
 	return w.am.DeleteAddressFile()
