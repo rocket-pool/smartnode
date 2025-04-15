@@ -136,9 +136,9 @@ func RequireNodeSecurityMember(c *cli.Context) error {
 // Service synchronization
 //
 
-func WaitNodePassword(c *cli.Context, verbose bool) error {
+func WaitNodeHdPassword(c *cli.Context, verbose bool) error {
 	for {
-		nodePasswordSet, err := getNodePasswordSet(c)
+		nodePasswordSet, err := getNodeHdPasswordSet(c)
 		if err != nil {
 			return err
 		}
@@ -152,12 +152,12 @@ func WaitNodePassword(c *cli.Context, verbose bool) error {
 	}
 }
 
-func WaitNodeWallet(c *cli.Context, verbose bool) error {
-	if err := WaitNodePassword(c, verbose); err != nil {
+func WaitNodeHdWallet(c *cli.Context, verbose bool) error {
+	if err := WaitNodeHdPassword(c, verbose); err != nil {
 		return err
 	}
 	for {
-		nodeWalletInitialized, err := getNodeWalletInitialized(c)
+		nodeWalletInitialized, err := getHdWalletInitialized(c)
 		if err != nil {
 			return err
 		}
@@ -200,15 +200,16 @@ func WaitRocketStorage(c *cli.Context, verbose bool) error {
 	}
 }
 
+// This check makes calls to GetHdWallet instead of GetWallet as it's used in node and watchtower
 func WaitNodeRegistered(c *cli.Context, verbose bool) error {
-	if err := WaitNodeWallet(c, verbose); err != nil {
+	if err := WaitNodeHdWallet(c, verbose); err != nil {
 		return err
 	}
 	if err := WaitRocketStorage(c, verbose); err != nil {
 		return err
 	}
 	for {
-		nodeRegistered, err := getNodeRegistered(c)
+		nodeRegistered, err := getHdNodeRegistered(c)
 		if err != nil {
 			return err
 		}
@@ -226,8 +227,8 @@ func WaitNodeRegistered(c *cli.Context, verbose bool) error {
 // Helpers
 //
 
-// Check if the node password is set
-func getNodePasswordSet(c *cli.Context) (bool, error) {
+// Check if the node password stored on disk is set
+func getNodeHdPasswordSet(c *cli.Context) (bool, error) {
 	pm, err := GetPasswordManager(c)
 	if err != nil {
 		return false, err
@@ -238,6 +239,15 @@ func getNodePasswordSet(c *cli.Context) (bool, error) {
 // Check if the node wallet is initialized
 func getNodeWalletInitialized(c *cli.Context) (bool, error) {
 	w, err := GetWallet(c)
+	if err != nil {
+		return false, err
+	}
+	return w.GetInitialized()
+}
+
+// Check if the node wallet stored on disk is initialized
+func getHdWalletInitialized(c *cli.Context) (bool, error) {
+	w, err := GetHdWallet(c)
 	if err != nil {
 		return false, err
 	}
@@ -264,6 +274,23 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
 // Check if the node is registered
 func getNodeRegistered(c *cli.Context) (bool, error) {
 	w, err := GetWallet(c)
+	if err != nil {
+		return false, err
+	}
+	rp, err := GetRocketPool(c)
+	if err != nil {
+		return false, err
+	}
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return false, err
+	}
+	return node.GetNodeExists(rp, nodeAccount.Address, nil)
+}
+
+// Check if node wallet stored on disk is registered
+func getHdNodeRegistered(c *cli.Context) (bool, error) {
+	w, err := GetHdWallet(c)
 	if err != nil {
 		return false, err
 	}

@@ -65,7 +65,7 @@ func run(c *cli.Context) error {
 	// Configure
 	configureHTTP()
 
-	// Wait until node is registered
+	// Wait until the node wallet stored on disk is registered
 	if err := services.WaitNodeRegistered(c, true); err != nil {
 		return err
 	}
