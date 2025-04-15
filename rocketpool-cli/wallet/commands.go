@@ -247,6 +247,61 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "masquerade",
+				Aliases:   []string{"m"},
+				Usage:     "Change your node's effective address to a different one. Your node will not be able to submit transactions or sign messages since you don't have the corresponding wallet's private key.",
+				UsageText: "rocketpool wallet m [options]",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm all interactive questions",
+					},
+					cli.StringFlag{
+						Name:  "address, a",
+						Usage: "Specify an address you'd like you masquerade as",
+					},
+				},
+
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+
+						return err
+					}
+
+					// Run
+					return masquerade(c)
+
+				},
+			},
+
+			{
+				Name:      "end-masquerade",
+				Aliases:   []string{"em"},
+				Usage:     "End a masquerade, restoring your node's effective address back to your wallet address if one is loaded.",
+				UsageText: "rocketpool wallet end-masquerade [options]",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm all interactive questions",
+					},
+				},
+
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return endMasquerade(c)
+
+				},
+			},
 		},
 	})
 }

@@ -23,6 +23,9 @@ type WalletStatusResponse struct {
 	PasswordSet       bool           `json:"passwordSet"`
 	WalletInitialized bool           `json:"walletInitialized"`
 	AccountAddress    common.Address `json:"accountAddress"`
+	NodeAddress       common.Address `json:"nodeAddress"`
+	HasAddress        bool           `json:"hasAddress"`
+	IsMasquerading    bool           `json:"isMasquerading"`
 }
 
 type SetPasswordResponse struct {
@@ -85,6 +88,16 @@ type TestMnemonicResponse struct {
 }
 
 type PurgeResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
+type MasqueradeResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
+type EndMasqueradeResponse struct {
 	Status string `json:"status"`
 	Error  string `json:"error"`
 }
