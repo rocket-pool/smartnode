@@ -62,4 +62,6 @@ type Megapool interface {
 	EstimateDelegateUpgradeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, error)
 	GetMegapoolPubkeys(opts *bind.CallOpts) ([]rptypes.ValidatorPubkey, error)
+	EstimatePenaliseGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, block *big.Int, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
+	Penalise(rp *rocketpool.RocketPool, megapoolAddress common.Address, block *big.Int, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) 
 }
