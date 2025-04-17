@@ -483,6 +483,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 				Exiting:            validatorDetails.Exiting,
 				ValidatorIndex:     validatorDetails.ValidatorIndex,
 				ExitBalance:        validatorDetails.ExitBalance,
+				WithdrawableEpoch:  validatorDetails.WithdrawableEpoch,
 			}
 			if validator.Staked {
 				validator.BeaconStatus, err = bc.GetValidatorStatus(validator.PubKey, nil)
