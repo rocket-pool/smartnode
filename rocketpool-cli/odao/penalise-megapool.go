@@ -7,7 +7,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -17,10 +16,6 @@ import (
 )
 
 func penaliseMegapool(c *cli.Context, megapoolAddress common.Address, block *big.Int) error {
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return err
-	}
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
