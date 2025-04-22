@@ -34,7 +34,7 @@ import (
 
 // Settings
 const MinipoolBatchSize = 20
-const BlockStartOffset = 100000
+const BlockStartOffset = 150000
 const ScrubSafetyDivider = 2
 const MinScrubSafetyTime = time.Duration(0) * time.Hour
 
