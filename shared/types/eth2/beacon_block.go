@@ -62,7 +62,7 @@ type BeaconBlockBodyDeneb struct {
 	SyncAggregate         *SyncAggregate                `json:"sync_aggregate"`
 	ExecutionPayload      *ExecutionPayloadDeneb        `json:"execution_payload"`
 	BlsToExecutionChanges []*SignedBLSToExecutionChange `json:"bls_to_execution_changes" ssz-max:"16"`
-	BlobKzgCommitments    [][48]byte                    `json:"blob_kzg_commitments" ssz-max:"6,48" ssz-size:"?,48"`
+	BlobKzgCommitments    [][48]byte                    `json:"blob_kzg_commitments" ssz-max:"4096,48" ssz-size:"?,48"`
 }
 
 type ProposerSlashing struct {
