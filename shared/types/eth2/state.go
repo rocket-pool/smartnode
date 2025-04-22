@@ -64,7 +64,7 @@ func getDenebGeneralizedIndexForValidators() uint64 {
 	return getPowerOfTwoCeil(getDenebStateChunkSize()) + beaconStateDenebValidatorsIndex
 }
 
-func (state *BeaconStateDeneb) getGeneralizedIndexForValidator(index uint64) uint64 {
+func getGeneralizedIndexForValidator(index uint64) uint64 {
 	root := getDenebGeneralizedIndexForValidators()
 
 	// Now, grab the validator index within the list
@@ -86,7 +86,7 @@ func (state *BeaconStateDeneb) validatorStateProof(index uint64) ([][]byte, erro
 	}
 
 	// Find the validator's generalized index
-	generalizedIndex := state.getGeneralizedIndexForValidator(index)
+	generalizedIndex := getGeneralizedIndexForValidator(index)
 
 	// Grab the proof for that index
 	proof, err := root.Prove(int(generalizedIndex))
