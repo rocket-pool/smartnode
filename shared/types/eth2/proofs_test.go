@@ -13,6 +13,8 @@ import (
 	"crypto/sha256"
 	_ "embed"
 	"testing"
+
+	ssz "github.com/ferranbt/fastssz"
 )
 
 // Test state - deneb fork. Hoodi genesis state.
@@ -96,11 +98,11 @@ func TestOffsetGidRoot(t *testing.T) {
 		})
 	}
 }
-func validateStateProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *BeaconStateDeneb) ([]byte, []byte) {
-	currentHash := leaf
 
-	// The gid is now the index of the leaf from the state root, but we need to prove up to the beacon block header root
+func validateStateProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *BeaconStateDeneb) ([]byte, []byte) {
+	// First, offset the gid to account for the fact that state proofs are actually beacon block header proofs
 	gid = offsetGidRoot(gid, beaconBlockHeaderStateRootGeneralizedIndex)
+	currentHash := leaf
 
 	// The gid is now the index of the leaf
 	for i, proofRow := range proof {
@@ -147,7 +149,13 @@ func validateStateProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, s
 }
 
 func validateValidatorProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *BeaconStateDeneb) ([]byte, []byte) {
-	return validateStateProof(t, leaf, proof, gid*4, state)
+	gid *= 4
+	return validateStateProof(t, leaf, proof, gid, state)
+}
+
+func validateWithdrawableEpochProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *BeaconStateDeneb) ([]byte, []byte) {
+	gid = offsetGidRoot(beaconStateValidatorWithdrawableEpochGeneralizedIndex, gid)
+	return validateStateProof(t, leaf, proof, gid, state)
 }
 
 func getValidatorLeaf(t *testing.T, validator *Validator) []byte {
@@ -197,6 +205,58 @@ func TestWithdrawalCredentialsStateProof(t *testing.T) {
 		}
 
 		stateRoot, blockRoot := validateValidatorProof(t, getValidatorLeaf(t, state.Validators[tc.validatorIndex]), proof, tc.gid, state)
+		t.Logf("stateRoot: %x", stateRoot)
+		t.Logf("blockRoot: %x", blockRoot)
+		expectedStateRoot, err := hex.DecodeString("2683ebc120f91f740c7bed4c866672d01e1ba51b4cc360297138465ee5df40f0")
+		if err != nil {
+			panic(err)
+		}
+		expectedBlockRoot, err := hex.DecodeString("376450cd7fb9f05ade82a7f88565ac57af449ac696b1a6ac5cc7dac7d467b7d6")
+		if err != nil {
+			panic(err)
+		}
+		if !bytes.Equal(stateRoot, expectedStateRoot) {
+			t.Fatalf("expected state root: %x, got: %x", expectedStateRoot, stateRoot)
+		}
+		if !bytes.Equal(blockRoot, expectedBlockRoot) {
+			t.Fatalf("expected block root: %x, got: %x", expectedBlockRoot, blockRoot)
+		}
+	}
+}
+
+func TestValidatorWithdrawableEpochProof(t *testing.T) {
+	state := &BeaconStateDeneb{}
+	err := state.UnmarshalSSZ(testState)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal test state: %v", err)
+	}
+
+	type tc struct {
+		validatorIndex uint64
+		gid            uint64
+	}
+
+	testCases := []tc{
+		{validatorIndex: 0, gid: 94557999988736},
+		{validatorIndex: 111111, gid: 94558000099847},
+		{validatorIndex: 555555, gid: 94558000544291},
+	}
+
+	for _, tc := range testCases {
+		proof, err := state.ValidatorWithdrawableEpochProof(tc.validatorIndex)
+		if err != nil {
+			t.Fatalf("Failed to get validator withdrawable epoch proof: %v", err)
+		}
+		gid := getGeneralizedIndexForValidator(tc.validatorIndex)
+		t.Logf("gid: %v", gid)
+		if gid != tc.gid {
+			t.Fatalf("expected gid: %v, got: %v", tc.gid, gid)
+		}
+
+		expectedWithdrawableEpoch := state.Validators[tc.validatorIndex].WithdrawableEpoch
+		leaf := ssz.LeafFromUint64(expectedWithdrawableEpoch)
+
+		stateRoot, blockRoot := validateWithdrawableEpochProof(t, leaf.Hash(), proof, tc.gid, state)
 		t.Logf("stateRoot: %x", stateRoot)
 		t.Logf("blockRoot: %x", blockRoot)
 		expectedStateRoot, err := hex.DecodeString("2683ebc120f91f740c7bed4c866672d01e1ba51b4cc360297138465ee5df40f0")
