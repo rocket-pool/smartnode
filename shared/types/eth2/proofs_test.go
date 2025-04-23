@@ -22,6 +22,9 @@ import (
 //go:embed testdata/hoodi_genesis.ssz.gz
 var testState []byte
 
+//go:embed testdata/block_11544444.ssz
+var testBlock []byte
+
 func init() {
 	decompressor, err := gzip.NewReader(bytes.NewReader(testState))
 	if err != nil {
@@ -257,6 +260,116 @@ func TestValidatorWithdrawableEpochProof(t *testing.T) {
 		leaf := ssz.LeafFromUint64(expectedWithdrawableEpoch)
 
 		stateRoot, blockRoot := validateWithdrawableEpochProof(t, leaf.Hash(), proof, tc.gid, state)
+		t.Logf("stateRoot: %x", stateRoot)
+		t.Logf("blockRoot: %x", blockRoot)
+		expectedStateRoot, err := hex.DecodeString("2683ebc120f91f740c7bed4c866672d01e1ba51b4cc360297138465ee5df40f0")
+		if err != nil {
+			panic(err)
+		}
+		expectedBlockRoot, err := hex.DecodeString("376450cd7fb9f05ade82a7f88565ac57af449ac696b1a6ac5cc7dac7d467b7d6")
+		if err != nil {
+			panic(err)
+		}
+		if !bytes.Equal(stateRoot, expectedStateRoot) {
+			t.Fatalf("expected state root: %x, got: %x", expectedStateRoot, stateRoot)
+		}
+		if !bytes.Equal(blockRoot, expectedBlockRoot) {
+			t.Fatalf("expected block root: %x, got: %x", expectedBlockRoot, blockRoot)
+		}
+	}
+}
+
+func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64, block *BeaconBlockDeneb) []byte {
+	savedExepectedBlockRoot, err := hex.DecodeString("8442138d973483bfeaba9082f28217234e2879dedb5202e67ef68e2349db9a31")
+	if err != nil {
+		panic(err)
+	}
+	expectedBlockRoot, err := block.HashTreeRoot()
+	if err != nil {
+		t.Fatalf("Failed to get block root: %v", err)
+	}
+
+	if !bytes.Equal(expectedBlockRoot[:], savedExepectedBlockRoot) {
+		t.Fatalf("expected block root: %x, got: %x", savedExepectedBlockRoot, expectedBlockRoot)
+	}
+
+	currentHash := leaf[:]
+	for i, proofRow := range proof {
+		// The last neighbor must have a gid of either 2 or 3
+		if i == len(proof)-1 {
+			if gid != 2 && gid != 3 {
+				t.Fatalf("last node/neighbor gid must be 2 or 3, got: %d", gid)
+			}
+		}
+		// If the current gid is odd, the neighbor is on the left, otherwise it's on the right
+		t.Logf("iter: %d, gid: %d, currentHash: %x, proofRow: %x", i, gid, currentHash, proofRow)
+		neighborIsLeft := gid%2 == 1
+		gid /= 2
+
+		// hash the neighbor and the current hash together
+		currentHash = hash(currentHash, proofRow, neighborIsLeft)
+	}
+
+	if !bytes.Equal(currentHash, expectedBlockRoot[:]) {
+		t.Fatalf("final hash does not match block root")
+	} else {
+		t.Logf("final hash %x matches expected block root %x", currentHash, expectedBlockRoot)
+	}
+
+	return currentHash
+}
+
+func TestWithdrawalProof(t *testing.T) {
+	block := &SignedBeaconBlockDeneb{}
+	err := block.UnmarshalSSZ(testBlock)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal test block: %v", err)
+	}
+
+	for idx, withdrawal := range block.Block.Body.ExecutionPayload.Withdrawals {
+		proof, err := block.Block.ProveWithdrawal(uint64(idx))
+		if err != nil {
+			t.Fatalf("Failed to get withdrawal proof: %v", err)
+		}
+
+		if testing.Verbose() {
+			for i, p := range proof {
+				t.Logf("proof[%d]: %x", i, p)
+			}
+		}
+		gid := uint64(1)
+		gid = gid*beaconBlockDenebChunksCeil + beaconBlockDenebBodyIndex
+		gid = gid*beaconBlockDenebBodyChunksCeil + beaconBlockDenebBodyExecutionPayloadIndex
+		gid = gid*beaconBlockDenebBodyExecutionPayloadChunksCeil + beaconBlockDenebBodyExecutionPayloadWithdrawalsIndex
+		gid = gid * 2
+		gid = gid*beaconBlockDenebWithdrawalsArrayMax + uint64(idx)
+		leaf, err := withdrawal.HashTreeRoot()
+		if err != nil {
+			t.Fatalf("Failed to get withdrawal leaf: %v", err)
+		}
+		validateBlockProof(t, leaf, proof, gid, block.Block)
+	}
+}
+
+func TestBlockRootProof(t *testing.T) {
+	state := &BeaconStateDeneb{}
+	err := state.UnmarshalSSZ(testState)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal test state: %v", err)
+	}
+
+	for _, slot := range []uint64{0, 10, 100, 1000} {
+
+		proof, err := state.BlockRootProof(slot)
+		if err != nil {
+			t.Fatalf("Failed to get block root proof: %v", err)
+		}
+
+		gid := uint64(1)
+		gid = gid*beaconStateChunkCeil + beaconStateBlockRootsFieldIndex
+		gid = gid*beaconStateBlockRootsMaxLength + (slot % slotsPerHistoricalRoot)
+
+		stateRoot, blockRoot := validateStateProof(t, state.BlockRoots[slot%slotsPerHistoricalRoot][:], proof, gid, state)
 		t.Logf("stateRoot: %x", stateRoot)
 		t.Logf("blockRoot: %x", blockRoot)
 		expectedStateRoot, err := hex.DecodeString("2683ebc120f91f740c7bed4c866672d01e1ba51b4cc360297138465ee5df40f0")
