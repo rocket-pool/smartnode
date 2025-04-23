@@ -18,7 +18,7 @@ type WithdrawalProofResponse struct {
 	Proof          []string `json:"proof"`
 
 	// Contract refers to this as _withdrawalNum
-	IndexInWithdrawalsArray int `json:"indexInWithdrawalsArray"`
+	IndexInWithdrawalsArray uint `json:"indexInWithdrawalsArray"`
 	// Part of the Withdrawal calldata
 	WithdrawalIndex   uint64         `json:"withdrawalIndex"`
 	WithdrawalAddress common.Address `json:"withdrawalAddress"`

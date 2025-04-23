@@ -215,31 +215,47 @@ func (state *BeaconStateDeneb) ValidatorCredentialsProof(index uint64) ([][]byte
 	return out, nil
 }
 
-func (state *BeaconStateDeneb) BlockRootProof(slot uint64) ([][]byte, error) {
+func (state *BeaconStateDeneb) historicalBlockRootProof(slot uint64) ([][]byte, error) {
 	tree, err := state.GetTree()
 	if err != nil {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
 	}
+
+	// Navigate to the historical_summaries
+	gid := uint64(1)
+	gid = gid*beaconStateChunkCeil + beaconStateHistoricalSummariesFieldIndex
+	// Navigate into the historical summaries vector.
+	arrayIndex := (slot / slotsPerHistoricalRoot)
+	gid = gid*2*beaconStateHistoricalSummariesMaxLength + arrayIndex
+
+	// XXX
+	// We actually need to supplement the proof with the 8192 block roots that comprise the historical summaries.
+	// So this doesn't currently work.
+	gid = gid*2 + 0 // First field of the HistoricalSummary struct (2 fields)
+
+	_ = tree
+	return nil, errors.New("not implemented")
+}
+
+func (state *BeaconStateDeneb) BlockRootProof(slot uint64) ([][]byte, error) {
 	isHistorical := slot+slotsPerHistoricalRoot <= state.Slot
+	if isHistorical {
+		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, slotsPerHistoricalRoot, state.Slot)
+	}
+
+	tree, err := state.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get state tree: %w", err)
+	}
 
 	gid := uint64(1)
 
-	if isHistorical {
-		// Navigate to the historical_summaries
-		gid = gid*beaconStateChunkCeil + beaconStateHistoricalSummariesFieldIndex
-		// Navigate into the historical summaries array.
-		arrayIndex := (slot / slotsPerHistoricalRoot)
-		gid = gid*2*beaconStateHistoricalSummariesMaxLength + arrayIndex
+	// Navigate to the block_roots
+	gid = gid*beaconStateChunkCeil + beaconStateBlockRootsFieldIndex
 
-		gid = gid*2 + 0 // First field of the HistoricalSummary struct (2 fields)
-
-	} else {
-		// Navigate to the block_roots
-		gid = gid*beaconStateChunkCeil + beaconStateBlockRootsFieldIndex
-	}
-	// We're now at the block_summary_root or block_roots bector, which is the root of a slotsPerHistoricalRoot slots vector.
+	// We're now at the block_roots vector, which is the root of a slotsPerHistoricalRoot slots vector.
 	// The index we care about is given by slot % slotsPerHistoricalRoot.
-	gid = gid*2*beaconStateBlockRootsMaxLength + (slot % slotsPerHistoricalRoot)
+	gid = gid*beaconStateBlockRootsMaxLength + (slot % slotsPerHistoricalRoot)
 
 	proof, err := tree.Prove(int(gid))
 	if err != nil {

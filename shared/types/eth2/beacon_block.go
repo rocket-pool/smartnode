@@ -2,21 +2,21 @@ package eth2
 
 // Important indices for proof generation:
 // beaconBlockDenebBodyIndex is the field offset of the Body field in the BeaconBlockDeneb struct
-const beaconBlockDenebChunksCeil int = 8
-const beaconBlockDenebBodyIndex int = 4
-const beaconBlockDenebBodyChunksCeil int = 16
-const beaconBlockDenebBodyExecutionPayloadIndex int = 9
-const beaconBlockDenebBodyExecutionPayloadChunksCeil int = 32
-const beaconBlockDenebBodyExecutionPayloadWithdrawalsIndex int = 14
-const beaconBlockDenebWithdrawalsArrayMax int = 16
+const beaconBlockDenebChunksCeil uint64 = 8
+const beaconBlockDenebBodyIndex uint64 = 4
+const beaconBlockDenebBodyChunksCeil uint64 = 16
+const beaconBlockDenebBodyExecutionPayloadIndex uint64 = 9
+const beaconBlockDenebBodyExecutionPayloadChunksCeil uint64 = 32
+const beaconBlockDenebBodyExecutionPayloadWithdrawalsIndex uint64 = 14
+const beaconBlockDenebWithdrawalsArrayMax uint64 = 16
 
-func (b *BeaconBlockDeneb) ProveWithdrawal(indexInWithdrawalsArray int) ([][]byte, error) {
+func (b *BeaconBlockDeneb) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
 	tree, err := b.GetTree()
 	if err != nil {
 		return nil, err
 	}
 
-	gid := 1
+	gid := uint64(1)
 	// Navigate to the body
 	gid = gid*beaconBlockDenebChunksCeil + beaconBlockDenebBodyIndex
 	// Then to the ExecutionPayload
@@ -28,7 +28,7 @@ func (b *BeaconBlockDeneb) ProveWithdrawal(indexInWithdrawalsArray int) ([][]byt
 	// Finally to the withdrawal in question
 	gid = gid*beaconBlockDenebWithdrawalsArrayMax + indexInWithdrawalsArray
 
-	proof, err := tree.Prove(gid)
+	proof, err := tree.Prove(int(gid))
 	if err != nil {
 		return nil, err
 	}

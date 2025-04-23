@@ -103,7 +103,7 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 			response.WithdrawalSlot = candidateSlot
 			response.Amount = big.NewInt(0).SetUint64(withdrawal.Amount)
 			foundWithdrawal = true
-			response.IndexInWithdrawalsArray = i
+			response.IndexInWithdrawalsArray = uint(i)
 			response.WithdrawalIndex = withdrawal.Index
 			response.WithdrawalAddress = withdrawal.Address
 			break
@@ -120,7 +120,7 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	}
 
 	// Start by proving from the withdrawal to the block_root
-	proof, err := beaconBlockDeneb.Block.ProveWithdrawal(response.IndexInWithdrawalsArray)
+	proof, err := beaconBlockDeneb.Block.ProveWithdrawal(uint64(response.IndexInWithdrawalsArray))
 	if err != nil {
 		return err
 	}
