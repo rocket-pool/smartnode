@@ -94,7 +94,7 @@ func stake(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to stake validator id %d", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake validator id %d", validatorId))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

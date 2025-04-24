@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -53,7 +54,7 @@ func dissolveValidator(c *cli.Context) error {
 			for vi, v := range validatorsInPrestake {
 				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
 			}
-			selected, _ := cliutils.Select("Please select a validator to DISSOLVE:", options)
+			selected, _ := prompt.Select("Please select a validator to DISSOLVE:", options)
 
 			// Get validators
 			validatorId = uint64(validatorsInPrestake[selected].ValidatorId)
@@ -84,7 +85,7 @@ func dissolveValidator(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to DISSOLVE megapool validator ID: %d?", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to DISSOLVE megapool validator ID: %d?", validatorId))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

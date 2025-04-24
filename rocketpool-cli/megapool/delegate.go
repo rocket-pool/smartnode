@@ -6,6 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -52,7 +53,7 @@ func delegateUpgradeMegapool(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to upgrade your megapool to the latest delegate?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to upgrade your megapool to the latest delegate?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -129,7 +130,7 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to change the auto-upgrade setting for your megapool?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to change the auto-upgrade setting for your megapool?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

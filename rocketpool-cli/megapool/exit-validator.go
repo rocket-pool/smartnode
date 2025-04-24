@@ -7,6 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -54,7 +55,7 @@ func exitValidator(c *cli.Context) error {
 			for vi, v := range activeValidators {
 				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
 			}
-			selected, _ := cliutils.Select("Please select a validator to EXIT:", options)
+			selected, _ := prompt.Select("Please select a validator to EXIT:", options)
 
 			// Get validators
 			validatorId = uint64(activeValidators[selected].ValidatorId)
@@ -81,7 +82,7 @@ func exitValidator(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to EXIT validator id %d?", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to EXIT validator id %d?", validatorId))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

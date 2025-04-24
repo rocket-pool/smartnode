@@ -6,6 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -44,7 +45,7 @@ func deployMegapool(c *cli.Context) error {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to deploy a megapool contract?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to deploy a megapool contract?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

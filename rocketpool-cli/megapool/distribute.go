@@ -6,6 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
 
@@ -51,7 +52,7 @@ func distribute(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm("Are you sure you want to distribute your megapool rewards?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to distribute your megapool rewards?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
