@@ -25,6 +25,10 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32) (*api.CanNotifyFi
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.CanNotifyFinalBalanceResponse{}
@@ -57,8 +61,52 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32) (*api.CanNotifyFi
 		response.InvalidStatus = true
 	}
 
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the first slot of the finalized epoch to use for the withdrawal proof
+	head, err := bc.GetBeaconHead()
+	if err != nil {
+		return nil, err
+	}
+
+	referenceSlot := head.FinalizedEpoch * eth2Config.SlotsPerEpoch
+
+	proof, err := services.GetWithdrawalProofForSlot(c, referenceSlot, validatorInfo.ValidatorIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	}
+
+	withdrawalObj := megapool.Withdrawal{
+		Index:                 proof.WithdrawalIndex,
+		AmountInGwei:          proof.Amount.Uint64(),
+		ValidatorIndex:        big.NewInt(int64(proof.ValidatorIndex)),
+		WithdrawalCredentials: proof.WithdrawalAddress,
+	}
+
+	// Estimate the tx to notify the validator final balance
+	gasInfo, err := mp.EstimateNotifyFinalBalance(validatorId, big.NewInt(int64(proof.WithdrawalSlot)), big.NewInt(int64(proof.IndexInWithdrawalsArray)), withdrawalObj, big.NewInt(int64(referenceSlot)), proof.Proof, opts)
+	if err != nil {
+		return nil, err
+	}
+
 	// Update & return response
 	response.CanNotify = !response.InvalidStatus
+	response.GasInfo = gasInfo
 	return &response, nil
 
 }
