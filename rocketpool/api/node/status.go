@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/rocketpool-go/megapool"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -28,6 +29,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/alerting/alertmanager/models"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -68,9 +70,14 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	if reg == nil {
 		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
 	}
+	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.NodeStatusResponse{}
+	response.IsSaturnDeployed = saturnDeployed
 	response.PenalizedMinipools = map[common.Address]uint64{}
 	response.NodeRPLLocked = big.NewInt(0)
 
@@ -87,6 +94,46 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	// Sync
 	var wg errgroup.Group
+
+	if saturnDeployed {
+		wg.Go(func() error {
+			deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+			if err == nil {
+				response.MegapoolDeployed = deployed
+			}
+			megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+			if err == nil {
+				response.MegapoolAddress = megapoolAddress
+			}
+
+			// Load the megapool contract
+			mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+			if err == nil {
+				debt, err := mp.GetDebt(nil)
+				if err == nil {
+					response.MegapoolNodeDebt = debt
+				}
+				refund, err := mp.GetRefundValue(nil)
+				if err == nil {
+					response.MegapoolRefundValue = refund
+				}
+				validatorCount, err := mp.GetActiveValidatorCount(nil)
+				if err == nil {
+					response.MegapoolActiveValidatorCount = uint16(validatorCount)
+				}
+			}
+			return err
+		})
+
+		wg.Go(func() error {
+			expressTicketCount, err := node.GetExpressTicketCount(rp, nodeAccount.Address, nil)
+			if err == nil {
+				response.ExpressTicketCount = expressTicketCount
+			}
+			return err
+		})
+
+	}
 
 	wg.Go(func() error {
 		mpDetails, err := mp.GetNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)

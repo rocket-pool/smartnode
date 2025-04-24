@@ -115,6 +115,18 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
+	wg.Go(func() error {
+		var err error
+		response.Deposit.ExpressQueueRate, err = protocol.GetExpressQueueRate(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Deposit.ExpressQueueTicketsBaseProvision, err = protocol.GetExpressQueueTicketsBaseProvision(rp, nil)
+		return err
+	})
+
 	// === Inflation ===
 
 	wg.Go(func() error {

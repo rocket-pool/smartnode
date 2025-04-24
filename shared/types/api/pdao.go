@@ -95,6 +95,8 @@ type GetPDAOSettingsResponse struct {
 		MaximumAssignmentsPerDeposit           uint64   `json:"maximumAssignmentsPerDeposit"`
 		MaximumSocialisedAssignmentsPerDeposit uint64   `json:"maximumSocialisedAssignmentsPerDeposit"`
 		DepositFee                             *big.Int `json:"depositFee"`
+		ExpressQueueRate                       uint64   `json:"expressQueueRate"`
+		ExpressQueueTicketsBaseProvision       uint64   `json:"expressQueueTicketsBaseProvision"`
 	} `json:"deposit"`
 
 	Inflation struct {

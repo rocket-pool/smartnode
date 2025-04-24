@@ -43,6 +43,8 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tMax Total Assigns Per Deposit:      %d\n", response.Deposit.MaximumAssignmentsPerDeposit)
 	fmt.Printf("\tMax Socialized Assigns Per Deposit: %d\n", response.Deposit.MaximumSocialisedAssignmentsPerDeposit)
 	fmt.Printf("\tDeposit Fee:                        %.2f%%\n", eth.WeiToEth(response.Deposit.DepositFee)*100)
+	fmt.Printf("\tExpress Queue Rate:                 %d\n", response.Deposit.ExpressQueueRate)
+	fmt.Printf("\tExpress Queue Tickets Provision:    %d\n", response.Deposit.ExpressQueueTicketsBaseProvision)
 	fmt.Println()
 
 	// Inflation

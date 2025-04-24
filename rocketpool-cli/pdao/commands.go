@@ -915,6 +915,60 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 										},
 									},
+
+									{
+										Name:      "express-queue-rate",
+										Aliases:   []string{"eqr"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ExpressQueueRatePath, uintUsage),
+										UsageText: "rocketpool pdao propose setting deposit express-queue-rate value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingDepositExpressQueueRate(c, value)
+
+										},
+									},
+
+									{
+										Name:      "express-queue-tickets-base-provision",
+										Aliases:   []string{"eqtbp"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ExpressQueueTicketsBaseProvisionPath, uintUsage),
+										UsageText: "rocketpool pdao propose setting deposit express-queue-tickets-base-provision value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingDepositExpressQueueTicketsBaseProvision(c, value)
+
+										},
+									},
 								},
 							},
 

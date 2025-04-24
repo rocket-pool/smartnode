@@ -10,6 +10,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/dao/protocol"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/state"
+	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
+
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -46,6 +48,12 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 		return nil, err
 	}
 
+	// Check if Saturn is already deployed
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Response
 	response := api.PDAOGetClaimableBondsResponse{}
 
@@ -58,7 +66,7 @@ func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, erro
 	// Set up multicall
 	mcAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 	bbAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-	contracts, err := state.NewNetworkContracts(rp, mcAddress, bbAddress, nil)
+	contracts, err := state.NewNetworkContracts(rp, saturnDeployed, mcAddress, bbAddress, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error creating network contracts: %w", err)
 	}

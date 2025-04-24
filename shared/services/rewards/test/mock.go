@@ -71,7 +71,7 @@ func (h *MockHistory) GetMinipoolAttestationScoreAndCount(address common.Address
 			continue
 		}
 		pubkey := mpi.Pubkey
-		validator := state.ValidatorDetails[pubkey]
+		validator := state.MinipoolValidatorDetails[pubkey]
 		// Check if the validator was exited before this slot
 		if validator.ExitEpoch <= h.BeaconConfig.SlotToEpoch(slot) {
 			continue
@@ -529,7 +529,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		MinipoolDetails:            []rpstate.NativeMinipoolDetails{},
 		MinipoolDetailsByAddress:   make(map[common.Address]*rpstate.NativeMinipoolDetails),
 		MinipoolDetailsByNode:      make(map[common.Address][]*rpstate.NativeMinipoolDetails),
-		ValidatorDetails:           make(state.ValidatorDetailsMap),
+		MinipoolValidatorDetails:   make(state.ValidatorDetailsMap),
 		OracleDaoMemberDetails:     []rpstate.OracleDaoMemberDetails{},
 		ProtocolDaoProposalDetails: nil,
 	}
@@ -660,7 +660,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			if minipool.Finalised {
 				details.Status = beacon.ValidatorState_WithdrawalDone
 			}
-			out.ValidatorDetails[pubkey] = details
+			out.MinipoolValidatorDetails[pubkey] = details
 		}
 
 		// Calculate the AverageNodeFee and DistributorShares

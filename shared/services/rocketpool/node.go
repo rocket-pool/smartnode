@@ -568,9 +568,41 @@ func (c *Client) NodeWithdrawEth(amountWei *big.Int) (api.NodeWithdrawEthRespons
 	return response, nil
 }
 
+// Check whether we can withdraw credit from the node
+func (c *Client) CanNodeWithdrawCredit(amountWei *big.Int) (api.CanNodeWithdrawCreditResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-credit %s", amountWei.String()))
+	if err != nil {
+		return api.CanNodeWithdrawCreditResponse{}, fmt.Errorf("Could not get can node withdraw credit status: %w", err)
+	}
+	var response api.CanNodeWithdrawCreditResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNodeWithdrawCreditResponse{}, fmt.Errorf("Could not decode can node withdraw credit response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNodeWithdrawCreditResponse{}, fmt.Errorf("Could not get can node withdraw credit status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Withdraw credit from the node as rETH
+func (c *Client) NodeWithdrawCredit(amountWei *big.Int) (api.NodeWithdrawCreditResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-credit %s", amountWei.String()))
+	if err != nil {
+		return api.NodeWithdrawCreditResponse{}, fmt.Errorf("Could not withdraw credit: %w", err)
+	}
+	var response api.NodeWithdrawCreditResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeWithdrawCreditResponse{}, fmt.Errorf("Could not decode withdraw credit response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeWithdrawCreditResponse{}, fmt.Errorf("Could not withdraw credit: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can make a deposit
-func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int) (api.CanNodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s", amountWei.String(), minFee, salt.String()))
+func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useExpressTicket bool) (api.CanNodeDepositResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s %t", amountWei.String(), minFee, salt.String(), useExpressTicket))
 	if err != nil {
 		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %w", err)
 	}
@@ -585,8 +617,8 @@ func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.In
 }
 
 // Make a node deposit
-func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, submit bool) (api.NodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %t", amountWei.String(), minFee, salt.String(), useCreditBalance, submit))
+func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, useExpressTicket bool, submit bool) (api.NodeDepositResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %t %t", amountWei.String(), minFee, salt.String(), useCreditBalance, useExpressTicket, submit))
 	if err != nil {
 		return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
 	}
@@ -1108,6 +1140,54 @@ func (c *Client) SendMessage(address common.Address, message []byte) (api.NodeSe
 	}
 	if response.Error != "" {
 		return api.NodeSendMessageResponse{}, fmt.Errorf("Could not get send-message response: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check if the node can deploy a megapool
+func (c *Client) CanDeployMegapool() (api.CanDeployMegapoolResponse, error) {
+	responseBytes, err := c.callAPI("megapool can-deploy-megapool")
+	if err != nil {
+		return api.CanDeployMegapoolResponse{}, fmt.Errorf("Could not get can-deploy-megapool response: %w", err)
+	}
+	var response api.CanDeployMegapoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanDeployMegapoolResponse{}, fmt.Errorf("Could not decode can-deploy-megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanDeployMegapoolResponse{}, fmt.Errorf("Could not get can-deploy-megapool response: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Deploy a megapool
+func (c *Client) DeployMegapool() (api.DeployMegapoolResponse, error) {
+	responseBytes, err := c.callAPI("megapool deploy-megapool")
+	if err != nil {
+		return api.DeployMegapoolResponse{}, fmt.Errorf("Could not get deploy-megapool response: %w", err)
+	}
+	var response api.DeployMegapoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.DeployMegapoolResponse{}, fmt.Errorf("Could not decode deploy-megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.DeployMegapoolResponse{}, fmt.Errorf("Could not get deploy-megapool response: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get the number of express tickets available for the node
+func (c *Client) GetExpressTicketCount() (api.GetExpressTicketCountResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node get-express-ticket-count"))
+	if err != nil {
+		return api.GetExpressTicketCountResponse{}, fmt.Errorf("Could not get express ticket count: %w", err)
+	}
+	var response api.GetExpressTicketCountResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetExpressTicketCountResponse{}, fmt.Errorf("Could not decode express ticket count response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetExpressTicketCountResponse{}, fmt.Errorf("Could not get express ticket count: %s", response.Error)
 	}
 	return response, nil
 }

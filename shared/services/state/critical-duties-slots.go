@@ -40,7 +40,7 @@ func NewCriticalDutiesEpochs(epochs uint64, state *NetworkState) *CriticalDuties
 		}
 
 		pubkey := minipool.Pubkey
-		validatorIndex := state.ValidatorDetails[pubkey].Index
+		validatorIndex := state.MinipoolValidatorDetails[pubkey].Index
 		criticalDuties.CriticalDuties[lastReductionEpoch] = append(criticalDuties.CriticalDuties[lastReductionEpoch], validatorIndex)
 	}
 
@@ -59,7 +59,7 @@ func NewCriticalDutiesEpochs(epochs uint64, state *NetworkState) *CriticalDuties
 		// Flag every minipool for this node as having a critical duty
 		for _, minipool := range state.MinipoolDetailsByNode[node.NodeAddress] {
 			pubkey := minipool.Pubkey
-			validatorIndex := state.ValidatorDetails[pubkey].Index
+			validatorIndex := state.MinipoolValidatorDetails[pubkey].Index
 			criticalDuties.CriticalDuties[lastOptStatusChangeEpoch] = append(criticalDuties.CriticalDuties[lastOptStatusChangeEpoch], validatorIndex)
 		}
 	}

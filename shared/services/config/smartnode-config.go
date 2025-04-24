@@ -114,6 +114,9 @@ type SmartnodeConfig struct {
 	// Threshold for automatic vote power initialization transactions
 	AutoInitVPThreshold config.Parameter `yaml:"autoInitVPThreshold,omitempty"`
 
+	// Delay for automatic queue assignment
+	AutoAssignmentDelay config.Parameter `yaml:"autoAssignmentDelay,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -340,6 +343,17 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		AutoAssignmentDelay: config.Parameter{
+			ID:                 "autoAssignmentDelay",
+			Name:               "Automatic queue assigment delay",
+			Description:        "The Smartnode will periodically check whether its megapool is next in the queue. It will wait for the number of hours specified by this parameter after the last assignment before performing the assignment automatically.\n\n",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: uint16(48)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		RewardsTreeMode: config.Parameter{
 			ID:                 "rewardsTreeMode",
 			Name:               "Rewards Tree Mode",
@@ -525,7 +539,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		snapshotApiDomain: map[config.Network]string{
 			config.Network_Mainnet: "hub.snapshot.org",
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  "hub.snapshot.org",
 			config.Network_Testnet: "hub.snapshot.org",
 		},
 
@@ -631,6 +645,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
 		&cfg.AutoInitVPThreshold,
+		&cfg.AutoAssignmentDelay,
 		&cfg.RewardsTreeMode,
 		&cfg.PriceBalanceSubmissionReferenceTimestamp,
 		&cfg.RewardsTreeCustomUrl,

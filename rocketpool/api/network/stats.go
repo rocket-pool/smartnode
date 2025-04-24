@@ -12,6 +12,8 @@ import (
 	"github.com/rocket-pool/rocketpool-go/tokens"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
+	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
+
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -30,6 +32,12 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		return nil, err
 	}
 	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if Saturn is already deployed
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +136,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 	wg.Go(func() error {
 		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
 		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, nil)
+		contracts, err := rpstate.NewNetworkContracts(rp, saturnDeployed, multicallerAddress, balanceBatcherAddress, nil)
 		if err != nil {
 			return fmt.Errorf("error getting network contracts: %w", err)
 		}

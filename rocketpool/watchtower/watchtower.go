@@ -35,6 +35,7 @@ const (
 	SubmitRplPriceColor            = color.FgYellow
 	SubmitNetworkBalancesColor     = color.FgYellow
 	DissolveTimedOutMinipoolsColor = color.FgMagenta
+	DissolveTimedOutMegapoolsColor = color.FgCyan
 	SubmitScrubMinipoolsColor      = color.FgHiGreen
 	ErrorColor                     = color.FgRed
 	MetricsColor                   = color.FgHiYellow
@@ -127,6 +128,10 @@ func run(c *cli.Context) error {
 		return fmt.Errorf("error during network balances check: %w", err)
 	}
 	dissolveTimedOutMinipools, err := newDissolveTimedOutMinipools(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
+	if err != nil {
+		return fmt.Errorf("error during timed-out minipools check: %w", err)
+	}
+	dissolveTimedOutMegapoolValidators, err := newDissolveTimedOutMegapoolValidators(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
 	if err != nil {
 		return fmt.Errorf("error during timed-out minipools check: %w", err)
 	}
@@ -227,6 +232,12 @@ func run(c *cli.Context) error {
 					time.Sleep(taskCooldown)
 					continue
 				}
+
+				// Run the megapool validator dissolve check
+				if err := dissolveTimedOutMegapoolValidators.run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
 
 				// Run the network balance submission check
 				if err := submitNetworkBalances.run(state); err != nil {

@@ -139,18 +139,18 @@ func (c *Client) DownloadRewardsFile(interval uint64) (api.DownloadRewardsFileRe
 	return response, nil
 }
 
-// Check if Houston Hotfix 1.3.1 has been deployed yet
-func (c *Client) IsHoustonHotfixDeployed() (api.IsHoustonHotfixDeployedResponse, error) {
-	responseBytes, err := c.callAPI("network is-houston-hotfix-deployed")
+// Check if Saturn 1.4 has been deployed yet
+func (c *Client) IsSaturnDeployed() (api.IsSaturnDeployedResponse, error) {
+	responseBytes, err := c.callAPI("network is-saturn-deployed")
 	if err != nil {
-		return api.IsHoustonHotfixDeployedResponse{}, fmt.Errorf("could not check if Houston Hotfix is deployed: %w", err)
+		return api.IsSaturnDeployedResponse{}, fmt.Errorf("could not check if Saturn is deployed: %w", err)
 	}
-	var response api.IsHoustonHotfixDeployedResponse
+	var response api.IsSaturnDeployedResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.IsHoustonHotfixDeployedResponse{}, fmt.Errorf("could not decode is-houston-hotfix-deployed response: %w", err)
+		return api.IsSaturnDeployedResponse{}, fmt.Errorf("could not decode is-saturn-deployed response: %w", err)
 	}
 	if response.Error != "" {
-		return api.IsHoustonHotfixDeployedResponse{}, fmt.Errorf("could not check if Houston Hotfix is deployed: %s", response.Error)
+		return api.IsSaturnDeployedResponse{}, fmt.Errorf("could not check if Saturn is deployed: %s", response.Error)
 	}
 	return response, nil
 }
