@@ -26,6 +26,10 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.CanNotifyValidatorExitResponse{}
@@ -58,7 +62,24 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 		response.InvalidStatus = true
 	}
 
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+
+	proof, err := services.GetWithdrawableEpochProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
+	if err != nil {
+		return nil, err
+	}
+
+	// Notify the validator exit
+	gasInfo, err := mp.EstimateNotifyExitGas(validatorId, big.NewInt(int64(proof.WithdrawableEpoch)), proof.Slot, proof.Witnesses, opts)
+	if err != nil {
+		return nil, err
+	}
+
 	// Update & return response
+	response.GasInfo = gasInfo
 	response.CanExit = !response.InvalidStatus
 	return &response, nil
 
