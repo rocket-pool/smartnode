@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/megapool"
-	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -118,7 +117,15 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32) (*api.NotifyFinalBal
 		return nil, err
 	}
 
-	proof, err := services.GetWithdrawableEpochProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
+	// Get the first slot of the finalized epoch to use for the withdrawal proof
+	head, err := bc.GetBeaconHead()
+	if err != nil {
+		return nil, err
+	}
+
+	referenceSlot := head.FinalizedEpoch * eth2Config.SlotsPerEpoch
+
+	proof, err := services.GetWithdrawalProofForSlot(c, referenceSlot, validatorInfo.ValidatorIndex)
 	if err != nil {
 		return nil, err
 	}
@@ -135,8 +142,15 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32) (*api.NotifyFinalBal
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Notify the validator exit
-	hash, err := mp.NotifyFinalBalance(validatorId, big.NewInt(int64(proof.WithdrawableEpoch)), proof.Slot, proof.Witnesses, opts)
+	withdrawalObj := megapool.Withdrawal{
+		Index:                 proof.WithdrawalIndex,
+		AmountInGwei:          proof.Amount.Uint64(),
+		ValidatorIndex:        big.NewInt(int64(proof.ValidatorIndex)),
+		WithdrawalCredentials: proof.WithdrawalAddress,
+	}
+
+	// Notify the validator final balance
+	hash, err := mp.NotifyFinalBalance(validatorId, big.NewInt(int64(proof.WithdrawalSlot)), big.NewInt(int64(proof.IndexInWithdrawalsArray)), withdrawalObj, big.NewInt(int64(referenceSlot)), proof.Proof, opts)
 	if err != nil {
 		return nil, err
 	}

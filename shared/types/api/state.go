@@ -11,11 +11,11 @@ type BeaconStateResponse struct {
 }
 
 type WithdrawalProofResponse struct {
-	Slot           uint64   `json:"slot"`
-	WithdrawalSlot uint64   `json:"withdrawalSlot"`
-	ValidatorIndex uint64   `json:"validatorIndex"`
-	Amount         *big.Int `json:"amount"`
-	Proof          []string `json:"proof"`
+	Slot           uint64     `json:"slot"`
+	WithdrawalSlot uint64     `json:"withdrawalSlot"`
+	ValidatorIndex uint64     `json:"validatorIndex"`
+	Amount         *big.Int   `json:"amount"`
+	Proof          [][32]byte `json:"proof"`
 
 	// Contract refers to this as _withdrawalNum
 	IndexInWithdrawalsArray uint `json:"indexInWithdrawalsArray"`

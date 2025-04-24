@@ -23,11 +23,14 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
 )
+
+const MAX_WITHDRAWAL_SLOT_DISTANCE = 432000 // 60 days.
 
 func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, error) {
 	// Get validator private key
@@ -172,6 +175,95 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 	}
 
 	return proof, err
+}
+
+func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint64) (api.WithdrawalProofResponse, error) {
+	// Create a new response
+	response := api.WithdrawalProofResponse{}
+	response.ValidatorIndex = validatorIndex
+	response.Slot = slot
+	// Get services
+	if err := RequireNodeRegistered(c); err != nil {
+		return api.WithdrawalProofResponse{}, err
+	}
+	bc, err := GetBeaconClient(c)
+	if err != nil {
+		return api.WithdrawalProofResponse{}, err
+	}
+
+	// Find the most recent withdrawal to slot.
+	// Keep track of 404s- if we get 64 missing slots in a row, assume we don't have full history.
+	notFounds := 0
+	var beaconBlockDeneb *eth2.SignedBeaconBlockDeneb
+	for candidateSlot := slot; candidateSlot >= slot-MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot-- {
+		// Get the block at the candidate slot.
+		block, found, err := bc.GetBeaconBlockDeneb(candidateSlot)
+		if err != nil {
+			return api.WithdrawalProofResponse{}, err
+		}
+		if !found {
+			notFounds++
+			if notFounds >= 64 {
+				return api.WithdrawalProofResponse{}, fmt.Errorf("2 epochs of missing slots detected. It is likely that the Beacon Client was checkpoint synced after the most recent withdrawal to slot %d, and does not have the history required to generate a withdrawal proof", slot)
+			}
+			continue
+		} else {
+			notFounds = 0
+		}
+
+		if block.Block.Body.ExecutionPayload == nil {
+			continue
+		}
+
+		foundWithdrawal := false
+
+		// Check the block for a withdrawal for the given validator index.
+		for i, withdrawal := range block.Block.Body.ExecutionPayload.Withdrawals {
+			if withdrawal.ValidatorIndex != validatorIndex {
+				continue
+			}
+			response.WithdrawalSlot = candidateSlot
+			response.Amount = big.NewInt(0).SetUint64(withdrawal.Amount)
+			foundWithdrawal = true
+			response.IndexInWithdrawalsArray = uint(i)
+			response.WithdrawalIndex = withdrawal.Index
+			response.WithdrawalAddress = withdrawal.Address
+			break
+		}
+
+		if foundWithdrawal {
+			beaconBlockDeneb = block
+			break
+		}
+	}
+
+	if response.Slot == 0 {
+		return api.WithdrawalProofResponse{}, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
+	}
+
+	// Start by proving from the withdrawal to the block_root
+	proof, err := beaconBlockDeneb.Block.ProveWithdrawal(uint64(response.IndexInWithdrawalsArray))
+	if err != nil {
+		return api.WithdrawalProofResponse{}, err
+	}
+
+	// Get beacon state
+	state, err := bc.GetBeaconState(slot)
+	if err != nil {
+		return api.WithdrawalProofResponse{}, err
+	}
+
+	stateProof, err := state.BlockRootProof(response.WithdrawalSlot)
+	if err != nil {
+		return api.WithdrawalProofResponse{}, err
+	}
+
+	// Concatenate state and stateProof
+	proof = append(proof, stateProof...)
+
+	response.Proof = convertToFixedSize(proof)
+
+	return response, nil
 }
 
 func convertToFixedSize(proofBytes [][]byte) [][32]byte {
