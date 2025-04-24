@@ -466,6 +466,53 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-notify-final-balance",
+				Usage:     "Check if we can notify the final balance of a megapool validator",
+				UsageText: "rocketpool api megapool can-notify-final-balance validator-id",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get the validatorId
+					validatorId, err := cliutils.ValidateUint32("validatorId", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNotifyValidatorExit(c, validatorId))
+					return nil
+
+				},
+			},
+			{
+				Name:      "notify-final-balance",
+				Aliases:   []string{"fb"},
+				Usage:     "Notify a megapool validator final balance",
+				UsageText: "rocketpool api megapool notify-final-balance validator-id",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get validatorId
+					validatorId, err := cliutils.ValidateUint32("validatorId", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(notifyFinalBalance(c, validatorId))
+					return nil
+
+				},
+			},
+			{
 				Name:      "get-use-latest-delegate",
 				Usage:     "Gets the current setting of the 'always use latest delegate' toggle",
 				UsageText: "rocketpool api megapool get-use-latest-delegate megapool-address",

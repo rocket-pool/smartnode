@@ -11,7 +11,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func notifyValidatorExit(c *cli.Context) error {
+func notifyFinalBalance(c *cli.Context) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -42,23 +42,23 @@ func notifyValidatorExit(c *cli.Context) error {
 			return err
 		}
 
-		activeValidators := []api.MegapoolValidatorDetails{}
+		exitingValidators := []api.MegapoolValidatorDetails{}
 
 		for _, validator := range status.Megapool.Validators {
-			if validator.Activated {
-				activeValidators = append(activeValidators, validator)
+			if validator.Exiting {
+				exitingValidators = append(exitingValidators, validator)
 			}
 		}
-		if len(activeValidators) > 0 {
+		if len(exitingValidators) > 0 {
 
-			options := make([]string, len(activeValidators))
-			for vi, v := range activeValidators {
-				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+			options := make([]string, len(exitingValidators))
+			for vi, v := range exitingValidators {
+				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Final ETH balance: %d)", v.ValidatorId, v.PubKey.String(), v.ExitBalance)
 			}
-			selected, _ := prompt.Select("Please select a validator to notify the exit:", options)
+			selected, _ := prompt.Select("Please select a validator to notify the final balance:", options)
 
 			// Get validators
-			validatorId = uint64(activeValidators[selected].ValidatorId)
+			validatorId = uint64(exitingValidators[selected].ValidatorId)
 
 		} else {
 			fmt.Println("No validators can be exited at the moment")
@@ -66,12 +66,12 @@ func notifyValidatorExit(c *cli.Context) error {
 		}
 	}
 
-	response, err := rp.CanNotifyValidatorExit(validatorId)
+	response, err := rp.CanNotifyFinalBalance(validatorId)
 	if err != nil {
 		return err
 	}
 
-	if !response.CanExit {
+	if !response.CanNotify {
 		return nil
 	}
 
@@ -82,25 +82,25 @@ func notifyValidatorExit(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to notify about the validator id %d exit?", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to notify the final balance for validator id %d?", validatorId))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Exit the validator
-	resp, err := rp.NotifyValidatorExit(validatorId)
+	resp, err := rp.NotifyFinalBalance(validatorId)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Notifying validator exit...\n")
+	fmt.Printf("Notifying validator final balance...\n")
 	cliutils.PrintTransactionHash(rp, resp.TxHash)
 	if _, err = rp.WaitForTransaction(resp.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully requested to exit validator id %d.\n", validatorId)
+	fmt.Printf("Successfully notified validator final balance id %d.\n", validatorId)
 	return nil
 
 }

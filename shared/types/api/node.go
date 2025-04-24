@@ -779,6 +779,19 @@ type NotifyValidatorExitResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type CanNotifyFinalBalanceResponse struct {
+	Status        string             `json:"status"`
+	Error         string             `json:"error"`
+	CanNotify     bool               `json:"canNotify"`
+	InvalidStatus bool               `json:"invalidStatus"`
+	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+}
+type NotifyFinalBalanceResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type CanStakeResponse struct {
 	Status        string             `json:"status"`
 	Error         string             `json:"error"`

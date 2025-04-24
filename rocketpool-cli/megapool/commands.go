@@ -287,6 +287,32 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "notify-final-balance",
+				Aliases:   []string{"fb"},
+				Usage:     "Notify the final balance of a validator after an exit",
+				UsageText: "rocketpool megapool notify-final-balance",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+					cli.StringFlag{
+						Name:  "validator-id",
+						Usage: "The validator id for which the final balance is being notified",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return notifyFinalBalance(c)
+				},
+			},
+			{
 				Name:      "distribute",
 				Aliases:   []string{"b"},
 				Usage:     "Distribute any accrued execution layer rewards sent to this megapool",
