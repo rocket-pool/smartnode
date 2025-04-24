@@ -150,6 +150,88 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-reduce-bond",
+				Usage:     "Check if we can reduce the megapool bond",
+				UsageText: "rocketpool api megapool can-reduce-bond amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get amount
+					amount, err := cliutils.ValidatePositiveWeiAmount("amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canReduceBond(c, amount))
+					return nil
+
+				},
+			},
+			{
+				Name:      "reduce-bond",
+				Aliases:   []string{"rb"},
+				Usage:     "Reduce the megapool bond",
+				UsageText: "rocketpool api megapool reduce-bond amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get amount
+					amount, err := cliutils.ValidatePositiveWeiAmount("amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(reduceBond(c, amount))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-claim-refund",
+				Usage:     "Check if we can claim a megapool refund",
+				UsageText: "rocketpool api megapool can-claim-refund",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canClaimRefund(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "claim-refund",
+				Aliases:   []string{"cr"},
+				Usage:     "Claim a megapool refund",
+				UsageText: "rocketpool api megapool claim-refund",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(claimRefund(c))
+					return nil
+
+				},
+			},
+			{
 				Name:      "can-stake",
 				Usage:     "Check if we can stake a megapool validator",
 				UsageText: "rocketpool api megapool can-stake validator-id",

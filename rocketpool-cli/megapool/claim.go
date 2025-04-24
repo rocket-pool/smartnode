@@ -2,7 +2,7 @@ package megapool
 
 import (
 	"fmt"
-	"strconv"
+	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -13,7 +13,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func repayDebt(c *cli.Context) error {
+func claim(c *cli.Context) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -36,35 +36,21 @@ func repayDebt(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if megapoolDetails.Megapool.NodeDebt != nil {
-		fmt.Printf("You have %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
+
+	if megapoolDetails.Megapool.RefundValue != nil && megapoolDetails.Megapool.RefundValue.Cmp(big.NewInt(0)) > 0 {
+		fmt.Printf("You have %.6f ETH of megapool refund to claim.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.RefundValue), 6))
 	} else {
-		fmt.Println("You have no megapool debt.")
+		fmt.Println("You have no megapool refund to claim.")
 		return nil
 	}
 
-	// Get amount to repay
-	amountStr := prompt.Prompt("Enter the amount of megapool debt to repay (in ETH):", "^\\d+(\\.\\d+)?$", "Invalid amount")
-
-	amount, err := strconv.ParseFloat(amountStr, 64)
-	if err != nil {
-		return fmt.Errorf("Invalid amount '%s': %w\n", amountStr, err)
-	}
-
-	amountWei := eth.EthToWei(amount)
-	// Check megapool debt can be repaid
-	canRepay, err := rp.CanRepayDebt(amountWei)
+	canRepay, err := rp.CanClaimMegapoolRefund()
 	if err != nil {
 		return err
 	}
 
-	if !canRepay.CanRepay {
-		if canRepay.NotEnoughDebt {
-			fmt.Println("Not enough megapool debt to repay.")
-		}
-		if canRepay.NotEnoughBalance {
-			fmt.Println("Not enough balance to repay megapool debt.")
-		}
+	if !canRepay.CanClaim {
+		fmt.Println("You cannot claim a megapool refund at this time.")
 		return nil
 	}
 
@@ -75,25 +61,25 @@ func repayDebt(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to repay %.6f of megapool debt?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to claim your megapool refund?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
 	// Repay megapool debt
-	response, err := rp.RepayDebt(amountWei)
+	response, err := rp.ClaimMegapoolRefund()
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("Repaying megapool debt...\n")
+	fmt.Printf("Claiming megapool refund...\n")
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Log & return
-	fmt.Printf("Successfully repaid %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully claimed megapool refund.\n")
 	return nil
 
 }

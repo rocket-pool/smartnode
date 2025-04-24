@@ -92,7 +92,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Name:      "repay-debt",
 				Aliases:   []string{"r"},
 				Usage:     "Repay megapool debt",
-				UsageText: "rocketpool megapool repay-debt amount",
+				UsageText: "rocketpool megapool repay-debt",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes",
@@ -102,18 +102,56 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-
-					// Get amount
-					amount, err := cliutils.ValidatePositiveEthAmount("amount", c.Args().Get(0))
-					if err != nil {
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
 
 					// Run
-					return repayDebt(c, amount)
+					return repayDebt(c)
+				},
+			},
+			{
+				Name:      "reduce-bond",
+				Aliases:   []string{"e"},
+				Usage:     "Reduce the megapool bond",
+				UsageText: "rocketpool megapool reduce-bond",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return reduceBond(c)
+				},
+			},
+			{
+				Name:      "claim",
+				Aliases:   []string{"r"},
+				Usage:     "Claim any megapool rewards that were distributed but not yet claimed",
+				UsageText: "rocketpool megapool claim",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return claim(c)
 				},
 			},
 			{

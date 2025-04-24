@@ -701,6 +701,31 @@ type GetExpressTicketCountResponse struct {
 	Count  uint64 `json:"count"`
 }
 
+type CanClaimRefundResponse struct {
+	Status   string             `json:"status"`
+	Error    string             `json:"error"`
+	CanClaim bool               `json:"canClaim"`
+	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+}
+type ClaimRefundResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type CanReduceBondResponse struct {
+	Status        string             `json:"status"`
+	Error         string             `json:"error"`
+	CanReduceBond bool               `json:"canReduceBond"`
+	NotEnoughBond bool               `json:"notEnoughBond"`
+	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+}
+type ReduceBondResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type CanRepayDebtResponse struct {
 	Status           string             `json:"status"`
 	Error            string             `json:"error"`

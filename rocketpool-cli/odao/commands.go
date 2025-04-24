@@ -90,6 +90,40 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "penalise-megapool",
+				Aliases:   []string{"pm"},
+				Usage:     "Penalise a megapool",
+				UsageText: "rocketpool odao penalise-megapool megapool-adress block",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					block, err := cliutils.ValidateBigInt("block number", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					return penaliseMegapool(c, megapoolAddress, block)
+
+				},
+			},
+
+			{
 				Name:    "propose",
 				Aliases: []string{"p"},
 				Usage:   "Make an oracle DAO proposal",

@@ -162,7 +162,7 @@ func repayDebt(c *cli.Context, amount *big.Int) (*api.RepayDebtResponse, error) 
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Dissolve
+	// Repay debt
 	hash, err := mp.RepayDebt(opts)
 	if err != nil {
 		return nil, err

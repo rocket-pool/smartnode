@@ -2,10 +2,9 @@ package megapool
 
 import (
 	"fmt"
-	"strings"
+	"math/big"
 
 	"github.com/rocket-pool/rocketpool-go/megapool"
-	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error) {
+func canReduceBond(c *cli.Context, amount *big.Int) (*api.CanReduceBondResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -39,7 +38,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 	}
 
 	// Response
-	response := api.CanStakeResponse{}
+	response := api.CanReduceBondResponse{}
 
 	// Check if the megapool is deployed
 	megapoolDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
@@ -47,7 +46,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 		return nil, err
 	}
 	if !megapoolDeployed {
-		response.CanStake = false
+		response.CanReduceBond = false
 		return &response, nil
 	}
 
@@ -57,46 +56,22 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 		return nil, err
 	}
 
-	// Load the megapool
+	// Load the megapool details
+	details, err := GetNodeMegapoolDetails(rp, bc, nodeAccount.Address)
+	if err != nil {
+		return nil, err
+	}
+
 	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Get the validator count
-	validatorCount, err := mp.GetValidatorCount(nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if validatorId >= uint64(validatorCount) {
-		response.CanStake = false
+	// Check if the node bond is greater than the current required bond
+	if details.NodeBond.Cmp(details.BondRequirement) <= 0 {
+		response.CanReduceBond = false
+		response.NotEnoughBond = true
 		return &response, nil
-	}
-
-	validatorInfo, err := mp.GetValidatorInfo(uint32(validatorId), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if !validatorInfo.InPrestake {
-		response.CanStake = false
-		return &response, nil
-	}
-
-	eth2Config, err := bc.GetEth2Config()
-	if err != nil {
-		return nil, err
-	}
-
-	proof, err := services.GetStakeValidatorInfo(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
-	if err != nil {
-		if strings.Contains(err.Error(), "index not found") {
-			response.CanStake = false
-			response.IndexNotFound = true
-			return &response, nil
-		}
-		return nil, err
 	}
 
 	// Get gas estimate
@@ -104,18 +79,18 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateStakeGas(uint32(validatorId), proof, opts)
+	gasInfo, err := mp.EstimateReduceBondGas(amount, opts)
 	if err != nil {
 		return nil, err
 	}
 	response.GasInfo = gasInfo
-	response.CanStake = true
+	response.CanReduceBond = true
 
 	return &response, nil
 
 }
 
-func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
+func reduceBond(c *cli.Context, amount *big.Int) (*api.ReduceBondResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -129,10 +104,6 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	bc, err := services.GetBeaconClient(c)
-	if err != nil {
-		return nil, err
-	}
 
 	// Get the node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -141,7 +112,7 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 	}
 
 	// Response
-	response := api.StakeResponse{}
+	response := api.ReduceBondResponse{}
 
 	// Get the megapool address
 	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
@@ -151,21 +122,6 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 
 	// Load the megapool
 	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	validatorInfo, err := mp.GetValidatorInfo(uint32(validatorId), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	eth2Config, err := bc.GetEth2Config()
-	if err != nil {
-		return nil, err
-	}
-
-	proof, err := services.GetStakeValidatorInfo(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
 	if err != nil {
 		return nil, err
 	}
@@ -182,8 +138,8 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Stake
-	hash, err := mp.Stake(uint32(validatorId), proof, opts)
+	// Reduce bond
+	hash, err := mp.ReduceBond(amount, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -9,7 +9,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/rocketpool"
 	"github.com/rocket-pool/rocketpool-go/types"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	mp_api "github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -146,7 +145,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := mp_api.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount))
+	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount))
 	if err != nil {
 		return err
 	}
@@ -176,7 +175,7 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 
 	t.log.Printlnf("[STARTED] Crafting a proof that the correct credentials were used on the first beacon chain deposit. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
-	signature, depositDataRoot, proof, err := services.GetStakeValidatorInfo(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
+	proof, err := services.GetStakeValidatorInfo(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
@@ -185,7 +184,7 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 	t.log.Printlnf("[FINISHED] The beacon state proof has been successfully created.")
 
 	// Get the gas limit
-	gasInfo, err := mp.EstimateStakeGas(validatorId, signature, depositDataRoot, proof, opts)
+	gasInfo, err := mp.EstimateStakeGas(validatorId, proof, opts)
 	if err != nil {
 		return err
 	}
@@ -209,7 +208,7 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 	opts.GasLimit = gas.Uint64()
 
 	// Call stake
-	hash, err := mp.Stake(validatorId, signature, depositDataRoot, proof, opts)
+	hash, err := mp.Stake(validatorId, proof, opts)
 	if err != nil {
 		return err
 	}

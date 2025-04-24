@@ -76,7 +76,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		}
 
 		// Post a warning about fee distribution
-		if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("%sNOTE: By creating a new validator, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: By creating a new validator, your node will automatically claim and distribute any balance you have in your fee distributor contract. If you don't want to claim your balance at this time, you should not create a new minipool.%s\nWould you like to continue?", colorYellow, colorReset))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

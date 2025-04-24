@@ -852,3 +852,35 @@ func (c *Client) GetTNDAOMinipoolSettings() (api.GetTNDAOMinipoolSettingsRespons
 	}
 	return response, nil
 }
+
+// Check whether the node can penalise a megapool
+func (c *Client) CanPenaliseMegapool(megapoolAddress common.Address, block *big.Int, amountWei *big.Int) (api.CanPenaliseMegapoolResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao can-penalise-megapool %s %s %s", megapoolAddress.String(), block.String(), amountWei.String()))
+	if err != nil {
+		return api.CanPenaliseMegapoolResponse{}, fmt.Errorf("Could not get can penalise megapool status: %w", err)
+	}
+	var response api.CanPenaliseMegapoolResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanPenaliseMegapoolResponse{}, fmt.Errorf("Could not decode can penalise megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanPenaliseMegapoolResponse{}, fmt.Errorf("Could not get can penalise megapool status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Penalise a megapool
+func (c *Client) PenaliseMegapool(megapoolAddress common.Address, block *big.Int, amountWei *big.Int) (api.RepayDebtResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("odao penalise-megapool %s %s %s", megapoolAddress.String(), block.String(), amountWei.String()))
+	if err != nil {
+		return api.RepayDebtResponse{}, fmt.Errorf("Could not penalise megapool : %w", err)
+	}
+	var response api.RepayDebtResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.RepayDebtResponse{}, fmt.Errorf("Could not decode penalise megapool response: %w", err)
+	}
+	if response.Error != "" {
+		return api.RepayDebtResponse{}, fmt.Errorf("Could not penalise megapool : %s", response.Error)
+	}
+	return response, nil
+}
