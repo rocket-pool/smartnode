@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
@@ -66,12 +67,12 @@ func nodeWithdrawCredit(c *cli.Context) error {
 		// Get maximum withdrawable amount
 		maxAmount := status.CreditBalance
 		// Prompt for maximum amount
-		if cliutils.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of credit ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
+		if prompt.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of credit ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
 			amountWei = maxAmount
 		} else {
 
 			// Prompt for custom amount
-			inputAmount := cliutils.Prompt("Please enter an amount of ETH credit to withdraw:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+			inputAmount := prompt.Prompt("Please enter an amount of ETH credit to withdraw:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 			withdrawalAmount, err := strconv.ParseFloat(inputAmount, 64)
 			if err != nil {
 				return fmt.Errorf("Invalid withdrawal amount '%s': %w", inputAmount, err)
@@ -101,7 +102,7 @@ func nodeWithdrawCredit(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || cliutils.Confirm(fmt.Sprintf("Are you sure you want to withdraw %.6f of credit?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to withdraw %.6f of credit?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
