@@ -27,7 +27,7 @@ const beaconStateBlockRootsFieldIndex uint64 = 5
 
 // See https://github.com/ethereum/consensus-specs/blob/dev/ssz/merkle-proofs.md for general index calculation and helpers
 
-const slotsPerHistoricalRoot uint64 = 8192
+const SlotsPerHistoricalRoot uint64 = 8192
 
 func getPowerOfTwoCeil(x uint64) uint64 {
 	// Base case
@@ -215,7 +215,11 @@ func (state *BeaconStateDeneb) ValidatorCredentialsProof(index uint64) ([][]byte
 	return out, nil
 }
 
-func (state *BeaconStateDeneb) historicalBlockRootProof(slot uint64) ([][]byte, error) {
+func (state *BeaconStateDeneb) HistoricalBlockRootProof(slot uint64) ([][]byte, error) {
+	isHistorical := slot+SlotsPerHistoricalRoot <= state.Slot
+	if !isHistorical {
+		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, SlotsPerHistoricalRoot, state.Slot)
+	}
 	tree, err := state.GetTree()
 	if err != nil {
 		return nil, fmt.Errorf("could not get state tree: %w", err)
@@ -225,22 +229,55 @@ func (state *BeaconStateDeneb) historicalBlockRootProof(slot uint64) ([][]byte, 
 	gid := uint64(1)
 	gid = gid*beaconStateChunkCeil + beaconStateHistoricalSummariesFieldIndex
 	// Navigate into the historical summaries vector.
-	arrayIndex := (slot / slotsPerHistoricalRoot)
+	arrayIndex := (slot / SlotsPerHistoricalRoot)
 	gid = gid*2*beaconStateHistoricalSummariesMaxLength + arrayIndex
 
-	// XXX
-	// We actually need to supplement the proof with the 8192 block roots that comprise the historical summaries.
-	// So this doesn't currently work.
-	gid = gid*2 + 0 // First field of the HistoricalSummary struct (2 fields)
+	proof, err := tree.Prove(int(gid))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for historical block root: %w", err)
+	}
 
-	_ = tree
-	return nil, errors.New("not implemented")
+	return proof.Hashes, nil
+}
+
+func (state *BeaconStateDeneb) HistoricalSummaryProof(slot int) ([][]byte, error) {
+	// If the state isn't aligned at the end of an 8192 slot era, throw an error
+	if state.Slot%SlotsPerHistoricalRoot != SlotsPerHistoricalRoot-1 {
+		return nil, fmt.Errorf("state is not aligned at the end of an 8192 slot era")
+	}
+
+	if slot < int(state.Slot)-int(SlotsPerHistoricalRoot)-1 || slot+int(SlotsPerHistoricalRoot)-1 >= int(state.Slot) {
+		return nil, fmt.Errorf("slot %d is out of range for historical summary proof", slot)
+	}
+
+	hsls := HistoricalSummaryLists{
+		BlockRoots: state.BlockRoots,
+		StateRoots: state.StateRoots,
+	}
+
+	idx := slot % int(SlotsPerHistoricalRoot)
+	tree, err := hsls.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get historical summary lists tree: %w", err)
+	}
+
+	gid := uint64(1)
+	gid = gid * 2                      // Now at block_roots
+	gid = gid * SlotsPerHistoricalRoot // Now at the first block_root
+	gid = gid + uint64(idx)            // Now at the correct block_root
+
+	proof, err := tree.Prove(int(gid))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for historical summary: %w", err)
+	}
+
+	return proof.Hashes, nil
 }
 
 func (state *BeaconStateDeneb) BlockRootProof(slot uint64) ([][]byte, error) {
-	isHistorical := slot+slotsPerHistoricalRoot <= state.Slot
+	isHistorical := slot+SlotsPerHistoricalRoot <= state.Slot
 	if isHistorical {
-		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, slotsPerHistoricalRoot, state.Slot)
+		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, SlotsPerHistoricalRoot, state.Slot)
 	}
 
 	tree, err := state.GetTree()
@@ -255,7 +292,7 @@ func (state *BeaconStateDeneb) BlockRootProof(slot uint64) ([][]byte, error) {
 
 	// We're now at the block_roots vector, which is the root of a slotsPerHistoricalRoot slots vector.
 	// The index we care about is given by slot % slotsPerHistoricalRoot.
-	gid = gid*beaconStateBlockRootsMaxLength + (slot % slotsPerHistoricalRoot)
+	gid = gid*beaconStateBlockRootsMaxLength + (slot % SlotsPerHistoricalRoot)
 
 	proof, err := tree.Prove(int(gid))
 	if err != nil {
@@ -376,4 +413,9 @@ type SyncCommittee struct {
 type HistoricalSummary struct {
 	BlockSummaryRoot [32]byte `json:"block_summary_root" ssz-size:"32"`
 	StateSummaryRoot [32]byte `json:"state_summary_root" ssz-size:"32"`
+}
+
+type HistoricalSummaryLists struct {
+	BlockRoots [8192][32]byte `json:"block_roots" ssz-size:"8192,32"`
+	StateRoots [8192][32]byte `json:"state_roots" ssz-size:"8192,32"`
 }

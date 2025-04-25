@@ -367,9 +367,9 @@ func TestBlockRootProof(t *testing.T) {
 
 		gid := uint64(1)
 		gid = gid*beaconStateChunkCeil + beaconStateBlockRootsFieldIndex
-		gid = gid*beaconStateBlockRootsMaxLength + (slot % slotsPerHistoricalRoot)
+		gid = gid*beaconStateBlockRootsMaxLength + (slot % SlotsPerHistoricalRoot)
 
-		stateRoot, blockRoot := validateStateProof(t, state.BlockRoots[slot%slotsPerHistoricalRoot][:], proof, gid, state)
+		stateRoot, blockRoot := validateStateProof(t, state.BlockRoots[slot%SlotsPerHistoricalRoot][:], proof, gid, state)
 		t.Logf("stateRoot: %x", stateRoot)
 		t.Logf("blockRoot: %x", blockRoot)
 		expectedStateRoot, err := hex.DecodeString("2683ebc120f91f740c7bed4c866672d01e1ba51b4cc360297138465ee5df40f0")

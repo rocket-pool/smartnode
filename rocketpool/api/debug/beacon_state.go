@@ -131,13 +131,42 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		return err
 	}
 
-	stateProof, err := state.BlockRootProof(response.WithdrawalSlot)
-	if err != nil {
-		return err
+	var summaryProof [][]byte
+
+	var stateProof [][]byte
+	if response.WithdrawalSlot+eth2.SlotsPerHistoricalRoot > state.Slot {
+		stateProof, err = state.BlockRootProof(response.WithdrawalSlot)
+		if err != nil {
+			return err
+		}
+	} else {
+		stateProof, err = state.HistoricalBlockRootProof(response.WithdrawalSlot)
+		if err != nil {
+			return err
+		}
+
+		// Additionally, we need to prove from the block_root in the historical summary
+		// up to the beginning of the above proof, which is the entry in the historical summaries vector.
+		blockRootsStateSlot := (response.WithdrawalSlot / eth2.SlotsPerHistoricalRoot) * eth2.SlotsPerHistoricalRoot
+		blockRootsStateSlot = blockRootsStateSlot + eth2.SlotsPerHistoricalRoot - 1
+		// get the state that has the block roots tree
+		blockRootsState, err := bc.GetBeaconState(blockRootsStateSlot)
+		if err != nil {
+			return err
+		}
+		summaryProof, err = blockRootsState.HistoricalSummaryProof(int(response.WithdrawalSlot))
+		if err != nil {
+			return err
+		}
+
 	}
 
 	// Convert the proof to a list of 0x-prefixed hex strings
-	response.Proof = make([]string, 0, len(proof)+len(stateProof))
+	response.Proof = make([]string, 0, len(proof)+len(stateProof)+len(summaryProof))
+	for _, hash := range summaryProof {
+		response.Proof = append(response.Proof, hexutil.EncodeToString(hash))
+	}
+
 	for _, hash := range proof {
 		response.Proof = append(response.Proof, hexutil.EncodeToString(hash))
 	}
