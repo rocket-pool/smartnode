@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/smartnode/shared/types/eth2"
 )
 
 // API request options
@@ -153,6 +152,20 @@ const (
 	ValidatorState_WithdrawalDone     ValidatorState = "withdrawal_done"
 )
 
+// SSZ response go into these wrapper types.
+// You can stream Data into a deserializer.
+// Fork is the consensus version, e.g, "deneb" or "electra"
+
+type BeaconStateSSZ struct {
+	Data []byte
+	Fork string
+}
+
+type BeaconBlockSSZ struct {
+	Data []byte
+	Fork string
+}
+
 // Beacon client interface
 type Client interface {
 	GetClientType() (BeaconClientType, error)
@@ -163,8 +176,6 @@ type Client interface {
 	GetBeaconBlock(blockId string) (BeaconBlock, bool, error)
 	GetBeaconBlockHeader(blockId string) (BeaconBlockHeader, bool, error)
 	GetBeaconHead() (BeaconHead, error)
-	GetBeaconState(slot uint64) (*eth2.BeaconStateDeneb, error)
-	GetBeaconBlockDeneb(slot uint64) (*eth2.SignedBeaconBlockDeneb, bool, error)
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
@@ -179,4 +190,7 @@ type Client interface {
 	GetEth1DataForEth2Block(blockId string) (Eth1Data, bool, error)
 	GetCommitteesForEpoch(epoch *uint64) (Committees, error)
 	ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
+
+	GetBeaconStateSSZ(slot uint64) (*BeaconStateSSZ, error)
+	GetBeaconBlockSSZ(slot uint64) (*BeaconBlockSSZ, bool, error)
 }

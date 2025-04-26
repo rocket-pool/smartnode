@@ -203,7 +203,7 @@ func TestWithdrawalCredentialsStateProof(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get validator credentials proof: %v", err)
 		}
-		gid := getGeneralizedIndexForValidator(tc.validatorIndex)
+		gid := getGeneralizedIndexForValidator(tc.validatorIndex, getDenebGeneralizedIndexForValidators())
 		t.Logf("gid: %v", gid)
 		if gid != tc.gid {
 			t.Fatalf("expected gid: %v, got: %v", tc.gid, gid)
@@ -252,7 +252,7 @@ func TestValidatorWithdrawableEpochProof(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get validator withdrawable epoch proof: %v", err)
 		}
-		gid := getGeneralizedIndexForValidator(tc.validatorIndex)
+		gid := getGeneralizedIndexForValidator(tc.validatorIndex, getDenebGeneralizedIndexForValidators())
 		t.Logf("gid: %v", gid)
 		if gid != tc.gid {
 			t.Fatalf("expected gid: %v, got: %v", tc.gid, gid)
