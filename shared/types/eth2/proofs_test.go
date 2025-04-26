@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"math/bits"
@@ -15,6 +16,7 @@ import (
 	"testing"
 
 	ssz "github.com/ferranbt/fastssz"
+	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Test state - deneb fork. Hoodi genesis state.
@@ -351,40 +353,80 @@ func TestWithdrawalProof(t *testing.T) {
 	}
 }
 
+//go:embed testdata/11567104_roots.json
+var testRootsJSON []byte
+
+type testRoots struct {
+	BlockRoots []string `json:"block_roots"`
+	StateRoots []string `json:"state_roots"`
+}
+
 func TestBlockRootProof(t *testing.T) {
-	state := &BeaconStateDeneb{}
-	err := state.UnmarshalSSZ(testState)
+	// Unmarshal testRootsJSON
+	var testRoots testRoots
+	err := json.Unmarshal(testRootsJSON, &testRoots)
 	if err != nil {
-		t.Fatalf("Failed to unmarshal test state: %v", err)
+		t.Fatalf("Failed to unmarshal test roots: %v", err)
 	}
 
-	for _, slot := range []uint64{0, 10, 100, 1000} {
+	// Convert it to a HistoricalSummaryLists
+	hsls := HistoricalSummaryLists{}
 
-		proof, err := state.BlockRootProof(slot)
+	for i, blockRoot := range testRoots.BlockRoots {
+		blockRootBytes, err := hex.DecodeString(hexutils.RemovePrefix(blockRoot))
 		if err != nil {
-			t.Fatalf("Failed to get block root proof: %v", err)
+			t.Fatalf("Failed to decode block root: %v", err)
 		}
-
-		gid := uint64(1)
-		gid = gid*beaconStateChunkCeil + beaconStateBlockRootsFieldIndex
-		gid = gid*beaconStateBlockRootsMaxLength + (slot % SlotsPerHistoricalRoot)
-
-		stateRoot, blockRoot := validateStateProof(t, state.BlockRoots[slot%SlotsPerHistoricalRoot][:], proof, gid, state)
-		t.Logf("stateRoot: %x", stateRoot)
-		t.Logf("blockRoot: %x", blockRoot)
-		expectedStateRoot, err := hex.DecodeString("2683ebc120f91f740c7bed4c866672d01e1ba51b4cc360297138465ee5df40f0")
-		if err != nil {
-			panic(err)
-		}
-		expectedBlockRoot, err := hex.DecodeString("376450cd7fb9f05ade82a7f88565ac57af449ac696b1a6ac5cc7dac7d467b7d6")
-		if err != nil {
-			panic(err)
-		}
-		if !bytes.Equal(stateRoot, expectedStateRoot) {
-			t.Fatalf("expected state root: %x, got: %x", expectedStateRoot, stateRoot)
-		}
-		if !bytes.Equal(blockRoot, expectedBlockRoot) {
-			t.Fatalf("expected block root: %x, got: %x", expectedBlockRoot, blockRoot)
-		}
+		copy(hsls.BlockRoots[i][:], blockRootBytes)
 	}
+	for i, stateRoot := range testRoots.StateRoots {
+		stateRootBytes, err := hex.DecodeString(hexutils.RemovePrefix(stateRoot))
+		if err != nil {
+			t.Fatalf("Failed to decode state root: %v", err)
+		}
+		copy(hsls.StateRoots[i][:], stateRootBytes)
+	}
+
+	hslsTree, err := hsls.GetTree()
+	if err != nil {
+		t.Fatalf("Failed to get historical summary lists tree: %v", err)
+	}
+	block_summary_node, err := hslsTree.Get(2)
+	if err != nil {
+		t.Fatalf("Failed to get block summary node: %v", err)
+	}
+	// Get the root of the block_summary_node
+	block_summary_root := block_summary_node.Hash()
+	t.Logf("block_summary_root: %x", block_summary_root)
+
+	// I have verified that this is the correct historical summary root on mainnet for this 8192 slot era.
+	// The era ended at slot 11567103, and the next 8192 slot era began at slot 11567104.
+	// Slot 11567104's state has a historical summary at the end of the list of:
+	//  {
+	//    "block_summary_root": "0x9d73b29c6e80e8300cedfa9e53aff89523affb98f3bd3f6752ecc159a2058858",
+	//    "state_summary_root": "0x8a38d8b000dc65641eff8f7ff2e0b6f3b129957410cb9ecf183537484630b289"
+	//  }
+	expectedBlockSummaryRoot, err := hex.DecodeString("9d73b29c6e80e8300cedfa9e53aff89523affb98f3bd3f6752ecc159a2058858")
+	if err != nil {
+		t.Fatalf("Failed to decode expected block summary root: %v", err)
+	}
+	if !bytes.Equal(block_summary_root, expectedBlockSummaryRoot) {
+		t.Fatalf("expected block summary root: %x, got: %x", expectedBlockSummaryRoot, block_summary_root)
+	}
+
+	// Since the state roots are part of the proof as witness, we may as well verify them here as well.
+	state_summary_node, err := hslsTree.Get(3)
+	if err != nil {
+		t.Fatalf("Failed to get state summary node: %v", err)
+	}
+	state_summary_root := state_summary_node.Hash()
+	t.Logf("state_summary_root: %x", state_summary_root)
+	expectedStateSummaryRoot, err := hex.DecodeString("8a38d8b000dc65641eff8f7ff2e0b6f3b129957410cb9ecf183537484630b289")
+	if err != nil {
+		t.Fatalf("Failed to decode expected state summary root: %v", err)
+	}
+	if !bytes.Equal(state_summary_root, expectedStateSummaryRoot) {
+		t.Fatalf("expected state summary root: %x, got: %x", expectedStateSummaryRoot, state_summary_root)
+	}
+
 }
