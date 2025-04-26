@@ -22,6 +22,8 @@ const beaconStateValidatorWithdrawableEpochGeneralizedIndex uint64 = 14         
 const beaconStateChunkCeil uint64 = 32
 const beaconStateHistoricalSummariesFieldIndex uint64 = 27
 const beaconStateHistoricalSummariesMaxLength uint64 = 1 << 24
+const beaconStateHistoricalSummaryChunkCeil uint64 = 2
+const beaconStateHistoricalSummaryBlockSummaryRootIndex uint64 = 0
 const beaconStateBlockRootsMaxLength uint64 = 1 << 13
 const beaconStateBlockRootsFieldIndex uint64 = 5
 
@@ -215,7 +217,7 @@ func (state *BeaconStateDeneb) ValidatorCredentialsProof(index uint64) ([][]byte
 	return out, nil
 }
 
-func (state *BeaconStateDeneb) HistoricalBlockRootProof(slot uint64) ([][]byte, error) {
+func (state *BeaconStateDeneb) HistoricalSummaryProof(slot uint64) ([][]byte, error) {
 	isHistorical := slot+SlotsPerHistoricalRoot <= state.Slot
 	if !isHistorical {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, SlotsPerHistoricalRoot, state.Slot)
@@ -237,10 +239,15 @@ func (state *BeaconStateDeneb) HistoricalBlockRootProof(slot uint64) ([][]byte, 
 		return nil, fmt.Errorf("could not get proof for historical block root: %w", err)
 	}
 
-	return proof.Hashes, nil
+	// The EL proves against BeaconBlockHeader root, so we need to merge the state proof with that.
+	blockHeaderProof, err := state.blockHeaderToStateProof(state.LatestBlockHeader)
+	if err != nil {
+		return nil, fmt.Errorf("could not get block header proof: %w", err)
+	}
+	return append(proof.Hashes, blockHeaderProof...), nil
 }
 
-func (state *BeaconStateDeneb) HistoricalSummaryProof(slot int) ([][]byte, error) {
+func (state *BeaconStateDeneb) HistoricalSummaryBlockRootProof(slot int) ([][]byte, error) {
 	// If the state isn't aligned at the end of an 8192 slot era, throw an error
 	if state.Slot%SlotsPerHistoricalRoot != SlotsPerHistoricalRoot-1 {
 		return nil, fmt.Errorf("state is not aligned at the end of an 8192 slot era")

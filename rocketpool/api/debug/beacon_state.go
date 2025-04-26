@@ -140,21 +140,20 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 			return err
 		}
 	} else {
-		stateProof, err = state.HistoricalBlockRootProof(response.WithdrawalSlot)
+		stateProof, err = state.HistoricalSummaryProof(response.WithdrawalSlot)
 		if err != nil {
 			return err
 		}
 
 		// Additionally, we need to prove from the block_root in the historical summary
 		// up to the beginning of the above proof, which is the entry in the historical summaries vector.
-		blockRootsStateSlot := (response.WithdrawalSlot / eth2.SlotsPerHistoricalRoot) * eth2.SlotsPerHistoricalRoot
-		blockRootsStateSlot = blockRootsStateSlot + eth2.SlotsPerHistoricalRoot - 1
+		blockRootsStateSlot := eth2.SlotsPerHistoricalRoot + ((response.WithdrawalSlot / eth2.SlotsPerHistoricalRoot) * eth2.SlotsPerHistoricalRoot)
 		// get the state that has the block roots tree
 		blockRootsState, err := bc.GetBeaconState(blockRootsStateSlot)
 		if err != nil {
 			return err
 		}
-		summaryProof, err = blockRootsState.HistoricalSummaryProof(int(response.WithdrawalSlot))
+		summaryProof, err = blockRootsState.HistoricalSummaryBlockRootProof(int(response.WithdrawalSlot))
 		if err != nil {
 			return err
 		}
@@ -163,14 +162,17 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 
 	// Convert the proof to a list of 0x-prefixed hex strings
 	response.Proof = make([]string, 0, len(proof)+len(stateProof)+len(summaryProof))
-	for _, hash := range summaryProof {
-		response.Proof = append(response.Proof, hexutil.EncodeToString(hash))
-	}
-
+	// First we prove from the withdrawal to the block_root
 	for _, hash := range proof {
 		response.Proof = append(response.Proof, hexutil.EncodeToString(hash))
 	}
 
+	// Then, if summaryProof has rows, we add them to prove from the block_root to the historical_summary row
+	for _, hash := range summaryProof {
+		response.Proof = append(response.Proof, hexutil.EncodeToString(hash))
+	}
+
+	// Finally, we prove either from the historical_summary or the block_root to the state_root
 	for _, hash := range stateProof {
 		response.Proof = append(response.Proof, hexutil.EncodeToString(hash))
 	}
