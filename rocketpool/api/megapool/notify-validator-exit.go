@@ -73,7 +73,7 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 	}
 
 	// Notify the validator exit
-	gasInfo, err := mp.EstimateNotifyExitGas(validatorId, big.NewInt(int64(proof.WithdrawableEpoch)), proof.Slot, proof.Witnesses, opts)
+	gasInfo, err := mp.EstimateNotifyExitGas(validatorId, big.NewInt(int64(proof.WithdrawableEpoch)), proof.Slot, proof.Witnesses, nil)
 	if err != nil {
 		return nil, err
 	}
