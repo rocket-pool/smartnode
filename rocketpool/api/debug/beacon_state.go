@@ -29,7 +29,12 @@ func getBeaconStateForSlot(c *cli.Context, slot uint64, validatorIndex uint64) e
 	}
 
 	// Get beacon state
-	beaconState, err := bc.GetBeaconState(slot)
+	beaconStateResponse, err := bc.GetBeaconStateSSZ(slot)
+	if err != nil {
+		return err
+	}
+
+	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
 	if err != nil {
 		return err
 	}
@@ -72,10 +77,10 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	// Find the most recent withdrawal to slot.
 	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
 	notFounds := 0
-	var beaconBlockDeneb *eth2.SignedBeaconBlockDeneb
+	var block eth2.BeaconBlock
 	for candidateSlot := slot; candidateSlot >= slot-MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot-- {
 		// Get the block at the candidate slot.
-		block, found, err := bc.GetBeaconBlockDeneb(candidateSlot)
+		blockResponse, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
 		if err != nil {
 			return err
 		}
@@ -89,14 +94,19 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 			notFounds = 0
 		}
 
-		if block.Block.Body.ExecutionPayload == nil {
+		beaconBlock, err := eth2.NewBeaconBlock(blockResponse.Data, blockResponse.Fork)
+		if err != nil {
+			return err
+		}
+
+		if !beaconBlock.HasExecutionPayload() {
 			continue
 		}
 
 		foundWithdrawal := false
 
 		// Check the block for a withdrawal for the given validator index.
-		for i, withdrawal := range block.Block.Body.ExecutionPayload.Withdrawals {
+		for i, withdrawal := range beaconBlock.Withdrawals() {
 			if withdrawal.ValidatorIndex != validatorIndex {
 				continue
 			}
@@ -110,7 +120,7 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		}
 
 		if foundWithdrawal {
-			beaconBlockDeneb = block
+			block = beaconBlock
 			break
 		}
 	}
@@ -120,13 +130,18 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	}
 
 	// Start by proving from the withdrawal to the block_root
-	proof, err := beaconBlockDeneb.Block.ProveWithdrawal(uint64(response.IndexInWithdrawalsArray))
+	proof, err := block.ProveWithdrawal(uint64(response.IndexInWithdrawalsArray))
 	if err != nil {
 		return err
 	}
 
 	// Get beacon state
-	state, err := bc.GetBeaconState(slot)
+	stateResponse, err := bc.GetBeaconStateSSZ(slot)
+	if err != nil {
+		return err
+	}
+
+	state, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Fork)
 	if err != nil {
 		return err
 	}
@@ -134,7 +149,7 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	var summaryProof [][]byte
 
 	var stateProof [][]byte
-	if response.WithdrawalSlot+eth2.SlotsPerHistoricalRoot > state.Slot {
+	if response.WithdrawalSlot+eth2.SlotsPerHistoricalRoot > state.GetSlot() {
 		stateProof, err = state.BlockRootProof(response.WithdrawalSlot)
 		if err != nil {
 			return err
@@ -149,7 +164,11 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		// up to the beginning of the above proof, which is the entry in the historical summaries vector.
 		blockRootsStateSlot := eth2.SlotsPerHistoricalRoot + ((response.WithdrawalSlot / eth2.SlotsPerHistoricalRoot) * eth2.SlotsPerHistoricalRoot)
 		// get the state that has the block roots tree
-		blockRootsState, err := bc.GetBeaconState(blockRootsStateSlot)
+		blockRootsStateResponse, err := bc.GetBeaconStateSSZ(blockRootsStateSlot)
+		if err != nil {
+			return err
+		}
+		blockRootsState, err := eth2.NewBeaconState(blockRootsStateResponse.Data, blockRootsStateResponse.Fork)
 		if err != nil {
 			return err
 		}
