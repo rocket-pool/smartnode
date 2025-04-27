@@ -1,5 +1,12 @@
 package generic
 
+const BeaconBlockChunksCeil uint64 = 8
+const BeaconBlockBodyIndex uint64 = 4
+const BeaconBlockBodyExecutionPayloadIndex uint64 = 9
+const BeaconBlockBodyExecutionPayloadChunksCeil uint64 = 32
+const BeaconBlockBodyExecutionPayloadWithdrawalsIndex uint64 = 14
+const BeaconBlockWithdrawalsArrayMax uint64 = 16
+
 type ProposerSlashing struct {
 	Header1 *SignedBeaconBlockHeader `json:"signed_header_1"`
 	Header2 *SignedBeaconBlockHeader `json:"signed_header_2"`
@@ -50,7 +57,7 @@ type SyncAggregate struct {
 	SyncCommiteeSignature [96]byte `json:"sync_committee_signature" ssz-size:"96"`
 }
 
-type ExecutionPayloadDeneb struct {
+type ExecutionPayload struct {
 	ParentHash    [32]byte      `ssz-size:"32" json:"parent_hash"`
 	FeeRecipient  [20]byte      `ssz-size:"20" json:"fee_recipient"`
 	StateRoot     [32]byte      `ssz-size:"32" json:"state_root"`

@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -149,7 +150,7 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	var summaryProof [][]byte
 
 	var stateProof [][]byte
-	if response.WithdrawalSlot+eth2.SlotsPerHistoricalRoot > state.GetSlot() {
+	if response.WithdrawalSlot+generic.SlotsPerHistoricalRoot > state.GetSlot() {
 		stateProof, err = state.BlockRootProof(response.WithdrawalSlot)
 		if err != nil {
 			return err
@@ -162,7 +163,7 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 
 		// Additionally, we need to prove from the block_root in the historical summary
 		// up to the beginning of the above proof, which is the entry in the historical summaries vector.
-		blockRootsStateSlot := eth2.SlotsPerHistoricalRoot + ((response.WithdrawalSlot / eth2.SlotsPerHistoricalRoot) * eth2.SlotsPerHistoricalRoot)
+		blockRootsStateSlot := generic.SlotsPerHistoricalRoot + ((response.WithdrawalSlot / generic.SlotsPerHistoricalRoot) * generic.SlotsPerHistoricalRoot)
 		// get the state that has the block roots tree
 		blockRootsStateResponse, err := bc.GetBeaconStateSSZ(blockRootsStateSlot)
 		if err != nil {
