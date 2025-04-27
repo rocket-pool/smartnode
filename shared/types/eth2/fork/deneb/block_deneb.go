@@ -3,14 +3,7 @@ package deneb
 import "github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 
 // Important indices for proof generation:
-// beaconBlockDenebBodyIndex is the field offset of the Body field in the BeaconBlockDeneb struct
-const BeaconBlockDenebChunksCeil uint64 = 8
-const BeaconBlockDenebBodyIndex uint64 = 4
 const BeaconBlockDenebBodyChunksCeil uint64 = 16
-const BeaconBlockDenebBodyExecutionPayloadIndex uint64 = 9
-const BeaconBlockDenebBodyExecutionPayloadChunksCeil uint64 = 32
-const BeaconBlockDenebBodyExecutionPayloadWithdrawalsIndex uint64 = 14
-const BeaconBlockDenebWithdrawalsArrayMax uint64 = 16
 
 func (b *BeaconBlockDeneb) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
 	tree, err := b.GetTree()
@@ -20,15 +13,15 @@ func (b *BeaconBlockDeneb) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]
 
 	gid := uint64(1)
 	// Navigate to the body
-	gid = gid*BeaconBlockDenebChunksCeil + BeaconBlockDenebBodyIndex
+	gid = gid*generic.BeaconBlockChunksCeil + generic.BeaconBlockBodyIndex
 	// Then to the ExecutionPayload
-	gid = gid*BeaconBlockDenebBodyChunksCeil + BeaconBlockDenebBodyExecutionPayloadIndex
+	gid = gid*BeaconBlockDenebBodyChunksCeil + generic.BeaconBlockBodyExecutionPayloadIndex
 	// Then to the withdrawals array
-	gid = gid*BeaconBlockDenebBodyExecutionPayloadChunksCeil + BeaconBlockDenebBodyExecutionPayloadWithdrawalsIndex
+	gid = gid*generic.BeaconBlockBodyExecutionPayloadChunksCeil + generic.BeaconBlockBodyExecutionPayloadWithdrawalsIndex
 	// Then to the array contents
 	gid = gid * 2
 	// Finally to the withdrawal in question
-	gid = gid*BeaconBlockDenebWithdrawalsArrayMax + indexInWithdrawalsArray
+	gid = gid*generic.BeaconBlockWithdrawalsArrayMax + indexInWithdrawalsArray
 
 	proof, err := tree.Prove(int(gid))
 	if err != nil {

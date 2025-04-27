@@ -1,4 +1,4 @@
-package deneb
+package electra
 
 import (
 	"bytes"
@@ -11,11 +11,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-const beaconStateDenebChunkCeil uint64 = 32
+const beaconStateElectraChunkCeil uint64 = 64
 
-// Taken from https://github.com/prysmaticlabs/prysm/blob/ac1717f1e44bd218b0bd3af0c4dec951c075f462/proto/prysm/v1alpha1/beacon_state.pb.go#L1574
+// Taken from https://github.com/OffchainLabs/prysm/blob/a0071826c5daf7dc3a6e76874fdaa76481a3c665/proto/prysm/v1alpha1/beacon_state.pb.go#L1955
 // Unexported fields stripped, as well as proto-related field tags. JSON and ssz-size tags are preserved, and nested types are replaced with local copies as well.
-type BeaconStateDeneb struct {
+type BeaconStateElectra struct {
 	GenesisTime                  uint64                          `json:"genesis_time"`
 	GenesisValidatorsRoot        []byte                          `json:"genesis_validators_root" ssz-size:"32"`
 	Slot                         uint64                          `json:"slot"`
@@ -44,28 +44,39 @@ type BeaconStateDeneb struct {
 	NextWithdrawalIndex          uint64                          `json:"next_withdrawal_index"`
 	NextWithdrawalValidatorIndex uint64                          `json:"next_withdrawal_validator_index"`
 	HistoricalSummaries          []*generic.HistoricalSummary    `json:"historical_summaries" ssz-max:"16777216"`
+
+	// New in Electra
+	DepositRequestsStartIndex     uint64                              `json:"deposit_requests_start_index"`
+	DepositBalanceToConsume       uint64                              `json:"deposit_balance_to_consume"`
+	ExitBalanceToConsume          uint64                              `json:"exit_balance_to_consume"`
+	EarliestExitEpoch             uint64                              `json:"earliest_exit_epoch"`
+	ConsolidationBalanceToConsume uint64                              `json:"consolidation_balance_to_consume"`
+	EarliestConsolidationEpoch    uint64                              `json:"earliest_consolidation_epoch"`
+	PendingDeposits               []*generic.PendingDeposit           `json:"pending_deposits,omitempty" ssz-max:"134217728"`
+	PendingPartialWithdrawals     []*generic.PendingPartialWithdrawal `json:"pending_partial_withdrawals,omitempty" ssz-max:"134217728"`
+	PendingConsolidations         []*generic.PendingConsolidation     `json:"pending_consolidations,omitempty" ssz-max:"262144"`
 }
 
 var beaconStateChunkSize atomic.Uint64
 
-func getDenebStateChunkSize() uint64 {
+func getElectraStateChunkSize() uint64 {
 	// Use a static value to avoid multiple reflection calls
 	storedChunkSize := beaconStateChunkSize.Load()
 	if storedChunkSize == 0 {
-		s := reflect.TypeOf(BeaconStateDeneb{}).NumField()
+		s := reflect.TypeOf(BeaconStateElectra{}).NumField()
 		beaconStateChunkSize.Store(uint64(s))
 		storedChunkSize = uint64(s)
 	}
 	return storedChunkSize
 }
 
-func GetDenebGeneralizedIndexForValidators() uint64 {
+func GetElectraGeneralizedIndexForValidators() uint64 {
 	// There's 28 fields, so rounding up to the next power of two is 32, a left-aligned node
-	// BeaconStateDenebValidatorsIndex is the 11th field, so its generalized index is 32 + 11 = 43
-	return math.GetPowerOfTwoCeil(getDenebStateChunkSize()) + generic.BeaconStateValidatorsIndex
+	// BeaconStateElectraValidatorsIndex is the 11th field, so its generalized index is 32 + 11 = 43
+	return math.GetPowerOfTwoCeil(getElectraStateChunkSize()) + generic.BeaconStateValidatorsIndex
 }
 
-func (state *BeaconStateDeneb) validatorStateProof(index uint64) ([][]byte, error) {
+func (state *BeaconStateElectra) validatorStateProof(index uint64) ([][]byte, error) {
 
 	// Convert the state to a proof tree
 	root, err := state.GetTree()
@@ -74,7 +85,7 @@ func (state *BeaconStateDeneb) validatorStateProof(index uint64) ([][]byte, erro
 	}
 
 	// Find the validator's generalized index
-	generalizedIndex := generic.GetGeneralizedIndexForValidator(index, GetDenebGeneralizedIndexForValidators())
+	generalizedIndex := generic.GetGeneralizedIndexForValidator(index, GetElectraGeneralizedIndexForValidators())
 
 	// Grab the proof for that index
 	proof, err := root.Prove(int(generalizedIndex))
@@ -97,7 +108,7 @@ func (state *BeaconStateDeneb) validatorStateProof(index uint64) ([][]byte, erro
 
 // ValidatorWithdrawableEpochProof computes the merkle proof for a validator's withdrawable epoch
 // at a specific index in the validator registry.
-func (state *BeaconStateDeneb) ValidatorWithdrawableEpochProof(index uint64) ([][]byte, error) {
+func (state *BeaconStateElectra) ValidatorWithdrawableEpochProof(index uint64) ([][]byte, error) {
 
 	if index >= uint64(len(state.Validators)) {
 		return nil, errors.New("validator index out of bounds")
@@ -131,7 +142,7 @@ func (state *BeaconStateDeneb) ValidatorWithdrawableEpochProof(index uint64) ([]
 	return out, nil
 }
 
-func (state *BeaconStateDeneb) blockHeaderToStateProof(blockHeader *generic.BeaconBlockHeader) ([][]byte, error) {
+func (state *BeaconStateElectra) blockHeaderToStateProof(blockHeader *generic.BeaconBlockHeader) ([][]byte, error) {
 	generalizedIndex := generic.BeaconBlockHeaderStateRootGeneralizedIndex
 	root, err := blockHeader.GetTree()
 	if err != nil {
@@ -146,7 +157,7 @@ func (state *BeaconStateDeneb) blockHeaderToStateProof(blockHeader *generic.Beac
 
 // ValidatorCredentialsProof computes the merkle proof for a validator's credentials
 // at a specific index in the validator registry.
-func (state *BeaconStateDeneb) ValidatorCredentialsProof(index uint64) ([][]byte, error) {
+func (state *BeaconStateElectra) ValidatorCredentialsProof(index uint64) ([][]byte, error) {
 
 	if index >= uint64(len(state.Validators)) {
 		return nil, errors.New("validator index out of bounds")
@@ -175,7 +186,7 @@ func (state *BeaconStateDeneb) ValidatorCredentialsProof(index uint64) ([][]byte
 	return out, nil
 }
 
-func (state *BeaconStateDeneb) HistoricalSummaryProof(slot uint64) ([][]byte, error) {
+func (state *BeaconStateElectra) HistoricalSummaryProof(slot uint64) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if !isHistorical {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
@@ -187,7 +198,7 @@ func (state *BeaconStateDeneb) HistoricalSummaryProof(slot uint64) ([][]byte, er
 
 	// Navigate to the historical_summaries
 	gid := uint64(1)
-	gid = gid*beaconStateDenebChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
+	gid = gid*beaconStateElectraChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
 	// Navigate into the historical summaries vector.
 	arrayIndex := (slot / generic.SlotsPerHistoricalRoot)
 	gid = gid*2*generic.BeaconStateHistoricalSummariesMaxLength + arrayIndex
@@ -205,7 +216,7 @@ func (state *BeaconStateDeneb) HistoricalSummaryProof(slot uint64) ([][]byte, er
 	return append(proof.Hashes, blockHeaderProof...), nil
 }
 
-func (state *BeaconStateDeneb) HistoricalSummaryBlockRootProof(slot int) ([][]byte, error) {
+func (state *BeaconStateElectra) HistoricalSummaryBlockRootProof(slot int) ([][]byte, error) {
 	// If the state isn't aligned at the end of an 8192 slot era, throw an error
 	if state.Slot%generic.SlotsPerHistoricalRoot != generic.SlotsPerHistoricalRoot-1 {
 		return nil, fmt.Errorf("state is not aligned at the end of an 8192 slot era")
@@ -239,7 +250,7 @@ func (state *BeaconStateDeneb) HistoricalSummaryBlockRootProof(slot int) ([][]by
 	return proof.Hashes, nil
 }
 
-func (state *BeaconStateDeneb) BlockRootProof(slot uint64) ([][]byte, error) {
+func (state *BeaconStateElectra) BlockRootProof(slot uint64) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if isHistorical {
 		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
@@ -253,7 +264,7 @@ func (state *BeaconStateDeneb) BlockRootProof(slot uint64) ([][]byte, error) {
 	gid := uint64(1)
 
 	// Navigate to the block_roots
-	gid = gid*beaconStateDenebChunkCeil + generic.BeaconStateBlockRootsFieldIndex
+	gid = gid*beaconStateElectraChunkCeil + generic.BeaconStateBlockRootsFieldIndex
 
 	// We're now at the block_roots vector, which is the root of a slotsPerHistoricalRoot slots vector.
 	// The index we care about is given by slot % slotsPerHistoricalRoot.
@@ -273,10 +284,10 @@ func (state *BeaconStateDeneb) BlockRootProof(slot uint64) ([][]byte, error) {
 	return append(proof.Hashes, blockHeaderProof...), nil
 }
 
-func (state *BeaconStateDeneb) GetValidators() []*generic.Validator {
+func (state *BeaconStateElectra) GetValidators() []*generic.Validator {
 	return state.Validators
 }
 
-func (state *BeaconStateDeneb) GetSlot() uint64 {
+func (state *BeaconStateElectra) GetSlot() uint64 {
 	return state.Slot
 }
