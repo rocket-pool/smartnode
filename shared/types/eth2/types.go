@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/deneb"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/electra"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
@@ -41,6 +42,13 @@ func NewBeaconState(data []byte, fork string) (BeaconState, error) {
 			return nil, err
 		}
 		return out, nil
+	case "electra":
+		out := &electra.BeaconState{}
+		err := out.UnmarshalSSZ(data)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
 	default:
 		return nil, fmt.Errorf("unsupported fork: %s", fork)
 	}
@@ -52,6 +60,13 @@ func NewBeaconBlock(data []byte, fork string) (BeaconBlock, error) {
 	switch fork {
 	case "deneb":
 		out := &deneb.BeaconBlock{}
+		err := out.UnmarshalSSZ(data)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	case "electra":
+		out := &electra.BeaconBlock{}
 		err := out.UnmarshalSSZ(data)
 		if err != nil {
 			return nil, err
