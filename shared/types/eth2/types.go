@@ -11,9 +11,11 @@ import (
 
 // State type assertions
 var _ BeaconState = &deneb.BeaconState{}
+var _ BeaconState = &electra.BeaconState{}
 
 // Block type assertions
 var _ BeaconBlock = &deneb.BeaconBlock{}
+var _ BeaconBlock = &electra.BeaconBlock{}
 
 type BeaconState interface {
 	GetSlot() uint64
