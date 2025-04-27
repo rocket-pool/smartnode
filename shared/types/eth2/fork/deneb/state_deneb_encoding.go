@@ -9,12 +9,12 @@ import (
 )
 
 // MarshalSSZ ssz marshals the BeaconStateDeneb object
-func (b *BeaconStateDeneb) MarshalSSZ() ([]byte, error) {
+func (b *BeaconState) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(b)
 }
 
 // MarshalSSZTo ssz marshals the BeaconStateDeneb object to a target array
-func (b *BeaconStateDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (b *BeaconState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(2736653)
 
@@ -264,7 +264,7 @@ func (b *BeaconStateDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 }
 
 // UnmarshalSSZ ssz unmarshals the BeaconStateDeneb object
-func (b *BeaconStateDeneb) UnmarshalSSZ(buf []byte) error {
+func (b *BeaconState) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 2736653 {
@@ -572,7 +572,7 @@ func (b *BeaconStateDeneb) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the BeaconStateDeneb object
-func (b *BeaconStateDeneb) SizeSSZ() (size int) {
+func (b *BeaconState) SizeSSZ() (size int) {
 	size = 2736653
 
 	// Field (7) 'HistoricalRoots'
@@ -609,12 +609,12 @@ func (b *BeaconStateDeneb) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the BeaconStateDeneb object
-func (b *BeaconStateDeneb) HashTreeRoot() ([32]byte, error) {
+func (b *BeaconState) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(b)
 }
 
 // HashTreeRootWith ssz hashes the BeaconStateDeneb object with a hasher
-func (b *BeaconStateDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (b *BeaconState) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'GenesisTime'
@@ -884,6 +884,6 @@ func (b *BeaconStateDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 }
 
 // GetTree ssz hashes the BeaconStateDeneb object
-func (b *BeaconStateDeneb) GetTree() (*ssz.Node, error) {
+func (b *BeaconState) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(b)
 }

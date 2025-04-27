@@ -3,9 +3,9 @@ package electra
 import "github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 
 // Important indices for proof generation:
-const BeaconBlockElectraBodyChunksCeil uint64 = 16
+const BeaconBlockBodyChunksCeil uint64 = 16
 
-func (b *BeaconBlockElectra) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
+func (b *BeaconBlock) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
 	tree, err := b.GetTree()
 	if err != nil {
 		return nil, err
@@ -15,7 +15,7 @@ func (b *BeaconBlockElectra) ProveWithdrawal(indexInWithdrawalsArray uint64) ([]
 	// Navigate to the body
 	gid = gid*generic.BeaconBlockChunksCeil + generic.BeaconBlockBodyIndex
 	// Then to the ExecutionPayload
-	gid = gid*BeaconBlockElectraBodyChunksCeil + generic.BeaconBlockBodyExecutionPayloadIndex
+	gid = gid*BeaconBlockBodyChunksCeil + generic.BeaconBlockBodyExecutionPayloadIndex
 	// Then to the withdrawals array
 	gid = gid*generic.BeaconBlockBodyExecutionPayloadChunksCeil + generic.BeaconBlockBodyExecutionPayloadWithdrawalsIndex
 	// Then to the array contents
@@ -32,25 +32,25 @@ func (b *BeaconBlockElectra) ProveWithdrawal(indexInWithdrawalsArray uint64) ([]
 }
 
 // Types needed for withdrawal proofs
-type BeaconBlockElectra struct {
-	Slot          uint64                  `json:"slot"`
-	ProposerIndex uint64                  `json:"proposer_index"`
-	ParentRoot    [32]byte                `json:"parent_root" ssz-size:"32"`
-	StateRoot     [32]byte                `json:"state_root" ssz-size:"32"`
-	Body          *BeaconBlockBodyElectra `json:"body"`
+type BeaconBlock struct {
+	Slot          uint64           `json:"slot"`
+	ProposerIndex uint64           `json:"proposer_index"`
+	ParentRoot    [32]byte         `json:"parent_root" ssz-size:"32"`
+	StateRoot     [32]byte         `json:"state_root" ssz-size:"32"`
+	Body          *BeaconBlockBody `json:"body"`
 }
 
-type SignedBeaconBlockElectra struct {
-	Block     *BeaconBlockElectra `json:"message"`
-	Signature []byte              `json:"signature" ssz-size:"96"`
+type SignedBeaconBlock struct {
+	Block     *BeaconBlock `json:"message"`
+	Signature []byte       `json:"signature" ssz-size:"96"`
 }
 
-type BeaconBlockBodyElectra struct {
+type BeaconBlockBody struct {
 	RandaoReveal          []byte                                `json:"randao_reveal" ssz-size:"96"`
 	Eth1Data              *generic.Eth1Data                     `json:"eth1_data"`
 	Graffiti              [32]byte                              `json:"graffiti" ssz-size:"32"`
 	ProposerSlashings     []*generic.ProposerSlashing           `json:"proposer_slashings" ssz-max:"16"`
-	AttesterSlashings     []*AttesterSlashingElectra            `json:"attester_slashings" ssz-max:"1"`
+	AttesterSlashings     []*AttesterSlashing                   `json:"attester_slashings" ssz-max:"1"`
 	Attestations          []*generic.Attestation                `json:"attestations" ssz-max:"8"`
 	Deposits              []*generic.Deposit                    `json:"deposits" ssz-max:"16"`
 	VoluntaryExits        []*generic.SignedVoluntaryExit        `json:"voluntary_exits" ssz-max:"16"`
@@ -87,15 +87,15 @@ type ConsolidationRequest struct {
 	TargetPubkey  []byte `json:"target_pubkey" ssz-size:"48"`
 }
 
-type AttesterSlashingElectra struct {
+type AttesterSlashing struct {
 	Attestation1 *generic.IndexedAttestation `json:"attestation_1"`
 	Attestation2 *generic.IndexedAttestation `json:"attestation_2"`
 }
 
-func (b *BeaconBlockElectra) HasExecutionPayload() bool {
+func (b *BeaconBlock) HasExecutionPayload() bool {
 	return b.Body.ExecutionPayload != nil
 }
 
-func (b *BeaconBlockElectra) Withdrawals() []*generic.Withdrawal {
+func (b *BeaconBlock) Withdrawals() []*generic.Withdrawal {
 	return b.Body.ExecutionPayload.Withdrawals
 }

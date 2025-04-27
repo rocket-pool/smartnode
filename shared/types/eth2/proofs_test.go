@@ -106,7 +106,7 @@ func TestOffsetGidRoot(t *testing.T) {
 	}
 }
 
-func validateStateProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *deneb.BeaconStateDeneb) ([]byte, []byte) {
+func validateStateProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *deneb.BeaconState) ([]byte, []byte) {
 	// First, offset the gid to account for the fact that state proofs are actually beacon block header proofs
 	gid = offsetGidRoot(gid, generic.BeaconBlockHeaderStateRootGeneralizedIndex)
 	currentHash := leaf
@@ -155,12 +155,12 @@ func validateStateProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, s
 	return stateRoot[:], finalHash[:]
 }
 
-func validateValidatorProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *deneb.BeaconStateDeneb) ([]byte, []byte) {
+func validateValidatorProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *deneb.BeaconState) ([]byte, []byte) {
 	gid *= 4
 	return validateStateProof(t, leaf, proof, gid, state)
 }
 
-func validateWithdrawableEpochProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *deneb.BeaconStateDeneb) ([]byte, []byte) {
+func validateWithdrawableEpochProof(t *testing.T, leaf []byte, proof [][]byte, gid uint64, state *deneb.BeaconState) ([]byte, []byte) {
 	gid = offsetGidRoot(generic.BeaconStateValidatorWithdrawableEpochGeneralizedIndex, gid)
 	return validateStateProof(t, leaf, proof, gid, state)
 }
@@ -182,7 +182,7 @@ func getValidatorLeaf(t *testing.T, validator *generic.Validator) []byte {
 }
 
 func TestWithdrawalCredentialsStateProof(t *testing.T) {
-	state := &deneb.BeaconStateDeneb{}
+	state := &deneb.BeaconState{}
 	err := state.UnmarshalSSZ(testState)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal test state: %v", err)
@@ -205,7 +205,7 @@ func TestWithdrawalCredentialsStateProof(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get validator credentials proof: %v", err)
 		}
-		gid := generic.GetGeneralizedIndexForValidator(tc.validatorIndex, deneb.GetDenebGeneralizedIndexForValidators())
+		gid := generic.GetGeneralizedIndexForValidator(tc.validatorIndex, deneb.GetGeneralizedIndexForValidators())
 		t.Logf("gid: %v", gid)
 		if gid != tc.gid {
 			t.Fatalf("expected gid: %v, got: %v", tc.gid, gid)
@@ -232,7 +232,7 @@ func TestWithdrawalCredentialsStateProof(t *testing.T) {
 }
 
 func TestValidatorWithdrawableEpochProof(t *testing.T) {
-	state := &deneb.BeaconStateDeneb{}
+	state := &deneb.BeaconState{}
 	err := state.UnmarshalSSZ(testState)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal test state: %v", err)
@@ -254,7 +254,7 @@ func TestValidatorWithdrawableEpochProof(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get validator withdrawable epoch proof: %v", err)
 		}
-		gid := generic.GetGeneralizedIndexForValidator(tc.validatorIndex, deneb.GetDenebGeneralizedIndexForValidators())
+		gid := generic.GetGeneralizedIndexForValidator(tc.validatorIndex, deneb.GetGeneralizedIndexForValidators())
 		t.Logf("gid: %v", gid)
 		if gid != tc.gid {
 			t.Fatalf("expected gid: %v, got: %v", tc.gid, gid)
@@ -283,7 +283,7 @@ func TestValidatorWithdrawableEpochProof(t *testing.T) {
 	}
 }
 
-func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64, block *deneb.BeaconBlockDeneb) []byte {
+func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64, block *deneb.BeaconBlock) []byte {
 	savedExepectedBlockRoot, err := hex.DecodeString("8442138d973483bfeaba9082f28217234e2879dedb5202e67ef68e2349db9a31")
 	if err != nil {
 		panic(err)
@@ -324,7 +324,7 @@ func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64,
 }
 
 func TestWithdrawalProof(t *testing.T) {
-	block := &deneb.SignedBeaconBlockDeneb{}
+	block := &deneb.SignedBeaconBlock{}
 	err := block.UnmarshalSSZ(testBlock)
 	if err != nil {
 		t.Fatalf("Failed to unmarshal test block: %v", err)
@@ -343,7 +343,7 @@ func TestWithdrawalProof(t *testing.T) {
 		}
 		gid := uint64(1)
 		gid = gid*generic.BeaconBlockChunksCeil + generic.BeaconBlockBodyIndex
-		gid = gid*deneb.BeaconBlockDenebBodyChunksCeil + generic.BeaconBlockBodyExecutionPayloadIndex
+		gid = gid*deneb.BeaconBlockBodyChunksCeil + generic.BeaconBlockBodyExecutionPayloadIndex
 		gid = gid*generic.BeaconBlockBodyExecutionPayloadChunksCeil + generic.BeaconBlockBodyExecutionPayloadWithdrawalsIndex
 		gid = gid * 2
 		gid = gid*generic.BeaconBlockWithdrawalsArrayMax + uint64(idx)

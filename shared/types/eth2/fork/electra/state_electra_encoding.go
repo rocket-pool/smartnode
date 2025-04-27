@@ -9,12 +9,12 @@ import (
 )
 
 // MarshalSSZ ssz marshals the BeaconStateElectra object
-func (b *BeaconStateElectra) MarshalSSZ() ([]byte, error) {
+func (b *BeaconState) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(b)
 }
 
 // MarshalSSZTo ssz marshals the BeaconStateElectra object to a target array
-func (b *BeaconStateElectra) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (b *BeaconState) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(2736713)
 
@@ -327,7 +327,7 @@ func (b *BeaconStateElectra) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 }
 
 // UnmarshalSSZ ssz unmarshals the BeaconStateElectra object
-func (b *BeaconStateElectra) UnmarshalSSZ(buf []byte) error {
+func (b *BeaconState) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 2736713 {
@@ -722,7 +722,7 @@ func (b *BeaconStateElectra) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the BeaconStateElectra object
-func (b *BeaconStateElectra) SizeSSZ() (size int) {
+func (b *BeaconState) SizeSSZ() (size int) {
 	size = 2736713
 
 	// Field (7) 'HistoricalRoots'
@@ -768,12 +768,12 @@ func (b *BeaconStateElectra) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the BeaconStateElectra object
-func (b *BeaconStateElectra) HashTreeRoot() ([32]byte, error) {
+func (b *BeaconState) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(b)
 }
 
 // HashTreeRootWith ssz hashes the BeaconStateElectra object with a hasher
-func (b *BeaconStateElectra) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (b *BeaconState) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'GenesisTime'
@@ -1109,6 +1109,6 @@ func (b *BeaconStateElectra) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 }
 
 // GetTree ssz hashes the BeaconStateElectra object
-func (b *BeaconStateElectra) GetTree() (*ssz.Node, error) {
+func (b *BeaconState) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(b)
 }

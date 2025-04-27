@@ -9,10 +9,10 @@ import (
 )
 
 // State type assertions
-var _ BeaconState = &deneb.BeaconStateDeneb{}
+var _ BeaconState = &deneb.BeaconState{}
 
 // Block type assertions
-var _ BeaconBlock = &deneb.BeaconBlockDeneb{}
+var _ BeaconBlock = &deneb.BeaconBlock{}
 
 type BeaconState interface {
 	GetSlot() uint64
@@ -35,7 +35,7 @@ func NewBeaconState(data []byte, fork string) (BeaconState, error) {
 
 	switch fork {
 	case "deneb":
-		out := &deneb.BeaconStateDeneb{}
+		out := &deneb.BeaconState{}
 		err := out.UnmarshalSSZ(data)
 		if err != nil {
 			return nil, err
@@ -51,7 +51,7 @@ func NewBeaconBlock(data []byte, fork string) (BeaconBlock, error) {
 
 	switch fork {
 	case "deneb":
-		out := &deneb.BeaconBlockDeneb{}
+		out := &deneb.BeaconBlock{}
 		err := out.UnmarshalSSZ(data)
 		if err != nil {
 			return nil, err

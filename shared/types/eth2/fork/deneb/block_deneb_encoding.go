@@ -9,12 +9,12 @@ import (
 )
 
 // MarshalSSZ ssz marshals the BeaconBlockDeneb object
-func (b *BeaconBlockDeneb) MarshalSSZ() ([]byte, error) {
+func (b *BeaconBlock) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(b)
 }
 
 // MarshalSSZTo ssz marshals the BeaconBlockDeneb object to a target array
-func (b *BeaconBlockDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (b *BeaconBlock) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(84)
 
@@ -42,7 +42,7 @@ func (b *BeaconBlockDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 }
 
 // UnmarshalSSZ ssz unmarshals the BeaconBlockDeneb object
-func (b *BeaconBlockDeneb) UnmarshalSSZ(buf []byte) error {
+func (b *BeaconBlock) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 84 {
@@ -77,7 +77,7 @@ func (b *BeaconBlockDeneb) UnmarshalSSZ(buf []byte) error {
 	{
 		buf = tail[o4:]
 		if b.Body == nil {
-			b.Body = new(BeaconBlockBodyDeneb)
+			b.Body = new(BeaconBlockBody)
 		}
 		if err = b.Body.UnmarshalSSZ(buf); err != nil {
 			return err
@@ -87,12 +87,12 @@ func (b *BeaconBlockDeneb) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the BeaconBlockDeneb object
-func (b *BeaconBlockDeneb) SizeSSZ() (size int) {
+func (b *BeaconBlock) SizeSSZ() (size int) {
 	size = 84
 
 	// Field (4) 'Body'
 	if b.Body == nil {
-		b.Body = new(BeaconBlockBodyDeneb)
+		b.Body = new(BeaconBlockBody)
 	}
 	size += b.Body.SizeSSZ()
 
@@ -100,12 +100,12 @@ func (b *BeaconBlockDeneb) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the BeaconBlockDeneb object
-func (b *BeaconBlockDeneb) HashTreeRoot() ([32]byte, error) {
+func (b *BeaconBlock) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(b)
 }
 
 // HashTreeRootWith ssz hashes the BeaconBlockDeneb object with a hasher
-func (b *BeaconBlockDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (b *BeaconBlock) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'Slot'
@@ -130,17 +130,17 @@ func (b *BeaconBlockDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 }
 
 // GetTree ssz hashes the BeaconBlockDeneb object
-func (b *BeaconBlockDeneb) GetTree() (*ssz.Node, error) {
+func (b *BeaconBlock) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(b)
 }
 
 // MarshalSSZ ssz marshals the SignedBeaconBlockDeneb object
-func (s *SignedBeaconBlockDeneb) MarshalSSZ() ([]byte, error) {
+func (s *SignedBeaconBlock) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(s)
 }
 
 // MarshalSSZTo ssz marshals the SignedBeaconBlockDeneb object to a target array
-func (s *SignedBeaconBlockDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (s *SignedBeaconBlock) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(100)
 
@@ -163,7 +163,7 @@ func (s *SignedBeaconBlockDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error
 }
 
 // UnmarshalSSZ ssz unmarshals the SignedBeaconBlockDeneb object
-func (s *SignedBeaconBlockDeneb) UnmarshalSSZ(buf []byte) error {
+func (s *SignedBeaconBlock) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 100 {
@@ -192,7 +192,7 @@ func (s *SignedBeaconBlockDeneb) UnmarshalSSZ(buf []byte) error {
 	{
 		buf = tail[o0:]
 		if s.Block == nil {
-			s.Block = new(BeaconBlockDeneb)
+			s.Block = new(BeaconBlock)
 		}
 		if err = s.Block.UnmarshalSSZ(buf); err != nil {
 			return err
@@ -202,12 +202,12 @@ func (s *SignedBeaconBlockDeneb) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the SignedBeaconBlockDeneb object
-func (s *SignedBeaconBlockDeneb) SizeSSZ() (size int) {
+func (s *SignedBeaconBlock) SizeSSZ() (size int) {
 	size = 100
 
 	// Field (0) 'Block'
 	if s.Block == nil {
-		s.Block = new(BeaconBlockDeneb)
+		s.Block = new(BeaconBlock)
 	}
 	size += s.Block.SizeSSZ()
 
@@ -215,12 +215,12 @@ func (s *SignedBeaconBlockDeneb) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the SignedBeaconBlockDeneb object
-func (s *SignedBeaconBlockDeneb) HashTreeRoot() ([32]byte, error) {
+func (s *SignedBeaconBlock) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(s)
 }
 
 // HashTreeRootWith ssz hashes the SignedBeaconBlockDeneb object with a hasher
-func (s *SignedBeaconBlockDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (s *SignedBeaconBlock) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'Block'
@@ -240,17 +240,17 @@ func (s *SignedBeaconBlockDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error)
 }
 
 // GetTree ssz hashes the SignedBeaconBlockDeneb object
-func (s *SignedBeaconBlockDeneb) GetTree() (*ssz.Node, error) {
+func (s *SignedBeaconBlock) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(s)
 }
 
 // MarshalSSZ ssz marshals the BeaconBlockBodyDeneb object
-func (b *BeaconBlockBodyDeneb) MarshalSSZ() ([]byte, error) {
+func (b *BeaconBlockBody) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(b)
 }
 
 // MarshalSSZTo ssz marshals the BeaconBlockBodyDeneb object to a target array
-func (b *BeaconBlockBodyDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (b *BeaconBlockBody) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(392)
 
@@ -309,7 +309,7 @@ func (b *BeaconBlockBodyDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error) 
 	// Offset (9) 'ExecutionPayload'
 	dst = ssz.WriteOffset(dst, offset)
 	if b.ExecutionPayload == nil {
-		b.ExecutionPayload = new(ExecutionPayloadDeneb)
+		b.ExecutionPayload = new(ExecutionPayload)
 	}
 	offset += b.ExecutionPayload.SizeSSZ()
 
@@ -418,7 +418,7 @@ func (b *BeaconBlockBodyDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error) 
 }
 
 // UnmarshalSSZ ssz unmarshals the BeaconBlockBodyDeneb object
-func (b *BeaconBlockBodyDeneb) UnmarshalSSZ(buf []byte) error {
+func (b *BeaconBlockBody) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 392 {
@@ -599,7 +599,7 @@ func (b *BeaconBlockBodyDeneb) UnmarshalSSZ(buf []byte) error {
 	{
 		buf = tail[o9:o10]
 		if b.ExecutionPayload == nil {
-			b.ExecutionPayload = new(ExecutionPayloadDeneb)
+			b.ExecutionPayload = new(ExecutionPayload)
 		}
 		if err = b.ExecutionPayload.UnmarshalSSZ(buf); err != nil {
 			return err
@@ -640,7 +640,7 @@ func (b *BeaconBlockBodyDeneb) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the BeaconBlockBodyDeneb object
-func (b *BeaconBlockBodyDeneb) SizeSSZ() (size int) {
+func (b *BeaconBlockBody) SizeSSZ() (size int) {
 	size = 392
 
 	// Field (3) 'ProposerSlashings'
@@ -666,7 +666,7 @@ func (b *BeaconBlockBodyDeneb) SizeSSZ() (size int) {
 
 	// Field (9) 'ExecutionPayload'
 	if b.ExecutionPayload == nil {
-		b.ExecutionPayload = new(ExecutionPayloadDeneb)
+		b.ExecutionPayload = new(ExecutionPayload)
 	}
 	size += b.ExecutionPayload.SizeSSZ()
 
@@ -680,12 +680,12 @@ func (b *BeaconBlockBodyDeneb) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the BeaconBlockBodyDeneb object
-func (b *BeaconBlockBodyDeneb) HashTreeRoot() ([32]byte, error) {
+func (b *BeaconBlockBody) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(b)
 }
 
 // HashTreeRootWith ssz hashes the BeaconBlockBodyDeneb object with a hasher
-func (b *BeaconBlockBodyDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (b *BeaconBlockBody) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'RandaoReveal'
@@ -834,17 +834,17 @@ func (b *BeaconBlockBodyDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 }
 
 // GetTree ssz hashes the BeaconBlockBodyDeneb object
-func (b *BeaconBlockBodyDeneb) GetTree() (*ssz.Node, error) {
+func (b *BeaconBlockBody) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(b)
 }
 
 // MarshalSSZ ssz marshals the ExecutionPayloadDeneb object
-func (e *ExecutionPayloadDeneb) MarshalSSZ() ([]byte, error) {
+func (e *ExecutionPayload) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(e)
 }
 
 // MarshalSSZTo ssz marshals the ExecutionPayloadDeneb object to a target array
-func (e *ExecutionPayloadDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (e *ExecutionPayload) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(528)
 
@@ -946,7 +946,7 @@ func (e *ExecutionPayloadDeneb) MarshalSSZTo(buf []byte) (dst []byte, err error)
 }
 
 // UnmarshalSSZ ssz unmarshals the ExecutionPayloadDeneb object
-func (e *ExecutionPayloadDeneb) UnmarshalSSZ(buf []byte) error {
+func (e *ExecutionPayload) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 528 {
@@ -1073,7 +1073,7 @@ func (e *ExecutionPayloadDeneb) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the ExecutionPayloadDeneb object
-func (e *ExecutionPayloadDeneb) SizeSSZ() (size int) {
+func (e *ExecutionPayload) SizeSSZ() (size int) {
 	size = 528
 
 	// Field (10) 'ExtraData'
@@ -1092,12 +1092,12 @@ func (e *ExecutionPayloadDeneb) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the ExecutionPayloadDeneb object
-func (e *ExecutionPayloadDeneb) HashTreeRoot() ([32]byte, error) {
+func (e *ExecutionPayload) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(e)
 }
 
 // HashTreeRootWith ssz hashes the ExecutionPayloadDeneb object with a hasher
-func (e *ExecutionPayloadDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (e *ExecutionPayload) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'ParentHash'
@@ -1198,6 +1198,6 @@ func (e *ExecutionPayloadDeneb) HashTreeRootWith(hh ssz.HashWalker) (err error) 
 }
 
 // GetTree ssz hashes the ExecutionPayloadDeneb object
-func (e *ExecutionPayloadDeneb) GetTree() (*ssz.Node, error) {
+func (e *ExecutionPayload) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(e)
 }

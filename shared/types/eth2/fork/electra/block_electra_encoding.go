@@ -9,12 +9,12 @@ import (
 )
 
 // MarshalSSZ ssz marshals the BeaconBlockElectra object
-func (b *BeaconBlockElectra) MarshalSSZ() ([]byte, error) {
+func (b *BeaconBlock) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(b)
 }
 
 // MarshalSSZTo ssz marshals the BeaconBlockElectra object to a target array
-func (b *BeaconBlockElectra) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (b *BeaconBlock) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(84)
 
@@ -42,7 +42,7 @@ func (b *BeaconBlockElectra) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 }
 
 // UnmarshalSSZ ssz unmarshals the BeaconBlockElectra object
-func (b *BeaconBlockElectra) UnmarshalSSZ(buf []byte) error {
+func (b *BeaconBlock) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 84 {
@@ -77,7 +77,7 @@ func (b *BeaconBlockElectra) UnmarshalSSZ(buf []byte) error {
 	{
 		buf = tail[o4:]
 		if b.Body == nil {
-			b.Body = new(BeaconBlockBodyElectra)
+			b.Body = new(BeaconBlockBody)
 		}
 		if err = b.Body.UnmarshalSSZ(buf); err != nil {
 			return err
@@ -87,12 +87,12 @@ func (b *BeaconBlockElectra) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the BeaconBlockElectra object
-func (b *BeaconBlockElectra) SizeSSZ() (size int) {
+func (b *BeaconBlock) SizeSSZ() (size int) {
 	size = 84
 
 	// Field (4) 'Body'
 	if b.Body == nil {
-		b.Body = new(BeaconBlockBodyElectra)
+		b.Body = new(BeaconBlockBody)
 	}
 	size += b.Body.SizeSSZ()
 
@@ -100,12 +100,12 @@ func (b *BeaconBlockElectra) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the BeaconBlockElectra object
-func (b *BeaconBlockElectra) HashTreeRoot() ([32]byte, error) {
+func (b *BeaconBlock) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(b)
 }
 
 // HashTreeRootWith ssz hashes the BeaconBlockElectra object with a hasher
-func (b *BeaconBlockElectra) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (b *BeaconBlock) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'Slot'
@@ -130,17 +130,17 @@ func (b *BeaconBlockElectra) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 }
 
 // GetTree ssz hashes the BeaconBlockElectra object
-func (b *BeaconBlockElectra) GetTree() (*ssz.Node, error) {
+func (b *BeaconBlock) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(b)
 }
 
 // MarshalSSZ ssz marshals the SignedBeaconBlockElectra object
-func (s *SignedBeaconBlockElectra) MarshalSSZ() ([]byte, error) {
+func (s *SignedBeaconBlock) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(s)
 }
 
 // MarshalSSZTo ssz marshals the SignedBeaconBlockElectra object to a target array
-func (s *SignedBeaconBlockElectra) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (s *SignedBeaconBlock) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(100)
 
@@ -163,7 +163,7 @@ func (s *SignedBeaconBlockElectra) MarshalSSZTo(buf []byte) (dst []byte, err err
 }
 
 // UnmarshalSSZ ssz unmarshals the SignedBeaconBlockElectra object
-func (s *SignedBeaconBlockElectra) UnmarshalSSZ(buf []byte) error {
+func (s *SignedBeaconBlock) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 100 {
@@ -192,7 +192,7 @@ func (s *SignedBeaconBlockElectra) UnmarshalSSZ(buf []byte) error {
 	{
 		buf = tail[o0:]
 		if s.Block == nil {
-			s.Block = new(BeaconBlockElectra)
+			s.Block = new(BeaconBlock)
 		}
 		if err = s.Block.UnmarshalSSZ(buf); err != nil {
 			return err
@@ -202,12 +202,12 @@ func (s *SignedBeaconBlockElectra) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the SignedBeaconBlockElectra object
-func (s *SignedBeaconBlockElectra) SizeSSZ() (size int) {
+func (s *SignedBeaconBlock) SizeSSZ() (size int) {
 	size = 100
 
 	// Field (0) 'Block'
 	if s.Block == nil {
-		s.Block = new(BeaconBlockElectra)
+		s.Block = new(BeaconBlock)
 	}
 	size += s.Block.SizeSSZ()
 
@@ -215,12 +215,12 @@ func (s *SignedBeaconBlockElectra) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the SignedBeaconBlockElectra object
-func (s *SignedBeaconBlockElectra) HashTreeRoot() ([32]byte, error) {
+func (s *SignedBeaconBlock) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(s)
 }
 
 // HashTreeRootWith ssz hashes the SignedBeaconBlockElectra object with a hasher
-func (s *SignedBeaconBlockElectra) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (s *SignedBeaconBlock) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'Block'
@@ -240,17 +240,17 @@ func (s *SignedBeaconBlockElectra) HashTreeRootWith(hh ssz.HashWalker) (err erro
 }
 
 // GetTree ssz hashes the SignedBeaconBlockElectra object
-func (s *SignedBeaconBlockElectra) GetTree() (*ssz.Node, error) {
+func (s *SignedBeaconBlock) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(s)
 }
 
 // MarshalSSZ ssz marshals the BeaconBlockBodyElectra object
-func (b *BeaconBlockBodyElectra) MarshalSSZ() ([]byte, error) {
+func (b *BeaconBlockBody) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(b)
 }
 
 // MarshalSSZTo ssz marshals the BeaconBlockBodyElectra object to a target array
-func (b *BeaconBlockBodyElectra) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (b *BeaconBlockBody) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(396)
 
@@ -427,7 +427,7 @@ func (b *BeaconBlockBodyElectra) MarshalSSZTo(buf []byte) (dst []byte, err error
 }
 
 // UnmarshalSSZ ssz unmarshals the BeaconBlockBodyElectra object
-func (b *BeaconBlockBodyElectra) UnmarshalSSZ(buf []byte) error {
+func (b *BeaconBlockBody) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 396 {
@@ -536,10 +536,10 @@ func (b *BeaconBlockBodyElectra) UnmarshalSSZ(buf []byte) error {
 		if err != nil {
 			return err
 		}
-		b.AttesterSlashings = make([]*AttesterSlashingElectra, num)
+		b.AttesterSlashings = make([]*AttesterSlashing, num)
 		err = ssz.UnmarshalDynamic(buf, num, func(indx int, buf []byte) (err error) {
 			if b.AttesterSlashings[indx] == nil {
-				b.AttesterSlashings[indx] = new(AttesterSlashingElectra)
+				b.AttesterSlashings[indx] = new(AttesterSlashing)
 			}
 			if err = b.AttesterSlashings[indx].UnmarshalSSZ(buf); err != nil {
 				return err
@@ -665,7 +665,7 @@ func (b *BeaconBlockBodyElectra) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the BeaconBlockBodyElectra object
-func (b *BeaconBlockBodyElectra) SizeSSZ() (size int) {
+func (b *BeaconBlockBody) SizeSSZ() (size int) {
 	size = 396
 
 	// Field (3) 'ProposerSlashings'
@@ -711,12 +711,12 @@ func (b *BeaconBlockBodyElectra) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the BeaconBlockBodyElectra object
-func (b *BeaconBlockBodyElectra) HashTreeRoot() ([32]byte, error) {
+func (b *BeaconBlockBody) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(b)
 }
 
 // HashTreeRootWith ssz hashes the BeaconBlockBodyElectra object with a hasher
-func (b *BeaconBlockBodyElectra) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (b *BeaconBlockBody) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'RandaoReveal'
@@ -870,7 +870,7 @@ func (b *BeaconBlockBodyElectra) HashTreeRootWith(hh ssz.HashWalker) (err error)
 }
 
 // GetTree ssz hashes the BeaconBlockBodyElectra object
-func (b *BeaconBlockBodyElectra) GetTree() (*ssz.Node, error) {
+func (b *BeaconBlockBody) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(b)
 }
 
@@ -1428,12 +1428,12 @@ func (c *ConsolidationRequest) GetTree() (*ssz.Node, error) {
 }
 
 // MarshalSSZ ssz marshals the AttesterSlashingElectra object
-func (a *AttesterSlashingElectra) MarshalSSZ() ([]byte, error) {
+func (a *AttesterSlashing) MarshalSSZ() ([]byte, error) {
 	return ssz.MarshalSSZ(a)
 }
 
 // MarshalSSZTo ssz marshals the AttesterSlashingElectra object to a target array
-func (a *AttesterSlashingElectra) MarshalSSZTo(buf []byte) (dst []byte, err error) {
+func (a *AttesterSlashing) MarshalSSZTo(buf []byte) (dst []byte, err error) {
 	dst = buf
 	offset := int(8)
 
@@ -1461,7 +1461,7 @@ func (a *AttesterSlashingElectra) MarshalSSZTo(buf []byte) (dst []byte, err erro
 }
 
 // UnmarshalSSZ ssz unmarshals the AttesterSlashingElectra object
-func (a *AttesterSlashingElectra) UnmarshalSSZ(buf []byte) error {
+func (a *AttesterSlashing) UnmarshalSSZ(buf []byte) error {
 	var err error
 	size := uint64(len(buf))
 	if size < 8 {
@@ -1510,7 +1510,7 @@ func (a *AttesterSlashingElectra) UnmarshalSSZ(buf []byte) error {
 }
 
 // SizeSSZ returns the ssz encoded size in bytes for the AttesterSlashingElectra object
-func (a *AttesterSlashingElectra) SizeSSZ() (size int) {
+func (a *AttesterSlashing) SizeSSZ() (size int) {
 	size = 8
 
 	// Field (0) 'Attestation1'
@@ -1529,12 +1529,12 @@ func (a *AttesterSlashingElectra) SizeSSZ() (size int) {
 }
 
 // HashTreeRoot ssz hashes the AttesterSlashingElectra object
-func (a *AttesterSlashingElectra) HashTreeRoot() ([32]byte, error) {
+func (a *AttesterSlashing) HashTreeRoot() ([32]byte, error) {
 	return ssz.HashWithDefaultHasher(a)
 }
 
 // HashTreeRootWith ssz hashes the AttesterSlashingElectra object with a hasher
-func (a *AttesterSlashingElectra) HashTreeRootWith(hh ssz.HashWalker) (err error) {
+func (a *AttesterSlashing) HashTreeRootWith(hh ssz.HashWalker) (err error) {
 	indx := hh.Index()
 
 	// Field (0) 'Attestation1'
@@ -1552,6 +1552,6 @@ func (a *AttesterSlashingElectra) HashTreeRootWith(hh ssz.HashWalker) (err error
 }
 
 // GetTree ssz hashes the AttesterSlashingElectra object
-func (a *AttesterSlashingElectra) GetTree() (*ssz.Node, error) {
+func (a *AttesterSlashing) GetTree() (*ssz.Node, error) {
 	return ssz.ProofTree(a)
 }
