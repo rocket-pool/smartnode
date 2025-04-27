@@ -3,9 +3,9 @@ package deneb
 import "github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 
 // Important indices for proof generation:
-const BeaconBlockDenebBodyChunksCeil uint64 = 16
+const BeaconBlockBodyChunksCeil uint64 = 16
 
-func (b *BeaconBlockDeneb) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
+func (b *BeaconBlock) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
 	tree, err := b.GetTree()
 	if err != nil {
 		return nil, err
@@ -15,7 +15,7 @@ func (b *BeaconBlockDeneb) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]
 	// Navigate to the body
 	gid = gid*generic.BeaconBlockChunksCeil + generic.BeaconBlockBodyIndex
 	// Then to the ExecutionPayload
-	gid = gid*BeaconBlockDenebBodyChunksCeil + generic.BeaconBlockBodyExecutionPayloadIndex
+	gid = gid*BeaconBlockBodyChunksCeil + generic.BeaconBlockBodyExecutionPayloadIndex
 	// Then to the withdrawals array
 	gid = gid*generic.BeaconBlockBodyExecutionPayloadChunksCeil + generic.BeaconBlockBodyExecutionPayloadWithdrawalsIndex
 	// Then to the array contents
@@ -32,20 +32,20 @@ func (b *BeaconBlockDeneb) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]
 }
 
 // Types needed for withdrawal proofs
-type BeaconBlockDeneb struct {
-	Slot          uint64                `json:"slot"`
-	ProposerIndex uint64                `json:"proposer_index"`
-	ParentRoot    [32]byte              `json:"parent_root" ssz-size:"32"`
-	StateRoot     [32]byte              `json:"state_root" ssz-size:"32"`
-	Body          *BeaconBlockBodyDeneb `json:"body"`
+type BeaconBlock struct {
+	Slot          uint64           `json:"slot"`
+	ProposerIndex uint64           `json:"proposer_index"`
+	ParentRoot    [32]byte         `json:"parent_root" ssz-size:"32"`
+	StateRoot     [32]byte         `json:"state_root" ssz-size:"32"`
+	Body          *BeaconBlockBody `json:"body"`
 }
 
-type SignedBeaconBlockDeneb struct {
-	Block     *BeaconBlockDeneb `json:"message"`
-	Signature []byte            `json:"signature" ssz-size:"96"`
+type SignedBeaconBlock struct {
+	Block     *BeaconBlock `json:"message"`
+	Signature []byte       `json:"signature" ssz-size:"96"`
 }
 
-type BeaconBlockBodyDeneb struct {
+type BeaconBlockBody struct {
 	RandaoReveal          []byte                                `json:"randao_reveal" ssz-size:"96"`
 	Eth1Data              *generic.Eth1Data                     `json:"eth1_data"`
 	Graffiti              [32]byte                              `json:"graffiti" ssz-size:"32"`
@@ -55,12 +55,12 @@ type BeaconBlockBodyDeneb struct {
 	Deposits              []*generic.Deposit                    `json:"deposits" ssz-max:"16"`
 	VoluntaryExits        []*generic.SignedVoluntaryExit        `json:"voluntary_exits" ssz-max:"16"`
 	SyncAggregate         *generic.SyncAggregate                `json:"sync_aggregate"`
-	ExecutionPayload      *ExecutionPayloadDeneb                `json:"execution_payload"`
+	ExecutionPayload      *ExecutionPayload                     `json:"execution_payload"`
 	BlsToExecutionChanges []*generic.SignedBLSToExecutionChange `json:"bls_to_execution_changes" ssz-max:"16"`
 	BlobKzgCommitments    [][48]byte                            `json:"blob_kzg_commitments" ssz-max:"4096,48" ssz-size:"?,48"`
 }
 
-type ExecutionPayloadDeneb struct {
+type ExecutionPayload struct {
 	ParentHash    [32]byte              `ssz-size:"32" json:"parent_hash"`
 	FeeRecipient  [20]byte              `ssz-size:"20" json:"fee_recipient"`
 	StateRoot     [32]byte              `ssz-size:"32" json:"state_root"`
@@ -80,10 +80,10 @@ type ExecutionPayloadDeneb struct {
 	ExcessBlobGas uint64                `json:"excess_blob_gas"`
 }
 
-func (b *BeaconBlockDeneb) HasExecutionPayload() bool {
+func (b *BeaconBlock) HasExecutionPayload() bool {
 	return b.Body.ExecutionPayload != nil
 }
 
-func (b *BeaconBlockDeneb) Withdrawals() []*generic.Withdrawal {
+func (b *BeaconBlock) Withdrawals() []*generic.Withdrawal {
 	return b.Body.ExecutionPayload.Withdrawals
 }

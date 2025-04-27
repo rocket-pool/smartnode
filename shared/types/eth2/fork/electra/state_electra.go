@@ -11,11 +11,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-const beaconStateElectraChunkCeil uint64 = 64
+const beaconStateChunkCeil uint64 = 64
 
 // Taken from https://github.com/OffchainLabs/prysm/blob/a0071826c5daf7dc3a6e76874fdaa76481a3c665/proto/prysm/v1alpha1/beacon_state.pb.go#L1955
 // Unexported fields stripped, as well as proto-related field tags. JSON and ssz-size tags are preserved, and nested types are replaced with local copies as well.
-type BeaconStateElectra struct {
+type BeaconState struct {
 	GenesisTime                  uint64                          `json:"genesis_time"`
 	GenesisValidatorsRoot        []byte                          `json:"genesis_validators_root" ssz-size:"32"`
 	Slot                         uint64                          `json:"slot"`
@@ -59,24 +59,24 @@ type BeaconStateElectra struct {
 
 var beaconStateChunkSize atomic.Uint64
 
-func getElectraStateChunkSize() uint64 {
+func getStateChunkSize() uint64 {
 	// Use a static value to avoid multiple reflection calls
 	storedChunkSize := beaconStateChunkSize.Load()
 	if storedChunkSize == 0 {
-		s := reflect.TypeOf(BeaconStateElectra{}).NumField()
+		s := reflect.TypeOf(BeaconState{}).NumField()
 		beaconStateChunkSize.Store(uint64(s))
 		storedChunkSize = uint64(s)
 	}
 	return storedChunkSize
 }
 
-func GetElectraGeneralizedIndexForValidators() uint64 {
+func GetGeneralizedIndexForValidators() uint64 {
 	// There's 28 fields, so rounding up to the next power of two is 32, a left-aligned node
-	// BeaconStateElectraValidatorsIndex is the 11th field, so its generalized index is 32 + 11 = 43
-	return math.GetPowerOfTwoCeil(getElectraStateChunkSize()) + generic.BeaconStateValidatorsIndex
+	// BeaconStateValidatorsIndex is the 11th field, so its generalized index is 32 + 11 = 43
+	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateValidatorsIndex
 }
 
-func (state *BeaconStateElectra) validatorStateProof(index uint64) ([][]byte, error) {
+func (state *BeaconState) validatorStateProof(index uint64) ([][]byte, error) {
 
 	// Convert the state to a proof tree
 	root, err := state.GetTree()
@@ -85,7 +85,7 @@ func (state *BeaconStateElectra) validatorStateProof(index uint64) ([][]byte, er
 	}
 
 	// Find the validator's generalized index
-	generalizedIndex := generic.GetGeneralizedIndexForValidator(index, GetElectraGeneralizedIndexForValidators())
+	generalizedIndex := generic.GetGeneralizedIndexForValidator(index, GetGeneralizedIndexForValidators())
 
 	// Grab the proof for that index
 	proof, err := root.Prove(int(generalizedIndex))
@@ -108,7 +108,7 @@ func (state *BeaconStateElectra) validatorStateProof(index uint64) ([][]byte, er
 
 // ValidatorWithdrawableEpochProof computes the merkle proof for a validator's withdrawable epoch
 // at a specific index in the validator registry.
-func (state *BeaconStateElectra) ValidatorWithdrawableEpochProof(index uint64) ([][]byte, error) {
+func (state *BeaconState) ValidatorWithdrawableEpochProof(index uint64) ([][]byte, error) {
 
 	if index >= uint64(len(state.Validators)) {
 		return nil, errors.New("validator index out of bounds")
@@ -142,7 +142,7 @@ func (state *BeaconStateElectra) ValidatorWithdrawableEpochProof(index uint64) (
 	return out, nil
 }
 
-func (state *BeaconStateElectra) blockHeaderToStateProof(blockHeader *generic.BeaconBlockHeader) ([][]byte, error) {
+func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlockHeader) ([][]byte, error) {
 	generalizedIndex := generic.BeaconBlockHeaderStateRootGeneralizedIndex
 	root, err := blockHeader.GetTree()
 	if err != nil {
@@ -157,7 +157,7 @@ func (state *BeaconStateElectra) blockHeaderToStateProof(blockHeader *generic.Be
 
 // ValidatorCredentialsProof computes the merkle proof for a validator's credentials
 // at a specific index in the validator registry.
-func (state *BeaconStateElectra) ValidatorCredentialsProof(index uint64) ([][]byte, error) {
+func (state *BeaconState) ValidatorCredentialsProof(index uint64) ([][]byte, error) {
 
 	if index >= uint64(len(state.Validators)) {
 		return nil, errors.New("validator index out of bounds")
@@ -186,7 +186,7 @@ func (state *BeaconStateElectra) ValidatorCredentialsProof(index uint64) ([][]by
 	return out, nil
 }
 
-func (state *BeaconStateElectra) HistoricalSummaryProof(slot uint64) ([][]byte, error) {
+func (state *BeaconState) HistoricalSummaryProof(slot uint64) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if !isHistorical {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
@@ -198,7 +198,7 @@ func (state *BeaconStateElectra) HistoricalSummaryProof(slot uint64) ([][]byte, 
 
 	// Navigate to the historical_summaries
 	gid := uint64(1)
-	gid = gid*beaconStateElectraChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
+	gid = gid*beaconStateChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
 	// Navigate into the historical summaries vector.
 	arrayIndex := (slot / generic.SlotsPerHistoricalRoot)
 	gid = gid*2*generic.BeaconStateHistoricalSummariesMaxLength + arrayIndex
@@ -216,7 +216,7 @@ func (state *BeaconStateElectra) HistoricalSummaryProof(slot uint64) ([][]byte, 
 	return append(proof.Hashes, blockHeaderProof...), nil
 }
 
-func (state *BeaconStateElectra) HistoricalSummaryBlockRootProof(slot int) ([][]byte, error) {
+func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, error) {
 	// If the state isn't aligned at the end of an 8192 slot era, throw an error
 	if state.Slot%generic.SlotsPerHistoricalRoot != generic.SlotsPerHistoricalRoot-1 {
 		return nil, fmt.Errorf("state is not aligned at the end of an 8192 slot era")
@@ -250,7 +250,7 @@ func (state *BeaconStateElectra) HistoricalSummaryBlockRootProof(slot int) ([][]
 	return proof.Hashes, nil
 }
 
-func (state *BeaconStateElectra) BlockRootProof(slot uint64) ([][]byte, error) {
+func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if isHistorical {
 		return nil, fmt.Errorf("slot %d is more than %d slots in the past from the state at slot %d, you must build a proof from the historical_summaries instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
@@ -264,7 +264,7 @@ func (state *BeaconStateElectra) BlockRootProof(slot uint64) ([][]byte, error) {
 	gid := uint64(1)
 
 	// Navigate to the block_roots
-	gid = gid*beaconStateElectraChunkCeil + generic.BeaconStateBlockRootsFieldIndex
+	gid = gid*beaconStateChunkCeil + generic.BeaconStateBlockRootsFieldIndex
 
 	// We're now at the block_roots vector, which is the root of a slotsPerHistoricalRoot slots vector.
 	// The index we care about is given by slot % slotsPerHistoricalRoot.
@@ -284,10 +284,10 @@ func (state *BeaconStateElectra) BlockRootProof(slot uint64) ([][]byte, error) {
 	return append(proof.Hashes, blockHeaderProof...), nil
 }
 
-func (state *BeaconStateElectra) GetValidators() []*generic.Validator {
+func (state *BeaconState) GetValidators() []*generic.Validator {
 	return state.Validators
 }
 
-func (state *BeaconStateElectra) GetSlot() uint64 {
+func (state *BeaconState) GetSlot() uint64 {
 	return state.Slot
 }
