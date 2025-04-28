@@ -8,6 +8,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -27,7 +28,12 @@ func getBeaconStateForSlot(c *cli.Context, slot uint64, validatorIndex uint64) e
 	}
 
 	// Get beacon state
-	beaconState, err := bc.GetBeaconState(slot)
+	beaconStateResponse, err := bc.GetBeaconStateSSZ(slot)
+	if err != nil {
+		return err
+	}
+
+	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
 	if err != nil {
 		return err
 	}

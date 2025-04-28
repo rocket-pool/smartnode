@@ -90,7 +90,12 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	}
 
 	// Get the beacon state for that slot
-	beaconState, err := bc.GetBeaconState(block.Slot)
+	beaconStateResponse, err := bc.GetBeaconStateSSZ(block.Slot)
+	if err != nil {
+		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+	}
+
+	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
 	if err != nil {
 		return megapool.ValidatorProof{}, err
 	}
@@ -151,12 +156,17 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 	}
 
 	// Get the beacon state for that slot
-	beaconState, err := bc.GetBeaconState(block.Slot)
+	beaconStateResponse, err := bc.GetBeaconStateSSZ(block.Slot)
 	if err != nil {
 		return api.ValidatorWithdrawableEpochProof{}, err
 	}
 
-	withdrawableEpoch := beaconState.Validators[validatorIndex64].WithdrawableEpoch
+	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
+	if err != nil {
+		return api.ValidatorWithdrawableEpochProof{}, err
+	}
+
+	withdrawableEpoch := beaconState.GetValidators()[validatorIndex64].WithdrawableEpoch
 
 	proofBytes, err := beaconState.ValidatorWithdrawableEpochProof(validatorIndex64)
 	if err != nil {

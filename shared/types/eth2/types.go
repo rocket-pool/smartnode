@@ -1,35 +1,80 @@
 package eth2
 
-// Deposit data (with no signature field)
-type DepositDataNoSignature struct {
-	PublicKey             []byte `json:"pubkey" ssz-size:"48"`
-	WithdrawalCredentials []byte `json:"withdrawal_credentials" ssz-size:"32"`
-	Amount                uint64 `json:"amount"`
+import (
+	"fmt"
+	"strings"
+
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/deneb"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/electra"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
+)
+
+// State type assertions
+var _ BeaconState = &deneb.BeaconState{}
+var _ BeaconState = &electra.BeaconState{}
+
+// Block type assertions
+var _ BeaconBlock = &deneb.BeaconBlock{}
+var _ BeaconBlock = &electra.BeaconBlock{}
+
+type BeaconState interface {
+	GetSlot() uint64
+	ValidatorWithdrawableEpochProof(index uint64) ([][]byte, error)
+	ValidatorCredentialsProof(index uint64) ([][]byte, error)
+	HistoricalSummaryProof(slot uint64) ([][]byte, error)
+	HistoricalSummaryBlockRootProof(slot int) ([][]byte, error)
+	BlockRootProof(slot uint64) ([][]byte, error)
+	GetValidators() []*generic.Validator
 }
 
-// Deposit data (including signature)
-type DepositData struct {
-	PublicKey             []byte `json:"pubkey" ssz-size:"48"`
-	WithdrawalCredentials []byte `json:"withdrawal_credentials" ssz-size:"32"`
-	Amount                uint64 `json:"amount"`
-	Signature             []byte `json:"signature" ssz-size:"96"`
+type BeaconBlock interface {
+	ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error)
+	HasExecutionPayload() bool
+	Withdrawals() []*generic.Withdrawal
 }
 
-// BLS signing root with domain
-type SigningRoot struct {
-	ObjectRoot []byte `json:"object_root" ssz-size:"32"`
-	Domain     []byte `json:"domain" ssz-size:"32"`
+func NewBeaconState(data []byte, fork string) (BeaconState, error) {
+	fork = strings.ToLower(fork)
+
+	switch fork {
+	case "deneb":
+		out := &deneb.BeaconState{}
+		err := out.UnmarshalSSZ(data)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	case "electra":
+		out := &electra.BeaconState{}
+		err := out.UnmarshalSSZ(data)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("unsupported fork: %s", fork)
+	}
 }
 
-// Voluntary exit transaction
-type VoluntaryExit struct {
-	Epoch          uint64 `json:"epoch"`
-	ValidatorIndex uint64 `json:"validator_index"`
-}
+func NewBeaconBlock(data []byte, fork string) (BeaconBlock, error) {
+	fork = strings.ToLower(fork)
 
-// Withdrawal creds change message
-type WithdrawalCredentialsChange struct {
-	ValidatorIndex     uint64   `json:"validator_index"`
-	FromBLSPubkey      [48]byte `json:"from_bls_pubkey" ssz-size:"48"`
-	ToExecutionAddress [20]byte `json:"to_execution_address" ssz-size:"20"`
+	switch fork {
+	case "deneb":
+		out := &deneb.BeaconBlock{}
+		err := out.UnmarshalSSZ(data)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	case "electra":
+		out := &electra.BeaconBlock{}
+		err := out.UnmarshalSSZ(data)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	default:
+		return nil, fmt.Errorf("unsupported fork: %s", fork)
+	}
 }
