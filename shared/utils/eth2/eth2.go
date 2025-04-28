@@ -47,10 +47,7 @@ func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []
 
 		// Get batch start & end index
 		msi := bsi
-		mei := bsi + MinipoolBalanceDetailsBatchSize
-		if mei > len(addresses) {
-			mei = len(addresses)
-		}
+		mei := min(bsi+MinipoolBalanceDetailsBatchSize, len(addresses))
 
 		// Load details
 		var wg errgroup.Group
@@ -85,10 +82,7 @@ func GetBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*rpstate.Nativ
 
 		// Get batch start & end index
 		msi := bsi
-		mei := bsi + MinipoolBalanceDetailsBatchSize
-		if mei > len(mpds) {
-			mei = len(mpds)
-		}
+		mei := min(bsi+MinipoolBalanceDetailsBatchSize, len(mpds))
 
 		// Load details
 		var wg errgroup.Group

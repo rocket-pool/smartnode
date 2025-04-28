@@ -25,10 +25,7 @@ func GetMinipoolValidators(rp *rocketpool.RocketPool, bc beacon.Client, addresse
 
 		// Get batch start & end index
 		msi := bsi
-		mei := bsi + MinipoolPubkeyBatchSize
-		if mei > len(addresses) {
-			mei = len(addresses)
-		}
+		mei := min(bsi+MinipoolPubkeyBatchSize, len(addresses))
 
 		// Load details
 		var wg errgroup.Group

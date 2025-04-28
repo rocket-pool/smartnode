@@ -333,10 +333,7 @@ func (d *DropDown) Draw(screen tcell.Screen) {
 
 	// Draw label.
 	if d.labelWidth > 0 {
-		labelWidth := d.labelWidth
-		if labelWidth > rightLimit-x {
-			labelWidth = rightLimit - x
-		}
+		labelWidth := min(d.labelWidth, rightLimit-x)
 		tview.Print(screen, d.label, x, y, labelWidth, tview.AlignLeft, d.labelColor)
 		x += labelWidth
 	} else {
@@ -414,10 +411,7 @@ func (d *DropDown) Draw(screen tcell.Screen) {
 		lheight := len(d.options)
 		_, sheight := screen.Size()
 		if ly+lheight >= sheight && ly-2 > lheight-ly {
-			ly = y - lheight
-			if ly < 0 {
-				ly = 0
-			}
+			ly = max(y-lheight, 0)
 		}
 		if ly+lheight >= sheight {
 			lheight = sheight - ly

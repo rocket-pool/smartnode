@@ -347,14 +347,8 @@ func getStatus(c *cli.Context) error {
 			remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
 			remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
 			remainingAmountEth := int(eth.WeiToEth(remainingAmount))
-			remainingFor8EB := remainingAmountEth / 24
-			if remainingFor8EB < 0 {
-				remainingFor8EB = 0
-			}
-			remainingFor16EB := remainingAmountEth / 16
-			if remainingFor16EB < 0 {
-				remainingFor16EB = 0
-			}
+			remainingFor8EB := max(remainingAmountEth/24, 0)
+			remainingFor16EB := max(remainingAmountEth/16, 0)
 			fmt.Printf("The node has enough RPL staked to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
 		}
 
