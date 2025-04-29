@@ -360,9 +360,10 @@ func (bc *MockBeaconClient) GetAttestations(_slot string) ([]beacon.AttestationI
 		{
 			AggregationBits: bl,
 			SlotIndex:       uint64(s),
-			Committees:      map[int]bool{0: true},
+			Committees:      bitfield.NewBitvector64(),
 		},
 	}
+	out[0].Committees.SetBitAt(0, true)
 	return out, true, nil
 }
 

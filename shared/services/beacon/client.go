@@ -98,32 +98,11 @@ type AttestationInfo struct {
 	AggregationBits bitfield.Bitlist
 	SlotIndex       uint64
 	// Committees represented by AggregationBits
-	Committees map[int]bool
-}
-
-func (a *AttestationInfo) SetCommittees(committees bitfield.Bitlist) {
-	if committees == nil {
-		return
-	}
-
-	if committees.Len() == 0 {
-		return
-	}
-
-	a.Committees = make(map[int]bool)
-	for _, index := range committees.BitIndices() {
-		a.Committees[index] = true
-	}
+	Committees bitfield.Bitvector64
 }
 
 func (a *AttestationInfo) CommitteeIndices() []int {
-	out := []int{}
-	for committeeIndex, ok := range a.Committees {
-		if !ok {
-			continue
-		}
-		out = append(out, committeeIndex)
-	}
+	out := a.Committees.BitIndices()
 	sort.Ints(out)
 	return out
 }
