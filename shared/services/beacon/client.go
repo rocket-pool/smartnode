@@ -100,7 +100,6 @@ type AttestationInfo struct {
 	CommitteeBits   bitfield.Bitlist
 }
 
-// if !attestation.ValidatorAttested(i, position, slotInfo.CommitteeSizes) {
 func (a AttestationInfo) ValidatorAttested(committeeIndex int, position int, committeeSizes map[uint64]int) bool {
 	// Calculate the offset in aggregation_bits
 	var offset int
@@ -108,10 +107,8 @@ func (a AttestationInfo) ValidatorAttested(committeeIndex int, position int, com
 		offset = position
 	} else {
 		committeeOffset := 0
-		if committeeIndex > 0 {
-			for i := 0; i < committeeIndex; i++ {
-				committeeOffset += committeeSizes[uint64(i)]
-			}
+		for i := 0; i < committeeIndex; i++ {
+			committeeOffset += committeeSizes[uint64(i)]
 		}
 		offset = committeeOffset + position
 	}
