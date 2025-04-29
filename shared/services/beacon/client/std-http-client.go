@@ -622,7 +622,7 @@ func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.Attestati
 			return nil, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
 		}
 		if attestation.CommitteeBits != "" && attestation.CommitteeBits != "0x" {
-			attestationInfo[i].CommitteeBits, err = hex.DecodeString(attestation.CommitteeBits)
+			attestationInfo[i].CommitteeBits, err = hex.DecodeString(hexutil.RemovePrefix(attestation.CommitteeBits))
 			if err != nil {
 				return nil, false, fmt.Errorf("Error decoding committee bits for attestation %d of block %s: %w", i, blockId, err)
 			}
@@ -668,7 +668,7 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
 		}
 		if attestation.CommitteeBits != "" && attestation.CommitteeBits != "0x" {
-			info.CommitteeBits, err = hex.DecodeString(attestation.CommitteeBits)
+			info.CommitteeBits, err = hex.DecodeString(hexutil.RemovePrefix(attestation.CommitteeBits))
 			if err != nil {
 				return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding committee bits for attestation %d of block %s: %w", i, blockId, err)
 			}
