@@ -93,7 +93,7 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	// Get the beacon state for that slot
 	beaconStateResponse, err := bc.GetBeaconStateSSZ(block.Slot)
 	if err != nil {
-		return types.ValidatorSignature{}, common.Hash{}, megapool.ValidatorProof{}, err
+		return megapool.ValidatorProof{}, err
 	}
 
 	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
