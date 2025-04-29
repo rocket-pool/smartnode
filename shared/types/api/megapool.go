@@ -123,10 +123,13 @@ type MegapoolGetEffectiveDelegateResponse struct {
 }
 
 type CanDistributeMegapoolResponse struct {
-	Status        string             `json:"status"`
-	Error         string             `json:"error"`
-	CanDistribute bool               `json:"canDistribute"`
-	GasInfo       rocketpool.GasInfo `json:"gasInfo"`
+	Status                string             `json:"status"`
+	Error                 string             `json:"error"`
+	MegapoolAddress       common.Address     `json:"megapoolAddress"`
+	MegapoolDeployed      bool               `json:"megapoolDeployed"`
+	LastDistributionBlock uint64             `json:"lastDistributionBlock"`
+	CanDistribute         bool               `json:"canDistribute"`
+	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
 }
 
 type DistributeMegapoolResponse struct {

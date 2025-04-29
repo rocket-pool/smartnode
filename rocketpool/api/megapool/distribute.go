@@ -40,25 +40,36 @@ func canDistributeMegapool(c *cli.Context) (*api.CanDistributeMegapoolResponse, 
 	}
 
 	// Check if the megapool is already deployed
-	alreadyDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+	response.MegapoolDeployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if !alreadyDeployed {
+	if !response.MegapoolDeployed {
 		response.CanDistribute = false
 		return &response, nil
 	}
 
-	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	response.MegapoolAddress, err = megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Load the megapool
-	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	mp, err := megapool.NewMegaPoolV1(rp, response.MegapoolAddress, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	// LastDistributionBlock is 0 if the megapool has never had a staking validator
+	response.LastDistributionBlock, err = mp.GetLastDistributionBlock(nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if response.LastDistributionBlock == 0 {
+		response.CanDistribute = false
+		return &response, nil
 	}
 
 	gasInfo, err := mp.EstimateDistributeGas(opts)

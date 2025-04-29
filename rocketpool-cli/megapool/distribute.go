@@ -35,6 +35,17 @@ func distribute(c *cli.Context) error {
 		return fmt.Errorf("error checking if megapool can distribute rewards: %w", err)
 	}
 
+	if !canResponse.CanDistribute {
+		fmt.Println("Could not distribute rewards")
+		if canResponse.MegapoolDeployed == false {
+			fmt.Println("The node does not have a megapool deployed")
+		}
+		if canResponse.LastDistributionBlock == 0 {
+			fmt.Printf("The node's megapool: %s does not have any staking validators\n", canResponse.MegapoolAddress)
+		}
+		return nil
+	}
+
 	// Get pending rewards
 	rewardsSplit, err := rp.CalculatePendingRewards()
 	if err != nil {
