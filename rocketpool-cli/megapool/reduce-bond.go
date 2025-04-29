@@ -40,6 +40,7 @@ func reduceBond(c *cli.Context) error {
 	fmt.Printf("Current active validators:                       %d\n", megapoolDetails.Megapool.ActiveValidatorCount)
 	fmt.Printf("Current megapool bond:                           %.6f ETH\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.NodeBond), 6))
 	fmt.Printf("Current bond requirements for active validators: %.6f ETH\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.BondRequirement), 6))
+	fmt.Println()
 
 	var amount float64
 	// If current node bond is higher than the bond requirement, ask if the user wants to reduce the bond
@@ -57,6 +58,9 @@ func reduceBond(c *cli.Context) error {
 				return fmt.Errorf("Invalid amount '%s': %w\n", amountStr, err)
 			}
 		}
+	} else {
+		fmt.Println("Your megapool bond does not exceed the bond requirement, so a bond reduction is not available.")
+		return nil
 	}
 
 	amountWei := eth.EthToWei(amount)
