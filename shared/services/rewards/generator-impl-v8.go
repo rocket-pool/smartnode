@@ -852,13 +852,7 @@ func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.Attestat
 		if inclusionSlot-attestation.SlotIndex > r.beaconConfig.SlotsPerEpoch {
 			continue
 		}
-		var committeeIndexes []int
-		if attestation.CommitteeBits == nil {
-			committeeIndexes = []int{int(attestation.CommitteeIndex)}
-		} else {
-			committeeIndexes = attestation.CommitteeBits.BitIndices()
-		}
-		for _, committeeIndex := range committeeIndexes {
+		for _, committeeIndex := range attestation.CommitteeIndices() {
 			rpCommittee, exists := slotInfo.Committees[uint64(committeeIndex)]
 			if !exists {
 				continue

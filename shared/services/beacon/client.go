@@ -2,6 +2,7 @@ package beacon
 
 import (
 	"math/big"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
@@ -96,19 +97,48 @@ type Committees interface {
 type AttestationInfo struct {
 	AggregationBits bitfield.Bitlist
 	SlotIndex       uint64
-	CommitteeIndex  uint64
-	CommitteeBits   bitfield.Bitlist
+	// Committees represented by AggregationBits
+	Committees map[int]bool
+}
+
+func (a *AttestationInfo) SetCommittees(committees bitfield.Bitlist) {
+	if committees == nil {
+		return
+	}
+
+	if committees.Len() == 0 {
+		return
+	}
+
+	a.Committees = make(map[int]bool)
+	for _, index := range committees.BitIndices() {
+		a.Committees[index] = true
+	}
+}
+
+func (a *AttestationInfo) CommitteeIndices() []int {
+	out := []int{}
+	for committeeIndex, ok := range a.Committees {
+		if !ok {
+			continue
+		}
+		out = append(out, committeeIndex)
+	}
+	sort.Ints(out)
+	return out
 }
 
 func (a AttestationInfo) ValidatorAttested(committeeIndex int, position int, committeeSizes map[uint64]int) bool {
 	// Calculate the offset in aggregation_bits
 	var offset int
-	if a.CommitteeBits == nil {
+	if a.Committees == nil {
 		offset = position
 	} else {
 		committeeOffset := 0
-		for i := 0; i < committeeIndex; i++ {
-			committeeOffset += committeeSizes[uint64(i)]
+		for c, _ := range a.Committees {
+			if c < committeeIndex {
+				committeeOffset += committeeSizes[uint64(c)]
+			}
 		}
 		offset = committeeOffset + position
 	}

@@ -616,15 +616,19 @@ func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.Attestati
 	for i, attestation := range attestations.Data {
 		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
 		attestationInfo[i].SlotIndex = uint64(attestation.Data.Slot)
-		attestationInfo[i].CommitteeIndex = uint64(attestation.Data.Index)
 		attestationInfo[i].AggregationBits, err = hex.DecodeString(bitString)
 		if err != nil {
 			return nil, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
 		}
 		if attestation.CommitteeBits != "" && attestation.CommitteeBits != "0x" {
-			attestationInfo[i].CommitteeBits, err = hex.DecodeString(hexutil.RemovePrefix(attestation.CommitteeBits))
+			committeeBytes, err := hex.DecodeString(hexutil.RemovePrefix(attestation.CommitteeBits))
 			if err != nil {
 				return nil, false, fmt.Errorf("Error decoding committee bits for attestation %d of block %s: %w", i, blockId, err)
+			}
+			attestationInfo[i].SetCommittees(committeeBytes)
+		} else {
+			attestationInfo[i].Committees = map[int]bool{
+				int(attestation.Data.Index): true,
 			}
 		}
 	}
@@ -660,17 +664,21 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 	for i, attestation := range block.Data.Message.Body.Attestations {
 		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
 		info := beacon.AttestationInfo{
-			SlotIndex:      uint64(attestation.Data.Slot),
-			CommitteeIndex: uint64(attestation.Data.Index),
+			SlotIndex: uint64(attestation.Data.Slot),
 		}
 		info.AggregationBits, err = hex.DecodeString(bitString)
 		if err != nil {
 			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
 		}
 		if attestation.CommitteeBits != "" && attestation.CommitteeBits != "0x" {
-			info.CommitteeBits, err = hex.DecodeString(hexutil.RemovePrefix(attestation.CommitteeBits))
+			committeeBytes, err := hex.DecodeString(hexutil.RemovePrefix(attestation.CommitteeBits))
 			if err != nil {
 				return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding committee bits for attestation %d of block %s: %w", i, blockId, err)
+			}
+			info.SetCommittees(committeeBytes)
+		} else {
+			info.Committees = map[int]bool{
+				int(attestation.Data.Index): true,
 			}
 		}
 		beaconBlock.Attestations = append(beaconBlock.Attestations, info)
