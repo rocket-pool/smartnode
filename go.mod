@@ -8,7 +8,7 @@ require (
 	github.com/felixge/fgprof v0.9.5
 	github.com/goccy/go-json v0.10.2
 	github.com/rocket-pool/rocketpool-go v1.8.4-0.20241122223132-c5f2be18f72b
-	github.com/rocket-pool/smartnode v1.15.1-0.20241215155839-c965d632b779
+	github.com/rocket-pool/smartnode v1.15.6-0.20250429035200-157cf5deeef0
 	github.com/urfave/cli/v2 v2.26.0
 )
 
@@ -18,7 +18,6 @@ require (
 	github.com/alessio/shellescape v1.4.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.11.0 // indirect
-	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/btcsuite/btcd/btcec/v2 v2.3.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/consensys/bavard v0.1.13 // indirect
@@ -114,6 +113,7 @@ require (
 	golang.org/x/mod v0.20.0 // indirect
 	golang.org/x/sync v0.8.0 // indirect
 	golang.org/x/sys v0.24.0 // indirect
+	golang.org/x/term v0.23.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
@@ -125,6 +125,6 @@ require (
 
 replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
 
-//replace github.com/rocket-pool/smartnode => ../smartnode
+replace github.com/rocket-pool/smartnode => ../smartnode
 
 //replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
