@@ -234,8 +234,9 @@ type IntervalDutiesInfo struct {
 }
 
 type SlotInfo struct {
-	Index      uint64
-	Committees map[uint64]*CommitteeInfo
+	Index          uint64
+	Committees     map[uint64]*CommitteeInfo
+	CommitteeSizes map[uint64]int
 }
 
 type CommitteeInfo struct {

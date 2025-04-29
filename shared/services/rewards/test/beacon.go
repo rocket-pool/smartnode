@@ -387,6 +387,10 @@ func (mbc *MockBeaconCommittees) Validators(index int) []string {
 	return mbc.slots[index].validators
 }
 
+func (mbc *MockBeaconCommittees) ValidatorCount(index int) int {
+	return len(mbc.slots[index].validators)
+}
+
 // Release is a no-op
 func (mbc *MockBeaconCommittees) Release() {
 }

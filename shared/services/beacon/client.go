@@ -82,6 +82,9 @@ type Committees interface {
 	// Validators returns the list of validators of the committee at
 	// the provided offset
 	Validators(int) []string
+	// ValidatorCount returns the number of validators in the committee at
+	// the provided offset
+	ValidatorCount(int) int
 	// Count returns the number of committees in the response
 	Count() int
 	// Release returns the reused validators slice buffer to the pool for
@@ -94,6 +97,26 @@ type AttestationInfo struct {
 	AggregationBits bitfield.Bitlist
 	SlotIndex       uint64
 	CommitteeIndex  uint64
+	CommitteeBits   bitfield.Bitlist
+}
+
+// if !attestation.ValidatorAttested(i, position, slotInfo.CommitteeSizes) {
+func (a AttestationInfo) ValidatorAttested(committeeIndex int, position int, committeeSizes map[uint64]int) bool {
+	// Calculate the offset in aggregation_bits
+	var offset int
+	if a.CommitteeBits == nil {
+		offset = position
+	} else {
+		committeeOffset := 0
+		if committeeIndex > 0 {
+			for i := 0; i < committeeIndex; i++ {
+				committeeOffset += committeeSizes[uint64(i)]
+			}
+		}
+		offset = committeeOffset + position
+	}
+
+	return a.AggregationBits.BitAt(uint64(offset))
 }
 
 // Beacon client type
