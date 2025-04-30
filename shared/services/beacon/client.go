@@ -109,20 +109,14 @@ func (a *AttestationInfo) CommitteeIndices() []int {
 
 func (a AttestationInfo) ValidatorAttested(committeeIndex int, position int, committeeSizes map[uint64]int) bool {
 	// Calculate the offset in aggregation_bits
-	var offset int
-	if a.Committees == nil {
-		offset = position
-	} else {
-		committeeOffset := 0
-		for c, _ := range a.CommitteeIndices() {
-			if c >= committeeIndex {
-				break
-			}
-			committeeOffset += committeeSizes[uint64(c)]
+	committeeOffset := 0
+	for _, c := range a.CommitteeIndices() {
+		if c >= committeeIndex {
+			break
 		}
-		offset = committeeOffset + position
+		committeeOffset += committeeSizes[uint64(c)]
 	}
-
+	offset := committeeOffset + position
 	return a.AggregationBits.BitAt(uint64(offset))
 }
 
