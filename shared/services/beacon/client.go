@@ -114,10 +114,11 @@ func (a AttestationInfo) ValidatorAttested(committeeIndex int, position int, com
 		offset = position
 	} else {
 		committeeOffset := 0
-		for c, _ := range a.Committees {
-			if c < committeeIndex {
-				committeeOffset += committeeSizes[uint64(c)]
+		for c, _ := range a.CommitteeIndices() {
+			if c >= committeeIndex {
+				break
 			}
+			committeeOffset += committeeSizes[uint64(c)]
 		}
 		offset = committeeOffset + position
 	}
