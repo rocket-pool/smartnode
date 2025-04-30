@@ -65,6 +65,10 @@ func (c *CommitteesResponse) Validators(idx int) []string {
 	return c.Data[idx].Validators
 }
 
+func (c *CommitteesResponse) ValidatorCount(idx int) int {
+	return len(c.Data[idx].Validators)
+}
+
 func (c *CommitteesResponse) Release() {
 	for _, committee := range c.Data {
 		// Reset the slice length to 0 (capacity stays the same)

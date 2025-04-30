@@ -16,6 +16,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/prysmaticlabs/prysm/v5/crypto/bls"
 	"github.com/rocket-pool/rocketpool-go/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -616,10 +617,18 @@ func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.Attestati
 	for i, attestation := range attestations.Data {
 		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
 		attestationInfo[i].SlotIndex = uint64(attestation.Data.Slot)
-		attestationInfo[i].CommitteeIndex = uint64(attestation.Data.Index)
 		attestationInfo[i].AggregationBits, err = hex.DecodeString(bitString)
 		if err != nil {
 			return nil, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
+		}
+		if attestation.CommitteeBits != "" && attestation.CommitteeBits != "0x" {
+			attestationInfo[i].Committees, err = hex.DecodeString(hexutil.RemovePrefix(attestation.CommitteeBits))
+			if err != nil {
+				return nil, false, fmt.Errorf("Error decoding committee bits for attestation %d of block %s: %w", i, blockId, err)
+			}
+		} else {
+			attestationInfo[i].Committees = bitfield.NewBitvector64()
+			attestationInfo[i].Committees.SetBitAt(uint64(attestation.Data.Index), true)
 		}
 	}
 
@@ -654,12 +663,20 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 	for i, attestation := range block.Data.Message.Body.Attestations {
 		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
 		info := beacon.AttestationInfo{
-			SlotIndex:      uint64(attestation.Data.Slot),
-			CommitteeIndex: uint64(attestation.Data.Index),
+			SlotIndex: uint64(attestation.Data.Slot),
 		}
 		info.AggregationBits, err = hex.DecodeString(bitString)
 		if err != nil {
 			return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
+		}
+		if attestation.CommitteeBits != "" && attestation.CommitteeBits != "0x" {
+			info.Committees, err = hex.DecodeString(hexutil.RemovePrefix(attestation.CommitteeBits))
+			if err != nil {
+				return beacon.BeaconBlock{}, false, fmt.Errorf("Error decoding committee bits for attestation %d of block %s: %w", i, blockId, err)
+			}
+		} else {
+			info.Committees = bitfield.NewBitvector64()
+			info.Committees.SetBitAt(uint64(attestation.Data.Index), true)
 		}
 		beaconBlock.Attestations = append(beaconBlock.Attestations, info)
 	}

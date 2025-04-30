@@ -2,6 +2,7 @@ package beacon
 
 import (
 	"math/big"
+	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
@@ -82,6 +83,9 @@ type Committees interface {
 	// Validators returns the list of validators of the committee at
 	// the provided offset
 	Validators(int) []string
+	// ValidatorCount returns the number of validators in the committee at
+	// the provided offset
+	ValidatorCount(int) int
 	// Count returns the number of committees in the response
 	Count() int
 	// Release returns the reused validators slice buffer to the pool for
@@ -93,7 +97,27 @@ type Committees interface {
 type AttestationInfo struct {
 	AggregationBits bitfield.Bitlist
 	SlotIndex       uint64
-	CommitteeIndex  uint64
+	// Committees represented by AggregationBits
+	Committees bitfield.Bitvector64
+}
+
+func (a *AttestationInfo) CommitteeIndices() []int {
+	out := a.Committees.BitIndices()
+	sort.Ints(out)
+	return out
+}
+
+func (a AttestationInfo) ValidatorAttested(committeeIndex int, position int, committeeSizes map[uint64]int) bool {
+	// Calculate the offset in aggregation_bits
+	committeeOffset := 0
+	for _, c := range a.CommitteeIndices() {
+		if c >= committeeIndex {
+			break
+		}
+		committeeOffset += committeeSizes[uint64(c)]
+	}
+	offset := committeeOffset + position
+	return a.AggregationBits.BitAt(uint64(offset))
 }
 
 // Beacon client type
