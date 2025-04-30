@@ -332,7 +332,7 @@ func findInQueue(rp *rocketpool.RocketPool, megapoolAddress common.Address, vali
 		positionOffset.Add(positionOffset, big.NewInt(1))
 	}
 	if slice.NextIndex.Cmp(big.NewInt(0)) == 0 {
-		return nil, err
+		return nil, nil
 	} else {
 		return findInQueue(rp, megapoolAddress, validatorId, queueKey, slice.NextIndex, positionOffset)
 	}
@@ -346,7 +346,7 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 		return nil, fmt.Errorf("Could not find position in queue %s for validatorId %d: %w", queueKey, validatorId, err)
 	}
 	if position == nil {
-		return nil, err
+		return nil, nil
 	}
 
 	pos := position.Uint64()
@@ -360,13 +360,13 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 
 	var overallPosition uint64
 	if queueKey == "deposit.queue.express" {
-		standardEntriesBefore := (pos + (queueIndex%queueInterval)/expressQueueRate)
+		standardEntriesBefore := (pos + (queueIndex % queueInterval)) / expressQueueRate
 		if standardEntriesBefore > standardQueueLength {
 			standardEntriesBefore = standardQueueLength
 		}
 		overallPosition = pos + standardEntriesBefore
 	} else {
-		expressEntriesbefore := (pos*expressQueueLength + (expressQueueRate - (queueIndex % queueInterval)))
+		expressEntriesbefore := (pos * expressQueueLength) + (expressQueueRate - (queueIndex % queueInterval))
 		if expressEntriesbefore > expressQueueLength {
 			expressEntriesbefore = expressQueueLength
 		}
