@@ -166,6 +166,7 @@ type Attestation struct {
 		Slot  uinteger `json:"slot"`
 		Index uinteger `json:"index"`
 	} `json:"data"`
+	CommitteeBits string `json:"committee_bits"`
 }
 
 type Withdrawal struct {

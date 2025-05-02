@@ -360,9 +360,10 @@ func (bc *MockBeaconClient) GetAttestations(_slot string) ([]beacon.AttestationI
 		{
 			AggregationBits: bl,
 			SlotIndex:       uint64(s),
-			CommitteeIndex:  0,
+			Committees:      bitfield.NewBitvector64(),
 		},
 	}
+	out[0].Committees.SetBitAt(0, true)
 	return out, true, nil
 }
 
@@ -385,6 +386,10 @@ func (mbc *MockBeaconCommittees) Slot(index int) uint64 {
 // the provided offset
 func (mbc *MockBeaconCommittees) Validators(index int) []string {
 	return mbc.slots[index].validators
+}
+
+func (mbc *MockBeaconCommittees) ValidatorCount(index int) int {
+	return len(mbc.slots[index].validators)
 }
 
 // Release is a no-op
