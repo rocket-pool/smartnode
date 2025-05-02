@@ -42,24 +42,32 @@ func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress comm
 		return nil, err
 	}
 
-	// Get the megapool address
-	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAddress, nil)
+	// Check if the node has a megapool
+	megapoolDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAddress, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	// Load the megapool
-	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
+	if megapoolDeployed {
+		// Get the megapool address
+		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAddress, nil)
+		if err != nil {
+			return nil, err
+		}
 
-	megapoolPubkeys, err := mp.GetMegapoolPubkeys(nil)
-	if err != nil {
-		return nil, err
-	}
+		// Load the megapool
+		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+		if err != nil {
+			return nil, err
+		}
 
-	pubkeys = append(pubkeys, megapoolPubkeys...)
+		megapoolPubkeys, err := mp.GetMegapoolPubkeys(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		pubkeys = append(pubkeys, megapoolPubkeys...)
+	}
 
 	// Remove zero pubkeys
 	zeroPubkey := types.ValidatorPubkey{}
