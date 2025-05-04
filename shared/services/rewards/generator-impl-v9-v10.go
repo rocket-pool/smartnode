@@ -1146,10 +1146,7 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 
 		// Get batch start & end index
 		iterationStartIndex := batchStartIndex
-		iterationEndIndex := batchStartIndex + SmoothingPoolDetailsBatchSize
-		if iterationEndIndex > nodeCount {
-			iterationEndIndex = nodeCount
-		}
+		iterationEndIndex := min(batchStartIndex+SmoothingPoolDetailsBatchSize, nodeCount)
 
 		// Load details
 		var wg errgroup.Group
