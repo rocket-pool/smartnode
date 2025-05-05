@@ -255,10 +255,7 @@ func (m *DirectionalModal) Draw(screen tcell.Screen) {
 	}
 	buttonsWidth -= 2
 	screenWidth, screenHeight := screen.Size()
-	width := screenWidth / 3
-	if width < buttonsWidth {
-		width = buttonsWidth
-	}
+	width := max(screenWidth/3, buttonsWidth)
 	// width is now without the box border.
 
 	// Reset the text and find out how wide it is.

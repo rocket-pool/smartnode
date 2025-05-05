@@ -154,10 +154,9 @@ func (t *VotingTree) generatePollard(virtualRootIndex uint64) (*types.VotingTree
 	rootNode := t.Nodes[index-1] // 0-indexed
 
 	rootLevel := uint64(math.Floor(math.Log2(float64(index)))) // The level of the root node
-	absoluteDepth := rootLevel + t.DepthPerRound               // The actual level in the tree that this pollard must come from
-	if absoluteDepth > t.Depth {
-		absoluteDepth = t.Depth // Clamp it to the level of the leaf nodes
-	}
+	// The actual level in the tree that this pollard must come from
+	// Clamp it to the level of the leaf nodes
+	absoluteDepth := min(rootLevel+t.DepthPerRound, t.Depth)
 	relativeDepth := absoluteDepth - rootLevel // How far the pollard level is below the root node level
 	//fmt.Printf("[Pollard Gen] Root level = %d, absolute depth = %d, relative depth = %d\n", rootLevel, absoluteDepth, relativeDepth)
 
