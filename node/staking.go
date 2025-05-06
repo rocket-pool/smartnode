@@ -98,17 +98,17 @@ func GetNodeLegacyStakedRPL(rp *rocketpool.RocketPool, nodeAddress common.Addres
 	return *nodeRplStake, nil
 }
 
-// Get a node's minimum RPL stake for the megapool
-func GetNodeMinimumRPLStakeForMegapool(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+// Get the amount of unstaking RPL for a node
+func GetNodeUnstakingRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
 	if err != nil {
 		return nil, err
 	}
-	nodeMinimumRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeMinimumRplStake, "getNodeMinimumRPLStakeForMegapool", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting minimum node RPL stake for megapool: %w", err)
+	unstakingRpl := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, unstakingRpl, "getNodeUnstakingRPL", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node unstaking RPL: %w", err)
 	}
-	return *nodeMinimumRplStake, nil
+	return *unstakingRpl, nil
 }
 
 // Get a node's maximum RPL stake to collateralize their minipools
@@ -148,6 +148,19 @@ func GetNodeLastUnstakeTime(rp *rocketpool.RocketPool, nodeAddress common.Addres
 		return 0, fmt.Errorf("error getting node last unstaked RPL time: %w", err)
 	}
 	return (*nodeRplStakedTime).Uint64(), nil
+}
+
+// Get the ratio between capital taken from users and provided by a node operator for minipools
+func GetNodeETHCollateralisationRatio(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	nodeEthCol := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, nodeEthCol, "getNodeETHCollateralisationRatio", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting NodeETHCollateralisationRatio: %w", err)
+	}
+	return *nodeEthCol, nil
 }
 
 // Get the amount of ETH the node has borrowed from the deposit pool
@@ -343,21 +356,21 @@ func SetNodeStakeRPLForAllowed(rp *rocketpool.RocketPool, nodeAddress common.Add
 }
 
 // Estimate the gas of WithdrawRPL
-func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateWithdrawRPLGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawRPL", rplAmount)
+	return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawRPL")
 }
 
 // Withdraw staked RPL
-func WithdrawRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func WithdrawRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNodeStaking.Transact(opts, "withdrawRPL", rplAmount)
+	tx, err := rocketNodeStaking.Transact(opts, "withdrawRPL")
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error withdrawing staked RPL: %w", err)
 	}
