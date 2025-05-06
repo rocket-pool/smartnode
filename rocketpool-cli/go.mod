@@ -1,4 +1,4 @@
-module github.com/rocket-pool/smartnode
+module github.com/rocket-pool/smartnode/rocketpool-cli
 
 go 1.21
 
@@ -171,11 +171,3 @@ require (
 	lukechampine.com/blake3 v1.2.1 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
-
-replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
-
-// replace github.com/web3-storage/go-w3s-client => github.com/rocket-pool/go-w3s-client v0.0.0-20221006052217-dbd9938d11d8
-
-// replace github.com/wealdtech/go-eth2-types/v2 => github.com/rocket-pool/go-eth2-types/v2 v2.0.0-20230130220714-d88838162252
-
-// replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
