@@ -3,12 +3,15 @@ package wallet
 import (
 	"context"
 	"crypto/ecdsa"
+	"encoding/json"
 	"errors"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -18,6 +21,10 @@ func (w *Wallet) GetNodeAccount() (accounts.Account, error) {
 	// Check wallet is initialized
 	if !w.IsInitialized() {
 		return accounts.Account{}, errors.New("Wallet is not initialized")
+	}
+
+	if w.Offline() {
+		return *w.nodeAddress, nil
 	}
 
 	// Get private key
@@ -50,6 +57,25 @@ func (w *Wallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
 	// Check wallet is initialized
 	if !w.IsInitialized() {
 		return nil, errors.New("Wallet is not initialized")
+	}
+
+	if w.Offline() {
+		var transactor bind.TransactOpts
+		transactor.From = w.nodeAddress.Address
+		transactor.Context = context.Background()
+		transactor.GasFeeCap = w.maxFee
+		transactor.GasTipCap = w.maxPriorityFee
+		transactor.GasLimit = w.gasLimit
+		transactor.Signer = func(address common.Address, tx *types.Transaction) (*types.Transaction, error) {
+			txJSON, err := json.MarshalIndent(tx, "", "  ")
+			if err != nil {
+				return tx, err
+			}
+			fmt.Printf("Offline mode: this transaction would have been signed by %s:\n%s\n", address.String(), string(txJSON))
+			return nil, fmt.Errorf("Offline mode - transaction not signed")
+		}
+
+		return &transactor, nil
 	}
 
 	// Get private key

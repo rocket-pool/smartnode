@@ -10,6 +10,7 @@ import (
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
@@ -39,6 +40,7 @@ type Wallet struct {
 	pm         *passwords.PasswordManager
 	encryptor  *eth2ks.Encryptor
 	chainID    *big.Int
+	offline    bool
 
 	// Encrypted store
 	ws *walletStore
@@ -48,6 +50,7 @@ type Wallet struct {
 	mk   *hdkeychain.ExtendedKey
 
 	// Node key cache
+	nodeAddress *accounts.Account
 	nodeKey     *ecdsa.PrivateKey
 	nodeKeyPath string
 
@@ -100,6 +103,18 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 
 }
 
+func (w *Wallet) Offline() bool {
+	return w.offline
+}
+
+// This function designates a wallet as offline
+func (w *Wallet) SetOffline(address string) {
+	w.offline = true
+	w.nodeAddress = &accounts.Account{
+		Address: common.HexToAddress(address),
+	}
+}
+
 // Gets the wallet's chain ID
 func (w *Wallet) GetChainID() *big.Int {
 	copy := big.NewInt(0).Set(w.chainID)
@@ -113,7 +128,7 @@ func (w *Wallet) AddKeystore(name string, ks keystore.Keystore) {
 
 // Check if the wallet has been initialized
 func (w *Wallet) IsInitialized() bool {
-	return (w.ws != nil && w.seed != nil && w.mk != nil)
+	return w.offline || (w.ws != nil && w.seed != nil && w.mk != nil)
 }
 
 // Attempt to initialize the wallet if not initialized and return status
