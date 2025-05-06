@@ -30,7 +30,6 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	}
 	utils.ZeroIfNil(&response.RplStake)
 	utils.ZeroIfNil(&response.EffectiveRplStake)
-	utils.ZeroIfNil(&response.MinimumRplStake)
 	utils.ZeroIfNil(&response.MaximumRplStake)
 	utils.ZeroIfNil(&response.AccountBalances.ETH)
 	utils.ZeroIfNil(&response.AccountBalances.RPL)
@@ -505,17 +504,17 @@ func (c *Client) SetStakeRPLForAllowed(caller common.Address, allowed bool) (api
 }
 
 // Check whether the node can withdraw RPL
-func (c *Client) CanNodeWithdrawRpl(amountWei *big.Int) (api.CanNodeWithdrawRplResponse, error) {
+func (c *Client) CanNodeWithdrawRpl(amountWei *big.Int) (api.CanNodeWithdrawLegacyRplResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl %s", amountWei.String()))
 	if err != nil {
-		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
+		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
 	}
-	var response api.CanNodeWithdrawRplResponse
+	var response api.CanNodeWithdrawLegacyRplResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not decode can node withdraw RPL response: %w", err)
+		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not decode can node withdraw RPL response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %s", response.Error)
+		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %s", response.Error)
 	}
 	return response, nil
 }

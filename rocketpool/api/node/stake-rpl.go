@@ -47,13 +47,6 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 	}
 	response.InsufficientBalance = (amountWei.Cmp(rplBalance) > 0)
 
-	// Get the min RPL stake
-	minRplStake, err := node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-	response.MinimumRplStake = minRplStake
-
 	// Get the max stake fraction
 	maxStakeFraction, err := protocol.GetMaximumPerMinipoolStake(rp, nil)
 	if err != nil {

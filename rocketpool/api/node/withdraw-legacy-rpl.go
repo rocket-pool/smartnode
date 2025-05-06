@@ -17,7 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeWithdrawRpl(c *cli.Context) (*api.CanNodeWithdrawRplResponse, error) {
+func canNodeWithdrawLegacyRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdrawLegacyRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -37,7 +37,7 @@ func canNodeWithdrawRpl(c *cli.Context) (*api.CanNodeWithdrawRplResponse, error)
 	}
 
 	// Response
-	response := api.CanNodeWithdrawRplResponse{}
+	response := api.CanNodeWithdrawLegacyRplResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -47,17 +47,26 @@ func canNodeWithdrawRpl(c *cli.Context) (*api.CanNodeWithdrawRplResponse, error)
 
 	// Data
 	var wg errgroup.Group
-	var rplUnstaking *big.Int
+	var rplStake *big.Int
+	var maximumRplStake *big.Int
+	nodeRplLocked := big.NewInt(0)
 	var currentTime uint64
-	var rplLastUnstakedTime uint64
-	var unstakingPeriod time.Duration
+	var rplStakedTime uint64
+	var withdrawalDelay time.Duration
 	var isRPLWithdrawalAddressSet bool
 	var rplWithdrawalAddress common.Address
 
 	// Get RPL stake
 	wg.Go(func() error {
 		var err error
-		rplUnstaking, err = node.GetNodeUnstakingRPL(rp, nodeAccount.Address, nil)
+		rplStake, err = node.GetNodeLegacyStakedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+
+	// Get maximum RPL stake
+	wg.Go(func() error {
+		var err error
+		maximumRplStake, err = node.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -73,14 +82,14 @@ func canNodeWithdrawRpl(c *cli.Context) (*api.CanNodeWithdrawRplResponse, error)
 	// Get RPL staked time
 	wg.Go(func() error {
 		var err error
-		rplLastUnstakedTime, err = node.GetNodeLastUnstakeTime(rp, nodeAccount.Address, nil)
+		rplStakedTime, err = node.GetNodeRPLStakedTime(rp, nodeAccount.Address, nil)
 		return err
 	})
 
 	// Get withdrawal delay
 	wg.Go(func() error {
 		var err error
-		unstakingPeriod, err = protocol.GetRewardsClaimIntervalTime(rp, nil)
+		withdrawalDelay, err = protocol.GetRewardsClaimIntervalTime(rp, nil)
 		return err
 	})
 
@@ -98,13 +107,20 @@ func canNodeWithdrawRpl(c *cli.Context) (*api.CanNodeWithdrawRplResponse, error)
 		return err
 	})
 
+	// Get RPL locked on node
+	wg.Go(func() error {
+		var err error
+		nodeRplLocked, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+
 	// Get gas estimate
 	wg.Go(func() error {
 		opts, err := w.GetNodeAccountTransactor()
 		if err != nil {
 			return err
 		}
-		gasInfo, err := node.EstimateWithdrawRPLGas(rp, opts)
+		gasInfo, err := node.EstimateWithdrawLegacyRPLGas(rp, amountWei, opts)
 		if err == nil {
 			response.GasInfo = gasInfo
 		}
@@ -117,18 +133,21 @@ func canNodeWithdrawRpl(c *cli.Context) (*api.CanNodeWithdrawRplResponse, error)
 	}
 
 	// Check data
-
-	response.InsufficientBalance = (rplUnstaking.Cmp(big.NewInt(0)) > 0)
-	response.UnstakingPeriodActive = ((currentTime - rplLastUnstakedTime) < uint64(unstakingPeriod.Seconds()))
+	var remainingRplStake big.Int
+	remainingRplStake.Sub(rplStake, amountWei)
+	remainingRplStake.Sub(&remainingRplStake, nodeRplLocked)
+	response.InsufficientBalance = (amountWei.Cmp(rplStake) > 0)
+	response.BelowMaxRPLStake = (remainingRplStake.Cmp(maximumRplStake) < 0)
+	response.WithdrawalDelayActive = ((currentTime - rplStakedTime) < uint64(withdrawalDelay.Seconds()))
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 
 	// Update & return response
-	response.CanWithdraw = !(response.InsufficientBalance || response.UnstakingPeriodActive || response.HasDifferentRPLWithdrawalAddress || response.BelowMaxRPLStake)
+	response.CanWithdraw = !(response.InsufficientBalance || response.WithdrawalDelayActive || response.HasDifferentRPLWithdrawalAddress || response.BelowMaxRPLStake)
 	return &response, nil
 
 }
 
-func nodeWithdrawRpl(c *cli.Context) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawLegacyRpl(c *cli.Context, amountWei *big.Int) (*api.NodeWithdrawRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -159,7 +178,7 @@ func nodeWithdrawRpl(c *cli.Context) (*api.NodeWithdrawRplResponse, error) {
 	}
 	var hash common.Hash
 	// Withdraw RPL
-	hash, err = node.WithdrawRPL(rp, opts)
+	hash, err = node.WithdrawLegacyRPL(rp, amountWei, opts)
 	if err != nil {
 		return nil, err
 	}

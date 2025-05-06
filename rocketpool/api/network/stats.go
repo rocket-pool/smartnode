@@ -125,9 +125,27 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 
 	// Get total RPL staked
 	wg.Go(func() error {
-		totalStaked, err := node.GetTotalRPLStake(rp, nil)
+		totalStaked, err := node.GetTotalStakedRPL(rp, nil)
 		if err == nil {
 			response.TotalRplStaked = eth.WeiToEth(totalStaked)
+		}
+		return err
+	})
+
+	// Get total RPL staked
+	wg.Go(func() error {
+		megapoolStaked, err := node.GetTotalMegapoolStakedRPL(rp, nil)
+		if err == nil {
+			response.TotalMegapoolRplStaked = eth.WeiToEth(megapoolStaked)
+		}
+		return err
+	})
+
+	// Get total RPL staked
+	wg.Go(func() error {
+		legacyStaked, err := node.GetTotalLegacyStakedRPL(rp, nil)
+		if err == nil {
+			response.TotalLegacyRplStaked = eth.WeiToEth(legacyStaked)
 		}
 		return err
 	})

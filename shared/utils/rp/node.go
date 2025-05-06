@@ -114,14 +114,6 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 		}
 		return nil
 	})
-	wg.Go(func() error {
-		var err error
-		ethMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAddress, opts)
-		if err != nil {
-			return fmt.Errorf("error getting how much ETH the node is able to borrow: %w", err)
-		}
-		return nil
-	})
 	for i, address := range addresses {
 		i := i
 		address := address

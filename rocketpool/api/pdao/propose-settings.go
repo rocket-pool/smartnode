@@ -61,14 +61,14 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 	// Get the node's RPL stake
 	wg.Go(func() error {
 		var err error
-		stakedRpl, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+		stakedRpl, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
 		return err
 	})
 
 	// Get the node's locked RPL
 	wg.Go(func() error {
 		var err error
-		lockedRpl, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+		lockedRpl, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
 		return err
 	})
 

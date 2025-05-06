@@ -39,6 +39,8 @@ type NetworkStatsResponse struct {
 	FinalizedMinipoolCount    uint64         `json:"finalizedMinipoolCount"`
 	RplPrice                  float64        `json:"rplPrice"`
 	TotalRplStaked            float64        `json:"totalRplStaked"`
+	TotalMegapoolRplStaked    float64        `json:"totalMegapoolRplStaked"`
+	TotalLegacyRplStaked      float64        `json:"totalLegacyRplStaked"`
 	EffectiveRplStaked        float64        `json:"effectiveRplStaked"`
 	RethPrice                 float64        `json:"rethPrice"`
 	SmoothingPoolNodes        uint64         `json:"smoothingPoolNodes"`

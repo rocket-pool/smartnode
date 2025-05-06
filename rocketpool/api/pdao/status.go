@@ -118,7 +118,7 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	// Get the node's locked RPL
 	wg.Go(func() error {
 		var err error
-		response.NodeRPLLocked, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+		response.NodeRPLLocked, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
 		return err
 	})
 

@@ -75,7 +75,7 @@ func canSetRPLWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address
 	// Get the RPL stake amount
 	wg.Go(func() error {
 		var err error
-		rplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+		rplStake, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
 		return err
 	})
 
