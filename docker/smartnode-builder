@@ -12,8 +12,13 @@ RUN apt update && apt install -y \
 	wget
 
 # Cache go dependencies
-COPY . /src
+COPY ./go.work /src/go.work
+COPY ./go.work.sum /src/go.work.sum
+COPY ./addons/go.mod /src/addons/go.mod
+COPY ./rocketpool/go.mod /src/rocketpool/go.mod
+COPY ./rocketpool-cli/go.mod /src/rocketpool-cli/go.mod
+COPY ./shared/go.mod /src/shared/go.mod
 WORKDIR /src
-RUN go work sync
+RUN go mod download -x
 WORKDIR /
 RUN rm -rf /src
