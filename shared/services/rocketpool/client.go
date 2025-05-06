@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -879,34 +878,6 @@ func (c *Client) RunNethermindPruneStarter(executionContainerName string, pruneS
 		return err
 	}
 	return nil
-}
-
-// Runs the EC migrator
-func (c *Client) RunEcMigrator(container string, volume string, targetDir string, mode string, image string) error {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient -v %s:/mnt/external -e EC_MIGRATE_MODE='%s' %s", container, volume, targetDir, mode, image)
-	err := c.printOutput(cmd)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Gets the size of the target directory via the EC migrator for importing, which should have the same permissions as exporting
-func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string, image string) (uint64, error) {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/mnt/external -e OPERATION='size' %s", container, targetDir, image)
-	output, err := c.readOutput(cmd)
-	if err != nil {
-		return 0, fmt.Errorf("Error getting source directory size: %w", err)
-	}
-
-	trimmedOutput := strings.TrimRight(string(output), "\n")
-	dirSize, err := strconv.ParseUint(trimmedOutput, 0, 64)
-	if err != nil {
-		return 0, fmt.Errorf("Error parsing directory size output [%s]: %w", trimmedOutput, err)
-	}
-
-	return dirSize, nil
 }
 
 // Deletes the node wallet and all validator keys, and restarts the Docker containers

@@ -14,7 +14,6 @@ import (
 const (
 	smartnodeTag                       string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
 	pruneProvisionerTag                string = "rocketpool/eth1-prune-provision:v0.0.1"
-	ecMigratorTag                      string = "rocketpool/ec-migrator:v1.0.0"
 	NetworkID                          string = "network"
 	ProjectNameID                      string = "projectName"
 	SnapshotID                         string = "rocketpool-dao.eth"
@@ -748,10 +747,6 @@ func (cfg *SmartnodeConfig) GetSmartnodeContainerTag() string {
 
 func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
 	return pruneProvisionerTag
-}
-
-func (cfg *SmartnodeConfig) GetEcMigratorContainerTag() string {
-	return ecMigratorTag
 }
 
 func (cfg *SmartnodeConfig) GetSnapshotApiDomain() string {

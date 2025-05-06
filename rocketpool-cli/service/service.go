@@ -38,7 +38,6 @@ const (
 	ApiContainerSuffix              string = "_api"
 	WatchtowerContainerSuffix       string = "_watchtower"
 	PruneProvisionerContainerSuffix string = "_prune_provisioner"
-	EcMigratorContainerSuffix       string = "_ec_migrator"
 	clientDataVolumeName            string = "/ethclient"
 	dataFolderVolumeName            string = "/.rocketpool/data"
 
