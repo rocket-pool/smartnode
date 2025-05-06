@@ -37,7 +37,7 @@ type NodeStatusResponse struct {
 	AccountBalances                          tokens.Balances `json:"accountBalances"`
 	PrimaryWithdrawalBalances                tokens.Balances `json:"primaryWithdrawalBalances"`
 	RPLWithdrawalBalances                    tokens.Balances `json:"rplWithdrawalBalances"`
-	RplStakeTotal                            *big.Int        `json:"rplStakeTotal"`
+	RplStake                                 *big.Int        `json:"rplStake"`
 	RplStakeMegapool                         *big.Int        `json:"rplStakeMegapool"`
 	RplStakeLegacy                           *big.Int        `json:"rplStakeLegacy"`
 	EffectiveRplStake                        *big.Int        `json:"effectiveRplStake"`

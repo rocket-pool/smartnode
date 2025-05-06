@@ -23,6 +23,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	node131 "github.com/rocket-pool/rocketpool-go/legacy/v1.3.1/node"
 	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -187,12 +188,54 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	// Get the node's locked RPL
-	wg.Go(func() error {
-		var err error
-		response.NodeRPLLocked, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
-		return err
-	})
+	if saturnDeployed {
+		// Get the node's locked RPL
+		wg.Go(func() error {
+			var err error
+			response.NodeRPLLocked, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
+			return err
+		})
+		// Get staking details
+		wg.Go(func() error {
+			var err error
+			response.RplStake, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			response.RplStakeMegapool, err = node.GetNodeMegapoolStakedRPL(rp, nodeAccount.Address, nil)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			response.RplStakeLegacy, err = node.GetNodeLegacyStakedRPL(rp, nodeAccount.Address, nil)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			response.MaximumRplStake, err = node.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
+			return err
+		})
+	} else {
+		// Get the node's locked RPL
+		wg.Go(func() error {
+			var err error
+			response.NodeRPLLocked, err = node131.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.MaximumRplStake, err = node131.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
+			return err
+		})
+	}
 
 	// Check if Voting is Initialized
 	wg.Go(func() error {
@@ -218,27 +261,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	// Get staking details
-	wg.Go(func() error {
-		var err error
-		response.RplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		response.EffectiveRplStake, err = node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		response.MinimumRplStake, err = node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		response.MaximumRplStake, err = node.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
 	wg.Go(func() error {
 		var err error
 		response.MaximumStakeFraction, err = protocol.GetMaximumPerMinipoolStake(rp, nil)
@@ -246,7 +268,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	})
 	wg.Go(func() error {
 		var err error
-		response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+		response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(saturnDeployed, rp, nodeAccount.Address, nil)
 		return err
 	})
 
