@@ -6,6 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/deposit"
+	node131 "github.com/rocket-pool/rocketpool-go/legacy/v1.3.1/node"
 	"github.com/rocket-pool/rocketpool-go/minipool"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
@@ -13,7 +14,6 @@ import (
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	rpstate "github.com/rocket-pool/rocketpool-go/utils/state"
 	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
-
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -123,32 +123,43 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		return err
 	})
 
-	// Get total RPL staked
-	wg.Go(func() error {
-		totalStaked, err := node.GetTotalStakedRPL(rp, nil)
-		if err == nil {
-			response.TotalRplStaked = eth.WeiToEth(totalStaked)
-		}
-		return err
-	})
+	if saturnDeployed {
+		// Get total RPL staked
+		wg.Go(func() error {
+			totalStaked, err := node.GetTotalStakedRPL(rp, nil)
+			if err == nil {
+				response.TotalRplStaked = eth.WeiToEth(totalStaked)
+			}
+			return err
+		})
 
-	// Get total RPL staked
-	wg.Go(func() error {
-		megapoolStaked, err := node.GetTotalMegapoolStakedRPL(rp, nil)
-		if err == nil {
-			response.TotalMegapoolRplStaked = eth.WeiToEth(megapoolStaked)
-		}
-		return err
-	})
+		// Get RPL staked on megapools
+		wg.Go(func() error {
+			megapoolStaked, err := node.GetTotalMegapoolStakedRPL(rp, nil)
+			if err == nil {
+				response.TotalMegapoolRplStaked = eth.WeiToEth(megapoolStaked)
+			}
+			return err
+		})
 
-	// Get total RPL staked
-	wg.Go(func() error {
-		legacyStaked, err := node.GetTotalLegacyStakedRPL(rp, nil)
-		if err == nil {
-			response.TotalLegacyRplStaked = eth.WeiToEth(legacyStaked)
-		}
-		return err
-	})
+		// Get legacy RPL staked
+		wg.Go(func() error {
+			legacyStaked, err := node.GetTotalLegacyStakedRPL(rp, nil)
+			if err == nil {
+				response.TotalLegacyRplStaked = eth.WeiToEth(legacyStaked)
+			}
+			return err
+		})
+
+	} else {
+		wg.Go(func() error {
+			totalStaked, err := node131.GetTotalRPLStake(rp, nil)
+			if err == nil {
+				response.TotalRplStaked = eth.WeiToEth(totalStaked)
+			}
+			return err
+		})
+	}
 
 	// Get total effective RPL staked
 	wg.Go(func() error {

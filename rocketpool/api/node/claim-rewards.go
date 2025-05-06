@@ -10,6 +10,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	node131 "github.com/rocket-pool/rocketpool-go/legacy/v1.3.1/node"
 	"github.com/rocket-pool/rocketpool-go/network"
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/rocketpool-go/rewards"
@@ -19,6 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
+	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -42,6 +44,12 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		return nil, err
 	}
 	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if Saturn is already deployed
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -103,24 +111,34 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 	// Sync
 	var wg errgroup.Group
 
-	wg.Go(func() error {
-		var err error
-		response.RplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
+	if saturnDeployed {
+		wg.Go(func() error {
+			var err error
+			response.RplStake, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
+			return err
+		})
+
+	} else {
+		wg.Go(func() error {
+			var err error
+			response.RplStake, err = node131.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			response.EffectiveRplStake, err = node131.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
+			return err
+		})
+	}
+
 	wg.Go(func() error {
 		var err error
 		response.RplPrice, err = network.GetRPLPrice(rp, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		response.MinimumRplStake, err = node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		response.EffectiveRplStake, err = node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -139,7 +157,7 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		})
 		wg2.Go(func() error {
 			var err error
-			response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+			response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(saturnDeployed, rp, nodeAccount.Address, nil)
 			return err
 		})
 

@@ -37,9 +37,12 @@ type NodeStatusResponse struct {
 	AccountBalances                          tokens.Balances `json:"accountBalances"`
 	PrimaryWithdrawalBalances                tokens.Balances `json:"primaryWithdrawalBalances"`
 	RPLWithdrawalBalances                    tokens.Balances `json:"rplWithdrawalBalances"`
-	RplStake                                 *big.Int        `json:"rplStake"`
+	RplStakeTotal                            *big.Int        `json:"rplStakeTotal"`
+	RplStakeMegapool                         *big.Int        `json:"rplStakeMegapool"`
+	RplStakeLegacy                           *big.Int        `json:"rplStakeLegacy"`
 	EffectiveRplStake                        *big.Int        `json:"effectiveRplStake"`
 	MaximumRplStake                          *big.Int        `json:"maximumRplStake"`
+	MinimumRplStake                          *big.Int        `json:"minimumRplStake"`
 	MaximumStakeFraction                     float64         `json:"maximumStakeFraction"`
 	BorrowedCollateralRatio                  float64         `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio                    float64         `json:"bondedCollateralRatio"`
@@ -281,6 +284,7 @@ type CanNodeStakeRplResponse struct {
 	Error                string             `json:"error"`
 	CanStake             bool               `json:"canStake"`
 	InsufficientBalance  bool               `json:"insufficientBalance"`
+	MinimumRplStake      *big.Int           `json:"minimumRplStake`
 	InConsensus          bool               `json:"inConsensus"`
 	MaximumStakeFraction float64            `json:"maximumStakeFraction"`
 	GasInfo              rocketpool.GasInfo `json:"gasInfo"`
@@ -350,6 +354,19 @@ type CanNodeWithdrawCreditResponse struct {
 	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeWithdrawCreditResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+type CanNodeUnstakeRplResponse struct {
+	Status                           string             `json:"status"`
+	Error                            string             `json:"error"`
+	CanUnstake                       bool               `json:"canUnstake"`
+	InsufficientBalance              bool               `json:"insufficientBalance"`
+	HasDifferentRPLWithdrawalAddress bool               `json:"hasDifferentRPLWithdrawalAddress"`
+	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
+}
+type NodeUnstakeRplResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`

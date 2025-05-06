@@ -12,6 +12,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	node131 "github.com/rocket-pool/rocketpool-go/legacy/v1.3.1/node"
 	"github.com/urfave/cli"
 	"github.com/wealdtech/go-ens/v3"
 	"golang.org/x/sync/errgroup"
@@ -20,6 +21,7 @@ import (
 	"github.com/rocket-pool/rocketpool-go/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
+	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
@@ -53,6 +55,12 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	}
 	if reg == nil {
 		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
+	}
+
+	// Check if Saturn is already deployed
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
 	}
 
 	// Response
@@ -115,12 +123,21 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 		return err
 	})
 
-	// Get the node's locked RPL
-	wg.Go(func() error {
-		var err error
-		response.NodeRPLLocked, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
-		return err
-	})
+	if saturnDeployed {
+		// Get the node's locked RPL
+		wg.Go(func() error {
+			var err error
+			response.NodeRPLLocked, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
+			return err
+		})
+	} else {
+		// Get the node's locked RPL
+		wg.Go(func() error {
+			var err error
+			response.NodeRPLLocked, err = node131.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+			return err
+		})
+	}
 
 	// Check if Node is registered
 	wg.Go(func() error {
