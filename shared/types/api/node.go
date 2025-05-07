@@ -95,6 +95,9 @@ type NodeStatusResponse struct {
 	MegapoolRefundValue          *big.Int          `json:"megapoolRefundValue"`
 	IsSaturnDeployed             bool              `json:"isSaturnDeployed"`
 	ExpressTicketCount           uint64            `json:"expressTicketCount"`
+	UnstakingRPL                 *big.Int          `json:"unstakingRPL"`
+	LastRPLUnstakeTime           time.Time         `json:"lastRPLUnstakeTime"`
+	UnstakingPeriodDuration      time.Duration     `json:"unstakingPeriodDuration"`
 }
 
 type NodeAlert struct {

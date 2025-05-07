@@ -792,7 +792,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 			{
 				Name:      "withdraw-legacy-rpl",
-				Aliases:   []string{"i"},
+				Aliases:   []string{"l"},
 				Usage:     "Withdraw legacy RPL staked against the node",
 				UsageText: "rocketpool api node withdraw-legacy-rpl amount",
 				Action: func(c *cli.Context) error {
@@ -832,7 +832,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 			{
 				Name:      "withdraw-rpl",
-				Aliases:   []string{"i"},
+				Aliases:   []string{"w"},
 				Usage:     "Withdraw RPL staked against the node",
 				UsageText: "rocketpool api node withdraw-rpl",
 				Action: func(c *cli.Context) error {
@@ -844,6 +844,52 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(nodeWithdrawRpl(c))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "can-unstake-rpl",
+				Usage:     "Check whether the node can unstake RPL",
+				UsageText: "rocketpool api node can-unstake-rpl amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("unstake amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNodeUnstakeRpl(c, amountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:      "unstake-rpl",
+				Aliases:   []string{"u"},
+				Usage:     "Unstake RPL from the node",
+				UsageText: "rocketpool api node withdraw-rpl amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("unstake amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeUnstakeRpl(c, amountWei))
 					return nil
 
 				},

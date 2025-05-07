@@ -213,6 +213,29 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		})
 		wg.Go(func() error {
 			var err error
+			response.UnstakingRPL, err = node.GetNodeUnstakingRPL(rp, nodeAccount.Address, nil)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			unstakingPeriod, err := protocol.GetNodeUnstakingPeriod(rp, nil)
+			if err != nil {
+				response.UnstakingPeriodDuration = time.Duration(unstakingPeriod.Int64()) * time.Second
+			}
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			lastUnstakeTimestamp, err := node.GetNodeLastUnstakeTime(rp, nodeAccount.Address, nil)
+			if err != nil {
+				// Convert the lastUnstakeTimestamp to a time.Time object
+				response.LastRPLUnstakeTime = time.Unix(int64(lastUnstakeTimestamp), 0)
+			}
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
 			response.MaximumRplStake, err = node.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
 			return err
 		})

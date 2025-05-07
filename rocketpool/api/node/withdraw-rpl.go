@@ -123,7 +123,7 @@ func canNodeWithdrawRpl(c *cli.Context) (*api.CanNodeWithdrawRplResponse, error)
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 
 	// Update & return response
-	response.CanWithdraw = !(response.InsufficientBalance || response.UnstakingPeriodActive || response.HasDifferentRPLWithdrawalAddress || response.BelowMaxRPLStake)
+	response.CanWithdraw = !(response.InsufficientBalance || response.UnstakingPeriodActive || response.HasDifferentRPLWithdrawalAddress)
 	return &response, nil
 
 }

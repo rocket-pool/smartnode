@@ -506,8 +506,24 @@ func (c *Client) SetStakeRPLForAllowed(caller common.Address, allowed bool) (api
 }
 
 // Check whether the node can withdraw RPL
-func (c *Client) CanNodeWithdrawRpl(amountWei *big.Int) (api.CanNodeWithdrawLegacyRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl %s", amountWei.String()))
+func (c *Client) CanNodeWithdrawRpl() (api.CanNodeWithdrawRplResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl"))
+	if err != nil {
+		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
+	}
+	var response api.CanNodeWithdrawRplResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not decode can node withdraw RPL response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can withdraw RPL
+func (c *Client) CanNodeWithdrawLegacyRpl(amountWei *big.Int) (api.CanNodeWithdrawLegacyRplResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-legacy-rpl %s", amountWei.String()))
 	if err != nil {
 		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
 	}
@@ -522,8 +538,24 @@ func (c *Client) CanNodeWithdrawRpl(amountWei *big.Int) (api.CanNodeWithdrawLega
 }
 
 // Withdraw RPL staked against the node
-func (c *Client) NodeWithdrawRpl(amountWei *big.Int) (api.NodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-rpl %s", amountWei.String()))
+func (c *Client) NodeWithdrawRpl() (api.NodeWithdrawRplResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-rpl"))
+	if err != nil {
+		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
+	}
+	var response api.NodeWithdrawRplResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not decode withdraw node RPL response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Withdraw RPL staked against the node
+func (c *Client) NodeWithdrawLegacyRpl(amountWei *big.Int) (api.NodeWithdrawRplResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-legacy-rpl %s", amountWei.String()))
 	if err != nil {
 		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
 	}
