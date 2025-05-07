@@ -31,6 +31,7 @@ A [Makefile](./Makefile) is included for building, testing, and linting.
 * `make all` will build rocketpool-cli, rocketpool-daemon, and run the linter.
 * `make rocketpool-daemon` will build the docker containers required to build the daemon, then build the daemon.
 * `make rocketpool-cli` will build the cli for linux and osx.
+* `make treegen-bin` makes treegen binaries, `make treegen-docker` makes docker images with those binaries, and `make treegen-container-push` pushes them to docker hub.
 * `make test` runs all unit tests.
 * `make clean` deletes any binaries. It does not clear your go caches.
 

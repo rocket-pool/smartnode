@@ -1,0 +1,4 @@
+FROM debian:bookworm-slim
+
+ARG TARGETARCH
+COPY ./build/treegen/treegen-linux-${TARGETARCH} /treegen
