@@ -38,7 +38,7 @@ $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool
 
 .PHONY: clean
 clean:
-	rm -rf build
+	rm -rf ${BUILD_DIR} 
 
 .PHONY: lint
 lint:
