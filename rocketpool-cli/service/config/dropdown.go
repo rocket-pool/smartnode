@@ -82,6 +82,8 @@ type DropDown struct {
 	selected func(text string, index int)
 
 	dragging bool // Set to true when mouse dragging is in progress.
+
+	disabled bool // Form item should be read-only when true
 }
 
 // NewDropDown returns a new drop-down.
@@ -581,4 +583,9 @@ func (d *DropDown) MouseHandler() func(action tview.MouseAction, event *tcell.Ev
 
 		return
 	})
+}
+
+func (d *DropDown) SetDisabled(disabled bool) tview.FormItem {
+	d.disabled = disabled
+	return d
 }

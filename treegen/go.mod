@@ -1,6 +1,6 @@
 module treegen
 
-go 1.22.9
+go 1.22
 
 require (
 	github.com/ethereum/go-ethereum v1.13.5
@@ -8,7 +8,6 @@ require (
 	github.com/felixge/fgprof v0.9.5
 	github.com/goccy/go-json v0.10.2
 	github.com/rocket-pool/rocketpool-go v1.8.4-0.20241122223132-c5f2be18f72b
-	github.com/rocket-pool/smartnode v1.15.6-0.20250430151946-8926467b3e9e
 	github.com/urfave/cli/v2 v2.26.0
 )
 
@@ -123,8 +122,3 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
-
-replace github.com/rocket-pool/smartnode => ../smartnode
-
-//replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
