@@ -504,11 +504,6 @@ func (c *Client) StopService(composeFiles []string) error {
 
 // Stop the Rocket Pool service and remove the config folder
 func (c *Client) TerminateService(composeFiles []string, configPath string) error {
-	// Get the command to run with root privileges
-	rootCmd, err := c.getEscalationCommand()
-	if err != nil {
-		return fmt.Errorf("could not get privilege escalation command: %w", err)
-	}
 
 	// Terminate the Docker containers
 	cmd, err := c.compose(composeFiles, "down -v")
@@ -526,8 +521,9 @@ func (c *Client) TerminateService(composeFiles []string, configPath string) erro
 		return fmt.Errorf("error loading Rocket Pool directory: %w", err)
 	}
 	fmt.Printf("Deleting Rocket Pool directory (%s)...\n", path)
-	cmd = fmt.Sprintf("%s rm -rf %s", rootCmd, path)
-	_, err = c.readOutput(cmd)
+	cmd = fmt.Sprintf("rm -rf %s", path)
+	// The directory contains root-owned paths, so delete it as root
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting Rocket Pool directory: %w", err)
 	}
@@ -882,11 +878,6 @@ func (c *Client) RunNethermindPruneStarter(executionContainerName string, pruneS
 
 // Deletes the node wallet and all validator keys, and restarts the Docker containers
 func (c *Client) PurgeAllKeys(composeFiles []string) error {
-	// Get the command to run with root privileges
-	rootCmd, err := c.getEscalationCommand()
-	if err != nil {
-		return fmt.Errorf("could not get privilege escalation command: %w", err)
-	}
 
 	// Get the config
 	cfg, _, err := c.LoadConfig()
@@ -912,8 +903,9 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 		return fmt.Errorf("error loading wallet path: %w", err)
 	}
 	fmt.Println("Deleting wallet...")
-	cmd := fmt.Sprintf("%s rm -f %s", rootCmd, walletPath)
-	_, err = c.readOutput(cmd)
+	cmd := fmt.Sprintf("rm -f %s", walletPath)
+	// The file is owned by root, so delete as root
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting wallet: %w", err)
 	}
@@ -924,8 +916,9 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 		return fmt.Errorf("error loading password path: %w", err)
 	}
 	fmt.Println("Deleting password...")
-	cmd = fmt.Sprintf("%s rm -f %s", rootCmd, passwordPath)
-	_, err = c.readOutput(cmd)
+	cmd = fmt.Sprintf("rm -f %s", passwordPath)
+	// The file is owned by root, so delete as root
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting password: %w", err)
 	}
@@ -936,13 +929,19 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 		return fmt.Errorf("error loading validators folder path: %w", err)
 	}
 	fmt.Println("Deleting validator keys...")
-	cmd = fmt.Sprintf("%s rm -rf %s/*", rootCmd, validatorsPath)
-	_, err = c.readOutput(cmd)
+	cmd = fmt.Sprintf("rm -rf %s/*", validatorsPath)
+	// The validators path can be created by the smartnode daemon (owned by root, 0600)
+	// So delete its contents as root, otherwise the * won't expand.
+	// NB: we delete the contents of the folder instead of recreating the folder
+	// This way, if the drive is full, we don't release the directory inode and fail to recreate it.
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting validator keys: %w", err)
 	}
-	cmd = fmt.Sprintf("%s rm -rf %s/.[a-zA-Z0-9]*", rootCmd, validatorsPath)
-	_, err = c.readOutput(cmd)
+	// Also delete hidden files
+	cmd = fmt.Sprintf("rm -rf %s/.[a-zA-Z0-9]*", validatorsPath)
+	// also as root, so bash can expand the regex
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting hidden files in validator folder: %w", err)
 	}
@@ -975,31 +974,6 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 func (c *Client) SetClientStatusFlags(ignoreSyncCheck bool, forceFallbacks bool) {
 	c.ignoreSyncCheck = ignoreSyncCheck
 	c.forceFallbacks = forceFallbacks
-}
-
-// Get the command used to escalate privileges on the system
-func (c *Client) getEscalationCommand() (string, error) {
-	// Check for sudo first
-	sudo := "sudo"
-	exists, err := c.checkIfCommandExists(sudo)
-	if err != nil {
-		return "", fmt.Errorf("error checking if %s exists: %w", sudo, err)
-	}
-	if exists {
-		return sudo, nil
-	}
-
-	// Check for doas next
-	doas := "doas"
-	exists, err = c.checkIfCommandExists(doas)
-	if err != nil {
-		return "", fmt.Errorf("error checking if %s exists: %w", doas, err)
-	}
-	if exists {
-		return doas, nil
-	}
-
-	return "", fmt.Errorf("no privilege escalation command found")
 }
 
 func (c *Client) checkIfCommandExists(command string) (bool, error) {
@@ -1388,6 +1362,26 @@ func (c *Client) printOutput(cmdText string) error {
 	// Wait for the command to exit
 	return cmd.Wait()
 
+}
+
+// Run a command as root and return its output
+func (c *Client) readOutputSudo(rootCmdText string) ([]byte, error) {
+	var escCmd string
+	for _, escalationCommand := range []string{"sudo", "doas"} {
+		exists, err := c.checkIfCommandExists(escalationCommand)
+		if err != nil {
+			return nil, fmt.Errorf("error checking if %s exists: %w", escalationCommand, err)
+		}
+		if exists {
+			escCmd = escalationCommand
+			break
+		}
+	}
+	if escCmd == "" {
+		return nil, fmt.Errorf("no privilege escalation command found")
+	}
+
+	return c.readOutput(fmt.Sprintf("%s bash -c %s", escCmd, shellescape.Quote(rootCmdText)))
 }
 
 // Run a command and return its output
