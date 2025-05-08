@@ -118,11 +118,10 @@ func NewWallet(addressPath string, walletPath string, chainId uint, maxFee *big.
 
 	// Check if the address file exists
 	_, err := os.Stat(addressPath)
-	masquerading := !os.IsNotExist(err)
-
 	if err != nil && !os.IsNotExist(err) {
 		return nil, fmt.Errorf("error checking address file path: %w", err)
 	}
+	masquerading := !os.IsNotExist(err)
 
 	// Initialize Wallet
 	var w Wallet
