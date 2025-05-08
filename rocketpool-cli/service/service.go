@@ -975,28 +975,26 @@ func pruneExecutionClient(c *cli.Context) error {
 		fmt.Println("You are using Native Mode.\nThe Smart Node cannot prune your Execution client for you, you'll have to do it manually.")
 	}
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
-	switch selectedEc {
-	case cfgtypes.ExecutionClient_Besu:
-		if cfg.Besu.ArchiveMode.Value == true {
-			fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
-			return nil
-		}
+
+	// Don't prune besu if it's in archive mode
+	if selectedEc == cfgtypes.ExecutionClient_Besu && cfg.Besu.ArchiveMode.Value == true {
+		fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
+		return nil
 	}
 
-	if selectedEc == cfgtypes.ExecutionClient_Geth || selectedEc == cfgtypes.ExecutionClient_Besu {
-		if selectedEc == cfgtypes.ExecutionClient_Geth {
-			fmt.Printf("%sGeth has a new feature that renders pruning obsolete. However, as this is a new feature you may have to resync with `rocketpool service resync-eth1` before this takes effect.%s\n", colorYellow, colorReset)
-		}
+	// Print the appropriate warnings before pruning
+	if selectedEc == cfgtypes.ExecutionClient_Geth {
+		fmt.Printf("%sGeth has a new feature that renders pruning obsolete. However, as this is a new feature you may have to resync with `rocketpool service resync-eth1` before this takes effect.%s\n", colorYellow, colorReset)
 		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if cfg.UseFallbackClients.Value == false {
 			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until pruning is done.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 		} else {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}
+		fmt.Println("Once pruning is complete, your execution client will restart automatically.")
 	} else {
 		fmt.Println("This will request your main execution client to prune its database, freeing up disk space. This is a resource intensive operation and may lead to an increase in missed attestations until it finishes.")
 	}
-	fmt.Println("Once pruning is complete, your execution client will restart automatically.")
 	fmt.Println()
 
 	// Get the container prefix
@@ -1010,9 +1008,6 @@ func pruneExecutionClient(c *cli.Context) error {
 		fmt.Println("Cancelled.")
 		return nil
 	}
-
-	// Get the prune provisioner image
-	pruneProvisioner := cfg.Smartnode.GetPruneProvisionerContainerTag()
 
 	// Get the execution container name
 	executionContainerName := prefix + ExecutionContainerSuffix
@@ -1074,7 +1069,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	// Run the prune provisioner
 	fmt.Printf("Provisioning pruning on volume %s...\n", volume)
-	err = rp.RunPruneProvisioner(prefix+PruneProvisionerContainerSuffix, volume, pruneProvisioner)
+	err = rp.RunPruneProvisioner(prefix+PruneProvisionerContainerSuffix, volume)
 	if err != nil {
 		return fmt.Errorf("Error running prune provisioner: %w", err)
 	}
