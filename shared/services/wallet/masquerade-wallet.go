@@ -12,10 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
-	"github.com/google/uuid"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
-	"github.com/tyler-smith/go-bip39"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
@@ -134,35 +132,7 @@ func (w *masqueradeWallet) Recover(derivationPath string, walletIndex uint, mnem
 
 // Recover a wallet from a mnemonic - only used for testing mnemonics
 func (w *masqueradeWallet) TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error {
-
-	// Check mnemonic
-	if !bip39.IsMnemonicValid(mnemonic) {
-		return fmt.Errorf("Invalid mnemonic '%s'", mnemonic)
-	}
-
-	// Generate seed
-	w.seed = bip39.NewSeed(mnemonic, "")
-
-	// Create master key
-	var err error
-	w.mk, err = hdkeychain.NewMaster(w.seed, &chaincfg.MainNetParams)
-	if err != nil {
-		return fmt.Errorf("Could not create wallet master key: %w", err)
-	}
-
-	// Create wallet store
-	w.ws = &walletStore{
-		Name:           w.encryptor.Name(),
-		Version:        w.encryptor.Version(),
-		UUID:           uuid.New(),
-		DerivationPath: derivationPath,
-		WalletIndex:    walletIndex,
-		NextAccount:    0,
-	}
-
-	// Return
-	return nil
-
+	return ErrIsMasquerading
 }
 
 // Save the wallet store to disk

@@ -18,14 +18,16 @@ type ValidatorKeystore struct {
 }
 
 type WalletStatusResponse struct {
-	Status            string         `json:"status"`
-	Error             string         `json:"error"`
-	PasswordSet       bool           `json:"passwordSet"`
-	WalletInitialized bool           `json:"walletInitialized"`
-	AccountAddress    common.Address `json:"accountAddress"`
-	NodeAddress       common.Address `json:"nodeAddress"`
-	HasAddress        bool           `json:"hasAddress"`
-	IsMasquerading    bool           `json:"isMasquerading"`
+	Status            string `json:"status"`
+	Error             string `json:"error"`
+	PasswordSet       bool   `json:"passwordSet"`
+	WalletInitialized bool   `json:"walletInitialized"`
+	// When masquerading, AccountAddress represents the masqueraded address.
+	// When using a normal wallet, AccountAddress represents the address derived from the wallet stored on disk
+	AccountAddress common.Address `json:"accountAddress"`
+	// NodeAddress always represents the address drived from the wallet stored on disk
+	NodeAddress    common.Address `json:"nodeAddress"`
+	IsMasquerading bool           `json:"isMasquerading"`
 }
 
 type SetPasswordResponse struct {
