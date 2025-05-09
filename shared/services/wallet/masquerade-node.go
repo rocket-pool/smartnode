@@ -3,92 +3,58 @@ package wallet
 import (
 	"context"
 	"crypto/ecdsa"
-	"errors"
 	"fmt"
 
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/ethereum/go-ethereum/accounts"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 // Get the node account
-func (w *hdWallet) GetNodeAccount() (accounts.Account, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return accounts.Account{}, errors.New("Wallet is not initialized")
-	}
-
-	// Get private key
-	privateKey, path, err := w.getNodePrivateKey()
+func (w *masqueradeWallet) GetNodeAccount() (accounts.Account, error) {
+	address, err := w.am.LoadAddress()
 	if err != nil {
-		return accounts.Account{}, err
-	}
-
-	// Get public key
-	publicKey := privateKey.Public()
-	publicKeyECDSA, ok := publicKey.(*ecdsa.PublicKey)
-	if !ok {
-		return accounts.Account{}, errors.New("Could not get node public key")
+		return accounts.Account{}, fmt.Errorf("Could not load node address: %w", err)
 	}
 
 	// Create & return account
 	return accounts.Account{
-		Address: crypto.PubkeyToAddress(*publicKeyECDSA),
+		Address: address,
 		URL: accounts.URL{
 			Scheme: "",
-			Path:   path,
+			Path:   "",
 		},
 	}, nil
 
 }
 
-// Get a transactor for the node account
-func (w *hdWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
-	}
-
-	// Get private key
-	privateKey, _, err := w.getNodePrivateKey()
+// Get a transactor for the masqueraded node account. There is no private key so transactions will fail
+func (w *masqueradeWallet) GetNodeAccountTransactor() (*bind.TransactOpts, error) {
+	// Masqueraded account
+	account, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
 	}
 
 	// Create & return transactor
-	transactor, err := bind.NewKeyedTransactorWithChainID(privateKey, w.chainID)
+	transactor := &bind.TransactOpts{}
 	transactor.GasFeeCap = w.maxFee
 	transactor.GasTipCap = w.maxPriorityFee
 	transactor.GasLimit = w.gasLimit
 	transactor.Context = context.Background()
+	transactor.NoSend = true
+	transactor.From = account.Address
 	return transactor, err
-
 }
 
 // Get the node account private key bytes
-func (w *hdWallet) GetNodePrivateKeyBytes() ([]byte, error) {
-
-	// Check wallet is initialized
-	if !w.IsInitialized() {
-		return nil, errors.New("Wallet is not initialized")
-	}
-
-	// Get private key
-	privateKey, _, err := w.getNodePrivateKey()
-	if err != nil {
-		return nil, err
-	}
-
-	// Return private key bytes
-	return crypto.FromECDSA(privateKey), nil
+func (w *masqueradeWallet) GetNodePrivateKeyBytes() ([]byte, error) {
+	return nil, ErrIsMasquerading
 
 }
 
 // Get the node private key
-func (w *hdWallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
+func (w *masqueradeWallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 
 	// Check for cached node key
 	if w.nodeKey != nil {
@@ -118,7 +84,7 @@ func (w *hdWallet) getNodePrivateKey() (*ecdsa.PrivateKey, string, error) {
 }
 
 // Get the derived key & derivation path for the node account at the index
-func (w *hdWallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
+func (w *masqueradeWallet) getNodeDerivedKey(index uint) (*hdkeychain.ExtendedKey, string, error) {
 
 	// Get derivation path
 	if w.ws.DerivationPath == "" {
