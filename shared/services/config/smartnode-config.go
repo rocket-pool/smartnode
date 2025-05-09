@@ -13,7 +13,6 @@ import (
 // Constants
 const (
 	smartnodeTag                       string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
-	pruneProvisionerTag                string = "rocketpool/eth1-prune-provision:v0.0.1"
 	NetworkID                          string = "network"
 	ProjectNameID                      string = "projectName"
 	SnapshotID                         string = "rocketpool-dao.eth"
@@ -743,10 +742,6 @@ func (cfg *SmartnodeConfig) GetRplTokenAddress() string {
 
 func (cfg *SmartnodeConfig) GetSmartnodeContainerTag() string {
 	return smartnodeTag
-}
-
-func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
-	return pruneProvisionerTag
 }
 
 func (cfg *SmartnodeConfig) GetSnapshotApiDomain() string {

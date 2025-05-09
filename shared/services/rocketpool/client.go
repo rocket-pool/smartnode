@@ -847,10 +847,10 @@ func (c *Client) GetVolumeSize(volumeName string) (string, error) {
 }
 
 // Runs the prune provisioner
-func (c *Client) RunPruneProvisioner(container string, volume string, image string) error {
+func (c *Client) RunPruneProvisioner(container, volume string) error {
 
 	// Run the prune provisioner
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s", container, volume, image)
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient alpine:latest sh -c 'touch /ethclient/prune.lock'", container, volume)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return err
