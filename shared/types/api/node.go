@@ -55,9 +55,9 @@ type NodeStatusResponse struct {
 	OnchainVotingDelegate                    common.Address  `json:"onchainVotingDelegate"`
 	OnchainVotingDelegateFormatted           string          `json:"onchainVotingDelegateFormatted"`
 	MinipoolLimit                            uint64          `json:"minipoolLimit"`
-	EthMatched                               *big.Int        `json:"ethMatched"`
-	EthMatchedLimit                          *big.Int        `json:"ethMatchedLimit"`
-	PendingMatchAmount                       *big.Int        `json:"pendingMatchAmount"`
+	EthBorrowed                              *big.Int        `json:"ethBorrowed"`
+	EthBorrowedLimit                         *big.Int        `json:"ethBorrowedLimit"`
+	PendingBorrowAmount                      *big.Int        `json:"pendingBorrowAmount"`
 	CreditBalance                            *big.Int        `json:"creditBalance"`
 	CreditAndEthOnBehalfBalance              *big.Int        `json:"creditAndEthOnBehalfBalance"`
 	EthOnBehalfBalance                       *big.Int        `json:"ethOnBehalfBalance"`
@@ -584,9 +584,9 @@ type NodeGetRewardsInfoResponse struct {
 	ActiveMinipools         int                    `json:"activeMinipools"`
 	EffectiveRplStake       *big.Int               `json:"effectiveRplStake"`
 	MinimumRplStake         *big.Int               `json:"minimumRplStake"`
-	EthMatched              *big.Int               `json:"ethMatched"`
-	EthMatchedLimit         *big.Int               `json:"ethMatchedLimit"`
-	PendingMatchAmount      *big.Int               `json:"pendingMatchAmount"`
+	EthBorrowed             *big.Int               `json:"ethBorrowed"`
+	EthBorrowLimit          *big.Int               `json:"ethBorrowLimit"`
+	PendingBorrowAmount     *big.Int               `json:"pendingBorrowAmount"`
 	BorrowedCollateralRatio float64                `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio   float64                `json:"bondedCollateralRatio"`
 }
@@ -688,9 +688,9 @@ type SmoothingRewardsResponse struct {
 type CheckCollateralResponse struct {
 	Status                 string   `json:"status"`
 	Error                  string   `json:"error"`
-	EthMatched             *big.Int `json:"ethMatched"`
-	EthMatchedLimit        *big.Int `json:"ethMatchedLimit"`
-	PendingMatchAmount     *big.Int `json:"pendingMatchAmount"`
+	EthBorrowed            *big.Int `json:"ethBorrowed"`
+	EthBorrowedLimit       *big.Int `json:"ethBorrowedLimit"`
+	PendingBorrowAmount    *big.Int `json:"pendingBorrowAmount"`
 	InsufficientCollateral bool     `json:"insufficientCollateral"`
 }
 

@@ -359,8 +359,8 @@ func getStatus(c *cli.Context) error {
 		}
 		fmt.Println()
 
-		remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
-		remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
+		remainingAmount := big.NewInt(0).Sub(status.EthBorrowedLimit, status.EthBorrowed)
+		remainingAmount.Sub(remainingAmount, status.PendingBorrowAmount)
 		remainingAmountEth := int(eth.WeiToEth(remainingAmount))
 		remainingFor8EB := max(remainingAmountEth/24, 0)
 		remainingFor16EB := max(remainingAmountEth/16, 0)

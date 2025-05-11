@@ -49,9 +49,9 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	utils.ZeroIfNil(&response.PendingEffectiveRplStake)
 	utils.ZeroIfNil(&response.PendingMinimumRplStake)
 	utils.ZeroIfNil(&response.PendingMaximumRplStake)
-	utils.ZeroIfNil(&response.EthMatched)
-	utils.ZeroIfNil(&response.EthMatchedLimit)
-	utils.ZeroIfNil(&response.PendingMatchAmount)
+	utils.ZeroIfNil(&response.EthBorrowed)
+	utils.ZeroIfNil(&response.EthBorrowedLimit)
+	utils.ZeroIfNil(&response.PendingBorrowAmount)
 	utils.ZeroIfNil(&response.CreditBalance)
 	utils.ZeroIfNil(&response.FeeDistributorBalance)
 	return response, nil
