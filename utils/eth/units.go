@@ -67,3 +67,16 @@ func AmountWithDecimalsToInt(amountRaw float64, decimals uint8) *big.Int {
 	weiFloat.Int(&wei)
 	return &wei
 }
+
+// Converts float amount to big.Int considering a token's decimals
+func IntToFloatWithDecimals(amount *big.Int, decimals uint8) float64 {
+	if amount == nil {
+		return 0
+	}
+	var weiFloat big.Float
+	var eth big.Float
+	weiFloat.SetInt(amount)
+	eth.Quo(&weiFloat, big.NewFloat(math.Pow(10, float64(decimals))))
+	eth64, _ := eth.Float64()
+	return eth64
+}
