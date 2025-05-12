@@ -58,7 +58,7 @@ func GweiToWei(gwei float64) *big.Int {
 }
 
 // Converts float amount to big.Int considering a token's decimals
-func AmountWithDecimalsToInt(amountRaw float64, decimals uint8) *big.Int {
+func EthToWeiWithDecimals(amountRaw float64, decimals uint8) *big.Int {
 	var ethFloat big.Float
 	var weiFloat big.Float
 	var wei big.Int
@@ -68,8 +68,8 @@ func AmountWithDecimalsToInt(amountRaw float64, decimals uint8) *big.Int {
 	return &wei
 }
 
-// Converts float amount to big.Int considering a token's decimals
-func IntToFloatWithDecimals(amount *big.Int, decimals uint8) float64 {
+// Converts big.Int to float64 considering a token's decimals
+func WeiToEthWithDecimals(amount *big.Int, decimals uint8) float64 {
 	if amount == nil {
 		return 0
 	}
