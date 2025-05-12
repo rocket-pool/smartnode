@@ -84,8 +84,7 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 			if err != nil {
 				return fmt.Errorf("Invalid test amount '%s': %w\n", inputAmount, err)
 			}
-			amountWei := eth.EthToWei(testAmount)
-			canSendResponse, err := rp.CanNodeSend(amountWei, "eth", withdrawalAddress)
+			canSendResponse, err := rp.CanNodeSend(testAmount, "eth", withdrawalAddress)
 			if err != nil {
 				return err
 			}
@@ -101,7 +100,7 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 				return nil
 			}
 
-			sendResponse, err := rp.NodeSend(amountWei, "eth", withdrawalAddress)
+			sendResponse, err := rp.NodeSend(testAmount, "eth", withdrawalAddress)
 			if err != nil {
 				return err
 			}
