@@ -17,6 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/state"
+	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
@@ -98,6 +99,11 @@ func run(c *cli.Context) error {
 		return err
 	}
 	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return err
+	}
+	// Check if Saturn is already deployed
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return err
 	}
@@ -228,6 +234,10 @@ func run(c *cli.Context) error {
 			if time.Since(lastTotalEffectiveStakeTime) > totalEffectiveStakeCooldown {
 				updateTotalEffectiveStake = true
 				lastTotalEffectiveStakeTime = time.Now() // Even if the call below errors out, this will prevent contant errors related to this flag
+			}
+			// TODO deprecate totalEffectiveStake post Saturn 1
+			if saturnDeployed {
+				updateTotalEffectiveStake = false
 			}
 			state, totalEffectiveStake, err := updateNetworkState(m, &updateLog, nodeAccount.Address, updateTotalEffectiveStake)
 			if err != nil {
