@@ -123,7 +123,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 			if maxAmount.Cmp(status.RplStakeMegapool) < 0 {
 				maxAmount.Set(status.RplStakeMegapool)
 			}
-			fmt.Println("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
+			fmt.Printf("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
 			// Prompt for maximum amount
 			if prompt.Confirm("Would you like to unstake the maximum amount of staked RPL?") {
 				amountWei = &maxAmount
