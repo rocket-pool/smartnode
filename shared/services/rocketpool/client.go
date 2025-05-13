@@ -53,7 +53,8 @@ const (
 	templateSuffix    string = ".tmpl"
 	composeFileSuffix string = ".yml"
 
-	nethermindAdminUrl string = "http://127.0.0.1:7434"
+	nethermindAdminUrl          string = "http://127.0.0.1:7434"
+	pruneStarterContainerSuffix string = "_nm_prune_starter"
 
 	DebugColor = color.FgYellow
 )
@@ -865,13 +866,72 @@ func (c *Client) RunPruneProvisioner(container, volume string) error {
 
 }
 
-// Executes a Go program that triggers NM pruning
-func (c *Client) RunNethermindPruneStarter(executionContainerName string, pruneStarterContainerName string) error {
-	cmd := fmt.Sprintf(`docker run --rm  --name %s --network container:%s rocketpool/nm-prune-starter %s`, pruneStarterContainerName, executionContainerName, nethermindAdminUrl)
+// Curls the Nethermind admin URL to trigger pruning
+func (c *Client) RunNethermindPruneStarter(executionContainerName string) error {
+	retryCount := 5
+	retryTime := 3 * time.Second
 
-	err := c.printOutput(cmd)
-	if err != nil {
-		return err
+	for i := 0; i < retryCount; i++ {
+		command := fmt.Sprintf(`-m 30 -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"admin_prune","params":[],"id":%d}' %s`, i+1, nethermindAdminUrl)
+		cmdText := fmt.Sprintf(`docker run --quiet --rm  --name curl%s --network container:%s curlimages/curl -Ss %s`, pruneStarterContainerSuffix, executionContainerName, command)
+
+		if i != 0 {
+			fmt.Printf("Trying again in %v... (%d/%d)\n", retryTime, i+1, retryCount)
+			time.Sleep(retryTime)
+		}
+
+		cmd, err := c.newCommand(cmdText)
+		if err != nil {
+			return fmt.Errorf("error creating command for prune starter: %w", err)
+		}
+
+		stdOut, stdErr, err := cmd.OutputPipes()
+		if err != nil {
+			return fmt.Errorf("error getting output pipes for prune starter: %w", err)
+		}
+
+		err = cmd.Start()
+		if err != nil {
+			return fmt.Errorf("error running prune starter: %w", err)
+		}
+		defer func() {
+			_ = cmd.Wait()
+		}()
+
+		// Check for a curl error
+		stdErrTextBytes, err := io.ReadAll(stdErr)
+		if err != nil {
+			return fmt.Errorf("error reading error from prune starter: %w", err)
+		}
+		stdErrText := string(stdErrTextBytes)
+		if stdErrText != "" {
+			fmt.Printf("Error while curling the Nethermind admin URL: %s\n", stdErrText)
+			continue
+		}
+
+		// Grab the response
+		stdOutText, err := io.ReadAll(stdOut)
+		if err != nil {
+			return fmt.Errorf("error reading response from prune starter: %w", err)
+		}
+		// Parse the response as JSON
+		var response map[string]any
+		err = json.Unmarshal(stdOutText, &response)
+		if err != nil {
+			return fmt.Errorf("error parsing response from prune starter: %w", err)
+		}
+
+		if errObject, ok := response["error"].(map[string]any); ok {
+			fmt.Printf("Error starting prune: code %d, message = %s, data = %s\n", errObject["code"], errObject["message"], errObject["data"])
+			continue
+		} else {
+			fmt.Printf("Success: Pruning is now \"%s\"\n", response["result"])
+			fmt.Println("Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
+			fmt.Println("NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!")
+			fmt.Println("You must let it run to completion!")
+			break
+		}
+
 	}
 	return nil
 }
