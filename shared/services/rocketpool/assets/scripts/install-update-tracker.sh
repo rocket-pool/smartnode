@@ -75,10 +75,6 @@ else
 fi
 
 
-# The default smart node package version to download
-PACKAGE_VERSION="latest"
-
-
 # Print progress
 progress() {
     STEP_NUMBER=$1
@@ -92,29 +88,14 @@ install() {
 
 
 # Parse arguments
-while getopts "v:" FLAG; do
+while getopts "" FLAG; do
     case "$FLAG" in
-        v) PACKAGE_VERSION="$OPTARG" ;;
         *) fail "Incorrect usage." ;;
     esac
 done
 
-
-# Get package files URL
-if [ "$PACKAGE_VERSION" = "latest" ]; then
-    PACKAGE_URL="https://github.com/rocket-pool/smartnode-install/releases/latest/download/rp-update-tracker.tar.xz"
-else
-    PACKAGE_URL="https://github.com/rocket-pool/smartnode-install/releases/download/$PACKAGE_VERSION/rp-update-tracker.tar.xz"
-fi
-
-
-# Create temporary data folder; clean up on exit
-TEMPDIR=$(mktemp -d 2>/dev/null) || fail "Could not create temporary data directory."
-trap 'rm -rf "$TEMPDIR"' EXIT
-
-
 # Get temporary data paths
-PACKAGE_FILES_PATH="$TEMPDIR/rp-update-tracker"
+PACKAGE_FILES_PATH="$(dirname $0)/rp-update-tracker"
 
 
 case "$INSTALLER" in
@@ -123,7 +104,7 @@ case "$INSTALLER" in
     apt)
 
         # The total number of steps in the installation process
-        TOTAL_STEPS="3"
+        TOTAL_STEPS="2"
         
         # Install dependencies 
         progress 1 "Installing dependencies..."
@@ -132,13 +113,8 @@ case "$INSTALLER" in
         { sudo apt -y install update-notifier-common || true; } >&2
         { sudo apt -y install moreutils || fail "Could not install OS dependencies.";  } >&2
 
-        # Download and extract package files
-        progress 2 "Downloading Rocket Pool update tracker package files..."
-        { curl -L "$PACKAGE_URL" | tar -xJ -C "$TEMPDIR" || fail "Could not download and extract the Rocket Pool update tracker package files."; } >&2
-        { test -d "$PACKAGE_FILES_PATH" || fail "Could not extract the Rocket Pool update tracker package files."; } >&2
-
         # Install the update tracker files
-        progress 3 "Installing update tracker..."
+        progress 2 "Installing update tracker..."
         { sudo mkdir -p "$TEXTFILE_COLLECTOR_PATH" || fail "Could not create textfile collector path."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/apt/apt-metrics.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move apt update collector."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/rp-version-check.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move Rocket Pool update collector."; } >&2
@@ -152,7 +128,7 @@ case "$INSTALLER" in
     dnf)
 
         # The total number of steps in the installation process
-        TOTAL_STEPS="4"
+        TOTAL_STEPS="3"
 
         # Install dependencies
         progress 1 "Installing dependencies..."
@@ -163,13 +139,8 @@ case "$INSTALLER" in
         { sudo dnf -y install epel-release || true;  } >&2
         { sudo dnf -y install moreutils || fail "Could not install moreutils.";  } >&2
 
-        # Download and extract package files
-        progress 2 "Downloading Rocket Pool update tracker package files..."
-        { curl -L "$PACKAGE_URL" | tar -xJ -C "$TEMPDIR" || fail "Could not download and extract the Rocket Pool update tracker package files."; } >&2
-        { test -d "$PACKAGE_FILES_PATH" || fail "Could not extract the Rocket Pool update tracker package files."; } >&2
-
         # Install the update tracker files
-        progress 3 "Installing update tracker..."
+        progress 2 "Installing update tracker..."
         { sudo mkdir -p "$TEXTFILE_COLLECTOR_PATH" || fail "Could not create textfile collector path."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/dnf/dnf-metrics.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move dnf update collector."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/rp-version-check.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move Rocket Pool update collector."; } >&2
@@ -181,7 +152,7 @@ case "$INSTALLER" in
         { sudo chmod +x "$UPDATE_SCRIPT_PATH/rp-dnf-check.sh" || fail "Could not set permissions on Rocket Pool update tracker script."; } >&2
 
         # Install the update checking service
-        progress 4 "Installing update tracker service..."
+        progress 3 "Installing update tracker service..."
         if [ "$SELINUX" = true ]; then
             echo -e "${COLOR_YELLOW}Your system has SELinux enabled, so Rocket Pool can't automatically start the update tracker service."
             echo "Please run the following commands manually:"
@@ -203,7 +174,7 @@ case "$INSTALLER" in
     yum)
 
         # The total number of steps in the installation process
-        TOTAL_STEPS="4"
+        TOTAL_STEPS="3"
 
         # Install dependencies
         progress 1 "Installing dependencies..."
@@ -213,13 +184,8 @@ case "$INSTALLER" in
         { sudo yum -y install epel-release  || true; } >&2
         { sudo yum -y install moreutils || fail "Could not install moreutils.";  } >&2
 
-        # Download and extract package files
-        progress 2 "Downloading Rocket Pool update tracker package files..."
-        { curl -L "$PACKAGE_URL" | tar -xJ -C "$TEMPDIR" || fail "Could not download and extract the Rocket Pool update tracker package files."; } >&2
-        { test -d "$PACKAGE_FILES_PATH" || fail "Could not extract the Rocket Pool update tracker package files."; } >&2
-
         # Install the update tracker files
-        progress 3 "Installing update tracker..."
+        progress 2 "Installing update tracker..."
         { sudo mkdir -p "$TEXTFILE_COLLECTOR_PATH" || fail "Could not create textfile collector path."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/yum/yum-metrics.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move yum update collector."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/rp-version-check.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move Rocket Pool update collector."; } >&2
@@ -231,7 +197,7 @@ case "$INSTALLER" in
         { sudo chmod +x "$UPDATE_SCRIPT_PATH/rp-yum-check.sh" || fail "Could not set permissions on Rocket Pool update tracker script."; } >&2
 
         # Install the update checking service
-        progress 4 "Installing update tracker service..."
+        progress 3 "Installing update tracker service..."
         if [ "$SELINUX" = true ]; then
             echo -e "${COLOR_YELLOW}Your system has SELinux enabled, so Rocket Pool can't automatically start the update tracker service."
             echo "Please run the following commands manually:"

@@ -47,11 +47,9 @@ fi
 
 
 # The total number of steps in the installation process
-TOTAL_STEPS="9"
+TOTAL_STEPS="8"
 # The Rocket Pool user data path
 RP_PATH="$HOME/.rocketpool"
-# The default smart node package version to download
-PACKAGE_VERSION="latest"
 # The default network to run Rocket Pool on
 NETWORK="mainnet"
 
@@ -96,13 +94,12 @@ install() {
 
 
 # Parse arguments
-while getopts "dp:u:n:v:" FLAG; do
+while getopts "dp:u:n:" FLAG; do
     case "$FLAG" in
         d) NO_DEPS=true ;;
         p) RP_PATH="$OPTARG" ;;
         u) DATA_PATH="$OPTARG" ;;
         n) NETWORK="$OPTARG" ;;
-        v) PACKAGE_VERSION="$OPTARG" ;;
         *) fail "Incorrect usage." ;;
     esac
 done
@@ -111,23 +108,8 @@ if [ -z "$DATA_PATH" ]; then
     DATA_PATH="$RP_PATH/data"
 fi
 
-
-# Get package files URL
-if [ "$PACKAGE_VERSION" = "latest" ]; then
-    PACKAGE_URL="https://github.com/rocket-pool/smartnode-install/releases/latest/download/rp-smartnode-install.tar.xz"
-else
-    PACKAGE_URL="https://github.com/rocket-pool/smartnode-install/releases/download/$PACKAGE_VERSION/rp-smartnode-install.tar.xz"
-fi
-
-
-# Create temporary data folder; clean up on exit
-TEMPDIR=$(mktemp -d 2>/dev/null) || fail "Could not create temporary data directory."
-trap 'rm -rf "$TEMPDIR"' EXIT
-
-
 # Get temporary data paths
-PACKAGE_FILES_PATH="$TEMPDIR/install"
-
+PACKAGE_FILES_PATH="$(dirname $0)/install"
 
 ##
 # Installation
@@ -411,14 +393,8 @@ progress 6 "Creating Rocket Pool user data directory..."
 { mkdir -p "$RP_PATH/alerting/rules" || fail "Could not create the alerting rules directory."; } >&2
 
 
-# Download and extract package files
-progress 7 "Downloading Rocket Pool package files..."
-{ curl -L "$PACKAGE_URL" | tar -xJ -C "$TEMPDIR" || fail "Could not download and extract the Rocket Pool package files."; } >&2
-{ test -d "$PACKAGE_FILES_PATH" || fail "Could not extract the Rocket Pool package files."; } >&2
-
-
 # Copy package files
-progress 8 "Copying package files to Rocket Pool user data directory..."
+progress 7 "Copying package files to Rocket Pool user data directory..."
 { cp -r "$PACKAGE_FILES_PATH/addons" "$RP_PATH" || fail "Could not copy addons folder to the Rocket Pool user data directory."; } >&2
 { cp -r -n "$PACKAGE_FILES_PATH/override" "$RP_PATH" || rsync -r --ignore-existing "$PACKAGE_FILES_PATH/override" "$RP_PATH" || fail "Could not copy new override files to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/scripts" "$RP_PATH" || fail "Could not copy scripts folder to the Rocket Pool user data directory."; } >&2
@@ -429,7 +405,7 @@ progress 8 "Copying package files to Rocket Pool user data directory..."
 { touch -a "$RP_PATH/.firstrun" || fail "Could not create the first-run flag file."; } >&2
 
 # Clean up unnecessary files from old installations
-progress 9 "Cleaning up obsolete files from previous installs..."
+progress 8 "Cleaning up obsolete files from previous installs..."
 { rm -rf "$DATA_PATH/fr-default" || echo "NOTE: Could not remove '$DATA_PATH/fr-default' which is no longer needed."; } >&2
 GRAFFITI_OWNER=$(stat -c "%U" $RP_PATH/addons/gww/graffiti.txt)
 if [ "$GRAFFITI_OWNER" = "$USER" ]; then

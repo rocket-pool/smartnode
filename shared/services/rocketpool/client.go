@@ -2,13 +2,11 @@ package rocketpool
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
-	"io"
+	"io/fs"
 	"math"
 	"math/big"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -25,6 +23,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool/assets"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/template"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -33,9 +32,6 @@ import (
 
 // Config
 const (
-	InstallerURL     string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install.sh"
-	UpdateTrackerURL string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install-update-tracker.sh"
-
 	SettingsFile             string = "user-settings.yml"
 	BackupSettingsFile       string = "user-settings-backup.yml"
 	PrometheusConfigTemplate string = "prometheus.tmpl"
@@ -291,13 +287,137 @@ func (c *Client) UpdatePrometheusConfiguration(config *config.RocketPoolConfig) 
 	return t.Write(config)
 }
 
+func (c *Client) runScript(script assets.ScriptWithContext, verbose bool, flags []string) error {
+	// Make a tmpdir
+	tmpdir, err := os.MkdirTemp("", "rocketpool-")
+	if err != nil {
+		return fmt.Errorf("error creating tmpdir: %w", err)
+	}
+	if verbose {
+		fmt.Printf("Verbose mode enabled, tmpdir %s will not be removed\n", tmpdir)
+	} else {
+		defer os.RemoveAll(tmpdir)
+	}
+
+	// Create a file in the tmpdir
+	scriptPathName := filepath.Join(tmpdir, "script.sh")
+	scriptFile, err := os.Create(scriptPathName)
+	if err != nil {
+		return fmt.Errorf("error creating script file: %w", err)
+	}
+	if err := scriptFile.Chmod(0700); err != nil {
+		return fmt.Errorf("error setting script file permissions: %w", err)
+	}
+	// write the script to the file
+	_, err = scriptFile.Write(script.Script)
+	if err != nil {
+		return fmt.Errorf("error writing script to file: %w", err)
+	}
+	scriptFile.Close()
+
+	// Copy the context to the tmpdir
+	// If we upgrade to go 1.23+ we can probably use os.CopyFS() instead
+	err = fs.WalkDir(script.Context, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		dstpath := filepath.Join(tmpdir, path)
+		if d.IsDir() {
+			// If d is a directory, create it.
+			if verbose {
+				fmt.Printf("Creating directory: %s\n", path)
+			}
+			err = os.MkdirAll(dstpath, 0755)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		// d is a file, copy it.
+		if verbose {
+			fmt.Printf("Copying file: %s\n", path)
+		}
+		scriptFile, err := os.Create(dstpath)
+		if err != nil {
+			return err
+		}
+		content, err := fs.ReadFile(script.Context, path)
+		if err != nil {
+			return err
+		}
+		_, err = scriptFile.Write(content)
+		if err != nil {
+			return err
+		}
+		err = scriptFile.Close()
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error copying script files: %w", err)
+	}
+
+	// Initialize command
+	cmdString := fmt.Sprintf("%s %s", scriptPathName, strings.Join(flags, " "))
+	if verbose {
+		fmt.Printf("Running script: %s\n", cmdString)
+	}
+	cmd, err := c.newCommand(cmdString)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = cmd.Close()
+	}()
+
+	// Get command output pipes
+	cmdOut, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	cmdErr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+
+	// Print progress from stdout
+	go (func() {
+		scanner := bufio.NewScanner(cmdOut)
+		for scanner.Scan() {
+			fmt.Println(scanner.Text())
+		}
+	})()
+
+	// Read command & error output from stderr; render in verbose mode
+	var errMessage string
+	go (func() {
+		c := color.New(DebugColor)
+		scanner := bufio.NewScanner(cmdErr)
+		for scanner.Scan() {
+			errMessage = scanner.Text()
+			if verbose {
+				_, _ = c.Println(scanner.Text())
+			}
+		}
+	})()
+
+	// Run command and return error output
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("Could not run script: %s", errMessage)
+	}
+	return nil
+
+}
+
 // Install the Rocket Pool service
-func (c *Client) InstallService(verbose, noDeps bool, version, path string, dataPath string) error {
+func (c *Client) InstallService(verbose, noDeps bool, path string, dataPath string) error {
 
 	// Get installation script flags
-	flags := []string{
-		"-v", shellescape.Quote(version),
-	}
+	flags := []string{}
 	if path != "" {
 		flags = append(flags, fmt.Sprintf("-p %s", shellescape.Quote(path)))
 	}
@@ -308,174 +428,19 @@ func (c *Client) InstallService(verbose, noDeps bool, version, path string, data
 		flags = append(flags, fmt.Sprintf("-u %s", dataPath))
 	}
 
-	// Download the installation script
-	resp, err := http.Get(fmt.Sprintf(InstallerURL, version))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected http status downloading installation script: %d", resp.StatusCode)
-	}
-
-	// Sanity check that the script octet length matches content-length
-	script, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
-		return fmt.Errorf("downloaded script length %d did not match content-length header %s", len(script), resp.Header.Get("content-length"))
-	}
-
-	// Initialize installation command
-	cmd, err := c.newCommand(fmt.Sprintf("sh -s -- %s", strings.Join(flags, " ")))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = cmd.Close()
-	}()
-
-	// Pass the script to sh via its stdin fd
-	cmd.SetStdin(bytes.NewReader(script))
-
-	// Get command output pipes
-	cmdOut, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	cmdErr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	// Print progress from stdout
-	go (func() {
-		scanner := bufio.NewScanner(cmdOut)
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-	})()
-
-	// Read command & error output from stderr; render in verbose mode
-	var errMessage string
-	go (func() {
-		c := color.New(DebugColor)
-		scanner := bufio.NewScanner(cmdErr)
-		for scanner.Scan() {
-			errMessage = scanner.Text()
-			if verbose {
-				_, _ = c.Println(scanner.Text())
-			}
-		}
-	})()
-
-	// Run command and return error output
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("Could not install Rocket Pool service: %s", errMessage)
-	}
-	return nil
-
+	// Load the installation script
+	return c.runScript(assets.InstallScript(), verbose, flags)
 }
 
 // Install the update tracker
-func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
+func (c *Client) InstallUpdateTracker(verbose bool) error {
 
-	// Get installation script flags
-	flags := []string{
-		"-v", fmt.Sprintf("%s", shellescape.Quote(version)),
-	}
-
-	// Download the installer package
-	url := fmt.Sprintf(UpdateTrackerURL, version)
-	resp, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("error downloading installer package: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("downloading installer package failed with code %d - [%s]", resp.StatusCode, resp.Status)
-	}
-
-	// Create a temp file for it
-	path := filepath.Join(os.TempDir(), "install-update-tracker.sh")
-	tempFile, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0755)
-	if err != nil {
-		return fmt.Errorf("error creating temporary file for installer script: %w", err)
-	}
-	defer tempFile.Close()
-	defer os.Remove(tempFile.Name())
-	_, err = io.Copy(tempFile, resp.Body)
-	if err != nil {
-		return fmt.Errorf("error writing installer package to disk: %w", err)
-	}
-	tempFile.Close()
-
-	// Initialize installation command
-	cmd, err := c.newCommand(fmt.Sprintf("sh -c \"%s %s\"", path, strings.Join(flags, " ")))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = cmd.Close()
-	}()
-
-	// Get command output pipes
-	cmdOut, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	cmdErr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	// Print progress from stdout
-	go (func() {
-		scanner := bufio.NewScanner(cmdOut)
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-	})()
-
-	// Read command & error output from stderr; render in verbose mode
-	var errMessage string
-	go (func() {
-		c := color.New(DebugColor)
-		scanner := bufio.NewScanner(cmdErr)
-		for scanner.Scan() {
-			errMessage = scanner.Text()
-			if verbose {
-				_, _ = c.Println(scanner.Text())
-			}
-		}
-	})()
-
-	// Run command and return error output
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("Could not install Rocket Pool update tracker: %s", errMessage)
-	}
-	return nil
-
+	return c.runScript(assets.InstallUpdateTrackerScript(), verbose, nil)
 }
 
 // Start the Rocket Pool service
 func (c *Client) StartService(composeFiles []string) error {
 
-	/*
-		// Start the API container first
-		cmd, err := c.compose([]string{}, "up -d --quiet-pull")
-		if err != nil {
-			return fmt.Errorf("error creating compose command for API container: %w", err)
-		}
-		err = c.printOutput(cmd)
-		if err != nil {
-			return fmt.Errorf("error starting API container: %w", err)
-		}
-	*/
 	// Start all of the containers
 	cmd, err := c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
 	if err != nil {

@@ -58,8 +58,8 @@ func installService(c *cli.Context) error {
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
-		"The Rocket Pool service will be installed --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
-		c.String("version"), colorGreen, colorReset,
+		"The Rocket Pool %s service will be installed.\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
+		shared.RocketPoolVersion, colorGreen, colorReset,
 	))) {
 		fmt.Println("Cancelled.")
 		return nil
@@ -83,7 +83,7 @@ func installService(c *cli.Context) error {
 	}
 
 	// Install service
-	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("version"), c.String("path"), dataPath)
+	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("path"), dataPath)
 	if err != nil {
 		return err
 	}
@@ -150,7 +150,7 @@ func installUpdateTracker(c *cli.Context) error {
 	defer rp.Close()
 
 	// Install service
-	err := rp.InstallUpdateTracker(c.Bool("verbose"), c.String("version"))
+	err := rp.InstallUpdateTracker(c.Bool("verbose"))
 	if err != nil {
 		return err
 	}
