@@ -258,6 +258,11 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
+		wg.Go(func() error {
+			var err error
+			response.RplStake, err = node131.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+			return err
+		})
 	}
 
 	// Check if Voting is Initialized

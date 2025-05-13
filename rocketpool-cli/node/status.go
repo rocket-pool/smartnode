@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/rocketpool-go/utils/eth"
@@ -329,34 +330,43 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("%s=== RPL Stake ===%s\n", colorGreen, colorReset)
 		fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.")
 		fmt.Println()
-		fmt.Printf(
-			"The node has a total stake of %.6f RPL.\n",
-			math.RoundDown(eth.WeiToEth(status.RplStake), 6))
+		fmt.Printf("The node has a total stake of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStake), 6))
 		if status.BorrowedCollateralRatio > 0 {
-			rplTooLow := (status.RplStake.Cmp(status.MinimumRplStake) < 0)
+			fmt.Printf("This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n", status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
+		}
+
+		if status.IsSaturnDeployed {
+			fmt.Printf("The node has %.6f megapool staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6))
+			if status.RplStakeLegacy != nil && status.RplStakeLegacy.Cmp(big.NewInt(0)) != 0 {
+				fmt.Printf("The node has %6f legacy staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6))
+				fmt.Printf("The node has a total stake (legacy minipool RPL plus megapool RPL) of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStake), 6))
+			}
+			var unstakingPeriodEnd time.Time
+			if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
+				fmt.Printf("The unstaking period is currently %s\n", status.UnstakingPeriodDuration)
+				// Check if unstaking period passed considering the last unstake time
+				unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
+				fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat))
+			}
+			// Max withdrawable amount for megapools
+			var maxAmount big.Int
+			maxAmount.Sub(status.RplStake, status.NodeRPLLocked)
+			if maxAmount.Cmp(status.RplStakeMegapool) < 0 {
+				maxAmount.Set(status.RplStakeMegapool)
+			}
+			fmt.Println("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
+		} else {
+			// Withdrawal limit pre-saturn 1
 			rplTotalStake := math.RoundDown(eth.WeiToEth(status.RplStake), 6)
 			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6)
-			if rplTooLow {
-				fmt.Printf(
-					"This is currently %s%.2f%% of its borrowed ETH%s and %.2f%% of its bonded ETH.\n",
-					colorRed, status.BorrowedCollateralRatio*100, colorReset, status.BondedCollateralRatio*100)
-			} else {
-				fmt.Printf(
-					"This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n",
-					status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
-			}
-			fmt.Printf(
-				"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
-			fmt.Printf(
-				"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of 150%% of bonded ETH. Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n")
 			if rplTotalStake > rplWithdrawalLimit {
 				fmt.Printf(
-					"You can now withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6), (status.MaximumStakeFraction)*100)
-			}
-			if rplTooLow {
-				fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
+					"You can withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6), (status.MaximumStakeFraction)*100)
 			}
 		}
+
+		fmt.Printf(
+			"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of 150%% of bonded ETH. Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n")
 		fmt.Println()
 
 		remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
