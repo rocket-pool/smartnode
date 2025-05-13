@@ -32,8 +32,8 @@ type NativeNodeDetails struct {
 	EffectiveRPLStake                *big.Int       `json:"effective_rpl_stake"`
 	MinimumRPLStake                  *big.Int       `json:"minimum_rpl_stake"`
 	MaximumRPLStake                  *big.Int       `json:"maximum_rpl_stake"`
-	EthMatched                       *big.Int       `json:"eth_matched"`
-	EthMatchedLimit                  *big.Int       `json:"eth_matched_limit"`
+	EthBorrowed                      *big.Int       `json:"eth_borrowed"`
+	EthBorrowedLimit                 *big.Int       `json:"eth_borrowed_limit"`
 	MinipoolCount                    *big.Int       `json:"minipool_count"`
 	BalanceETH                       *big.Int       `json:"balance_eth"`
 	BalanceRETH                      *big.Int       `json:"balance_reth"`
@@ -334,12 +334,15 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	mc.AddCall(contracts.RocketNodeManager, &details.FeeDistributorInitialised, "getFeeDistributorInitialised", address)
 	mc.AddCall(contracts.RocketNodeDistributorFactory, &details.FeeDistributorAddress, "getProxyAddress", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.RewardNetwork, "getRewardNetwork", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.RplStake, "getNodeRPLStake", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.EffectiveRPLStake, "getNodeEffectiveRPLStake", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.MinimumRPLStake, "getNodeMinimumRPLStake", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.MaximumRPLStake, "getNodeMaximumRPLStake", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.EthMatched, "getNodeETHMatched", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.EthMatchedLimit, "getNodeETHMatchedLimit", address)
+	if !contracts.isSaturnDeployed() {
+		mc.AddCall(contracts.RocketNodeStaking, &details.RplStake, "getNodeRPLStake", address)
+		mc.AddCall(contracts.RocketNodeStaking, &details.EffectiveRPLStake, "getNodeEffectiveRPLStake", address)
+		mc.AddCall(contracts.RocketNodeStaking, &details.MinimumRPLStake, "getNodeMinimumRPLStake", address)
+		mc.AddCall(contracts.RocketNodeStaking, &details.MaximumRPLStake, "getNodeMaximumRPLStake", address)
+		// Matched is renamed to borrowed in Saturn v1.4
+		mc.AddCall(contracts.RocketNodeStaking, &details.EthBorrowed, "getNodeETHMatched", address)
+		mc.AddCall(contracts.RocketNodeStaking, &details.EthBorrowedLimit, "getNodeETHMatchedLimit", address)
+	}
 	mc.AddCall(contracts.RocketMinipoolManager, &details.MinipoolCount, "getNodeMinipoolCount", address)
 	mc.AddCall(contracts.RocketTokenRETH, &details.BalanceRETH, "balanceOf", address)
 	mc.AddCall(contracts.RocketTokenRPL, &details.BalanceRPL, "balanceOf", address)
@@ -355,6 +358,7 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 
 	// Saturn
 	if contracts.isSaturnDeployed() {
+		mc.AddCall(contracts.RocketNodeStaking, &details.EthBorrowed, "getNodeETHBorrowed", address)
 		mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolAddress, "getExpectedAddress", address)
 		mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getMegapoolDeployed", address)
 	}
