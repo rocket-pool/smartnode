@@ -1,6 +1,7 @@
 package node
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
@@ -79,7 +80,7 @@ func canNodeSend(c *cli.Context, amountRaw float64, token string, to common.Addr
 	if strings.HasPrefix(token, "0x") {
 		tokenAddress := common.HexToAddress(token)
 
-		if to == tokenAddress {
+		if bytes.Equal(to.Bytes(), tokenAddress.Bytes()) {
 			return nil, fmt.Errorf("sending tokens to the same address as the token is prohibited for safety")
 		}
 
