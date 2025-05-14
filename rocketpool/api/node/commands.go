@@ -851,7 +851,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("send amount", c.Args().Get(0))
+					amountRaw, err := cliutils.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -865,7 +865,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(canNodeSend(c, amountWei, token, toAddress))
+					api.PrintResponse(canNodeSend(c, amountRaw, token, toAddress))
 					return nil
 
 				},
@@ -881,7 +881,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("send amount", c.Args().Get(0))
+					amountRaw, err := cliutils.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -895,7 +895,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(nodeSend(c, amountWei, token, toAddress))
+					api.PrintResponse(nodeSend(c, amountRaw, token, toAddress))
 					return nil
 
 				},
