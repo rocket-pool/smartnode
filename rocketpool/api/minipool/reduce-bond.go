@@ -88,7 +88,7 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 			return fmt.Errorf("error getting node deposit balance for minipool %s: %w", minipoolAddress.Hex(), err)
 		}
 		// How much more ETH they're requesting from the staking pool
-		response.MatchRequest = big.NewInt(0).Sub(nodeDepositAmount, newBondAmountWei)
+		response.BorrowRequest = big.NewInt(0).Sub(nodeDepositAmount, newBondAmountWei)
 		return nil
 	})
 

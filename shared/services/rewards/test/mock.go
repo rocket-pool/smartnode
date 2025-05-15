@@ -551,8 +551,8 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		maxRplStake.Div(maxRplStake, rplPrice)
 
 		// Eth matching limit is rpl stake times the price divided by the collateral fraction
-		ethMatchingLimit := big.NewInt(0).Mul(node.RplStake, rplPrice)
-		ethMatchingLimit.Div(ethMatchingLimit, h.NetworkDetails.MinCollateralFraction)
+		ethBorrowingLimit := big.NewInt(0).Mul(node.RplStake, rplPrice)
+		ethBorrowingLimit.Div(ethBorrowingLimit, h.NetworkDetails.MinCollateralFraction)
 		collateralisationRatio := big.NewInt(0)
 		if node.borrowedEth.Sign() > 0 {
 			collateralisationRatio.Div(node.bondedEth, big.NewInt(0).Add(big.NewInt(0).Mul(node.bondedEth, eth.EthToWei(1)), node.borrowedEth))
@@ -568,8 +568,8 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			EffectiveRPLStake: rplStake,
 			MinimumRPLStake:   minRplStake,
 			MaximumRPLStake:   maxRplStake,
-			EthMatched:        node.borrowedEth,
-			EthMatchedLimit:   ethMatchingLimit,
+			EthBorrowed:       node.borrowedEth,
+			EthBorrowedLimit:  ethBorrowingLimit,
 			MinipoolCount:     big.NewInt(int64(len(node.Minipools))),
 			// Empty node wallet
 			BalanceETH:                       big.NewInt(0),

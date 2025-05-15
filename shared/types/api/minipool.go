@@ -303,7 +303,7 @@ type CanBeginReduceBondAmountResponse struct {
 	MinipoolVersionTooLow bool                  `json:"minipoolVersionTooLow"`
 	Balance               uint64                `json:"balance"`
 	BalanceTooLow         bool                  `json:"balanceTooLow"`
-	MatchRequest          *big.Int              `json:"matchRequest"`
+	BorrowRequest         *big.Int              `json:"borrowRequest"`
 	BeaconState           beacon.ValidatorState `json:"beaconState"`
 	InvalidBeaconState    bool                  `json:"invalidBeaconState"`
 	CanReduce             bool                  `json:"canReduce"`

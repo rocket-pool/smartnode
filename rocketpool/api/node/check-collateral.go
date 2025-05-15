@@ -40,15 +40,15 @@ func checkCollateral(c *cli.Context) (*api.CheckCollateralResponse, error) {
 	}
 
 	// Check collateral
-	response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(saturnDeployed, rp, nodeAccount.Address, nil)
+	response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(saturnDeployed, rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
 
 	// Check if there's sufficient collateral including pending bond reductions
-	remainingMatch := big.NewInt(0).Sub(response.EthMatchedLimit, response.EthMatched)
-	remainingMatch.Sub(remainingMatch, response.PendingMatchAmount)
-	response.InsufficientCollateral = (remainingMatch.Cmp(big.NewInt(0)) < 0)
+	remainingBorrow := big.NewInt(0).Sub(response.EthBorrowedLimit, response.EthBorrowed)
+	remainingBorrow.Sub(remainingBorrow, response.PendingBorrowAmount)
+	response.InsufficientCollateral = (remainingBorrow.Cmp(big.NewInt(0)) < 0)
 
 	return &response, nil
 }
