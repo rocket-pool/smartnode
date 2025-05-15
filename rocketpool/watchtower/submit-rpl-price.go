@@ -246,7 +246,7 @@ type submitRplPrice struct {
 	log       *log.ColorLogger
 	errLog    *log.ColorLogger
 	cfg       *config.RocketPoolConfig
-	w         *wallet.Wallet
+	w         wallet.Wallet
 	ec        rocketpool.ExecutionClient
 	rp        *rocketpool.RocketPool
 	bc        beacon.Client
@@ -262,7 +262,7 @@ func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.C
 	if err != nil {
 		return nil, err
 	}
-	w, err := services.GetWallet(c)
+	w, err := services.GetHdWallet(c)
 	if err != nil {
 		return nil, err
 	}

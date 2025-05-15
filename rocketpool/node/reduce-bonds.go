@@ -33,7 +33,7 @@ type reduceBonds struct {
 	c              *cli.Context
 	log            log.ColorLogger
 	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
+	w              wallet.Wallet
 	rp             *rocketpool.RocketPool
 	d              *client.Client
 	gasThreshold   float64
@@ -60,7 +60,7 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 	if err != nil {
 		return nil, err
 	}
-	w, err := services.GetWallet(c)
+	w, err := services.GetHdWallet(c)
 	if err != nil {
 		return nil, err
 	}

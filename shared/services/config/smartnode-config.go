@@ -668,6 +668,14 @@ func (cfg *SmartnodeConfig) GetPasswordPath() string {
 	return filepath.Join(DaemonDataPath, "password")
 }
 
+func (cfg *SmartnodeConfig) GetNodeAddressPath() string {
+	if cfg.parent.IsNativeMode {
+		return filepath.Join(cfg.DataPath.Value.(string), "address")
+	}
+
+	return filepath.Join(DaemonDataPath, "address")
+}
+
 func (cfg *SmartnodeConfig) GetValidatorKeychainPath() string {
 	if cfg.parent.IsNativeMode {
 		return filepath.Join(cfg.DataPath.Value.(string), "validators")

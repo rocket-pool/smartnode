@@ -23,7 +23,7 @@ type downloadRewardsTrees struct {
 	c   *cli.Context
 	log log.ColorLogger
 	cfg *config.RocketPoolConfig
-	w   *wallet.Wallet
+	w   wallet.Wallet
 	rp  *rocketpool.RocketPool
 	d   *client.Client
 	bc  beacon.Client
@@ -37,7 +37,7 @@ func newDownloadRewardsTrees(c *cli.Context, logger log.ColorLogger) (*downloadR
 	if err != nil {
 		return nil, err
 	}
-	w, err := services.GetWallet(c)
+	w, err := services.GetHdWallet(c)
 	if err != nil {
 		return nil, err
 	}
