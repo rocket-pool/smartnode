@@ -370,6 +370,9 @@ if [ -d $RP_PATH ]; then
         if [ -f "$RP_PATH/grafana-prometheus-datasource.yml" ]; then 
             { mv "$RP_PATH/grafana-prometheus-datasource.yml" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move grafana-prometheus-datasource.yml to backup folder."; } >&2
         fi
+        if [ -f "$RP_PATH/grafana-dashboards.yml" ]; then 
+            { mv "$RP_PATH/grafana-dashboards.yml" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move grafana-dashboards.yml to backup folder."; } >&2
+        fi
         if [ -d "$RP_PATH/chains" ]; then 
             { mv "$RP_PATH/chains" "$OLD_CONFIG_BACKUP_PATH" || fail "Could not move chains directory to backup folder."; } >&2
         fi
@@ -391,6 +394,7 @@ progress 6 "Creating Rocket Pool user data directory..."
 { mkdir -p "$DATA_PATH/rewards-trees" || fail "Could not create the Rocket Pool rewards trees directory."; } >&2
 { mkdir -p "$RP_PATH/extra-scrape-jobs" || fail "Could not create the Prometheus extra scrape jobs directory."; } >&2
 { mkdir -p "$RP_PATH/alerting/rules" || fail "Could not create the alerting rules directory."; } >&2
+{ mkdir -p "$RP_PATH/dashboards" || fail "Could not create the grafana dashboards directory."; } >&2
 
 
 # Copy package files
@@ -400,7 +404,11 @@ progress 7 "Copying package files to Rocket Pool user data directory..."
 { cp -r "$PACKAGE_FILES_PATH/scripts" "$RP_PATH" || fail "Could not copy scripts folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/templates" "$RP_PATH" || fail "Could not copy templates folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/alerting" "$RP_PATH" || fail "Could not copy alerting folder to the Rocket Pool user data directory."; } >&2
-{ cp "$PACKAGE_FILES_PATH/grafana-prometheus-datasource.yml" "$PACKAGE_FILES_PATH/prometheus.tmpl" "$RP_PATH" || fail "Could not copy base files to the Rocket Pool user data directory."; } >&2
+{ cp	\
+	"$PACKAGE_FILES_PATH/grafana-prometheus-datasource.yml" \
+	"$PACKAGE_FILES_PATH/prometheus.tmpl" \
+	"$PACKAGE_FILES_PATH/grafana-dashboards.yml" "$RP_PATH" || fail "Could not copy base files to the Rocket Pool user data directory."; } >&2
+{ cp -r "$PACKAGE_FILES_PATH/dashboards" "$RP_PATH" || fail "Could not copy grafana dashboards folder to the Rocket Pool user data directory."; } >&2
 { find "$RP_PATH/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || fail "Could not set executable permissions on package files."; } >&2
 { touch -a "$RP_PATH/.firstrun" || fail "Could not create the first-run flag file."; } >&2
 
