@@ -5,6 +5,21 @@
 # See https://docs.docker.com/compose/extends/#adding-and-overriding-configuration
 # for more information on overriding specific parameters of docker-compose files.
 
+{{define "GENESIS_DL"}}
+  eth2_genesis_downloader:
+    image: curlimages/curl:8.13.0
+    user: root
+    container_name: {{.Smartnode.ProjectName}}_genesis_downloader
+    volumes:
+      - eth2clientdata:/ethclient
+      - {{.RocketPoolDirectory}}/scripts:/setup:ro
+    network_mode: host
+    environment:
+      - NETWORK={{.Smartnode.Network}}
+    entrypoint: sh
+    command: "/setup/download-genesis.sh"
+{{end}}
+
 services:
   eth2:
     image: {{.GetBeaconContainerTag}}
@@ -72,11 +87,6 @@ services:
       {{- else if eq .ConsensusClient.String "lighthouse"}}
       - BN_P2P_QUIC_PORT={{.Lighthouse.P2pQuicPort}}
       {{- end}}
-    {{- if eq .ConsensusClient.String "prysm"}}
-    entrypoint: bash
-    {{- else}}
-    entrypoint: sh
-    {{- end}}
     command: "/setup/start-bn.sh"
     cap_drop:
       - all
@@ -84,6 +94,16 @@ services:
       - dac_override
     security_opt:
       - no-new-privileges
+    {{- if ne .ConsensusClient.String "prysm"}}
+    entrypoint: sh
+    {{- else}}
+    {{- /* prysm has bash but not sh and may need us to download genesis for testnets */}}
+    entrypoint: bash
+    depends_on:
+      eth2_genesis_downloader:
+        condition: service_completed_successfully
+    {{- template "GENESIS_DL" . }}
+    {{- end}}
 networks:
   net:
 volumes:
