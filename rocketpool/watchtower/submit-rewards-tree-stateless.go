@@ -175,12 +175,15 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 
 	// Check if the node has already submitted the rewards for the previous interval
 	// In case we just had consensus, we want other nodes to also submit
-	hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig.Sub(currentIndexBig, big.NewInt(1)))
-	if err != nil {
-		return fmt.Errorf("error checking if Merkle tree submission has already been processed: %w", err)
-	}
-	if !hasSubmitted { // didn't participate in the previous consensus. Decrement the index and submit it as a health check
-		currentIndexBig = currentIndexBig.Sub(currentIndexBig, big.NewInt(1))
+	var hasSubmitted bool
+	if currentIndexBig.Cmp(big.NewInt(0)) > 0 {
+		hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig.Sub(currentIndexBig, big.NewInt(1)))
+		if err != nil {
+			return fmt.Errorf("error checking if Merkle tree submission has already been processed: %w", err)
+		}
+		if !hasSubmitted { // didn't participate in the previous consensus. Decrement the index and submit it as a health check
+			currentIndexBig = currentIndexBig.Sub(currentIndexBig, big.NewInt(1))
+		}
 	}
 
 	// Check if rewards generation is already running
