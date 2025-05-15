@@ -5,6 +5,7 @@ providers:
     folder: Rocket Pool Default
     orgId: 1
     type: file
+    allowUiUpdates: false
     options:
       path: /etc/grafana/default_dashboards/
       updateIntervalSeconds: 300

@@ -1,14 +1,4 @@
 {
-  "__inputs": [
-    {
-      "name": "DS_PROMETHEUS",
-      "label": "Prometheus",
-      "description": "",
-      "type": "datasource",
-      "pluginId": "prometheus",
-      "pluginName": "Prometheus"
-    }
-  ],
   "__elements": {},
   "__requires": [
     {
@@ -21,7 +11,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "9.4.10"
+      "version": "9.5.18"
     },
     {
       "type": "panel",
@@ -92,10 +82,6 @@
   "liveNow": false,
   "panels": [
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "gridPos": {
         "h": 1,
         "w": 12,
@@ -112,25 +98,12 @@
         "content": "",
         "mode": "markdown"
       },
-      "pluginVersion": "9.4.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "9.5.18",
       "title": "Hardware Stats",
       "transparent": true,
       "type": "text"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "gridPos": {
         "h": 1,
         "w": 9,
@@ -147,25 +120,12 @@
         "content": "",
         "mode": "markdown"
       },
-      "pluginVersion": "9.4.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "9.5.18",
       "title": "Validator Stats",
       "transparent": true,
       "type": "text"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "A count of how long your Beacon Node has been running. If you don't restart it, this is about the same as your total system uptime.",
       "fieldConfig": {
         "defaults": {
@@ -220,13 +180,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "time() - process_start_time_seconds{job=\"eth2\"}",
           "interval": "",
@@ -238,10 +194,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The temperature of your CPU (you can set this to Tctl or Tdie, whichever you prefer to monitor).\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
@@ -292,13 +244,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "node_hwmon_temp_celsius{job=\"node\", chip=\"\", sensor=\"\"}",
@@ -312,10 +260,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "This will turn red when your system needs to be rebooted because of security updates.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
@@ -373,13 +317,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "os_reboot_required{job=\"node\"}",
           "interval": "",
@@ -391,10 +331,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "Tracks any updates that are available for your OS or for Rocket Pool but haven't been applied yet. When one of these numbers is higher than 0, it means you should update your system or Rocket Pool accordingly.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
@@ -440,13 +376,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "max(os_upgrades_pending{job=\"node\"})",
           "interval": "",
@@ -454,10 +386,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "max(rocketpool_version_update{job=\"node\"})",
           "hide": false,
@@ -470,10 +398,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "How much of your total swap space you're currently using. If you have swap space enabled, you want this to be as low as possible - otherwise, your system is running out of free RAM.",
       "fieldConfig": {
         "defaults": {
@@ -525,13 +449,9 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "((node_memory_SwapTotal_bytes{job=\"node\"} - node_memory_SwapFree_bytes{job=\"node\"}) / node_memory_SwapTotal_bytes{job=\"node\"})",
           "interval": "",
@@ -543,10 +463,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "Tracks the activity of all of your validators on the Beacon Chain. This is a cumulative count; it starts at 0 when your node first starts up, and then continuously increments as it goes.",
       "fieldConfig": {
         "defaults": {
@@ -601,13 +517,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "sum(vc_signed_attestations_total{job=\"validator\", status=\"success\"}) OR # Lighthouse\nsum(vc_published_attestations_total{job=\"validator\"}) OR # Lodestar\nsum(beacon_attestations_sent_total{job=\"validator\"}) OR # Nimbus\nsum(validator_successful_attestations{job=\"validator\"}) OR # Prysm\nvalidator_duties_performed_total{job=\"validator\", type=\"attestation\", result=\"success\"} OR # Teku\non() vector(0)",
@@ -618,10 +530,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "sum(vc_signed_beacon_blocks_total{job=\"validator\", status=\"success\"}) OR # Lighthouse\nsum(vc_block_published_total{job=\"validator\"}) OR # Lodestar\nsum(beacon_blocks_sent_total{job=\"validator\"}) OR # Nimbus\nsum(validator_successful_proposals{job=\"validator\"}) OR # Prysm\nvalidator_duties_performed_total{job=\"validator\", type=\"block\", result=\"success\"} OR # Teku\non() vector(0)",
@@ -635,10 +543,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "Tracks the activity of all of your validators on the Beacon Chain.",
       "fieldConfig": {
         "defaults": {
@@ -714,10 +618,6 @@
       "pluginVersion": "8.1.1",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "(sum(rate(vc_signed_beacon_blocks_total{job=\"validator\", status=\"success\"}[$__rate_interval])) OR # Lighthouse\nsum(rate(vc_block_published_total{job=\"validator\"}[$__rate_interval])) OR # Lodestar\nsum(rate(beacon_blocks_sent_total{job=\"validator\"}[$__rate_interval])) OR # Nimbus\nsum(rate(validator_successful_proposals{job=\"validator\"}[$__rate_interval])) OR # Prysm\nrate(validator_duties_performed{job=\"validator\", type=\"block\", result=\"success\"}[$__rate_interval]) OR # Teku\non() vector(0)) * 45",
@@ -728,10 +628,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "(sum(rate(vc_signed_attestations_total{job=\"validator\", status=\"success\"}[$__rate_interval])) OR # Lighthouse\nsum(rate(vc_published_attestations_total{job=\"validator\"}[$__rate_interval])) OR # Lodestar\nsum(rate(beacon_attestations_sent_total{job=\"validator\"}[$__rate_interval])) OR # Nimbus\nsum(rate(validator_successful_attestations{job=\"validator\"}[$__rate_interval])) OR # Prysm\nrate(validator_duties_performed{job=\"validator\", type=\"attestation\", result=\"success\"}[$__rate_interval]) OR # Teku\non() vector(0)) * 45",
@@ -746,10 +642,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The CPU usage of your Execution Client and Beacon Node + Validator Client pair, as well as your system total (with respect to all cores on your CPU).",
       "fieldConfig": {
         "defaults": {
@@ -837,13 +729,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "(system_cpu_procload{job=\"geth\"} / scalar(count without(cpu, mode) (node_cpu_seconds_total{mode=\"idle\"}))) OR # Geth\nirate(process_cpu_seconds_total{job=\"eth1\"}[$__rate_interval]) * 100 / scalar(count without(cpu, mode) (node_cpu_seconds_total{mode=\"idle\"})) OR # Besu, Nethermind\nirate(reth_process_cpu_seconds_total{job=\"eth1\"}[$__rate_interval]) * 100 / scalar(count without(cpu, mode) (node_cpu_seconds_total{mode=\"idle\"})) # Reth",
           "hide": false,
@@ -852,10 +740,6 @@
           "refId": "C"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "(sum(avg (irate(process_cpu_seconds_total{job=\"eth2\"}[$__rate_interval]))) + (sum(avg (irate(process_cpu_seconds_total{job=\"validator\"}[$__rate_interval]))) or vector(0))) * 100 / (count (node_cpu_seconds_total{job=\"node\", mode=\"idle\"}))",
@@ -865,10 +749,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "(1 - avg (irate(node_cpu_seconds_total{job=\"node\", mode=\"idle\"}[$__rate_interval]))) * 100",
           "hide": false,
@@ -881,10 +761,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The amount of RAM that your Execution Client, Beacon Node and Validator Client combo, and your whole system are using.",
       "fieldConfig": {
         "defaults": {
@@ -970,13 +846,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "system_memory_used{job=\"geth\"} OR # Geth\nprocess_resident_memory_bytes{job=\"eth1\"} OR # Besu\nprocess_working_set_bytes{job=\"eth1\"} OR # Nethermind\nreth_process_resident_memory_bytes{job=\"eth1\"} # Reth",
@@ -986,10 +858,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "sum(process_resident_memory_bytes{job=\"eth2\"}) + (sum(process_resident_memory_bytes{job=\"validator\"}) or vector(0))",
           "hide": false,
@@ -998,10 +866,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "node_memory_MemTotal_bytes{job=\"node\"} - node_memory_MemAvailable_bytes{job=\"node\"}",
           "hide": false,
@@ -1014,10 +878,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The number of block proposals you have coming up in the next few minutes. If you were planning on taking your node down for maintenance, you should wait until after the proposals because they're worth a lot of ETH!",
       "fieldConfig": {
         "defaults": {
@@ -1062,13 +922,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_beacon_upcoming_proposals",
           "interval": "",
@@ -1080,10 +936,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The number of [sync committees](https://github.com/ethereum/annotated-spec/blob/master/altair/sync-protocol.md#introduction) that you're about to be a part of, and that you're currently a part of.\n\nIf you were planning on doing maintenance to your node, **you should wait until the sync committee is over**. Not only are they worth an **extremely** large amount of ETH, but if you miss attestations during a sync committee, you **lose an extremely large amount of ETH** instead!\n\nYou should be online as long as possible while you are in a sync committee.",
       "fieldConfig": {
         "defaults": {
@@ -1128,13 +980,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_beacon_upcoming_sync_committee",
           "interval": "",
@@ -1142,10 +990,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_beacon_active_sync_committee",
           "hide": false,
@@ -1158,10 +1002,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "This chart shows the overall performance of your total attestations on the Beacon Chain, broken down by the individual attestation components - correct head, correct source, and correct target. If any of these are below 100%, you lost some rewards for submitting a late, partially incorrect, or fully incorrect attestation. For a detailed explanation of each component, take a look at Ben Edgington's explainer: https://eth2book.info/bellatrix/annotated-spec/\n\nThis is updated once per epoch, once your Beacon Node can see how well your node did during the previous epoch.\n\nNOTE: **Lighthouse** and **Teku** currently do not provide source correctness information, only head and target.",
       "fieldConfig": {
         "defaults": {
@@ -1237,10 +1077,6 @@
       "pluginVersion": "9.3.6",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "(irate(validator_monitor_prev_epoch_on_chain_target_attester_hit{job=\"eth2\", validator=\"total\"}[$__rate_interval]) / (irate(validator_monitor_prev_epoch_on_chain_target_attester_hit{job=\"eth2\", validator=\"total\"}[$__rate_interval]) + irate(validator_monitor_prev_epoch_on_chain_target_attester_miss{job=\"eth2\", validator=\"total\"}[$__rate_interval]))) OR # Lighthouse\n(irate(validator_monitor_prev_epoch_on_chain_target_attester_hit_total{job=\"eth2\"}[$__rate_interval]) / (irate(validator_monitor_prev_epoch_on_chain_target_attester_hit_total{job=\"eth2\"}[$__rate_interval]) + irate(validator_monitor_prev_epoch_on_chain_target_attester_miss_total{job=\"eth2\"}[$__rate_interval]))) OR # Nimbus and Lodestar\n(sum(validator_correctly_voted_target{job=\"validator\"}) / count(validator_correctly_voted_target{job=\"validator\"})) OR # Prysm\n(validator_performance_correct_target_count{job=\"eth2\"} / validator_performance_expected_attestations{job=\"eth2\"}) # Teku",
           "hide": false,
@@ -1249,10 +1085,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "irate(validator_monitor_prev_epoch_on_chain_source_attester_hit_total{job=\"eth2\"}[$__rate_interval]) / (irate(validator_monitor_prev_epoch_on_chain_source_attester_hit_total{job=\"eth2\"}[$__rate_interval]) + irate(validator_monitor_prev_epoch_on_chain_source_attester_miss_total{job=\"eth2\"}[$__rate_interval])) OR # Nimbus and Lodestar\n(sum(validator_correctly_voted_source{job=\"validator\"}) / count(validator_correctly_voted_source{job=\"validator\"})) # Prysm",
           "hide": false,
@@ -1261,10 +1093,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "irate(validator_monitor_prev_epoch_on_chain_head_attester_hit{job=\"eth2\", validator=\"total\"}[$__rate_interval]) / (irate(validator_monitor_prev_epoch_on_chain_head_attester_hit{job=\"eth2\", validator=\"total\"}[$__rate_interval]) + irate(validator_monitor_prev_epoch_on_chain_head_attester_miss{job=\"eth2\", validator=\"total\"}[$__rate_interval])) OR # Lighthouse\nirate(validator_monitor_prev_epoch_on_chain_head_attester_hit_total{job=\"eth2\"}[$__rate_interval]) / (irate(validator_monitor_prev_epoch_on_chain_head_attester_hit_total{job=\"eth2\"}[$__rate_interval]) + irate(validator_monitor_prev_epoch_on_chain_head_attester_miss_total{job=\"eth2\"}[$__rate_interval])) OR # Nimbus and Lodestar\n(sum(validator_correctly_voted_head{job=\"validator\"}) / count(validator_correctly_voted_head{job=\"validator\"})) OR # Prysm\n(validator_performance_correct_head_block_count{job=\"eth2\"} / validator_performance_expected_attestations{job=\"eth2\"}) # Teku",
           "hide": false,
@@ -1278,10 +1106,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "Tracks the amount of CPU consumption for the Execution Client, the Beacon Node, and the total system. 100% means all of your CPU core are being used at their full capacity. The orange line indicates how much CPU a single core can provide in your system.\n\n**Note:** The EC's usage is stacked *on top of* the BN+VC, so it shows the aggregated amount of EC + BN + VC.",
       "fieldConfig": {
         "defaults": {
@@ -1422,10 +1246,6 @@
       "pluginVersion": "8.1.1",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "(1 - avg by (instance) (irate(node_cpu_seconds_total{job=\"node\", mode=\"idle\"}[$__rate_interval]))) * 100",
@@ -1436,10 +1256,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "(sum(avg (irate(process_cpu_seconds_total{job=\"eth2\"}[$__rate_interval]))) + (sum(avg (irate(process_cpu_seconds_total{job=\"validator\"}[$__rate_interval]))) or vector(0))) * 100 / (count (node_cpu_seconds_total{job=\"node\", mode=\"idle\"}))",
@@ -1449,10 +1265,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "(system_cpu_procload{job=\"geth\"} / scalar(count without(cpu, mode) (node_cpu_seconds_total{mode=\"idle\"}))) OR # Geth\nirate(process_cpu_seconds_total{job=\"eth1\"}[$__rate_interval]) * 100 / scalar(count without(cpu, mode) (node_cpu_seconds_total{mode=\"idle\"})) OR # Besu, Nethermind\nirate(reth_process_cpu_seconds_total{job=\"eth1\"}[$__rate_interval]) * 100 / scalar(count without(cpu, mode) (node_cpu_seconds_total{mode=\"idle\"})) # Reth",
           "hide": false,
@@ -1461,10 +1273,6 @@
           "refId": "D"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "100 / (count (node_cpu_seconds_total{job=\"node\", mode=\"idle\"}))",
@@ -1480,10 +1288,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "Tracks the total amount of RAM usage by the eth2 client and the entire system, versus how much is available.\n\n**Note:** The EC's usage is stacked *on top of* the BN+VC, so it shows the aggregated amount of EC + BN + VC.",
       "fieldConfig": {
         "defaults": {
@@ -1649,10 +1453,6 @@
       "pluginVersion": "8.1.1",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "node_memory_MemTotal_bytes{job=\"node\"} - node_memory_MemAvailable_bytes{job=\"node\"}",
@@ -1662,10 +1462,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "sum(process_resident_memory_bytes{job=\"eth2\"}) + (sum(process_resident_memory_bytes{job=\"validator\"}) or vector(0))",
@@ -1676,10 +1472,6 @@
           "refId": "C"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "system_memory_used{job=\"geth\"} OR # Geth\nprocess_resident_memory_bytes{job=\"eth1\"} OR # Besu\nprocess_working_set_bytes{job=\"eth1\"} OR # Nethermind\nreth_process_resident_memory_bytes{job=\"eth1\"} # Reth",
           "hide": false,
@@ -1688,10 +1480,6 @@
           "refId": "D"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "node_memory_MemTotal_bytes{job=\"node\"}",
@@ -1706,10 +1494,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "This tells you when your next attestation duty will arrive. Use it to find an optimal time to take your clients down for maintenance so you're back up and running before it hits.\n\n- NOTE: **Lodestar** and **Teku** do not provide this information.",
       "fieldConfig": {
         "defaults": {
@@ -1774,13 +1558,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "((min(vc_attestation_duty_slot{job=\"validator\"}) - scalar(beacon_head_slot{job=\"eth2\"})) * 12) OR # Lighthouse\nmax(next_action_wait{job=\"eth2\"} OR # Nimbus\n(min((validator_next_attestation_slot{job=\"validator\"} - scalar(beacon_slot{job=\"eth2\"})) > 0 - 1) * 12) OR # Prysm\non() vector(0))",
@@ -1794,10 +1574,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "How many minipools you currently have running on your node.",
       "fieldConfig": {
         "defaults": {
@@ -1838,13 +1614,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_node_active_minipool_count",
           "interval": "",
@@ -1856,10 +1628,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "gridPos": {
         "h": 1,
         "w": 9,
@@ -1876,25 +1644,12 @@
         "content": "",
         "mode": "markdown"
       },
-      "pluginVersion": "9.4.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "9.5.18",
       "title": "Connectivity",
       "transparent": true,
       "type": "text"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "How many peers your EC is currently connected to.",
       "fieldConfig": {
         "defaults": {
@@ -1957,13 +1712,9 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "p2p_peers{job=\"geth\"} OR # Geth\nethereum_peer_count{job=\"eth1\"} OR # Nethermind, Besu\nreth_network_connected_peers{job=\"eth1\"} # Reth",
@@ -1977,10 +1728,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "How many peers your Beacon Node is currently connected to on the Beacon Chain.",
       "fieldConfig": {
         "defaults": {
@@ -2043,13 +1790,9 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nbeacon_peer_count{job=\"eth2\"} # Teku",
@@ -2063,10 +1806,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "How many peers Execution Client and Beacon Node are currently connected to for blockchain traffic.",
       "fieldConfig": {
         "defaults": {
@@ -2141,10 +1880,6 @@
       "pluginVersion": "8.1.1",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nbeacon_peer_count{job=\"eth2\"} # Teku",
@@ -2154,10 +1889,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "p2p_peers{job=\"geth\"} OR # Geth\nethereum_peer_count{job=\"eth1\"} OR # Nethermind, Besu\nreth_network_connected_peers{job=\"eth1\"} # Reth",
           "hide": false,
@@ -2170,10 +1901,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "This tracks how long it takes between one of your processes trying to read from / write to your SSD, and when that operation is actually performed. Think of this like \"how long SSD reads and writes have to wait in a queue before completing\". The longer this time, the longer it takes for your node to perform its Beacon Chain duties.",
       "fieldConfig": {
         "defaults": {
@@ -2246,10 +1973,6 @@
       "pluginVersion": "8.1.1",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "irate(node_pressure_io_waiting_seconds_total{job=\"node\"}[$__rate_interval])",
           "interval": "",
@@ -2261,10 +1984,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The disk space used by your primary (Operating System) hard drive. Change the `device` option in this query to be your machine's hard drive.\n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
@@ -2315,13 +2034,9 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "(node_filesystem_size_bytes{job=\"node\", mountpoint=\"/\"} - node_filesystem_avail_bytes{job=\"node\", mountpoint=\"/\"}) / node_filesystem_size_bytes{job=\"node\", mountpoint=\"/\"}",
@@ -2331,10 +2046,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "(node_filesystem_size_bytes{job=\"node\", device=\"\"} - node_filesystem_avail_bytes{job=\"node\", device=\"\"}) / node_filesystem_size_bytes{job=\"node\", device=\"\"}",
@@ -2349,10 +2060,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The temperature of your SSD.\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
@@ -2403,13 +2110,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "node_hwmon_temp_celsius{job=\"node\", chip=\"\", sensor=\"\"}",
@@ -2420,10 +2123,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "node_hwmon_temp_celsius{job=\"node\", chip=\"\", sensor=\"\"}",
@@ -2438,10 +2137,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "",
       "gridPos": {
         "h": 1,
@@ -2459,24 +2154,11 @@
         "content": "",
         "mode": "markdown"
       },
-      "pluginVersion": "9.4.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "9.5.18",
       "transparent": true,
       "type": "text"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "gridPos": {
         "h": 1,
         "w": 9,
@@ -2493,25 +2175,12 @@
         "content": "",
         "mode": "markdown"
       },
-      "pluginVersion": "9.4.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "9.5.18",
       "title": "Beacon Chain Rewards (Updates Every 5 Minutes)",
       "transparent": true,
       "type": "text"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The average read/write latency of your SSD. The lower it is, the faster your machine can process and respond to Beacon Chain activities like attesting. Change the `device` setting in the queries to be the SSD you want to track (typically the one with your chain data on it).\n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
@@ -2584,10 +2253,6 @@
       "pluginVersion": "8.1.1",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "irate(node_disk_write_time_seconds_total{job=\"node\", device=\"\"}[$__rate_interval]) / irate(node_disk_writes_completed_total{job=\"node\", device=\"\"}[$__rate_interval])",
@@ -2598,10 +2263,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "irate(node_disk_read_time_seconds_total{job=\"node\", device=\"\"}[$__rate_interval]) / irate(node_disk_reads_completed_total{job=\"node\", device=\"\"}[$__rate_interval])",
@@ -2611,10 +2272,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "irate(node_disk_write_time_seconds_total{job=\"node\", device=\"\"}[$__rate_interval]) / irate(node_disk_writes_completed_total{job=\"node\", device=\"\"}[$__rate_interval])",
@@ -2625,10 +2282,6 @@
           "refId": "C"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "irate(node_disk_read_time_seconds_total{job=\"node\", device=\"\"}[$__rate_interval]) / irate(node_disk_reads_completed_total{job=\"node\", device=\"\"}[$__rate_interval])",
@@ -2643,10 +2296,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "A chart showing the network I/O used by your main network adapter over time. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
@@ -2719,10 +2368,6 @@
       "pluginVersion": "8.1.1",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "irate(node_network_transmit_bytes_total{job=\"node\", device=\"\"}[$__rate_interval])",
@@ -2733,10 +2378,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "irate(node_network_receive_bytes_total{job=\"node\", device=\"\"}[$__rate_interval])",
@@ -2750,10 +2391,6 @@
       "type": "timeseries"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The total network I/O that has gone through your main network adapter. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
@@ -2796,13 +2433,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "node_network_transmit_bytes_total{job=\"node\", device=\"\"}",
@@ -2813,10 +2446,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "node_network_receive_bytes_total{job=\"node\", device=\"\"}",
@@ -2830,10 +2459,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The total ETH balance of all of your Rocket Pool validators on the Beacon Chain. This includes both ETH belonging to you and ETH belonging to the pool stakers you used to make your minipools.",
       "fieldConfig": {
         "defaults": {
@@ -2877,13 +2502,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_node_beacon_balance{job=\"rocketpool\"}",
           "interval": "",
@@ -2895,10 +2516,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "This is how much ETH is currently available for distribution in all of your minipool contracts (on the execution layer). Note that if any of them have a refund, this shows the total balance **minus** that refund amount - in other words, it shows whatever's left over after your refund.",
       "fieldConfig": {
         "defaults": {
@@ -2942,13 +2559,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_node_minipool_balance{job=\"rocketpool\"}",
@@ -2962,10 +2575,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "A collection of other ETH rewards you can claim (or have claimed).\n\n- **Unclaimed ETH (SP)**: ETH you've earned from the Smoothing Pool that you haven't claimed yet.\n- **Claimed ETH (SP)**: ETH from the Smoothing Pool you've already claimed in the past.\n- **Total Refund**: ETH that belongs to you from special operations like bond reduction or solo staker migration. When you claim this, it goes directly to you - it isn't split with the pool stakers.",
       "fieldConfig": {
         "defaults": {
@@ -3029,13 +2638,9 @@
         "text": {},
         "textMode": "value_and_name"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "rocketpool_node_unclaimed_eth_rewards{job=\"rocketpool\"}",
           "hide": false,
@@ -3044,10 +2649,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_node_claimed_eth_rewards{job=\"rocketpool\"}",
@@ -3057,10 +2658,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "rocketpool_node_refund_balance{job=\"rocketpool\"}",
           "hide": false,
@@ -3073,10 +2670,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "This is how much ETH you will receive if you exit all of your validators on the Beacon Chain; it's your share of the total balance for each Rocket Pool minipool.",
       "fieldConfig": {
         "defaults": {
@@ -3120,13 +2713,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_node_beacon_share{job=\"rocketpool\"}",
@@ -3140,10 +2729,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The total amount of ETH that belongs to you across the EL balances of all of your minipool contracts (minus any refunds you may have waiting).",
       "fieldConfig": {
         "defaults": {
@@ -3188,13 +2773,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_node_minipool_share{job=\"rocketpool\"}",
@@ -3209,10 +2790,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "",
       "gridPos": {
         "h": 1,
@@ -3230,25 +2807,12 @@
         "content": "",
         "mode": "markdown"
       },
-      "pluginVersion": "9.4.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "9.5.18",
       "title": "Rocket Pool Network Stats (Updates Every 5 Minutes)",
       "transparent": true,
       "type": "text"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The total amount of ETH locked on the Rocket Pool network, including staked RPL (but not including Beacon Chain rewards).",
       "fieldConfig": {
         "defaults": {
@@ -3292,13 +2856,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_demand_deposit_pool_balance{job=\"rocketpool\"} + rocketpool_demand_total_minipool_capacity{job=\"rocketpool\"} + rocketpool_supply_active_minipools{job=\"rocketpool\"} * 32 + rocketpool_rpl_total_value_staked{job=\"rocketpool\"} * rocketpool_rpl_rpl_price{job=\"rocketpool\"}",
           "interval": "",
@@ -3310,10 +2870,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The total amount of RPL staked across all node operators in the Rocket Pool network.",
       "fieldConfig": {
         "defaults": {
@@ -3357,13 +2913,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_rpl_total_value_staked{job=\"rocketpool\"}",
           "interval": "",
@@ -3375,10 +2927,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The total *effective* RPL stake across all node operators on the Rocket Pool network. This accounts for the 150% collateral cap per minipool. If this number is lower than the Total RPL Staked, then some node operators have gone above 150%.",
       "fieldConfig": {
         "defaults": {
@@ -3422,13 +2970,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_rpl_total_effective_staked{job=\"rocketpool\"}",
           "interval": "",
@@ -3440,10 +2984,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The current balance of the Smoothing Pool. This is what will get distributed to each node operator opted into the Smoothing Pool at the end of each rewards interval.",
       "fieldConfig": {
         "defaults": {
@@ -3487,13 +3027,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_smoothing_pool_eth_balance",
@@ -3507,10 +3043,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "gridPos": {
         "h": 1,
         "w": 9,
@@ -3527,25 +3059,12 @@
         "content": "",
         "mode": "markdown"
       },
-      "pluginVersion": "9.4.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "9.5.18",
       "title": "RPL Rewards (Updates Every 5 Minutes)",
       "transparent": true,
       "type": "text"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The time of the next RPL rewards checkpoint. If you have an effective RPL stake greater than zero, you should receive rewards here (unless it's your first checkpoint, in which case you'll need to wait a bit longer).",
       "fieldConfig": {
         "defaults": {
@@ -3588,13 +3107,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_rpl_checkpoint_time{job=\"rocketpool\"}",
           "interval": "",
@@ -3606,10 +3121,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "This tracks how long you have until the next RPL rewards checkpoint.",
       "fieldConfig": {
         "defaults": {
@@ -3652,13 +3163,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_rpl_checkpoint_time{job=\"rocketpool\"}",
           "interval": "",
@@ -3670,10 +3177,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The amount of ETH that 1 rETH is worth.",
       "fieldConfig": {
         "defaults": {
@@ -3716,13 +3219,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_performance_eth_reth_exchange_rate{job=\"rocketpool\"}",
           "interval": "",
@@ -3734,10 +3233,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The amount of ETH that 1 RPL is worth, as reported by the Oracle DAO. This updates somewhat infrequently, so it's expected if it falls out of sync with other price watchers.",
       "fieldConfig": {
         "defaults": {
@@ -3780,13 +3275,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_rpl_rpl_price{job=\"rocketpool\"}",
           "interval": "",
@@ -3798,10 +3289,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The amount of ETH currently in the staking pool, waiting to be used by node operators to create new minipools.",
       "fieldConfig": {
         "defaults": {
@@ -3847,13 +3334,9 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_demand_deposit_pool_balance{job=\"rocketpool\"}",
           "interval": "",
@@ -3865,10 +3348,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The number of minipools that are currently in the queue, waiting for ETH to be assigned to them from the staking pool.",
       "fieldConfig": {
         "defaults": {
@@ -3910,13 +3389,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_demand_queue_length{job=\"rocketpool\"}",
@@ -3930,10 +3405,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "This shows various levels of RPL stake you have:\n\n- **Total**: the total amount of RPL you have staked.\n- **Effective**: the amount of your staked RPL that is being put to use, accounting for the 10% borrowed minimum and 150% bonded maximum limits.\n- **Rewardable**: the effective amount of RPL that is eligible for earning RPL rewards at the end of each rewards period. This is based on the status of your validators on the Beacon Chain; validators that haven't been activated yet or validators that have been exited are not eligible for rewards.\n\n**Note**: this takes any *pending bond reductions* you may have into account.",
       "fieldConfig": {
         "defaults": {
@@ -3977,13 +3448,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_node_total_staked_rpl{job=\"rocketpool\"}",
@@ -3993,10 +3460,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "rocketpool_node_effective_staked_rpl{job=\"rocketpool\"}",
           "hide": false,
@@ -4005,10 +3468,6 @@
           "refId": "B"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "rocketpool_node_rewardable_staked_rpl{job=\"rocketpool\"}",
           "hide": false,
@@ -4021,10 +3480,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "Your total staked RPL collateral levels. This shows your collateral relative to the amount of ETH you have *borrowed* from the staking pool to complete your validators, and the amount of ETH you have *bonded* with your own funds.\n\nIf you fall below 10% of the *borrowed* ETH, you won't be able to claim your rewards at the next checkpoint until you get back to 10%.\n\nIf you go over 150% of the *bonded* ETH, you'll only be rewarded for the first 150% of your stake.",
       "fieldConfig": {
         "defaults": {
@@ -4076,13 +3531,9 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_node_borrowed_collateral_ratio{job=\"rocketpool\"}",
@@ -4092,10 +3543,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "rocketpool_node_bonded_collateral_ratio{job=\"rocketpool\"}",
           "hide": false,
@@ -4108,10 +3555,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The total number of nodes that have registered on the Rocket Pool network.",
       "fieldConfig": {
         "defaults": {
@@ -4153,13 +3596,9 @@
         "text": {},
         "textMode": "value"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_supply_node_count{job=\"rocketpool\"}",
           "interval": "",
@@ -4171,10 +3610,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "A breakdown of the counts of each minipool on the Rocket Pool network by status:\n\n- **Initialized**: waiting for a deposit still\n- **Prelaunch:** deposits are done, waiting to be staked by the node operator's `rocketpool_node` container \n- **Staking:** deposited, validator created, and active (or pending) on the Beacon Chain\n- **Dissolved:** staking failed, funds returned to the node operator and staking pool\n- **Withdrawable:** exited from the Beacon Chain, waiting for rewards to be withdrawn to the minipool\n- **Finalized:** exited, withdrawn from, and essentially closed (inactive)",
       "fieldConfig": {
         "defaults": {
@@ -4314,10 +3749,6 @@
       },
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_supply_minipool_count{job=\"rocketpool\"}",
           "format": "time_series",
@@ -4331,10 +3762,6 @@
       "type": "piechart"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The relative amount of ETH that was deposited into the staking pool by rETH stakers, which was then used by node operators to create new minipools with validators on the Beacon Chain. The closer this number is to 100%, the more efficiently the Rocket Pool network is operating and the faster rETH's price grows.",
       "fieldConfig": {
         "defaults": {
@@ -4397,13 +3824,9 @@
         "showThresholdMarkers": true,
         "text": {}
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_performance_eth_utilization_rate{job=\"rocketpool\"}",
           "interval": "",
@@ -4415,10 +3838,6 @@
       "type": "gauge"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The total amount of ETH needed to be added to the staking pool in order to clear the minipool queue completely.",
       "fieldConfig": {
         "defaults": {
@@ -4464,13 +3883,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_demand_total_minipool_capacity",
@@ -4484,10 +3899,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The total number of Rocket Pool minipools (validators) that are active (not exited and withdrawn from the Beacon Chain).",
       "fieldConfig": {
         "defaults": {
@@ -4529,13 +3940,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_supply_active_minipools{job=\"rocketpool\"}",
           "interval": "",
@@ -4547,10 +3954,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The approximate amount of RPL you'll receive at the next checkpoint, based on your current rewardable stake and how much RPL is staked on the entire network.",
       "fieldConfig": {
         "defaults": {
@@ -4594,13 +3997,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_node_expected_rpl_rewards{job=\"rocketpool\"}",
           "interval": "",
@@ -4612,10 +4011,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The amount of RPL you've claimed over the life of your node, and the amount you still have yet to claim.",
       "fieldConfig": {
         "defaults": {
@@ -4692,13 +4087,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_node_unclaimed_rewards{job=\"rocketpool\"}",
@@ -4708,10 +4099,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "expr": "rocketpool_node_cumulative_rpl_rewards{job=\"rocketpool\"}",
           "hide": false,
@@ -4724,10 +4111,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "",
       "gridPos": {
         "h": 1,
@@ -4745,25 +4128,12 @@
         "content": "",
         "mode": "markdown"
       },
-      "pluginVersion": "9.4.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "9.5.18",
       "title": "Governance (Updates Every 6 Hours)",
       "transparent": true,
       "type": "text"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The number of active proposals you or your delegate have voted on.",
       "fieldConfig": {
         "defaults": {
@@ -4833,13 +4203,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_snapshot_votes_active",
@@ -4849,10 +4215,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_snapshot_proposals_active - rocketpool_snapshot_votes_active",
@@ -4867,10 +4229,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "Shows the number of closed votes you or your delegate has voted or missed.",
       "fieldConfig": {
         "defaults": {
@@ -4911,13 +4269,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_snapshot_votes_closed",
@@ -4927,10 +4281,6 @@
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_snapshot_proposals_closed - rocketpool_snapshot_votes_closed",
@@ -4945,10 +4295,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The node voting power on Snapshot.",
       "fieldConfig": {
         "defaults": {
@@ -4989,13 +4335,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_snapshot_node_vp ",
@@ -5009,10 +4351,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The voting power of the delegate you have chosen.",
       "fieldConfig": {
         "defaults": {
@@ -5053,13 +4391,9 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_snapshot_delegate_vp ",
@@ -5073,10 +4407,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The approximate APR for your RPL stake, based on the rewards you will receive at the next checkpoint.",
       "fieldConfig": {
         "defaults": {
@@ -5120,13 +4450,9 @@
         "text": {},
         "textMode": "auto"
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": true,
           "expr": "rocketpool_node_rpl_apr{job=\"rocketpool\"}",
           "interval": "",
@@ -5138,10 +4464,6 @@
       "type": "stat"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "",
       "gridPos": {
         "h": 1,
@@ -5159,24 +4481,11 @@
         "content": "",
         "mode": "markdown"
       },
-      "pluginVersion": "9.4.10",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
-          "refId": "A"
-        }
-      ],
+      "pluginVersion": "9.5.18",
       "transparent": true,
       "type": "text"
     },
     {
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${DS_PROMETHEUS}"
-      },
       "description": "The balances of your node wallet (only tracks Rocket Pool tokens). Keep an eye on how much ETH you have; if it falls too low, your node won't be able to pay for gas during automatic RPL reward claims or other transactions.",
       "fieldConfig": {
         "defaults": {
@@ -5224,13 +4533,9 @@
         "showHeader": true,
         "sortBy": []
       },
-      "pluginVersion": "9.4.10",
+      "pluginVersion": "9.5.18",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${DS_PROMETHEUS}"
-          },
           "exemplar": false,
           "expr": "rocketpool_node_balance{job=\"rocketpool\"}",
           "format": "table",
@@ -5289,7 +4594,7 @@
     ]
   },
   "timezone": "",
-  "title": "Rocket Pool Dashboard v1.3.2",
+  "title": "Rocket Pool Dashboard v1.3.2 - Provisioned",
   "uid": "Ur22GG77z132",
   "version": 20,
   "weekStart": ""
