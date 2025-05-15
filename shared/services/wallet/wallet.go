@@ -476,12 +476,6 @@ func (w *hdWallet) loadStore() (bool, error) {
 		return false, fmt.Errorf("Could not create wallet master key: %w", err)
 	}
 
-	// Load the node address
-	_, err = w.am.LoadAddress()
-	if err != nil {
-		return false, fmt.Errorf("Could not load node address: %w", err)
-	}
-
 	// Return
 	return true, nil
 
