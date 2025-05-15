@@ -6,7 +6,7 @@ if [ "$NETWORK" = "testnet" ]; then
     echo "Prysm is configured to use Hoodi, genesis state required."
     if [ ! -f "/ethclient/hoodi-genesis.ssz" ]; then
         echo "Downloading from Github..."
-        wget https://github.com/eth-clients/hoodi/blob/main/metadata/genesis.ssz -O /ethclient/hoodi-genesis.ssz
+        wget https://github.com/eth-clients/hoodi/raw/refs/heads/main/metadata/genesis.ssz -O /ethclient/hoodi-genesis.ssz
         echo "Download complete."
     else
         echo "Genesis state already downloaded, continuing."
@@ -15,7 +15,7 @@ elif [ "$NETWORK" = "devnet" ]; then
     echo "Prysm is configured to use Hoodi, genesis state required."
     if [ ! -f "/ethclient/hoodi-genesis.ssz" ]; then
         echo "Downloading from Github..."
-        wget https://github.com/eth-clients/hoodi/blob/main/metadata/genesis.ssz -O /ethclient/hoodi-genesis.ssz
+        wget https://github.com/eth-clients/hoodi/raw/refs/heads/main/metadata/genesis.ssz -O /ethclient/hoodi-genesis.ssz
         echo "Download complete."
     else
         echo "Genesis state already downloaded, continuing."
