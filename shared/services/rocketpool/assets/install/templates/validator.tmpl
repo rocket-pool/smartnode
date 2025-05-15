@@ -7,18 +7,7 @@
 
 services:
   validator:
-    {{- if eq .ConsensusClient.String "prysm"}}
-    image: localhost/{{.GetVCContainerTag}}
-    pull_policy: never
-    build:
-      dockerfile_inline: |
-        FROM {{.GetVCContainerTag}} as upstream
-        FROM debian:bookworm-slim
-        RUN apt update && apt install -y wget ca-certificates && rm -rf /var/lib/apt/lists/*
-        COPY --from=upstream /app/cmd/validator/validator /app/cmd/validator/validator
-    {{- else}}
     image: {{.GetVCContainerTag}}
-    {{- end}}
     user: root
     container_name: {{.Smartnode.ProjectName}}_validator
     restart: unless-stopped
@@ -56,7 +45,11 @@ services:
       {{- if eq .ConsensusClient.String "teku"}}
       - TEKU_USE_SLASHING_PROTECTION={{.Teku.UseSlashingProtection}}
       {{- end}}
+    {{- if eq .ConsensusClient.String "prysm"}}
+    entrypoint: bash
+    {{- else}}
     entrypoint: sh
+    {{- end}}
     command: "/setup/start-vc.sh"
     cap_drop:
       - all

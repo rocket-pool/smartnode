@@ -168,12 +168,6 @@ if [ "$CC_CLIENT" = "prysm" ]; then
     # Make the Prysm dir
     mkdir -p /validators/prysm-non-hd/
 
-    # Get rid of the protocol prefix
-    CC_RPC_ENDPOINT=$(echo $CC_RPC_ENDPOINT | sed -E 's/.*\:\/\/(.*)/\1/')
-    if [ ! -z "$FALLBACK_CC_RPC_ENDPOINT" ]; then
-        FALLBACK_CC_RPC_ENDPOINT=$(echo $FALLBACK_CC_RPC_ENDPOINT | sed -E 's/.*\:\/\/(.*)/\1/')
-    fi
-
     # Set up the CC + fallback string
     CC_URL_STRING=$CC_RPC_ENDPOINT
     if [ ! -z "$FALLBACK_CC_RPC_ENDPOINT" ]; then
