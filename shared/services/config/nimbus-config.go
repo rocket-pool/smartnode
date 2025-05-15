@@ -45,6 +45,9 @@ type NimbusConfig struct {
 	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
+// Type assertion for NimbusConfig
+var _ config.ConsensusConfig = &NimbusConfig{}
+
 // Generates a new Nimbus configuration
 func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 	return &NimbusConfig{

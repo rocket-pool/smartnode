@@ -33,6 +33,9 @@ type LighthouseConfig struct {
 	P2pQuicPort config.Parameter `yaml:"p2pQuicPort,omitempty"`
 }
 
+// Type assertion for LighthouseConfig
+var _ config.ConsensusConfig = &LighthouseConfig{}
+
 // Generates a new Lighthouse configuration
 func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 	return &LighthouseConfig{
