@@ -63,15 +63,19 @@ docker:
 	docker manifest create rocketpool/smartnode:${VERSION} --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
 	docker manifest create rocketpool/smartnode:latest --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
 
-.PHONY: clean
-clean:
-	rm -rf ${BUILD_DIR} 
-
+define lint-template 
+.PHONY: lint-$1
+lint-$1:
+	docker run --rm -v .:/go/smartnode --workdir /go/smartnode/$1 golangci/golangci-lint:v2.1-alpine golangci-lint fmt --diff
+endef
+$(foreach module,$(MODULES),$(eval $(call lint-template,$(module))))
 .PHONY: lint
-lint:
-	@echo $(MODULE_GLOBS)
-	docker run --rm -v .:/go/smartnode --workdir /go/smartnode golangci/golangci-lint:v2.1-alpine golangci-lint fmt --enable goimports $(MODULE_GLOBS)
+lint: $(foreach module,$(MODULES),lint-$(module))
 
 .PHONY: test
 test:
 	go test -test.timeout 20m $(MODULE_GLOBS)
+
+.PHONY: clean
+clean:
+	rm -rf ${BUILD_DIR}

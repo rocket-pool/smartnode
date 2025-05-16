@@ -28,11 +28,17 @@ See the [Smartnode Installer](https://github.com/rocket-pool/smartnode-install) 
 
 A [Makefile](./Makefile) is included for building, testing, and linting.
 
-* `make all` will build rocketpool-cli, rocketpool-daemon, and run the linter.
-* `make rocketpool-daemon` will build the docker containers required to build the daemon, then build the daemon.
-* `make rocketpool-cli` will build the cli for linux and osx.
+* `make` or `make all` will build rocketpool-cli, rocketpool-daemon, and run the linter.
+  * build/rocketpool-cli and build/rocketpool-daemon will be symlinked to the version and architecture specific binaries in build/
+* `make release` will build all architecture specific binaries as well as docker images and manifests
+  * It will tag docker images as latest as well as the version in `shared/version.txt`
+  * It will put cli and native mode binaries in build/\<version\>
+* `make build/rocketpool-cli` builds just the cli
+* `make build/rocketpool-daemon` builds just the daemon
+* `make docker` builds the rocketpool/smartnode container and tags it with latest as well as the version from `shared/version.txt`
+* `make lint` runs the linter.
 * `make test` runs all unit tests.
-* `make clean` deletes any binaries. It does not clear your go caches.
+* `make clean` deletes any binaries. It does not clear your go caches. It does not clean up old docker images.
 
 ## CLI Commands
 
