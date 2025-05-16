@@ -406,7 +406,7 @@ func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *cfgt
 func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName string) error {
 
 	// Stop all of the containers
-	fmt.Print("Stopping containers... ")
+	fmt.Println("Stopping containers... ")
 	err := rp.PauseService(getComposeFiles(c))
 	if err != nil {
 		return fmt.Errorf("error stopping service: %w", err)
@@ -414,7 +414,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Println("done")
 
 	// Restart the API container
-	fmt.Print("Starting API container... ")
+	fmt.Println("Starting API container... ")
 	output, err := rp.StartContainer(apiContainerName)
 	if err != nil {
 		return fmt.Errorf("error starting API container: %w", err)
@@ -425,7 +425,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Println("done")
 
 	// Get the path of the user's data folder
-	fmt.Print("Retrieving data folder path... ")
+	fmt.Println("Retrieving data folder path... ")
 	volumePath, err := rp.GetClientVolumeSource(apiContainerName, dataFolderVolumeName)
 	if err != nil {
 		return fmt.Errorf("error getting data folder path: %w", err)
@@ -433,7 +433,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Printf("done, data folder = %s\n", volumePath)
 
 	// Delete the data folder
-	fmt.Print("Removing data folder... ")
+	fmt.Println("Removing data folder... ")
 	_, err = rp.TerminateDataFolder()
 	if err != nil {
 		return err
@@ -441,7 +441,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Println("done")
 
 	// Terminate the current setup
-	fmt.Print("Removing old installation... ")
+	fmt.Println("Removing old installation... ")
 	err = rp.StopService(getComposeFiles(c))
 	if err != nil {
 		return fmt.Errorf("error terminating old installation: %w", err)
@@ -449,14 +449,14 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Println("done")
 
 	// Create new validator folder
-	fmt.Print("Recreating data folder... ")
+	fmt.Println("Recreating data folder... ")
 	err = os.MkdirAll(filepath.Join(volumePath, "validators"), 0775)
 	if err != nil {
 		return fmt.Errorf("error recreating data folder: %w", err)
 	}
 
 	// Start the service
-	fmt.Print("Starting Rocket Pool... ")
+	fmt.Println("Starting Rocket Pool... ")
 	err = rp.StartService(getComposeFiles(c))
 	if err != nil {
 		return fmt.Errorf("error starting service: %w", err)
