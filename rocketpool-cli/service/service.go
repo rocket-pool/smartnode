@@ -58,7 +58,7 @@ func installService(c *cli.Context) error {
 	// Prompt for confirmation
 	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
 		"The Rocket Pool %s service will be installed.\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
-		shared.RocketPoolVersion, colorGreen, colorReset,
+		shared.RocketPoolVersion(), colorGreen, colorReset,
 	))) {
 		fmt.Println("Cancelled.")
 		return nil
@@ -117,20 +117,14 @@ func installService(c *cli.Context) error {
 // TODO: get this from an external source and don't hardcode it into the CLI
 func printPatchNotes(c *cli.Context) {
 
-	fmt.Print(`
-______           _        _    ______           _ 
-| ___ \         | |      | |   | ___ \         | |
-| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
-|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
-| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
-\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|
-
-`)
-	fmt.Printf("%s=== Smart Node v%s ===%s\n\n", colorGreen, shared.RocketPoolVersion, colorReset)
-	fmt.Printf("Changes you should be aware of before starting:\n\n")
-
-	fmt.Println("")
-
+	fmt.Print(shared.Logo())
+	fmt.Println()
+	fmt.Println()
+	fmt.Printf("%s=== Smart Node v%s ===%s\n", colorGreen, shared.RocketPoolVersion(), colorReset)
+	fmt.Println()
+	fmt.Printf("Changes you should be aware of before starting:\n")
+	fmt.Println()
+	fmt.Println()
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
