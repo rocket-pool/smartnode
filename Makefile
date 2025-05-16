@@ -1,6 +1,9 @@
+VERSION=$(shell cat shared/version.txt)
+LOCAL_OS=$(shell go env GOOS)-$(shell go env GOARCH)
+
 BUILD_DIR=build
-CLI_DIR=${BUILD_DIR}/cli
-DAEMON_DIR=${BUILD_DIR}/daemon
+CLI_DIR=${BUILD_DIR}/${VERSION}/cli
+DAEMON_DIR=${BUILD_DIR}/${VERSION}/daemon
 
 CLI_TARGET_OOS:=linux darwin
 ARCHS:=arm64 amd64
@@ -19,15 +22,29 @@ ${CLI_DIR}/rocketpool-cli-$1-$2: ${CLI_DIR}
 endef
 
 .PHONY: all
-all: lint rocketpool-cli rocketpool-daemon
+all: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon lint
 
-.PHONY: rocketpool-cli
-rocketpool-cli: $(CLI_TARGET_STRINGS)
+.PHONY: release
+release: clean docker ${CLI_TARGET_STRINGS} ${DAEMON_TARGET_STRINGS}
 
-.PHONY: rocketpool-daemon
-rocketpool-daemon: ${DAEMON_DIR}
-	docker build -t rocketpool/smartnode-builder:latest -f docker/smartnode-builder .
-	docker run --env OWNER=$(shell id -u):$(shell id -g) --rm -v $(PWD):/src -v $(PWD)/${DAEMON_DIR}:/out -v /tmp/docker-go-build:/root/.cache/go-build rocketpool/smartnode-builder:latest /src/rocketpool/build.sh
+# Target for build/rocketpool-cli which is a symlink to an os-specific build
+${BUILD_DIR}/rocketpool-cli: ${CLI_DIR}/rocketpool-cli-${LOCAL_OS}
+	ln -sf $(shell pwd)/${CLI_DIR}/rocketpool-cli-${LOCAL_OS} ${BUILD_DIR}/rocketpool-cli
+
+
+# Target for build/rocketpool-daemon which is a symlink to an os-specific build
+${BUILD_DIR}/rocketpool-daemon: ${DAEMON_DIR}/rocketpool-daemon-${LOCAL_OS}
+	ln -sf $(shell pwd)/${DAEMON_DIR}/rocketpool-daemon-${LOCAL_OS} ${BUILD_DIR}/rocketpool-daemon
+
+# amd64 daemon build
+.PHONY: ${DAEMON_DIR}/rocketpool-daemon-linux-amd64
+${DAEMON_DIR}/rocketpool-daemon-linux-amd64: ${DAEMON_DIR}
+	CGO_ENABLED=1 CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build -o $@ rocketpool/rocketpool.go
+
+# arm64 daemon build
+.PHONY: ${DAEMON_DIR}/rocketpool-daemon-linux-arm64
+${DAEMON_DIR}/rocketpool-daemon-linux-arm64: ${DAEMON_DIR}
+	CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build -o $@ rocketpool/rocketpool.go
 
 ${CLI_DIR}:
 	mkdir -p ${CLI_DIR}
@@ -36,6 +53,16 @@ ${DAEMON_DIR}:
 
 $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool-cli-template,$(oos),$(arch)))))
 
+
+# Docker containers
+.PHONY: docker
+docker:
+	rm -f ~/.docker/manifests/docker.io_rocketpool_smartnode-latest
+	rm -f ~/.docker/manifests/docker.io_rocketpool_smartnode-${VERSION}
+	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl daemon
+	docker manifest create rocketpool/smartnode:${VERSION} --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
+	docker manifest create rocketpool/smartnode:latest --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
+
 .PHONY: clean
 clean:
 	rm -rf ${BUILD_DIR} 
@@ -43,7 +70,7 @@ clean:
 .PHONY: lint
 lint:
 	@echo $(MODULE_GLOBS)
-	golangci-lint run --disable-all --enable goimports $(MODULE_GLOBS) 
+	docker run --rm -v .:/go/smartnode --workdir /go/smartnode golangci/golangci-lint:v2.1-alpine golangci-lint fmt --enable goimports $(MODULE_GLOBS)
 
 .PHONY: test
 test:

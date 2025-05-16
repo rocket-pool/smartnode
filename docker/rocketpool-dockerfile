@@ -1,7 +1,44 @@
-FROM debian:bookworm-slim
+FROM golang:1.21.8-bookworm AS smartnode_dependencies
 
+# Install build tools
+RUN dpkg --add-architecture arm64
+RUN apt update && apt install -y \
+	build-essential \
+	gcc-aarch64-linux-gnu \
+	libc6-dev-arm64-cross\
+	g++-aarch64-linux-gnu \
+	wget
+
+# Cache go dependencies
+COPY ./go.work /src/go.work
+COPY ./go.work.sum /src/go.work.sum
+COPY ./addons/go.mod /src/addons/go.mod
+COPY ./rocketpool/go.mod /src/rocketpool/go.mod
+COPY ./rocketpool-cli/go.mod /src/rocketpool-cli/go.mod
+COPY ./shared/go.mod /src/shared/go.mod
+WORKDIR /src
+RUN go mod download -x
+WORKDIR /
+RUN rm -rf /src
+
+FROM smartnode_dependencies AS build
 ARG TARGETARCH
-COPY ./build/daemon/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
+ARG VERSION
+COPY ./go.work /src/go.work
+COPY ./go.work.sum /src/go.work.sum
+COPY ./addons/ /src/addons/
+COPY ./rocketpool/ /src/rocketpool/
+COPY ./rocketpool-cli/ /src/rocketpool-cli/
+COPY ./shared/ /src/shared/
+COPY Makefile /src/Makefile
+WORKDIR /src
+RUN make build/${VERSION}/daemon/rocketpool-daemon-linux-${TARGETARCH}
+
+FROM debian:bookworm-slim AS daemon
+ARG TARGETARCH
+ARG VERSION
+
+COPY --from=build /src/build/${VERSION}/daemon/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
 
 RUN apt update && apt install ca-certificates -y
 
