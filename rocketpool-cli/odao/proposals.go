@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/rocket-pool/rocketpool-go/dao"
@@ -22,14 +23,7 @@ func filterProposalState(state string, stateFilter string) bool {
 
 	// Check comma separated list for the state
 	filterStates := strings.Split(stateFilter, ",")
-	for _, fs := range filterStates {
-		if fs == state {
-			return false
-		}
-	}
-
-	// Not found
-	return true
+	return !slices.Contains(filterStates, state)
 }
 
 func getProposals(c *cli.Context, stateFilter string) error {

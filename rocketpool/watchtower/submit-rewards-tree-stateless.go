@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
@@ -173,6 +174,19 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	currentIndex := state.NetworkDetails.RewardIndex
 	currentIndexBig := big.NewInt(0).SetUint64(currentIndex)
 
+	// Check if the node has already submitted the rewards for the previous interval
+	// In case we just had consensus, we want other nodes to also submit
+	var hasSubmitted bool
+	if currentIndexBig.Cmp(big.NewInt(0)) > 0 {
+		hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig.Sub(currentIndexBig, big.NewInt(1)))
+		if err != nil {
+			return fmt.Errorf("error checking if Merkle tree submission has already been processed: %w", err)
+		}
+		if !hasSubmitted { // didn't participate in the previous consensus. Decrement the index and submit it as a health check
+			currentIndexBig = currentIndexBig.Sub(currentIndexBig, big.NewInt(1))
+		}
+	}
+
 	// Check if rewards generation is already running
 	t.lock.Lock()
 	if t.isRunning {
@@ -194,10 +208,6 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		}
 
 		// Return if this node has already submitted the tree for the current interval and there's a file present
-		hasSubmitted, err := t.hasSubmittedTree(nodeAccount.Address, currentIndexBig)
-		if err != nil {
-			return fmt.Errorf("error checking if Merkle tree submission has already been processed: %w", err)
-		}
 		if hasSubmitted {
 			return nil
 		}
@@ -508,7 +518,27 @@ func (t *submitRewardsTree_Stateless) getSnapshotEnd(endTime time.Time, state *s
 
 // Check whether the rewards tree for the current interval been submitted by the node
 func (t *submitRewardsTree_Stateless) hasSubmittedTree(nodeAddress common.Address, index *big.Int) (bool, error) {
-	indexBuffer := make([]byte, 32)
-	index.FillBytes(indexBuffer)
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("rewards.snapshot.submitted.node"), nodeAddress.Bytes(), indexBuffer))
+	stringArgument, err := abi.NewType("string", "string", nil)
+	if err != nil {
+		return false, err
+	}
+	addressArgument, err := abi.NewType("address", "address", nil)
+	if err != nil {
+		return false, err
+	}
+	uint256Argument, err := abi.NewType("uint256", "uint256", nil)
+	if err != nil {
+		return false, err
+	}
+
+	arguments := abi.Arguments{
+		{Type: stringArgument}, {Type: addressArgument}, {Type: uint256Argument},
+	}
+
+	packedBytes, err := arguments.Pack("rewards.snapshot.submitted.node", nodeAddress, index)
+	if err != nil {
+		return false, err
+	}
+
+	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash(packedBytes))
 }

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -146,11 +147,8 @@ func promptTimezone() string {
 			isUpper := unicode.IsUpper(rune(filename[0]))                 // Must start with an upper case letter
 			if !isSymlink && isDir && isUpper {
 				isValid := true
-				for _, invalidCountry := range invalidCountries {
-					if invalidCountry == filename {
-						isValid = false
-						break
-					}
+				if slices.Contains(invalidCountries, filename) {
+					isValid = false
 				}
 				if isValid {
 					countryNames = append(countryNames, filename)
@@ -192,13 +190,7 @@ func promptTimezone() string {
 		timezone = ""
 		country = prompt.Prompt("Please enter a country / continent from the list above:", "^.+$", "Please enter a country / continent from the list above:")
 
-		exists := false
-		for _, candidate := range countryNames {
-			if candidate == country {
-				exists = true
-				break
-			}
-		}
+		exists := slices.Contains(countryNames, country)
 
 		if !exists {
 			fmt.Printf("%s is not a valid country or continent. Please see the list above for valid countries and continents.\n\n", country)
@@ -253,13 +245,7 @@ func promptTimezone() string {
 		timezone = ""
 		region = prompt.Prompt("Please enter a region from the list above:", "^.+$", "Please enter a region from the list above:")
 
-		exists := false
-		for _, candidate := range regionNames {
-			if candidate == region {
-				exists = true
-				break
-			}
-		}
+		exists := slices.Contains(regionNames, region)
 
 		if !exists {
 			fmt.Printf("%s is not a valid country or continent. Please see the list above for valid countries and continents.\n\n", region)

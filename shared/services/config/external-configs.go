@@ -118,6 +118,13 @@ type ExternalTekuConfig struct {
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
 }
 
+// Type assertions for all ExternalConsensusConfigs
+var _ config.ConsensusConfig = &ExternalLighthouseConfig{}
+var _ config.ConsensusConfig = &ExternalLodestarConfig{}
+var _ config.ConsensusConfig = &ExternalNimbusConfig{}
+var _ config.ConsensusConfig = &ExternalPrysmConfig{}
+var _ config.ConsensusConfig = &ExternalTekuConfig{}
+
 // Generates a new ExternalExecutionConfig configuration
 func NewExternalExecutionConfig(cfg *RocketPoolConfig) *ExternalExecutionConfig {
 	return &ExternalExecutionConfig{

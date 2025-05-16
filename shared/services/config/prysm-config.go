@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	prysmBnTest             string = "rocketpool/prysm:v6.0.1"
-	prysmBnProd             string = "rocketpool/prysm:v6.0.1"
-	prysmVcTest             string = "rocketpool/prysm:v6.0.1"
-	prysmVcProd             string = "rocketpool/prysm:v6.0.1"
+	prysmBnTest             string = "gcr.io/offchainlabs/prysm/beacon-chain:v6.0.2"
+	prysmBnProd             string = "gcr.io/offchainlabs/prysm/beacon-chain:v6.0.2"
+	prysmVcTest             string = "gcr.io/offchainlabs/prysm/validator:v6.0.2"
+	prysmVcProd             string = "gcr.io/offchainlabs/prysm/validator:v6.0.2"
 	defaultPrysmRpcPort     uint16 = 5053
 	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers    uint16 = 70
@@ -45,6 +45,9 @@ type PrysmConfig struct {
 	// Custom command line flags for the VC
 	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
 }
+
+// Type assertion for PrysmConfig
+var _ config.ConsensusConfig = &PrysmConfig{}
 
 // Generates a new Prysm configuration
 func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {

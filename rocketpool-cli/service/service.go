@@ -21,7 +21,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	sharedConfig "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -33,12 +32,10 @@ const (
 	ValidatorContainerSuffix        string = "_validator"
 	BeaconContainerSuffix           string = "_eth2"
 	ExecutionContainerSuffix        string = "_eth1"
-	PruneStarterContainerSuffix     string = "_nm_prune_starter"
 	NodeContainerSuffix             string = "_node"
 	ApiContainerSuffix              string = "_api"
 	WatchtowerContainerSuffix       string = "_watchtower"
 	PruneProvisionerContainerSuffix string = "_prune_provisioner"
-	EcMigratorContainerSuffix       string = "_ec_migrator"
 	clientDataVolumeName            string = "/ethclient"
 	dataFolderVolumeName            string = "/.rocketpool/data"
 
@@ -59,8 +56,8 @@ func installService(c *cli.Context) error {
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
-		"The Rocket Pool service will be installed --Version: %s\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
-		c.String("version"), colorGreen, colorReset,
+		"The Rocket Pool %s service will be installed.\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
+		shared.RocketPoolVersion, colorGreen, colorReset,
 	))) {
 		fmt.Println("Cancelled.")
 		return nil
@@ -84,7 +81,7 @@ func installService(c *cli.Context) error {
 	}
 
 	// Install service
-	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("version"), c.String("path"), dataPath)
+	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("path"), dataPath)
 	if err != nil {
 		return err
 	}
@@ -151,7 +148,7 @@ func installUpdateTracker(c *cli.Context) error {
 	defer rp.Close()
 
 	// Install service
-	err := rp.InstallUpdateTracker(c.Bool("verbose"), c.String("version"))
+	err := rp.InstallUpdateTracker(c.Bool("verbose"))
 	if err != nil {
 		return err
 	}
@@ -408,7 +405,7 @@ func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *cfgt
 func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName string) error {
 
 	// Stop all of the containers
-	fmt.Print("Stopping containers... ")
+	fmt.Println("Stopping containers... ")
 	err := rp.PauseService(getComposeFiles(c))
 	if err != nil {
 		return fmt.Errorf("error stopping service: %w", err)
@@ -416,7 +413,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Println("done")
 
 	// Restart the API container
-	fmt.Print("Starting API container... ")
+	fmt.Println("Starting API container... ")
 	output, err := rp.StartContainer(apiContainerName)
 	if err != nil {
 		return fmt.Errorf("error starting API container: %w", err)
@@ -427,7 +424,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Println("done")
 
 	// Get the path of the user's data folder
-	fmt.Print("Retrieving data folder path... ")
+	fmt.Println("Retrieving data folder path... ")
 	volumePath, err := rp.GetClientVolumeSource(apiContainerName, dataFolderVolumeName)
 	if err != nil {
 		return fmt.Errorf("error getting data folder path: %w", err)
@@ -435,7 +432,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Printf("done, data folder = %s\n", volumePath)
 
 	// Delete the data folder
-	fmt.Print("Removing data folder... ")
+	fmt.Println("Removing data folder... ")
 	_, err = rp.TerminateDataFolder()
 	if err != nil {
 		return err
@@ -443,7 +440,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Println("done")
 
 	// Terminate the current setup
-	fmt.Print("Removing old installation... ")
+	fmt.Println("Removing old installation... ")
 	err = rp.StopService(getComposeFiles(c))
 	if err != nil {
 		return fmt.Errorf("error terminating old installation: %w", err)
@@ -451,14 +448,14 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 	fmt.Println("done")
 
 	// Create new validator folder
-	fmt.Print("Recreating data folder... ")
+	fmt.Println("Recreating data folder... ")
 	err = os.MkdirAll(filepath.Join(volumePath, "validators"), 0775)
 	if err != nil {
 		return fmt.Errorf("error recreating data folder: %w", err)
 	}
 
 	// Start the service
-	fmt.Print("Starting Rocket Pool... ")
+	fmt.Println("Starting Rocket Pool... ")
 	err = rp.StartService(getComposeFiles(c))
 	if err != nil {
 		return fmt.Errorf("error starting service: %w", err)
@@ -976,28 +973,26 @@ func pruneExecutionClient(c *cli.Context) error {
 		fmt.Println("You are using Native Mode.\nThe Smart Node cannot prune your Execution client for you, you'll have to do it manually.")
 	}
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
-	switch selectedEc {
-	case cfgtypes.ExecutionClient_Besu:
-		if cfg.Besu.ArchiveMode.Value == true {
-			fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
-			return nil
-		}
+
+	// Don't prune besu if it's in archive mode
+	if selectedEc == cfgtypes.ExecutionClient_Besu && cfg.Besu.ArchiveMode.Value == true {
+		fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
+		return nil
 	}
 
-	if selectedEc == cfgtypes.ExecutionClient_Geth || selectedEc == cfgtypes.ExecutionClient_Besu {
-		if selectedEc == cfgtypes.ExecutionClient_Geth {
-			fmt.Printf("%sGeth has a new feature that renders pruning obsolete. However, as this is a new feature you may have to resync with `rocketpool service resync-eth1` before this takes effect.%s\n", colorYellow, colorReset)
-		}
+	// Print the appropriate warnings before pruning
+	if selectedEc == cfgtypes.ExecutionClient_Geth {
+		fmt.Printf("%sGeth has a new feature that renders pruning obsolete. However, as this is a new feature you may have to resync with `rocketpool service resync-eth1` before this takes effect.%s\n", colorYellow, colorReset)
 		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if cfg.UseFallbackClients.Value == false {
 			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until pruning is done.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
 		} else {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}
+		fmt.Println("Once pruning is complete, your execution client will restart automatically.")
 	} else {
 		fmt.Println("This will request your main execution client to prune its database, freeing up disk space. This is a resource intensive operation and may lead to an increase in missed attestations until it finishes.")
 	}
-	fmt.Println("Once pruning is complete, your execution client will restart automatically.")
 	fmt.Println()
 
 	// Get the container prefix
@@ -1012,13 +1007,8 @@ func pruneExecutionClient(c *cli.Context) error {
 		return nil
 	}
 
-	// Get the prune provisioner image
-	pruneProvisioner := cfg.Smartnode.GetPruneProvisionerContainerTag()
-
 	// Get the execution container name
 	executionContainerName := prefix + ExecutionContainerSuffix
-
-	pruneStarterContainerName := prefix + PruneStarterContainerSuffix
 
 	// Check for enough free space
 	volumePath, err := rp.GetClientVolumeSource(executionContainerName, clientDataVolumeName)
@@ -1052,7 +1042,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	if selectedEc == cfgtypes.ExecutionClient_Nethermind {
 		// Restarting NM is not needed anymore
-		err = rp.RunNethermindPruneStarter(executionContainerName, pruneStarterContainerName)
+		err = rp.RunNethermindPruneStarter(executionContainerName)
 		if err != nil {
 			return fmt.Errorf("Error starting Nethermind prune starter: %w", err)
 		}
@@ -1075,7 +1065,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	// Run the prune provisioner
 	fmt.Printf("Provisioning pruning on volume %s...\n", volume)
-	err = rp.RunPruneProvisioner(prefix+PruneProvisionerContainerSuffix, volume, pruneProvisioner)
+	err = rp.RunPruneProvisioner(prefix+PruneProvisionerContainerSuffix, volume)
 	if err != nil {
 		return fmt.Errorf("Error running prune provisioner: %w", err)
 	}
@@ -1395,7 +1385,7 @@ func serviceVersion(c *cli.Context) error {
 
 	var mevBoostString string
 	if cfg.EnableMevBoost.Value.(bool) {
-		if cfg.MevBoost.Mode.Value.(sharedConfig.Mode) == sharedConfig.Mode_Local {
+		if cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 			mevBoostString = fmt.Sprintf("Enabled (Local Mode)\n\tImage: %s", cfg.MevBoost.ContainerTag.Value.(string))
 		} else {
 			mevBoostString = "Enabled (External Mode)"

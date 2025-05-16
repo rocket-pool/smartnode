@@ -633,8 +633,8 @@ func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, 
 }
 
 // Check whether the node can send tokens
-func (c *Client) CanNodeSend(amountWei *big.Int, token string, toAddress common.Address) (api.CanNodeSendResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-send %s %s %s", amountWei.String(), token, toAddress.Hex()))
+func (c *Client) CanNodeSend(amountRaw float64, token string, toAddress common.Address) (api.CanNodeSendResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-send %.10f %s %s", amountRaw, token, toAddress.Hex()))
 	if err != nil {
 		return api.CanNodeSendResponse{}, fmt.Errorf("Could not get can node send status: %w", err)
 	}
@@ -649,8 +649,8 @@ func (c *Client) CanNodeSend(amountWei *big.Int, token string, toAddress common.
 }
 
 // Send tokens from the node to an address
-func (c *Client) NodeSend(amountWei *big.Int, token string, toAddress common.Address) (api.NodeSendResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node send %s %s %s", amountWei.String(), token, toAddress.Hex()))
+func (c *Client) NodeSend(amountRaw float64, token string, toAddress common.Address) (api.NodeSendResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node send %.10f %s %s", amountRaw, token, toAddress.Hex()))
 	if err != nil {
 		return api.NodeSendResponse{}, fmt.Errorf("Could not send tokens from node: %w", err)
 	}
