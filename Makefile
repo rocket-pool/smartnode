@@ -66,7 +66,7 @@ docker:
 define lint-template 
 .PHONY: lint-$1
 lint-$1:
-	docker run --rm -v .:/go/smartnode --workdir /go/smartnode/$1 golangci/golangci-lint:v2.1-alpine golangci-lint fmt --diff
+	docker run -e GOCACHE=/go/.cache/go-build -e GOLANGCI_LINT_CACHE=/go/.cache/golangci-lint --user $(shell id -u):$(shell id -g) --rm -v ~/.cache:/go/.cache -v .:/smartnode --workdir /smartnode/$1 golangci/golangci-lint:v2.1-alpine golangci-lint fmt --diff
 endef
 $(foreach module,$(MODULES),$(eval $(call lint-template,$(module))))
 .PHONY: lint
