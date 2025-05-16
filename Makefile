@@ -36,15 +36,25 @@ ${BUILD_DIR}/rocketpool-cli: ${CLI_DIR}/rocketpool-cli-${LOCAL_OS}
 ${BUILD_DIR}/rocketpool-daemon: ${DAEMON_DIR}/rocketpool-daemon-${LOCAL_OS}
 	ln -sf $(shell pwd)/${DAEMON_DIR}/rocketpool-daemon-${LOCAL_OS} ${BUILD_DIR}/rocketpool-daemon
 
+# daemon-builder container
+.PHONY: daemon-builder
+daemon-builder:
+	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl builder
+
 # amd64 daemon build
 .PHONY: ${DAEMON_DIR}/rocketpool-daemon-linux-amd64
-${DAEMON_DIR}/rocketpool-daemon-linux-amd64: ${DAEMON_DIR}
-	CGO_ENABLED=1 CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build -o $@ rocketpool/rocketpool.go
+${DAEMON_DIR}/rocketpool-daemon-linux-amd64: ${DAEMON_DIR} daemon-builder
+	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
+		-e GOARCH=amd64 -e GOOS=linux --workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
+		go build -o $@ rocketpool/rocketpool.go
 
 # arm64 daemon build
 .PHONY: ${DAEMON_DIR}/rocketpool-daemon-linux-arm64
-${DAEMON_DIR}/rocketpool-daemon-linux-arm64: ${DAEMON_DIR}
-	CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build -o $@ rocketpool/rocketpool.go
+${DAEMON_DIR}/rocketpool-daemon-linux-arm64: ${DAEMON_DIR} daemon-builder
+	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
+	-e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
+	--workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
+	go build -o $@ rocketpool/rocketpool.go
 
 ${CLI_DIR}:
 	mkdir -p ${CLI_DIR}
