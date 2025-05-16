@@ -17,4 +17,5 @@ jobs:
       - uses: actions/setup-go@v4
         with:
           go-version: 1.21.8
-      - run: make build/rocketpool-cli build/rocketpool-daemon
+      - run: make build/rocketpool-cli
+      - run: go build -o build/rocketpool-daemon-gh ./rocketpool/rocketpool.go
