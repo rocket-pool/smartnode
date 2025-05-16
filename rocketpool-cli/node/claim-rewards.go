@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -150,13 +151,7 @@ func nodeClaimRewards(c *cli.Context) error {
 			seenIndices := map[uint64]bool{}
 
 			for _, element := range elements {
-				found := false
-				for _, validIndex := range validIndices {
-					if validIndex == element {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(validIndices, element)
 				if !found {
 					fmt.Printf("'%s' is an invalid index.\nValid indices are: %s\n", element, strings.Join(validIndices, ","))
 					allValid = false

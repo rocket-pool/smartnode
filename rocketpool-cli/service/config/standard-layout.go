@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
@@ -181,11 +182,8 @@ func (layout *standardLayout) addFormItemsWithCommonParams(commonParams []*param
 	// Add the common params if they aren't in the unsupported list
 	for _, commonParam := range commonParams {
 		isSupported := true
-		for _, unsupportedParam := range unsupportedCommonParams {
-			if commonParam.parameter.ID == unsupportedParam {
-				isSupported = false
-				break
-			}
+		if slices.Contains(unsupportedCommonParams, commonParam.parameter.ID) {
+			isSupported = false
 		}
 
 		if isSupported {
