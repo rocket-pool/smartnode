@@ -25,7 +25,7 @@ endef
 all: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon lint
 
 .PHONY: release
-release: clean docker ${CLI_TARGET_STRINGS} ${DAEMON_TARGET_STRINGS}
+release: clean docker ${CLI_TARGET_STRINGS} ${DAEMON_TARGET_STRINGS} ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon
 
 # Target for build/rocketpool-cli which is a symlink to an os-specific build
 ${BUILD_DIR}/rocketpool-cli: ${CLI_DIR}/rocketpool-cli-${LOCAL_OS}
@@ -57,8 +57,8 @@ $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool
 # Docker containers
 .PHONY: docker
 docker:
-	rm -f ~/.docker/manifests/docker.io_rocketpool_smartnode-latest
-	rm -f ~/.docker/manifests/docker.io_rocketpool_smartnode-${VERSION}
+	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-latest
+	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-${VERSION}
 	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl daemon
 	docker manifest create rocketpool/smartnode:${VERSION} --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
 	docker manifest create rocketpool/smartnode:latest --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
