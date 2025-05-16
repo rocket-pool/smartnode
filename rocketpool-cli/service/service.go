@@ -21,7 +21,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	sharedConfig "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/shirou/gopsutil/v3/disk"
@@ -1386,7 +1385,7 @@ func serviceVersion(c *cli.Context) error {
 
 	var mevBoostString string
 	if cfg.EnableMevBoost.Value.(bool) {
-		if cfg.MevBoost.Mode.Value.(sharedConfig.Mode) == sharedConfig.Mode_Local {
+		if cfg.MevBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
 			mevBoostString = fmt.Sprintf("Enabled (Local Mode)\n\tImage: %s", cfg.MevBoost.ContainerTag.Value.(string))
 		} else {
 			mevBoostString = "Enabled (External Mode)"
