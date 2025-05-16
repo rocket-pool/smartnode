@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"math"
 	"math/big"
 	"strconv"
 )
@@ -54,4 +55,28 @@ func GweiToWei(gwei float64) *big.Int {
 	weiFloat.Mul(&gweiFloat, big.NewFloat(WeiPerGwei))
 	weiFloat.Int(&wei)
 	return &wei
+}
+
+// Converts float amount to big.Int considering a token's decimals
+func EthToWeiWithDecimals(amountRaw float64, decimals uint8) *big.Int {
+	var ethFloat big.Float
+	var weiFloat big.Float
+	var wei big.Int
+	ethFloat.SetString(strconv.FormatFloat(amountRaw, 'f', -1, 64))
+	weiFloat.Mul(&ethFloat, big.NewFloat(math.Pow(10, float64(decimals))))
+	weiFloat.Int(&wei)
+	return &wei
+}
+
+// Converts big.Int to float64 considering a token's decimals
+func WeiToEthWithDecimals(amount *big.Int, decimals uint8) float64 {
+	if amount == nil {
+		return 0
+	}
+	var weiFloat big.Float
+	var eth big.Float
+	weiFloat.SetInt(amount)
+	eth.Quo(&weiFloat, big.NewFloat(math.Pow(10, float64(decimals))))
+	eth64, _ := eth.Float64()
+	return eth64
 }
