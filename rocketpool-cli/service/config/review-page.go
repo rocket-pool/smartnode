@@ -56,7 +56,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 			if newConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && newConfig.ExecutionClient.Value.(cfgtypes.ExecutionClient) != cfgtypes.ExecutionClient_Geth {
 				totalAffectedContainers[cfgtypes.ContainerID_Eth1] = true
 			}
-			builder.WriteString(fmt.Sprintf("Updated to Smartnode v%s (will affect several containers)\n\n", shared.RocketPoolVersion))
+			builder.WriteString(fmt.Sprintf("Updated to Smartnode v%s (will affect several containers)\n\n", shared.RocketPoolVersion()))
 		}
 
 		for categoryName, changedSettingsList := range changedSettings {

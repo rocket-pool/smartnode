@@ -22,7 +22,7 @@ func main() {
 	// Set application info
 	app.Name = "rocketpool"
 	app.Usage = "Rocket Pool service"
-	app.Version = shared.RocketPoolVersion
+	app.Version = shared.RocketPoolVersion()
 	app.Copyright = "(c) 2024 Rocket Pool Pty Ltd"
 
 	// Set application flags

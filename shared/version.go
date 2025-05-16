@@ -1,10 +1,20 @@
 package shared
 
-const RocketPoolVersion string = "1.15.6"
+import (
+	_ "embed"
+	"strings"
+)
 
-const Logo string = `______           _        _    ______           _
-| ___ \         | |      | |   | ___ \         | |
-| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
-|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
-| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
-\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|`
+//go:embed version.txt
+var rocketPoolVersion string
+
+func RocketPoolVersion() string {
+	return strings.TrimSpace(rocketPoolVersion)
+}
+
+//go:embed logo.txt
+var logo string
+
+func Logo() string {
+	return strings.TrimSpace(logo)
+}

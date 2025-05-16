@@ -108,7 +108,7 @@ func (m *VotingInfoSnapshotManager) CreateVotingInfoSnapshot(blockNumber uint32)
 	}
 
 	return &VotingInfoSnapshot{
-		SmartnodeVersion: shared.RocketPoolVersion,
+		SmartnodeVersion: shared.RocketPoolVersion(),
 		Network:          m.cfg.Smartnode.Network.Value.(cfgtypes.Network),
 		BlockNumber:      blockNumber,
 		Info:             infos,

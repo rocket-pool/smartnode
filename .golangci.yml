@@ -1,0 +1,13 @@
+version: "2"
+linters:
+  default: none 
+formatters:
+  enable:
+    - goimports
+run:
+  relative-path-mode: cfg
+  go: '1.21.8'
+output:
+  formats:
+    text:
+      path: stderr

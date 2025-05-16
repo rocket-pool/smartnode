@@ -142,7 +142,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					if c.String("version") != "" {
-						fmt.Fprintf(os.Stderr, "--version/-v is no longer supported. Instead, download the correct version of the `rocketpool` binary and install that. Current version: %s\n", shared.RocketPoolVersion)
+						fmt.Fprintf(os.Stderr, "--version/-v is no longer supported. Instead, download the correct version of the `rocketpool` binary and install that. Current version: %s\n", shared.RocketPoolVersion())
 						os.Exit(1)
 					}
 
@@ -433,7 +433,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					if c.String("version") != "" {
-						fmt.Fprintf(os.Stderr, "--version/-v is no longer supported. Instead, download the correct version of the `rocketpool` binary and install the update tracker from there. Current version: %s\n", shared.RocketPoolVersion)
+						fmt.Fprintf(os.Stderr, "--version/-v is no longer supported. Instead, download the correct version of the `rocketpool` binary and install the update tracker from there. Current version: %s\n", shared.RocketPoolVersion())
 						os.Exit(1)
 					}
 
