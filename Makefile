@@ -1,4 +1,4 @@
-VERSION=$(shell cat shared/version.txt)
+VERSION=v$(shell cat shared/version.txt)
 LOCAL_OS=$(shell go env GOOS)-$(shell go env GOARCH)
 
 BUILD_DIR=build
