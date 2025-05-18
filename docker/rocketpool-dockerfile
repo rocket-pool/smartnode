@@ -32,7 +32,7 @@ COPY ./rocketpool-cli/ /src/rocketpool-cli/
 COPY ./shared/ /src/shared/
 COPY Makefile /src/Makefile
 WORKDIR /src
-RUN make build/${VERSION}/daemon/rocketpool-daemon-linux-${TARGETARCH}
+RUN make NO_DOCKER=true build/${VERSION}/daemon/rocketpool-daemon-linux-${TARGETARCH}
 
 FROM debian:bookworm-slim AS daemon
 ARG TARGETARCH
