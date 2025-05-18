@@ -4,6 +4,7 @@ LOCAL_OS=$(shell go env GOOS)-$(shell go env GOARCH)
 BUILD_DIR=build
 CLI_DIR=${BUILD_DIR}/${VERSION}/cli
 DAEMON_DIR=${BUILD_DIR}/${VERSION}/daemon
+DOCKER_DIR=${BUILD_DIR}/${VERSION}/docker
 
 CLI_TARGET_OOS:=linux darwin
 ARCHS:=arm64 amd64
@@ -25,7 +26,7 @@ endef
 all: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon lint
 
 .PHONY: release
-release: clean docker ${CLI_TARGET_STRINGS} ${DAEMON_TARGET_STRINGS} ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon
+release: ${CLI_TARGET_STRINGS} ${DAEMON_TARGET_STRINGS} ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon
 
 # Target for build/rocketpool-cli which is a symlink to an os-specific build
 ${BUILD_DIR}/rocketpool-cli: ${CLI_DIR}/rocketpool-cli-${LOCAL_OS}
@@ -73,18 +74,40 @@ ${CLI_DIR}:
 	mkdir -p ${CLI_DIR}
 ${DAEMON_DIR}:
 	mkdir -p ${DAEMON_DIR}
+${DOCKER_DIR}:
+	mkdir -p ${DOCKER_DIR}
 
 $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool-cli-template,$(oos),$(arch)))))
 
 
 # Docker containers
 .PHONY: docker
-docker:
+docker: ${DOCKER_DIR}
+	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl daemon
+
+.PHONY: docker-load
+docker-load: docker
+	docker import - smartnode:${VERSION}-amd64 < ${DOCKER_DIR}/smartnode:${VERSION}-amd64.tar
+	docker import - smartnode:${VERSION}-arm64 < ${DOCKER_DIR}/smartnode:${VERSION}-arm64.tar
+
+.PHONY: docker-push
+docker-push: docker-load
+	echo
+	echo -n "Publishing smartnode:${VERSION} containers. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
+	docker push rocketpool/smartnode:${VERSION}-amd64
+	docker push rocketpool/smartnode:${VERSION}-arm64
+	echo "Done!"
+
+.PHONY: docker-latest
+docker-latest: docker-push
+	echo
+	echo -n "Publishing smartnode:${VERSION} as latest. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-latest
 	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-${VERSION}
-	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl daemon
 	docker manifest create rocketpool/smartnode:${VERSION} --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
 	docker manifest create rocketpool/smartnode:latest --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
+	docker manifest push --purge rocketpool/smartnode:${VERSION}
+	docker manifest push --purge rocketpool/smartnode:latest
 
 define lint-template 
 .PHONY: lint-$1

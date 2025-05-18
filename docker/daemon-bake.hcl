@@ -31,4 +31,5 @@ target "daemon" {
   }
   target = "daemon"
   platform = "linux/${arch}"
+  output = [{ "type": "tar", "dest": "build/${VERSION}/docker/smartnode:${VERSION}-${arch}.tar" }]
 }

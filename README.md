@@ -34,8 +34,13 @@ A [Makefile](./Makefile) is included for building, testing, and linting.
   * It will tag docker images as latest as well as the version in `shared/version.txt`
   * It will put cli and native mode binaries in build/\<version\>
 * `make build/rocketpool-cli` builds just the cli
+  * The cli is always built natively.
 * `make build/rocketpool-daemon` builds just the daemon
-* `make docker` builds the rocketpool/smartnode container and tags it with latest as well as the version from `shared/version.txt`
+  * The daemon is built in docker, unless you run `make NO_DOCKER=true \<cmd\>`
+* `make docker` builds the rocketpool/smartnode containers for all supported architectures and saves them in build/\<version\>/docker
+* `make docker-load` builds and loads the smartnode containers.
+* `make docker-push` builds, loads, and pushes the smartnode containers.
+* `make docker-latest` builds, loads, pushes, tags as latest, and creates a multi-arch manifest, which is also pushed.
 * `make lint` runs the linter.
 * `make test` runs all unit tests.
 * `make clean` deletes any binaries. It does not clear your go caches. It does not clean up old docker images.
