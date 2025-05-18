@@ -32,13 +32,13 @@ COPY ./rocketpool-cli/ /src/rocketpool-cli/
 COPY ./shared/ /src/shared/
 COPY Makefile /src/Makefile
 WORKDIR /src
-RUN --mount=type=cache,target=/root/.cache/go-build make NO_DOCKER=true build/${VERSION}/daemon/rocketpool-daemon-linux-${TARGETARCH}
+RUN --mount=type=cache,target=/root/.cache/go-build make NO_DOCKER=true build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH}
 
 FROM debian:bookworm-slim AS daemon
 ARG TARGETARCH
 ARG VERSION
 
-COPY --from=build /src/build/${VERSION}/daemon/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
+COPY --from=build /src/build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
 
 RUN apt update && apt install ca-certificates -y
 
