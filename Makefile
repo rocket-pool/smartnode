@@ -116,15 +116,10 @@ endif
 # Docker containers
 .PHONY: docker
 docker: ${DOCKER_DIR}
-	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl daemon
-
-.PHONY: docker-load
-docker-load: docker
-	docker import - smartnode:${VERSION}-amd64 < ${DOCKER_DIR}/smartnode:${VERSION}-amd64.tar
-	docker import - smartnode:${VERSION}-arm64 < ${DOCKER_DIR}/smartnode:${VERSION}-arm64.tar
+	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl smartnode
 
 .PHONY: docker-push
-docker-push: docker-load
+docker-push: docker
 	echo
 	echo -n "Publishing smartnode:${VERSION} containers. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-${VERSION}
@@ -141,6 +136,11 @@ docker-latest: docker-push
 	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-latest
 	docker manifest create rocketpool/smartnode:latest --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
 	docker manifest push --purge rocketpool/smartnode:latest
+
+.PHONY: docker-prune
+docker-prune:
+	docker system prune -af
+	docker buildx prune -af
 
 define lint-template 
 .PHONY: lint-$1

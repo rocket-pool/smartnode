@@ -34,15 +34,22 @@ COPY ./shared/ /src/shared/
 COPY ./treegen/ /src/treegen
 COPY Makefile /src/Makefile
 WORKDIR /src
-RUN --mount=type=cache,target=/root/.cache/go-build make NO_DOCKER=true build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH}
+RUN --mount=type=cache,target=/root/.cache/go-build make NO_DOCKER=true \
+	build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH} \
+	build/${VERSION}/bin/rocketpool-cli-linux-${TARGETARCH} \
+	build/${VERSION}/bin/treegen-linux-${TARGETARCH}
 
-FROM debian:bookworm-slim AS daemon
+FROM debian:bookworm-slim AS smartnode
 ARG TARGETARCH
 ARG VERSION
 
-COPY --from=build /src/build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
-
 RUN apt update && apt install ca-certificates -y
 
-# Container entry point
+COPY --from=build /src/build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
+COPY --from=build /src/build/${VERSION}/bin/rocketpool-cli-linux-${TARGETARCH} /go/bin/rocketpool-cli
+COPY --from=build /src/build/${VERSION}/bin/treegen-linux-${TARGETARCH} /go/bin/treegen
+
+ENV PATH="$PATH:/go/bin"
+
+# Default entry point
 ENTRYPOINT ["/go/bin/rocketpool"]
