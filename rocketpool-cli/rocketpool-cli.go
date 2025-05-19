@@ -26,17 +26,12 @@ func main() {
 
 	// Add logo to application help template
 	cli.AppHelpTemplate = fmt.Sprintf(`
-______           _        _    ______           _ 
-| ___ \         | |      | |   | ___ \         | |
-| |_/ /___   ___| | _____| |_  | |_/ /__   ___ | |
-|    // _ \ / __| |/ / _ \ __| |  __/ _ \ / _ \| |
-| |\ \ (_) | (__|   <  __/ |_  | | | (_) | (_) | |
-\_| \_\___/ \___|_|\_\___|\__| \_|  \___/ \___/|_|
+%s
 
 Authored by the Rocket Pool Core Team
 A special thanks to the Rocket Pool community for all their contributions.
 
-%s`, cli.AppHelpTemplate)
+%s`, shared.Logo(), cli.AppHelpTemplate)
 
 	// Initialise application
 	app := cli.NewApp()
@@ -44,7 +39,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 	// Set application info
 	app.Name = "rocketpool"
 	app.Usage = "Rocket Pool CLI"
-	app.Version = shared.RocketPoolVersion
+	app.Version = shared.RocketPoolVersion()
 	app.Copyright = "(c) 2024 Rocket Pool Pty Ltd"
 
 	// Initialize app metadata
