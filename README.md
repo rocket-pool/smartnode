@@ -28,15 +28,19 @@ See the [Smartnode Installer](https://github.com/rocket-pool/smartnode-install) 
 
 A [Makefile](./Makefile) is included for building, testing, and linting.
 
-* `make` or `make all` will build rocketpool-cli, rocketpool-daemon, and run the linter.
+* `make` or `make default` will build rocketpool-cli, rocketpool-daemon, and run the linter.
   * build/rocketpool-cli and build/rocketpool-daemon will be symlinked to the version and architecture specific binaries in build/
+* `make all` will build rocketpool-cli, rocketpool-daemon, treegen, and run the linter.
+  * symlinks will be created for the first 3 binaries in build/
 * `make release` will build all architecture specific binaries as well as docker images and manifests
   * It will tag docker images as latest as well as the version in `shared/version.txt`
   * It will put cli and native mode binaries in build/\<version\>
 * `make build/rocketpool-cli` builds just the cli
-  * The cli is always built natively.
+  * The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
 * `make build/rocketpool-daemon` builds just the daemon
-  * The daemon is built in docker, unless you run `make NO_DOCKER=true \<cmd\>`
+  * The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
+* `make build/treegen` builds just the treegen stand-alone binary.
+  * The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
 * `make docker` builds the rocketpool/smartnode containers for all supported architectures and saves them in build/\<version\>/docker
 * `make docker-load` builds and loads the smartnode containers.
 * `make docker-push` builds, loads, and pushes the smartnode containers.

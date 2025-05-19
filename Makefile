@@ -10,6 +10,7 @@ ARCHS:=arm64 amd64
 
 CLI_TARGET_STRINGS:=$(foreach oos,$(CLI_TARGET_OOS), $(foreach arch,$(ARCHS),${BIN_DIR}/rocketpool-cli-$(oos)-$(arch)))
 DAEMON_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/rocketpool-daemon-linux-$(arch))
+TREEGEN_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/treegen-linux-$(arch))
 
 MODULES:=$(foreach path,$(shell find . -name go.mod),$(dir $(path)))
 MODULE_GLOBS:=$(foreach module,$(MODULES),$(module)...)
@@ -27,11 +28,15 @@ else
 endif
 endef
 
+# Must be first- so `make` runs this.
+.PHONY: default
+default: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon lint
+
 .PHONY: all
-all: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon lint
+all: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon ${BUILD_DIR}/treegen lint
 
 .PHONY: release
-release: ${CLI_TARGET_STRINGS} ${DAEMON_TARGET_STRINGS} ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon
+release: ${CLI_TARGET_STRINGS} ${DAEMON_TARGET_STRINGS} ${TREEGEN_TARGET_STRINGS} ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon ${BUILD_DIR}/treegen
 
 # Target for build/rocketpool-cli which is a symlink to an os-specific build
 ${BUILD_DIR}/rocketpool-cli: ${BIN_DIR}/rocketpool-cli-${LOCAL_OS}
@@ -41,6 +46,10 @@ ${BUILD_DIR}/rocketpool-cli: ${BIN_DIR}/rocketpool-cli-${LOCAL_OS}
 # Target for build/rocketpool-daemon which is a symlink to an os-specific build
 ${BUILD_DIR}/rocketpool-daemon: ${BIN_DIR}/rocketpool-daemon-${LOCAL_OS}
 	ln -sf $(shell pwd)/${BIN_DIR}/rocketpool-daemon-${LOCAL_OS} ${BUILD_DIR}/rocketpool-daemon
+
+# Target for build/treegen which is a symlink to a version-specific build
+${BUILD_DIR}/treegen: ${BIN_DIR}/treegen-${LOCAL_OS}
+	ln -sf $(shell pwd)/${BIN_DIR}/treegen-${LOCAL_OS} ${BUILD_DIR}/treegen
 
 # docker-builder container
 .PHONY: docker-builder
@@ -52,27 +61,31 @@ ifndef NO_DOCKER
 	bin_deps += docker-builder
 endif
 
+docker_build_cmd_amd64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
+	-e GOARCH=amd64 -e GOOS=linux --workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
+	go build
+local_build_cmd_amd64 = CGO_ENABLED=1 CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build
+docker_build_cmd_arm64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
+	-e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
+	--workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
+	go build
+local_build_cmd_arm64 = CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build
 # amd64 daemon build
 .PHONY: ${BIN_DIR}/rocketpool-daemon-linux-amd64
 ${BIN_DIR}/rocketpool-daemon-linux-amd64: ${bin_deps}
 ifndef NO_DOCKER
-	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
-		-e GOARCH=amd64 -e GOOS=linux --workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
-		go build -o $@ rocketpool/rocketpool.go
+	${docker_build_cmd_amd64} -o $@ rocketpool/rocketpool.go
 else
-	CGO_ENABLED=1 CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build -o $@ rocketpool/rocketpool.go
+	${local_build_cmd_amd64} -o $@ rocketpool/rocketpool.go
 endif
 
 # arm64 daemon build
 .PHONY: ${BIN_DIR}/rocketpool-daemon-linux-arm64
 ${BIN_DIR}/rocketpool-daemon-linux-arm64: ${bin_deps}
 ifndef NO_DOCKER
-	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
-	-e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
-	--workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
-	go build -o $@ rocketpool/rocketpool.go
+	${docker_build_cmd_arm64} -o $@ rocketpool/rocketpool.go
 else
-	CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build -o $@ rocketpool/rocketpool.go
+	${local_build_cmd_arm64} -o $@ rocketpool/rocketpool.go
 endif
 
 ${BIN_DIR}:
@@ -82,6 +95,23 @@ ${DOCKER_DIR}:
 
 $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool-cli-template,$(oos),$(arch)))))
 
+# amd64 treegen build
+.PHONY: ${BIN_DIR}/treegen-linux-amd64
+${BIN_DIR}/treegen-linux-amd64: ${bin_deps}
+ifndef NO_DOCKER
+	${docker_build_cmd_amd64} -o $@ ./treegen/.
+else
+	${local_build_cmd_amd64} -o $@ ./treegen/.
+endif
+
+# arm64 treegen build
+.PHONY: ${BIN_DIR}/treegen-linux-arm64
+${BIN_DIR}/treegen-linux-arm64: ${bin_deps}
+ifndef NO_DOCKER
+	${docker_build_cmd_arm64} -o $@ ./treegen/.
+else
+	${local_build_cmd_arm64} -o $@ ./treegen/.
+endif
 
 # Docker containers
 .PHONY: docker
