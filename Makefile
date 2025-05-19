@@ -127,8 +127,11 @@ docker-load: docker
 docker-push: docker-load
 	echo
 	echo -n "Publishing smartnode:${VERSION} containers. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
+	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-${VERSION}
 	docker push rocketpool/smartnode:${VERSION}-amd64
 	docker push rocketpool/smartnode:${VERSION}-arm64
+	docker manifest create rocketpool/smartnode:${VERSION} --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
+	docker manifest push --purge rocketpool/smartnode:${VERSION}
 	echo "Done!"
 
 .PHONY: docker-latest
@@ -136,10 +139,7 @@ docker-latest: docker-push
 	echo
 	echo -n "Publishing smartnode:${VERSION} as latest. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-latest
-	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-${VERSION}
-	docker manifest create rocketpool/smartnode:${VERSION} --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
 	docker manifest create rocketpool/smartnode:latest --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
-	docker manifest push --purge rocketpool/smartnode:${VERSION}
 	docker manifest push --purge rocketpool/smartnode:latest
 
 define lint-template 

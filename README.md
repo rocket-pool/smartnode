@@ -43,8 +43,8 @@ A [Makefile](./Makefile) is included for building, testing, and linting.
   * The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
 * `make docker` builds the rocketpool/smartnode containers for all supported architectures and saves them in build/\<version\>/docker
 * `make docker-load` builds and loads the smartnode containers.
-* `make docker-push` builds, loads, and pushes the smartnode containers.
-* `make docker-latest` builds, loads, pushes, tags as latest, and creates a multi-arch manifest, which is also pushed.
+* `make docker-push` builds, loads, pushes, creates a multi-arch manifest, and pushes the smartnode containers and manifest.
+* `make docker-latest` does the same as docker-push, but tags latest which is also pushed.
 * `make lint` runs the linter.
 * `make test` runs all unit tests.
 * `make clean` deletes any binaries. It does not clear your go caches. It does not clean up old docker images.
