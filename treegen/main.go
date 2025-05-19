@@ -140,13 +140,13 @@ func main() {
 			defer func() {
 				f, err := os.Create(memprofile)
 				if err != nil {
-					fmt.Printf("%sError saving heap profile: %w%w\n", colorRed, err, colorReset)
+					fmt.Printf("%sError saving heap profile: %s%s\n", colorRed, err.Error(), colorReset)
 					os.Exit(1)
 				}
 				defer f.Close()
 				runtime.GC()
 				if err := pprof.WriteHeapProfile(f); err != nil {
-					fmt.Printf("%sError saving heap profile: %w%w\n", colorRed, err, colorReset)
+					fmt.Printf("%sError saving heap profile: %s%s\n", colorRed, err.Error(), colorReset)
 				}
 			}()
 		}
@@ -155,7 +155,7 @@ func main() {
 		if fgprofile != "" {
 			f, err := os.Create(fgprofile)
 			if err != nil {
-				fmt.Printf("%sError saving heap profile: %w%w\n", colorRed, err, colorReset)
+				fmt.Printf("%sError saving heap profile: %s%s\n", colorRed, err.Error(), colorReset)
 				os.Exit(1)
 			}
 			closure := fgprof.Start(f, fgprof.FormatPprof)

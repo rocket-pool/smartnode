@@ -16,6 +16,7 @@ COPY ./addons/go.mod /src/addons/go.mod
 COPY ./rocketpool/go.mod /src/rocketpool/go.mod
 COPY ./rocketpool-cli/go.mod /src/rocketpool-cli/go.mod
 COPY ./shared/go.mod /src/shared/go.mod
+COPY ./treegen/go.mod /src/treegen/go.mod
 WORKDIR /src
 RUN go mod download -x
 WORKDIR /
@@ -30,6 +31,7 @@ COPY ./addons/ /src/addons/
 COPY ./rocketpool/ /src/rocketpool/
 COPY ./rocketpool-cli/ /src/rocketpool-cli/
 COPY ./shared/ /src/shared/
+COPY ./treegen/ /src/treegen
 COPY Makefile /src/Makefile
 WORKDIR /src
 RUN --mount=type=cache,target=/root/.cache/go-build make NO_DOCKER=true build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH}
