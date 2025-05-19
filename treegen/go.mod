@@ -1,6 +1,6 @@
-module treegen
+module github.com/rocket-pool/smartnode/treegen
 
-go 1.22.9
+go 1.21.8
 
 require (
 	github.com/ethereum/go-ethereum v1.13.5
@@ -8,7 +8,6 @@ require (
 	github.com/felixge/fgprof v0.9.5
 	github.com/goccy/go-json v0.10.2
 	github.com/rocket-pool/rocketpool-go v1.8.4-0.20241122223132-c5f2be18f72b
-	github.com/rocket-pool/smartnode v1.15.6-0.20250430151946-8926467b3e9e
 	github.com/urfave/cli/v2 v2.26.0
 )
 
@@ -84,10 +83,9 @@ require (
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.55.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	github.com/prysmaticlabs/fastssz v0.0.0-20241008181541-518c4ce73516 // indirect
+	github.com/prysmaticlabs/fastssz v0.0.0-20221107182844-78142813af44 // indirect
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20240328144219-a1caa50c3a1e // indirect
-	github.com/prysmaticlabs/gohashtree v0.0.4-beta.0.20240624100937-73632381301b // indirect
-	github.com/prysmaticlabs/prysm/v5 v5.1.2 // indirect
+	github.com/prysmaticlabs/gohashtree v0.0.3-alpha // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
@@ -122,9 +120,3 @@ require (
 	lukechampine.com/blake3 v1.3.0 // indirect
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
-
-replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a => github.com/rocket-pool/go-merkletree v1.0.1-0.20220406020931-c262d9b976dd
-
-replace github.com/rocket-pool/smartnode => ../smartnode
-
-//replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
