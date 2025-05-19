@@ -14,14 +14,9 @@ DAEMON_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/rocketpool-daemon-linu
 MODULES:=$(foreach path,$(shell find . -name go.mod),$(dir $(path)))
 MODULE_GLOBS:=$(foreach module,$(MODULES),$(module)...)
 
-cli_deps = ${BIN_DIR}
-ifndef NO_DOCKER
-	cli_deps += docker-builder
-endif
-
 define rocketpool-cli-template
 .PHONY: ${BIN_DIR}/rocketpool-cli-$1-$2
-${BIN_DIR}/rocketpool-cli-$1-$2: ${cli_deps}
+${BIN_DIR}/rocketpool-cli-$1-$2: ${bin_deps}
 	@echo "Building rocketpool-cli-$1-$2"
 ifndef NO_DOCKER
 	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=0 \
@@ -52,14 +47,14 @@ ${BUILD_DIR}/rocketpool-daemon: ${BIN_DIR}/rocketpool-daemon-${LOCAL_OS}
 docker-builder:
 	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl builder
 
-daemon_build_deps = ${BIN_DIR}
+bin_deps = ${BIN_DIR}
 ifndef NO_DOCKER
-	daemon_build_deps += docker-builder
+	bin_deps += docker-builder
 endif
 
 # amd64 daemon build
 .PHONY: ${BIN_DIR}/rocketpool-daemon-linux-amd64
-${BIN_DIR}/rocketpool-daemon-linux-amd64: ${daemon_build_deps}
+${BIN_DIR}/rocketpool-daemon-linux-amd64: ${bin_deps}
 ifndef NO_DOCKER
 	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
 		-e GOARCH=amd64 -e GOOS=linux --workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
@@ -70,7 +65,7 @@ endif
 
 # arm64 daemon build
 .PHONY: ${BIN_DIR}/rocketpool-daemon-linux-arm64
-${BIN_DIR}/rocketpool-daemon-linux-arm64: ${daemon_build_deps}
+${BIN_DIR}/rocketpool-daemon-linux-arm64: ${bin_deps}
 ifndef NO_DOCKER
 	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
 	-e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
