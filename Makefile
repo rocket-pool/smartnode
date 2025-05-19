@@ -30,7 +30,7 @@ endef
 
 # Must be first- so `make` runs this.
 .PHONY: default
-default: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon lint
+default: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon ${BUILD_DIR}/treegen lint
 
 .PHONY: all
 all: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon ${BUILD_DIR}/treegen lint

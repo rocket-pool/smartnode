@@ -28,7 +28,7 @@ See the [Smartnode Installer](https://github.com/rocket-pool/smartnode-install) 
 
 A [Makefile](./Makefile) is included for building, testing, and linting.
 
-* `make` or `make default` will build rocketpool-cli, rocketpool-daemon, and run the linter.
+* `make` or `make default` will build rocketpool-cli, rocketpool-daemon, treegen, and run the linter.
   * build/rocketpool-cli and build/rocketpool-daemon will be symlinked to the version and architecture specific binaries in build/
 * `make all` will build rocketpool-cli, rocketpool-daemon, treegen, and run the linter.
   * symlinks will be created for the first 3 binaries in build/
