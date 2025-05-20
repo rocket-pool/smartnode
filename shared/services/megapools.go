@@ -73,7 +73,7 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	var block beacon.BeaconBlock
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
-		block, _, err := bc.GetBeaconBlock(blockToRequest)
+		block, _, err = bc.GetBeaconBlock(blockToRequest)
 		if err != nil {
 			return megapool.ValidatorProof{}, err
 		}
