@@ -398,7 +398,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 			}
 		}
 	}
-	if hasSubmittedPastBlock || lastSubmissionBlock == 0 || !eventFound{
+	if hasSubmittedPastBlock || lastSubmissionBlock == 0 || !eventFound {
 		// If the node participated in consensus, find the next submission target
 		var targetBlockHeader *types.Header
 		_, nextSubmissionTime, targetBlockHeader, err = utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
