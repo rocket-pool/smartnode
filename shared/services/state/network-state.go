@@ -99,7 +99,8 @@ type NetworkState struct {
 	MinipoolDetailsByNode    map[common.Address][]*rpstate.NativeMinipoolDetails `json:"-"`
 
 	// Validator details
-	MinipoolValidatorDetails ValidatorDetailsMap `json:"minipool_validator_details"`
+	// NetworkState was updated to support megapools, so the old json tag "validator_details" is needed to decode rp-network-state-mainnet-20.json.gz
+	MinipoolValidatorDetails ValidatorDetailsMap `json:"validator_details"`
 	MegapoolValidatorDetails ValidatorDetailsMap `json:"megapool_validator_details"`
 
 	// Oracle DAO details
