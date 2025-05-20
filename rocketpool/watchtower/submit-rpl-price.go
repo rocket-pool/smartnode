@@ -377,21 +377,21 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	var hasSubmittedPastBlock bool
 	var nextSubmissionTime time.Time
 	var targetBlockNumber uint64
-	var lastSubmissionBlockHeader *types.Header
-
+	var lastSubmissionSlotTimestamp uint64
 	// Check if the node has submitted prices for the latest block
 	if lastSubmissionBlock != 0 {
-		// Create context with timeout
-		ctx, cancel := context.WithTimeout(context.Background(), contextTimeout)
-		defer cancel()
-
-		// Get the lastSubmissionBlock timestamp
-		lastSubmissionBlockHeader, err = t.rp.Client.HeaderByNumber(ctx, big.NewInt(int64(lastSubmissionBlock)))
+		found, lastSubmissionEvent, err := network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, nil)
 		if err != nil {
-			t.log.Printlnf("Error getting the latest submission block header: %s", err.Error())
+			t.log.Printlnf("Error getting price submission event for block %d", lastSubmissionBlock)
 			return err
 		}
-		hasSubmittedPastBlock, err = t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, lastSubmissionBlock, lastSubmissionBlockHeader.Time, state.NetworkDetails.RplPrice)
+		if !found {
+			t.log.Printlnf("No price submission event found for block %d", lastSubmissionBlock)
+			return fmt.Errorf("no price submission event found for block %d", lastSubmissionBlock)
+		}
+		lastSubmissionSlotTimestamp = lastSubmissionEvent.SlotTimestamp.Uint64()
+
+		hasSubmittedPastBlock, err = t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, lastSubmissionBlock, lastSubmissionSlotTimestamp, state.NetworkDetails.RplPrice)
 		if err != nil {
 			t.log.Printlnf("Error checking if node has submitted prices for block %d: %s", lastSubmissionBlock, err.Error())
 			return err
@@ -411,7 +411,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 		// If the node didn't participate in consensus, use the last submission block as the target block as a health check
 		t.log.Printlnf("Node has not participated on the consensus for block %d, using it as the target block.", lastSubmissionBlock)
 		targetBlockNumber = lastSubmissionBlock
-		nextSubmissionTime = time.Unix(int64(lastSubmissionBlockHeader.Time), 0)
+		nextSubmissionTime = time.Unix(int64(lastSubmissionSlotTimestamp), 0)
 
 	}
 
