@@ -3,7 +3,7 @@ variable "VERSION" {
 }
 
 group "default" {
-  targets = ["builder", "daemon"]
+  targets = ["builder", "smartnode"]
 }
 
 target "builder" {
@@ -16,8 +16,8 @@ target "builder" {
   platforms = [ "linux/amd64" ]
 }
 
-target "daemon" {
-  name = "daemon-${arch}"
+target "smartnode" {
+  name = "smartnode-${arch}"
   dockerfile = "docker/rocketpool-dockerfile"
   args = {
     VERSION = "${VERSION}"
@@ -29,7 +29,7 @@ target "daemon" {
   matrix = {
     arch = [ "amd64", "arm64" ]
   }
-  target = "daemon"
+  target = "smartnode"
   platform = "linux/${arch}"
-  output = [{ "type": "tar", "dest": "build/${VERSION}/docker/smartnode:${VERSION}-${arch}.tar" }]
+  output = [{ "type": "docker" }]
 }

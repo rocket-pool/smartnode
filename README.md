@@ -42,7 +42,6 @@ A [Makefile](./Makefile) is included for building, testing, and linting.
 * `make build/treegen` builds just the treegen stand-alone binary.
   * The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
 * `make docker` builds the rocketpool/smartnode containers for all supported architectures and saves them in build/\<version\>/docker
-* `make docker-load` builds and loads the smartnode containers.
 * `make docker-push` builds, loads, pushes, creates a multi-arch manifest, and pushes the smartnode containers and manifest.
 * `make docker-latest` does the same as docker-push, but tags latest which is also pushed.
 * `make lint` runs the linter.
