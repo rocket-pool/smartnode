@@ -34,6 +34,15 @@ type NativeNodeDetails struct {
 	MaximumRPLStake                  *big.Int       `json:"maximum_rpl_stake"`
 	EthBorrowed                      *big.Int       `json:"eth_borrowed"`
 	EthBorrowedLimit                 *big.Int       `json:"eth_borrowed_limit"`
+	MegapoolETHBorrowed              *big.Int       `json:"megapool_eth_borrowed"`
+	MinipoolETHBorrowed              *big.Int       `json:"minipool_eth_borrowed"`
+	EthBonded                        *big.Int       `json:"eth_bonded"`
+	MegapoolEthBonded                *big.Int       `json:"megapool_eth_bonded"`
+	MinipoolETHBonded                *big.Int       `json:"minipool_eth_bonded"`
+	MegapoolStakedRPL                *big.Int       `json:"megapool_staked_rpl"`
+	LegacyStakedRPL                  *big.Int       `json:"legacy_staked_rpl"`
+	UnstakingRPL                     *big.Int       `json:"unstaking_rpl"`
+	LockedRPL                        *big.Int       `json:"locked_rpl"`
 	MinipoolCount                    *big.Int       `json:"minipool_count"`
 	BalanceETH                       *big.Int       `json:"balance_eth"`
 	BalanceRETH                      *big.Int       `json:"balance_reth"`
@@ -340,6 +349,7 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 		mc.AddCall(contracts.RocketNodeStaking, &details.MinimumRPLStake, "getNodeMinimumRPLStake", address)
 		mc.AddCall(contracts.RocketNodeStaking, &details.MaximumRPLStake, "getNodeMaximumRPLStake", address)
 		// Matched is renamed to borrowed in Saturn v1.4
+		// getNodeETHMatched and getNodeETHMatchedLimit is the naming for these calls pre-saturn
 		mc.AddCall(contracts.RocketNodeStaking, &details.EthBorrowed, "getNodeETHMatched", address)
 		mc.AddCall(contracts.RocketNodeStaking, &details.EthBorrowedLimit, "getNodeETHMatchedLimit", address)
 	}
@@ -358,7 +368,28 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 
 	// Saturn
 	if contracts.isSaturnDeployed() {
+		// a node's total borrowed ETH amount (minipool + megapool)
 		mc.AddCall(contracts.RocketNodeStaking, &details.EthBorrowed, "getNodeETHBorrowed", address)
+		// a node's borrowed megapool ETH amount
+		mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolETHBorrowed, "getNodeMegapoolETHBorrowed", address)
+		// a node's borrowed minipool ETH amount
+		mc.AddCall(contracts.RocketNodeStaking, &details.MinipoolETHBorrowed, "getNodeMinipoolETHBorrowed", address)
+		// a node's total amount of a node operator's bonded ETH (minipool + megapool)
+		mc.AddCall(contracts.RocketNodeStaking, &details.EthBonded, "getNodeETHBonded", address)
+		// the amount of a node operator's megapool bonded ETH
+		mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolEthBonded, "getNodeMegapoolETHBonded", address)
+		// the amount of a node operator's minipool bonded ETH
+		mc.AddCall(contracts.RocketNodeStaking, &details.MinipoolETHBonded, "getNodeMinipoolETHBonded", address)
+		// the total amount of RPL staked by a node operator (both legacy and megapool staked RPL)
+		mc.AddCall(contracts.RocketNodeStaking, &details.RplStake, "getNodeStakedRPL", address)
+		// the amount of megapool staked RPL for a node operator
+		mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolStakedRPL, "getNodeMegapoolStakedRPL", address)
+		// the amount of legacy staked RPL for a node operator
+		mc.AddCall(contracts.RocketNodeStaking, &details.LegacyStakedRPL, "getNodeLegacyStakedRPL", address)
+		// the timestamp at which a node last unstaked megapool staked RPL
+		mc.AddCall(contracts.RocketNodeStaking, &details.UnstakingRPL, "getNodeUnstakingRPL", address)
+		// the amount of RPL that is locked for a given node
+		mc.AddCall(contracts.RocketNodeStaking, &details.LockedRPL, "getNodeLockedRPL", address)
 		mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolAddress, "getExpectedAddress", address)
 		mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getMegapoolDeployed", address)
 	}
