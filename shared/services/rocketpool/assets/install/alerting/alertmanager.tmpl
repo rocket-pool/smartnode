@@ -40,12 +40,24 @@ receivers:
     discord_configs:
       - webhook_url: "{{ .DiscordWebhookURL.Value }}"
     {{- end }}
-  
+
+    {{- if .PushoverToken.Value and .PushoverUserKey.Value }}
+    pushover_configs:
+      - token: "{{ .PushoverToken.Value }}"
+        user_key: "{{ .PushoverUserKey.Value }}"
+    {{- end }}
+
   - name: "node_operator_no_resolved"
     {{- if .DiscordWebhookURL.Value }}
     discord_configs:
       - webhook_url: "{{ .DiscordWebhookURL.Value }}"
         send_resolved: false
+    {{- end }}
+    
+    {{- if .PushoverToken.Value and .PushoverUserKey.Value }}
+    pushover_configs:
+      - token: "{{ .PushoverToken.Value }}"
+        user_key: "{{ .PushoverUserKey.Value }}"
     {{- end }}
 
 inhibit_rules:
