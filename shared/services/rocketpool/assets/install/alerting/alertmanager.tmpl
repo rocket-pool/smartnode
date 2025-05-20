@@ -54,7 +54,7 @@ receivers:
         send_resolved: false
     {{- end }}
     
-    {{- if .PushoverToken.Value and .PushoverUserKey.Value }}
+    {{- if .PushoverToken.Value .PushoverUserKey.Value }}
     pushover_configs:
       - token: "{{ .PushoverToken.Value }}"
         user_key: "{{ .PushoverUserKey.Value }}"
