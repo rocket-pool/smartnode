@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/hashicorp/go-version"
+	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
 )
@@ -52,6 +53,10 @@ type NetworkContracts struct {
 	// Houston
 	RocketDAOProtocolProposal *rocketpool.Contract
 	RocketDAOProtocolVerifier *rocketpool.Contract
+
+	// Saturn
+	RocketMegapoolFactory *rocketpool.Contract
+	RocketMegapoolManager *rocketpool.Contract
 }
 
 type contractArtifacts struct {
@@ -62,7 +67,7 @@ type contractArtifacts struct {
 }
 
 // Get a new network contracts container
-func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) (*NetworkContracts, error) {
+func NewNetworkContracts(rp *rocketpool.RocketPool, isSaturnDeployed bool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) (*NetworkContracts, error) {
 	// Get the latest block number if it's not provided
 	if opts == nil {
 		latestElBlock, err := rp.Client.BlockNumber(context.Background())
@@ -173,6 +178,17 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 		contract: &contracts.RocketDAOProtocolVerifier,
 	})
 
+	// Saturn wrappers
+	if isSaturnDeployed {
+		wrappers = append(wrappers, contractArtifacts{
+			name:     "rocketMegapoolFactory",
+			contract: &contracts.RocketMegapoolFactory,
+		}, contractArtifacts{
+			name:     "rocketMegapoolManager",
+			contract: &contracts.RocketMegapoolManager,
+		})
+	}
+
 	// Add the address and ABI getters to multicall
 	for i, wrapper := range wrappers {
 		// Add the address getter
@@ -216,10 +232,27 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 	return contracts, nil
 }
 
+// Returns whether or not Saturn has been deployed
+func (c *NetworkContracts) isSaturnDeployed() bool {
+	constraint, _ := version.NewConstraint(">= 1.4.0")
+	return constraint.Check(c.Version)
+}
+
 // Get the current version of the network
 func (c *NetworkContracts) getCurrentVersion(rp *rocketpool.RocketPool) error {
 	opts := &bind.CallOpts{
 		BlockNumber: c.ElBlockNumber,
+	}
+
+	depositPoolVersion, err := deposit.GetRocketDepositPoolVersion(rp, opts)
+	if err != nil {
+		return fmt.Errorf("error checking deposit pool version: %w", err)
+	}
+
+	// Check for v1.4 (Saturn 1)
+	if depositPoolVersion > 3 {
+		c.Version, err = version.NewSemver("1.4.0")
+		return err
 	}
 
 	// Check for v1.2

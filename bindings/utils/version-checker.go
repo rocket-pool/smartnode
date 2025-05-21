@@ -5,12 +5,27 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/hashicorp/go-version"
+	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
 func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version.Version, error) {
+	depositPoolVersion, err := deposit.GetRocketDepositPoolVersion(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error checking deposit pool version: %w", err)
+	}
+
+	// Check for v1.4 (Saturn 1)
+	if depositPoolVersion > 3 {
+		return version.NewSemver("1.4.0")
+	}
+
+	nodeMgrVersion, err := node.GetNodeManagerVersion(rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error checking node manager version: %w", err)
+	}
 
 	// Check for v1.3.1 (Houston Hotfix)
 	networkVotingVersion, err := network.GetRocketNetworkVotingVersion(rp, opts)
@@ -21,12 +36,6 @@ func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version
 		return version.NewSemver("1.3.1")
 	}
 
-	nodeMgrVersion, err := node.GetNodeManagerVersion(rp, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error checking node manager version: %w", err)
-	}
-
-	// Check for v1.3 (Houston)
 	if nodeMgrVersion > 3 {
 		return version.NewSemver("1.3.0")
 	}

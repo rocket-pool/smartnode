@@ -707,6 +707,55 @@ func ConfirmRPLWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.A
 	return tx.Hash(), nil
 }
 
+func EstimateDeployMegapool(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "deployMegapool")
+}
+
+// Deploys a Megapool contract
+func DeployMegapool(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, nil
+	}
+
+	tx, err := rocketNodeManager.Transact(opts, "deployMegapool")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error calling deployMegapool: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
+// Get express ticket count for a node
+func GetExpressTicketCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+	rocketMegapoolFactory, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	expressTicketCount := new(*big.Int)
+	if err := rocketMegapoolFactory.Call(opts, expressTicketCount, "getExpressTicketCount", nodeAddress); err != nil {
+		return 0, fmt.Errorf("error getting express ticket count for node %s: %w", nodeAddress, err)
+	}
+	return (*expressTicketCount).Uint64(), nil
+}
+
+// Consume an express ticket for the given node operator
+func UseExpressTicket(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, nil
+	}
+
+	tx, err := rocketNodeManager.Transact(opts, "useExpressTicket")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error calling useExpressticket: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 
