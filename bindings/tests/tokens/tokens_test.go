@@ -4,12 +4,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	rethutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/reth"
-	rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
+	rethutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/tokens/reth"
+	rplutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/tokens/rpl"
 )
 
 func TestTokenBalances(t *testing.T) {

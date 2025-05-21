@@ -8,8 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
-	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	trustednodedao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
 // Config

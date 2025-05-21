@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
 )
 
 func TestInflationSettings(t *testing.T) {

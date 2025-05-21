@@ -5,8 +5,8 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/storage"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 

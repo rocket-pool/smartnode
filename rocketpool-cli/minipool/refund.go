@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	rocketpoolapi "github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"

@@ -5,12 +5,12 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/smartnode/bindings/rewards"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
+	nodeutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/node"
 )
 
 func TestTrustedNodeRewards(t *testing.T) {

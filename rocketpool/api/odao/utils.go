@@ -4,11 +4,11 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao"
-	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/dao"
+	tndao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	tnsettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"golang.org/x/sync/errgroup"
 )
 

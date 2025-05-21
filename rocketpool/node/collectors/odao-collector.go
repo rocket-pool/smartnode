@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
 // Represents the collector for the ODAO metrics

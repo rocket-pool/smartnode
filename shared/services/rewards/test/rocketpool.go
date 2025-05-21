@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/rocket-pool/rocketpool-go/rewards"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/rewards"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
 // MockRocketPool is a EC mock specifically for testing treegen.

@@ -2,6 +2,7 @@ go 1.21.8
 
 use (
 	./addons
+	./bindings
 	./rocketpool
 	./rocketpool-cli
 	./shared
@@ -12,4 +13,4 @@ replace github.com/wealdtech/go-merkletree v1.0.1-0.20190605192610-2bb163c2ea2a 
 
 replace github.com/rocket-pool/smartnode => ./
 
-// replace github.com/rocket-pool/rocketpool-go => ../rocketpool-go
+replace github.com/rocket-pool/rocketpool-go => ./

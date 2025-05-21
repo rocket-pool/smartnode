@@ -9,8 +9,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 )
 
 // Settings

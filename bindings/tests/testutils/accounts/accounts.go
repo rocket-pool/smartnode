@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 
-	"github.com/rocket-pool/rocketpool-go/tests"
+	"github.com/rocket-pool/smartnode/bindings/tests"
 )
 
 // An account containing a keypair and address

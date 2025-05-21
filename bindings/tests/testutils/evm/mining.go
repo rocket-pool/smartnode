@@ -3,7 +3,7 @@ package evm
 import (
 	"github.com/ethereum/go-ethereum/rpc"
 
-	"github.com/rocket-pool/rocketpool-go/tests"
+	"github.com/rocket-pool/smartnode/bindings/tests"
 )
 
 // Mine a number of blocks

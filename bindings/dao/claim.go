@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
 func GetContractExists(rp *rocketpool.RocketPool, contractName string, opts *bind.CallOpts) (bool, error) {
