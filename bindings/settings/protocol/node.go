@@ -165,6 +165,19 @@ func GetMaximumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	return *value, nil
 }
 
+// The the period of time a node must wait before withdrawing RPL
+func GetNodeUnstakingPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := nodeSettingsContract.Call(opts, value, "getUnstakingPeriod"); err != nil {
+		return nil, fmt.Errorf("error getting the unstaking period: %w", err)
+	}
+	return *value, nil
+}
+
 // Get contracts
 var nodeSettingsContractLock sync.Mutex
 
