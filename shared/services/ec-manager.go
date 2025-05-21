@@ -64,14 +64,14 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 		}
 	}
 
-	primaryEc, err := ethclient.Dial(primaryEcUrl)
+	primaryEc, err := dialWithTimeout(primaryEcUrl)
 	if err != nil {
 		return nil, fmt.Errorf("error connecting to primary EC at [%s]: %w", primaryEcUrl, err)
 	}
 
 	var fallbackEc *ethclient.Client
 	if fallbackEcUrl != "" {
-		fallbackEc, err = ethclient.Dial(fallbackEcUrl)
+		fallbackEc, err = dialWithTimeout(fallbackEcUrl)
 		if err != nil {
 			return nil, fmt.Errorf("error connecting to fallback EC at [%s]: %w", fallbackEcUrl, err)
 		}
@@ -87,6 +87,12 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 		fallbackReady: fallbackEc != nil,
 	}, nil
 
+}
+
+func dialWithTimeout(url string) (*ethclient.Client, error) {	
+	initalConnectionCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	return ethclient.DialContext(initalConnectionCtx, url)
 }
 
 /// ========================
