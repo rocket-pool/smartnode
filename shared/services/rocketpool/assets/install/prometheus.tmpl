@@ -1,0 +1,60 @@
+# Default Prometheus configuration for Rocket Pool
+
+global:
+  scrape_interval:     15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  scrape_timeout:      12s # Timeout must be shorter than the interval
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:{{or .Prometheus.Port.Value "9091"}}']
+
+  - job_name: 'node'
+    static_configs:
+      # node-exporter is on the host network so it can get access to the actual machine's network info
+      # We have to use 'hosts.docker.internal' to refer to it due to this configuration
+      - targets: ['host.docker.internal:{{or .ExporterMetricsPort.Value "9103"}}']
+
+  - job_name: 'geth'
+    static_configs:
+      - targets: ['{{.GetExecutionHostname}}:{{or .EcMetricsPort.Value "9105"}}']
+    metrics_path: /debug/metrics/prometheus
+
+  - job_name: 'eth1'
+    static_configs:
+      - targets: ['{{.GetExecutionHostname}}:{{or .EcMetricsPort.Value "9105"}}']
+
+  - job_name: 'eth2'
+    static_configs:
+      - targets: ['{{.GetConsensusHostname}}:{{or .BnMetricsPort.Value "9100"}}']
+
+  - job_name: 'validator'
+    static_configs:
+      - targets: ['validator:{{or .VcMetricsPort.Value "9101"}}']
+
+  - job_name: 'rocketpool'
+    scrape_interval: 5m
+    scrape_timeout: 5m
+    static_configs:
+      - targets: ['node:{{or .NodeMetricsPort.Value "9102"}}']
+
+  - job_name: 'watchtower'
+    scrape_interval: 5m
+    scrape_timeout: 5m
+    static_configs:
+      - targets: ['watchtower:{{or .WatchtowerMetricsPort.Value "9104"}}']
+
+  - job_name: 'custom_jobs' # Mandatory field, but will be ignored.
+    file_sd_configs:
+      - files:
+        - /extra-scrape-jobs/*.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:{{or .Alertmanager.Port.Value "9093"}}
+
+rule_files:
+  - /alerting/rules/*.yml

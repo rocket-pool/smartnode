@@ -1,7 +1,7 @@
 package odao
 
 import (
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"

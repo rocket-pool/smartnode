@@ -12,9 +12,7 @@ import (
 
 // Constants
 const (
-	smartnodeTag                       string = "rocketpool/smartnode:v" + shared.RocketPoolVersion
-	pruneProvisionerTag                string = "rocketpool/eth1-prune-provision:v0.0.1"
-	ecMigratorTag                      string = "rocketpool/ec-migrator:v1.0.0"
+	smartnodeTagPrefix                 string = "rocketpool/smartnode:v"
 	NetworkID                          string = "network"
 	ProjectNameID                      string = "projectName"
 	SnapshotID                         string = "rocketpool-dao.eth"
@@ -758,15 +756,7 @@ func (cfg *SmartnodeConfig) GetRplTokenAddress() string {
 }
 
 func (cfg *SmartnodeConfig) GetSmartnodeContainerTag() string {
-	return smartnodeTag
-}
-
-func (config *SmartnodeConfig) GetPruneProvisionerContainerTag() string {
-	return pruneProvisionerTag
-}
-
-func (cfg *SmartnodeConfig) GetEcMigratorContainerTag() string {
-	return ecMigratorTag
+	return smartnodeTagPrefix + shared.RocketPoolVersion()
 }
 
 func (cfg *SmartnodeConfig) GetSnapshotApiDomain() string {
@@ -981,7 +971,7 @@ func getNetworkOptions() []config.ParameterOption {
 		},
 	}
 
-	if strings.HasSuffix(shared.RocketPoolVersion, "-dev") {
+	if strings.HasSuffix(shared.RocketPoolVersion(), "-dev") {
 		options = append(options, config.ParameterOption{
 			Name:        "Devnet",
 			Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.",

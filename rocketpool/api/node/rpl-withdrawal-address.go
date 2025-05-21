@@ -5,10 +5,12 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	node131 "github.com/rocket-pool/rocketpool-go/legacy/v1.3.1/node"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/storage"
+	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/urfave/cli"
+	"golang.org/x/sync/errgroup"
 
 	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"

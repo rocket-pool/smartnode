@@ -30,6 +30,9 @@ type LodestarConfig struct {
 	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
+// Type assertion for LodestarConfig
+var _ config.ConsensusConfig = &LodestarConfig{}
+
 // Generates a new Lodestar configuration
 func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 	return &LodestarConfig{

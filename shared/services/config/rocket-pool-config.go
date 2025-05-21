@@ -762,7 +762,7 @@ func (cfg *RocketPoolConfig) Serialize() map[string]map[string]string {
 	masterMap[rootConfigName] = rootParams
 	masterMap[rootConfigName]["rpDir"] = cfg.RocketPoolDirectory
 	masterMap[rootConfigName]["isNative"] = fmt.Sprint(cfg.IsNativeMode)
-	masterMap[rootConfigName]["version"] = fmt.Sprintf("v%s", shared.RocketPoolVersion) // Update the version with the current Smartnode version
+	masterMap[rootConfigName]["version"] = fmt.Sprintf("v%s", shared.RocketPoolVersion()) // Update the version with the current Smartnode version
 
 	// Serialize the subconfigs
 	for name, subconfig := range cfg.GetSubconfigs() {
@@ -782,7 +782,7 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 	// Upgrade the config to the latest version
 	err := migration.UpdateConfig(masterMap)
 	if err != nil {
-		return fmt.Errorf("error upgrading configuration to v%s: %w", shared.RocketPoolVersion, err)
+		return fmt.Errorf("error upgrading configuration to v%s: %w", shared.RocketPoolVersion(), err)
 	}
 
 	// Get the network
@@ -925,6 +925,14 @@ func (cfg *RocketPoolConfig) ConsensusClientApiUrl() (string, error) {
 	return cCfg.(config.ExternalConsensusConfig).GetApiUrl(), nil
 }
 
+func stripScheme(url string) string {
+	idx := strings.Index(url, "://")
+	if idx != -1 {
+		url = url[idx+3:]
+	}
+	return url
+}
+
 // Used by text/template to format validator.yml
 func (cfg *RocketPoolConfig) ConsensusClientRpcUrl() (string, error) {
 	// Check if Rescue Node is in-use
@@ -947,8 +955,8 @@ func (cfg *RocketPoolConfig) ConsensusClientRpcUrl() (string, error) {
 		return fmt.Sprintf("%s:%d", Eth2ContainerName, cfg.Prysm.RpcPort.Value), nil
 	}
 
-	// Use the external RPC endpoint
-	return cfg.ExternalPrysm.JsonRpcUrl.Value.(string), nil
+	// Use the external RPC endpoint, but strip any scheme
+	return stripScheme(cfg.ExternalPrysm.JsonRpcUrl.Value.(string)), nil
 }
 
 // Used by text/template to format validator.yml
@@ -976,7 +984,7 @@ func (cfg *RocketPoolConfig) FallbackCcRpcUrl() string {
 		return ""
 	}
 
-	return cfg.FallbackPrysm.JsonRpcUrl.Value.(string)
+	return stripScheme(cfg.FallbackPrysm.JsonRpcUrl.Value.(string))
 }
 
 // Used by text/template to format validator.yml
@@ -1008,7 +1016,7 @@ func (cfg *RocketPoolConfig) CustomGraffiti() (string, error) {
 func (cfg *RocketPoolConfig) GraffitiPrefix() string {
 	// Graffiti
 	identifier := ""
-	versionString := fmt.Sprintf("v%s", shared.RocketPoolVersion)
+	versionString := fmt.Sprintf("v%s", shared.RocketPoolVersion())
 	if len(versionString) < 8 {
 		var ecInitial string
 		if !cfg.ExecutionClientLocal() {
@@ -1046,7 +1054,7 @@ func (cfg *RocketPoolConfig) Graffiti() (string, error) {
 
 // Used by text/template to format validator.yml
 func (cfg *RocketPoolConfig) RocketPoolVersion() string {
-	return shared.RocketPoolVersion
+	return shared.RocketPoolVersion()
 }
 
 // Used by text/template to format validator.yml

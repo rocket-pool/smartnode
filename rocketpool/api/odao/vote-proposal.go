@@ -3,9 +3,9 @@ package odao
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/dao"
+	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 

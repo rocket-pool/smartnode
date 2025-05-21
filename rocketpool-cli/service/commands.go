@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/urfave/cli"
@@ -131,7 +132,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					cli.StringFlag{
 						Name:  "version, v",
 						Usage: "The smart node package version to install",
-						Value: fmt.Sprintf("v%s", shared.RocketPoolVersion),
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -139,6 +139,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
+					}
+
+					if c.String("version") != "" {
+						fmt.Fprintf(os.Stderr, "--version/-v is no longer supported. Instead, download the correct version of the `rocketpool` binary and install that. Current version: %s\n", shared.RocketPoolVersion())
+						os.Exit(1)
 					}
 
 					// Run command
@@ -417,8 +422,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 					cli.StringFlag{
 						Name:  "version, v",
-						Usage: "The update tracker package version to install",
-						Value: fmt.Sprintf("v%s", shared.RocketPoolVersion),
+						Usage: "DEPRECATED: The update tracker package version to install",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -426,6 +430,11 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
+					}
+
+					if c.String("version") != "" {
+						fmt.Fprintf(os.Stderr, "--version/-v is no longer supported. Instead, download the correct version of the `rocketpool` binary and install the update tracker from there. Current version: %s\n", shared.RocketPoolVersion())
+						os.Exit(1)
 					}
 
 					// Run command

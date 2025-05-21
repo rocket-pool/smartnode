@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 

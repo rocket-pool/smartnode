@@ -5,10 +5,10 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	tndao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	tnsettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/rocketpool-go/utils"
+	tndao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	tnsettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
+	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 

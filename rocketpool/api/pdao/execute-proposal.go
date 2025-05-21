@@ -3,8 +3,8 @@ package pdao
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/dao/protocol"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 

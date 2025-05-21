@@ -18,21 +18,21 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/prysmaticlabs/prysm/v5/crypto/bls"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	beacontypes "github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 // Config
 const (
-	RequestUrlFormat       = "%s%s"
-	RequestJsonContentType = "application/json"
-	RequestSSZContentType  = "application/octet-stream"
+	RequestUrlFormat               = "%s%s"
+	RequestJsonContentType         = "application/json"
+	RequestSSZContentType          = "application/octet-stream"
+	ResponseConsensusVersionHeader = "Eth-Consensus-Version"
 
 	RequestSyncStatusPath                  = "/eth/v1/node/syncing"
 	RequestEth2ConfigPath                  = "/eth/v1/config/spec"
@@ -977,7 +977,7 @@ func (c *StandardHttpClient) getAttestations(blockId string) (AttestationsRespon
 
 // Get the target beacon block
 func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse, bool, error) {
-	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, fmt.Sprint(blockId)))
 	if err != nil {
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: %w", err)
 	}
@@ -995,20 +995,56 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 }
 
 // Get the Beacon state for a slot
-func (c *StandardHttpClient) GetBeaconState(slot uint64) (*beacontypes.BeaconStateDeneb, error) {
-	responseBody, status, err := c.getRequestWithContentType(fmt.Sprintf(RequestBeaconStatePath, slot), RequestSSZContentType)
+func (c *StandardHttpClient) GetBeaconStateSSZ(slot uint64) (*beacon.BeaconStateSSZ, error) {
+	response, err := c.sszRequest(fmt.Sprintf(RequestBeaconStatePath, slot))
 	if err != nil {
 		return nil, fmt.Errorf("Could not get beacon state data: %w", err)
 	}
-	if status != http.StatusOK {
-		return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d; response body: '%s'", status, string(responseBody))
-	}
-	var beaconState beacontypes.BeaconStateDeneb
-	if err := beaconState.UnmarshalSSZ(responseBody); err != nil {
-		return nil, fmt.Errorf("Could not decode beacon state data: %w", err)
+	if response.StatusCode != http.StatusOK {
+		responseBody, err := io.ReadAll(response.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d; response body: '%s'", response.StatusCode, string(responseBody))
+		}
+		return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d", response.StatusCode)
 	}
 
-	return &beaconState, nil
+	// Slurp the body
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get beacon state data: %w", err)
+	}
+
+	return &beacon.BeaconStateSSZ{
+		Data: body,
+		Fork: response.Header.Get(ResponseConsensusVersionHeader),
+	}, nil
+}
+
+func (c *StandardHttpClient) GetBeaconBlockSSZ(slot uint64) (*beacon.BeaconBlockSSZ, bool, error) {
+	response, err := c.sszRequest(fmt.Sprintf(RequestBeaconBlockPath, fmt.Sprint(slot)))
+	if err != nil {
+		return nil, false, fmt.Errorf("Could not get beacon block data: %w", err)
+	}
+	if response.StatusCode == http.StatusNotFound {
+		return nil, false, nil
+	}
+	if response.StatusCode != http.StatusOK {
+		responseBody, err := io.ReadAll(response.Body)
+		if err != nil {
+			return nil, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", response.StatusCode, string(responseBody))
+		}
+		return nil, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", response.StatusCode, string(responseBody))
+	}
+
+	// Slurp the body
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, false, fmt.Errorf("Could not get beacon block data: %w", err)
+	}
+	return &beacon.BeaconBlockSSZ{
+		Data: body,
+		Fork: response.Header.Get(ResponseConsensusVersionHeader),
+	}, true, nil
 }
 
 // Get the specified beacon block header
@@ -1162,6 +1198,15 @@ func (c *StandardHttpClient) getRequestWithContentType(requestPath string, conte
 
 	// Return
 	return body, status, nil
+}
+
+func (c *StandardHttpClient) sszRequest(requestPath string) (*http.Response, error) {
+	request, err := http.NewRequest("GET", fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Accept", RequestSSZContentType)
+	return http.DefaultClient.Do(request)
 }
 
 // Make a POST request to the beacon node
