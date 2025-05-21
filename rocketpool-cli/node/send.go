@@ -5,17 +5,15 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS string) error {
+func nodeSend(c *cli.Context, amountRaw float64, token string, toAddressOrENS string) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
@@ -23,9 +21,6 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 		return err
 	}
 	defer rp.Close()
-
-	// Get amount in wei
-	amountWei := eth.EthToWei(amount)
 
 	// Get the recipient
 	var toAddress common.Address
@@ -46,7 +41,7 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 	}
 
 	// Check tokens can be sent
-	canSend, err := rp.CanNodeSend(amountWei, token, toAddress)
+	canSend, err := rp.CanNodeSend(amountRaw, token, toAddress)
 	if err != nil {
 		return err
 	}
@@ -69,16 +64,16 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 		fmt.Printf("Token address:   %s\n", token)
 		fmt.Printf("Token name:      %s\n", canSend.TokenName)
 		fmt.Printf("Token symbol:    %s\n", canSend.TokenSymbol)
-		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(canSend.Balance), canSend.TokenSymbol)
+		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, canSend.TokenSymbol)
 		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
 
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.6f of %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	} else {
-		fmt.Printf("Node balance:    %.6f %s\n\n", eth.WeiToEth(canSend.Balance), token)
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.6f %s to %s? This action cannot be undone!", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString))) {
+		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, token)
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -91,7 +86,7 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 	}
 
 	// Send tokens
-	response, err := rp.NodeSend(amountWei, token, toAddress)
+	response, err := rp.NodeSend(amountRaw, token, toAddress)
 	if err != nil {
 		return err
 	}
@@ -108,9 +103,9 @@ func nodeSend(c *cli.Context, amount float64, token string, toAddressOrENS strin
 
 	// Log & return
 	if strings.HasPrefix(token, "0x") {
-		fmt.Printf("Successfully sent %.6f of %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), tokenString, toAddressString)
+		fmt.Printf("Successfully sent %.6f of %s to %s.\n", amountRaw, tokenString, toAddressString)
 	} else {
-		fmt.Printf("Successfully sent %.6f %s to %s.\n", math.RoundDown(eth.WeiToEth(amountWei), 6), token, toAddressString)
+		fmt.Printf("Successfully sent %.6f %s to %s.\n", amountRaw, token, toAddressString)
 	}
 	return nil
 

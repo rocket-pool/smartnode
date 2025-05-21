@@ -4,11 +4,11 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao"
-	"github.com/rocket-pool/rocketpool-go/dao/security"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	psettings "github.com/rocket-pool/rocketpool-go/settings/protocol"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/dao"
+	"github.com/rocket-pool/smartnode/bindings/dao/security"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	psettings "github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"golang.org/x/sync/errgroup"
 )
 

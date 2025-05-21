@@ -1,14 +1,15 @@
 package node
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"math/big"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -16,7 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) (*api.CanNodeSendResponse, error) {
+func canNodeSend(c *cli.Context, amountRaw float64, token string, to common.Address) (*api.CanNodeSendResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -79,6 +80,10 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
 	if strings.HasPrefix(token, "0x") {
 		tokenAddress := common.HexToAddress(token)
 
+		if bytes.Equal(to.Bytes(), tokenAddress.Bytes()) {
+			return nil, fmt.Errorf("sending tokens to the same address as the token is prohibited for safety")
+		}
+
 		// Error out if using one of the well-known ones
 		if tokenAddress == *rplContract.Address {
 			return nil, fmt.Errorf("sending RPL via the token address is prohibited for safety; please use 'rpl' as the token to send instead of its address")
@@ -95,6 +100,8 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
 		if err != nil {
 			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
 		}
+
+		amountWei := eth.EthToWeiWithDecimals(amountRaw, contract.Decimals)
 		response.TokenName = contract.Name
 		response.TokenSymbol = contract.Symbol
 
@@ -103,7 +110,8 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
 		if err != nil {
 			return nil, fmt.Errorf("error getting ERC20 balance: %w", err)
 		}
-		response.Balance = balance
+
+		response.Balance = eth.WeiToEthWithDecimals(balance, contract.Decimals)
 		response.InsufficientBalance = (amountWei.Cmp(balance) > 0)
 
 		// Get the gas info
@@ -114,16 +122,17 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
 		response.GasInfo = gasInfo
 	} else {
 		// Handle well-known token types
+		amountWei := eth.EthToWei(amountRaw)
+		var balanceWei *big.Int
 		switch token {
 		case "eth":
 
 			// Check node ETH balance
-			ethBalanceWei, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
+			balanceWei, err = ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
 			if err != nil {
 				return nil, err
 			}
-			response.Balance = ethBalanceWei
-			response.InsufficientBalance = (amountWei.Cmp(ethBalanceWei) > 0)
+			response.InsufficientBalance = (amountWei.Cmp(balanceWei) > 0)
 			gasInfo, err := eth.EstimateSendTransactionGas(ec, to, nil, false, opts)
 			if err != nil {
 				return nil, err
@@ -137,12 +146,11 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
 				return nil, err
 			}
 			// Check node RPL balance
-			rplBalanceWei, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
+			balanceWei, err = tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
 			if err != nil {
 				return nil, err
 			}
-			response.Balance = rplBalanceWei
-			response.InsufficientBalance = (amountWei.Cmp(rplBalanceWei) > 0)
+			response.InsufficientBalance = (amountWei.Cmp(balanceWei) > 0)
 			gasInfo, err := tokens.EstimateTransferRPLGas(rp, to, amountWei, opts)
 			if err != nil {
 				return nil, err
@@ -156,12 +164,11 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
 				return nil, err
 			}
 			// Check node fixed-supply RPL balance
-			fixedSupplyRplBalanceWei, err := tokens.GetFixedSupplyRPLBalance(rp, nodeAccount.Address, nil)
+			balanceWei, err = tokens.GetFixedSupplyRPLBalance(rp, nodeAccount.Address, nil)
 			if err != nil {
 				return nil, err
 			}
-			response.Balance = fixedSupplyRplBalanceWei
-			response.InsufficientBalance = (amountWei.Cmp(fixedSupplyRplBalanceWei) > 0)
+			response.InsufficientBalance = (amountWei.Cmp(balanceWei) > 0)
 			gasInfo, err := tokens.EstimateTransferFixedSupplyRPLGas(rp, to, amountWei, opts)
 			if err != nil {
 				return nil, err
@@ -175,12 +182,11 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
 				return nil, err
 			}
 			// Check node rETH balance
-			rethBalanceWei, err := tokens.GetRETHBalance(rp, nodeAccount.Address, nil)
+			balanceWei, err = tokens.GetRETHBalance(rp, nodeAccount.Address, nil)
 			if err != nil {
 				return nil, err
 			}
-			response.Balance = rethBalanceWei
-			response.InsufficientBalance = (amountWei.Cmp(rethBalanceWei) > 0)
+			response.InsufficientBalance = (amountWei.Cmp(balanceWei) > 0)
 			gasInfo, err := tokens.EstimateTransferRETHGas(rp, to, amountWei, opts)
 			if err != nil {
 				return nil, err
@@ -188,6 +194,7 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
 			response.GasInfo = gasInfo
 
 		}
+		response.Balance = eth.WeiToEth(balanceWei)
 	}
 
 	// Update & return response
@@ -196,7 +203,7 @@ func canNodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Add
 
 }
 
-func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Address) (*api.NodeSendResponse, error) {
+func nodeSend(c *cli.Context, amountRaw float64, token string, to common.Address) (*api.NodeSendResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -238,12 +245,15 @@ func nodeSend(c *cli.Context, amountWei *big.Int, token string, to common.Addres
 			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
 		}
 
+		amountWei := eth.EthToWeiWithDecimals(amountRaw, contract.Decimals)
+
 		tx, err := contract.Transfer(to, amountWei, opts)
 		if err != nil {
 			return nil, err
 		}
 		response.TxHash = tx.Hash()
 	} else {
+		amountWei := eth.EthToWei(amountRaw)
 		// Handle token type
 		switch token {
 		case "eth":

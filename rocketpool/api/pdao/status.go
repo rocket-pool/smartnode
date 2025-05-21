@@ -12,13 +12,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	node131 "github.com/rocket-pool/rocketpool-go/legacy/v1.3.1/node"
+	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/urfave/cli"
 	"github.com/wealdtech/go-ens/v3"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/smartnode/bindings/network"
+	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"

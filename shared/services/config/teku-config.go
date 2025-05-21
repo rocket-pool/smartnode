@@ -40,6 +40,9 @@ type TekuConfig struct {
 	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
 }
 
+// Type assertion for TekuConfig
+var _ config.ConsensusConfig = &TekuConfig{}
+
 // Generates a new Teku configuration
 func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 	return &TekuConfig{

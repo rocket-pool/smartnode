@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
@@ -63,7 +63,7 @@ func CreateTreeFromLeaves(blockNumber uint32, network cfgtypes.Network, leaves [
 	}
 
 	return &VotingTree{
-		SmartnodeVersion: shared.RocketPoolVersion,
+		SmartnodeVersion: shared.RocketPoolVersion(),
 		BlockNumber:      blockNumber,
 		Network:          network,
 		Nodes:            nodes,

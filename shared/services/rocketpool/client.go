@@ -2,17 +2,15 @@ package rocketpool
 
 import (
 	"bufio"
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"math"
 	"math/big"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +24,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool/assets"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/template"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -34,9 +33,6 @@ import (
 
 // Config
 const (
-	InstallerURL     string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install.sh"
-	UpdateTrackerURL string = "https://github.com/rocket-pool/smartnode-install/releases/download/%s/install-update-tracker.sh"
-
 	SettingsFile             string = "user-settings.yml"
 	BackupSettingsFile       string = "user-settings-backup.yml"
 	PrometheusConfigTemplate string = "prometheus.tmpl"
@@ -54,7 +50,8 @@ const (
 	templateSuffix    string = ".tmpl"
 	composeFileSuffix string = ".yml"
 
-	nethermindAdminUrl string = "http://127.0.0.1:7434"
+	nethermindAdminUrl          string = "http://127.0.0.1:7434"
+	pruneStarterContainerSuffix string = "_nm_prune_starter"
 
 	DebugColor = color.FgYellow
 )
@@ -292,13 +289,137 @@ func (c *Client) UpdatePrometheusConfiguration(config *config.RocketPoolConfig) 
 	return t.Write(config)
 }
 
+func (c *Client) runScript(script assets.ScriptWithContext, verbose bool, flags []string) error {
+	// Make a tmpdir
+	tmpdir, err := os.MkdirTemp("", "rocketpool-")
+	if err != nil {
+		return fmt.Errorf("error creating tmpdir: %w", err)
+	}
+	if verbose {
+		fmt.Printf("Verbose mode enabled, tmpdir %s will not be removed\n", tmpdir)
+	} else {
+		defer os.RemoveAll(tmpdir)
+	}
+
+	// Create a file in the tmpdir
+	scriptPathName := filepath.Join(tmpdir, "script.sh")
+	scriptFile, err := os.Create(scriptPathName)
+	if err != nil {
+		return fmt.Errorf("error creating script file: %w", err)
+	}
+	if err := scriptFile.Chmod(0700); err != nil {
+		return fmt.Errorf("error setting script file permissions: %w", err)
+	}
+	// write the script to the file
+	_, err = scriptFile.Write(script.Script)
+	if err != nil {
+		return fmt.Errorf("error writing script to file: %w", err)
+	}
+	scriptFile.Close()
+
+	// Copy the context to the tmpdir
+	// If we upgrade to go 1.23+ we can probably use os.CopyFS() instead
+	err = fs.WalkDir(script.Context, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		dstpath := filepath.Join(tmpdir, path)
+		if d.IsDir() {
+			// If d is a directory, create it.
+			if verbose {
+				fmt.Printf("Creating directory: %s\n", path)
+			}
+			err = os.MkdirAll(dstpath, 0755)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		// d is a file, copy it.
+		if verbose {
+			fmt.Printf("Copying file: %s\n", path)
+		}
+		scriptFile, err := os.Create(dstpath)
+		if err != nil {
+			return err
+		}
+		content, err := fs.ReadFile(script.Context, path)
+		if err != nil {
+			return err
+		}
+		_, err = scriptFile.Write(content)
+		if err != nil {
+			return err
+		}
+		err = scriptFile.Close()
+		if err != nil {
+			return err
+		}
+		return nil
+	})
+	if err != nil {
+		return fmt.Errorf("error copying script files: %w", err)
+	}
+
+	// Initialize command
+	cmdString := fmt.Sprintf("%s %s", scriptPathName, strings.Join(flags, " "))
+	if verbose {
+		fmt.Printf("Running script: %s\n", cmdString)
+	}
+	cmd, err := c.newCommand(cmdString)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = cmd.Close()
+	}()
+
+	// Get command output pipes
+	cmdOut, err := cmd.StdoutPipe()
+	if err != nil {
+		return err
+	}
+	cmdErr, err := cmd.StderrPipe()
+	if err != nil {
+		return err
+	}
+
+	// Print progress from stdout
+	go (func() {
+		scanner := bufio.NewScanner(cmdOut)
+		for scanner.Scan() {
+			fmt.Println(scanner.Text())
+		}
+	})()
+
+	// Read command & error output from stderr; render in verbose mode
+	var errMessage string
+	go (func() {
+		c := color.New(DebugColor)
+		scanner := bufio.NewScanner(cmdErr)
+		for scanner.Scan() {
+			errMessage = scanner.Text()
+			if verbose {
+				_, _ = c.Println(scanner.Text())
+			}
+		}
+	})()
+
+	// Run command and return error output
+	err = cmd.Run()
+	if err != nil {
+		return fmt.Errorf("Could not run script: %s", errMessage)
+	}
+	return nil
+
+}
+
 // Install the Rocket Pool service
-func (c *Client) InstallService(verbose, noDeps bool, version, path string, dataPath string) error {
+func (c *Client) InstallService(verbose, noDeps bool, path string, dataPath string) error {
 
 	// Get installation script flags
-	flags := []string{
-		"-v", shellescape.Quote(version),
-	}
+	flags := []string{}
 	if path != "" {
 		flags = append(flags, fmt.Sprintf("-p %s", shellescape.Quote(path)))
 	}
@@ -309,174 +430,19 @@ func (c *Client) InstallService(verbose, noDeps bool, version, path string, data
 		flags = append(flags, fmt.Sprintf("-u %s", dataPath))
 	}
 
-	// Download the installation script
-	resp, err := http.Get(fmt.Sprintf(InstallerURL, version))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("unexpected http status downloading installation script: %d", resp.StatusCode)
-	}
-
-	// Sanity check that the script octet length matches content-length
-	script, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return err
-	}
-
-	if fmt.Sprint(len(script)) != resp.Header.Get("content-length") {
-		return fmt.Errorf("downloaded script length %d did not match content-length header %s", len(script), resp.Header.Get("content-length"))
-	}
-
-	// Initialize installation command
-	cmd, err := c.newCommand(fmt.Sprintf("sh -s -- %s", strings.Join(flags, " ")))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = cmd.Close()
-	}()
-
-	// Pass the script to sh via its stdin fd
-	cmd.SetStdin(bytes.NewReader(script))
-
-	// Get command output pipes
-	cmdOut, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	cmdErr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	// Print progress from stdout
-	go (func() {
-		scanner := bufio.NewScanner(cmdOut)
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-	})()
-
-	// Read command & error output from stderr; render in verbose mode
-	var errMessage string
-	go (func() {
-		c := color.New(DebugColor)
-		scanner := bufio.NewScanner(cmdErr)
-		for scanner.Scan() {
-			errMessage = scanner.Text()
-			if verbose {
-				_, _ = c.Println(scanner.Text())
-			}
-		}
-	})()
-
-	// Run command and return error output
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("Could not install Rocket Pool service: %s", errMessage)
-	}
-	return nil
-
+	// Load the installation script
+	return c.runScript(assets.InstallScript(), verbose, flags)
 }
 
 // Install the update tracker
-func (c *Client) InstallUpdateTracker(verbose bool, version string) error {
+func (c *Client) InstallUpdateTracker(verbose bool) error {
 
-	// Get installation script flags
-	flags := []string{
-		"-v", fmt.Sprintf("%s", shellescape.Quote(version)),
-	}
-
-	// Download the installer package
-	url := fmt.Sprintf(UpdateTrackerURL, version)
-	resp, err := http.Get(url)
-	if err != nil {
-		return fmt.Errorf("error downloading installer package: %w", err)
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("downloading installer package failed with code %d - [%s]", resp.StatusCode, resp.Status)
-	}
-
-	// Create a temp file for it
-	path := filepath.Join(os.TempDir(), "install-update-tracker.sh")
-	tempFile, err := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0755)
-	if err != nil {
-		return fmt.Errorf("error creating temporary file for installer script: %w", err)
-	}
-	defer tempFile.Close()
-	defer os.Remove(tempFile.Name())
-	_, err = io.Copy(tempFile, resp.Body)
-	if err != nil {
-		return fmt.Errorf("error writing installer package to disk: %w", err)
-	}
-	tempFile.Close()
-
-	// Initialize installation command
-	cmd, err := c.newCommand(fmt.Sprintf("sh -c \"%s %s\"", path, strings.Join(flags, " ")))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = cmd.Close()
-	}()
-
-	// Get command output pipes
-	cmdOut, err := cmd.StdoutPipe()
-	if err != nil {
-		return err
-	}
-	cmdErr, err := cmd.StderrPipe()
-	if err != nil {
-		return err
-	}
-
-	// Print progress from stdout
-	go (func() {
-		scanner := bufio.NewScanner(cmdOut)
-		for scanner.Scan() {
-			fmt.Println(scanner.Text())
-		}
-	})()
-
-	// Read command & error output from stderr; render in verbose mode
-	var errMessage string
-	go (func() {
-		c := color.New(DebugColor)
-		scanner := bufio.NewScanner(cmdErr)
-		for scanner.Scan() {
-			errMessage = scanner.Text()
-			if verbose {
-				_, _ = c.Println(scanner.Text())
-			}
-		}
-	})()
-
-	// Run command and return error output
-	err = cmd.Run()
-	if err != nil {
-		return fmt.Errorf("Could not install Rocket Pool update tracker: %s", errMessage)
-	}
-	return nil
-
+	return c.runScript(assets.InstallUpdateTrackerScript(), verbose, nil)
 }
 
 // Start the Rocket Pool service
 func (c *Client) StartService(composeFiles []string) error {
 
-	/*
-		// Start the API container first
-		cmd, err := c.compose([]string{}, "up -d --quiet-pull")
-		if err != nil {
-			return fmt.Errorf("error creating compose command for API container: %w", err)
-		}
-		err = c.printOutput(cmd)
-		if err != nil {
-			return fmt.Errorf("error starting API container: %w", err)
-		}
-	*/
 	// Start all of the containers
 	cmd, err := c.compose(composeFiles, "up -d --remove-orphans --quiet-pull")
 	if err != nil {
@@ -505,11 +471,6 @@ func (c *Client) StopService(composeFiles []string) error {
 
 // Stop the Rocket Pool service and remove the config folder
 func (c *Client) TerminateService(composeFiles []string, configPath string) error {
-	// Get the command to run with root privileges
-	rootCmd, err := c.getEscalationCommand()
-	if err != nil {
-		return fmt.Errorf("could not get privilege escalation command: %w", err)
-	}
 
 	// Terminate the Docker containers
 	cmd, err := c.compose(composeFiles, "down -v")
@@ -527,8 +488,9 @@ func (c *Client) TerminateService(composeFiles []string, configPath string) erro
 		return fmt.Errorf("error loading Rocket Pool directory: %w", err)
 	}
 	fmt.Printf("Deleting Rocket Pool directory (%s)...\n", path)
-	cmd = fmt.Sprintf("%s rm -rf %s", rootCmd, path)
-	_, err = c.readOutput(cmd)
+	cmd = fmt.Sprintf("rm -rf %s", path)
+	// The directory contains root-owned paths, so delete it as root
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting Rocket Pool directory: %w", err)
 	}
@@ -852,10 +814,10 @@ func (c *Client) GetVolumeSize(volumeName string) (string, error) {
 }
 
 // Runs the prune provisioner
-func (c *Client) RunPruneProvisioner(container string, volume string, image string) error {
+func (c *Client) RunPruneProvisioner(container, volume string) error {
 
 	// Run the prune provisioner
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient %s", container, volume, image)
+	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient alpine:latest sh -c 'touch /ethclient/prune.lock'", container, volume)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return err
@@ -870,52 +832,78 @@ func (c *Client) RunPruneProvisioner(container string, volume string, image stri
 
 }
 
-// Executes a Go program that triggers NM pruning
-func (c *Client) RunNethermindPruneStarter(executionContainerName string, pruneStarterContainerName string) error {
-	cmd := fmt.Sprintf(`docker run --rm  --name %s --network container:%s rocketpool/nm-prune-starter %s`, pruneStarterContainerName, executionContainerName, nethermindAdminUrl)
+// Curls the Nethermind admin URL to trigger pruning
+func (c *Client) RunNethermindPruneStarter(executionContainerName string) error {
+	retryCount := 5
+	retryTime := 3 * time.Second
 
-	err := c.printOutput(cmd)
-	if err != nil {
-		return err
+	for i := 0; i < retryCount; i++ {
+		command := fmt.Sprintf(`-m 30 -H "Content-Type: application/json" -X POST --data '{"jsonrpc":"2.0","method":"admin_prune","params":[],"id":%d}' %s`, i+1, nethermindAdminUrl)
+		cmdText := fmt.Sprintf(`docker run --quiet --rm  --name curl%s --network container:%s curlimages/curl -Ss %s`, pruneStarterContainerSuffix, executionContainerName, command)
+
+		if i != 0 {
+			fmt.Printf("Trying again in %v... (%d/%d)\n", retryTime, i+1, retryCount)
+			time.Sleep(retryTime)
+		}
+
+		cmd, err := c.newCommand(cmdText)
+		if err != nil {
+			return fmt.Errorf("error creating command for prune starter: %w", err)
+		}
+
+		stdOut, stdErr, err := cmd.OutputPipes()
+		if err != nil {
+			return fmt.Errorf("error getting output pipes for prune starter: %w", err)
+		}
+
+		err = cmd.Start()
+		if err != nil {
+			return fmt.Errorf("error running prune starter: %w", err)
+		}
+		defer func() {
+			_ = cmd.Wait()
+		}()
+
+		// Check for a curl error
+		stdErrTextBytes, err := io.ReadAll(stdErr)
+		if err != nil {
+			return fmt.Errorf("error reading error from prune starter: %w", err)
+		}
+		stdErrText := string(stdErrTextBytes)
+		if stdErrText != "" {
+			fmt.Printf("Error while curling the Nethermind admin URL: %s\n", stdErrText)
+			continue
+		}
+
+		// Grab the response
+		stdOutText, err := io.ReadAll(stdOut)
+		if err != nil {
+			return fmt.Errorf("error reading response from prune starter: %w", err)
+		}
+		// Parse the response as JSON
+		var response map[string]any
+		err = json.Unmarshal(stdOutText, &response)
+		if err != nil {
+			return fmt.Errorf("error parsing response from prune starter: %w", err)
+		}
+
+		if errObject, ok := response["error"].(map[string]any); ok {
+			fmt.Printf("Error starting prune: code %d, message = %s, data = %s\n", errObject["code"], errObject["message"], errObject["data"])
+			continue
+		} else {
+			fmt.Printf("Success: Pruning is now \"%s\"\n", response["result"])
+			fmt.Println("Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
+			fmt.Println("NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!")
+			fmt.Println("You must let it run to completion!")
+			break
+		}
+
 	}
 	return nil
-}
-
-// Runs the EC migrator
-func (c *Client) RunEcMigrator(container string, volume string, targetDir string, mode string, image string) error {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/ethclient -v %s:/mnt/external -e EC_MIGRATE_MODE='%s' %s", container, volume, targetDir, mode, image)
-	err := c.printOutput(cmd)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// Gets the size of the target directory via the EC migrator for importing, which should have the same permissions as exporting
-func (c *Client) GetDirSizeViaEcMigrator(container string, targetDir string, image string) (uint64, error) {
-	cmd := fmt.Sprintf("docker run --rm --name %s -v %s:/mnt/external -e OPERATION='size' %s", container, targetDir, image)
-	output, err := c.readOutput(cmd)
-	if err != nil {
-		return 0, fmt.Errorf("Error getting source directory size: %w", err)
-	}
-
-	trimmedOutput := strings.TrimRight(string(output), "\n")
-	dirSize, err := strconv.ParseUint(trimmedOutput, 0, 64)
-	if err != nil {
-		return 0, fmt.Errorf("Error parsing directory size output [%s]: %w", trimmedOutput, err)
-	}
-
-	return dirSize, nil
 }
 
 // Deletes the node wallet and all validator keys, and restarts the Docker containers
 func (c *Client) PurgeAllKeys(composeFiles []string) error {
-	// Get the command to run with root privileges
-	rootCmd, err := c.getEscalationCommand()
-	if err != nil {
-		return fmt.Errorf("could not get privilege escalation command: %w", err)
-	}
 
 	// Get the config
 	cfg, _, err := c.LoadConfig()
@@ -941,8 +929,9 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 		return fmt.Errorf("error loading wallet path: %w", err)
 	}
 	fmt.Println("Deleting wallet...")
-	cmd := fmt.Sprintf("%s rm -f %s", rootCmd, walletPath)
-	_, err = c.readOutput(cmd)
+	cmd := fmt.Sprintf("rm -f %s", walletPath)
+	// The file is owned by root, so delete as root
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting wallet: %w", err)
 	}
@@ -953,8 +942,9 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 		return fmt.Errorf("error loading password path: %w", err)
 	}
 	fmt.Println("Deleting password...")
-	cmd = fmt.Sprintf("%s rm -f %s", rootCmd, passwordPath)
-	_, err = c.readOutput(cmd)
+	cmd = fmt.Sprintf("rm -f %s", passwordPath)
+	// The file is owned by root, so delete as root
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting password: %w", err)
 	}
@@ -965,13 +955,19 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 		return fmt.Errorf("error loading validators folder path: %w", err)
 	}
 	fmt.Println("Deleting validator keys...")
-	cmd = fmt.Sprintf("%s rm -rf %s/*", rootCmd, validatorsPath)
-	_, err = c.readOutput(cmd)
+	cmd = fmt.Sprintf("rm -rf %s/*", validatorsPath)
+	// The validators path can be created by the smartnode daemon (owned by root, 0600)
+	// So delete its contents as root, otherwise the * won't expand.
+	// NB: we delete the contents of the folder instead of recreating the folder
+	// This way, if the drive is full, we don't release the directory inode and fail to recreate it.
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting validator keys: %w", err)
 	}
-	cmd = fmt.Sprintf("%s rm -rf %s/.[a-zA-Z0-9]*", rootCmd, validatorsPath)
-	_, err = c.readOutput(cmd)
+	// Also delete hidden files
+	cmd = fmt.Sprintf("rm -rf %s/.[a-zA-Z0-9]*", validatorsPath)
+	// also as root, so bash can expand the regex
+	_, err = c.readOutputSudo(cmd)
 	if err != nil {
 		return fmt.Errorf("error deleting hidden files in validator folder: %w", err)
 	}
@@ -1004,31 +1000,6 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 func (c *Client) SetClientStatusFlags(ignoreSyncCheck bool, forceFallbacks bool) {
 	c.ignoreSyncCheck = ignoreSyncCheck
 	c.forceFallbacks = forceFallbacks
-}
-
-// Get the command used to escalate privileges on the system
-func (c *Client) getEscalationCommand() (string, error) {
-	// Check for sudo first
-	sudo := "sudo"
-	exists, err := c.checkIfCommandExists(sudo)
-	if err != nil {
-		return "", fmt.Errorf("error checking if %s exists: %w", sudo, err)
-	}
-	if exists {
-		return sudo, nil
-	}
-
-	// Check for doas next
-	doas := "doas"
-	exists, err = c.checkIfCommandExists(doas)
-	if err != nil {
-		return "", fmt.Errorf("error checking if %s exists: %w", doas, err)
-	}
-	if exists {
-		return doas, nil
-	}
-
-	return "", fmt.Errorf("no privilege escalation command found")
 }
 
 func (c *Client) checkIfCommandExists(command string) (bool, error) {
@@ -1417,6 +1388,26 @@ func (c *Client) printOutput(cmdText string) error {
 	// Wait for the command to exit
 	return cmd.Wait()
 
+}
+
+// Run a command as root and return its output
+func (c *Client) readOutputSudo(rootCmdText string) ([]byte, error) {
+	var escCmd string
+	for _, escalationCommand := range []string{"sudo", "doas"} {
+		exists, err := c.checkIfCommandExists(escalationCommand)
+		if err != nil {
+			return nil, fmt.Errorf("error checking if %s exists: %w", escalationCommand, err)
+		}
+		if exists {
+			escCmd = escalationCommand
+			break
+		}
+	}
+	if escCmd == "" {
+		return nil, fmt.Errorf("no privilege escalation command found")
+	}
+
+	return c.readOutput(fmt.Sprintf("%s bash -c %s", escCmd, shellescape.Quote(rootCmdText)))
 }
 
 // Run a command and return its output

@@ -3,7 +3,7 @@ package megapool
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/megapool"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"

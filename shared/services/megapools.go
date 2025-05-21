@@ -12,17 +12,18 @@ import (
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
 	prdeposit "github.com/prysmaticlabs/prysm/v5/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
-	"github.com/rocket-pool/rocketpool-go/megapool"
-	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/storage"
-	"github.com/rocket-pool/rocketpool-go/types"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/bindings/network"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/storage"
+	"github.com/rocket-pool/smartnode/bindings/types"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -72,7 +73,7 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	var block beacon.BeaconBlock
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
-		block, _, err := bc.GetBeaconBlock(blockToRequest)
+		block, _, err = bc.GetBeaconBlock(blockToRequest)
 		if err != nil {
 			return megapool.ValidatorProof{}, err
 		}
@@ -87,7 +88,12 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 	}
 
 	// Get the beacon state for that slot
-	beaconState, err := bc.GetBeaconState(block.Slot)
+	beaconStateResponse, err := bc.GetBeaconStateSSZ(block.Slot)
+	if err != nil {
+		return megapool.ValidatorProof{}, err
+	}
+
+	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
 	if err != nil {
 		return megapool.ValidatorProof{}, err
 	}
@@ -148,12 +154,17 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 	}
 
 	// Get the beacon state for that slot
-	beaconState, err := bc.GetBeaconState(block.Slot)
+	beaconStateResponse, err := bc.GetBeaconStateSSZ(block.Slot)
 	if err != nil {
 		return api.ValidatorWithdrawableEpochProof{}, err
 	}
 
-	withdrawableEpoch := beaconState.Validators[validatorIndex64].WithdrawableEpoch
+	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
+	if err != nil {
+		return api.ValidatorWithdrawableEpochProof{}, err
+	}
+
+	withdrawableEpoch := beaconState.GetValidators()[validatorIndex64].WithdrawableEpoch
 
 	proofBytes, err := beaconState.ValidatorWithdrawableEpochProof(validatorIndex64)
 	if err != nil {

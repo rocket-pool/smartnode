@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/dao/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 

@@ -3,11 +3,12 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"slices"
 	"strconv"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -150,13 +151,7 @@ func nodeClaimRewards(c *cli.Context) error {
 			seenIndices := map[uint64]bool{}
 
 			for _, element := range elements {
-				found := false
-				for _, validIndex := range validIndices {
-					if validIndex == element {
-						found = true
-						break
-					}
-				}
+				found := slices.Contains(validIndices, element)
 				if !found {
 					fmt.Printf("'%s' is an invalid index.\nValid indices are: %s\n", element, strings.Join(validIndices, ","))
 					allValid = false

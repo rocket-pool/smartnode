@@ -4,12 +4,13 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math"
+	"slices"
 	"strings"
 	"time"
 
-	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	utilsStrings "github.com/rocket-pool/rocketpool-go/utils/strings"
+	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	utilsStrings "github.com/rocket-pool/smartnode/bindings/utils/strings"
 
 	"github.com/urfave/cli"
 
@@ -26,14 +27,7 @@ func filterProposalState(state string, stateFilter string) bool {
 
 	// Check comma separated list for the state
 	filterStates := strings.Split(stateFilter, ",")
-	for _, fs := range filterStates {
-		if fs == state {
-			return false
-		}
-	}
-
-	// Not found
-	return true
+	return !slices.Contains(filterStates, state)
 }
 
 func getProposals(c *cli.Context, stateFilter string) error {
