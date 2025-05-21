@@ -3,12 +3,12 @@ package node
 import (
 	"math/big"
 
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
-	rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/accounts"
+	rplutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/tokens/rpl"
 )
 
 // Mint & stake an amount of RPL against a node

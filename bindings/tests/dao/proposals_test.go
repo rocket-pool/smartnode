@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
-	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/node"
-	trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/dao"
+	trustednodedao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	trustednodesettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
+	nodeutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/node"
 )
 
 func TestProposalDetails(t *testing.T) {

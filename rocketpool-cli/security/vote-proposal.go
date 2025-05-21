@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/rocket-pool/rocketpool-go/dao"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/dao"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"

@@ -5,11 +5,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/rocketpool-go/tokens"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
+	rplutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/tokens/rpl"
 )
 
 func TestFixedSupplyRPLBalances(t *testing.T) {

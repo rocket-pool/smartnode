@@ -3,8 +3,8 @@ package state
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/hashicorp/go-version"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/utils"
 )
 
 // Check if Redstone has been deployed

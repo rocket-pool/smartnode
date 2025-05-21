@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/types"
 
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/minipool"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/minipool"
+	nodeutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/node"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/validator"
 )
 
 func TestMinipoolDetails(t *testing.T) {

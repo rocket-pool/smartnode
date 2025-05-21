@@ -13,7 +13,7 @@ import (
 	"github.com/tyler-smith/go-bip39"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )

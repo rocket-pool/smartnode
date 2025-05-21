@@ -3,7 +3,7 @@ package security
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/dao/security"
+	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 

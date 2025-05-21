@@ -3,7 +3,7 @@ package security
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
