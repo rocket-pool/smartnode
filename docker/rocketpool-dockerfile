@@ -13,6 +13,7 @@ RUN apt update && apt install -y \
 COPY ./go.work /src/go.work
 COPY ./go.work.sum /src/go.work.sum
 COPY ./addons/go.mod /src/addons/go.mod
+COPY ./bindings/go.mod /src/bindings/go.mod
 COPY ./rocketpool/go.mod /src/rocketpool/go.mod
 COPY ./rocketpool-cli/go.mod /src/rocketpool-cli/go.mod
 COPY ./shared/go.mod /src/shared/go.mod
@@ -28,6 +29,7 @@ ARG VERSION
 COPY ./go.work /src/go.work
 COPY ./go.work.sum /src/go.work.sum
 COPY ./addons/ /src/addons/
+COPY ./bindings/ /src/bindings/
 COPY ./rocketpool/ /src/rocketpool/
 COPY ./rocketpool-cli/ /src/rocketpool-cli/
 COPY ./shared/ /src/shared/

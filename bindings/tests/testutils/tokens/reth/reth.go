@@ -3,11 +3,11 @@ package tokens
 import (
 	"math/big"
 
-	"github.com/rocket-pool/rocketpool-go/deposit"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/tokens"
+	"github.com/rocket-pool/smartnode/bindings/deposit"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/accounts"
 )
 
 // Mint an amount of rETH to an account

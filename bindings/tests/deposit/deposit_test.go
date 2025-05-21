@@ -3,13 +3,13 @@ package deposit
 import (
 	"testing"
 
-	"github.com/rocket-pool/rocketpool-go/deposit"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/deposit"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/minipool"
 )
 
 func TestDeposit(t *testing.T) {

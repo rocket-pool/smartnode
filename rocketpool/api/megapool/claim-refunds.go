@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/rocket-pool/rocketpool-go/megapool"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"

@@ -14,6 +14,7 @@ TREEGEN_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/treegen-linux-$(arch)
 
 MODULES:=$(foreach path,$(shell find . -name go.mod),$(dir $(path)))
 MODULE_GLOBS:=$(foreach module,$(MODULES),$(module)...)
+TEST_GLOBS:=$(filter-out ./bindings/...,$(MODULE_GLOBS))
 
 define rocketpool-cli-template
 .PHONY: ${BIN_DIR}/rocketpool-cli-$1-$2
@@ -153,7 +154,7 @@ lint: $(foreach module,$(MODULES),lint-$(module))
 
 .PHONY: test
 test:
-	go test -test.timeout 20m $(MODULE_GLOBS)
+	go test -test.timeout 20m $(TEST_GLOBS)
 
 .PHONY: clean
 clean:

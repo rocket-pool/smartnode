@@ -3,7 +3,7 @@ package security
 import (
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/rocketpool-go/dao/security"
+	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
