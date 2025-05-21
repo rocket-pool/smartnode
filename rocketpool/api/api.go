@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/security"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/rocketpool/api/auction"
 	"github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/network"

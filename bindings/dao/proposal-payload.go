@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	strutils "github.com/rocket-pool/rocketpool-go/utils/strings"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	strutils "github.com/rocket-pool/smartnode/bindings/utils/strings"
 )
 
 // Get the string representation of a proposal payload

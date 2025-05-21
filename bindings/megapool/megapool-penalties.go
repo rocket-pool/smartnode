@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
 func EstimatePenaliseGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, block *big.Int, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {

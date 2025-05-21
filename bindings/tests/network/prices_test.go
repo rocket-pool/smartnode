@@ -3,11 +3,11 @@ package network
 import (
 	"testing"
 
-	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/network"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
+	nodeutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/node"
 )
 
 func TestSubmitPrices(t *testing.T) {

@@ -3,7 +3,7 @@ package node
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/node"
+	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"

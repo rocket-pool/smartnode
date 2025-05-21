@@ -8,22 +8,22 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
-	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	"github.com/rocket-pool/rocketpool-go/utils"
+	trustednodedao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/utils"
 
-	"github.com/rocket-pool/rocketpool-go/deposit"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/network"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/tokens"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/deposit"
+	"github.com/rocket-pool/smartnode/bindings/minipool"
+	"github.com/rocket-pool/smartnode/bindings/network"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
-	minipoolutils "github.com/rocket-pool/rocketpool-go/tests/testutils/minipool"
-	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
+	minipoolutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/minipool"
+	nodeutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/node"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/validator"
 )
 
 func TestDetails(t *testing.T) {

@@ -3,10 +3,10 @@ package protocol
 import (
 	"testing"
 
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/evm"
 )
 
 func TestDepositSettings(t *testing.T) {

@@ -3,14 +3,14 @@ package node
 import (
 	"fmt"
 
-	trustednodedao "github.com/rocket-pool/rocketpool-go/dao/trustednode"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	trustednodesettings "github.com/rocket-pool/rocketpool-go/settings/trustednode"
-	"github.com/rocket-pool/rocketpool-go/tokens"
+	trustednodedao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	trustednodesettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
-	rplutils "github.com/rocket-pool/rocketpool-go/tests/testutils/tokens/rpl"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/accounts"
+	rplutils "github.com/rocket-pool/smartnode/bindings/tests/testutils/tokens/rpl"
 )
 
 // Trusted node counter

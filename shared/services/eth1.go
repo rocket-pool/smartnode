@@ -3,7 +3,7 @@ package services
 import (
 	"context"
 
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
 func GetEthClientLatestBlockTimestamp(ec rocketpool.ExecutionClient) (uint64, error) {

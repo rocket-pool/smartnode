@@ -3,7 +3,7 @@ package network
 import (
 	"math/big"
 
-	"github.com/rocket-pool/rocketpool-go/network"
+	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 

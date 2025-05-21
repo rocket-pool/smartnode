@@ -7,9 +7,9 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
-	"github.com/rocket-pool/rocketpool-go/dao/security"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	psettings "github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/dao/security"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	psettings "github.com/rocket-pool/smartnode/bindings/settings/protocol"
 )
 
 const (

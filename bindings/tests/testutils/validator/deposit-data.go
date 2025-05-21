@@ -6,9 +6,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-ssz"
 
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/types"
 
-	"github.com/rocket-pool/rocketpool-go/tests"
+	"github.com/rocket-pool/smartnode/bindings/tests"
 )
 
 // Deposit settings

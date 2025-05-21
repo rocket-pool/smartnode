@@ -3,7 +3,7 @@ package types
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/utils/json"
+	"github.com/rocket-pool/smartnode/bindings/utils/json"
 )
 
 // Minipool statuses

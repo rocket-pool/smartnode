@@ -3,7 +3,7 @@ package odao
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/settings/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"

@@ -8,13 +8,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/node"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	"github.com/rocket-pool/rocketpool-go/utils"
+	"github.com/rocket-pool/smartnode/bindings/minipool"
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/utils"
 
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/accounts"
-	"github.com/rocket-pool/rocketpool-go/tests/testutils/validator"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/accounts"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils/validator"
 )
 
 var salt int64 = 0
