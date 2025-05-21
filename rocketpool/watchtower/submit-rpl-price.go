@@ -381,7 +381,8 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	var lastSubmissionSlotTimestamp uint64
 	// Check if the node has submitted prices for the latest block
 	if lastSubmissionBlock != 0 {
-		eventFound, lastSubmissionEvent, err := network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, nil)
+		lastSubmissionEvent := network.PriceUpdatedEvent{}
+		eventFound, lastSubmissionEvent, err = network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, nil)
 		if err != nil {
 			t.log.Printlnf("Error getting price submission event for block %d", lastSubmissionBlock)
 			return err
