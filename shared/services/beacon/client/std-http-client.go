@@ -45,7 +45,7 @@ const (
 	RequestValidatorBalancesPath           = "/eth/v1/beacon/states/%s/validator_balances"
 	RequestVoluntaryExitPath               = "/eth/v1/beacon/pool/voluntary_exits"
 	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
-	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%d"
+	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
 	RequestBeaconBlockHeaderPath           = "/eth/v1/beacon/headers/%s"
 	RequestBeaconStatePath                 = "/eth/v2/debug/beacon/states/%d"
 	RequestValidatorSyncDuties             = "/eth/v1/validator/duties/sync/%s"
@@ -1021,7 +1021,7 @@ func (c *StandardHttpClient) GetBeaconStateSSZ(slot uint64) (*beacon.BeaconState
 }
 
 func (c *StandardHttpClient) GetBeaconBlockSSZ(slot uint64) (*beacon.BeaconBlockSSZ, bool, error) {
-	response, err := c.sszRequest(fmt.Sprintf(RequestBeaconBlockPath, slot))
+	response, err := c.sszRequest(fmt.Sprintf(RequestBeaconBlockPath, fmt.Sprint(slot)))
 	if err != nil {
 		return nil, false, fmt.Errorf("Could not get beacon block data: %w", err)
 	}
