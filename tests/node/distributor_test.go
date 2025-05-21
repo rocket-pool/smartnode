@@ -1,8 +1,9 @@
 package node
 
 import (
-	"github.com/rocket-pool/rocketpool-go/node"
 	"testing"
+
+	"github.com/rocket-pool/rocketpool-go/node"
 
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 )

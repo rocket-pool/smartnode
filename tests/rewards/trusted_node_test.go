@@ -2,11 +2,12 @@ package rewards
 
 import (
 	"context"
+	"math/big"
+	"testing"
+
 	"github.com/rocket-pool/rocketpool-go/rewards"
 	"github.com/rocket-pool/rocketpool-go/settings/protocol"
 	"github.com/rocket-pool/rocketpool-go/tokens"
-	"math/big"
-	"testing"
 
 	"github.com/rocket-pool/rocketpool-go/tests/testutils/evm"
 	nodeutils "github.com/rocket-pool/rocketpool-go/tests/testutils/node"
