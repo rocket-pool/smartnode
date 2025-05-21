@@ -63,7 +63,7 @@ func CreateTreeFromLeaves(blockNumber uint32, network cfgtypes.Network, leaves [
 	}
 
 	return &VotingTree{
-		SmartnodeVersion: shared.RocketPoolVersion,
+		SmartnodeVersion: shared.RocketPoolVersion(),
 		BlockNumber:      blockNumber,
 		Network:          network,
 		Nodes:            nodes,

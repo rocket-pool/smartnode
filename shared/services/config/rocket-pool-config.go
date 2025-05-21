@@ -762,7 +762,7 @@ func (cfg *RocketPoolConfig) Serialize() map[string]map[string]string {
 	masterMap[rootConfigName] = rootParams
 	masterMap[rootConfigName]["rpDir"] = cfg.RocketPoolDirectory
 	masterMap[rootConfigName]["isNative"] = fmt.Sprint(cfg.IsNativeMode)
-	masterMap[rootConfigName]["version"] = fmt.Sprintf("v%s", shared.RocketPoolVersion) // Update the version with the current Smartnode version
+	masterMap[rootConfigName]["version"] = fmt.Sprintf("v%s", shared.RocketPoolVersion()) // Update the version with the current Smartnode version
 
 	// Serialize the subconfigs
 	for name, subconfig := range cfg.GetSubconfigs() {
@@ -782,7 +782,7 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 	// Upgrade the config to the latest version
 	err := migration.UpdateConfig(masterMap)
 	if err != nil {
-		return fmt.Errorf("error upgrading configuration to v%s: %w", shared.RocketPoolVersion, err)
+		return fmt.Errorf("error upgrading configuration to v%s: %w", shared.RocketPoolVersion(), err)
 	}
 
 	// Get the network
@@ -1016,7 +1016,7 @@ func (cfg *RocketPoolConfig) CustomGraffiti() (string, error) {
 func (cfg *RocketPoolConfig) GraffitiPrefix() string {
 	// Graffiti
 	identifier := ""
-	versionString := fmt.Sprintf("v%s", shared.RocketPoolVersion)
+	versionString := fmt.Sprintf("v%s", shared.RocketPoolVersion())
 	if len(versionString) < 8 {
 		var ecInitial string
 		if !cfg.ExecutionClientLocal() {
@@ -1054,7 +1054,7 @@ func (cfg *RocketPoolConfig) Graffiti() (string, error) {
 
 // Used by text/template to format validator.yml
 func (cfg *RocketPoolConfig) RocketPoolVersion() string {
-	return shared.RocketPoolVersion
+	return shared.RocketPoolVersion()
 }
 
 // Used by text/template to format validator.yml
