@@ -1021,7 +1021,7 @@ func (c *StandardHttpClient) GetBeaconStateSSZ(slot uint64) (*beacon.BeaconState
 }
 
 func (c *StandardHttpClient) GetBeaconBlockSSZ(slot uint64) (*beacon.BeaconBlockSSZ, bool, error) {
-	response, err := c.sszRequest(fmt.Sprintf(RequestBeaconBlockPath, slot))
+	response, err := c.sszRequest(fmt.Sprintf(RequestBeaconBlockPath, fmt.Sprint(slot)))
 	if err != nil {
 		return nil, false, fmt.Errorf("Could not get beacon block data: %w", err)
 	}
