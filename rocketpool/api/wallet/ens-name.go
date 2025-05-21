@@ -3,7 +3,7 @@ package wallet
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/urfave/cli"

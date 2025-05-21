@@ -4,9 +4,9 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/minipool"
-	"github.com/rocket-pool/rocketpool-go/rocketpool"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/minipool"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"

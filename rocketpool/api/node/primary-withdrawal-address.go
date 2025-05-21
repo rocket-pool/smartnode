@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/storage"
+	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"

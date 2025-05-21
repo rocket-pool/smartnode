@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rocket-pool/rocketpool-go/types"
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
-	utilsStrings "github.com/rocket-pool/rocketpool-go/utils/strings"
+	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	utilsStrings "github.com/rocket-pool/smartnode/bindings/utils/strings"
 
 	"github.com/urfave/cli"
 

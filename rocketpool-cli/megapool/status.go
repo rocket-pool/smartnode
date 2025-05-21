@@ -5,7 +5,7 @@ import (
 	"math/big"
 	"sort"
 
-	"github.com/rocket-pool/rocketpool-go/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"

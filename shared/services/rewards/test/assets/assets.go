@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/rocketpool-go/rewards"
+	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
 

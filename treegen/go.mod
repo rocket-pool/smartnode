@@ -7,7 +7,6 @@ require (
 	github.com/fatih/color v1.14.1
 	github.com/felixge/fgprof v0.9.5
 	github.com/goccy/go-json v0.10.2
-	github.com/rocket-pool/rocketpool-go v1.8.4-0.20241122223132-c5f2be18f72b
 	github.com/urfave/cli/v2 v2.26.0
 )
 

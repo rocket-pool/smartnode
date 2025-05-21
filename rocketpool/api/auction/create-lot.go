@@ -3,8 +3,8 @@ package auction
 import (
 	"fmt"
 
-	"github.com/rocket-pool/rocketpool-go/auction"
-	"github.com/rocket-pool/rocketpool-go/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/auction"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 

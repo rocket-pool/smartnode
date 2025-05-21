@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
-	"github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
 // API request options
