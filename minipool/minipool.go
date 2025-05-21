@@ -616,8 +616,8 @@ func GetMinipoolDepositType(rp *rocketpool.RocketPool, minipoolAddress common.Ad
 	return types.MinipoolDeposit(*value), nil
 }
 
-	// Get contracts
-	var rocketMinipoolManagerLock sync.Mutex
+// Get contracts
+var rocketMinipoolManagerLock sync.Mutex
 
 func getRocketMinipoolManager(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
 	rocketMinipoolManagerLock.Lock()
