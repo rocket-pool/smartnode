@@ -375,29 +375,30 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	eth2Config := state.BeaconConfig
 
 	var hasSubmittedPastBlock bool
+	var eventFound bool
 	var nextSubmissionTime time.Time
 	var targetBlockNumber uint64
 	var lastSubmissionSlotTimestamp uint64
 	// Check if the node has submitted prices for the latest block
 	if lastSubmissionBlock != 0 {
-		found, lastSubmissionEvent, err := network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, nil)
+		eventFound, lastSubmissionEvent, err := network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, nil)
 		if err != nil {
 			t.log.Printlnf("Error getting price submission event for block %d", lastSubmissionBlock)
 			return err
 		}
-		if !found {
+		if !eventFound {
 			t.log.Printlnf("No price submission event found for block %d", lastSubmissionBlock)
-			return fmt.Errorf("no price submission event found for block %d", lastSubmissionBlock)
-		}
-		lastSubmissionSlotTimestamp = lastSubmissionEvent.SlotTimestamp.Uint64()
+		} else {
+			lastSubmissionSlotTimestamp = lastSubmissionEvent.SlotTimestamp.Uint64()
 
-		hasSubmittedPastBlock, err = t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, lastSubmissionBlock, lastSubmissionSlotTimestamp, state.NetworkDetails.RplPrice)
-		if err != nil {
-			t.log.Printlnf("Error checking if node has submitted prices for block %d: %s", lastSubmissionBlock, err.Error())
-			return err
+			hasSubmittedPastBlock, err = t.hasSubmittedSpecificBlockPrices(nodeAccount.Address, lastSubmissionBlock, lastSubmissionSlotTimestamp, state.NetworkDetails.RplPrice)
+			if err != nil {
+				t.log.Printlnf("Error checking if node has submitted prices for block %d: %s", lastSubmissionBlock, err.Error())
+				return err
+			}
 		}
 	}
-	if hasSubmittedPastBlock || lastSubmissionBlock == 0 {
+	if hasSubmittedPastBlock || lastSubmissionBlock == 0 || !eventFound {
 		// If the node participated in consensus, find the next submission target
 		var targetBlockHeader *types.Header
 		_, nextSubmissionTime, targetBlockHeader, err = utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
