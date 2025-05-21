@@ -1,8 +1,8 @@
 package wallet
 
 import (
-	"github.com/rocket-pool/rocketpool-go/types"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
+	"github.com/rocket-pool/smartnode/bindings/types"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 

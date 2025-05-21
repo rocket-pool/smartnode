@@ -16,11 +16,11 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
 	"github.com/google/uuid"
-	rptypes "github.com/rocket-pool/rocketpool-go/types"
 	"github.com/tyler-smith/go-bip39"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
