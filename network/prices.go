@@ -130,6 +130,8 @@ func GetPriceUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts *b
 		return false, PriceUpdatedEvent{}, err
 	}
 
+	indexBig := big.NewInt(0).SetUint64(blockNumber)
+
 	// Create the list of addresses to check
 	currentAddress := *rocketNetworkPrices.Address
 	rocketNetworkPricesAddress := []common.Address{currentAddress}
@@ -137,11 +139,12 @@ func GetPriceUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts *b
 	// Construct a filter query for relevant logs
 	pricesUpdatedEvent := rocketNetworkPrices.ABI.Events["PricesUpdated"]
 	indexBytes := [32]byte{}
+	indexBig.FillBytes(indexBytes[:])
 	addressFilter := rocketNetworkPricesAddress
 	topicFilter := [][]common.Hash{{pricesUpdatedEvent.ID}, {indexBytes}}
 
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), big.NewInt(int64(blockNumber)), big.NewInt(int64(blockNumber)), nil)
+	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(100), big.NewInt(int64(blockNumber)), big.NewInt(int64(blockNumber+1000)), nil)
 	if err != nil {
 		return false, PriceUpdatedEvent{}, err
 	}
