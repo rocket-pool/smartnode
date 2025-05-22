@@ -41,7 +41,7 @@ receivers:
       - webhook_url: "{{ .DiscordWebhookURL.Value }}"
     {{- end }}
 
-    {{- if .PushoverToken.Value .PushoverUserKey.Value }}
+    {{- if and .PushoverToken.Value .PushoverUserKey.Value }}
     pushover_configs:
       - token: "{{ .PushoverToken.Value }}"
         user_key: "{{ .PushoverUserKey.Value }}"
@@ -55,7 +55,7 @@ receivers:
         send_resolved: false
     {{- end }}
     
-    {{- if .PushoverToken.Value .PushoverUserKey.Value }}
+    {{- if and .PushoverToken.Value .PushoverUserKey.Value }}
     pushover_configs:
       - token: "{{ .PushoverToken.Value }}"
         user_key: "{{ .PushoverUserKey.Value }}"
