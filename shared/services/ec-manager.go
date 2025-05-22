@@ -89,7 +89,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 
 }
 
-func dialWithTimeout(url string) (*ethclient.Client, error) {	
+func dialWithTimeout(url string) (*ethclient.Client, error) {
 	initalConnectionCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	return ethclient.DialContext(initalConnectionCtx, url)
