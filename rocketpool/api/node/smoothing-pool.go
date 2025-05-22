@@ -3,7 +3,6 @@ package node
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
@@ -66,11 +65,10 @@ func getSmoothingPoolRegistrationStatus(c *cli.Context) (*api.GetSmoothingPoolRe
 	}
 
 	// Get the time the user can next change their opt-in status
-	latestBlockTimeUnix, err := services.GetEthClientLatestBlockTimestamp(ec)
+	latestBlockTime, err := ec.LatestBlockTime(context.Background())
 	if err != nil {
 		return nil, err
 	}
-	latestBlockTime := time.Unix(int64(latestBlockTimeUnix), 0)
 	changeAvailableTime := regChangeTime.Add(intervalTime)
 	response.TimeLeftUntilChangeable = changeAvailableTime.Sub(latestBlockTime)
 

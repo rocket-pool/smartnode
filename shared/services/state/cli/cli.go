@@ -7,8 +7,8 @@ import (
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -46,7 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	ec, err := ethclient.Dial(*elFlag)
+	ec, err := services.NewEthClient(*elFlag)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error connecting to execution node: %v\n", err)
 		os.Exit(1)

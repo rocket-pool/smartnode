@@ -95,6 +95,8 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	// Sync
 	var wg errgroup.Group
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 
 	if saturnDeployed {
 		wg.Go(func() error {
@@ -189,6 +191,11 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	})
 
 	if saturnDeployed {
+		wg.Go(func() error {
+			var err error
+			response.LatestBlockTime, err = rp.Client.LatestBlockTime(ctx)
+			return err
+		})
 		// Get the node's locked RPL
 		wg.Go(func() error {
 			var err error
@@ -417,6 +424,8 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
+		// Cancel in-flight requests.
+		cancel()
 		return nil, err
 	}
 
