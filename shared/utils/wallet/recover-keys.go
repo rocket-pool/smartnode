@@ -29,7 +29,7 @@ const (
 	bucketLimit uint = 2000
 )
 
-func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress common.Address, w *wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
+func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress common.Address, w wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 
 	cfg, err := services.GetConfig(c)
 	if err != nil {

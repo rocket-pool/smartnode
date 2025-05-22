@@ -26,7 +26,7 @@ type stakeMegapoolValidator struct {
 	c              *cli.Context
 	log            log.ColorLogger
 	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
+	w              wallet.Wallet
 	rp             *rocketpool.RocketPool
 	bc             beacon.Client
 	d              *client.Client

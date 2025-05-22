@@ -67,7 +67,7 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 		return nil, err
 	}
 
-	proof, err := services.GetWithdrawableEpochProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
+	proof, err := services.GetWithdrawableEpochProof(c, &w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func notifyValidatorExit(c *cli.Context, validatorId uint32) (*api.NotifyValidat
 		return nil, err
 	}
 
-	proof, err := services.GetWithdrawableEpochProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
+	proof, err := services.GetWithdrawableEpochProof(c, &w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
 	if err != nil {
 		return nil, err
 	}

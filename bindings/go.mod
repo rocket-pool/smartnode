@@ -64,6 +64,7 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/princjef/mageutil v1.0.0 // indirect
 	github.com/prometheus/client_golang v1.20.0 // indirect
+	github.com/protolambda/zssz v0.1.5 // indirect
 	github.com/prysmaticlabs/go-bitfield v0.0.0-20240328144219-a1caa50c3a1e // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/rogpeppe/go-internal v1.11.0 // indirect
