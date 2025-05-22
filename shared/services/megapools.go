@@ -108,7 +108,7 @@ func GetStakeValidatorInfo(c *cli.Context, wallet wallet.Wallet, eth2Config beac
 
 	proof := megapool.ValidatorProof{
 		Slot:                  block.Slot,
-		ValidatorIndex:        new(big.Int).SetUint64(validatorIndex64),
+		ValidatorIndex:        validatorIndex64,
 		Pubkey:                validatorPubkey[:],
 		WithdrawalCredentials: withdrawalCredentials,
 		Witnesses:             proofWithFixedSize,
