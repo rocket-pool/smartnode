@@ -354,7 +354,7 @@ func getStatus(c *cli.Context) error {
 			if maxAmount.Cmp(status.RplStakeMegapool) < 0 {
 				maxAmount.Set(status.RplStakeMegapool)
 			}
-			fmt.Println("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
+			fmt.Printf("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
 		} else {
 			// Withdrawal limit pre-saturn 1
 			rplTotalStake := math.RoundDown(eth.WeiToEth(status.RplStake), 6)

@@ -15,8 +15,6 @@ import (
 	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
-	"golang.org/x/sync/errgroup"
 )
 
 func canSetRPLWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodeRPLWithdrawalAddressResponse, error) {
