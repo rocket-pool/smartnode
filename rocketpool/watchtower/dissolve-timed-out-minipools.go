@@ -29,7 +29,7 @@ type dissolveTimedOutMinipools struct {
 	c   *cli.Context
 	log log.ColorLogger
 	cfg *config.RocketPoolConfig
-	w   *wallet.Wallet
+	w   wallet.Wallet
 	ec  rocketpool.ExecutionClient
 	rp  *rocketpool.RocketPool
 }
@@ -42,7 +42,7 @@ func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*diss
 	if err != nil {
 		return nil, err
 	}
-	w, err := services.GetWallet(c)
+	w, err := services.GetHdWallet(c)
 	if err != nil {
 		return nil, err
 	}

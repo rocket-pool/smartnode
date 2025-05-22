@@ -16,6 +16,7 @@ const (
 	colorRed    string = "\033[31m"
 	colorGreen  string = "\033[32m"
 	colorYellow string = "\033[33m"
+	colorBlue   string = "\033[36m"
 )
 
 func testRecovery(c *cli.Context) error {

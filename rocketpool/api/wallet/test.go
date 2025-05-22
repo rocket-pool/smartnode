@@ -33,7 +33,7 @@ func testRecoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletRespo
 
 	// Create a blank wallet
 	chainId := cfg.Smartnode.GetChainID()
-	w, err := wallet.NewWallet("", chainId, nil, nil, 0, nil)
+	w, err := wallet.NewWallet("", "", chainId, nil, nil, 0, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func testSearchAndRecoverWallet(c *cli.Context, mnemonic string, address common.
 
 	// Create a blank wallet
 	chainId := cfg.Smartnode.GetChainID()
-	w, err := wallet.NewWallet("", chainId, nil, nil, 0, nil)
+	w, err := wallet.NewWallet("", "", chainId, nil, nil, 0, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +116,7 @@ func testSearchAndRecoverWallet(c *cli.Context, mnemonic string, address common.
 	for i := uint(0); i < findIterations; i++ {
 		for j := 0; j < len(paths); j++ {
 			derivationPath := paths[j]
-			recoveredWallet, err := wallet.NewWallet("", uint(w.GetChainID().Uint64()), nil, nil, 0, nil)
+			recoveredWallet, err := wallet.NewWallet("", "", uint(w.GetChainID().Uint64()), nil, nil, 0, nil, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error generating new wallet: %w", err)
 			}
