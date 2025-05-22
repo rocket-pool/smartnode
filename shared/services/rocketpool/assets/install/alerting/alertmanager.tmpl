@@ -45,6 +45,7 @@ receivers:
     pushover_configs:
       - token: "{{ .PushoverToken.Value }}"
         user_key: "{{ .PushoverUserKey.Value }}"
+        priority: {{ `'{{ if eq .CommonLabels.severity "critical" }}2{{ else if eq .CommonLabels.severity "warning" }}1{{ else }}0{{ end }}'` }}
     {{- end }}
 
   - name: "node_operator_no_resolved"
@@ -58,6 +59,7 @@ receivers:
     pushover_configs:
       - token: "{{ .PushoverToken.Value }}"
         user_key: "{{ .PushoverUserKey.Value }}"
+        priority: {{ `'{{ if eq .CommonLabels.severity "critical" }}2{{ else if eq .CommonLabels.severity "warning" }}1{{ else }}0{{ end }}'` }}
         send_resolved: false
     {{- end }}
 
