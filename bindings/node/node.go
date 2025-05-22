@@ -797,6 +797,15 @@ func GetUnclaimedRewardsRaw(rp *rocketpool.RocketPool, nodeAddress common.Addres
 	return *unclaimedRewards, nil
 }
 
+// Estimate the gas for sending unclaimed rewards to node operator's withdrawal address
+func EstimateClaimUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "claimUnclaimedRewards", nodeAddress)
+}
+
 // Sends any unclaimed rewards to node operator's withdrawal address
 func ClaimUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNodeManager, err := getRocketNodeManager(rp, nil)
