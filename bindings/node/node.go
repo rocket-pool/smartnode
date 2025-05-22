@@ -769,6 +769,48 @@ func GetMegapoolAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, o
 	return *value, nil
 }
 
+// Get the amount of unclaimed ETH rewards for a given node operator
+func GetUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (float64, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	unclaimedRewards := new(*big.Int)
+
+	if err := rocketNodeManager.Call(opts, unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
+		return 0, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
+	}
+	return eth.WeiToEth(*unclaimedRewards), nil
+}
+
+// Get the amount of unclaimed ETH rewards for a given node operator
+func GetUnclaimedRewardsRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	unclaimedRewards := new(*big.Int)
+
+	if err := rocketNodeManager.Call(opts, unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
+	}
+	return *unclaimedRewards, nil
+}
+
+// Sends any unclaimed rewards to node operator's withdrawal address
+func ClaimUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, nil
+	}
+
+	tx, err := rocketNodeManager.Transact(opts, "claimUnclaimedRewards", nodeAddress)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error calling claimUnclaimedRewards for the node %s: %w", nodeAddress.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 
