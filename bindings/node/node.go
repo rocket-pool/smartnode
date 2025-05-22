@@ -756,6 +756,19 @@ func UseExpressTicket(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 	return tx.Hash(), nil
 }
 
+// Get the megapool address for the given node operator
+func GetMegapoolAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return common.Address{}, err
+	}
+	value := new(common.Address)
+	if err := rocketNodeManager.Call(opts, value, "getMegapoolAddress", nodeAddress); err != nil {
+		return common.Address{}, fmt.Errorf("error getting node %s's megapool address: %w", nodeAddress.Hex(), err)
+	}
+	return *value, nil
+}
+
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 
