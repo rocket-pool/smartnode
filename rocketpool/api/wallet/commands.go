@@ -279,6 +279,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
 			{
 				Name:      "set-ens-name",
 				Usage:     "Set a name to the node wallet's ENS reverse record",
@@ -292,6 +293,46 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(setEnsName(c, c.Args().Get(0), false))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "masquerade",
+				Usage:     "Change your node's effective address to a different one. Your node will not be able to submit transactions or sign messages since you don't have the corresponding wallet's private key.",
+				UsageText: "rocketpool api wallet masquerade address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					address, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(masquerade(c, address))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "end-masquerade",
+				Usage:     "End a masquerade, restoring your node's effective address back to your wallet address if one is loaded.",
+				UsageText: "rocketpool api wallet end-masquerade",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(endMasquerade(c))
 					return nil
 
 				},

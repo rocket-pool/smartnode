@@ -10,6 +10,8 @@ import (
 	"github.com/btcsuite/btcd/btcutil/hdkeychain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/ethereum/go-ethereum/accounts"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
@@ -18,6 +20,7 @@ import (
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
 )
@@ -31,12 +34,48 @@ const (
 	MyEtherWalletNodeKeyPath = "m/44'/60'/0'/%d"
 )
 
-// Wallet
-type Wallet struct {
+type Wallet interface {
+	AddKeystore(name string, ks keystore.Keystore)
+	CreateValidatorKey() (*eth2types.BLSPrivateKey, error)
+	Delete() error
+	DeleteValidatorStores() error
+	GetChainID() *big.Int
+	GetInitialized() (bool, error)
+	GetNextValidatorKey() (*eth2types.BLSPrivateKey, error)
+	GetNodeAccount() (accounts.Account, error)
+	GetNodeAccountTransactor() (*bind.TransactOpts, error)
+	GetNodePrivateKeyBytes() ([]byte, error)
+	GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateKey, error)
+	GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2types.BLSPrivateKey, error)
+	GetValidatorKeyCount() (uint, error)
+	GetValidatorKeys(startIndex uint, length uint) ([]ValidatorKey, error)
+	Initialize(derivationPath string, walletIndex uint) (string, error)
+	IsInitialized() bool
+	LoadValidatorKey(pubkey rptypes.ValidatorPubkey) (*eth2types.BLSPrivateKey, error)
+	Recover(derivationPath string, walletIndex uint, mnemonic string) error
+	RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error)
+	Reload() error
+	Save() error
+	SaveValidatorKey(key ValidatorKey) error
+	Sign(serializedTx []byte) ([]byte, error)
+	SignMessage(message string) ([]byte, error)
+	StoreValidatorKey(key *eth2types.BLSPrivateKey, path string) error
+	String() (string, error)
+	TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error)
+	TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error
+	MasqueradeAsAddress(address common.Address) error
+	EndMasquerade() error
+	GetAddress() (common.Address, error)
+	IsNodeMasquerading() bool
+}
+
+// hdWallet
+type hdWallet struct {
 
 	// Core
 	walletPath string
 	pm         *passwords.PasswordManager
+	am         *AddressManager
 	encryptor  *eth2ks.Encryptor
 	chainID    *big.Int
 
@@ -75,12 +114,37 @@ type walletStore struct {
 }
 
 // Create new wallet
-func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager) (*Wallet, error) {
+func NewWallet(addressPath string, walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager, addressManager *AddressManager) (Wallet, error) {
 
+	// Check if the address file exists
+	_, err := os.Stat(addressPath)
+	if err != nil && !os.IsNotExist(err) {
+		return nil, fmt.Errorf("error checking address file path: %w", err)
+	}
+	masquerading := !os.IsNotExist(err)
+
+	// Initialize Wallet
+	var w Wallet
+	if masquerading {
+		w, err = NewMasqueradeWallet(walletPath, chainId, maxFee, maxPriorityFee, gasLimit, passwordManager, addressManager)
+	} else {
+		w, err = NewHdWallet(walletPath, chainId, maxFee, maxPriorityFee, gasLimit, passwordManager, addressManager)
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	// Return
+	return w, nil
+}
+
+// Create new hdWallet
+func NewHdWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager, addressManager *AddressManager) (Wallet, error) {
 	// Initialize wallet
-	w := &Wallet{
+	w := &hdWallet{
 		walletPath:     walletPath,
 		pm:             passwordManager,
+		am:             addressManager,
 		encryptor:      eth2ks.New(),
 		chainID:        big.NewInt(int64(chainId)),
 		validatorKeys:  map[uint]*eth2types.BLSPrivateKey{},
@@ -91,33 +155,84 @@ func NewWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee 
 	}
 
 	// Load & decrypt wallet store
-	if _, err := w.loadStore(); err != nil {
+	if err := w.Reload(); err != nil {
 		return nil, err
 	}
 
 	// Return
 	return w, nil
+}
 
+// Create new masqueradeWallet
+func NewMasqueradeWallet(walletPath string, chainId uint, maxFee *big.Int, maxPriorityFee *big.Int, gasLimit uint64, passwordManager *passwords.PasswordManager, addressManager *AddressManager) (Wallet, error) {
+	// Initialize wallet
+	w := &masqueradeWallet{
+		walletPath:     walletPath,
+		pm:             passwordManager,
+		am:             addressManager,
+		encryptor:      eth2ks.New(),
+		chainID:        big.NewInt(int64(chainId)),
+		maxFee:         maxFee,
+		maxPriorityFee: maxPriorityFee,
+		gasLimit:       gasLimit,
+	}
+
+	// Load & decrypt wallet store
+	if err := w.Reload(); err != nil {
+		return nil, err
+	}
+
+	// Return
+	return w, nil
+}
+
+// Getter to check if node is masquerading
+func (w *hdWallet) IsNodeMasquerading() bool {
+	return false
+}
+
+// Returns the wallet address since we're not masquerading
+func (w *hdWallet) GetAddress() (common.Address, error) {
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return common.Address{}, err
+
+	}
+	return nodeAccount.Address, nil
+}
+
+// Change the node's effective address to a different one. Node and watchtower tasks will continue to run normally using the loaded wallet.
+func (w *hdWallet) MasqueradeAsAddress(newAddress common.Address) error {
+	return w.am.SetAndSaveAddress(newAddress)
+}
+
+// End a masquerade, restoring your node's effective address back to your wallet address if one is loaded
+func (w *hdWallet) EndMasquerade() error {
+	if w.am == nil {
+		return errors.New("node is not masquerading")
+	}
+
+	return w.am.DeleteAddressFile()
 }
 
 // Gets the wallet's chain ID
-func (w *Wallet) GetChainID() *big.Int {
+func (w *hdWallet) GetChainID() *big.Int {
 	copy := big.NewInt(0).Set(w.chainID)
 	return copy
 }
 
 // Add a keystore to the wallet
-func (w *Wallet) AddKeystore(name string, ks keystore.Keystore) {
+func (w *hdWallet) AddKeystore(name string, ks keystore.Keystore) {
 	w.keystores[name] = ks
 }
 
 // Check if the wallet has been initialized
-func (w *Wallet) IsInitialized() bool {
+func (w *hdWallet) IsInitialized() bool {
 	return (w.ws != nil && w.seed != nil && w.mk != nil)
 }
 
 // Attempt to initialize the wallet if not initialized and return status
-func (w *Wallet) GetInitialized() (bool, error) {
+func (w *hdWallet) GetInitialized() (bool, error) {
 	if w.IsInitialized() {
 		return true, nil
 	}
@@ -125,7 +240,7 @@ func (w *Wallet) GetInitialized() (bool, error) {
 }
 
 // Serialize the wallet to a JSON string
-func (w *Wallet) String() (string, error) {
+func (w *hdWallet) String() (string, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -144,7 +259,7 @@ func (w *Wallet) String() (string, error) {
 }
 
 // Initialize the wallet from a random seed
-func (w *Wallet) Initialize(derivationPath string, walletIndex uint) (string, error) {
+func (w *hdWallet) Initialize(derivationPath string, walletIndex uint) (string, error) {
 
 	// Check wallet is not initialized
 	if w.IsInitialized() {
@@ -174,7 +289,7 @@ func (w *Wallet) Initialize(derivationPath string, walletIndex uint) (string, er
 }
 
 // Recover a wallet from a mnemonic
-func (w *Wallet) Recover(derivationPath string, walletIndex uint, mnemonic string) error {
+func (w *hdWallet) Recover(derivationPath string, walletIndex uint, mnemonic string) error {
 
 	// Check wallet is not initialized
 	if w.IsInitialized() {
@@ -197,7 +312,7 @@ func (w *Wallet) Recover(derivationPath string, walletIndex uint, mnemonic strin
 }
 
 // Recover a wallet from a mnemonic - only used for testing mnemonics
-func (w *Wallet) TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error {
+func (w *hdWallet) TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error {
 
 	// Check mnemonic
 	if !bip39.IsMnemonicValid(mnemonic) {
@@ -230,7 +345,7 @@ func (w *Wallet) TestRecovery(derivationPath string, walletIndex uint, mnemonic 
 }
 
 // Save the wallet store to disk
-func (w *Wallet) Save() error {
+func (w *hdWallet) Save() error {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -254,7 +369,7 @@ func (w *Wallet) Save() error {
 }
 
 // Delete the wallet store from disk
-func (w *Wallet) Delete() error {
+func (w *hdWallet) Delete() error {
 
 	// Check if it exists
 	_, err := os.Stat(w.walletPath)
@@ -271,7 +386,7 @@ func (w *Wallet) Delete() error {
 }
 
 // Signs a serialized TX using the wallet's private key
-func (w *Wallet) Sign(serializedTx []byte) ([]byte, error) {
+func (w *hdWallet) Sign(serializedTx []byte) ([]byte, error) {
 	// Get private key
 	privateKey, _, err := w.getNodePrivateKey()
 	if err != nil {
@@ -299,7 +414,7 @@ func (w *Wallet) Sign(serializedTx []byte) ([]byte, error) {
 }
 
 // Signs an arbitrary message using the wallet's private key
-func (w *Wallet) SignMessage(message string) ([]byte, error) {
+func (w *hdWallet) SignMessage(message string) ([]byte, error) {
 	// Get the wallet's private key
 	privateKey, _, err := w.getNodePrivateKey()
 	if err != nil {
@@ -318,13 +433,13 @@ func (w *Wallet) SignMessage(message string) ([]byte, error) {
 }
 
 // Reloads wallet from disk
-func (w *Wallet) Reload() error {
+func (w *hdWallet) Reload() error {
 	_, err := w.loadStore()
 	return err
 }
 
 // Load the wallet store from disk and decrypt it
-func (w *Wallet) loadStore() (bool, error) {
+func (w *hdWallet) loadStore() (bool, error) {
 
 	// Read wallet store from disk; cancel if not found
 	wsBytes, err := os.ReadFile(w.walletPath)
@@ -367,7 +482,7 @@ func (w *Wallet) loadStore() (bool, error) {
 }
 
 // Initialize the encrypted wallet store from a mnemonic
-func (w *Wallet) initializeStore(derivationPath string, walletIndex uint, mnemonic string) error {
+func (w *hdWallet) initializeStore(derivationPath string, walletIndex uint, mnemonic string) error {
 
 	// Generate seed
 	w.seed = bip39.NewSeed(mnemonic, "")

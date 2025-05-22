@@ -132,7 +132,7 @@ func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress comm
 
 }
 
-func CheckForAndRecoverCustomMinipoolKeys(cfg *config.RocketPoolConfig, pubkeyMap map[types.ValidatorPubkey]bool, w *wallet.Wallet, testOnly bool) (map[types.ValidatorPubkey]bool, error) {
+func CheckForAndRecoverCustomMinipoolKeys(cfg *config.RocketPoolConfig, pubkeyMap map[types.ValidatorPubkey]bool, w wallet.Wallet, testOnly bool) (map[types.ValidatorPubkey]bool, error) {
 
 	// Load custom validator keys
 	customKeyDir := cfg.Smartnode.GetCustomKeyPath()

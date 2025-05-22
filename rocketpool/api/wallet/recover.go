@@ -21,9 +21,6 @@ const (
 func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse, error) {
 
 	// Get services
-	if err := services.RequireNodePassword(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -93,9 +90,6 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Address) (*api.SearchAndRecoverWalletResponse, error) {
 
 	// Get services
-	if err := services.RequireNodePassword(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
@@ -128,7 +122,7 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 	for i := uint(0); i < findIterations; i++ {
 		for j := 0; j < len(paths); j++ {
 			derivationPath := paths[j]
-			recoveredWallet, err := wallet.NewWallet("", uint(w.GetChainID().Uint64()), nil, nil, 0, nil)
+			recoveredWallet, err := wallet.NewWallet("", "", uint(w.GetChainID().Uint64()), nil, nil, 0, nil, nil)
 			if err != nil {
 				return nil, fmt.Errorf("error generating new wallet: %w", err)
 			}
