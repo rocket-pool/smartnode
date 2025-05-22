@@ -32,6 +32,7 @@ const (
 	NetworkPenaltyThresholdSettingPath     string = "network.penalty.threshold"
 	NetworkPenaltyPerRateSettingPath       string = "network.penalty.per.rate"
 	SubmitRewardsEnabledSettingPath        string = "network.submit.rewards.enabled"
+	NetworkAllowListedControllersPath      string = "network.allow.listed.controllers"
 )
 
 // The threshold of trusted nodes that must reach consensus on oracle data to commit it

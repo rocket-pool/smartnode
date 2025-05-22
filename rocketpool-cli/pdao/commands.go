@@ -18,6 +18,7 @@ const (
 	unboundedPercentUsage string = "specify a percentage that can go over 100% (e.g., '1.5' for 150%)"
 	uintUsage             string = "specify an integer (e.g., '50')"
 	durationUsage         string = "specify a duration using hours, minutes, and seconds (e.g., '20m' or '72h0m0s')"
+	addressListUsage      string = "specify a list of one or more addresses separated by commas (e.g., '0x1a2b3c4d5e6f7890abcdef1234567890abcdef12,0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')"
 )
 
 // Register commands
@@ -1546,6 +1547,34 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 											// Run
 											return proposeSettingNetworkIsSubmitRewardsEnabled(c, value)
+
+										},
+									},
+
+									{
+										Name:      "allow-listed-controllers",
+										Aliases:   []string{"alc"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkAllowListedControllersPath, addressListUsage),
+										UsageText: "rocketpool pdao propose setting network allow-listed-controllers value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateAddresses("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNetworkAllowListedControllers(c, value)
 
 										},
 									},
