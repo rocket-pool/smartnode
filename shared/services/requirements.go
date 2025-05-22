@@ -582,16 +582,15 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 
 // Confirm the EC's latest block is within the threshold of the current system clock
 func IsSyncWithinThreshold(ec rocketpool.ExecutionClient) (bool, time.Time, error) {
-	timestamp, err := GetEthClientLatestBlockTimestamp(ec)
+	t, err := ec.LatestBlockTime(context.Background())
 	if err != nil {
 		return false, time.Time{}, err
 	}
 
 	// Return true if the latest block is under the threshold
-	blockTime := time.Unix(int64(timestamp), 0)
-	if time.Since(blockTime) < ethClientRecentBlockThreshold {
-		return true, blockTime, nil
+	if time.Since(t) < ethClientRecentBlockThreshold {
+		return true, t, nil
 	}
 
-	return false, blockTime, nil
+	return false, t, nil
 }

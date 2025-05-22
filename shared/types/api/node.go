@@ -98,6 +98,7 @@ type NodeStatusResponse struct {
 	UnstakingRPL                 *big.Int          `json:"unstakingRPL"`
 	LastRPLUnstakeTime           time.Time         `json:"lastRPLUnstakeTime"`
 	UnstakingPeriodDuration      time.Duration     `json:"unstakingPeriodDuration"`
+	LatestBlockTime              time.Time         `json:"latestBlockTime"`
 }
 
 type NodeAlert struct {

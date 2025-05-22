@@ -9,7 +9,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -27,10 +26,6 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
-	ec, err := services.GetEthClient(c)
-	if err != nil {
-		return err
-	}
 
 	// Get node status
 	status, err := rp.NodeStatus()
@@ -41,12 +36,6 @@ func nodeWithdrawRpl(c *cli.Context) error {
 	var unstakingPeriodEnd time.Time
 
 	if status.IsSaturnDeployed {
-		// Get the latest block time
-		latestBlockTimeUnix, err := services.GetEthClientLatestBlockTimestamp(ec)
-		if err != nil {
-			return err
-		}
-		latestBlockTime := time.Unix(int64(latestBlockTimeUnix), 0)
 		fmt.Print("The RPL withdrawal process has changed in Saturn. It is now a 2-step process:")
 		fmt.Println()
 		fmt.Print("1. Request to unstake a certain RPL amount;")
@@ -69,7 +58,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		fmt.Printf("")
 		if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
 
-			if unstakingPeriodEnd.After(latestBlockTime) {
+			if unstakingPeriodEnd.After(status.LatestBlockTime) {
 				fmt.Printf("You have %.6f RPL currently unstaking until %s.\n", status.UnstakingRPL, unstakingPeriodEnd.Format(TimeFormat))
 			} else {
 				if !c.Bool("yes") || prompt.Confirm(fmt.Sprintf("You have %.6f RPL already unstaked. Would you like to withdraw it now?", eth.WeiToEth(status.UnstakingRPL))) {
