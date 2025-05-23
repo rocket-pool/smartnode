@@ -99,6 +99,7 @@ type NodeStatusResponse struct {
 	LastRPLUnstakeTime           time.Time         `json:"lastRPLUnstakeTime"`
 	UnstakingPeriodDuration      time.Duration     `json:"unstakingPeriodDuration"`
 	LatestBlockTime              time.Time         `json:"latestBlockTime"`
+	UnclaimedRewards             *big.Int          `json:"unclaimedRewards"`
 }
 
 type NodeAlert struct {
@@ -827,6 +828,19 @@ type CanExitQueueResponse struct {
 }
 
 type ExitQueueResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
+type CanClaimUnclaimedRewardsResponse struct {
+	Status   string             `json:"status"`
+	Error    string             `json:"error"`
+	CanClaim bool               `json:"canRepay"`
+	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type ClaimUnclaimedRewardsResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`

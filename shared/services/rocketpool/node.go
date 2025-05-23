@@ -1256,3 +1256,35 @@ func (c *Client) GetExpressTicketCount() (api.GetExpressTicketCountResponse, err
 	}
 	return response, nil
 }
+
+// Check whether the node can claim unclaimed rewards
+func (c *Client) CanClaimUnclaimedRewards(nodeAddress common.Address) (api.CanClaimUnclaimedRewardsResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-claim-unclaimed-rewards %s", nodeAddress.Hex()))
+	if err != nil {
+		return api.CanClaimUnclaimedRewardsResponse{}, fmt.Errorf("Could not get can-claim-unclaimed-rewards response: %w", err)
+	}
+	var response api.CanClaimUnclaimedRewardsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanClaimUnclaimedRewardsResponse{}, fmt.Errorf("Could not decode can-claim-unclaimed-rewards response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanClaimUnclaimedRewardsResponse{}, fmt.Errorf("Could not get can-claim-unclaimed-rewards response: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Send unclaimed rewards to a node operator's withdrawal address
+func (c *Client) ClaimUnclaimedRewards(nodeAddress common.Address) (api.ClaimUnclaimedRewardsResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node claim-unclaimed-rewards %s", nodeAddress.Hex()))
+	if err != nil {
+		return api.ClaimUnclaimedRewardsResponse{}, fmt.Errorf("Could not get claim-unclaimed-rewards response: %w", err)
+	}
+	var response api.ClaimUnclaimedRewardsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ClaimUnclaimedRewardsResponse{}, fmt.Errorf("Could not decode claim-unclaimed-rewards response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ClaimUnclaimedRewardsResponse{}, fmt.Errorf("Could not get claim-unclaimed-rewards response: %s", response.Error)
+	}
+	return response, nil
+}

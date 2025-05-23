@@ -1611,6 +1611,48 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					return nil
 				},
 			},
+			{
+				Name:      "can-claim-unclaimed-rewards",
+				Usage:     "Check if any unclaimed rewards can be sent to the node's withdrawal address",
+				UsageText: "rocketpool api node can-claim-unclaimed-rewards address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					// Get amount
+					nodeAddress, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(canClaimUnclaimedRewards(c, nodeAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "claim-unclaimed-rewards",
+				Usage:     "Send unclaimed rewards to the node's withdrawal address",
+				UsageText: "rocketpool api node claim-unclaimed-rewards address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					// Get amount
+					nodeAddress, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(canClaimUnclaimedRewards(c, nodeAddress))
+					return nil
+
+				},
+			},
 		},
 	})
 }

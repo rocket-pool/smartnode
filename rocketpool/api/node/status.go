@@ -240,10 +240,14 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			}
 			return err
 		})
-
 		wg.Go(func() error {
 			var err error
 			response.MaximumRplStake, err = node.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
+			return err
+		})
+		wg.Go(func() error {
+			var err error
+			response.UnclaimedRewards, err = node.GetUnclaimedRewardsRaw(rp, nodeAccount.Address, nil)
 			return err
 		})
 	} else {

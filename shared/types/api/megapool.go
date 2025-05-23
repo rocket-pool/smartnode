@@ -32,7 +32,6 @@ type MegapoolDetails struct {
 	DelegateExpiry           uint64                     `json:"delegateExpiry"`
 	DelegateExpired          bool                       `json:"delegateExpired"`
 	PendingRewards           *big.Int                   `json:"pendingRewards"`
-	UnclaimedRewards         *big.Int                   `json:"unclaimedRewards"`
 	NodeExpressTicketCount   uint64                     `json:"nodeExpressTicketCount"`
 	UseLatestDelegate        bool                       `json:"useLatestDelegate"`
 	AssignedValue            *big.Int                   `json:"assignedValue"`

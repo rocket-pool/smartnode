@@ -858,6 +858,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "claim-unclaimed-rewards",
+				Aliases:   []string{"cur"},
+				Usage:     "Sends any unclaimed rewards to the node's withdrawal address",
+				UsageText: "rocketpool node claim-unclaimed-rewards",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					return claimUnclaimedRewards(c)
+
+				},
+			},
 		},
 	})
 }

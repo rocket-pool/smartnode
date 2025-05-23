@@ -137,11 +137,6 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		details.UserCapital, err = mega.GetUserCapital(nil)
 		return err
 	})
-	wg.Go(func() error {
-		var err error
-		details.UnclaimedRewards, err = node.GetUnclaimedRewardsRaw(rp, nodeAccount, nil)
-		return err
-	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
