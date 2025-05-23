@@ -83,7 +83,7 @@ func claimUnclaimedRewards(c *cli.Context, nodeAddress common.Address) (*api.Cla
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Repay debt
+	// Claim unclaimed rewards
 	hash, err := node.ClaimUnclaimedRewards(rp, nodeAddress, opts)
 	if err != nil {
 		return nil, err

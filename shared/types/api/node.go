@@ -836,7 +836,7 @@ type ExitQueueResponse struct {
 type CanClaimUnclaimedRewardsResponse struct {
 	Status   string             `json:"status"`
 	Error    string             `json:"error"`
-	CanClaim bool               `json:"canRepay"`
+	CanClaim bool               `json:"canClaim"`
 	GasInfo  rocketpool.GasInfo `json:"gasInfo"`
 }
 
