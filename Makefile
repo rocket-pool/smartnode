@@ -11,9 +11,6 @@ CLI_TARGET_STRINGS:=$(foreach oos,$(CLI_TARGET_OOS), $(foreach arch,$(ARCHS),${B
 DAEMON_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/rocketpool-daemon-linux-$(arch))
 TREEGEN_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/treegen-linux-$(arch))
 
-MODULES:=$(foreach path,$(shell find . -maxdepth 1 -mindepth 1 -type d -not -path '*/.*' -not -name "bindings"),$(dir $(path)))
-MODULE_GLOBS:=$(foreach module,$(MODULES),$(module)...)
-
 define rocketpool-cli-template
 .PHONY: ${BIN_DIR}/rocketpool-cli-$1-$2
 ${BIN_DIR}/rocketpool-cli-$1-$2: ${bin_deps}
@@ -147,7 +144,7 @@ endif
 
 .PHONY: test
 test:
-	go test -test.timeout 20m $(MODULE_GLOBS)
+	go test -test.timeout 20m $$(go list ./... | grep -v bindings)
 
 .PHONY: clean
 clean:
