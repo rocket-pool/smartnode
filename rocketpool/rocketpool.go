@@ -11,7 +11,14 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
 	"github.com/rocket-pool/smartnode/shared"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
+
+	blsversionpin "github.com/herumi/bls-eth-go-binary/bls"
 )
+
+// This variable simple ensures we have a direct dependency on bls-eth-go-binary, so it doesn't get tidied out of go.mod
+// we should probably re-test latest versions of the herumi packages on ARM to see if the issue Joe encountered has been
+// resolved yet.
+var _ blsversionpin.ID
 
 // Run
 func main() {
