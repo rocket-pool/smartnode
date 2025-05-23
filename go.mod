@@ -3,7 +3,7 @@ module github.com/rocket-pool/smartnode
 go 1.21.8
 
 // Do not update until you can test that its regression on ARM is resolved
-require github.com/herumi/bls-eth-go-binary v1.28.1 // indirect
+require github.com/herumi/bls-eth-go-binary v1.28.1
 
 require (
 	github.com/alessio/shellescape v1.4.1
