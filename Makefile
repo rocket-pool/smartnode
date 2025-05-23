@@ -3,7 +3,6 @@ LOCAL_OS=$(shell go env GOOS)-$(shell go env GOARCH)
 
 BUILD_DIR=build
 BIN_DIR=${BUILD_DIR}/${VERSION}/bin
-DOCKER_DIR=${BUILD_DIR}/${VERSION}/docker
 
 CLI_TARGET_OOS:=linux darwin
 ARCHS:=arm64 amd64
@@ -12,9 +11,8 @@ CLI_TARGET_STRINGS:=$(foreach oos,$(CLI_TARGET_OOS), $(foreach arch,$(ARCHS),${B
 DAEMON_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/rocketpool-daemon-linux-$(arch))
 TREEGEN_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/treegen-linux-$(arch))
 
-MODULES:=$(foreach path,$(shell find . -name go.mod),$(dir $(path)))
+MODULES:=$(foreach path,$(shell find . -maxdepth 1 -mindepth 1 -type d -not -path '*/.*' -not -name "bindings"),$(dir $(path)))
 MODULE_GLOBS:=$(foreach module,$(MODULES),$(module)...)
-TEST_GLOBS:=$(filter-out ./bindings/...,$(MODULE_GLOBS))
 
 define rocketpool-cli-template
 .PHONY: ${BIN_DIR}/rocketpool-cli-$1-$2
@@ -91,8 +89,6 @@ endif
 
 ${BIN_DIR}:
 	mkdir -p ${BIN_DIR}
-${DOCKER_DIR}:
-	mkdir -p ${DOCKER_DIR}
 
 $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool-cli-template,$(oos),$(arch)))))
 
@@ -116,7 +112,7 @@ endif
 
 # Docker containers
 .PHONY: docker
-docker: ${DOCKER_DIR}
+docker:
 	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl smartnode
 
 .PHONY: docker-push
@@ -143,18 +139,15 @@ docker-prune:
 	docker system prune -af
 	docker buildx prune -af
 
-define lint-template 
-.PHONY: lint-$1
-lint-$1:
-	docker run -e GOCACHE=/go/.cache/go-build -e GOLANGCI_LINT_CACHE=/go/.cache/golangci-lint --user $(shell id -u):$(shell id -g) --rm -v ~/.cache:/go/.cache -v .:/smartnode --workdir /smartnode/$1 golangci/golangci-lint:v2.1-alpine golangci-lint fmt --diff
-endef
-$(foreach module,$(MODULES),$(eval $(call lint-template,$(module))))
 .PHONY: lint
-lint: $(foreach module,$(MODULES),lint-$(module))
+lint:
+ifndef NO_DOCKER
+	docker run -e GOMODCACHE=/go/.cache/pkg/mod -e GOCACHE=/go/.cache/go-build -e GOLANGCI_LINT_CACHE=/go/.cache/golangci-lint --user $(shell id -u):$(shell id -g) --rm -v ~/.cache:/go/.cache -v .:/smartnode --workdir /smartnode/ golangci/golangci-lint:v2.1-alpine golangci-lint fmt --diff
+endif
 
 .PHONY: test
 test:
-	go test -test.timeout 20m $(TEST_GLOBS)
+	go test -test.timeout 20m $(MODULE_GLOBS)
 
 .PHONY: clean
 clean:

@@ -2,54 +2,49 @@ FROM golang:1.21.8-bookworm AS smartnode_dependencies
 
 # Install build tools
 RUN dpkg --add-architecture arm64
-RUN apt update && apt install -y \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+	--mount=type=cache,target=/var/lib/apt,sharing=locked \
+	apt update && apt install -y \
 	build-essential \
 	gcc-aarch64-linux-gnu \
 	libc6-dev-arm64-cross\
 	g++-aarch64-linux-gnu \
 	wget
-
-# Cache go dependencies
-COPY ./go.work /src/go.work
-COPY ./go.work.sum /src/go.work.sum
-COPY ./addons/go.mod /src/addons/go.mod
-COPY ./bindings/go.mod /src/bindings/go.mod
-COPY ./rocketpool/go.mod /src/rocketpool/go.mod
-COPY ./rocketpool-cli/go.mod /src/rocketpool-cli/go.mod
-COPY ./shared/go.mod /src/shared/go.mod
-COPY ./treegen/go.mod /src/treegen/go.mod
-WORKDIR /src
-RUN go mod download -x
-WORKDIR /
-RUN rm -rf /src
+# Load the project's go mod dependencies into the image
+COPY go.mod /src/go.mod
+COPY go.sum /src/go.sum
+RUN mkdir -p /go/pkg/
+# Using a cache mount and custom GOMODCACHE lets us use docker build cache to keep the most recent dependencies
+# That way when we rebuild with changes to dependencies, only the delta is downloaded.
+RUN --mount=type=cache,target=/gopkgmodcache \
+	cd /src && \
+	GOMODCACHE=/gopkgmodcache go mod download -x && \
+	cp -r /gopkgmodcache /go/pkg/mod
 
 FROM smartnode_dependencies AS build
 ARG TARGETARCH
 ARG VERSION
-COPY ./go.work /src/go.work
-COPY ./go.work.sum /src/go.work.sum
-COPY ./addons/ /src/addons/
-COPY ./bindings/ /src/bindings/
-COPY ./rocketpool/ /src/rocketpool/
-COPY ./rocketpool-cli/ /src/rocketpool-cli/
-COPY ./shared/ /src/shared/
-COPY ./treegen/ /src/treegen
-COPY Makefile /src/Makefile
-WORKDIR /src
-RUN --mount=type=cache,target=/root/.cache/go-build make NO_DOCKER=true \
-	build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH} \
-	build/${VERSION}/bin/rocketpool-cli-linux-${TARGETARCH} \
-	build/${VERSION}/bin/treegen-linux-${TARGETARCH}
+# Create a directory for the output
+RUN mkdir /build
+# Build the project by mounting ./ to /src, and go buildcache into the image
+RUN --mount=type=cache,target=/root/.cache/go-build \
+	--mount=type=bind,target=/src,source=./ \
+	cd /src && make NO_DOCKER=true BUILD_DIR=/build \
+	/build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH} \
+	/build/${VERSION}/bin/rocketpool-cli-linux-${TARGETARCH} \
+	/build/${VERSION}/bin/treegen-linux-${TARGETARCH}
 
 FROM debian:bookworm-slim AS smartnode
 ARG TARGETARCH
 ARG VERSION
 
-RUN apt update && apt install ca-certificates -y
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+	--mount=type=cache,target=/var/lib/apt,sharing=locked \
+	apt update && apt install ca-certificates -y
 
-COPY --from=build /src/build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
-COPY --from=build /src/build/${VERSION}/bin/rocketpool-cli-linux-${TARGETARCH} /go/bin/rocketpool-cli
-COPY --from=build /src/build/${VERSION}/bin/treegen-linux-${TARGETARCH} /go/bin/treegen
+COPY --from=build /build/${VERSION}/bin/rocketpool-daemon-linux-${TARGETARCH} /go/bin/rocketpool
+COPY --from=build /build/${VERSION}/bin/rocketpool-cli-linux-${TARGETARCH} /go/bin/rocketpool-cli
+COPY --from=build /build/${VERSION}/bin/treegen-linux-${TARGETARCH} /go/bin/treegen
 
 ENV PATH="$PATH:/go/bin"
 
