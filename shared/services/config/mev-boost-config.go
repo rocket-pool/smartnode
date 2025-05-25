@@ -55,6 +55,9 @@ type MevBoostConfig struct {
 	// Titan Regional relay
 	TitanRegionalRelay config.Parameter `yaml:"titanRegionalEnabled,omitempty"`
 
+	// BTCS OFAC+
+	BtcsOfacRelay config.Parameter `yaml:"btcsOfacEnabled,omitempty"`
+
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
 
@@ -146,6 +149,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		AestusRelay:             generateRelayParameter("aestusEnabled", relayMap[config.MevRelayID_Aestus]),
 		TitanGlobalRelay:        generateRelayParameter("titanGlobalEnabled", relayMap[config.MevRelayID_TitanGlobal]),
 		TitanRegionalRelay:      generateRelayParameter("titanRegionalEnabled", relayMap[config.MevRelayID_TitanRegional]),
+		BtcsOfacRelay:           generateRelayParameter("btcsOfacEnabled", relayMap[config.MevRelayID_BTCSOfac]),
 
 		Port: config.Parameter{
 			ID:                 "port",
@@ -226,6 +230,7 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.AestusRelay,
 		&cfg.TitanGlobalRelay,
 		&cfg.TitanRegionalRelay,
+		&cfg.BtcsOfacRelay,
 		&cfg.Port,
 		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,
@@ -339,6 +344,12 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 				relays = append(relays, cfg.relayMap[config.MevRelayID_TitanRegional])
 			}
 		}
+		if cfg.BtcsOfacRelay.Value == true {
+			_, exists := cfg.relayMap[config.MevRelayID_BTCSOfac].Urls[currentNetwork]
+			if exists {
+				relays = append(relays, cfg.relayMap[config.MevRelayID_BTCSOfac])
+			}
+		}
 	}
 
 	return relays
@@ -445,6 +456,19 @@ func createDefaultRelays() []config.MevRelay {
 				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
 				config.Network_Testnet: "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
 				config.Network_Devnet:  "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
+			},
+			Regulated: true,
+		},
+
+		// BTCS OFAC+
+		{
+			ID:          config.MevRelayID_BTCSOfac,
+			Name:        "BTCS OFAC+ ",
+			Description: "Select this to enable the BTCS OFAC+ regulated relay.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@mainnet.relay.btcs.com",
+				config.Network_Testnet: "",
+				config.Network_Devnet:  "",
 			},
 			Regulated: true,
 		},
