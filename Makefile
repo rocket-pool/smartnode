@@ -49,8 +49,8 @@ ${BUILD_DIR}/treegen: ${BIN_DIR}/treegen-${LOCAL_OS}
 
 # docker-builder container
 .PHONY: docker-builder
-docker-builder:
-	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl builder
+docker-builder: ${BUILD_DIR}/docker-buildx-builder
+	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl builder
 
 bin_deps = ${BIN_DIR}
 ifndef NO_DOCKER
@@ -84,6 +84,8 @@ else
 	${local_build_cmd_arm64} -o $@ rocketpool/rocketpool.go
 endif
 
+${BUILD_DIR}:
+	mkdir -p ${BUILD_DIR}
 ${BIN_DIR}:
 	mkdir -p ${BIN_DIR}
 
@@ -107,10 +109,15 @@ else
 	${local_build_cmd_arm64} -o $@ ./treegen/.
 endif
 
+# Multiarch builder
+${BUILD_DIR}/docker-buildx-builder: ${BUILD_DIR}
+	docker buildx create --name smartnode-builder --driver docker-container --platform linux/amd64,linux/arm64
+	touch ${BUILD_DIR}/docker-buildx-builder
+
 # Docker containers
 .PHONY: docker
-docker:
-	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl smartnode
+docker: ${BUILD_DIR}/docker-buildx-builder
+	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode
 
 .PHONY: docker-push
 docker-push: docker
@@ -135,6 +142,8 @@ docker-latest: docker-push
 docker-prune:
 	docker system prune -af
 	docker buildx prune -af
+	docker buildx rm smartnode-builder
+	rm ${BUILD_DIR}/docker-buildx-builder
 
 .PHONY: lint
 lint:
@@ -149,3 +158,4 @@ test:
 .PHONY: clean
 clean:
 	rm -rf ${BUILD_DIR}
+	docker buildx rm smartnode-builder
