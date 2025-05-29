@@ -587,7 +587,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		basePriceMessengerAddress: map[config.Network]string{
-			config.Network_Mainnet: "0x64A5856869C06B0188C84A5F83d712bbAc03517d",
+			config.Network_Mainnet: "0x8aa4afc5a9793433eb37c9919ff49b54903c7cb1",
 			config.Network_Devnet:  "",
 			config.Network_Testnet: "",
 		},

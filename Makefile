@@ -3,7 +3,6 @@ LOCAL_OS=$(shell go env GOOS)-$(shell go env GOARCH)
 
 BUILD_DIR=build
 BIN_DIR=${BUILD_DIR}/${VERSION}/bin
-DOCKER_DIR=${BUILD_DIR}/${VERSION}/docker
 
 CLI_TARGET_OOS:=linux darwin
 ARCHS:=arm64 amd64
@@ -11,10 +10,6 @@ ARCHS:=arm64 amd64
 CLI_TARGET_STRINGS:=$(foreach oos,$(CLI_TARGET_OOS), $(foreach arch,$(ARCHS),${BIN_DIR}/rocketpool-cli-$(oos)-$(arch)))
 DAEMON_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/rocketpool-daemon-linux-$(arch))
 TREEGEN_TARGET_STRINGS:=$(foreach arch,$(ARCHS),${BIN_DIR}/treegen-linux-$(arch))
-
-MODULES:=$(foreach path,$(shell find . -name go.mod),$(dir $(path)))
-MODULE_GLOBS:=$(foreach module,$(MODULES),$(module)...)
-TEST_GLOBS:=$(filter-out ./bindings/...,$(MODULE_GLOBS))
 
 define rocketpool-cli-template
 .PHONY: ${BIN_DIR}/rocketpool-cli-$1-$2
@@ -54,23 +49,23 @@ ${BUILD_DIR}/treegen: ${BIN_DIR}/treegen-${LOCAL_OS}
 
 # docker-builder container
 .PHONY: docker-builder
-docker-builder:
-	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl builder
+docker-builder: ${BUILD_DIR}/docker-buildx-builder
+	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl builder
 
 bin_deps = ${BIN_DIR}
 ifndef NO_DOCKER
 	bin_deps += docker-builder
 endif
 
-docker_build_cmd_amd64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
+docker_build_cmd_amd64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" \
 	-e GOARCH=amd64 -e GOOS=linux --workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
 	go build
-local_build_cmd_amd64 = CGO_ENABLED=1 CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build
-docker_build_cmd_arm64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
-	-e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
+local_build_cmd_amd64 = CGO_ENABLED=1 CGO_CFLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build
+docker_build_cmd_arm64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" \
+	-e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
 	--workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
 	go build
-local_build_cmd_arm64 = CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build
+local_build_cmd_arm64 = CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_CFLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build
 # amd64 daemon build
 .PHONY: ${BIN_DIR}/rocketpool-daemon-linux-amd64
 ${BIN_DIR}/rocketpool-daemon-linux-amd64: ${bin_deps}
@@ -89,10 +84,10 @@ else
 	${local_build_cmd_arm64} -o $@ rocketpool/rocketpool.go
 endif
 
+${BUILD_DIR}:
+	mkdir -p ${BUILD_DIR}
 ${BIN_DIR}:
 	mkdir -p ${BIN_DIR}
-${DOCKER_DIR}:
-	mkdir -p ${DOCKER_DIR}
 
 $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool-cli-template,$(oos),$(arch)))))
 
@@ -114,10 +109,15 @@ else
 	${local_build_cmd_arm64} -o $@ ./treegen/.
 endif
 
+# Multiarch builder
+${BUILD_DIR}/docker-buildx-builder: ${BUILD_DIR}
+	docker buildx create --name smartnode-builder --driver docker-container --platform linux/amd64,linux/arm64
+	touch ${BUILD_DIR}/docker-buildx-builder
+
 # Docker containers
 .PHONY: docker
-docker: ${DOCKER_DIR}
-	VERSION=${VERSION} docker bake -f docker/daemon-bake.hcl smartnode
+docker: ${BUILD_DIR}/docker-buildx-builder
+	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode
 
 .PHONY: docker-push
 docker-push: docker
@@ -142,20 +142,20 @@ docker-latest: docker-push
 docker-prune:
 	docker system prune -af
 	docker buildx prune -af
+	docker buildx rm smartnode-builder
+	rm ${BUILD_DIR}/docker-buildx-builder
 
-define lint-template 
-.PHONY: lint-$1
-lint-$1:
-	docker run -e GOCACHE=/go/.cache/go-build -e GOLANGCI_LINT_CACHE=/go/.cache/golangci-lint --user $(shell id -u):$(shell id -g) --rm -v ~/.cache:/go/.cache -v .:/smartnode --workdir /smartnode/$1 golangci/golangci-lint:v2.1-alpine golangci-lint fmt --diff
-endef
-$(foreach module,$(MODULES),$(eval $(call lint-template,$(module))))
 .PHONY: lint
-lint: $(foreach module,$(MODULES),lint-$(module))
+lint:
+ifndef NO_DOCKER
+	docker run -e GOMODCACHE=/go/.cache/pkg/mod -e GOCACHE=/go/.cache/go-build -e GOLANGCI_LINT_CACHE=/go/.cache/golangci-lint --user $(shell id -u):$(shell id -g) --rm -v ~/.cache:/go/.cache -v .:/smartnode --workdir /smartnode/ golangci/golangci-lint:v2.1-alpine golangci-lint fmt --diff
+endif
 
 .PHONY: test
 test:
-	go test -test.timeout 20m $(TEST_GLOBS)
+	go test -test.timeout 20m $$(go list ./... | grep -v bindings)
 
 .PHONY: clean
 clean:
 	rm -rf ${BUILD_DIR}
+	docker buildx rm smartnode-builder

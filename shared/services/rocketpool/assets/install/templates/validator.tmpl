@@ -45,11 +45,7 @@ services:
       {{- if eq .ConsensusClient.String "teku"}}
       - TEKU_USE_SLASHING_PROTECTION={{.Teku.UseSlashingProtection}}
       {{- end}}
-    {{- if eq .ConsensusClient.String "prysm"}}
-    entrypoint: bash
-    {{- else}}
-    entrypoint: sh
-    {{- end}}
+    entrypoint: {{ .GetEth2Entrypoint }}
     command: "/setup/start-vc.sh"
     cap_drop:
       - all
