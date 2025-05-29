@@ -17,7 +17,7 @@ import (
 
 type ValidatorProof struct {
 	Slot                  uint64
-	ValidatorIndex        *big.Int
+	ValidatorIndex        uint64
 	Pubkey                []byte
 	WithdrawalCredentials [32]byte
 	Witnesses             [][32]byte

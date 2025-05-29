@@ -13,9 +13,6 @@ import (
 func initWallet(c *cli.Context) (*api.InitWalletResponse, error) {
 
 	// Get services
-	if err := services.RequireNodePassword(c); err != nil {
-		return nil, err
-	}
 	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err

@@ -94,11 +94,9 @@ services:
       - dac_override
     security_opt:
       - no-new-privileges
-    {{- if ne .ConsensusClient.String "prysm"}}
-    entrypoint: sh
-    {{- else}}
-    {{- /* prysm has bash but not sh and may need us to download genesis for testnets */}}
-    entrypoint: bash
+    entrypoint: {{ .GetEth2Entrypoint }}
+    {{- if eq .ConsensusClient.String "prysm"}}
+    {{- /* prysm may need us to download genesis for testnets */}}
     depends_on:
       eth2_genesis_downloader:
         condition: service_completed_successfully

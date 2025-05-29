@@ -42,7 +42,7 @@ type processPenalties struct {
 	log            log.ColorLogger
 	errLog         log.ColorLogger
 	cfg            *config.RocketPoolConfig
-	w              *wallet.Wallet
+	w              wallet.Wallet
 	rp             *rocketpool.RocketPool
 	ec             rocketpool.ExecutionClient
 	bc             beacon.Client
@@ -67,7 +67,7 @@ func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log
 	if err != nil {
 		return nil, err
 	}
-	w, err := services.GetWallet(c)
+	w, err := services.GetHdWallet(c)
 	if err != nil {
 		return nil, err
 	}

@@ -29,7 +29,7 @@ const (
 	bucketLimit uint = 2000
 )
 
-func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress common.Address, w *wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
+func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress common.Address, w wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -132,7 +132,7 @@ func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress comm
 
 }
 
-func CheckForAndRecoverCustomMinipoolKeys(cfg *config.RocketPoolConfig, pubkeyMap map[types.ValidatorPubkey]bool, w *wallet.Wallet, testOnly bool) (map[types.ValidatorPubkey]bool, error) {
+func CheckForAndRecoverCustomMinipoolKeys(cfg *config.RocketPoolConfig, pubkeyMap map[types.ValidatorPubkey]bool, w wallet.Wallet, testOnly bool) (map[types.ValidatorPubkey]bool, error) {
 
 	// Load custom validator keys
 	customKeyDir := cfg.Smartnode.GetCustomKeyPath()

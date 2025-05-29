@@ -110,6 +110,7 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
     CMD="$PERF_PREFIX /usr/local/bin/node --max-http-header-size=65536 /usr/app/packages/cli/bin/lodestar beacon \
         --network $LODESTAR_NETWORK \
         --dataDir /ethclient/lodestar \
+        --serveHistoricalState \
         --port $BN_P2P_PORT \
         --execution.urls $EC_ENGINE_ENDPOINT \
         --rest \

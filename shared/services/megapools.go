@@ -30,7 +30,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, error) {
+func GetStakeValidatorInfo(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, error) {
 	// Get validator private key
 	validatorKey, err := wallet.GetValidatorKeyByPubkey(validatorPubkey)
 	if err != nil {
@@ -108,7 +108,7 @@ func GetStakeValidatorInfo(c *cli.Context, wallet *wallet.Wallet, eth2Config bea
 
 	proof := megapool.ValidatorProof{
 		Slot:                  block.Slot,
-		ValidatorIndex:        new(big.Int).SetUint64(validatorIndex64),
+		ValidatorIndex:        validatorIndex64,
 		Pubkey:                validatorPubkey[:],
 		WithdrawalCredentials: withdrawalCredentials,
 		Witnesses:             proofWithFixedSize,

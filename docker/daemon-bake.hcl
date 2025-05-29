@@ -14,12 +14,14 @@ target "builder" {
   ]
   target = "smartnode_dependencies"
   platforms = [ "linux/amd64" ]
+  output = [{ "type": "docker" }]
 }
 
 target "smartnode" {
   name = "smartnode-${arch}"
   dockerfile = "docker/rocketpool-dockerfile"
   args = {
+    BUILDPLATFORM = "linux/amd64"
     VERSION = "${VERSION}"
   }
   tags = [
@@ -30,6 +32,6 @@ target "smartnode" {
     arch = [ "amd64", "arm64" ]
   }
   target = "smartnode"
-  platform = "linux/${arch}"
+  platforms = ["linux/${arch}"]
   output = [{ "type": "docker" }]
 }
