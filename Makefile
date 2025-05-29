@@ -57,15 +57,15 @@ ifndef NO_DOCKER
 	bin_deps += docker-builder
 endif
 
-docker_build_cmd_amd64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
+docker_build_cmd_amd64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" \
 	-e GOARCH=amd64 -e GOOS=linux --workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
 	go build
-local_build_cmd_amd64 = CGO_ENABLED=1 CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build
-docker_build_cmd_arm64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" \
-	-e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp -e CGO_C_FLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
+local_build_cmd_amd64 = CGO_ENABLED=1 CGO_CFLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build
+docker_build_cmd_arm64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" \
+	-e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
 	--workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
 	go build
-local_build_cmd_arm64 = CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_C_FLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build
+local_build_cmd_arm64 = CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_CFLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build
 # amd64 daemon build
 .PHONY: ${BIN_DIR}/rocketpool-daemon-linux-amd64
 ${BIN_DIR}/rocketpool-daemon-linux-amd64: ${bin_deps}
