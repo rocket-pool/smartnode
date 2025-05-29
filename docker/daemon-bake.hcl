@@ -24,7 +24,6 @@ target "smartnode" {
   }
   tags = [
     "rocketpool/smartnode:${VERSION}",
-    "localhost/rocketpool/smartnode:${VERSION}"
   ]
   target = "smartnode"
   platforms = ["linux/amd64", "linux/arm64"]
