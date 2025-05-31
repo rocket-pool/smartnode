@@ -28,8 +28,8 @@ type OracleDaoMemberDetails struct {
 	RPLBondAmount       *big.Int       `json:"rplBondAmount"`
 	ReplacementAddress  common.Address `json:"replacementAddress"`
 	IsChallenged        bool           `json:"isChallenged"`
-	joinedTimeRaw       *big.Int       `json:"-"`
-	lastProposalTimeRaw *big.Int       `json:"-"`
+	joinedTimeRaw       *bigTime       `json:"-"`
+	lastProposalTimeRaw *bigTime       `json:"-"`
 }
 
 // Gets the details for an Oracle DAO member using the efficient multicall contract
@@ -182,7 +182,7 @@ func addOracleDaoMemberDetailsCalls(contracts *NetworkContracts, mc *multicall.M
 
 // Fixes a member details struct with supplemental logic
 func fixupOracleDaoMemberDetails(details *OracleDaoMemberDetails) error {
-	details.JoinedTime = convertToTime(details.joinedTimeRaw)
-	details.LastProposalTime = convertToTime(details.lastProposalTimeRaw)
+	details.JoinedTime = details.joinedTimeRaw.toTime()
+	details.LastProposalTime = details.lastProposalTimeRaw.toTime()
 	return nil
 }
