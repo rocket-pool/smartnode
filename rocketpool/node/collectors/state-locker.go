@@ -10,12 +10,12 @@ type StateLocker struct {
 	state *state.NetworkState
 
 	// Internal fields
-	lock *sync.Mutex
+	lock *sync.RWMutex
 }
 
 func NewStateLocker() *StateLocker {
 	return &StateLocker{
-		lock: &sync.Mutex{},
+		lock: &sync.RWMutex{},
 	}
 }
 
@@ -26,7 +26,7 @@ func (l *StateLocker) UpdateState(state *state.NetworkState) {
 }
 
 func (l *StateLocker) GetState() *state.NetworkState {
-	l.lock.Lock()
-	defer l.lock.Unlock()
+	l.lock.RLock()
+	defer l.lock.RUnlock()
 	return l.state
 }
