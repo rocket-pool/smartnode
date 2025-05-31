@@ -22,7 +22,8 @@ type NetworkStateManager struct {
 	beaconConfig *beacon.Eth2Config
 
 	// Multicaller and batch balance contract addresses
-	contracts config.StateManagerContracts
+	multicaller    common.Address
+	balanceBatcher common.Address
 }
 
 // Create a new manager for the network state
@@ -35,10 +36,11 @@ func NewNetworkStateManager(
 
 	// Create the manager
 	return &NetworkStateManager{
-		rp:        rp,
-		bc:        bc,
-		log:       log,
-		contracts: contracts,
+		rp:             rp,
+		bc:             bc,
+		log:            log,
+		multicaller:    contracts.Multicaller,
+		balanceBatcher: contracts.BalanceBatcher,
 	}
 }
 
@@ -144,11 +146,7 @@ func (m *NetworkStateManager) getLatestProposedBeaconBlock(targetSlot uint64) (b
 
 // Get the state of the network at the provided Beacon slot
 func (m *NetworkStateManager) getState(slotNumber uint64) (*NetworkState, error) {
-	beaconConfig, err := m.getBeaconConfig()
-	if err != nil {
-		return nil, fmt.Errorf("error getting Beacon config: %w", err)
-	}
-	state, err := createNetworkState(m.contracts, m.rp, m.bc, m.log, slotNumber, beaconConfig)
+	state, err := m.createNetworkState(slotNumber)
 	if err != nil {
 		return nil, err
 	}
@@ -157,11 +155,7 @@ func (m *NetworkStateManager) getState(slotNumber uint64) (*NetworkState, error)
 
 // Get the state of the network for a specific node only at the provided Beacon slot
 func (m *NetworkStateManager) getStateForNode(nodeAddress common.Address, slotNumber uint64, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
-	beaconConfig, err := m.getBeaconConfig()
-	if err != nil {
-		return nil, nil, fmt.Errorf("error getting Beacon config: %w", err)
-	}
-	state, totalEffectiveStake, err := createNetworkStateForNode(m.contracts, m.rp, m.bc, m.log, slotNumber, beaconConfig, nodeAddress, calculateTotalEffectiveStake)
+	state, totalEffectiveStake, err := m.createNetworkStateForNode(slotNumber, nodeAddress, calculateTotalEffectiveStake)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -171,6 +165,6 @@ func (m *NetworkStateManager) getStateForNode(nodeAddress common.Address, slotNu
 // Logs a line if the logger is specified
 func (m *NetworkStateManager) logLine(format string, v ...interface{}) {
 	if m.log != nil {
-		m.log.Printlnf(format, v)
+		m.log.Printlnf(format, v...)
 	}
 }
