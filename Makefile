@@ -8,6 +8,7 @@ LOCAL_PLATFORM=${LOCAL_OS}/${LOCAL_ARCH}
 
 BUILD_DIR=build
 BIN_DIR=${BUILD_DIR}/${VERSION}/bin
+TOOLS_DIR=${BUILD_DIR}/${VERSION}/tools
 
 CLI_TARGET_OOS:=linux darwin
 ARCHS:=arm64 amd64
@@ -93,6 +94,8 @@ ${BUILD_DIR}:
 	mkdir -p ${BUILD_DIR}
 ${BIN_DIR}:
 	mkdir -p ${BIN_DIR}
+${TOOLS_DIR}:
+	mkdir -p ${TOOLS_DIR}
 
 $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool-cli-template,$(oos),$(arch)))))
 
@@ -112,6 +115,24 @@ ifndef NO_DOCKER
 	${docker_build_cmd_arm64} -o $@ ./treegen/.
 else
 	${local_build_cmd_arm64} -o $@ ./treegen/.
+endif
+
+# amd64 state-cli build
+.PHONY: ${BIN_DIR}/treegen-linux-amd64
+${TOOLS_DIR}/state-cli-linux-amd64: ${bin_deps}
+ifndef NO_DOCKER
+	${docker_build_cmd_amd64} -o $@ ./shared/services/state/cli/.
+else
+	${local_build_cmd_amd64} -o $@ ./shared/services/state/cli/.
+endif
+
+# arm64 state-cli build
+.PHONY: ${BIN_DIR}/treegen-linux-arm64
+${TOOLS_DIR}/state-cli-linux-arm64: ${bin_deps}
+ifndef NO_DOCKER
+	${docker_build_cmd_arm64} -o $@ ./shared/services/state/cli/.
+else
+	${local_build_cmd_arm64} -o $@ ./shared/services/state/cli/.
 endif
 
 # Multiarch builder

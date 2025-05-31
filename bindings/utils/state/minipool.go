@@ -63,16 +63,16 @@ type NativeMinipoolDetails struct {
 	UserShareOfBeaconBalance          *big.Int `json:"user_share_of_beacon_balance"`
 
 	// Atlas
-	UserDistributed              bool
-	Slashed                      bool
-	IsVacant                     bool
-	LastBondReductionTime        *big.Int
-	LastBondReductionPrevValue   *big.Int
-	LastBondReductionPrevNodeFee *big.Int
-	ReduceBondTime               *big.Int
-	ReduceBondCancelled          bool
-	ReduceBondValue              *big.Int
-	PreMigrationBalance          *big.Int
+	UserDistributed              bool     `json:"user_distributed"`
+	Slashed                      bool     `json:"slashed"`
+	IsVacant                     bool     `json:"is_vacant"`
+	LastBondReductionTime        *big.Int `json:"last_bond_reduction_time"`
+	LastBondReductionPrevValue   *big.Int `json:"last_bond_reduction_prev_value"`
+	LastBondReductionPrevNodeFee *big.Int `json:"last_bond_reduction_prev_node_fee"`
+	ReduceBondTime               *big.Int `json:"reduce_bond_time"`
+	ReduceBondCancelled          bool     `json:"reduce_bond_cancelled"`
+	ReduceBondValue              *big.Int `json:"reduce_bond_value"`
+	PreMigrationBalance          *big.Int `json:"pre_migration_balance"`
 }
 
 var sixteenEth = big.NewInt(0).Mul(big.NewInt(16), oneEth)
