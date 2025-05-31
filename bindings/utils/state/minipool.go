@@ -200,7 +200,7 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 
 				// Calculate the Beacon shares
 				beaconBalance := big.NewInt(0).Set(beaconBalances[j])
-				if beaconBalance.Cmp(zero) > 0 {
+				if beaconBalance.Sign() > 0 {
 					mc.AddCall(mpContract, &details.NodeShareOfBeaconBalance, "calculateNodeShare", beaconBalance)
 					mc.AddCall(mpContract, &details.UserShareOfBeaconBalance, "calculateUserShare", beaconBalance)
 				} else {
@@ -214,7 +214,7 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 				totalBalance.Sub(totalBalance, details.NodeRefundBalance) // Remove node refund
 
 				// Calculate the node and user shares
-				if totalBalance.Cmp(zero) > 0 {
+				if totalBalance.Sign() > 0 {
 					mc.AddCall(mpContract, &details.NodeShareOfBalanceIncludingBeacon, "calculateNodeShare", totalBalance)
 					mc.AddCall(mpContract, &details.UserShareOfBalanceIncludingBeacon, "calculateUserShare", totalBalance)
 				} else {
@@ -581,7 +581,7 @@ func addMinipoolShareCalls(rp *rocketpool.RocketPool, mc *multicall.MultiCaller,
 	mpContract := mp.GetContract()
 
 	details.DistributableBalance = big.NewInt(0).Sub(details.Balance, details.NodeRefundBalance)
-	if details.DistributableBalance.Cmp(zero) >= 0 {
+	if details.DistributableBalance.Sign() >= 0 {
 		mc.AddCall(mpContract, &details.NodeShareOfBalance, "calculateNodeShare", details.DistributableBalance)
 		mc.AddCall(mpContract, &details.UserShareOfBalance, "calculateUserShare", details.DistributableBalance)
 	} else {

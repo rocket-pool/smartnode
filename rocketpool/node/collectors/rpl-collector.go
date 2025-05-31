@@ -18,6 +18,7 @@ type RplCollector struct {
 	totalValueStaked *prometheus.Desc
 
 	// The total effective amount of RPL staked on the network
+	// Obsolete, but still populated so the dashboard can show it.
 	totalEffectiveStaked *prometheus.Desc
 
 	// The date and time of the next RPL rewards checkpoint
@@ -81,20 +82,18 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 
 	rplPriceFloat := eth.WeiToEth(state.NetworkDetails.RplPrice)
 	totalValueStakedFloat := eth.WeiToEth(state.NetworkDetails.TotalRPLStake)
-	totalEffectiveStake := collector.stateLocker.GetTotalEffectiveRPLStake()
 	lastCheckpoint := state.NetworkDetails.IntervalStart
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	nextRewardsTime := float64(lastCheckpoint.Add(rewardsInterval).Unix()) * 1000
-	if totalEffectiveStake == nil {
-		return
-	}
 
 	channel <- prometheus.MustNewConstMetric(
 		collector.rplPrice, prometheus.GaugeValue, rplPriceFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalValueStaked, prometheus.GaugeValue, totalValueStakedFloat)
+	// All staked RPL is effective RPL, but this metric is on the dashboard so we
+	// should keep populating it for now.
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalEffectiveStaked, prometheus.GaugeValue, eth.WeiToEth(totalEffectiveStake))
+		collector.totalEffectiveStaked, prometheus.GaugeValue, totalValueStakedFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
 }
