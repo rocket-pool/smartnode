@@ -281,20 +281,16 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 }
 
 // Creates a snapshot of the Rocket Pool network, but only for a single node
-// Also gets the total effective RPL stake of the network for convenience since this is required by several node routines
-func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
+func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeAddress common.Address) (*NetworkState, error) {
 	steps := 5
-	if calculateTotalEffectiveStake {
-		steps++
-	}
 
 	// Get the execution block for the given slot
 	beaconBlock, exists, err := m.bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting Beacon block for slot %d: %w", slotNumber, err)
+		return nil, fmt.Errorf("error getting Beacon block for slot %d: %w", slotNumber, err)
 	}
 	if !exists {
-		return nil, nil, fmt.Errorf("slot %d did not have a Beacon block", slotNumber)
+		return nil, fmt.Errorf("slot %d did not have a Beacon block", slotNumber)
 	}
 
 	// Get the corresponding block on the EL
@@ -305,7 +301,7 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 
 	beaconConfig, err := m.getBeaconConfig()
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting Beacon config: %w", err)
+		return nil, fmt.Errorf("error getting Beacon config: %w", err)
 	}
 
 	// Create the state wrapper
@@ -324,18 +320,18 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 	// Network contracts and details
 	contracts, err := rpstate.NewNetworkContracts(m.rp, m.multicaller, m.balanceBatcher, opts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting network contracts: %w", err)
+		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
 	state.NetworkDetails, err = rpstate.NewNetworkDetails(m.rp, contracts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting network details: %w", err)
+		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
 	m.logLine("1/%d - Retrieved network details (%s so far)", steps, time.Since(start))
 
 	// Node details
 	nodeDetails, err := rpstate.GetNativeNodeDetails(m.rp, contracts, nodeAddress)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting node details: %w", err)
+		return nil, fmt.Errorf("error getting node details: %w", err)
 	}
 	state.NodeDetails = []rpstate.NativeNodeDetails{nodeDetails}
 	m.logLine("2/%d - Retrieved node details (%s so far)", steps, time.Since(start))
@@ -343,7 +339,7 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 	// Minipool details
 	state.MinipoolDetails, err = rpstate.GetNodeNativeMinipoolDetails(m.rp, contracts, nodeAddress)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting all minipool details: %w", err)
+		return nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
 	m.logLine("3/%d - Retrieved minipool details (%s so far)", steps, time.Since(start))
 
@@ -377,22 +373,13 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 
 	// Get the total network effective RPL stake
 	currentStep := 4
-	var totalEffectiveStake *big.Int
-	if calculateTotalEffectiveStake {
-		totalEffectiveStake, err = rpstate.GetTotalEffectiveRplStake(m.rp, contracts)
-		if err != nil {
-			return nil, nil, fmt.Errorf("error calculating total effective RPL stake for the network: %w", err)
-		}
-		m.logLine("%d/%d - Calculated total effective stake (total time: %s)", currentStep, steps, time.Since(start))
-		currentStep++
-	}
 
 	// Get the validator stats from Beacon
 	statusMap, err := m.bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
 		Slot: &slotNumber,
 	})
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	state.ValidatorDetails = statusMap
 	m.logLine("%d/%d - Retrieved validator details (total time: %s)", currentStep, steps, time.Since(start))
@@ -412,7 +399,7 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 	}
 	err = rpstate.CalculateCompleteMinipoolShares(m.rp, contracts, mpds, beaconBalances)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	state.ValidatorDetails = statusMap
 	m.logLine("%d/%d - Calculated complete node and user balance shares (total time: %s)", currentStep, steps, time.Since(start))
@@ -421,12 +408,12 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 	// Get the protocol DAO proposals
 	state.ProtocolDaoProposalDetails, err = rpstate.GetAllProtocolDaoProposalDetails(m.rp, contracts)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
+		return nil, fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
 	}
 	m.logLine("%d/%d - Retrieved Protocol DAO proposals (total time: %s)", currentStep, steps, time.Since(start))
 	currentStep++
 
-	return state, totalEffectiveStake, nil
+	return state, nil
 }
 
 func (s *NetworkState) GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth *big.Int, nodeStake *big.Int) (*big.Int, *big.Int) {

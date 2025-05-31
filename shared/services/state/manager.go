@@ -3,7 +3,6 @@ package state
 import (
 	"context"
 	"fmt"
-	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -65,21 +64,21 @@ func (m *NetworkStateManager) GetHeadState() (*NetworkState, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
 	}
-	return m.getState(targetSlot)
+	return m.createNetworkState(targetSlot)
 }
 
 // Get the state of the network for a single node using the latest Execution layer block, along with the total effective RPL stake for the network
-func (m *NetworkStateManager) GetHeadStateForNode(nodeAddress common.Address, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
+func (m *NetworkStateManager) GetHeadStateForNode(nodeAddress common.Address) (*NetworkState, error) {
 	targetSlot, err := m.getHeadSlot()
 	if err != nil {
-		return nil, nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
+		return nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
 	}
-	return m.getStateForNode(nodeAddress, targetSlot, calculateTotalEffectiveStake)
+	return m.createNetworkStateForNode(targetSlot, nodeAddress)
 }
 
 // Get the state of the network at the provided Beacon slot
 func (m *NetworkStateManager) GetStateForSlot(slotNumber uint64) (*NetworkState, error) {
-	return m.getState(slotNumber)
+	return m.createNetworkState(slotNumber)
 }
 
 // Gets the latest valid block
@@ -142,24 +141,6 @@ func (m *NetworkStateManager) getLatestProposedBeaconBlock(targetSlot uint64) (b
 			return block, nil
 		}
 	}
-}
-
-// Get the state of the network at the provided Beacon slot
-func (m *NetworkStateManager) getState(slotNumber uint64) (*NetworkState, error) {
-	state, err := m.createNetworkState(slotNumber)
-	if err != nil {
-		return nil, err
-	}
-	return state, nil
-}
-
-// Get the state of the network for a specific node only at the provided Beacon slot
-func (m *NetworkStateManager) getStateForNode(nodeAddress common.Address, slotNumber uint64, calculateTotalEffectiveStake bool) (*NetworkState, *big.Int, error) {
-	state, totalEffectiveStake, err := m.createNetworkStateForNode(slotNumber, nodeAddress, calculateTotalEffectiveStake)
-	if err != nil {
-		return nil, nil, err
-	}
-	return state, totalEffectiveStake, nil
 }
 
 // Logs a line if the logger is specified
