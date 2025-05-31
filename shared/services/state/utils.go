@@ -2,37 +2,7 @@ package state
 
 import (
 	"math/big"
-	"time"
-
-	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/rocket-pool/smartnode/bindings/rewards"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
-
-// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetClaimIntervalTime(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
-	return rewards.GetClaimIntervalTime(rp, opts)
-}
-
-// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetNodeOperatorRewardsPercent(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	return rewards.GetNodeOperatorRewardsPercent(rp, opts)
-}
-
-// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetTrustedNodeOperatorRewardsPercent(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	return rewards.GetTrustedNodeOperatorRewardsPercent(rp, opts)
-}
-
-// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetProtocolDaoRewardsPercent(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	return rewards.GetProtocolDaoRewardsPercent(rp, opts)
-}
-
-// TODO: temp until rocketpool-go supports RocketStorage contract address lookups per block
-func GetPendingRPLRewards(index uint64, rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	return rewards.GetPendingRPLRewards(rp, opts)
-}
 
 // Returns the index of the Most Significant Bit of n, or UINT_MAX if the input is 0
 // The index of the Least Significant Bit is 0.
