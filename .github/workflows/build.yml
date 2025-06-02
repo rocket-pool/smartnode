@@ -34,3 +34,4 @@ jobs:
           push: false
           files: docker/daemon-bake.hcl
           targets: smartnode
+          set: smartnode.platform=linux/amd64
