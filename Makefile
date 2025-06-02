@@ -118,7 +118,7 @@ else
 endif
 
 # amd64 state-cli build
-.PHONY: ${BIN_DIR}/state-cli-linux-amd64
+.PHONY: ${TOOLS_DIR}/state-cli-linux-amd64
 ${TOOLS_DIR}/state-cli-linux-amd64: ${bin_deps}
 ifndef NO_DOCKER
 	${docker_build_cmd_amd64} -o $@ ./shared/services/state/cli/.
@@ -127,7 +127,7 @@ else
 endif
 
 # arm64 state-cli build
-.PHONY: ${BIN_DIR}/state-cli-linux-arm64
+.PHONY: ${TOOLS_DIR}/state-cli-linux-arm64
 ${TOOLS_DIR}/state-cli-linux-arm64: ${bin_deps}
 ifndef NO_DOCKER
 	${docker_build_cmd_arm64} -o $@ ./shared/services/state/cli/.
