@@ -186,11 +186,10 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	}
 
 	// Get the delegated voting power
-	totalDelegatedVP, _, _, err := propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
+	response.TotalDelegatedVp, _, _, err = propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
-	response.TotalDelegatedVp = totalDelegatedVP
 
 	// Get the local tree
 	votingTree, err := propMgr.GetNetworkTree(response.BlockNumber, nil)
