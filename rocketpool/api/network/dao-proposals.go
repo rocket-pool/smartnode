@@ -3,7 +3,6 @@ package network
 import (
 	"context"
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -62,13 +61,6 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 	// Sync
 	var wg errgroup.Group
 	var blockNumber uint64
-
-	// Check if Voting is initialized and add to response
-	wg.Go(func() error {
-		var err error
-		response.IsVotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
-		return err
-	})
 
 	// Get the node onchain voting delegate
 	wg.Go(func() error {
@@ -142,16 +134,12 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 		return nil, err
 	}
 
-	// Get the delegated voting power if voting is initialized
-	if response.IsVotingInitialized {
-		totalDelegatedVP, _, _, err := propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
-		if err != nil {
-			return nil, err
-		}
-		response.TotalDelegatedVp = totalDelegatedVP
-	} else {
-		response.TotalDelegatedVp = big.NewInt(0)
+	// Get the delegated voting power
+	totalDelegatedVP, _, _, err := propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
+	if err != nil {
+		return nil, err
 	}
+	response.TotalDelegatedVp = totalDelegatedVP
 
 	// Get the local tree
 	votingTree, err := propMgr.GetNetworkTree(response.BlockNumber, nil)

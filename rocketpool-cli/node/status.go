@@ -204,12 +204,6 @@ func getStatus(c *cli.Context) error {
 
 		// Onchain voting status
 		fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
-		if status.IsVotingInitialized {
-			fmt.Println("The node has been initialized for onchain voting.")
-
-		} else {
-			fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
-		}
 
 		if status.OnchainVotingDelegate == blankAddress {
 			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")

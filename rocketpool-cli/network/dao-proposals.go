@@ -134,11 +134,6 @@ func getActiveDAOProposals(c *cli.Context) error {
 
 	// Onchain Voting Status
 	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
-	if snapshotProposalsResponse.IsVotingInitialized {
-		fmt.Printf("The node %s%s%s has been initialized for onchain voting.\n", colorBlue, snapshotProposalsResponse.AccountAddressFormatted, colorReset)
-	} else {
-		fmt.Printf("The node %s%s%s has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.\n", colorBlue, snapshotProposalsResponse.AccountAddressFormatted, colorReset)
-	}
 
 	if snapshotProposalsResponse.OnchainVotingDelegate == blankAddress {
 		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
