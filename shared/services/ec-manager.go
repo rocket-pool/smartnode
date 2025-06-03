@@ -77,15 +77,18 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 		}
 	}
 
-	return &ExecutionClientManager{
+	out := &ExecutionClientManager{
 		primaryEcUrl:  primaryEcUrl,
 		fallbackEcUrl: fallbackEcUrl,
 		primaryEc:     &ethClient{primaryEc},
-		fallbackEc:    &ethClient{fallbackEc},
 		logger:        log.NewColorLogger(color.FgYellow),
 		primaryReady:  true,
 		fallbackReady: fallbackEc != nil,
-	}, nil
+	}
+	if fallbackEc != nil {
+		out.fallbackEc = &ethClient{fallbackEc}
+	}
+	return out, nil
 
 }
 
