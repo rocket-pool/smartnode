@@ -86,12 +86,6 @@ func nodeDeposit(c *cli.Context) error {
 		}
 	}
 
-	// If hotfix is live and voting isn't initialized, display a warning
-	err = warnIfVotingUninitialized(rp, c, depositWarningMessage)
-	if err != nil {
-		return nil
-	}
-
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
 	if err != nil {
@@ -333,12 +327,6 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	fmt.Println("Your eth2 client is on the correct network.")
 	fmt.Println()
-
-	// If hotfix is live and voting isn't initialized, display a warning
-	err = warnIfVotingUninitialized(rp, c, depositWarningMessage)
-	if err != nil {
-		return nil
-	}
 
 	/*
 		// Check if the fee distributor has been initialized
