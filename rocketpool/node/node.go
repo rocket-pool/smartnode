@@ -41,7 +41,6 @@ const (
 	ReduceBondAmountColor          = color.FgHiBlue
 	DefendPdaoPropsColor           = color.FgYellow
 	VerifyPdaoPropsColor           = color.FgYellow
-	AutoInitVotingPowerColor       = color.FgHiYellow
 	DistributeMinipoolsColor       = color.FgHiGreen
 	ErrorColor                     = color.FgRed
 	WarningColor                   = color.FgYellow
@@ -170,15 +169,7 @@ func run(c *cli.Context) error {
 			return err
 		}
 	}
-	var autoInitVotingPower *autoInitVotingPower
-	// Make sure the user opted into this duty
-	AutoInitVPThreshold := cfg.Smartnode.AutoInitVPThreshold.Value.(float64)
-	if AutoInitVPThreshold != 0 {
-		autoInitVotingPower, err = newAutoInitVotingPower(c, log.NewColorLogger(AutoInitVotingPowerColor), AutoInitVPThreshold)
-		if err != nil {
-			return err
-		}
-	}
+
 	var prestakeMegapoolValidator *prestakeMegapoolValidator
 	prestakeMegapoolValidator, err = newPrestakeMegapoolValidator(c, log.NewColorLogger(PrestakeMegapoolValidatorColor))
 	if err != nil {
@@ -268,14 +259,6 @@ func run(c *cli.Context) error {
 			// Run the pDAO proposal verifier
 			if verifyPdaoProps != nil {
 				if err := verifyPdaoProps.run(state); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
-			}
-
-			// Run the auto vote initilization check
-			if autoInitVotingPower != nil {
-				if err := autoInitVotingPower.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)

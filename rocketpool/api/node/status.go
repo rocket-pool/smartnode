@@ -276,13 +276,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		})
 	}
 
-	// Check if Voting is Initialized
-	wg.Go(func() error {
-		var err error
-		response.IsVotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
-		return err
-	})
-
 	// Get the node onchain voting delegate
 	wg.Go(func() error {
 		var err error

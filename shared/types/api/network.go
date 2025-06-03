@@ -82,7 +82,6 @@ type NetworkDAOProposalsResponse struct {
 	TotalDelegatedVp               *big.Int               `json:"totalDelegateVp"`
 	SumVotingPower                 *big.Int               `json:"sumVotingPower"`
 	VotingDelegate                 common.Address         `json:"votingDelegate"`
-	IsVotingInitialized            bool                   `json:"isVotingInitialized"`
 	VotingPower                    *big.Int               `json:"votingPower"`
 	BlockNumber                    uint32                 `json:"blockNumber"`
 	IsNodeRegistered               bool                   `json:"isNodeRegistered"`

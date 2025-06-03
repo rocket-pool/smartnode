@@ -434,7 +434,6 @@ type PDAOStatusResponse struct {
 	OnchainVotingDelegateFormatted string                 `json:"onchainVotingDelegateFormatted"`
 	BlockNumber                    uint32                 `json:"blockNumber"`
 	VerifyEnabled                  bool                   `json:"verifyEnabled"`
-	IsVotingInitialized            bool                   `json:"isVotingInitialized"`
 	SnapshotResponse               SnapshotResponseStruct `json:"snapshotResponse"`
 	IsRPLLockingAllowed            bool                   `json:"isRPLLockingAllowed"`
 	NodeRPLLocked                  *big.Int               `json:"nodeRPLLocked"`
@@ -448,11 +447,10 @@ type PDAOStatusResponse struct {
 }
 
 type PDAOCanSetSignallingAddressResponse struct {
-	Status            string             `json:"status"`
-	Error             string             `json:"error"`
-	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
-	VotingInitialized bool               `json:"votingInitialized"`
-	NodeToSigner      common.Address     `json:"nodeToSigner"`
+	Status       string             `json:"status"`
+	Error        string             `json:"error"`
+	GasInfo      rocketpool.GasInfo `json:"gasInfo"`
+	NodeToSigner common.Address     `json:"nodeToSigner"`
 }
 
 type PDAOSetSignallingAddressResponse struct {
