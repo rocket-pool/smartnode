@@ -88,7 +88,6 @@ func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, mult
 	return votingInfos, nil
 }
 
-
 // Get the number of nodes that were present in the network at the provided block
 func GetVotingNodeCount(rp *rocketpool.RocketPool, blockNumber uint32, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
