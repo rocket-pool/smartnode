@@ -232,12 +232,12 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission
 // Get the event info for a rewards snapshot using the Atlas getter
 func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, RewardsEvent, error) {
 	// Check if the client is requesting interval 0 on mainnet, then return the hardcoded RewardsEvent
-	ok, eventDataInterval_0, err := getMainnetInterval0RewardsEvent(rp, index)
+	data, ok, err := getMainnetInterval0RewardsEvent(rp, index)
 	if err != nil {
 		return false, RewardsEvent{}, err
 	}
 	if ok {
-		return true, eventDataInterval_0, nil
+		return true, data, nil
 	}
 
 	// Get contracts
@@ -328,17 +328,17 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 }
 
 // Check if the client is requesting interval 0 on mainnet, then return the hardcoded RewardsEvent
-func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool, index uint64) (bool, RewardsEvent, error) {
+func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool, index uint64) (RewardsEvent, bool, error) {
 	if index != 0 {
-		return false, RewardsEvent{}, nil
+		return RewardsEvent{}, false, nil
 	}
 	// Check if the ec is synced to mainnet
 	chainID, err := rp.Client.ChainID(context.Background())
 	if err != nil {
-		return false, RewardsEvent{}, fmt.Errorf("error getting chainID: %w", err)
+		return RewardsEvent{}, false, fmt.Errorf("error getting chainID: %w", err)
 	}
 	if chainID.Cmp(big.NewInt(1)) != 0 {
-		return false, RewardsEvent{}, nil
+		return RewardsEvent{}, false, nil
 	}
 
 	// Hardcoded RewardsEvent for interval 0 on mainnet
@@ -366,7 +366,7 @@ func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool, index uint64) (b
 		SubmissionTime:    time.Unix(1662011717, 0),
 	}
 
-	return true, eventDataInterval_0, nil
+	return eventDataInterval_0, true, nil
 }
 
 // Get contracts
