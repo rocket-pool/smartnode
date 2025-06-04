@@ -363,13 +363,6 @@ func getStatus(c *cli.Context) error {
 			"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of 150%% of bonded ETH. Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n")
 		fmt.Println()
 
-		remainingAmount := big.NewInt(0).Sub(status.EthBorrowedLimit, status.EthBorrowed)
-		remainingAmount.Sub(remainingAmount, status.PendingBorrowAmount)
-		remainingAmountEth := int(eth.WeiToEth(remainingAmount))
-		remainingFor8EB := max(remainingAmountEth/24, 0)
-		remainingFor16EB := max(remainingAmountEth/16, 0)
-		fmt.Printf("The node has enough RPL staked to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
-
 		// Minipool details
 		fmt.Printf("%s=== Minipools ===%s\n", colorGreen, colorReset)
 		if status.MinipoolCounts.Total > 0 {
