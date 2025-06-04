@@ -603,9 +603,6 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 		fmt.Printf("Validator client [%s] was previously used - no slashing prevention delay necessary.\n", currentValidatorName)
 	} else if currentValidatorName == "" {
 		fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
-	} else if (currentValidatorName == "nimbus-eth2" && pendingValidatorName == "nimbus-validator-client") || (pendingValidatorName == "nimbus-eth2" && currentValidatorName == "nimbus-validator-client") {
-		// Handle the transition from Nimbus v22.11.x to Nimbus v22.12.x where they split the VC into its own container
-		fmt.Printf("Validator client [%s] was previously used, you are changing to [%s] but the Smart Node will migrate your slashing database automatically to this new client. No slashing prevention delay is necessary.\n", currentValidatorName, pendingValidatorName)
 	} else {
 
 		consensusClient, _ := cfg.GetSelectedConsensusClient()
