@@ -177,10 +177,7 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 	count := len(minipoolDetails)
 	for i := 0; i < count; i += minipoolCompleteShareBatchSize {
 		i := i
-		max := i + minipoolCompleteShareBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolCompleteShareBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -283,10 +280,7 @@ func getNodeMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkC
 	count := int(minipoolCount)
 	for i := 0; i < count; i += minipoolAddressBatchSize {
 		i := i
-		max := i + minipoolAddressBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -329,10 +323,7 @@ func getAllMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkCo
 	count := int(minipoolCount)
 	for i := 0; i < count; i += minipoolAddressBatchSize {
 		i := i
-		max := i + minipoolAddressBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -369,10 +360,7 @@ func getMinipoolVersionsFast(rp *rocketpool.RocketPool, contracts *NetworkContra
 	versions := make([]uint8, count)
 	for i := 0; i < count; i += minipoolVersionBatchSize {
 		i := i
-		max := i + minipoolVersionBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolVersionBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -426,10 +414,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	count := len(addresses)
 	for i := 0; i < count; i += minipoolBatchSize {
 		i := i
-		max := i + minipoolBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -464,10 +449,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	wg2.SetLimit(threadLimit)
 	for i := 0; i < count; i += minipoolBatchSize {
 		i := i
-		max := i + minipoolBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolBatchSize, count)
 
 		wg2.Go(func() error {
 			var err error
