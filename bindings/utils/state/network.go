@@ -76,9 +76,9 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 
 	// Local vars for things that need to be converted
 	var rewardIndex *big.Int
-	var intervalStart *bigTime
-	var intervalDuration *bigDuration
-	var scrubPeriodSeconds *bigDuration
+	var intervalStart *big.Int
+	var intervalDuration *big.Int
+	var scrubPeriodSeconds *big.Int
 	var totalQueueCapacity *big.Int
 	var effectiveQueueCapacity *big.Int
 	var totalQueueLength *big.Int
@@ -90,9 +90,9 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	var balancesBlock *big.Int
 	var balancesSubmissionFrequency *big.Int
 	var minipoolLaunchTimeout *big.Int
-	var promotionScrubPeriodSeconds *bigDuration
-	var windowStartRaw *bigDuration
-	var windowLengthRaw *bigDuration
+	var promotionScrubPeriodSeconds *big.Int
+	var windowStartRaw *big.Int
+	var windowLengthRaw *big.Int
 
 	// Multicall getters
 	contracts.Multicaller.AddCall(contracts.RocketNetworkPrices, &details.RplPrice, "getRPLPrice")
@@ -143,9 +143,9 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 
 	// Conversion for raw parameters
 	details.RewardIndex = rewardIndex.Uint64()
-	details.IntervalStart = intervalStart.toTime()
-	details.IntervalDuration = intervalDuration.toDuration()
-	details.ScrubPeriod = scrubPeriodSeconds.toDuration()
+	details.IntervalStart = convertToTime(intervalStart)
+	details.IntervalDuration = convertToDuration(intervalDuration)
+	details.ScrubPeriod = convertToDuration(scrubPeriodSeconds)
 	details.SmoothingPoolAddress = *contracts.RocketSmoothingPool.Address
 	details.QueueCapacity = minipool.QueueCapacity{
 		Total:     totalQueueCapacity,
@@ -161,9 +161,9 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	details.NodeFee = eth.WeiToEth(nodeFee)
 	details.BalancesBlock = balancesBlock.Uint64()
 	details.MinipoolLaunchTimeout = minipoolLaunchTimeout
-	details.PromotionScrubPeriod = promotionScrubPeriodSeconds.toDuration()
-	details.BondReductionWindowStart = windowStartRaw.toDuration()
-	details.BondReductionWindowLength = windowLengthRaw.toDuration()
+	details.PromotionScrubPeriod = convertToDuration(promotionScrubPeriodSeconds)
+	details.BondReductionWindowStart = convertToDuration(windowStartRaw)
+	details.BondReductionWindowLength = convertToDuration(windowLengthRaw)
 
 	// Get various balances
 	addresses := []common.Address{
