@@ -328,6 +328,17 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 	return result.(*ethereum.SyncProgress), err
 }
 
+// BlockNumber returns the most recent block number
+func (p *ExecutionClientManager) ChainID(ctx context.Context) (*big.Int, error) {
+	result, err := p.runFunction(func(client *ethclient.Client) (interface{}, error) {
+		return client.ChainID(ctx)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*big.Int), err
+}
+
 /// ==================
 /// Internal functions
 /// ==================

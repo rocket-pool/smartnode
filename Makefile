@@ -1,8 +1,14 @@
 VERSION=v$(shell cat shared/version.txt)
-LOCAL_OS=$(shell go env GOOS)-$(shell go env GOARCH)
+LOCAL_OS=$(shell go env GOOS)
+LOCAL_ARCH=$(shell go env GOARCH)
+# Needed for binary artifacts of format `rocketpool-cli-linux-amd64`
+LOCAL_TARGET=${LOCAL_OS}-${LOCAL_ARCH}
+# Needed for docker --platform arguments of format `linux/amd64`
+LOCAL_PLATFORM=${LOCAL_OS}/${LOCAL_ARCH}
 
 BUILD_DIR=build
 BIN_DIR=${BUILD_DIR}/${VERSION}/bin
+TOOLS_DIR=${BUILD_DIR}/${VERSION}/tools
 
 CLI_TARGET_OOS:=linux darwin
 ARCHS:=arm64 amd64
@@ -35,17 +41,17 @@ all: ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon ${BUILD_DIR}/tre
 release: ${CLI_TARGET_STRINGS} ${DAEMON_TARGET_STRINGS} ${TREEGEN_TARGET_STRINGS} ${BUILD_DIR}/rocketpool-cli ${BUILD_DIR}/rocketpool-daemon ${BUILD_DIR}/treegen
 
 # Target for build/rocketpool-cli which is a symlink to an os-specific build
-${BUILD_DIR}/rocketpool-cli: ${BIN_DIR}/rocketpool-cli-${LOCAL_OS}
-	ln -sf $(shell pwd)/${BIN_DIR}/rocketpool-cli-${LOCAL_OS} ${BUILD_DIR}/rocketpool-cli
+${BUILD_DIR}/rocketpool-cli: ${BIN_DIR}/rocketpool-cli-${LOCAL_TARGET}
+	ln -sf $(shell pwd)/${BIN_DIR}/rocketpool-cli-${LOCAL_TARGET} ${BUILD_DIR}/rocketpool-cli
 
 
 # Target for build/rocketpool-daemon which is a symlink to an os-specific build
-${BUILD_DIR}/rocketpool-daemon: ${BIN_DIR}/rocketpool-daemon-${LOCAL_OS}
-	ln -sf $(shell pwd)/${BIN_DIR}/rocketpool-daemon-${LOCAL_OS} ${BUILD_DIR}/rocketpool-daemon
+${BUILD_DIR}/rocketpool-daemon: ${BIN_DIR}/rocketpool-daemon-${LOCAL_TARGET}
+	ln -sf $(shell pwd)/${BIN_DIR}/rocketpool-daemon-${LOCAL_TARGET} ${BUILD_DIR}/rocketpool-daemon
 
 # Target for build/treegen which is a symlink to a version-specific build
-${BUILD_DIR}/treegen: ${BIN_DIR}/treegen-${LOCAL_OS}
-	ln -sf $(shell pwd)/${BIN_DIR}/treegen-${LOCAL_OS} ${BUILD_DIR}/treegen
+${BUILD_DIR}/treegen: ${BIN_DIR}/treegen-${LOCAL_TARGET}
+	ln -sf $(shell pwd)/${BIN_DIR}/treegen-${LOCAL_TARGET} ${BUILD_DIR}/treegen
 
 # docker-builder container
 .PHONY: docker-builder
@@ -88,6 +94,8 @@ ${BUILD_DIR}:
 	mkdir -p ${BUILD_DIR}
 ${BIN_DIR}:
 	mkdir -p ${BIN_DIR}
+${TOOLS_DIR}:
+	mkdir -p ${TOOLS_DIR}
 
 $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool-cli-template,$(oos),$(arch)))))
 
@@ -109,34 +117,47 @@ else
 	${local_build_cmd_arm64} -o $@ ./treegen/.
 endif
 
+# amd64 state-cli build
+.PHONY: ${TOOLS_DIR}/state-cli-linux-amd64
+${TOOLS_DIR}/state-cli-linux-amd64: ${bin_deps}
+ifndef NO_DOCKER
+	${docker_build_cmd_amd64} -o $@ ./shared/services/state/cli/.
+else
+	${local_build_cmd_amd64} -o $@ ./shared/services/state/cli/.
+endif
+
+# arm64 state-cli build
+.PHONY: ${TOOLS_DIR}/state-cli-linux-arm64
+${TOOLS_DIR}/state-cli-linux-arm64: ${bin_deps}
+ifndef NO_DOCKER
+	${docker_build_cmd_arm64} -o $@ ./shared/services/state/cli/.
+else
+	${local_build_cmd_arm64} -o $@ ./shared/services/state/cli/.
+endif
+
 # Multiarch builder
 ${BUILD_DIR}/docker-buildx-builder: ${BUILD_DIR}
-	docker buildx create --name smartnode-builder --driver docker-container --platform linux/amd64,linux/arm64
+	docker buildx create --name smartnode-builder --driver docker-container --platform linux/amd64,linux/arm64 || true
 	touch ${BUILD_DIR}/docker-buildx-builder
 
 # Docker containers
 .PHONY: docker
 docker: ${BUILD_DIR}/docker-buildx-builder
-	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode
+	# override the platform so we can load the resulting image into docker
+	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.platform=${LOCAL_PLATFORM}"
 
 .PHONY: docker-push
-docker-push: docker
-	echo
-	echo -n "Publishing smartnode:${VERSION} containers. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
-	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-${VERSION}
-	docker push rocketpool/smartnode:${VERSION}-amd64
-	docker push rocketpool/smartnode:${VERSION}-arm64
-	docker manifest create rocketpool/smartnode:${VERSION} --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
-	docker manifest push --purge rocketpool/smartnode:${VERSION}
+docker-push: ${BUILD_DIR}/docker-buildx-builder
+	echo -n "Building ${VERSION} and publishing containers. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
+	# override the output type to push to dockerhub
+	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry"
 	echo "Done!"
 
 .PHONY: docker-latest
-docker-latest: docker-push
-	echo
-	echo -n "Publishing smartnode:${VERSION} as latest. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
-	rm -rf ~/.docker/manifests/docker.io_rocketpool_smartnode-latest
-	docker manifest create rocketpool/smartnode:latest --amend rocketpool/smartnode:${VERSION}-amd64 --amend rocketpool/smartnode:${VERSION}-arm64
-	docker manifest push --purge rocketpool/smartnode:latest
+docker-latest: ${BUILD_DIR}/docker-buildx-builder
+	echo -n "Building ${VERSION}, tagging as latest, and publishing. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
+	# override the output type to push to dockerhub, and the tags array to tag latest
+	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry" --set "smartnode.tags=rocketpool/smartnode:latest"
 
 .PHONY: docker-prune
 docker-prune:

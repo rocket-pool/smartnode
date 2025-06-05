@@ -27,7 +27,6 @@ import (
 // Config
 var tasksInterval, _ = time.ParseDuration("5m")
 var taskCooldown, _ = time.ParseDuration("10s")
-var totalEffectiveStakeCooldown, _ = time.ParseDuration("1h")
 
 const (
 	MaxConcurrentEth1Requests = 200
@@ -183,9 +182,6 @@ func run(c *cli.Context) error {
 	wg := new(sync.WaitGroup)
 	wg.Add(2)
 
-	// Timestamp for caching total effective RPL stake
-	lastTotalEffectiveStakeTime := time.Unix(0, 0)
-
 	// Run task loop
 	go func() {
 		// we assume clients are synced on startup so that we don't send unnecessary alerts
@@ -224,18 +220,13 @@ func run(c *cli.Context) error {
 			}
 
 			// Update the network state
-			updateTotalEffectiveStake := false
-			if time.Since(lastTotalEffectiveStakeTime) > totalEffectiveStakeCooldown {
-				updateTotalEffectiveStake = true
-				lastTotalEffectiveStakeTime = time.Now() // Even if the call below errors out, this will prevent contant errors related to this flag
-			}
-			state, totalEffectiveStake, err := updateNetworkState(m, &updateLog, nodeAccount.Address, updateTotalEffectiveStake)
+			state, err := updateNetworkState(m, &updateLog, nodeAccount.Address)
 			if err != nil {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
 				continue
 			}
-			stateLocker.UpdateState(state, totalEffectiveStake)
+			stateLocker.UpdateState(state)
 
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.run(state); err != nil {
@@ -407,13 +398,13 @@ func removeLegacyFeeRecipientFiles(c *cli.Context) error {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address, calculateTotalEffectiveStake bool) (*state.NetworkState, *big.Int, error) {
+func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address) (*state.NetworkState, error) {
 	// Get the state of the network
-	state, totalEffectiveStake, err := m.GetHeadStateForNode(nodeAddress, calculateTotalEffectiveStake)
+	state, err := m.GetHeadStateForNode(nodeAddress)
 	if err != nil {
-		return nil, nil, fmt.Errorf("error updating network state: %w", err)
+		return nil, fmt.Errorf("error updating network state: %w", err)
 	}
-	return state, totalEffectiveStake, nil
+	return state, nil
 }
 
 // Checks if the user-inputted priorityFee is greater than the oracle based maxFee
