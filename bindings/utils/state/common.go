@@ -9,20 +9,12 @@ const (
 	threadLimit int = 10
 )
 
-// BigTime is a variable-sized big.Int from an evm 256-bit integer that represents a Unix time in seconds
-type bigTime struct {
-	big.Int
+// Converts a time on the chain (as Unix time in seconds) to a time.Time struct
+func convertToTime(value *big.Int) time.Time {
+	return time.Unix(value.Int64(), 0)
 }
 
-// BigDuration is a variable-sized big.Int from an evm 256-bit integer that represents a duration in seconds
-type bigDuration struct {
-	big.Int
-}
-
-func (b *bigTime) toTime() time.Time {
-	return time.Unix(b.Int64(), 0)
-}
-
-func (b *bigDuration) toDuration() time.Duration {
-	return time.Duration(b.Uint64()) * time.Second
+// Converts a duration on the chain (as a number of seconds) to a time.Duration struct
+func convertToDuration(value *big.Int) time.Duration {
+	return time.Duration(value.Uint64()) * time.Second
 }
