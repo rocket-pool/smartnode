@@ -565,10 +565,7 @@ func (mp *minipool_v2) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOp
 
 	// Backwards scan through blocks to find the event
 	for i := currentBlock; i >= fromBlock; i -= EventScanInterval {
-		from := i - EventScanInterval + 1
-		if from < fromBlock {
-			from = fromBlock
-		}
+		from := max(i-EventScanInterval+1, fromBlock)
 
 		fromBig := big.NewInt(0).SetUint64(from)
 		toBig := big.NewInt(0).SetUint64(i)

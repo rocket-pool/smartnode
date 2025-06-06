@@ -202,10 +202,7 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 	// Run the getters in batches
 	for i := 0; i < count; i += networkEffectiveStakeBatchSize {
 		i := i
-		max := i + networkEffectiveStakeBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+networkEffectiveStakeBatchSize, count)
 
 		wg.Go(func() error {
 			var err error

@@ -86,10 +86,7 @@ func getOdaoAddresses(rp *rocketpool.RocketPool, contracts *NetworkContracts, op
 	count := int(memberCount)
 	for i := 0; i < count; i += minipoolAddressBatchSize {
 		i := i
-		max := i + oDaoAddressBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+oDaoAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -125,10 +122,7 @@ func getOracleDaoDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts,
 	count := len(addresses)
 	for i := 0; i < count; i += minipoolBatchSize {
 		i := i
-		max := i + minipoolBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolBatchSize, count)
 
 		wg.Go(func() error {
 			var err error

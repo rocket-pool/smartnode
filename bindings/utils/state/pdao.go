@@ -101,10 +101,7 @@ func getProposalDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, 
 	count := len(propDetailsRaw)
 	for i := 0; i < count; i += pDaoPropDetailsBatchSize {
 		i := i
-		max := i + pDaoPropDetailsBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+pDaoPropDetailsBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
