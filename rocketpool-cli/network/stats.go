@@ -59,7 +59,6 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("rETH Price (ETH / rETH): %f ETH\n", response.RethPrice)
 	fmt.Printf("RPL Price (ETH / RPL):   %f ETH\n", response.RplPrice)
 	fmt.Printf("Total RPL staked:        %f RPL\n", response.TotalRplStaked)
-	fmt.Printf("Effective RPL staked:    %f RPL\n", response.EffectiveRplStaked)
 
 	return nil
 
