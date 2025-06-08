@@ -341,6 +341,17 @@ func (p *ExecutionClientManager) LatestBlockTime(ctx context.Context) (time.Time
 	return result.(time.Time), err
 }
 
+// BlockNumber returns the most recent block number
+func (p *ExecutionClientManager) ChainID(ctx context.Context) (*big.Int, error) {
+	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+		return client.ChainID(ctx)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*big.Int), err
+}
+
 /// ==================
 /// Internal functions
 /// ==================

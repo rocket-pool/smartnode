@@ -1,6 +1,7 @@
 package rewards
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"sync"
@@ -230,6 +231,15 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission
 
 // Get the event info for a rewards snapshot using the Atlas getter
 func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, RewardsEvent, error) {
+	// Check if the client is requesting interval 0 on mainnet, then return the hardcoded RewardsEvent
+	data, ok, err := getMainnetInterval0RewardsEvent(rp, index)
+	if err != nil {
+		return false, RewardsEvent{}, err
+	}
+	if ok {
+		return true, data, nil
+	}
+
 	// Get contracts
 	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
 	if err != nil {
@@ -315,6 +325,48 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	}
 
 	return true, eventData, nil
+}
+
+// Check if the client is requesting interval 0 on mainnet, then return the hardcoded RewardsEvent
+func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool, index uint64) (RewardsEvent, bool, error) {
+	if index != 0 {
+		return RewardsEvent{}, false, nil
+	}
+	// Check if the ec is synced to mainnet
+	chainID, err := rp.Client.ChainID(context.Background())
+	if err != nil {
+		return RewardsEvent{}, false, fmt.Errorf("error getting chainID: %w", err)
+	}
+	if chainID.Cmp(big.NewInt(1)) != 0 {
+		return RewardsEvent{}, false, nil
+	}
+
+	// Hardcoded RewardsEvent for interval 0 on mainnet
+	treasuryRPL := new(big.Int)
+	treasuryRPL.SetString("10633670478560109530497", 10)
+	trustedNodeRPL := new(big.Int)
+	trustedNodeRPL.SetString("10633670478560109529794", 10)
+	nodeRPL := new(big.Int)
+	nodeRPL.SetString("49623795566613844471758", 10)
+
+	eventDataInterval_0 := RewardsEvent{
+		Index:             big.NewInt(0),
+		ExecutionBlock:    big.NewInt(15451078),
+		ConsensusBlock:    big.NewInt(4598879),
+		IntervalsPassed:   big.NewInt(1),
+		TreasuryRPL:       treasuryRPL,
+		TrustedNodeRPL:    []*big.Int{trustedNodeRPL},
+		NodeRPL:           []*big.Int{nodeRPL},
+		NodeETH:           []*big.Int{big.NewInt(0)},
+		UserETH:           big.NewInt(0),
+		MerkleRoot:        common.HexToHash("0xb839fa0f5842bf3c8f19091361889fb0f1cb399d64b8da476d372b7de7a93463"),
+		MerkleTreeCID:     "bafybeidrck3sz24acv32h56xdb7ruarxq52oci32del7moxqtief3do73y",
+		IntervalStartTime: time.Unix(1659591339, 0),
+		IntervalEndTime:   time.Unix(1662010539, 0),
+		SubmissionTime:    time.Unix(1662011717, 0),
+	}
+
+	return eventDataInterval_0, true, nil
 }
 
 // Get contracts

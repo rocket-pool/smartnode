@@ -110,4 +110,7 @@ type ExecutionClient interface {
 
 	// LatestBlockTime returns the timestamp of the latest block
 	LatestBlockTime(ctx context.Context) (time.Time, error)
+
+	// ChainID retrieves the current chain ID
+	ChainID(ctx context.Context) (*big.Int, error)
 }
