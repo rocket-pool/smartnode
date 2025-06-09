@@ -234,7 +234,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		wg.Go(func() error {
 			var err error
 			lastUnstakeTimestamp, err := node.GetNodeLastUnstakeTime(rp, nodeAccount.Address, nil)
-			if err != nil {
+			if err == nil {
 				// Convert the lastUnstakeTimestamp to a time.Time object
 				response.LastRPLUnstakeTime = time.Unix(int64(lastUnstakeTimestamp), 0)
 			}
