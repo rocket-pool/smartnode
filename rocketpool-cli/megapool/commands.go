@@ -134,7 +134,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 			{
 				Name:      "claim",
-				Aliases:   []string{"r"},
+				Aliases:   []string{"a"},
 				Usage:     "Claim any megapool rewards that were distributed but not yet claimed",
 				UsageText: "rocketpool megapool claim",
 				Flags: []cli.Flag{
