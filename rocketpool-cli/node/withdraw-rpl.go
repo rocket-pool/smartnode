@@ -152,8 +152,8 @@ func nodeWithdrawRpl(c *cli.Context) error {
 				return nil
 			}
 
-			// Withdraw RPL
-			response, err := rp.NodeWithdrawLegacyRpl(amountWei)
+			// Request to unstake RPL
+			response, err := rp.NodeUnstakeRpl(amountWei)
 			if err != nil {
 				return err
 			}
