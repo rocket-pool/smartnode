@@ -23,6 +23,8 @@ const (
 	VacantMinipoolsEnabledSettingPath           string = "node.vacant.minipools.enabled"
 	MinimumPerMinipoolStakeSettingPath          string = "node.per.minipool.stake.minimum"
 	MaximumPerMinipoolStakeSettingPath          string = "node.per.minipool.stake.maximum"
+	ReducedBondSettingPath                      string = "reduced.bond"
+	NodeUnstakingPeriodSettingPath              string = "node.unstaking.period"
 )
 
 // Node registrations currently enabled
@@ -165,6 +167,38 @@ func GetMaximumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	return *value, nil
 }
 
+// Get the `reduced_bond` variable used in bond requirements calculation as ETH
+func GetReducedBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := nodeSettingsContract.Call(opts, value, "getReducedBond"); err != nil {
+		return 0, fmt.Errorf("error getting reduced bond variable: %w", err)
+	}
+	return eth.WeiToEth(*value), nil
+}
+func ProposeReducedBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ReducedBondSettingPath), NodeSettingsContractName, ReducedBondSettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeReducedBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ReducedBondSettingPath), NodeSettingsContractName, ReducedBondSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+// Get the `reduced_bond` variable used in bond requirements calculation as Wei
+func GetGetReducedBondRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := nodeSettingsContract.Call(opts, value, "getReducedBond"); err != nil {
+		return nil, fmt.Errorf("error getting reduced bond variable: %w", err)
+	}
+	return *value, nil
+}
+
 // The the period of time a node must wait before withdrawing RPL
 func GetNodeUnstakingPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
@@ -176,6 +210,12 @@ func GetNodeUnstakingPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*bi
 		return nil, fmt.Errorf("error getting the unstaking period: %w", err)
 	}
 	return *value, nil
+}
+func ProposeNodeUnstakingPeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NodeUnstakingPeriodSettingPath), NodeSettingsContractName, NodeUnstakingPeriodSettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeNodeUnstakingPeriod(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NodeUnstakingPeriodSettingPath), NodeSettingsContractName, NodeUnstakingPeriodSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts
