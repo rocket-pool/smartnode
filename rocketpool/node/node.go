@@ -51,7 +51,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:    name,
 		Aliases: aliases,
-		Usage:   "Run Rocket Pool node activity daemon",
+		Usage:   "Run Rocket Pool node activity daemon/webserver",
 		Action: func(c *cli.Context) error {
 			return run(c)
 		},

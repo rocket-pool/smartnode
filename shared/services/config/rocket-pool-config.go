@@ -1383,6 +1383,16 @@ func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 }
 
+// Used by text/template to format node.yml
+func (cfg *RocketPoolConfig) GetNodeOpenPorts() string {
+	portMode := cfg.Smartnode.OpenAPIPort.Value.(config.RPCMode)
+	if !portMode.Open() {
+		return ""
+	}
+	port := cfg.Smartnode.APIPort.Value.(uint16)
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
+}
+
 // Used by text/template to select an entrypoint based on which consensus client is used.
 func (cfg *RocketPoolConfig) GetEth2Entrypoint() string {
 	if client, _ := cfg.GetSelectedConsensusClient(); client == config.ConsensusClient_Prysm {
