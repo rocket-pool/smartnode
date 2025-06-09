@@ -2,6 +2,7 @@ package megapool
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -36,7 +37,7 @@ func repayDebt(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	if megapoolDetails.Megapool.NodeDebt != nil {
+	if megapoolDetails.Megapool.NodeDebt != nil && megapoolDetails.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("You have %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
 	} else {
 		fmt.Println("You have no megapool debt.")
