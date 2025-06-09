@@ -3,10 +3,8 @@ package megapool
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
@@ -75,11 +73,12 @@ func exitValidator(c *cli.Context) error {
 		return nil
 	}
 
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(response.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
+	// Show a warning message
+	fmt.Printf("%sNOTE:\n", colorYellow)
+	fmt.Println("You are about to exit a validator. This will tell each the validator to stop all activities on the Beacon Chain.")
+	fmt.Println("Please continue to run your validators until each one you've exited has been processed by the exit queue.\nYou can watch their progress on the https://beaconcha.in explorer.")
+	fmt.Println("Your funds will be locked on the Beacon Chain until they've been withdrawn, which will happen automatically (this may take a few days).")
+	fmt.Printf("Once your funds have been withdrawn, you can run `rocketpool megapool notify-validator-exit` to distribute them to your withdrawal address.\n\n%s", colorReset)
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to EXIT validator id %d?", validatorId))) {
@@ -88,14 +87,8 @@ func exitValidator(c *cli.Context) error {
 	}
 
 	// Exit the validator
-	resp, err := rp.ExitValidator(validatorId)
+	_, err = rp.ExitValidator(validatorId)
 	if err != nil {
-		return err
-	}
-
-	fmt.Printf("Exiting megapool validator...\n")
-	cliutils.PrintTransactionHash(rp, resp.TxHash)
-	if _, err = rp.WaitForTransaction(resp.TxHash); err != nil {
 		return err
 	}
 
