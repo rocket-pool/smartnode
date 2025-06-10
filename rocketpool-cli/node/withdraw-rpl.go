@@ -45,11 +45,6 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		fmt.Println()
 		fmt.Printf("Your node has %.6f RPL on its legacy stake (previously associated to minipools) and %.6f RPL staked on its megapool.", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6), math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6))
 		fmt.Println()
-		if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
-			// Check if unstaking period passed considering the last unstake time
-			unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
-			fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat))
-		}
 		fmt.Println()
 		fmt.Printf("There are currently %.6f RPL locked on pDAO proposals.", math.RoundDown(eth.WeiToEth(status.NodeRPLLocked), 6))
 		fmt.Println()
@@ -57,11 +52,12 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		fmt.Println()
 		fmt.Printf("")
 		if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
-
+			// Check if unstaking period passed considering the last unstake time
+			unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
 			if unstakingPeriodEnd.After(status.LatestBlockTime) {
 				fmt.Printf("You have %.6f RPL currently unstaking until %s.\n", status.UnstakingRPL, unstakingPeriodEnd.Format(TimeFormat))
 			} else {
-				if !c.Bool("yes") || prompt.Confirm(fmt.Sprintf("You have %.6f RPL already unstaked. Would you like to withdraw it now?", eth.WeiToEth(status.UnstakingRPL))) {
+				if c.Bool("yes") || prompt.Confirm(fmt.Sprintf("You have %.6f RPL already unstaked. Would you like to withdraw it now?", eth.WeiToEth(status.UnstakingRPL))) {
 
 					// Check RPL can be withdrawn
 					canWithdraw, err := rp.CanNodeWithdrawRpl()

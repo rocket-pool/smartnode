@@ -226,7 +226,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		wg.Go(func() error {
 			var err error
 			unstakingPeriod, err := protocol.GetNodeUnstakingPeriod(rp, nil)
-			if err != nil {
+			if err == nil {
 				response.UnstakingPeriodDuration = time.Duration(unstakingPeriod.Int64()) * time.Second
 			}
 			return err
