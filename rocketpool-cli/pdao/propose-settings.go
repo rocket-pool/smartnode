@@ -326,6 +326,11 @@ func proposeSettingMegapoolTimeBeforeDissolve(c *cli.Context, value time.Duratio
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolTimeBeforeDissolveSettingsPath, trueValue)
 }
 
+func proposeSettingMaximumMegapoolEthPenalty(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue)
+}
+
 // Master general proposal function
 func proposeSetting(c *cli.Context, contract string, setting string, value string) error {
 	// Get RP client
