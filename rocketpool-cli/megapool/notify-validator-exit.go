@@ -100,7 +100,7 @@ func notifyValidatorExit(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully requested to exit vaildator id %d.\n", validatorId)
+	fmt.Printf("Successfully notified the exit of validator id %d.\n", validatorId)
 	return nil
 
 }
