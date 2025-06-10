@@ -51,7 +51,7 @@ func exitValidator(c *cli.Context) error {
 
 			options := make([]string, len(activeValidators))
 			for vi, v := range activeValidators {
-				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s", v.ValidatorId, v.PubKey.String())
 			}
 			selected, _ := prompt.Select("Please select a validator to EXIT:", options)
 
@@ -75,7 +75,7 @@ func exitValidator(c *cli.Context) error {
 
 	// Show a warning message
 	fmt.Printf("%sNOTE:\n", colorYellow)
-	fmt.Println("You are about to exit a validator. This will tell each the validator to stop all activities on the Beacon Chain.")
+	fmt.Println("You are about to exit a validator. This will tell the validator to stop all activities on the Beacon Chain.")
 	fmt.Println("Please continue to run your validators until each one you've exited has been processed by the exit queue.\nYou can watch their progress on the https://beaconcha.in explorer.")
 	fmt.Println("Your funds will be locked on the Beacon Chain until they've been withdrawn, which will happen automatically (this may take a few days).")
 	fmt.Printf("Once your funds have been withdrawn, you can run `rocketpool megapool notify-validator-exit` to distribute them to your withdrawal address.\n\n%s", colorReset)
