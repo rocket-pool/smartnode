@@ -793,6 +793,21 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing SecurityProposalActionTime: %w", err)
 			}
 		}
+
+	case protocol.MegapoolSettingsContractName:
+		switch settingName {
+		// TimeBeforeDissolve
+		case protocol.MegapoolTimeBeforeDissolveSettingsPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeMegapoolTimeBeforeDissolve(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing TimeBeforeDissolve: %w", err)
+			}
+		}
+
 	}
 
 	// Make sure a setting was actually hit
@@ -1505,6 +1520,20 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposeSecurityProposalActionTime(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing SecurityProposalActionTime: %w", err)
+			}
+		}
+
+	case protocol.MegapoolSettingsContractName:
+		switch settingName {
+		// TimeBeforeDissolve
+		case protocol.MegapoolTimeBeforeDissolveSettingsPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMegapoolTimeBeforeDissolve(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing TimeBeforeDissolve: %w", err)
 			}
 		}
 	}

@@ -321,6 +321,11 @@ func proposeSettingNetworkAllowListedControllers(c *cli.Context, value []common.
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkAllowListedControllersPath, trueValue)
 }
 
+func proposeSettingMegapoolTimeBeforeDissolve(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolTimeBeforeDissolveSettingsPath, trueValue)
+}
+
 // Master general proposal function
 func proposeSetting(c *cli.Context, contract string, setting string, value string) error {
 	// Get RP client
