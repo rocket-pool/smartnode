@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"math"
 	"math/big"
 	"strconv"
 	"sync"
@@ -165,6 +166,9 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 	}
 
 	withdrawableEpoch := beaconState.GetValidators()[validatorIndex64].WithdrawableEpoch
+	if withdrawableEpoch == math.MaxUint64 {
+		return api.ValidatorWithdrawableEpochProof{}, fmt.Errorf("validator %d is not withdrawable", validatorIndex64)
+	}
 
 	proofBytes, err := beaconState.ValidatorWithdrawableEpochProof(validatorIndex64)
 	if err != nil {
