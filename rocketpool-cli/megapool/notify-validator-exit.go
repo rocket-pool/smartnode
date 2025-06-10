@@ -53,7 +53,7 @@ func notifyValidatorExit(c *cli.Context) error {
 
 			options := make([]string, len(activeValidators))
 			for vi, v := range activeValidators {
-				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s", v.ValidatorId, v.PubKey.String())
 			}
 			selected, _ := prompt.Select("Please select a validator to notify the exit:", options)
 

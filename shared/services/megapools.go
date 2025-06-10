@@ -139,7 +139,7 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 	var block beacon.BeaconBlock
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
-		block, _, err := bc.GetBeaconBlock(blockToRequest)
+		block, _, err = bc.GetBeaconBlock(blockToRequest)
 		if err != nil {
 			return api.ValidatorWithdrawableEpochProof{}, err
 		}
