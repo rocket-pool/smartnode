@@ -7,7 +7,7 @@ import (
 )
 
 const beaconStateValidatorWithdrawalCredentialsPubkeyGeneralizedIndex uint64 = 4 // Container with 8 fields, so gid 8 is the first field. We want the parent of 1st field, so gid 8 / 2 = 4
-const BeaconStateValidatorWithdrawableEpochGeneralizedIndex uint64 = 14          // Container with 8 fields, so gid 8 is the first field. We want the 8th field, so gid 8 + 7 = 15
+const BeaconStateValidatorWithdrawableEpochGeneralizedIndex uint64 = 15          // Container with 8 fields, so gid 8 is the first field. We want the 8th field, so gid 8 + 7 = 15
 
 func GetGeneralizedIndexForValidator(index uint64, validatorsArrayIndex uint64) uint64 {
 	root := validatorsArrayIndex
