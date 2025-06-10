@@ -222,6 +222,16 @@ func proposeSettingNodeMaximumPerMinipoolStake(c *cli.Context, value *big.Int) e
 	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.MaximumPerMinipoolStakeSettingPath, trueValue)
 }
 
+func proposeSettingReducedBond(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue)
+}
+
+func proposeSettingNodeUnstakingPeriod(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.NodeUnstakingPeriodSettingPath, trueValue)
+}
+
 func proposeSettingProposalsVotePhase1Time(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.VotePhase1TimeSettingPath, trueValue)

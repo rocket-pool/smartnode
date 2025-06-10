@@ -1750,6 +1750,66 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 										},
 									},
+
+									{
+										Name:      "reduced-bond",
+										Aliases:   []string{"rb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ReducedBondSettingPath, floatEthUsage),
+										UsageText: "rocketpool pdao propose setting node reduced-bond value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingReducedBond(c, value)
+
+										},
+									},
+
+									{
+										Name:      "node-unstaking-period",
+										Aliases:   []string{"nup"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeUnstakingPeriodSettingPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting node node-unstaking-period value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeUnstakingPeriod(c, value)
+
+										},
+									},
 								},
 							},
 
