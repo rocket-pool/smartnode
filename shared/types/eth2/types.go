@@ -19,8 +19,7 @@ var _ BeaconBlock = &electra.BeaconBlock{}
 
 type BeaconState interface {
 	GetSlot() uint64
-	ValidatorWithdrawableEpochProof(index uint64) ([][]byte, error)
-	ValidatorCredentialsProof(index uint64) ([][]byte, error)
+	ValidatorProof(index uint64) ([][]byte, error)
 	HistoricalSummaryProof(slot uint64) ([][]byte, error)
 	HistoricalSummaryBlockRootProof(slot int) ([][]byte, error)
 	BlockRootProof(slot uint64) ([][]byte, error)

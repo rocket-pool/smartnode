@@ -99,7 +99,7 @@ func GetStakeValidatorInfo(c *cli.Context, wallet wallet.Wallet, eth2Config beac
 		return megapool.ValidatorProof{}, err
 	}
 
-	proofBytes, err := beaconState.ValidatorCredentialsProof(validatorIndex64)
+	proofBytes, err := beaconState.ValidatorProof(validatorIndex64)
 	if err != nil {
 		return megapool.ValidatorProof{}, err
 	}
@@ -170,7 +170,7 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 		return api.ValidatorWithdrawableEpochProof{}, fmt.Errorf("validator %d is not withdrawable", validatorIndex64)
 	}
 
-	proofBytes, err := beaconState.ValidatorWithdrawableEpochProof(validatorIndex64)
+	proofBytes, err := beaconState.ValidatorProof(validatorIndex64)
 	if err != nil {
 		return api.ValidatorWithdrawableEpochProof{}, err
 	}
