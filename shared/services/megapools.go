@@ -25,11 +25,14 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
 )
+
+const MAX_WITHDRAWAL_SLOT_DISTANCE = 432000 // 60 days.
 
 func GetStakeValidatorInfo(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, error) {
 	// Get validator private key
@@ -599,4 +602,133 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 
 	return new(big.Int).SetUint64(overallPosition), err
 
+}
+
+func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint64) (megapool.FinalBalanceProof, error) {
+	// Create a new response
+	response := megapool.FinalBalanceProof{}
+	response.ValidatorIndex = validatorIndex
+	response.Slot = slot
+	// Get services
+	if err := RequireNodeRegistered(c); err != nil {
+		return megapool.FinalBalanceProof{}, err
+	}
+	bc, err := GetBeaconClient(c)
+	if err != nil {
+		return megapool.FinalBalanceProof{}, err
+	}
+
+	// Find the most recent withdrawal to slot.
+	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
+	notFounds := 0
+	var block eth2.SignedBeaconBlock
+	for candidateSlot := slot; candidateSlot >= slot-MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot-- {
+		// Get the block at the candidate slot.
+		blockResponse, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
+		if err != nil {
+			return megapool.FinalBalanceProof{}, err
+		}
+		if !found {
+			notFounds++
+			if notFounds >= 64 {
+				return megapool.FinalBalanceProof{}, fmt.Errorf("2 epochs of missing slots detected. It is likely that the Beacon Client was checkpoint synced after the most recent withdrawal to slot %d, and does not have the history required to generate a withdrawal proof", slot)
+			}
+			continue
+		} else {
+			notFounds = 0
+		}
+
+		beaconBlock, err := eth2.NewSignedBeaconBlock(blockResponse.Data, blockResponse.Fork)
+		if err != nil {
+			return megapool.FinalBalanceProof{}, err
+		}
+
+		if !beaconBlock.HasExecutionPayload() {
+			continue
+		}
+
+		foundWithdrawal := false
+
+		// Check the block for a withdrawal for the given validator index.
+		for i, withdrawal := range beaconBlock.Withdrawals() {
+			if withdrawal.ValidatorIndex != validatorIndex {
+				continue
+			}
+			response.WithdrawalSlot = candidateSlot
+			response.Amount = big.NewInt(0).SetUint64(withdrawal.Amount)
+			foundWithdrawal = true
+			response.IndexInWithdrawalsArray = uint(i)
+			response.WithdrawalIndex = withdrawal.Index
+			response.WithdrawalAddress = withdrawal.Address
+			break
+		}
+
+		if foundWithdrawal {
+			block = beaconBlock
+			break
+		}
+	}
+
+	if response.Slot == 0 {
+		return megapool.FinalBalanceProof{}, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
+	}
+
+	// Start by proving from the withdrawal to the block_root
+	proof, err := block.ProveWithdrawal(uint64(response.IndexInWithdrawalsArray))
+	if err != nil {
+		return megapool.FinalBalanceProof{}, err
+	}
+
+	// Get beacon state
+	stateResponse, err := bc.GetBeaconStateSSZ(slot)
+	if err != nil {
+		return megapool.FinalBalanceProof{}, err
+	}
+
+	state, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Fork)
+	if err != nil {
+		return megapool.FinalBalanceProof{}, err
+	}
+
+	var summaryProof [][]byte
+
+	var stateProof [][]byte
+	if response.WithdrawalSlot+generic.SlotsPerHistoricalRoot > state.GetSlot() {
+		stateProof, err = state.BlockRootProof(response.WithdrawalSlot)
+		if err != nil {
+			return megapool.FinalBalanceProof{}, err
+		}
+	} else {
+		stateProof, err = state.HistoricalSummaryProof(response.WithdrawalSlot)
+		if err != nil {
+			return megapool.FinalBalanceProof{}, err
+		}
+
+		// Additionally, we need to prove from the block_root in the historical summary
+		// up to the beginning of the above proof, which is the entry in the historical summaries vector.
+		blockRootsStateSlot := generic.SlotsPerHistoricalRoot + ((response.WithdrawalSlot / generic.SlotsPerHistoricalRoot) * generic.SlotsPerHistoricalRoot)
+		// get the state that has the block roots tree
+		blockRootsStateResponse, err := bc.GetBeaconStateSSZ(blockRootsStateSlot)
+		if err != nil {
+			return megapool.FinalBalanceProof{}, err
+		}
+		blockRootsState, err := eth2.NewBeaconState(blockRootsStateResponse.Data, blockRootsStateResponse.Fork)
+		if err != nil {
+			return megapool.FinalBalanceProof{}, err
+		}
+		summaryProof, err = blockRootsState.HistoricalSummaryBlockRootProof(int(response.WithdrawalSlot))
+		if err != nil {
+			return megapool.FinalBalanceProof{}, err
+		}
+
+	}
+
+	withdrawalProof := append(proof, summaryProof...)
+	withdrawalProof = append(withdrawalProof, stateProof...)
+
+	// Convert [][]byte to [][32]byte
+	proofWithFixedSize := convertToFixedSize(withdrawalProof)
+	response.Witnesses = proofWithFixedSize
+
+	return response, nil
 }
