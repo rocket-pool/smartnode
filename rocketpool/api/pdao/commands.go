@@ -1025,7 +1025,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
-
 			{
 				Name:      "set-signalling-address",
 				Usage:     "Set the signalling address for the node",
@@ -1079,6 +1078,52 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 					// Run
 					api.PrintResponse(clearSignallingAddress(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-propose-allow-listed-controllers",
+				Usage:     "Check whether the node can propose a list of addresses that can update commission share parameters",
+				UsageText: "rocketpool api pdao can-propose-allow-listed-controllers addresses",
+				Action: func(c *cli.Context) error {
+
+					// // Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					addressList, err := cliutils.ValidateAddresses("addressList", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProposeAllowListedControllers(c, addressList))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-allow-listed-controllers",
+				Usage:     "Propose a list of addresses that can update commission share parameters",
+				UsageText: "rocketpool api pdao propose-allow-listed-controllers addresses block-number",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					addressList, err := cliutils.ValidateAddresses("addressList", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(proposeAllowListedControllers(c, addressList, blockNumber))
 					return nil
 
 				},

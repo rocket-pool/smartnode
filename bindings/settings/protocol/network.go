@@ -373,6 +373,26 @@ func EstimateProposeSubmitRewardsEnabledGas(rp *rocketpool.RocketPool, value boo
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", SubmitRewardsEnabledSettingPath), NetworkSettingsContractName, SubmitRewardsEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
+// Returns a list of allow listed controller addresses
+func GetAllowListedControllers(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.Address, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new([]common.Address)
+	if err := networkSettingsContract.Call(opts, value, "getAllowListedControllers"); err != nil {
+		return nil, fmt.Errorf("error getting network allow listed controllers list: %w", err)
+	}
+	return *value, nil
+}
+
+func ProposeAllowListedControllers(rp *rocketpool.RocketPool, value []common.Address, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetAddressList(rp, fmt.Sprintf("set %s", NetworkAllowListedControllersPath), NetworkSettingsContractName, NetworkAllowListedControllersPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeAllowListedControllersGas(rp *rocketpool.RocketPool, value []common.Address, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetAddressListGas(rp, fmt.Sprintf("set %s", NetworkAllowListedControllersPath), NetworkSettingsContractName, NetworkAllowListedControllersPath, value, blockNumber, treeNodes, opts)
+}
+
 // Get contracts
 var networkSettingsContractLock sync.Mutex
 
