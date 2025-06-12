@@ -1,12 +1,15 @@
 package electra
 
-import "github.com/rocket-pool/smartnode/shared/types/eth2/generic"
+import (
+	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
+)
 
 // Important indices for proof generation:
 const BeaconBlockBodyChunksCeil uint64 = 16
 
-func (b *BeaconBlock) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
-	tree, err := b.GetTree()
+func (b *SignedBeaconBlock) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
+	tree, err := b.Block.GetTree()
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +54,7 @@ type BeaconBlockBody struct {
 	Graffiti              [32]byte                              `json:"graffiti" ssz-size:"32"`
 	ProposerSlashings     []*generic.ProposerSlashing           `json:"proposer_slashings" ssz-max:"16"`
 	AttesterSlashings     []*AttesterSlashing                   `json:"attester_slashings" ssz-max:"1"`
-	Attestations          []*generic.Attestation                `json:"attestations" ssz-max:"8"`
+	Attestations          []*Attestation                        `json:"attestations" ssz-max:"8"`
 	Deposits              []*generic.Deposit                    `json:"deposits" ssz-max:"16"`
 	VoluntaryExits        []*generic.SignedVoluntaryExit        `json:"voluntary_exits" ssz-max:"16"`
 	SyncAggregate         *generic.SyncAggregate                `json:"sync_aggregate"`
@@ -59,6 +62,13 @@ type BeaconBlockBody struct {
 	BlsToExecutionChanges []*generic.SignedBLSToExecutionChange `json:"bls_to_execution_changes" ssz-max:"16"`
 	BlobKzgCommitments    [][48]byte                            `json:"blob_kzg_commitments" ssz-max:"4096,48" ssz-size:"?,48"`
 	ExecutionRequests     *ExecutionRequests                    `json:"execution_requests"`
+}
+
+type Attestation struct {
+	AggregationBits bitfield.Bitlist         `json:"aggregation_bits" ssz:"bitlist" ssz-max:"131072"`
+	Data            *generic.AttestationData `json:"data"`
+	Signature       [96]byte                 `json:"signature" ssz-size:"96"`
+	CommitteeBits   []byte                   `json:"committee_bits" ssz-size:"8"`
 }
 
 type ExecutionRequests struct {
@@ -88,14 +98,20 @@ type ConsolidationRequest struct {
 }
 
 type AttesterSlashing struct {
-	Attestation1 *generic.IndexedAttestation `json:"attestation_1"`
-	Attestation2 *generic.IndexedAttestation `json:"attestation_2"`
+	Attestation1 *IndexedAttestation `json:"attestation_1"`
+	Attestation2 *IndexedAttestation `json:"attestation_2"`
 }
 
-func (b *BeaconBlock) HasExecutionPayload() bool {
-	return b.Body.ExecutionPayload != nil
+type IndexedAttestation struct {
+	AttestingIndices []uint64                 `json:"attesting_indices" ssz-max:"131072"`
+	Data             *generic.AttestationData `json:"data"`
+	Signature        []byte                   `json:"signature" ssz-size:"96"`
 }
 
-func (b *BeaconBlock) Withdrawals() []*generic.Withdrawal {
-	return b.Body.ExecutionPayload.Withdrawals
+func (b *SignedBeaconBlock) HasExecutionPayload() bool {
+	return b.Block.Body.ExecutionPayload != nil
+}
+
+func (b *SignedBeaconBlock) Withdrawals() []*generic.Withdrawal {
+	return b.Block.Body.ExecutionPayload.Withdrawals
 }

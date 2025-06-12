@@ -283,17 +283,18 @@ func TestValidatorWithdrawableEpochProof(t *testing.T) {
 	}
 }
 
-func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64, block *deneb.BeaconBlock) []byte {
+func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64, block *deneb.SignedBeaconBlock) []byte {
 	savedExepectedBlockRoot, err := hex.DecodeString("8442138d973483bfeaba9082f28217234e2879dedb5202e67ef68e2349db9a31")
 	if err != nil {
 		panic(err)
 	}
-	expectedBlockRoot, err := block.HashTreeRoot()
+
+	expectedBlockRoot, err := block.Block.HashTreeRoot()
 	if err != nil {
 		t.Fatalf("Failed to get block root: %v", err)
 	}
 
-	if !bytes.Equal(expectedBlockRoot[:], savedExepectedBlockRoot) {
+	if !bytes.Equal(expectedBlockRoot[:], savedExepectedBlockRoot[:]) {
 		t.Fatalf("expected block root: %x, got: %x", savedExepectedBlockRoot, expectedBlockRoot)
 	}
 
@@ -331,7 +332,7 @@ func TestWithdrawalProof(t *testing.T) {
 	}
 
 	for idx, withdrawal := range block.Block.Body.ExecutionPayload.Withdrawals {
-		proof, err := block.Block.ProveWithdrawal(uint64(idx))
+		proof, err := block.ProveWithdrawal(uint64(idx))
 		if err != nil {
 			t.Fatalf("Failed to get withdrawal proof: %v", err)
 		}
@@ -351,7 +352,7 @@ func TestWithdrawalProof(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get withdrawal leaf: %v", err)
 		}
-		validateBlockProof(t, leaf, proof, gid, block.Block)
+		validateBlockProof(t, leaf, proof, gid, block)
 	}
 }
 
