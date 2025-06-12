@@ -95,8 +95,14 @@ type ConsolidationRequest struct {
 }
 
 type AttesterSlashing struct {
-	Attestation1 *generic.IndexedAttestation `json:"attestation_1"`
-	Attestation2 *generic.IndexedAttestation `json:"attestation_2"`
+	Attestation1 *IndexedAttestation `json:"attestation_1"`
+	Attestation2 *IndexedAttestation `json:"attestation_2"`
+}
+
+type IndexedAttestation struct {
+	AttestingIndices []uint64                 `json:"attesting_indices" ssz-max:"131072"`
+	Data             *generic.AttestationData `json:"data"`
+	Signature        []byte                   `json:"signature" ssz-size:"96"`
 }
 
 func (b *BeaconBlock) HasExecutionPayload() bool {
