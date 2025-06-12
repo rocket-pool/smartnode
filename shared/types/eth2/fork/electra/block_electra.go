@@ -1,6 +1,9 @@
 package electra
 
-import "github.com/rocket-pool/smartnode/shared/types/eth2/generic"
+import (
+	"github.com/prysmaticlabs/go-bitfield"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
+)
 
 // Important indices for proof generation:
 const BeaconBlockBodyChunksCeil uint64 = 16
@@ -62,7 +65,7 @@ type BeaconBlockBody struct {
 }
 
 type Attestation struct {
-	AggregationBits []byte                   `json:"aggregation_bits" ssz:"bitlist" ssz-max:"131072"`
+	AggregationBits bitfield.Bitlist         `json:"aggregation_bits" ssz:"bitlist" ssz-max:"131072"`
 	Data            *generic.AttestationData `json:"data"`
 	Signature       [96]byte                 `json:"signature" ssz-size:"96"`
 	CommitteeBits   []byte                   `json:"committee_bits" ssz-size:"8"`
