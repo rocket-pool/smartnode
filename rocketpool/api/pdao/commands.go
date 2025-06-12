@@ -1,8 +1,10 @@
 package pdao
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -1088,15 +1090,19 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				UsageText: "rocketpool api pdao can-propose-allow-listed-controllers addresses",
 				Action: func(c *cli.Context) error {
 
-					// // Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					addressList, err := cliutils.ValidateAddresses("addressList", c.Args().Get(0))
-					if err != nil {
-						return err
+					// Validate args
+					if c.NArg() > 2 {
+						return fmt.Errorf("Incorrect argument count;")
 					}
 
+					var addressList []common.Address
+					var err error
+					if c.NArg() != 0 {
+						addressList, err = cliutils.ValidateAddresses("addressList", c.Args().Get(0))
+						if err != nil {
+							return err
+						}
+					}
 					// Run
 					api.PrintResponse(canProposeAllowListedControllers(c, addressList))
 					return nil
@@ -1110,16 +1116,29 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 2); err != nil {
-						return err
+					if c.NArg() > 3 || c.NArg() < 1 {
+						return fmt.Errorf("Incorrect argument count;")
 					}
-					addressList, err := cliutils.ValidateAddresses("addressList", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
-					if err != nil {
-						return err
+
+					var addressList []common.Address
+					var blockNumber uint32
+					var err error
+
+					// Handles a case where an empty addressList is passed, to propose an empty addressList
+					if c.NArg() == 1 {
+						blockNumber, err = cliutils.ValidateUint32("blockNumber", c.Args().Get(0))
+						if err != nil {
+							return err
+						}
+					} else {
+						addressList, err = cliutils.ValidateAddresses("addressList", c.Args().Get(0))
+						if err != nil {
+							return err
+						}
+						blockNumber, err = cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
+						if err != nil {
+							return err
+						}
 					}
 
 					// Run

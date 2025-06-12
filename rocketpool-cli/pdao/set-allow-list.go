@@ -25,7 +25,7 @@ func setAllowListedControllers(c *cli.Context) error {
 	addressListStr = c.String("addressList")
 	if addressListStr == "" {
 		// Ask the the user how many addresses should be included in the list
-		numStr := prompt.Prompt(fmt.Sprintf("How many addresses do you want to set as an allow listed controller?"), "^\\d+$", "Invalid number.")
+		numStr := prompt.Prompt(fmt.Sprintf("How many addresses do you want to propose as allowlisted controllers? Enter 0 to propose clearing the list"), "^\\d+$", "Invalid number.")
 		numAddressesUint, err := strconv.ParseUint(numStr, 0, 64)
 		if err != nil {
 			return fmt.Errorf("'%s' is not a valid number: %w.\n", numStr, err)
@@ -57,10 +57,14 @@ func setAllowListedControllers(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	fmt.Printf("You have selected %v\n", addressListStr)
+	if addressListStr == "" {
+		fmt.Printf("%sYou are proposing to remove all allowlisted controllers%s\n", colorGreen, colorReset)
+	} else {
+		fmt.Printf("%sYou have selected propose %v as the allowlisted controllers%s\n", colorGreen, addressListStr, colorReset)
+	}
 	fmt.Println()
 
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose a new list of allow listed controllers?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose a new list of allowlisted controllers?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
