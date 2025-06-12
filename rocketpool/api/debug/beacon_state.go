@@ -78,7 +78,7 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	// Find the most recent withdrawal to slot.
 	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
 	notFounds := 0
-	var block eth2.BeaconBlock
+	var block eth2.SignedBeaconBlock
 	for candidateSlot := slot; candidateSlot >= slot-MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot-- {
 		// Get the block at the candidate slot.
 		blockResponse, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
@@ -95,7 +95,7 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 			notFounds = 0
 		}
 
-		beaconBlock, err := eth2.NewBeaconBlock(blockResponse.Data, blockResponse.Fork)
+		beaconBlock, err := eth2.NewSignedBeaconBlock(blockResponse.Data, blockResponse.Fork)
 		if err != nil {
 			return err
 		}
