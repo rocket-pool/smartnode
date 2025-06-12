@@ -261,6 +261,12 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
+	wg.Go(func() error {
+		var err error
+		response.Network.AllowListedControllers, err = protocol.GetAllowListedControllers(rp, nil)
+		return err
+	})
+
 	// === Node ===
 
 	wg.Go(func() error {

@@ -114,19 +114,20 @@ type GetPDAOSettingsResponse struct {
 	} `json:"minipool"`
 
 	Network struct {
-		OracleDaoConsensusThreshold *big.Int      `json:"oracleDaoConsensusThreshold"`
-		NodePenaltyThreshold        *big.Int      `json:"nodePenaltyThreshold"`
-		PerPenaltyRate              *big.Int      `json:"perPenaltyRate"`
-		IsSubmitBalancesEnabled     bool          `json:"isSubmitBalancesEnabled"`
-		SubmitBalancesFrequency     time.Duration `json:"submitBalancesFrequency"`
-		IsSubmitPricesEnabled       bool          `json:"isSubmitPricesEnabled"`
-		SubmitPricesFrequency       time.Duration `json:"submitPricesFrequency"`
-		MinimumNodeFee              *big.Int      `json:"minimumNodeFee"`
-		TargetNodeFee               *big.Int      `json:"targetNodeFee"`
-		MaximumNodeFee              *big.Int      `json:"maximumNodeFee"`
-		NodeFeeDemandRange          *big.Int      `json:"nodeFeeDemandRange"`
-		TargetRethCollateralRate    *big.Int      `json:"targetRethCollateralRate"`
-		IsSubmitRewardsEnabled      bool          `json:"isSubmitRewardsEnabled"`
+		OracleDaoConsensusThreshold *big.Int         `json:"oracleDaoConsensusThreshold"`
+		NodePenaltyThreshold        *big.Int         `json:"nodePenaltyThreshold"`
+		PerPenaltyRate              *big.Int         `json:"perPenaltyRate"`
+		IsSubmitBalancesEnabled     bool             `json:"isSubmitBalancesEnabled"`
+		SubmitBalancesFrequency     time.Duration    `json:"submitBalancesFrequency"`
+		IsSubmitPricesEnabled       bool             `json:"isSubmitPricesEnabled"`
+		SubmitPricesFrequency       time.Duration    `json:"submitPricesFrequency"`
+		MinimumNodeFee              *big.Int         `json:"minimumNodeFee"`
+		TargetNodeFee               *big.Int         `json:"targetNodeFee"`
+		MaximumNodeFee              *big.Int         `json:"maximumNodeFee"`
+		NodeFeeDemandRange          *big.Int         `json:"nodeFeeDemandRange"`
+		TargetRethCollateralRate    *big.Int         `json:"targetRethCollateralRate"`
+		IsSubmitRewardsEnabled      bool             `json:"isSubmitRewardsEnabled"`
+		AllowListedControllers      []common.Address `json:"allowListedControllers"`
 	} `json:"network"`
 
 	Node struct {
@@ -471,4 +472,19 @@ type PDAOClearSignallingAddressResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
+}
+
+type PDAOACanProposeAllowListedControllersResponse struct {
+	Status                 string             `json:"status"`
+	Error                  string             `json:"error"`
+	BlockNumber            uint32             `json:"blockNumber"`
+	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	CanPropose             bool               `json:"canPropose"`
+	IsRplLockingDisallowed bool               `json:"isRplLockingDisallowed"`
+}
+type PDAOProposeAllowListedControllersResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
 }

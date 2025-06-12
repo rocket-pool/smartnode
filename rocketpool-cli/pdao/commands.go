@@ -1542,27 +1542,26 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "allow-listed-controllers",
 										Aliases:   []string{"alc"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkAllowListedControllersPath, addressListUsage),
-										UsageText: "rocketpool pdao propose setting network allow-listed-controllers value",
+										Usage:     fmt.Sprintf("Propose updating the %s setting", protocol.NetworkAllowListedControllersPath),
+										UsageText: "rocketpool pdao propose setting network allow-listed-controllers",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
 												Name:  "yes, y",
 												Usage: "Automatically confirm all interactive questions",
 											},
+											cli.StringFlag{
+												Name:  "addressList, a",
+												Usage: "One or more addresses, separated by commas with no spaces",
+											},
 										},
 										Action: func(c *cli.Context) error {
 
 											// Validate args
-											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+											if err := cliutils.ValidateArgCount(c, 0); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateAddresses("value", c.Args().Get(0))
-											if err != nil {
-												return err
-											}
-
 											// Run
-											return proposeSettingNetworkAllowListedControllers(c, value)
+											return setAllowListedControllers(c)
 
 										},
 									},

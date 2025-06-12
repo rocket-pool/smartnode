@@ -9,14 +9,12 @@ import (
 const BeaconBlockBodyChunksCeil uint64 = 16
 
 func (b *SignedBeaconBlock) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
-	tree, err := b.GetTree()
+	tree, err := b.Block.GetTree()
 	if err != nil {
 		return nil, err
 	}
 
 	gid := uint64(1)
-	// Navigate to the block
-	gid = gid*generic.SignedBeaconBlockChunksCeil + generic.SignedBeaconBlockIndex
 	// Navigate to the body
 	gid = gid*generic.BeaconBlockChunksCeil + generic.BeaconBlockBodyIndex
 	// Then to the ExecutionPayload

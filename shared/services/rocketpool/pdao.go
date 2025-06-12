@@ -719,6 +719,38 @@ func (c *Client) ClearSignallingAddress() (api.PDAOSetSignallingAddressResponse,
 	return response, nil
 }
 
+// Check whether the node can propose a list of addresses that can update commission share parameters
+func (c *Client) PDAOCanProposeAllowListedControllers(addressList string) (api.PDAOACanProposeAllowListedControllersResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-allow-listed-controllers %s", addressList))
+	if err != nil {
+		return api.PDAOACanProposeAllowListedControllersResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-allow-listed-controllers: %w", err)
+	}
+	var response api.PDAOACanProposeAllowListedControllersResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOACanProposeAllowListedControllersResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-allow-listed-controllers response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOACanProposeAllowListedControllersResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-allow-listed-controllers: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose a list of addresses that can update commission share parameters
+func (c *Client) PDAOProposeAllowListedControllers(addressList string, blockNumber uint32) (api.PDAOProposeAllowListedControllersResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-allow-listed-controllers %s %d", addressList, blockNumber))
+	if err != nil {
+		return api.PDAOProposeAllowListedControllersResponse{}, fmt.Errorf("Could not get protocol DAO propose-allow-listed-controllers: %w", err)
+	}
+	var response api.PDAOProposeAllowListedControllersResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOProposeAllowListedControllersResponse{}, fmt.Errorf("Could not decode protocol DAO propose-allow-listed-controllers response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOProposeAllowListedControllersResponse{}, fmt.Errorf("Could not get protocol DAO propose-allow-listed-controllers: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Get PDAO Status
 func (c *Client) PDAOStatus() (api.PDAOStatusResponse, error) {
 	responseBytes, err := c.callAPI("pdao status")

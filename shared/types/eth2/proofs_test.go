@@ -283,47 +283,19 @@ func TestValidatorWithdrawableEpochProof(t *testing.T) {
 	}
 }
 
-func getExpectedSignedBlockRoot(t *testing.T, block *deneb.SignedBeaconBlock) []byte {
+func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64, block *deneb.SignedBeaconBlock) []byte {
 	savedExepectedBlockRoot, err := hex.DecodeString("8442138d973483bfeaba9082f28217234e2879dedb5202e67ef68e2349db9a31")
 	if err != nil {
 		panic(err)
 	}
-	savedSignature, err := hex.DecodeString("93e11269e571076271f3ad7ccd6ec3221eabb5366dab73b92a0da3abc477ce778c99b57130232d2fd29813b6ee58b3d216e588f080103d465f74d83ac8eaef60141c9132a0310a336c6ff8b94fa10dd8b4dcd025144b4ff58e7451d3f88be4cc")
-	if err != nil {
-		panic(err)
-	}
 
-	// Split the signature into 4 32 byte chunks
-	signatureChunks := [4][32]byte{}
-	copy(signatureChunks[0][:], savedSignature[:32])
-	copy(signatureChunks[1][:], savedSignature[32:64])
-	copy(signatureChunks[2][:], savedSignature[64:])
-
-	// hash the first chunk and the second chunk together
-	combined := hash(signatureChunks[0][:], signatureChunks[1][:], false)
-
-	// hash the third chunk and the fourth chunk together
-	combined2 := hash(signatureChunks[2][:], signatureChunks[3][:], false)
-
-	// hash the combined hash and the third chunk together
-	signatureRoot := hash(combined, combined2, false)
-
-	// hash the block root and the signature root together
-	combined = hash(savedExepectedBlockRoot[:], signatureRoot[:], false)
-
-	return combined
-}
-
-func validateBlockProof(t *testing.T, leaf [32]byte, proof [][]byte, gid uint64, block *deneb.SignedBeaconBlock) []byte {
-	savedExpectedSignedBlockRoot := getExpectedSignedBlockRoot(t, block)
-
-	expectedBlockRoot, err := block.HashTreeRoot()
+	expectedBlockRoot, err := block.Block.HashTreeRoot()
 	if err != nil {
 		t.Fatalf("Failed to get block root: %v", err)
 	}
 
-	if !bytes.Equal(expectedBlockRoot[:], savedExpectedSignedBlockRoot[:]) {
-		t.Fatalf("expected block root: %x, got: %x", savedExpectedSignedBlockRoot, expectedBlockRoot)
+	if !bytes.Equal(expectedBlockRoot[:], savedExepectedBlockRoot[:]) {
+		t.Fatalf("expected block root: %x, got: %x", savedExepectedBlockRoot, expectedBlockRoot)
 	}
 
 	currentHash := leaf[:]
@@ -371,7 +343,6 @@ func TestWithdrawalProof(t *testing.T) {
 			}
 		}
 		gid := uint64(1)
-		gid = gid*generic.SignedBeaconBlockChunksCeil + generic.SignedBeaconBlockIndex
 		gid = gid*generic.BeaconBlockChunksCeil + generic.BeaconBlockBodyIndex
 		gid = gid*deneb.BeaconBlockBodyChunksCeil + generic.BeaconBlockBodyExecutionPayloadIndex
 		gid = gid*generic.BeaconBlockBodyExecutionPayloadChunksCeil + generic.BeaconBlockBodyExecutionPayloadWithdrawalsIndex

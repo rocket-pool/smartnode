@@ -78,6 +78,7 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tCommission Demand Range:    %.6f ETH\n", eth.WeiToEth(response.Network.NodeFeeDemandRange))
 	fmt.Printf("\trETH Collateral Target:     %.2f%%\n", eth.WeiToEth(response.Network.TargetRethCollateralRate)*100)
 	fmt.Printf("\tRewards Submission Enabled: %t\n", response.Network.IsSubmitRewardsEnabled)
+	fmt.Printf("\tAllow listed controllers: %v\n", response.Network.AllowListedControllers)
 	fmt.Println()
 
 	// Node
