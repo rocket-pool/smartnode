@@ -75,7 +75,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	}
 
 	// Notify the validator exit
-	gasInfo, err := mp.EstimateNotifyFinalBalance(validatorId, proof.Slot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, slot, proof.Witnesses, opts)
+	gasInfo, err := mp.EstimateNotifyFinalBalance(validatorId, proof.WithdrawalSlot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, proof.Slot, proof.Witnesses, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -157,7 +157,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	}
 
 	// Notify the validator exit
-	hash, err := mp.NotifyFinalBalance(validatorId, proof.Slot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, slot, proof.Witnesses, opts)
+	hash, err := mp.NotifyFinalBalance(validatorId, proof.WithdrawalSlot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, slot, proof.Witnesses, opts)
 	if err != nil {
 		return nil, err
 	}
