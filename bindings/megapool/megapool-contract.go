@@ -23,9 +23,23 @@ type ValidatorProof struct {
 	Witnesses             [][32]byte
 }
 
+type FinalBalanceProof struct {
+	Slot           uint64
+	WithdrawalSlot uint64
+	ValidatorIndex uint64
+	Amount         *big.Int
+	Witnesses      [][32]byte
+
+	// Contract refers to this as _withdrawalNum
+	IndexInWithdrawalsArray uint
+	// Part of the Withdrawal calldata
+	WithdrawalIndex   uint64
+	WithdrawalAddress common.Address
+}
+
 type Withdrawal struct {
 	Index                 uint64
-	ValidatorIndex        *big.Int
+	ValidatorIndex        uint64
 	WithdrawalCredentials [20]byte
 	AmountInGwei          uint64
 }
@@ -421,12 +435,12 @@ func (mp *megapoolV1) NotifyExit(validatorId uint32, withdrawalEpoch uint64, slo
 }
 
 // Estimate the gas to call NotifyFinalBalance
-func (mp *megapoolV1) EstimateNotifyFinalBalance(validatorId uint32, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal Withdrawal, slot *big.Int, exitProof [][32]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func (mp *megapoolV1) EstimateNotifyFinalBalance(validatorId uint32, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal Withdrawal, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "notifyFinalBalance", validatorId, withdrawalSlot, withdrawalNum, withdrawal, slot, exitProof)
 }
 
 // Notify the megapool of the final balance of an exited validator
-func (mp *megapoolV1) NotifyFinalBalance(validatorId uint32, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal Withdrawal, slot *big.Int, exitProof [][32]byte, opts *bind.TransactOpts) (common.Hash, error) {
+func (mp *megapoolV1) NotifyFinalBalance(validatorId uint32, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal Withdrawal, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (common.Hash, error) {
 	tx, err := mp.Contract.Transact(opts, "notifyFinalBalance", validatorId, withdrawalSlot, withdrawalNum, withdrawal, slot, exitProof)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error calling notify final balance: %w", err)
