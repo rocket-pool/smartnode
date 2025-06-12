@@ -1,7 +1,5 @@
 package generic
 
-const SignedBeaconBlockChunksCeil uint64 = 2
-const SignedBeaconBlockIndex uint64 = 0
 const BeaconBlockChunksCeil uint64 = 8
 const BeaconBlockBodyIndex uint64 = 4
 const BeaconBlockBodyExecutionPayloadIndex uint64 = 9
