@@ -5,13 +5,15 @@ import "github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 // Important indices for proof generation:
 const BeaconBlockBodyChunksCeil uint64 = 16
 
-func (b *BeaconBlock) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
+func (b *SignedBeaconBlock) ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error) {
 	tree, err := b.GetTree()
 	if err != nil {
 		return nil, err
 	}
 
 	gid := uint64(1)
+	// Navigate to the block
+	gid = gid*generic.SignedBeaconBlockChunksCeil + generic.SignedBeaconBlockIndex
 	// Navigate to the body
 	gid = gid*generic.BeaconBlockChunksCeil + generic.BeaconBlockBodyIndex
 	// Then to the ExecutionPayload
@@ -80,10 +82,10 @@ type ExecutionPayload struct {
 	ExcessBlobGas uint64                `json:"excess_blob_gas"`
 }
 
-func (b *BeaconBlock) HasExecutionPayload() bool {
-	return b.Body.ExecutionPayload != nil
+func (b *SignedBeaconBlock) HasExecutionPayload() bool {
+	return b.Block.Body.ExecutionPayload != nil
 }
 
-func (b *BeaconBlock) Withdrawals() []*generic.Withdrawal {
-	return b.Body.ExecutionPayload.Withdrawals
+func (b *SignedBeaconBlock) Withdrawals() []*generic.Withdrawal {
+	return b.Block.Body.ExecutionPayload.Withdrawals
 }

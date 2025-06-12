@@ -14,8 +14,8 @@ var _ BeaconState = &deneb.BeaconState{}
 var _ BeaconState = &electra.BeaconState{}
 
 // Block type assertions
-var _ BeaconBlock = &deneb.BeaconBlock{}
-var _ BeaconBlock = &electra.BeaconBlock{}
+var _ SignedBeaconBlock = &deneb.SignedBeaconBlock{}
+var _ SignedBeaconBlock = &electra.SignedBeaconBlock{}
 
 type BeaconState interface {
 	GetSlot() uint64
@@ -27,7 +27,7 @@ type BeaconState interface {
 	GetValidators() []*generic.Validator
 }
 
-type BeaconBlock interface {
+type SignedBeaconBlock interface {
 	ProveWithdrawal(indexInWithdrawalsArray uint64) ([][]byte, error)
 	HasExecutionPayload() bool
 	Withdrawals() []*generic.Withdrawal
@@ -56,19 +56,19 @@ func NewBeaconState(data []byte, fork string) (BeaconState, error) {
 	}
 }
 
-func NewBeaconBlock(data []byte, fork string) (BeaconBlock, error) {
+func NewSignedBeaconBlock(data []byte, fork string) (SignedBeaconBlock, error) {
 	fork = strings.ToLower(fork)
 
 	switch fork {
 	case "deneb":
-		out := &deneb.BeaconBlock{}
+		out := &deneb.SignedBeaconBlock{}
 		err := out.UnmarshalSSZ(data)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
 	case "electra":
-		out := &electra.BeaconBlock{}
+		out := &electra.SignedBeaconBlock{}
 		err := out.UnmarshalSSZ(data)
 		if err != nil {
 			return nil, err
