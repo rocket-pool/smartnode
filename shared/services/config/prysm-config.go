@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	prysmBnTest             string = "gcr.io/offchainlabs/prysm/beacon-chain:v6.0.3"
-	prysmBnProd             string = "gcr.io/offchainlabs/prysm/beacon-chain:v6.0.3"
-	prysmVcTest             string = "gcr.io/offchainlabs/prysm/validator:v6.0.3"
-	prysmVcProd             string = "gcr.io/offchainlabs/prysm/validator:v6.0.3"
+	prysmBnTest             string = "gcr.io/offchainlabs/prysm/beacon-chain:v6.0.4"
+	prysmBnProd             string = "gcr.io/offchainlabs/prysm/beacon-chain:v6.0.4"
+	prysmVcTest             string = "gcr.io/offchainlabs/prysm/validator:v6.0.4"
+	prysmVcProd             string = "gcr.io/offchainlabs/prysm/validator:v6.0.4"
 	defaultPrysmRpcPort     uint16 = 5053
 	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers    uint16 = 70
