@@ -45,7 +45,7 @@ func notifyValidatorExit(c *cli.Context) error {
 		activeValidators := []api.MegapoolValidatorDetails{}
 
 		for _, validator := range status.Megapool.Validators {
-			if validator.Activated && !validator.Exiting {
+			if validator.Activated && !validator.Exiting && !validator.Exited {
 				activeValidators = append(activeValidators, validator)
 			}
 		}
