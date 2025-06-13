@@ -481,7 +481,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	// Prompt for confirmation
 	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
 		"You are about to deposit %.6f ETH to create a new megapool validator.\n"+
-			"%sARE YOU SURE YOU WANT TO DO THIS? Exiting this validator and retrieving your capital cannot be done until the validator has been *active* on the Beacon Chain for 256 epochs (approx. 27 hours).%s\n",
+			"%sAre you sure you want to do this? You can exit this validator while it waits in the queue using `rocketpool megapool exit-queue`.%s\n",
 		math.RoundDown(eth.WeiToEth(amountWei), 6),
 		colorYellow,
 		colorReset))) {
