@@ -40,7 +40,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 	app.Name = "rocketpool"
 	app.Usage = "Rocket Pool CLI"
 	app.Version = shared.RocketPoolVersion()
-	app.Copyright = "(c) 2024 Rocket Pool Pty Ltd"
+	app.Copyright = "(c) 2025 Rocket Pool Pty Ltd"
 
 	// Initialize app metadata
 	app.Metadata = make(map[string]interface{})

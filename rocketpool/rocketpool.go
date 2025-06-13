@@ -30,7 +30,7 @@ func main() {
 	app.Name = "rocketpool"
 	app.Usage = "Rocket Pool service"
 	app.Version = shared.RocketPoolVersion()
-	app.Copyright = "(c) 2024 Rocket Pool Pty Ltd"
+	app.Copyright = "(c) 2025 Rocket Pool Pty Ltd"
 
 	// Set application flags
 	app.Flags = []cli.Flag{
