@@ -75,7 +75,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	}
 
 	// Notify the validator exit
-	gasInfo, err := mp.EstimateNotifyFinalBalance(validatorId, proof.WithdrawalSlot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, proof.Slot, proof.Witnesses, opts)
+	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, megapoolAddress, validatorId, proof.WithdrawalSlot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, proof.Slot, proof.Witnesses, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -157,11 +157,11 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	}
 
 	// Notify the validator exit
-	hash, err := mp.NotifyFinalBalance(validatorId, proof.WithdrawalSlot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, slot, proof.Witnesses, opts)
+	tx, err := megapool.NotifyFinalBalance(rp, megapoolAddress, validatorId, proof.WithdrawalSlot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, slot, proof.Witnesses, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.TxHash = hash
+	response.TxHash = tx.Hash()
 
 	// Return response
 	return &response, nil

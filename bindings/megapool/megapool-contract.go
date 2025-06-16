@@ -393,61 +393,6 @@ func (mp *megapoolV1) RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, e
 	return tx.Hash(), nil
 }
 
-// Estimate the gas of Stake
-func (mp *megapoolV1) EstimateStakeGas(validatorId uint32, validatorProof ValidatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "stake", validatorId, validatorProof)
-}
-
-// Progress the prelaunch megapool to staking
-func (mp *megapoolV1) Stake(validatorId uint32, validatorProof ValidatorProof, opts *bind.TransactOpts) (common.Hash, error) {
-	// callData, err := mp.Contract.ABI.Pack("stake", validatorId, validatorSignature[:], depositDataRoot, validatorProof)
-	// if err != nil {
-	// 	return common.Hash{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
-	// }
-
-	// fmt.Println("call data:\n")
-	// fmt.Printf("%s", hex.EncodeToString(callData))
-
-	// tx, err := mp.Contract.Contract.RawTransact(opts, callData)
-	// if err != nil {
-	// 	return common.Hash{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
-	// }
-
-	tx, err := mp.Contract.Transact(opts, "stake", validatorId, validatorProof)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error staking megapool %s: %w", mp.Address.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
-// Estimate the gas to call NotifyExit
-func (mp *megapoolV1) EstimateNotifyExitGas(validatorId uint32, withdrawalEpoch uint64, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "notifyExit", validatorId, withdrawalEpoch, slot, exitProof)
-}
-
-// Notify the megapool that one of its validators is exiting
-func (mp *megapoolV1) NotifyExit(validatorId uint32, withdrawalEpoch uint64, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "notifyExit", validatorId, withdrawalEpoch, slot, exitProof)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error calling notify exit: %w", err)
-	}
-	return tx.Hash(), nil
-}
-
-// Estimate the gas to call NotifyFinalBalance
-func (mp *megapoolV1) EstimateNotifyFinalBalance(validatorId uint32, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal Withdrawal, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "notifyFinalBalance", validatorId, withdrawalSlot, withdrawalNum, withdrawal, slot, exitProof)
-}
-
-// Notify the megapool of the final balance of an exited validator
-func (mp *megapoolV1) NotifyFinalBalance(validatorId uint32, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal Withdrawal, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "notifyFinalBalance", validatorId, withdrawalSlot, withdrawalNum, withdrawal, slot, exitProof)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error calling notify final balance: %w", err)
-	}
-	return tx.Hash(), nil
-}
-
 // Estimate the gas required to distribute megapool rewards
 func (mp *megapoolV1) EstimateDistributeGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "distribute")

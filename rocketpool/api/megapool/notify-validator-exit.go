@@ -77,7 +77,7 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 	}
 
 	// Notify the validator exit
-	gasInfo, err := mp.EstimateNotifyExitGas(validatorId, proof.WithdrawableEpoch, proof.Slot, proof.Witnesses, opts)
+	gasInfo, err := megapool.EstimateNotifyExitGas(rp, megapoolAddress, validatorId, proof.WithdrawableEpoch, proof.Slot, proof.Witnesses, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -161,11 +161,11 @@ func notifyValidatorExit(c *cli.Context, validatorId uint32) (*api.NotifyValidat
 	}
 
 	// Notify the validator exit
-	hash, err := mp.NotifyExit(validatorId, proof.WithdrawableEpoch, proof.Slot, proof.Witnesses, opts)
+	tx, err := megapool.NotifyExit(rp, megapoolAddress, validatorId, proof.WithdrawableEpoch, proof.Slot, proof.Witnesses, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.TxHash = hash
+	response.TxHash = tx.Hash()
 
 	// Return response
 	return &response, nil

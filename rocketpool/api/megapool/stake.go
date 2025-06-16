@@ -104,7 +104,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateStakeGas(uint32(validatorId), proof, opts)
+	gasInfo, err := megapool.EstimateStakeGas(rp, megapoolAddress, uint32(validatorId), proof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -183,11 +183,11 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 	}
 
 	// Stake
-	hash, err := mp.Stake(uint32(validatorId), proof, opts)
+	tx, err := megapool.Stake(rp, megapoolAddress, uint32(validatorId), proof, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.TxHash = hash
+	response.TxHash = tx.Hash()
 
 	// Return response
 	return &response, nil
