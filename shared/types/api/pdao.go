@@ -127,6 +127,7 @@ type GetPDAOSettingsResponse struct {
 		NodeFeeDemandRange          *big.Int         `json:"nodeFeeDemandRange"`
 		TargetRethCollateralRate    *big.Int         `json:"targetRethCollateralRate"`
 		IsSubmitRewardsEnabled      bool             `json:"isSubmitRewardsEnabled"`
+		NodeCommissionShare         *big.Int         `json:"nodeCommissionShare"`
 		AllowListedControllers      []common.Address `json:"allowListedControllers"`
 	} `json:"network"`
 

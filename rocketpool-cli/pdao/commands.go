@@ -1565,6 +1565,38 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 										},
 									},
+
+									{
+										Name:      "node-commission-share",
+										Aliases:   []string{"ncs"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkNodeCommissionSharePath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node node-commission-share value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeCommissionShare(c, value)
+
+										},
+									},
 								},
 							},
 

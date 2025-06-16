@@ -331,6 +331,11 @@ func proposeSettingMaximumMegapoolEthPenalty(c *cli.Context, value *big.Int) err
 	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue)
 }
 
+func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue)
+}
+
 // Master general proposal function
 func proposeSetting(c *cli.Context, contract string, setting string, value string) error {
 	// Get RP client
