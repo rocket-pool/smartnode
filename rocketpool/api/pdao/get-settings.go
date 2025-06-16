@@ -305,6 +305,12 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
+	wg.Go(func() error {
+		var err error
+		response.Node.ReducedBond, err = protocol.GetReducedBond(rp, nil)
+		return err
+	})
+
 	// === Proposals ===
 
 	wg.Go(func() error {

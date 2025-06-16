@@ -82,17 +82,12 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		}
 	*/
 
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: You are about to create a new megapool validator with a 4 ETH deposit.%s\nWould you like to continue?", colorYellow, colorReset))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-	amount := 4.0
-
 	useExpressTicket := false
 
 	var wg errgroup.Group
 	var expressTicketCount uint64
 	var queueDetails api.GetQueueDetailsResponse
+	var amount float64
 	// Get the express ticket count
 	wg.Go(func() error {
 		expressTicket, err := rp.GetExpressTicketCount()
@@ -102,8 +97,6 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		expressTicketCount = expressTicket.Count
 		return nil
 	})
-
-	//
 	wg.Go(func() error {
 		queueDetails, err = rp.GetQueueDetails()
 		if err != nil {
@@ -111,12 +104,23 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		}
 		return nil
 	})
-
-	//
+	wg.Go(func() error {
+		settings, err := rp.PDAOGetSettings()
+		if err != nil {
+			return err
+		}
+		amount = settings.Node.ReducedBond
+		return nil
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return err
+	}
+
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: You are about to create a new megapool validator with a %.0f ETH deposit.%s\nWould you like to continue?", colorYellow, amount, colorReset))) {
+		fmt.Println("Cancelled.")
+		return nil
 	}
 
 	fmt.Printf("There are %d validator(s) on the express queue.\n", queueDetails.ExpressLength)
