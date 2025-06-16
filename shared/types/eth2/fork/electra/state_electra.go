@@ -106,21 +106,13 @@ func (state *BeaconState) validatorStateProof(index uint64) ([][]byte, error) {
 
 }
 
-// ValidatorWithdrawableEpochProof computes the merkle proof for a validator's withdrawable epoch
-// at a specific index in the validator registry.
-func (state *BeaconState) ValidatorWithdrawableEpochProof(index uint64) ([][]byte, error) {
+func (state *BeaconState) ValidatorProof(index uint64) ([][]byte, error) {
 
 	if index >= uint64(len(state.Validators)) {
 		return nil, errors.New("validator index out of bounds")
 	}
 
-	// Get the validator's withdrawable epoch proof
-	withdrawableEpochProof, err := state.Validators[index].ValidatorWithdrawableEpochProof()
-	if err != nil {
-		return nil, fmt.Errorf("could not get validator withdrawable epoch proof: %w", err)
-	}
-
-	stateProof, err := state.validatorStateProof(index)
+	proof, err := state.validatorStateProof(index)
 	if err != nil {
 		return nil, fmt.Errorf("could not get validator state proof: %w", err)
 	}
@@ -136,10 +128,7 @@ func (state *BeaconState) ValidatorWithdrawableEpochProof(index uint64) ([][]byt
 		return nil, fmt.Errorf("could not get proof for block header: %w", err)
 	}
 
-	out := append(withdrawableEpochProof, stateProof...)
-	out = append(out, blockHeaderProof.Hashes...)
-
-	return out, nil
+	return append(proof, blockHeaderProof.Hashes...), nil
 }
 
 func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlockHeader) ([][]byte, error) {
@@ -153,37 +142,6 @@ func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlo
 		return nil, fmt.Errorf("could not get proof for block header: %w", err)
 	}
 	return blockHeaderProof.Hashes, nil
-}
-
-// ValidatorCredentialsProof computes the merkle proof for a validator's credentials
-// at a specific index in the validator registry.
-func (state *BeaconState) ValidatorCredentialsProof(index uint64) ([][]byte, error) {
-
-	if index >= uint64(len(state.Validators)) {
-		return nil, errors.New("validator index out of bounds")
-	}
-
-	// Get the validator's credentials proof
-	credentialsProof, err := state.Validators[index].ValidatorCredentialsPubkeyProof()
-	if err != nil {
-		return nil, fmt.Errorf("could not get validator credentials proof: %w", err)
-	}
-
-	stateProof, err := state.validatorStateProof(index)
-	if err != nil {
-		return nil, fmt.Errorf("could not get validator state proof: %w", err)
-	}
-
-	// The EL proves against BeaconBlockHeader root, so we need to merge the state proof with that.
-	blockHeaderProof, err := state.blockHeaderToStateProof(state.LatestBlockHeader)
-	if err != nil {
-		return nil, fmt.Errorf("could not get block header proof: %w", err)
-	}
-
-	out := append(credentialsProof, stateProof...)
-	out = append(out, blockHeaderProof...)
-
-	return out, nil
 }
 
 func (state *BeaconState) HistoricalSummaryProof(slot uint64) ([][]byte, error) {
