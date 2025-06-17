@@ -138,6 +138,12 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 		return nil, err
 	}
 
+	// If the slot was not provided, use the withdrawable slot
+	if slot == 0 {
+		slot = validatorInfo.WithdrawableEpoch * 32
+
+	}
+
 	proof, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
