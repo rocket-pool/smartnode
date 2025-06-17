@@ -2,6 +2,7 @@ package megapool
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -53,9 +54,14 @@ func distribute(c *cli.Context) error {
 		return fmt.Errorf("error calculating pending rewards: %w", err)
 	}
 
+	if rewardsSplit.RewardSplit.NodeRewards.Cmp(big.NewInt(0)) <= 0 {
+		fmt.Println("There are no pending rewards to distribute.")
+		return nil
+	}
 	// Print rewards
-	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.2f", eth.WeiToEth(rewardsSplit.RewardSplit.NodeRewards))
+	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.4f ETH.", eth.WeiToEth(rewardsSplit.RewardSplit.NodeRewards))
 	fmt.Println()
+
 	// Assign max fees
 	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
 	if err != nil {
