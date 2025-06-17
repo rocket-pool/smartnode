@@ -32,7 +32,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const MAX_WITHDRAWAL_SLOT_DISTANCE = 432000 // 60 days.
+const MAX_WITHDRAWAL_SLOT_DISTANCE = 144000 // 20 days.
 
 func GetStakeValidatorInfo(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, error) {
 	// Get validator private key
@@ -622,7 +622,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
 	notFounds := 0
 	var block eth2.SignedBeaconBlock
-	for candidateSlot := slot; candidateSlot >= slot-MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot-- {
+	for candidateSlot := slot; candidateSlot <= slot+MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot++ {
 		// Get the block at the candidate slot.
 		blockResponse, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
 		if err != nil {
