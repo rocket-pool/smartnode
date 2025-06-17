@@ -106,6 +106,6 @@ func exitQueue(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("Successfully requested exit from the megapool queue for validator ID %d.\n", validatorId)
+	fmt.Printf("Successfully exited validator ID %d from the megapool queue.\nYou have received credit for the validator deposit and may withdraw it using the command `rocketpool node withdraw-credit`.", validatorId)
 	return nil
 }

@@ -67,7 +67,7 @@ func nodeWithdrawCredit(c *cli.Context) error {
 		// Get maximum withdrawable amount
 		maxAmount := status.CreditBalance
 		// Prompt for maximum amount
-		if prompt.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of credit ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
+		if prompt.Confirm(fmt.Sprintf("You have %.6f ETH of credit that you can withdraw, receiving the equivalent amount in rETH. Would you like to withdraw the maximum amount of credit?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
 			amountWei = maxAmount
 		} else {
 
