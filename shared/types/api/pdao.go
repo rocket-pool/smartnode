@@ -130,6 +130,7 @@ type GetPDAOSettingsResponse struct {
 		NodeCommissionShare                     *big.Int         `json:"nodeCommissionShare"`
 		NodeCommissionShareSecurityCouncilAdder *big.Int         `json:"nodeCommissionShareSecurityCouncilAdder"`
 		MaxNodeCommissionShareCouncilAdder      *big.Int         `json:"maxNodeCommissionShareCouncilAdder"`
+		VoterShare                              *big.Int         `json:"voterShare"`
 		AllowListedControllers                  []common.Address `json:"allowListedControllers"`
 	} `json:"network"`
 
