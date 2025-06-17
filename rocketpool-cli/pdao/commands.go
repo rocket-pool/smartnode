@@ -1587,13 +1587,45 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
 
 											// Run
 											return proposeSettingNodeCommissionShare(c, value)
+
+										},
+									},
+
+									{
+										Name:      "node-commission-share-security-council-adder",
+										Aliases:   []string{"ncss"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node node-commission-share-security-council-adder value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeCommissionShareSecurityCouncilAdder(c, value)
 
 										},
 									},
