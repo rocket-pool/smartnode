@@ -129,8 +129,9 @@ type GetPDAOSettingsResponse struct {
 		IsSubmitRewardsEnabled                  bool             `json:"isSubmitRewardsEnabled"`
 		NodeCommissionShare                     *big.Int         `json:"nodeCommissionShare"`
 		NodeCommissionShareSecurityCouncilAdder *big.Int         `json:"nodeCommissionShareSecurityCouncilAdder"`
-		MaxNodeShareSecurityCouncilAdder        *big.Int         `json:"maxNodeCommissionShareCouncilAdder"`
 		VoterShare                              *big.Int         `json:"voterShare"`
+		MaxNodeShareSecurityCouncilAdder        *big.Int         `json:"maxNodeCommissionShareCouncilAdder"`
+		MaxRethBalanceDelta                     *big.Int         `json:"maxRethBalanceDelta"`
 		AllowListedControllers                  []common.Address `json:"allowListedControllers"`
 	} `json:"network"`
 

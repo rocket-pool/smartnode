@@ -275,13 +275,19 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
+		response.Network.VoterShare, err = protocol.GetVoterShare(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
 		response.Network.MaxNodeShareSecurityCouncilAdder, err = protocol.GetMaxNodeShareSecurityCouncilAdder(rp, nil)
 		return err
 	})
 
 	wg.Go(func() error {
 		var err error
-		response.Network.VoterShare, err = protocol.GetVoterShare(rp, nil)
+		response.Network.MaxRethBalanceDelta, err = protocol.GetMaxRethDelta(rp, nil)
 		return err
 	})
 

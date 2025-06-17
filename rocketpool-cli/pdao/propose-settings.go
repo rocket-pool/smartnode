@@ -351,6 +351,11 @@ func proposeMaxNodeShareSecurityCouncilAdder(c *cli.Context, value *big.Int) err
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkMaxNodeShareSecurityCouncilAdderPath, trueValue)
 }
 
+func proposeMaxRethBalanceDelta(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkMaxRethBalanceDeltaPath, trueValue)
+}
+
 // Master general proposal function
 func proposeSetting(c *cli.Context, contract string, setting string, value string) error {
 	// Get RP client
