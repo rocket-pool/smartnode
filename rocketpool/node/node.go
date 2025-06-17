@@ -45,6 +45,7 @@ const (
 	UpdateColor                    = color.FgHiWhite
 	PrestakeMegapoolValidatorColor = color.FgHiGreen
 	StakeMegapoolValidatorColor    = color.FgHiBlue
+	NotifyValidatorExitColor       = color.FgHiYellow
 )
 
 // Register node command
@@ -134,6 +135,10 @@ func run(c *cli.Context) error {
 		return err
 	}
 	stakeMegapoolValidators, err := newStakeMegapoolValidator(c, log.NewColorLogger(StakeMegapoolValidatorColor))
+	if err != nil {
+		return err
+	}
+	notifyValidatorExit, err := newNotifyValidatorExit(c, log.NewColorLogger(NotifyValidatorExitColor))
 	if err != nil {
 		return err
 	}
@@ -261,6 +266,12 @@ func run(c *cli.Context) error {
 
 			// Run the megapool stake check
 			if err := stakeMegapoolValidators.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the megapool notify validator exit check
+			if err := notifyValidatorExit.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
