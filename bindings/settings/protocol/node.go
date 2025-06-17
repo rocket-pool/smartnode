@@ -187,7 +187,7 @@ func EstimateProposeReducedBond(rp *rocketpool.RocketPool, value *big.Int, block
 }
 
 // Get the `reduced_bond` variable used in bond requirements calculation as Wei
-func GetGetReducedBondRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+func GetReducedBondRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err

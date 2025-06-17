@@ -263,6 +263,36 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
+		response.Network.NodeCommissionShare, err = protocol.GetNodeShare(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.NodeCommissionShareSecurityCouncilAdder, err = protocol.GetNodeShareSecurityCouncilAdder(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.VoterShare, err = protocol.GetVoterShare(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.MaxNodeShareSecurityCouncilAdder, err = protocol.GetMaxNodeShareSecurityCouncilAdder(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.MaxRethBalanceDelta, err = protocol.GetMaxRethDelta(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
 		response.Network.AllowListedControllers, err = protocol.GetAllowListedControllers(rp, nil)
 		return err
 	})
@@ -302,6 +332,12 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 	wg.Go(func() error {
 		var err error
 		response.Node.MaximumPerMinipoolStake, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Node.ReducedBond, err = protocol.GetReducedBond(rp, nil)
 		return err
 	})
 

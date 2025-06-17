@@ -114,20 +114,25 @@ type GetPDAOSettingsResponse struct {
 	} `json:"minipool"`
 
 	Network struct {
-		OracleDaoConsensusThreshold *big.Int         `json:"oracleDaoConsensusThreshold"`
-		NodePenaltyThreshold        *big.Int         `json:"nodePenaltyThreshold"`
-		PerPenaltyRate              *big.Int         `json:"perPenaltyRate"`
-		IsSubmitBalancesEnabled     bool             `json:"isSubmitBalancesEnabled"`
-		SubmitBalancesFrequency     time.Duration    `json:"submitBalancesFrequency"`
-		IsSubmitPricesEnabled       bool             `json:"isSubmitPricesEnabled"`
-		SubmitPricesFrequency       time.Duration    `json:"submitPricesFrequency"`
-		MinimumNodeFee              *big.Int         `json:"minimumNodeFee"`
-		TargetNodeFee               *big.Int         `json:"targetNodeFee"`
-		MaximumNodeFee              *big.Int         `json:"maximumNodeFee"`
-		NodeFeeDemandRange          *big.Int         `json:"nodeFeeDemandRange"`
-		TargetRethCollateralRate    *big.Int         `json:"targetRethCollateralRate"`
-		IsSubmitRewardsEnabled      bool             `json:"isSubmitRewardsEnabled"`
-		AllowListedControllers      []common.Address `json:"allowListedControllers"`
+		OracleDaoConsensusThreshold             *big.Int         `json:"oracleDaoConsensusThreshold"`
+		NodePenaltyThreshold                    *big.Int         `json:"nodePenaltyThreshold"`
+		PerPenaltyRate                          *big.Int         `json:"perPenaltyRate"`
+		IsSubmitBalancesEnabled                 bool             `json:"isSubmitBalancesEnabled"`
+		SubmitBalancesFrequency                 time.Duration    `json:"submitBalancesFrequency"`
+		IsSubmitPricesEnabled                   bool             `json:"isSubmitPricesEnabled"`
+		SubmitPricesFrequency                   time.Duration    `json:"submitPricesFrequency"`
+		MinimumNodeFee                          *big.Int         `json:"minimumNodeFee"`
+		TargetNodeFee                           *big.Int         `json:"targetNodeFee"`
+		MaximumNodeFee                          *big.Int         `json:"maximumNodeFee"`
+		NodeFeeDemandRange                      *big.Int         `json:"nodeFeeDemandRange"`
+		TargetRethCollateralRate                *big.Int         `json:"targetRethCollateralRate"`
+		IsSubmitRewardsEnabled                  bool             `json:"isSubmitRewardsEnabled"`
+		NodeCommissionShare                     *big.Int         `json:"nodeCommissionShare"`
+		NodeCommissionShareSecurityCouncilAdder *big.Int         `json:"nodeCommissionShareSecurityCouncilAdder"`
+		VoterShare                              *big.Int         `json:"voterShare"`
+		MaxNodeShareSecurityCouncilAdder        *big.Int         `json:"maxNodeCommissionShareCouncilAdder"`
+		MaxRethBalanceDelta                     *big.Int         `json:"maxRethBalanceDelta"`
+		AllowListedControllers                  []common.Address `json:"allowListedControllers"`
 	} `json:"network"`
 
 	Node struct {
@@ -137,6 +142,7 @@ type GetPDAOSettingsResponse struct {
 		AreVacantMinipoolsEnabled          bool     `json:"areVacantMinipoolsEnabled"`
 		MinimumPerMinipoolStake            *big.Int `json:"minimumPerMinipoolStake"`
 		MaximumPerMinipoolStake            *big.Int `json:"maximumPerMinipoolStake"`
+		ReducedBond                        float64  `json:"reducedBond"`
 	} `json:"node"`
 
 	Proposals struct {

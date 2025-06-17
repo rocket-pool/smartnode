@@ -1565,6 +1565,166 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 										},
 									},
+
+									{
+										Name:      "node-commission-share",
+										Aliases:   []string{"ncs"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkNodeCommissionSharePath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node node-commission-share value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeCommissionShare(c, value)
+
+										},
+									},
+
+									{
+										Name:      "node-commission-share-security-council-adder",
+										Aliases:   []string{"ncss"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node node-commission-share-security-council-adder value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeCommissionShareSecurityCouncilAdder(c, value)
+
+										},
+									},
+
+									{
+										Name:      "voter-share",
+										Aliases:   []string{"vs"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkVoterSharePath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node voter-share value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingVoterShare(c, value)
+
+										},
+									},
+
+									{
+										Name:      "max-node-share-security-council-adder",
+										Aliases:   []string{"mns"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkMaxNodeShareSecurityCouncilAdderPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node max-node-share-security-council-adder value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeMaxNodeShareSecurityCouncilAdder(c, value)
+
+										},
+									},
+
+									{
+										Name:      "max-reth-balance-delta",
+										Aliases:   []string{"mrb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkMaxRethBalanceDeltaPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node max-reth-balance-delta value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeMaxRethBalanceDelta(c, value)
+
+										},
+									},
 								},
 							},
 

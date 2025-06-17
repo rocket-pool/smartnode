@@ -519,6 +519,58 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing SubmitRewardsEnabled: %w", err)
 			}
+
+		// NodeShare
+		case protocol.NetworkNodeCommissionSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeNodeShareGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing NodeShare: %w", err)
+			}
+		// NodeShareSecurityCouncilAdder
+		case protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeNodeShareSecurityCouncilAdderGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing NodeShareSecurityCouncilAdder: %w", err)
+			}
+		// VoterShare
+		case protocol.NetworkVoterSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeVoterShareGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing VoterShare: %w", err)
+			}
+		//MaxNodeShareSecurityCouncilAdder
+		case protocol.NetworkMaxNodeShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateMaxNodeShareSecurityCouncilAdder(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MaxNodeShareSecurityCouncilAdder: %w", err)
+			}
+		//MaxRethBalanceDelta
+		case protocol.NetworkMaxRethBalanceDeltaPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateMaxRethDeltaGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MaxRethBalanceDelta: %w", err)
+			}
+
 		}
 
 	case protocol.NodeSettingsContractName:
@@ -1256,6 +1308,57 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing SubmitRewardsEnabled: %w", err)
 			}
+		// NodeShare
+		case protocol.NetworkNodeCommissionSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeNodeShare(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing NodeShare: %w", err)
+			}
+		// NodeShareSecurityCouncilAdder
+		case protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeNodeShareSecurityCouncilAdder(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing NodeShareSecurityCouncilAdder: %w", err)
+			}
+		// VoterShare
+		case protocol.NetworkVoterSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeVoterShare(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing VoterShare: %w", err)
+			}
+		// MaxNodeShareSecurityCouncilAdder
+		case protocol.NetworkMaxNodeShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMaxNodeShareSecurityCouncilAdder(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MaxNodeShareSecurityCouncilAdder: %w", err)
+			}
+		// MaxRethBalanceDelta
+		case protocol.NetworkMaxRethBalanceDeltaPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMaxRethDelta(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MaxRethBalanceDelta: %w", err)
+			}
+
 		}
 
 	case protocol.NodeSettingsContractName:

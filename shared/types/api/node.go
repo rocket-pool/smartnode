@@ -288,7 +288,7 @@ type CanNodeStakeRplResponse struct {
 	Error                string             `json:"error"`
 	CanStake             bool               `json:"canStake"`
 	InsufficientBalance  bool               `json:"insufficientBalance"`
-	MinimumRplStake      *big.Int           `json:"minimumRplStake`
+	MinimumRplStake      *big.Int           `json:"minimumRplStake"`
 	InConsensus          bool               `json:"inConsensus"`
 	MaximumStakeFraction float64            `json:"maximumStakeFraction"`
 	GasInfo              rocketpool.GasInfo `json:"gasInfo"`
