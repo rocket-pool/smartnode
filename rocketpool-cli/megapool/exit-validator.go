@@ -2,12 +2,19 @@ package megapool
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
+
+type ByIndex []api.MegapoolValidatorDetails
+
+func (a ByIndex) Len() int           { return len(a) }
+func (a ByIndex) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByIndex) Less(i, j int) bool { return a[i].ValidatorIndex < a[j].ValidatorIndex }
 
 func exitValidator(c *cli.Context) error {
 
@@ -48,10 +55,11 @@ func exitValidator(c *cli.Context) error {
 			}
 		}
 		if len(activeValidators) > 0 {
+			sort.Sort(ByIndex(activeValidators))
 
 			options := make([]string, len(activeValidators))
 			for vi, v := range activeValidators {
-				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+				options[vi] = fmt.Sprintf("ID: %d - Index: %d Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
 			}
 			selected, _ := prompt.Select("Please select a validator to EXIT:", options)
 
