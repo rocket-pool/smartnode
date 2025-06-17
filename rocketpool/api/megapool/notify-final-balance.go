@@ -55,6 +55,14 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	// Check validator status
 	if !validatorInfo.Exiting {
 		response.InvalidStatus = true
+		response.CanExit = false
+		return &response, nil
+	}
+
+	// If the slot was not provided, use the withdrawable slot
+	if slot == 0 {
+		slot = validatorInfo.WithdrawableEpoch * 32
+
 	}
 
 	proof, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
