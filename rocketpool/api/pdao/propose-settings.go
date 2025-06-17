@@ -550,6 +550,16 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing VoterShare: %w", err)
 			}
+		//MaxNodeShareSecurityCouncilAdder
+		case protocol.NetworkMaxNodeShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateMaxNodeShareSecurityCouncilAdder(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MaxNodeShareSecurityCouncilAdder: %w", err)
+			}
 
 		}
 
@@ -1317,6 +1327,16 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposeVoterShare(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing VoterShare: %w", err)
+			}
+		// MaxNodeShareSecurityCouncilAdder
+		case protocol.NetworkMaxNodeShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMaxNodeShareSecurityCouncilAdder(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MaxNodeShareSecurityCouncilAdder: %w", err)
 			}
 
 		}

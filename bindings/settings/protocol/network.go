@@ -36,7 +36,7 @@ const (
 	NetworkNodeCommissionSharePath                     string = "network.node.commission.share"
 	NetworkNodeCommissionShareSecurityCouncilAdderPath string = "network.node.commission.share.security.council.adder"
 	NetworkVoterSharePath                              string = "network.voter.share"
-	NetworkMaxNodeComissionShareCouncilAdderPath       string = "network.max.node.commission.share.council.adder"
+	NetworkMaxNodeShareSecurityCouncilAdderPath        string = "network.max.node.commission.share.council.adder"
 	NetworkMaxRethBalanceDeltaPath                     string = "network.max.reth.balance.delta"
 )
 
@@ -471,11 +471,11 @@ func GetMaxNodeShareSecurityCouncilAdder(rp *rocketpool.RocketPool, opts *bind.C
 	return *maxNodeShareSecurityCouncilAdder, nil
 }
 
-func ProposeMaxNodeComissionShareCouncilAdder(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkMaxNodeComissionShareCouncilAdderPath), NetworkSettingsContractName, NetworkMaxNodeComissionShareCouncilAdderPath, value, blockNumber, treeNodes, opts)
+func ProposeMaxNodeShareSecurityCouncilAdder(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkMaxNodeShareSecurityCouncilAdderPath), NetworkSettingsContractName, NetworkMaxNodeShareSecurityCouncilAdderPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateMaxNodeComissionShareCouncilAdderGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkMaxNodeComissionShareCouncilAdderPath), NetworkSettingsContractName, NetworkMaxNodeComissionShareCouncilAdderPath, value, blockNumber, treeNodes, opts)
+func EstimateMaxNodeShareSecurityCouncilAdder(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkMaxNodeShareSecurityCouncilAdderPath), NetworkSettingsContractName, NetworkMaxNodeShareSecurityCouncilAdderPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get the network.max.reth.balance.delta setting

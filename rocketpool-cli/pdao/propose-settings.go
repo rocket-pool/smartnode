@@ -346,6 +346,11 @@ func proposeSettingVoterShare(c *cli.Context, value *big.Int) error {
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkVoterSharePath, trueValue)
 }
 
+func proposeMaxNodeShareSecurityCouncilAdder(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkMaxNodeShareSecurityCouncilAdderPath, trueValue)
+}
+
 // Master general proposal function
 func proposeSetting(c *cli.Context, contract string, setting string, value string) error {
 	// Get RP client

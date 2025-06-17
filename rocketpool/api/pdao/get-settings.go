@@ -275,7 +275,7 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.Network.MaxNodeCommissionShareCouncilAdder, err = protocol.GetMaxNodeShareSecurityCouncilAdder(rp, nil)
+		response.Network.MaxNodeShareSecurityCouncilAdder, err = protocol.GetMaxNodeShareSecurityCouncilAdder(rp, nil)
 		return err
 	})
 
