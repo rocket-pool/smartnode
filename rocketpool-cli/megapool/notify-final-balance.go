@@ -2,6 +2,7 @@ package megapool
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -30,7 +31,6 @@ func notifyFinalBalance(c *cli.Context) error {
 		return nil
 	}
 
-	// List the validators that can be exited
 	var validatorId uint64
 
 	if c.IsSet("validator-id") {
@@ -50,10 +50,10 @@ func notifyFinalBalance(c *cli.Context) error {
 			}
 		}
 		if len(exitingValidators) > 0 {
-
+			sort.Sort(ByIndex(exitingValidators))
 			options := make([]string, len(exitingValidators))
 			for vi, v := range exitingValidators {
-				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s", v.ValidatorId, v.PubKey.String())
+				options[vi] = fmt.Sprintf("ID: %d - Index: %d - Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
 			}
 			selected, _ := prompt.Select("Please select a validator to notify the final balance:", options)
 
