@@ -136,13 +136,14 @@ type GetPDAOSettingsResponse struct {
 	} `json:"network"`
 
 	Node struct {
-		IsRegistrationEnabled              bool     `json:"isRegistrationEnabled"`
-		IsSmoothingPoolRegistrationEnabled bool     `json:"isSmoothingPoolRegistrationEnabled"`
-		IsDepositingEnabled                bool     `json:"isDepositingEnabled"`
-		AreVacantMinipoolsEnabled          bool     `json:"areVacantMinipoolsEnabled"`
-		MinimumPerMinipoolStake            *big.Int `json:"minimumPerMinipoolStake"`
-		MaximumPerMinipoolStake            *big.Int `json:"maximumPerMinipoolStake"`
-		ReducedBond                        float64  `json:"reducedBond"`
+		IsRegistrationEnabled              bool          `json:"isRegistrationEnabled"`
+		IsSmoothingPoolRegistrationEnabled bool          `json:"isSmoothingPoolRegistrationEnabled"`
+		IsDepositingEnabled                bool          `json:"isDepositingEnabled"`
+		AreVacantMinipoolsEnabled          bool          `json:"areVacantMinipoolsEnabled"`
+		MinimumPerMinipoolStake            *big.Int      `json:"minimumPerMinipoolStake"`
+		MaximumPerMinipoolStake            *big.Int      `json:"maximumPerMinipoolStake"`
+		ReducedBond                        float64       `json:"reducedBond"`
+		NodeUnstakingPeriod                time.Duration `json:"nodeUnstakingPeriod"`
 	} `json:"node"`
 
 	Proposals struct {
@@ -169,6 +170,11 @@ type GetPDAOSettingsResponse struct {
 		ProposalExecuteTime time.Duration `json:"proposalExecuteTime"`
 		ProposalActionTime  time.Duration `json:"proposalActionTime"`
 	} `json:"security"`
+
+	Megapool struct {
+		TimeBeforeDissolve time.Duration `json:"timeBeforeDissolve"`
+		MaximumEthPenalty  *big.Int      `json:"maximumEthPenalty"`
+	} `json:"megapool"`
 }
 
 type CanProposePDAOSettingResponse struct {

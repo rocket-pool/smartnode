@@ -41,16 +41,16 @@ func EstimateProposeMegapoolTimeBeforeDissolve(rp *rocketpool.RocketPool, value 
 }
 
 // The maximum amount a megapool can be penalised in 50,400 consecutive slots (~7 days)
-func GetMaximumEthPenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetMaximumEthPenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	value := new(*big.Int)
 	if err := megapoolSettingsContract.Call(opts, value, "getMaximumEthPenalty"); err != nil {
-		return 0, fmt.Errorf("error getting megapool maximum megapool eth penalty value: %w", err)
+		return nil, fmt.Errorf("error getting megapool maximum megapool eth penalty value: %w", err)
 	}
-	return (*value).Uint64(), nil
+	return *value, nil
 }
 
 func ProposeMaximumEthPenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
