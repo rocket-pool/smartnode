@@ -1373,6 +1373,15 @@ func (cfg *RocketPoolConfig) GetPrometheusOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Prometheus.Port.Value.(uint16)))
 }
 
+// Used by text/template to format grafana.yml
+func (cfg *RocketPoolConfig) GetGrafanaOpenPorts() string {
+	portMode := cfg.Grafana.OpenPort.Value.(config.RPCMode)
+	if !portMode.Open() {
+		return ""
+	}
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Grafana.Port.Value.(uint16)))
+}
+
 // Used by text/template to format mev-boost.yml
 func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 	portMode := cfg.MevBoost.OpenRpcPort.Value.(config.RPCMode)
