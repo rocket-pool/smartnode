@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/storage"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -135,6 +136,14 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	wg.Go(func() error {
 		var err error
 		details.UserCapital, err = mega.GetUserCapital(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.Balances, err = tokens.GetBalances(rp, megapoolAddress, nil)
+		if err != nil {
+			return fmt.Errorf("error getting megapool %s balances: %w", megapoolAddress.Hex(), err)
+		}
 		return err
 	})
 
