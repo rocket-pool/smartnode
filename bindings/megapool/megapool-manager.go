@@ -157,6 +157,28 @@ func NotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Addres
 	return tx, nil
 }
 
+// Estimate the gas to call DissolveWithProof
+func EstimateDissolveWithProof(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, validatorProof ValidatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return megapoolManager.GetTransactionGasInfo(opts, "dissolve", megapoolAddress, validatorId, validatorProof)
+}
+
+// Dissolve a validator using a proof that it used wrong credentials
+func DissolveWithProof(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, validatorProof ValidatorProof, opts *bind.TransactOpts) (*types.Transaction, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := megapoolManager.Transact(opts, "dissolve", megapoolAddress, validatorId, validatorProof)
+	if err != nil {
+		return nil, fmt.Errorf("error calling notify final balance: %w", err)
+	}
+	return tx, nil
+}
+
 // Get contracts
 var rocketMegapoolManagerLock sync.Mutex
 

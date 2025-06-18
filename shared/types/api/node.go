@@ -780,6 +780,20 @@ type DissolveValidatorResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type CanDissolveWithProofResponse struct {
+	Status           string             `json:"status"`
+	Error            string             `json:"error"`
+	CanDissolve      bool               `json:"canDissolve"`
+	NotInPrestake    bool               `json:"notInPrestake"`
+	ValidCredentials bool               `json:"validCredentials"`
+	GasInfo          rocketpool.GasInfo `json:"gasInfo"`
+}
+type DissolveWithProofResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type CanExitValidatorResponse struct {
 	Status        string             `json:"status"`
 	Error         string             `json:"error"`
