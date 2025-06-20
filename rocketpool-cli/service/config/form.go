@@ -152,11 +152,7 @@ func (f *Form) SetButtonTextActivatedColor(color tcell.Color) *Form {
 func (f *Form) SetFocus(index int) *Form {
 	if index < 0 {
 		f.focusedElement = 0
-	} else if index >= len(f.items)+len(f.buttons) {
-		f.focusedElement = len(f.items) + len(f.buttons)
-	} else {
-		f.focusedElement = index
-	}
+	} else f.focusedElement = min(index, len(f.items) + len(f.buttons))
 	if f.changed != nil {
 		f.changed(f.focusedElement)
 	}

@@ -54,10 +54,7 @@ func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, mult
 	votingInfos := make([]types.NodeVotingInfo, nodeCount)
 	for i := uint64(0); i < nodeCount; i += nodeVotingDetailsBatchSize {
 		i := i
-		max := i + nodeVotingDetailsBatchSize
-		if max > nodeCount {
-			max = nodeCount
-		}
+		max := min(i+nodeVotingDetailsBatchSize, nodeCount)
 
 		// Load details
 		wg.Go(func() error {

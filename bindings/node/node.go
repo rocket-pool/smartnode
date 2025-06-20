@@ -81,10 +81,7 @@ func GetNodes(rp *rocketpool.RocketPool, includeRplWithdrawalAddress bool, opts 
 
 		// Get batch start & end index
 		nsi := bsi
-		nei := bsi + NodeDetailsBatchSize
-		if nei > len(nodeAddresses) {
-			nei = len(nodeAddresses)
-		}
+		nei := min(bsi+NodeDetailsBatchSize, len(nodeAddresses))
 
 		// Load details
 		var wg errgroup.Group
@@ -125,10 +122,7 @@ func GetNodeAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.
 
 		// Get batch start & end index
 		nsi := bsi
-		nei := bsi + NodeAddressBatchSize
-		if nei > nodeCount {
-			nei = nodeCount
-		}
+		nei := min(bsi+NodeAddressBatchSize, nodeCount)
 
 		// Load addresses
 		var wg errgroup.Group
@@ -174,10 +168,7 @@ func GetNodeAddressesFast(rp *rocketpool.RocketPool, multicallAddress common.Add
 	count := int(nodeCount)
 	for i := 0; i < count; i += nodeAddressFastBatchSize {
 		i := i
-		max := i + nodeAddressFastBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+nodeAddressFastBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -595,10 +586,7 @@ func GetSmoothingPoolRegisteredNodeCount(rp *rocketpool.RocketPool, opts *bind.C
 	for i := uint64(0); i < iterations; i++ {
 		i := i
 		offset := i * SmoothingPoolCountBatchSize
-		limit := SmoothingPoolCountBatchSize
-		if nodeCount-offset < SmoothingPoolCountBatchSize {
-			limit = nodeCount - offset
-		}
+		limit := min(nodeCount-offset, SmoothingPoolCountBatchSize)
 		wg.Go(func() error {
 			count := new(*big.Int)
 			err := rocketNodeManager.Call(opts, count, "getSmoothingPoolRegisteredNodeCount", big.NewInt(int64(offset)), big.NewInt(int64(limit)))
