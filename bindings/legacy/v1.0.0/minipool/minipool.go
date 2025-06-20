@@ -63,10 +63,7 @@ func loadMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddresses []common.A
 
 		// Get batch start & end index
 		msi := bsi
-		mei := bsi + MinipoolDetailsBatchSize
-		if mei > len(minipoolAddresses) {
-			mei = len(minipoolAddresses)
-		}
+		mei := min(bsi+MinipoolDetailsBatchSize, len(minipoolAddresses))
 
 		// Load details
 		var wg errgroup.Group
@@ -107,10 +104,7 @@ func GetMinipoolAddresses(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacy
 
 		// Get batch start & end index
 		msi := bsi
-		mei := bsi + MinipoolAddressBatchSize
-		if mei > minipoolCount {
-			mei = minipoolCount
-		}
+		mei := min(bsi+MinipoolAddressBatchSize, minipoolCount)
 
 		// Load addresses
 		var wg errgroup.Group
@@ -180,10 +174,7 @@ func GetNodeMinipoolAddresses(rp *rocketpool.RocketPool, nodeAddress common.Addr
 
 		// Get batch start & end index
 		msi := bsi
-		mei := bsi + MinipoolAddressBatchSize
-		if mei > minipoolCount {
-			mei = minipoolCount
-		}
+		mei := min(bsi+MinipoolAddressBatchSize, minipoolCount)
 
 		// Load addresses
 		var wg errgroup.Group
@@ -224,10 +215,7 @@ func GetNodeValidatingMinipoolPubkeys(rp *rocketpool.RocketPool, nodeAddress com
 
 		// Get batch start & end index
 		msi := bsi
-		mei := bsi + MinipoolAddressBatchSize
-		if mei > minipoolCount {
-			mei = minipoolCount
-		}
+		mei := min(bsi+MinipoolAddressBatchSize, minipoolCount)
 
 		// Load pubkeys
 		var wg errgroup.Group
