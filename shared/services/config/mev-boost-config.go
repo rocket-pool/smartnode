@@ -246,8 +246,8 @@ func (cfg *MevBoostConfig) GetAvailableProfiles() (bool, bool) {
 
 	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
 	for _, relay := range cfg.relays {
-		_, exists := relay.Urls[currentNetwork]
-		if !exists {
+		url, exists := relay.Urls[currentNetwork]
+		if !exists || url == "" {
 			continue
 		}
 		regulatedAllMev = regulatedAllMev || relay.Regulated
@@ -262,8 +262,8 @@ func (cfg *MevBoostConfig) GetAvailableRelays() []config.MevRelay {
 	relays := []config.MevRelay{}
 	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
 	for _, relay := range cfg.relays {
-		_, exists := relay.Urls[currentNetwork]
-		if !exists {
+		url, exists := relay.Urls[currentNetwork]
+		if !exists || url == "" {
 			continue
 		}
 		relays = append(relays, relay)
@@ -280,8 +280,8 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 	switch cfg.SelectionMode.Value.(config.MevSelectionMode) {
 	case config.MevSelectionMode_Profile:
 		for _, relay := range cfg.relays {
-			_, exists := relay.Urls[currentNetwork]
-			if !exists {
+			url, exists := relay.Urls[currentNetwork]
+			if !exists || url == "" {
 				// Skip relays that don't exist on the current network
 				continue
 			}
@@ -297,48 +297,13 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 		}
 
 	case config.MevSelectionMode_Relay:
-		if cfg.FlashbotsRelay.Value == true {
-			_, exists := cfg.relayMap[config.MevRelayID_Flashbots].Urls[currentNetwork]
-			if exists {
-				relays = append(relays, cfg.relayMap[config.MevRelayID_Flashbots])
-			}
-		}
-		if cfg.BloxRouteMaxProfitRelay.Value == true {
-			_, exists := cfg.relayMap[config.MevRelayID_BloxrouteMaxProfit].Urls[currentNetwork]
-			if exists {
-				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteMaxProfit])
-			}
-		}
-		if cfg.BloxRouteRegulatedRelay.Value == true {
-			_, exists := cfg.relayMap[config.MevRelayID_BloxrouteRegulated].Urls[currentNetwork]
-			if exists {
-				relays = append(relays, cfg.relayMap[config.MevRelayID_BloxrouteRegulated])
-			}
-		}
-		if cfg.UltrasoundRelay.Value == true {
-			_, exists := cfg.relayMap[config.MevRelayID_Ultrasound].Urls[currentNetwork]
-			if exists {
-				relays = append(relays, cfg.relayMap[config.MevRelayID_Ultrasound])
-			}
-		}
-		if cfg.AestusRelay.Value == true {
-			_, exists := cfg.relayMap[config.MevRelayID_Aestus].Urls[currentNetwork]
-			if exists {
-				relays = append(relays, cfg.relayMap[config.MevRelayID_Aestus])
-			}
-		}
-		if cfg.TitanGlobalRelay.Value == true {
-			_, exists := cfg.relayMap[config.MevRelayID_TitanGlobal].Urls[currentNetwork]
-			if exists {
-				relays = append(relays, cfg.relayMap[config.MevRelayID_TitanGlobal])
-			}
-		}
-		if cfg.TitanRegionalRelay.Value == true {
-			_, exists := cfg.relayMap[config.MevRelayID_TitanRegional].Urls[currentNetwork]
-			if exists {
-				relays = append(relays, cfg.relayMap[config.MevRelayID_TitanRegional])
-			}
-		}
+		relays = cfg.maybeAddRelay(relays, cfg.FlashbotsRelay, config.MevRelayID_Flashbots, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteMaxProfitRelay, config.MevRelayID_BloxrouteMaxProfit, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteRegulatedRelay, config.MevRelayID_BloxrouteRegulated, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.UltrasoundRelay, config.MevRelayID_Ultrasound, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.AestusRelay, config.MevRelayID_Aestus, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.TitanGlobalRelay, config.MevRelayID_TitanGlobal, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.TitanRegionalRelay, config.MevRelayID_TitanRegional, currentNetwork)
 	}
 
 	return relays
@@ -530,4 +495,14 @@ func generateRelayParameter(id string, relay config.MevRelay) config.Parameter {
 		CanBeBlank:         false,
 		OverwriteOnUpgrade: false,
 	}
+}
+
+func (cfg *MevBoostConfig) maybeAddRelay(relays []config.MevRelay, relayParam config.Parameter, relayID config.MevRelayID, currentNetwork config.Network) []config.MevRelay {
+	if relayParam.Value == true {
+		url, exists := cfg.relayMap[relayID].Urls[currentNetwork]
+		if exists && url != "" {
+			relays = append(relays, cfg.relayMap[relayID])
+		}
+	}
+	return relays
 }
