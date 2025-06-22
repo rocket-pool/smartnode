@@ -246,12 +246,10 @@ func (cfg *MevBoostConfig) GetAvailableProfiles() (bool, bool) {
 
 	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
 	for _, relay := range cfg.relays {
-		url, exists := relay.Urls[currentNetwork]
-		if !exists || url == "" {
-			continue
+		if relay.Urls.UrlExists(currentNetwork) {
+			regulatedAllMev = regulatedAllMev || relay.Regulated
+			unregulatedAllMev = unregulatedAllMev || !relay.Regulated
 		}
-		regulatedAllMev = regulatedAllMev || relay.Regulated
-		unregulatedAllMev = unregulatedAllMev || !relay.Regulated
 	}
 
 	return regulatedAllMev, unregulatedAllMev
@@ -262,11 +260,9 @@ func (cfg *MevBoostConfig) GetAvailableRelays() []config.MevRelay {
 	relays := []config.MevRelay{}
 	currentNetwork := cfg.parentConfig.Smartnode.Network.Value.(config.Network)
 	for _, relay := range cfg.relays {
-		url, exists := relay.Urls[currentNetwork]
-		if !exists || url == "" {
-			continue
+		if relay.Urls.UrlExists(currentNetwork) {
+			relays = append(relays, relay)
 		}
-		relays = append(relays, relay)
 	}
 
 	return relays
@@ -280,8 +276,7 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 	switch cfg.SelectionMode.Value.(config.MevSelectionMode) {
 	case config.MevSelectionMode_Profile:
 		for _, relay := range cfg.relays {
-			url, exists := relay.Urls[currentNetwork]
-			if !exists || url == "" {
+			if !relay.Urls.UrlExists(currentNetwork) {
 				// Skip relays that don't exist on the current network
 				continue
 			}
@@ -435,8 +430,7 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 	mainnetRelays := []string{}
 	mainnetDescription := description + "\n\nRelays: "
 	for _, relay := range relays {
-		_, exists := relay.Urls[config.Network_Mainnet]
-		if !exists {
+		if !relay.Urls.UrlExists(config.Network_Mainnet) {
 			continue
 		}
 		if relay.Regulated == regulated {
@@ -449,8 +443,7 @@ func generateProfileParameter(id string, relays []config.MevRelay, regulated boo
 	testnetRelays := []string{}
 	testnetDescription := description + "\n\nRelays: "
 	for _, relay := range relays {
-		_, exists := relay.Urls[config.Network_Testnet]
-		if !exists {
+		if !relay.Urls.UrlExists(config.Network_Testnet) {
 			continue
 		}
 		if relay.Regulated == regulated {
@@ -499,8 +492,7 @@ func generateRelayParameter(id string, relay config.MevRelay) config.Parameter {
 
 func (cfg *MevBoostConfig) maybeAddRelay(relays []config.MevRelay, relayParam config.Parameter, relayID config.MevRelayID, currentNetwork config.Network) []config.MevRelay {
 	if relayParam.Value == true {
-		url, exists := cfg.relayMap[relayID].Urls[currentNetwork]
-		if exists && url != "" {
+		if cfg.relayMap[relayID].Urls.UrlExists(currentNetwork) {
 			relays = append(relays, cfg.relayMap[relayID])
 		}
 	}
