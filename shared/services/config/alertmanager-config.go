@@ -53,6 +53,11 @@ type AlertmanagerConfig struct {
 	// The Discord webhook URL for alert notifications
 	DiscordWebhookURL config.Parameter `yaml:"discordWebhookURL,omitempty"`
 
+	// The Pushover Token for alert notifications
+	PushoverToken config.Parameter `yaml:"pushoverToken,omitempty"`
+	// The Pushover User Key for alert notifications
+	PushoverUserKey config.Parameter `yaml:"pushoverUserKey,omitempty"`
+
 	// Alerts configured in prometheus rule configuration file:
 	AlertEnabled_ClientSyncStatusBeacon    config.Parameter `yaml:"alertEnabled_ClientSyncStatusBeacon,omitempty"`
 	AlertEnabled_ClientSyncStatusExecution config.Parameter `yaml:"alertEnabled_ClientSyncStatusBeacon,omitempty"`
@@ -159,6 +164,28 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		PushoverToken: config.Parameter{
+			ID:                 "pushoverToken",
+			Name:               "Alertmanager Pushover Token",
+			Description:        "Pushover notifications are sent via the Pushover API. See docs for detailed technical explanation or a tl;dr on how to configure at https://pushover.net/api",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		PushoverUserKey: config.Parameter{
+			ID:                 "pushoverUserKey",
+			Name:               "Alertmanager Pushover User Key",
+			Description:        "Pushover notifications are sent via the Pushover API. See docs for detailed technical explanation or a tl;dr on how to configure at https://pushover.net/api",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
 		AlertEnabled_ClientSyncStatusBeacon: createParameterForAlertEnablement(
 			"ClientSyncStatusBeacon",
 			"beacon client is not synced"),
@@ -251,6 +278,8 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.NativeModeHost,
 		&cfg.NativeModePort,
 		&cfg.DiscordWebhookURL,
+		&cfg.PushoverToken,
+		&cfg.PushoverUserKey,
 		&cfg.ContainerTag,
 		&cfg.AlertEnabled_ClientSyncStatusBeacon,
 		&cfg.AlertEnabled_ClientSyncStatusExecution,

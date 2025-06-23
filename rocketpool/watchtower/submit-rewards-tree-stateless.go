@@ -213,16 +213,14 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 
 		proofWrapper := localRewardsFile.Impl()
 
-		// Save the compressed file and get the CID for it
-		_, cid, err := localRewardsFile.CreateCompressedFileAndCid()
+		// Save the compressed file - ignoring the cid as we stopped using it
+		_, _, err = localRewardsFile.CreateCompressedFileAndCid()
 		if err != nil {
 			return fmt.Errorf("Error getting CID for file %s: %w", compressedRewardsTreePathJSON, err)
 		}
 
-		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
-
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, cid.String(), big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, "", big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
@@ -346,19 +344,14 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 
 	// Save the files
 	t.printMessage("Generation complete! Saving files...")
-	cid, cids, err := treegen.SaveFiles(treeResult, nodeTrusted)
+	_, _, err = treegen.SaveFiles(treeResult, nodeTrusted)
 	if err != nil {
 		return fmt.Errorf("Error writing rewards artifacts to disk: %w", err)
 	}
-	for filename, cid := range cids {
-		t.printMessage(fmt.Sprintf("\t%s - CID %s", filename, cid.String()))
-	}
 
 	if nodeTrusted {
-		t.printMessage(fmt.Sprintf("Calculated rewards tree CID: %s", cid))
-
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile, cid.String(), big.NewInt(int64(intervalsPassed)))
+		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile, "", big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}

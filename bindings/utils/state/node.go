@@ -149,10 +149,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 	// Run the getters in batches
 	for i := 0; i < count; i += legacyNodeBatchSize {
 		i := i
-		max := i + legacyNodeBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+legacyNodeBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -297,10 +294,7 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	count := int(nodeCount)
 	for i := 0; i < count; i += nodeAddressBatchSize {
 		i := i
-		max := i + nodeAddressBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+nodeAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
