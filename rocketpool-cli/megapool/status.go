@@ -136,14 +136,14 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("Effective node share: %.6f%% (time-weighted average due to universal commission changes since last distribution).\n", effectiveNodeShare)
 		}
 	} else {
-		fmt.Print("Upgrade your megapool delegate using 'rocketpool megapool delegate-upgrade' to view the balance and commission details.")
+		fmt.Print("Upgrade your megapool delegate using 'rocketpool megapool delegate-upgrade' to view the balance and commission details.\n")
 	}
-	fmt.Println("")
 
 	return nil
 
 }
 
+// Get the map of validator states, the total beacon balance, and the node share of beacon balance
 func getValidatorMapAndRewards(rp *rocketpool.Client, status api.MegapoolStatusResponse) (map[string][]api.MegapoolValidatorDetails, *big.Int, *big.Int, error) {
 
 	statusValidators := map[string][]api.MegapoolValidatorDetails{
@@ -156,7 +156,6 @@ func getValidatorMapAndRewards(rp *rocketpool.Client, status api.MegapoolStatusR
 
 	var totalBeaconBalance uint64
 	var totalEffectiveBeaconBalance uint64
-
 	// Iterate over the validators and append them based on their statuses
 	for _, validator := range status.Megapool.Validators {
 		if validator.Staked {
@@ -196,7 +195,7 @@ func getValidatorMapAndRewards(rp *rocketpool.Client, status api.MegapoolStatusR
 		if err != nil {
 			return statusValidators, totalBeaconBalanceWei, nodeShareOfCLBalance, fmt.Errorf("Error calculating the rewards split for amount %s: %w", toBeSkimmed.String(), err)
 		}
-		nodeShareOfCLBalance = rewards.RewardSplit.NodeRewards
+		nodeShareOfCLBalance = nodeShareOfCLBalance.Add(rewards.RewardSplit.NodeRewards, status.Megapool.NodeBond)
 	}
 
 	return statusValidators, totalBeaconBalanceWei, nodeShareOfCLBalance, nil
