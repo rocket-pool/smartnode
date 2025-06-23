@@ -108,7 +108,7 @@ func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.E
 	}
 
 	// Convert [][]byte to [][32]byte
-	proofWithFixedSize := convertToFixedSize(proofBytes)
+	proofWithFixedSize := ConvertToFixedSize(proofBytes)
 
 	proof := megapool.ValidatorProof{
 		Slot:                  block.Slot,
@@ -179,7 +179,7 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 	}
 
 	// Convert [][]byte to [][32]byte
-	proofWithFixedSize := convertToFixedSize(proofBytes)
+	proofWithFixedSize := ConvertToFixedSize(proofBytes)
 
 	proof := api.ValidatorWithdrawableEpochProof{
 		Slot:              block.Slot,
@@ -192,7 +192,7 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 	return proof, err
 }
 
-func convertToFixedSize(proofBytes [][]byte) [][32]byte {
+func ConvertToFixedSize(proofBytes [][]byte) [][32]byte {
 	var proofWithFixedSize [][32]byte
 	for _, b := range proofBytes {
 		if len(b) != 32 {
@@ -727,7 +727,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	withdrawalProof = append(withdrawalProof, stateProof...)
 
 	// Convert [][]byte to [][32]byte
-	proofWithFixedSize := convertToFixedSize(withdrawalProof)
+	proofWithFixedSize := ConvertToFixedSize(withdrawalProof)
 	response.Witnesses = proofWithFixedSize
 
 	return response, nil
