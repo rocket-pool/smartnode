@@ -2,7 +2,6 @@ package megapool
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -72,8 +71,13 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 		return nil, err
 	}
 
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
 	// Notify the validator exit
-	gasInfo, err := mp.EstimateNotifyExitGas(validatorId, big.NewInt(int64(proof.WithdrawableEpoch)), proof.Slot, proof.Witnesses, nil)
+	gasInfo, err := megapool.EstimateNotifyExitGas(rp, megapoolAddress, validatorId, proof.WithdrawableEpoch, proof.Slot, proof.Witnesses, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -157,11 +161,11 @@ func notifyValidatorExit(c *cli.Context, validatorId uint32) (*api.NotifyValidat
 	}
 
 	// Notify the validator exit
-	hash, err := mp.NotifyExit(validatorId, big.NewInt(int64(proof.WithdrawableEpoch)), proof.Slot, proof.Witnesses, opts)
+	tx, err := megapool.NotifyExit(rp, megapoolAddress, validatorId, proof.WithdrawableEpoch, proof.Slot, proof.Witnesses, opts)
 	if err != nil {
 		return nil, err
 	}
-	response.TxHash = hash
+	response.TxHash = tx.Hash()
 
 	// Return response
 	return &response, nil

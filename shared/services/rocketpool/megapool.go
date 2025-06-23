@@ -250,6 +250,38 @@ func (c *Client) NotifyValidatorExit(validatorId uint64) (api.NotifyValidatorExi
 	return response, nil
 }
 
+// Check whether we can notify a validator's final balance
+func (c *Client) CanNotifyFinalBalance(validatorId uint64, slot uint64) (api.CanNotifyFinalBalanceResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-notify-final-balance %d %d", validatorId, slot))
+	if err != nil {
+		return api.CanNotifyFinalBalanceResponse{}, fmt.Errorf("Could not get can notify validator final balance status: %w", err)
+	}
+	var response api.CanNotifyFinalBalanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNotifyFinalBalanceResponse{}, fmt.Errorf("Could not decode can notify-final-balance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNotifyFinalBalanceResponse{}, fmt.Errorf("Could not get can notify validator final balance status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Notify final balance of a megapool validator
+func (c *Client) NotifyFinalBalance(validatorId uint64, slot uint64) (api.NotifyFinalBalanceResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool notify-final-balance %d", validatorId, slot))
+	if err != nil {
+		return api.NotifyFinalBalanceResponse{}, fmt.Errorf("Could not notify final balance: %w", err)
+	}
+	var response api.NotifyFinalBalanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NotifyFinalBalanceResponse{}, fmt.Errorf("Could not decode notify-final-balance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NotifyFinalBalanceResponse{}, fmt.Errorf("Could not get notify-final-balance status: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can exit the megapool queue
 func (c *Client) CanExitQueue(validatorIndex uint32) (api.CanExitQueueResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-exit-queue %d", validatorIndex))

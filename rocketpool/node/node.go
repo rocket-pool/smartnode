@@ -39,13 +39,13 @@ const (
 	ReduceBondAmountColor          = color.FgHiBlue
 	DefendPdaoPropsColor           = color.FgYellow
 	VerifyPdaoPropsColor           = color.FgYellow
-	AutoInitVotingPowerColor       = color.FgHiYellow
 	DistributeMinipoolsColor       = color.FgHiGreen
 	ErrorColor                     = color.FgRed
 	WarningColor                   = color.FgYellow
 	UpdateColor                    = color.FgHiWhite
 	PrestakeMegapoolValidatorColor = color.FgHiGreen
 	StakeMegapoolValidatorColor    = color.FgHiBlue
+	NotifyValidatorExitColor       = color.FgHiYellow
 )
 
 // Register node command
@@ -138,6 +138,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	notifyValidatorExit, err := newNotifyValidatorExit(c, log.NewColorLogger(NotifyValidatorExitColor))
+	if err != nil {
+		return err
+	}
 	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
 	if err != nil {
 		return err
@@ -163,15 +167,7 @@ func run(c *cli.Context) error {
 			return err
 		}
 	}
-	var autoInitVotingPower *autoInitVotingPower
-	// Make sure the user opted into this duty
-	AutoInitVPThreshold := cfg.Smartnode.AutoInitVPThreshold.Value.(float64)
-	if AutoInitVPThreshold != 0 {
-		autoInitVotingPower, err = newAutoInitVotingPower(c, log.NewColorLogger(AutoInitVotingPowerColor), AutoInitVPThreshold)
-		if err != nil {
-			return err
-		}
-	}
+
 	var prestakeMegapoolValidator *prestakeMegapoolValidator
 	prestakeMegapoolValidator, err = newPrestakeMegapoolValidator(c, log.NewColorLogger(PrestakeMegapoolValidatorColor))
 	if err != nil {
@@ -254,14 +250,6 @@ func run(c *cli.Context) error {
 				time.Sleep(taskCooldown)
 			}
 
-			// Run the auto vote initilization check
-			if autoInitVotingPower != nil {
-				if err := autoInitVotingPower.run(state); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
-			}
-
 			// Run the megapool prestake check
 			if prestakeMegapoolValidator != nil {
 				if err := prestakeMegapoolValidator.run(state); err != nil {
@@ -278,6 +266,12 @@ func run(c *cli.Context) error {
 
 			// Run the megapool stake check
 			if err := stakeMegapoolValidators.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the megapool notify validator exit check
+			if err := notifyValidatorExit.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)

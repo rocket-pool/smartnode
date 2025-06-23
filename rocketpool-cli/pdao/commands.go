@@ -18,6 +18,7 @@ const (
 	unboundedPercentUsage string = "specify a percentage that can go over 100% (e.g., '1.5' for 150%)"
 	uintUsage             string = "specify an integer (e.g., '50')"
 	durationUsage         string = "specify a duration using hours, minutes, and seconds (e.g., '20m' or '72h0m0s')"
+	addressListUsage      string = "specify a list of one or more addresses separated by commas (e.g., '0x1a2b3c4d5e6f7890abcdef1234567890abcdef12,0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')"
 )
 
 // Register commands
@@ -63,18 +64,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return getRewardsPercentages(c)
-
-				},
-			},
-			{
-				Name:      "initialize-voting",
-				Aliases:   []string{"iv"},
-				Usage:     "Unlocks a node operator's voting power (only required for node operators who registered before governance structure was in place)",
-				UsageText: "rocketpool pdao initialize-voting",
-				Action: func(c *cli.Context) error {
-
-					// Run
-					return initializeVotingPrompt(c)
 
 				},
 			},
@@ -1549,6 +1538,193 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 										},
 									},
+
+									{
+										Name:      "allow-listed-controllers",
+										Aliases:   []string{"alc"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting", protocol.NetworkAllowListedControllersPath),
+										UsageText: "rocketpool pdao propose setting network allow-listed-controllers",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+											cli.StringFlag{
+												Name:  "addressList, a",
+												Usage: "One or more addresses, separated by commas with no spaces",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 0); err != nil {
+												return err
+											}
+											// Run
+											return setAllowListedControllers(c)
+
+										},
+									},
+
+									{
+										Name:      "node-commission-share",
+										Aliases:   []string{"ncs"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkNodeCommissionSharePath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node node-commission-share value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeCommissionShare(c, value)
+
+										},
+									},
+
+									{
+										Name:      "node-commission-share-security-council-adder",
+										Aliases:   []string{"ncss"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node node-commission-share-security-council-adder value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeCommissionShareSecurityCouncilAdder(c, value)
+
+										},
+									},
+
+									{
+										Name:      "voter-share",
+										Aliases:   []string{"vs"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkVoterSharePath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node voter-share value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingVoterShare(c, value)
+
+										},
+									},
+
+									{
+										Name:      "max-node-share-security-council-adder",
+										Aliases:   []string{"mns"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkMaxNodeShareSecurityCouncilAdderPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node max-node-share-security-council-adder value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeMaxNodeShareSecurityCouncilAdder(c, value)
+
+										},
+									},
+
+									{
+										Name:      "max-reth-balance-delta",
+										Aliases:   []string{"mrb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkMaxRethBalanceDeltaPath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node max-reth-balance-delta value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeMaxRethBalanceDelta(c, value)
+
+										},
+									},
 								},
 							},
 
@@ -1730,6 +1906,66 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 											// Run
 											return proposeSettingNodeMaximumPerMinipoolStake(c, value)
+
+										},
+									},
+
+									{
+										Name:      "reduced-bond",
+										Aliases:   []string{"rb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.ReducedBondSettingPath, floatEthUsage),
+										UsageText: "rocketpool pdao propose setting node reduced-bond value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingReducedBond(c, value)
+
+										},
+									},
+
+									{
+										Name:      "node-unstaking-period",
+										Aliases:   []string{"nup"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeUnstakingPeriodSettingPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting node node-unstaking-period value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeUnstakingPeriod(c, value)
 
 										},
 									},
@@ -2222,6 +2458,74 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 											// Run
 											return proposeSettingSecurityProposalActionTime(c, value)
+
+										},
+									},
+								},
+							},
+
+							{
+								Name:    "megapool",
+								Aliases: []string{"g"},
+								Usage:   "Megapool settings",
+								Subcommands: []cli.Command{
+
+									{
+										Name:      "time-before-dissolve",
+										Aliases:   []string{"tbd"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolTimeBeforeDissolveSettingsPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting megapool time-before-dissolve value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingMegapoolTimeBeforeDissolve(c, value)
+
+										},
+									},
+
+									{
+										Name:      "maximum-megapool-eth-penalty",
+										Aliases:   []string{"mmep"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolMaximumMegapoolEthPenaltyPath, floatEthUsage),
+										UsageText: "rocketpool pdao propose setting megapool maximum-megapool-eth-penalty value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingReducedBond(c, value)
 
 										},
 									},

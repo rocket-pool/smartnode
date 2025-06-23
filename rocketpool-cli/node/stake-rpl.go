@@ -36,12 +36,6 @@ func nodeStakeRpl(c *cli.Context) error {
 		return err
 	}
 
-	// If hotfix is live and voting isn't initialized, display a warning
-	err = warnIfVotingUninitialized(rp, c, stakeRPLWarningMessage)
-	if err != nil {
-		return nil
-	}
-
 	// If a custom nonce is set, print the multi-transaction warning
 	if c.GlobalUint64("nonce") != 0 {
 		cliutils.PrintMultiTransactionNonceWarning()

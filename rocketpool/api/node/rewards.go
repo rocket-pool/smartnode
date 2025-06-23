@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
@@ -197,23 +198,34 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		return err
 	})
 
-	// Get the node's effective stake
-	wg.Go(func() error {
-		effectiveStake, err := node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.EffectiveRplStake = eth.WeiToEth(effectiveStake)
-		}
-		return err
-	})
+	if saturnDeployed {
+		// Get the node's total stake
+		wg.Go(func() error {
+			stake, err := node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
+			if err == nil {
+				response.TotalRplStake = eth.WeiToEth(stake)
+			}
+			return err
+		})
 
-	// Get the node's total stake
-	wg.Go(func() error {
-		stake, err := node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.TotalRplStake = eth.WeiToEth(stake)
-		}
-		return err
-	})
+	} else {
+		// Get the node's total stake
+		wg.Go(func() error {
+			stake, err := node131.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+			if err == nil {
+				response.TotalRplStake = eth.WeiToEth(stake)
+			}
+			return err
+		})
+		// Get the node's effective stake
+		wg.Go(func() error {
+			effectiveStake, err := node131.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
+			if err == nil {
+				response.EffectiveRplStake = eth.WeiToEth(effectiveStake)
+			}
+			return err
+		})
+	}
 
 	// Get the total network effective stake
 	wg.Go(func() error {

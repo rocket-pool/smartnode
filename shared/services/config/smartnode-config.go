@@ -109,9 +109,6 @@ type SmartnodeConfig struct {
 	// The toggle for enabling pDAO proposal verification duties
 	VerifyProposals config.Parameter `yaml:"verifyProposals,omitempty"`
 
-	// Threshold for automatic vote power initialization transactions
-	AutoInitVPThreshold config.Parameter `yaml:"autoInitVPThreshold,omitempty"`
-
 	// Delay for automatic queue assignment
 	AutoAssignmentDelay config.Parameter `yaml:"autoAssignmentDelay,omitempty"`
 
@@ -328,19 +325,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: false,
 		},
 
-		AutoInitVPThreshold: config.Parameter{
-			ID:   "autoInitVPThreshold",
-			Name: "Auto-Init Vote Power Gas Threshold",
-			Description: "The Smartnode will regularly check if the node has initialized voting power and attempt to initialize voting power if it isn't initialized.\n\n" +
-				"This threshold is a limit (in gwei) you can set on this automatic transaction; your node will not attempt to initialize voting power if the network suggested fee is below this limit.\n\n" +
-				"A value of 0 will disable this task. Disable this if your node was registered post-houston or your vote power is already initialized.\n\n",
-			Type:               config.ParameterType_Float,
-			Default:            map[config.Network]interface{}{config.Network_All: float64(5)},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
-			CanBeBlank:         false,
-			OverwriteOnUpgrade: false,
-		},
-
 		AutoAssignmentDelay: config.Parameter{
 			ID:                 "autoAssignmentDelay",
 			Name:               "Automatic queue assigment delay",
@@ -447,7 +431,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0x8a7FB51dAdF638058fBB3f7357c6b5dFbCd2687C",
+			config.Network_Devnet:  "0x7d1AE15CfAf8972a4C58C3DD69819463d6e244EB",
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
@@ -459,13 +443,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0x28b3C69dC1A5839C353AdF83126Ca610aa6a9321",
+			config.Network_Devnet:  "0x3A922808724555f57dd2A1FEa615543Ed28f03d9",
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  "0xb318B1aacD3c6C7B717C5e4cB5d2F07F51370Ff8",
+			config.Network_Devnet:  "0xdc7227AAC9F6a7474f8fc1Ccbf9441d70BFFa6D7",
 			config.Network_Testnet: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
@@ -642,7 +626,6 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.AutoTxGasThreshold,
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
-		&cfg.AutoInitVPThreshold,
 		&cfg.AutoAssignmentDelay,
 		&cfg.RewardsTreeMode,
 		&cfg.PriceBalanceSubmissionReferenceTimestamp,

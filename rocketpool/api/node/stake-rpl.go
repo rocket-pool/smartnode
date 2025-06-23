@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
@@ -12,6 +13,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -40,6 +42,12 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 		return nil, err
 	}
 
+	// Check if Saturn is already deployed
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Check RPL balance
 	rplBalance, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
 	if err != nil {
@@ -47,12 +55,14 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 	}
 	response.InsufficientBalance = (amountWei.Cmp(rplBalance) > 0)
 
-	// Get the min RPL stake
-	minRplStake, err := node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
+	if !saturnDeployed {
+		// Get the min RPL stake
+		minRplStake, err := node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, err
+		}
+		response.MinimumRplStake = minRplStake
 	}
-	response.MinimumRplStake = minRplStake
 
 	// Get the max stake fraction
 	maxStakeFraction, err := protocol.GetMaximumPerMinipoolStake(rp, nil)

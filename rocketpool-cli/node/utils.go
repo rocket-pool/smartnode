@@ -15,7 +15,6 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/mitchellh/go-homedir"
-	"github.com/urfave/cli"
 	"gopkg.in/yaml.v2"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -375,23 +374,4 @@ func promptForSoloKeyPassword(rp *rocketpool.Client, cfg *config.RocketPoolConfi
 
 	return passwordFile, nil
 
-}
-
-// Display a warning if hotfix is live and voting is uninitialized
-func warnIfVotingUninitialized(rp *rocketpool.Client, c *cli.Context, warningMessage string) error {
-	// Check if voting power is initialized
-	isVotingInitializedResponse, err := rp.IsVotingInitialized()
-	if err != nil {
-		return fmt.Errorf("error checking if voting is initialized: %w", err)
-	}
-	if !isVotingInitializedResponse.VotingInitialized {
-		fmt.Println("Your voting power hasn't been initialized yet. Please visit https://docs.rocketpool.net/guides/houston/participate#initializing-voting to learn more.")
-		// Post a warning about initializing voting
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%s%s%s\nWould you like to continue?", colorYellow, warningMessage, colorReset))) {
-			fmt.Println("Cancelled.")
-			return fmt.Errorf("operation cancelled by user")
-		}
-	}
-
-	return nil
 }

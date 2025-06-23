@@ -3,6 +3,7 @@ package rocketpool
 import (
 	"context"
 	"math/big"
+	"time"
 
 	"github.com/ethereum/go-ethereum"
 	"github.com/ethereum/go-ethereum/common"
@@ -102,6 +103,13 @@ type ExecutionClient interface {
 	// SyncProgress retrieves the current progress of the sync algorithm. If there's
 	// no sync currently running, it returns nil.
 	SyncProgress(ctx context.Context) (*ethereum.SyncProgress, error)
+
+	/// =================
+	/// Utility functions
+	/// =================
+
+	// LatestBlockTime returns the timestamp of the latest block
+	LatestBlockTime(ctx context.Context) (time.Time, error)
 
 	// ChainID retrieves the current chain ID
 	ChainID(ctx context.Context) (*big.Int, error)

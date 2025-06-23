@@ -156,7 +156,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 			t.log.Printlnf("The validator %d needs to be staked", validatorInfo[i].ValidatorId)
 
 			// Call Stake
-			t.stakeValidator(mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
+			t.stakeValidator(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
 		}
 	}
 
@@ -165,7 +165,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 
 }
 
-func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
+func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -175,7 +175,7 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 
 	t.log.Printlnf("[STARTED] Crafting a proof that the correct credentials were used on the first beacon chain deposit. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
-	proof, err := services.GetStakeValidatorInfo(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
+	proof, err := services.GetValidatorProof(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
@@ -184,7 +184,7 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 	t.log.Printlnf("[FINISHED] The beacon state proof has been successfully created.")
 
 	// Get the gas limit
-	gasInfo, err := mp.EstimateStakeGas(validatorId, proof, opts)
+	gasInfo, err := megapool.EstimateStakeGas(rp, mp.GetAddress(), validatorId, proof, opts)
 	if err != nil {
 		return err
 	}
@@ -208,13 +208,13 @@ func (t *stakeMegapoolValidator) stakeValidator(mp megapool.Megapool, validatorI
 	opts.GasLimit = gas.Uint64()
 
 	// Call stake
-	hash, err := mp.Stake(validatorId, proof, opts)
+	tx, err := megapool.Stake(rp, mp.GetAddress(), validatorId, proof, opts)
 	if err != nil {
 		return err
 	}
 
 	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, &t.log)
+	err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
 	if err != nil {
 		return err
 	}

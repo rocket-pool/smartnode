@@ -3,8 +3,10 @@ package pdao
 import (
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli"
@@ -220,6 +222,16 @@ func proposeSettingNodeMaximumPerMinipoolStake(c *cli.Context, value *big.Int) e
 	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.MaximumPerMinipoolStakeSettingPath, trueValue)
 }
 
+func proposeSettingReducedBond(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue)
+}
+
+func proposeSettingNodeUnstakingPeriod(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.NodeUnstakingPeriodSettingPath, trueValue)
+}
+
 func proposeSettingProposalsVotePhase1Time(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.VotePhase1TimeSettingPath, trueValue)
@@ -298,6 +310,50 @@ func proposeSettingSecurityProposalExecuteTime(c *cli.Context, value time.Durati
 func proposeSettingSecurityProposalActionTime(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityProposalActionTimeSettingPath, trueValue)
+}
+
+func proposeSettingNetworkAllowListedControllers(c *cli.Context, value []common.Address) error {
+	strs := make([]string, len(value))
+	for i, addr := range value {
+		strs[i] = addr.Hex()
+	}
+	trueValue := strings.Join(strs, "")
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkAllowListedControllersPath, trueValue)
+}
+
+func proposeSettingMegapoolTimeBeforeDissolve(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolTimeBeforeDissolveSettingsPath, trueValue)
+}
+
+func proposeSettingMaximumMegapoolEthPenalty(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue)
+}
+
+func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue)
+}
+
+func proposeSettingNodeCommissionShareSecurityCouncilAdder(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, trueValue)
+}
+
+func proposeSettingVoterShare(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkVoterSharePath, trueValue)
+}
+
+func proposeMaxNodeShareSecurityCouncilAdder(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkMaxNodeShareSecurityCouncilAdderPath, trueValue)
+}
+
+func proposeMaxRethBalanceDelta(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkMaxRethBalanceDeltaPath, trueValue)
 }
 
 // Master general proposal function

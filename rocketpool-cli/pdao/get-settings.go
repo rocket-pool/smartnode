@@ -65,19 +65,25 @@ func getSettings(c *cli.Context) error {
 
 	// Network
 	fmt.Println("== Network Settings ==")
-	fmt.Printf("\toDAO Consensus Quorum:      %.2f%%\n", eth.WeiToEth(response.Network.OracleDaoConsensusThreshold)*100)
-	fmt.Printf("\tNode Penalty Quorum:        %.2f%%\n", eth.WeiToEth(response.Network.NodePenaltyThreshold)*100)
-	fmt.Printf("\tPenalty Size:               %.2f%%\n", eth.WeiToEth(response.Network.PerPenaltyRate)*100)
-	fmt.Printf("\tBalance Submission Enabled: %t\n", response.Network.IsSubmitBalancesEnabled)
-	fmt.Printf("\tBalance Submission Freq:    %s\n", response.Network.SubmitBalancesFrequency)
-	fmt.Printf("\tPrice Submission Enabled:   %t\n", response.Network.IsSubmitPricesEnabled)
-	fmt.Printf("\tPrice Submission Freq:      %s\n", response.Network.SubmitPricesFrequency)
-	fmt.Printf("\tMin Commission:             %.2f%%\n", eth.WeiToEth(response.Network.MinimumNodeFee)*100)
-	fmt.Printf("\tTarget Commission:          %.2f%%\n", eth.WeiToEth(response.Network.TargetNodeFee)*100)
-	fmt.Printf("\tMax Commission:             %.2f%%\n", eth.WeiToEth(response.Network.MaximumNodeFee)*100)
-	fmt.Printf("\tCommission Demand Range:    %.6f ETH\n", eth.WeiToEth(response.Network.NodeFeeDemandRange))
-	fmt.Printf("\trETH Collateral Target:     %.2f%%\n", eth.WeiToEth(response.Network.TargetRethCollateralRate)*100)
-	fmt.Printf("\tRewards Submission Enabled: %t\n", response.Network.IsSubmitRewardsEnabled)
+	fmt.Printf("\toDAO Consensus Quorum:                        %.2f%%\n", eth.WeiToEth(response.Network.OracleDaoConsensusThreshold)*100)
+	fmt.Printf("\tNode Penalty Quorum:                          %.2f%%\n", eth.WeiToEth(response.Network.NodePenaltyThreshold)*100)
+	fmt.Printf("\tPenalty Size:                                 %.2f%%\n", eth.WeiToEth(response.Network.PerPenaltyRate)*100)
+	fmt.Printf("\tBalance Submission Enabled:                   %t\n", response.Network.IsSubmitBalancesEnabled)
+	fmt.Printf("\tBalance Submission Freq:                      %s\n", response.Network.SubmitBalancesFrequency)
+	fmt.Printf("\tPrice Submission Enabled:                     %t\n", response.Network.IsSubmitPricesEnabled)
+	fmt.Printf("\tPrice Submission Freq:                        %s\n", response.Network.SubmitPricesFrequency)
+	fmt.Printf("\tMin Commission:                               %.2f%%\n", eth.WeiToEth(response.Network.MinimumNodeFee)*100)
+	fmt.Printf("\tTarget Commission:                            %.2f%%\n", eth.WeiToEth(response.Network.TargetNodeFee)*100)
+	fmt.Printf("\tMax Commission:                               %.2f%%\n", eth.WeiToEth(response.Network.MaximumNodeFee)*100)
+	fmt.Printf("\tCommission Demand Range:                      %.6f ETH\n", eth.WeiToEth(response.Network.NodeFeeDemandRange))
+	fmt.Printf("\trETH Collateral Target:                       %.2f%%\n", eth.WeiToEth(response.Network.TargetRethCollateralRate)*100)
+	fmt.Printf("\tRewards Submission Enabled:                   %t\n", response.Network.IsSubmitRewardsEnabled)
+	fmt.Printf("\tNode Commission Share:                        %.2f%%\n", eth.WeiToEth(response.Network.NodeCommissionShare)*100)
+	fmt.Printf("\tNode Commission Share Security Council Adder: %.2f%%\n", eth.WeiToEth(response.Network.NodeCommissionShareSecurityCouncilAdder)*100)
+	fmt.Printf("\tVoter Share:                                  %.2f%%\n", eth.WeiToEth(response.Network.VoterShare)*100)
+	fmt.Printf("\tMax Commission Share Security Council Adder:  %.2f%%\n", eth.WeiToEth(response.Network.MaxNodeShareSecurityCouncilAdder)*100)
+	fmt.Printf("\tMax rETH balance delta:                       %.2f%%\n", eth.WeiToEth(response.Network.MaxRethBalanceDelta)*100)
+	fmt.Printf("\tAllow listed controllers:                     %v\n", response.Network.AllowListedControllers)
 	fmt.Println()
 
 	// Node
@@ -88,6 +94,8 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tVacant Minipools Enabled:      %t\n", response.Node.AreVacantMinipoolsEnabled)
 	fmt.Printf("\tMin Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MinimumPerMinipoolStake)*100)
 	fmt.Printf("\tMax Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MaximumPerMinipoolStake)*100)
+	fmt.Printf("\tReduced Bond:                  %.6f ETH\n", response.Node.ReducedBond)
+	fmt.Printf("\tNode Unstaking Period:         %s\n", response.Node.NodeUnstakingPeriod)
 	fmt.Println()
 
 	// Proposals
@@ -116,6 +124,12 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tProposal Vote Time:    %s\n", response.Security.ProposalVoteTime)
 	fmt.Printf("\tProposal Execute Time: %s\n", response.Security.ProposalExecuteTime)
 	fmt.Printf("\tProposal Action Time:  %s\n", response.Security.ProposalActionTime)
+	fmt.Println()
+
+	// Megapool
+	fmt.Println("== Megapool Settings ==")
+	fmt.Printf("\tNode Unstaking Period: %s\n", response.Megapool.TimeBeforeDissolve)
+	fmt.Printf("\tMax ETH penalty:       %.6f ETH\n", eth.WeiToEth(response.Megapool.MaximumEthPenalty))
 
 	return nil
 }

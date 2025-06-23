@@ -261,6 +261,42 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
+	wg.Go(func() error {
+		var err error
+		response.Network.NodeCommissionShare, err = protocol.GetNodeShare(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.NodeCommissionShareSecurityCouncilAdder, err = protocol.GetNodeShareSecurityCouncilAdder(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.VoterShare, err = protocol.GetVoterShare(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.MaxNodeShareSecurityCouncilAdder, err = protocol.GetMaxNodeShareSecurityCouncilAdder(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.MaxRethBalanceDelta, err = protocol.GetMaxRethDelta(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Network.AllowListedControllers, err = protocol.GetAllowListedControllers(rp, nil)
+		return err
+	})
+
 	// === Node ===
 
 	wg.Go(func() error {
@@ -296,6 +332,21 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 	wg.Go(func() error {
 		var err error
 		response.Node.MaximumPerMinipoolStake, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Node.ReducedBond, err = protocol.GetReducedBond(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		nodeUnstakingPeriod, err := protocol.GetNodeUnstakingPeriod(rp, nil)
+		if err == nil {
+			response.Node.NodeUnstakingPeriod = time.Duration(nodeUnstakingPeriod.Int64()) * time.Second
+		}
 		return err
 	})
 
@@ -398,6 +449,23 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 	wg.Go(func() error {
 		var err error
 		response.Security.ProposalActionTime, err = protocol.GetSecurityProposalActionTime(rp, nil)
+		return err
+	})
+
+	// === Megapool ===
+	wg.Go(func() error {
+		var err error
+		timeBeforeDissolve, err := protocol.GetMegapoolTimeBeforeDissolve(rp, nil)
+		if err == nil {
+			response.Megapool.TimeBeforeDissolve = time.Duration(timeBeforeDissolve) * time.Second
+
+		}
+		return err
+	})
+
+	wg.Go(func() error {
+		var err error
+		response.Megapool.MaximumEthPenalty, err = protocol.GetMaximumEthPenalty(rp, nil)
 		return err
 	})
 

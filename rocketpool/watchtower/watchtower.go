@@ -30,22 +30,23 @@ var taskCooldown, _ = time.ParseDuration("5s")
 const (
 	MaxConcurrentEth1Requests = 200
 
-	RespondChallengesColor         = color.FgWhite
-	ClaimRplRewardsColor           = color.FgGreen
-	SubmitRplPriceColor            = color.FgYellow
-	SubmitNetworkBalancesColor     = color.FgYellow
-	DissolveTimedOutMinipoolsColor = color.FgMagenta
-	DissolveTimedOutMegapoolsColor = color.FgCyan
-	SubmitScrubMinipoolsColor      = color.FgHiGreen
-	ErrorColor                     = color.FgRed
-	MetricsColor                   = color.FgHiYellow
-	SubmitRewardsTreeColor         = color.FgHiCyan
-	WarningColor                   = color.FgYellow
-	ProcessPenaltiesColor          = color.FgHiMagenta
-	CancelBondsColor               = color.FgGreen
-	CheckSoloMigrationsColor       = color.FgCyan
-	FinalizeProposalsColor         = color.FgMagenta
-	UpdateColor                    = color.FgHiWhite
+	RespondChallengesColor          = color.FgWhite
+	ClaimRplRewardsColor            = color.FgGreen
+	SubmitRplPriceColor             = color.FgYellow
+	SubmitNetworkBalancesColor      = color.FgYellow
+	DissolveTimedOutMinipoolsColor  = color.FgMagenta
+	DissolveTimedOutMegapoolsColor  = color.FgCyan
+	DissolveInvalidCredentialsColor = color.FgHiRed
+	SubmitScrubMinipoolsColor       = color.FgHiGreen
+	ErrorColor                      = color.FgRed
+	MetricsColor                    = color.FgHiYellow
+	SubmitRewardsTreeColor          = color.FgHiCyan
+	WarningColor                    = color.FgYellow
+	ProcessPenaltiesColor           = color.FgHiMagenta
+	CancelBondsColor                = color.FgGreen
+	CheckSoloMigrationsColor        = color.FgCyan
+	FinalizeProposalsColor          = color.FgMagenta
+	UpdateColor                     = color.FgHiWhite
 )
 
 // Register watchtower command
@@ -134,6 +135,10 @@ func run(c *cli.Context) error {
 	dissolveTimedOutMegapoolValidators, err := newDissolveTimedOutMegapoolValidators(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
 	if err != nil {
 		return fmt.Errorf("error during timed-out minipools check: %w", err)
+	}
+	dissolveInvalidCredentials, err := newDissolveInvalidCredentials(c, log.NewColorLogger(DissolveInvalidCredentialsColor))
+	if err != nil {
+		return fmt.Errorf("error during invalid credentials check: %w", err)
 	}
 	submitScrubMinipools, err := newSubmitScrubMinipools(c, log.NewColorLogger(SubmitScrubMinipoolsColor), errorLog, scrubCollector)
 	if err != nil {
@@ -235,6 +240,12 @@ func run(c *cli.Context) error {
 
 				// Run the megapool validator dissolve check
 				if err := dissolveTimedOutMegapoolValidators.run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(taskCooldown)
+
+				// Run the invalid credentials dissolve check
+				if err := dissolveInvalidCredentials.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
