@@ -13,8 +13,7 @@ services:
     restart: unless-stopped
     environment:
       - GF_SERVER_HTTP_PORT={{$port}}
-    ports: 
-      - "{{$port}}:{{$port}}/tcp"
+    ports: [{{.GetGrafanaOpenPorts}}]
     volumes:
       - "{{.RocketPoolDirectory}}/grafana-prometheus-datasource.yml:/etc/grafana/provisioning/datasources/prometheus.yml"
       - "{{.RocketPoolDirectory}}/grafana-dashboards.yml:/etc/grafana/provisioning/dashboards/rocketpool.yml"

@@ -1373,6 +1373,15 @@ func (cfg *RocketPoolConfig) GetPrometheusOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Prometheus.Port.Value.(uint16)))
 }
 
+// Used by text/template to format grafana.yml
+func (cfg *RocketPoolConfig) GetGrafanaOpenPorts() string {
+	portMode := cfg.Grafana.OpenPort.Value.(config.RPCMode)
+	if !portMode.Open() {
+		return ""
+	}
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Grafana.Port.Value.(uint16)))
+}
+
 // Used by text/template to format mev-boost.yml
 func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 	portMode := cfg.MevBoost.OpenRpcPort.Value.(config.RPCMode)
@@ -1383,6 +1392,7 @@ func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 }
 
+// TODO: remove this code on the next Prysm release - so users can still rollback from 6.0.4
 // Used by text/template to select an entrypoint based on which consensus client is used.
 func (cfg *RocketPoolConfig) GetEth2Entrypoint() string {
 	if client, _ := cfg.GetSelectedConsensusClient(); client == config.ConsensusClient_Prysm {
