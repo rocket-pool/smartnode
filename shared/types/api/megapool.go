@@ -42,6 +42,7 @@ type MegapoolDetails struct {
 	RevenueSplit             network.RevenueSplit       `json:"revenueSplit"`
 	Balances                 tokens.Balances            `json:"balances"`
 	LastDistributionBlock    uint64                     `json:"lastDistributionBlock"`
+	PendingRewardSplit       megapool.RewardSplit       `json:"pendingRewardSplit"`
 	QueueDetails             QueueDetails               `json:"queueDetails"`
 	Validators               []MegapoolValidatorDetails `json:"validators"`
 }
