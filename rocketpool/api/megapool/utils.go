@@ -151,6 +151,11 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		details.PendingRewardSplit, err = mega.CalculatePendingRewards(nil)
 		return err
 	})
+	wg.Go(func() error {
+		var err error
+		details.ReducedBond, err = protocol.GetReducedBondRaw(rp, nil)
+		return err
+	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {

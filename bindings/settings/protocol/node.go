@@ -23,6 +23,7 @@ const (
 	VacantMinipoolsEnabledSettingPath           string = "node.vacant.minipools.enabled"
 	MinimumPerMinipoolStakeSettingPath          string = "node.per.minipool.stake.minimum"
 	MaximumPerMinipoolStakeSettingPath          string = "node.per.minipool.stake.maximum"
+	ReducedBondSettingPath                      string = "reduced.bond"
 )
 
 // Node registrations currently enabled
@@ -161,6 +162,38 @@ func GetMaximumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpt
 	value := new(*big.Int)
 	if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
 		return nil, fmt.Errorf("error getting maximum RPL stake per minipool: %w", err)
+	}
+	return *value, nil
+}
+
+// Get the `reduced_bond` variable used in bond requirements calculation as ETH
+func GetReducedBond(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := nodeSettingsContract.Call(opts, value, "getReducedBond"); err != nil {
+		return 0, fmt.Errorf("error getting reduced bond variable: %w", err)
+	}
+	return eth.WeiToEth(*value), nil
+}
+func ProposeReducedBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", ReducedBondSettingPath), NodeSettingsContractName, ReducedBondSettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeReducedBond(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", ReducedBondSettingPath), NodeSettingsContractName, ReducedBondSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+// Get the `reduced_bond` variable used in bond requirements calculation as Wei
+func GetReducedBondRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := nodeSettingsContract.Call(opts, value, "getReducedBond"); err != nil {
+		return nil, fmt.Errorf("error getting reduced bond variable: %w", err)
 	}
 	return *value, nil
 }

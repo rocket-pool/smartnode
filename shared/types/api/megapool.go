@@ -43,6 +43,7 @@ type MegapoolDetails struct {
 	Balances                 tokens.Balances            `json:"balances"`
 	LastDistributionBlock    uint64                     `json:"lastDistributionBlock"`
 	PendingRewardSplit       megapool.RewardSplit       `json:"pendingRewardSplit"`
+	ReducedBond              *big.Int                   `json:"reducedBond"`
 	QueueDetails             QueueDetails               `json:"queueDetails"`
 	Validators               []MegapoolValidatorDetails `json:"validators"`
 }
