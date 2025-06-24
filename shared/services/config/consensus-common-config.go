@@ -33,7 +33,7 @@ type ConsensusCommonConfig struct {
 	CheckpointSyncProvider config.Parameter `yaml:"checkpointSyncProvider,omitempty"`
 
 	// The suggested block gas limit
-	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,ommitempty"`
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
 
 	// The port to use for gossip traffic
 	P2pPort config.Parameter `yaml:"p2pPort,omitempty"`
