@@ -133,6 +133,7 @@ type LocalConsensusConfig interface {
 // Interface for External Consensus configurations
 type ExternalConsensusConfig interface {
 	GetApiUrl() string
+	GetSuggestedBlockGasLimit() string
 }
 
 // A setting that has changed
