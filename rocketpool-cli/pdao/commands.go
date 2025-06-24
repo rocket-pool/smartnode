@@ -554,7 +554,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -586,7 +586,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -646,7 +646,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -678,7 +678,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -774,7 +774,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -806,7 +806,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -894,7 +894,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1164,7 +1164,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1196,7 +1196,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1228,7 +1228,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1372,7 +1372,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1404,7 +1404,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1436,7 +1436,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1468,7 +1468,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -1500,7 +1500,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1587,7 +1587,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1619,7 +1619,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1651,7 +1651,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1683,7 +1683,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1715,7 +1715,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -1867,7 +1867,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -1899,7 +1899,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -1931,7 +1931,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -2111,7 +2111,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -2143,7 +2143,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
@@ -2203,7 +2203,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -2235,7 +2235,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -2339,7 +2339,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}
@@ -2519,7 +2519,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := parseFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
