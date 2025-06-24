@@ -10,7 +10,8 @@ import (
 )
 
 const (
-	boolUsage string = "specify 'true', 'false', 'yes', or 'no'"
+	boolUsage    string = "specify 'true', 'false', 'yes', or 'no'"
+	percentUsage string = "specify a percentage between 0 and 1 (e.g., '0.51' for 51%)"
 )
 
 // Register commands
@@ -384,9 +385,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "node-commission-share-council-adder",
 										Aliases:   []string{"ncsca"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeComissionShareSecurityCouncilAdder, boolUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeComissionShareSecurityCouncilAdder, percentUsage),
 										UsageText: "rocketpool security propose setting network node-commission-share-council-adder",
 										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
 											cli.BoolFlag{
 												Name:  "yes, y",
 												Usage: "Automatically confirm all interactive questions",
@@ -398,7 +403,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateBigInt("value", c.Args().Get(0))
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
 											if err != nil {
 												return err
 											}

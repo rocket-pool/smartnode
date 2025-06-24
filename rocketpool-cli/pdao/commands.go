@@ -1599,10 +1599,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									},
 
 									{
-										Name:      "node-commission-share-security-council-adder",
-										Aliases:   []string{"ncss"},
+										Name:      "node-commission-share-council-adder",
+										Aliases:   []string{"ncsca"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, percentUsage),
-										UsageText: "rocketpool pdao propose setting node node-commission-share-security-council-adder value",
+										UsageText: "rocketpool pdao propose setting node node-commission-share-council-adder value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
 												Name:  "raw",
