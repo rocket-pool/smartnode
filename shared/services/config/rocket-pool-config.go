@@ -1052,6 +1052,29 @@ func (cfg *RocketPoolConfig) Graffiti() (string, error) {
 	return fmt.Sprintf("%s (%s)", prefix, customGraffiti), nil
 }
 
+func (cfg *RocketPoolConfig) SuggestedBlockGasLimit() string {
+	if cfg.ConsensusClientLocal() {
+		return cfg.ConsensusCommon.SuggestedBlockGasLimit.Value.(string)
+	}
+
+	cc, _ := cfg.GetSelectedConsensusClient()
+	switch cc {
+	case config.ConsensusClient_Lighthouse:
+		return cfg.ExternalLighthouse.SuggestedBlockGasLimit.Value.(string)
+	case config.ConsensusClient_Lodestar:
+		return cfg.ExternalLodestar.SuggestedBlockGasLimit.Value.(string)
+	case config.ConsensusClient_Nimbus:
+		return cfg.ExternalNimbus.SuggestedBlockGasLimit.Value.(string)
+	case config.ConsensusClient_Prysm:
+		return cfg.ExternalPrysm.SuggestedBlockGasLimit.Value.(string)
+	case config.ConsensusClient_Teku:
+		return cfg.ExternalTeku.SuggestedBlockGasLimit.Value.(string)
+	default:
+		return ""
+	}
+
+}
+
 // Used by text/template to format validator.yml
 func (cfg *RocketPoolConfig) RocketPoolVersion() string {
 	return shared.RocketPoolVersion()

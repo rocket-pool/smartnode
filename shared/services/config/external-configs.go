@@ -25,6 +25,9 @@ type ExternalLighthouseConfig struct {
 	// Custom proposal graffiti
 	Graffiti config.Parameter `yaml:"graffiti,omitempty"`
 
+	// The suggested block gas limit
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
+
 	// Toggle for enabling doppelganger detection
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
 
@@ -41,6 +44,9 @@ type ExternalLodestarConfig struct {
 
 	// The URL of the HTTP endpoint
 	HttpUrl config.Parameter `yaml:"httpUrl,omitempty"`
+
+	// The suggested block gas limit
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
 
 	// Custom proposal graffiti
 	Graffiti config.Parameter `yaml:"graffiti,omitempty"`
@@ -62,6 +68,9 @@ type ExternalNimbusConfig struct {
 	// The URL of the HTTP endpoint
 	HttpUrl config.Parameter `yaml:"httpUrl,omitempty"`
 
+	// The suggested block gas limit
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
+
 	// Custom proposal graffiti
 	Graffiti config.Parameter `yaml:"graffiti,omitempty"`
 
@@ -81,6 +90,9 @@ type ExternalPrysmConfig struct {
 
 	// The URL of the gRPC (REST) endpoint for the Beacon API
 	HttpUrl config.Parameter `yaml:"httpUrl,omitempty"`
+
+	// The suggested block gas limit
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
 
 	// Custom proposal graffiti
 	Graffiti config.Parameter `yaml:"graffiti,omitempty"`
@@ -107,6 +119,9 @@ type ExternalTekuConfig struct {
 
 	// Custom proposal graffiti
 	Graffiti config.Parameter `yaml:"graffiti,omitempty"`
+
+	// The suggested block gas limit
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
 
 	// The Docker Hub tag for Teku
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
@@ -167,6 +182,17 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
 			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		SuggestedBlockGasLimit: config.Parameter{
+			ID:                 "suggestedBlockGasLimit",
+			Name:               "Suggested Block Gas Limit",
+			Description:        "The block gas limit that should be used for externally built blocks. Leave blank to use the Consensus Client default.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
 
@@ -237,6 +263,17 @@ func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		SuggestedBlockGasLimit: config.Parameter{
+			ID:                 "suggestedBlockGasLimit",
+			Name:               "Suggested Block Gas Limit",
+			Description:        "The block gas limit that should be used for externally built blocks. Leave blank to use the Consensus Client default.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
 		Graffiti: config.Parameter{
 			ID:                 GraffitiID,
 			Name:               "Custom Graffiti",
@@ -302,6 +339,17 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
 			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		SuggestedBlockGasLimit: config.Parameter{
+			ID:                 "suggestedBlockGasLimit",
+			Name:               "Suggested Block Gas Limit",
+			Description:        "The block gas limit that should be used for externally built blocks. Leave blank to use the Consensus Client default.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
 
@@ -383,6 +431,17 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		SuggestedBlockGasLimit: config.Parameter{
+			ID:                 "suggestedBlockGasLimit",
+			Name:               "Suggested Block Gas Limit",
+			Description:        "The block gas limit that should be used for externally built blocks. Leave blank to use the Consensus Client default.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
 		Graffiti: config.Parameter{
 			ID:                 GraffitiID,
 			Name:               "Custom Graffiti",
@@ -450,6 +509,17 @@ func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		SuggestedBlockGasLimit: config.Parameter{
+			ID:                 "suggestedBlockGasLimit",
+			Name:               "Suggested Block Gas Limit",
+			Description:        "The block gas limit that should be used for externally built blocks. Leave blank to use the Consensus Client default.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
 		Graffiti: config.Parameter{
 			ID:                 GraffitiID,
 			Name:               "Custom Graffiti",
@@ -513,6 +583,7 @@ func (cfg *ExternalExecutionConfig) GetParameters() []*config.Parameter {
 func (cfg *ExternalLighthouseConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.HttpUrl,
+		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
 		&cfg.ContainerTag,
@@ -524,6 +595,7 @@ func (cfg *ExternalLighthouseConfig) GetParameters() []*config.Parameter {
 func (cfg *ExternalNimbusConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.HttpUrl,
+		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
 		&cfg.ContainerTag,
@@ -535,6 +607,7 @@ func (cfg *ExternalNimbusConfig) GetParameters() []*config.Parameter {
 func (cfg *ExternalLodestarConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.HttpUrl,
+		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
 		&cfg.ContainerTag,
@@ -547,6 +620,7 @@ func (cfg *ExternalPrysmConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.HttpUrl,
 		&cfg.JsonRpcUrl,
+		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
 		&cfg.ContainerTag,
@@ -558,6 +632,7 @@ func (cfg *ExternalPrysmConfig) GetParameters() []*config.Parameter {
 func (cfg *ExternalTekuConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.HttpUrl,
+		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
 		&cfg.ContainerTag,
@@ -638,6 +713,40 @@ func (cfg *ExternalPrysmConfig) GetApiUrl() string {
 // Get the API url from the config
 func (cfg *ExternalTekuConfig) GetApiUrl() string {
 	return cfg.HttpUrl.Value.(string)
+}
+
+func (cfg *ExternalLighthouseConfig) GetSuggestedBlockGasLimit() string {
+	if cfg.SuggestedBlockGasLimit.Value == nil {
+		return ""
+	}
+	return cfg.SuggestedBlockGasLimit.Value.(string)
+}
+func (cfg *ExternalTekuConfig) GetSuggestedBlockGasLimit() string {
+	if cfg.SuggestedBlockGasLimit.Value == nil {
+		return ""
+	}
+	return cfg.SuggestedBlockGasLimit.Value.(string)
+}
+
+func (cfg *ExternalLodestarConfig) GetSuggestedBlockGasLimit() string {
+	if cfg.SuggestedBlockGasLimit.Value == nil {
+		return ""
+	}
+	return cfg.SuggestedBlockGasLimit.Value.(string)
+}
+
+func (cfg *ExternalNimbusConfig) GetSuggestedBlockGasLimit() string {
+	if cfg.SuggestedBlockGasLimit.Value == nil {
+		return ""
+	}
+	return cfg.SuggestedBlockGasLimit.Value.(string)
+}
+
+func (cfg *ExternalPrysmConfig) GetSuggestedBlockGasLimit() string {
+	if cfg.SuggestedBlockGasLimit.Value == nil {
+		return ""
+	}
+	return cfg.SuggestedBlockGasLimit.Value.(string)
 }
 
 // Get the doppelganger detection from the config
