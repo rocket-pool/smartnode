@@ -346,7 +346,7 @@ if [ "$CLIENT" = "reth" ]; then
     fi
 
     if [ "$RETH_ARCHIVE_MODE" = "false" ]; then
-        CMD="$CMD --full"
+        CMD="$CMD --block-interval 5 --prune.receipts.before 0 --prune.senderrecovery.full --prune.accounthistory.distance 10064 --prune.storagehistory.distance 100064"
     fi
 
     if [ ! -z "$EC_MAX_PEERS" ]; then
