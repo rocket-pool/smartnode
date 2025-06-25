@@ -76,12 +76,6 @@ func nodeDeposit(c *cli.Context) error {
 		}
 	}
 
-	// If hotfix is live and voting isn't initialized, display a warning
-	err = warnIfVotingUninitialized(rp, c, depositWarningMessage)
-	if err != nil {
-		return nil
-	}
-
 	// Check if the fee distributor has been initialized
 	isInitializedResponse, err := rp.IsFeeDistributorInitialized()
 	if err != nil {

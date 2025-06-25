@@ -18,7 +18,7 @@ import (
 
 // Config
 const (
-	stakeRPLWarningMessage = "NOTE: By staking RPL, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before staking RPL."
+	stakeRPLDisclaimer = "NOTE: By staking RPL, you become a member of the Rocket Pool pDAO. Stay informed on governance proposals by joining the Rocket Pool Discord."
 )
 
 func nodeStakeRpl(c *cli.Context) error {
@@ -36,11 +36,9 @@ func nodeStakeRpl(c *cli.Context) error {
 		return err
 	}
 
-	// If hotfix is live and voting isn't initialized, display a warning
-	err = warnIfVotingUninitialized(rp, c, stakeRPLWarningMessage)
-	if err != nil {
-		return nil
-	}
+	// Show the pDAO disclaimer
+	fmt.Println(stakeRPLDisclaimer)
+	fmt.Println()
 
 	// If a custom nonce is set, print the multi-transaction warning
 	if c.GlobalUint64("nonce") != 0 {
