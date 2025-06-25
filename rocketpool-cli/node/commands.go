@@ -322,7 +322,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of RPL to stake (also accepts custom percentages for 8-ETH minipools (eg. 3% of borrowed ETH as RPL), or 'all' for all of your RPL)",
+						Usage: "The amount of RPL to stake (also accepts custom percentages for a validator (eg. 3% of borrowed ETH as RPL), or 'all' for all of your RPL)",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",

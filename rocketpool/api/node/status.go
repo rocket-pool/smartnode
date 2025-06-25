@@ -250,6 +250,11 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.UnclaimedRewards, err = node.GetUnclaimedRewardsRaw(rp, nodeAccount.Address, nil)
 			return err
 		})
+		wg.Go(func() error {
+			var err error
+			response.ReducedBond, err = protocol.GetReducedBondRaw(rp, nil)
+			return err
+		})
 	} else {
 		// Get the node's locked RPL
 		wg.Go(func() error {

@@ -99,6 +99,7 @@ type NodeStatusResponse struct {
 	UnstakingPeriodDuration      time.Duration     `json:"unstakingPeriodDuration"`
 	LatestBlockTime              time.Time         `json:"latestBlockTime"`
 	UnclaimedRewards             *big.Int          `json:"unclaimedRewards"`
+	ReducedBond                  *big.Int          `json:"reducedBond"`
 }
 
 type NodeAlert struct {
