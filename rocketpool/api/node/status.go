@@ -268,7 +268,11 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.MaximumRplStake, err = node131.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
-
+		wg.Go(func() error {
+			var err error
+			response.EffectiveRplStake, err = node131.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
+			return err
+		})
 		wg.Go(func() error {
 			var err error
 			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
