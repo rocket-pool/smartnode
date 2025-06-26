@@ -13,6 +13,11 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
+type ExitChallenge struct {
+	MegapoolAddress common.Address `json:"megapoolAddress"`
+	ValidatorIds    []uint32       `json:"validatorIds"`
+}
+
 func GetValidatorCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint32, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, opts)
 	if err != nil {
@@ -131,6 +136,50 @@ func NotifyExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, valid
 	tx, err := megapoolManager.Transact(opts, "notifyExit", megapoolAddress, validatorId, withdrawalEpoch, slot, exitProof)
 	if err != nil {
 		return nil, fmt.Errorf("error calling notify exit: %w", err)
+	}
+	return tx, nil
+}
+
+// Estimate the gas to call NotifyNotExit
+func EstimateNotifyNotExitGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, validatorProof ValidatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return megapoolManager.GetTransactionGasInfo(opts, "notifyNotExit", megapoolAddress, validatorId, validatorProof)
+}
+
+// Used to prove a validator is not exiting after a challenge-exit
+func NotifyNotExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, validatorProof ValidatorProof, opts *bind.TransactOpts) (*types.Transaction, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := megapoolManager.Transact(opts, "notifyNotExit", megapoolAddress, validatorId, validatorProof)
+	if err != nil {
+		return nil, fmt.Errorf("error calling notify not exit: %w", err)
+	}
+	return tx, nil
+}
+
+// Estimate the gas to call ChallengeExit
+func EstimateChallengeExitGas(rp *rocketpool.RocketPool, exitChallenge []ExitChallenge, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return megapoolManager.GetTransactionGasInfo(opts, "challengeExit", exitChallenge)
+}
+
+// Used to challenge a validator that is exiting without an exit notification
+func ChallengeExit(rp *rocketpool.RocketPool, exitChallenge []ExitChallenge, opts *bind.TransactOpts) (*types.Transaction, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := megapoolManager.Transact(opts, "challengeExit", exitChallenge)
+	if err != nil {
+		return nil, fmt.Errorf("error calling challengeExit: %w", err)
 	}
 	return tx, nil
 }
