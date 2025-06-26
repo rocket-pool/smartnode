@@ -107,15 +107,24 @@ func CheckCollateral(saturnDeployed bool, rp *rocketpool.RocketPool, nodeAddress
 	deltas := make([]*big.Int, len(addresses))
 	zeroTime := time.Unix(0, 0)
 
-	wg.Go(func() error {
-		var err error
-		ethBorrowed, err = node.GetNodeETHBorrowed(rp, nodeAddress, opts)
-		if err != nil {
-			return fmt.Errorf("error getting node's borrowed ETH amount: %w", err)
-		}
-		return nil
-	})
-	if !saturnDeployed {
+	if saturnDeployed {
+		wg.Go(func() error {
+			var err error
+			ethBorrowed, err = node.GetNodeETHBorrowed(rp, nodeAddress, opts)
+			if err != nil {
+				return fmt.Errorf("error getting node's borrowed ETH amount: %w", err)
+			}
+			return nil
+		})
+	} else {
+		wg.Go(func() error {
+			var err error
+			ethBorrowed, err = node131.GetNodeEthMatched(rp, nodeAddress, opts)
+			if err != nil {
+				return fmt.Errorf("error getting node's borrowed ETH amount: %w", err)
+			}
+			return nil
+		})
 		wg.Go(func() error {
 			var err error
 			// Matched is renamed borrowed in Saturn v1.4
@@ -126,6 +135,7 @@ func CheckCollateral(saturnDeployed bool, rp *rocketpool.RocketPool, nodeAddress
 			return nil
 		})
 	}
+
 	for i, address := range addresses {
 		i := i
 		address := address
