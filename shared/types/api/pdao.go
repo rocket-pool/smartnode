@@ -75,9 +75,10 @@ type ExecutePDAOProposalResponse struct {
 }
 
 type GetPDAOSettingsResponse struct {
-	Status  string `json:"status"`
-	Error   string `json:"error"`
-	Auction struct {
+	Status         string `json:"status"`
+	Error          string `json:"error"`
+	SaturnDeployed bool   `json:"saturnDeployed"`
+	Auction        struct {
 		IsCreateLotEnabled    bool          `json:"isCreateLotEnabled"`
 		IsBidOnLotEnabled     bool          `json:"isBidOnLotEnabled"`
 		LotMinimumEthValue    *big.Int      `json:"lotMinimumEthValue"`
