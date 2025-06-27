@@ -74,7 +74,7 @@ type ValidatorInfo struct {
 }
 
 type ValidatorInfoFromGlobalIndex struct {
-	PubKey          []byte         `abi:"pubKey"`
+	Pubkey          []byte         `abi:"pubkey"`
 	ValidatorInfo   ValidatorInfo  `abi:"validatorInfo"`
 	MegapoolAddress common.Address `abi:"megapoolAddress"`
 	ValidatorId     uint32         `abi:"validatorId"`

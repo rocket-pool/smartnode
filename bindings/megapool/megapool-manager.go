@@ -77,7 +77,7 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 	})
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
 	// copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
-	validator.PubKey = iface[0].([]byte)
+	validator.Pubkey = iface[0].([]byte)
 	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
 	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
 	validator.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
