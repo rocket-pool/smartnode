@@ -67,9 +67,11 @@ type ValidatorInfo struct {
 	ExpressUsed        bool   `abi:"expressUsed"`
 	Dissolved          bool   `abi:"dissolved"`
 	Exiting            bool   `abi:"exiting"`
+	Locked             bool   `abi:"locked"`
 	ValidatorIndex     uint64 `abi:"validatorIndex"`
 	ExitBalance        uint64 `abi:"exitBalance"`
 	WithdrawableEpoch  uint64 `abi:"withdrawableEpoch"`
+	LockedSlot         uint64 `abi:"lockedSlot"`
 }
 
 type ValidatorInfoFromGlobalIndex struct {
