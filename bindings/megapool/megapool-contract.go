@@ -55,7 +55,6 @@ type MegapoolV1 interface {
 }
 
 type ValidatorInfo struct {
-	PubKey             []byte `abi:"pubKey"`
 	LastAssignmentTime uint32 `abi:"lastAssignmentTime"`
 	LastRequestedValue uint32 `abi:"lastRequestedValue"`
 	LastRequestedBond  uint32 `abi:"lastRequestedBond"`
@@ -75,6 +74,7 @@ type ValidatorInfo struct {
 }
 
 type ValidatorInfoFromGlobalIndex struct {
+	PubKey          []byte         `abi:"pubKey"`
 	ValidatorInfo   ValidatorInfo  `abi:"validatorInfo"`
 	MegapoolAddress common.Address `abi:"megapoolAddress"`
 	ValidatorId     uint32         `abi:"validatorId"`
@@ -173,6 +173,32 @@ func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) 
 	}
 
 	return *validatorInfo, nil
+}
+
+type ValidatorInforWithPubkey struct {
+	ValidatorInfo `abi:"validatorInfo"`
+	PubKey        []byte `abi:"pubKey"`
+}
+
+func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.CallOpts) (ValidatorInforWithPubkey, error) {
+	validatorWithPubkey := new(ValidatorInforWithPubkey)
+
+	callData, err := mp.Contract.ABI.Pack("getValidatorInfoAndPubkey", validatorId)
+	if err != nil {
+		return ValidatorInforWithPubkey{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
+	}
+
+	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, nil)
+	if err != nil {
+		return ValidatorInforWithPubkey{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
+	}
+
+	err = mp.Contract.ABI.UnpackIntoInterface(&validatorWithPubkey, "getValidatorInfoAndPubkey", response)
+	if err != nil {
+		return ValidatorInforWithPubkey{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
+	}
+
+	return *validatorWithPubkey, nil
 }
 
 // Get the number of validators currently exiting
@@ -498,7 +524,7 @@ func (mp *megapoolV1) GetMegapoolPubkeys(opts *bind.CallOpts) ([]rptypes.Validat
 		for mi := msi; mi < mei; mi++ {
 			mi := mi
 			wg.Go(func() error {
-				validator, err := mp.GetValidatorInfo(mi, opts)
+				validator, err := mp.GetValidatorInfoAndPubkey(mi, opts)
 				if err != nil {
 					return err
 				}

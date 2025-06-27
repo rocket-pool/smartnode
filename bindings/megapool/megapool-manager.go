@@ -40,7 +40,7 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 
 	indexBig := new(big.Int).SetUint64(uint64(index))
 
-	callData, err := megapoolManager.ABI.Pack("getValidatorInfo", indexBig)
+	callData, err := megapoolManager.ABI.Pack("getValidatorInfoAndPubkey", indexBig)
 	if err != nil {
 		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
 	}
@@ -52,13 +52,12 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 
 	// Both Call and UnpackIntoStruct were not working with this response (which contains a struct inside a struct)
 	// For the moment this was the only way for it to work. We should investigate further.
-	iface, err := megapoolManager.ABI.Unpack("getValidatorInfo", response)
+	iface, err := megapoolManager.ABI.Unpack("getValidatorInfoAndPubkey", response)
 	if err != nil {
 		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
 	}
 
-	src := iface[0].(struct {
-		PubKey             []byte `json:"pubKey"`
+	src := iface[1].(struct {
 		LastAssignmentTime uint32 `json:"lastAssignmentTime"`
 		LastRequestedValue uint32 `json:"lastRequestedValue"`
 		LastRequestedBond  uint32 `json:"lastRequestedBond"`
@@ -74,8 +73,9 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 		ExitBalance        uint64 `json:"exitBalance"`
 		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
 	})
-	validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
-	copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
+	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
+	// copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
+	validatorInfo.PubKey = iface[0].([]byte)
 	validatorInfo.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
 	validatorInfo.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
 	validatorInfo.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
@@ -90,8 +90,8 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 	validatorInfo.ValidatorInfo.InPrestake = src.InPrestake
 	validatorInfo.ValidatorInfo.ExpressUsed = src.ExpressUsed
 	validatorInfo.ValidatorInfo.Dissolved = src.Dissolved
-	validatorInfo.MegapoolAddress = iface[1].(common.Address)
-	validatorInfo.ValidatorId = iface[2].(uint32)
+	validatorInfo.MegapoolAddress = iface[2].(common.Address)
+	validatorInfo.ValidatorId = iface[3].(uint32)
 
 	return *validatorInfo, nil
 }

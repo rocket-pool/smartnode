@@ -51,7 +51,7 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 		return nil, err
 	}
 
-	validatorInfo, err := mp.GetValidatorInfo(validatorId, nil)
+	validatorInfo, err := mp.GetValidatorInfoAndPubkey(validatorId, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func notifyValidatorExit(c *cli.Context, validatorId uint32) (*api.NotifyValidat
 	}
 
 	// Get the validator pubkey
-	validatorInfo, err := mp.GetValidatorInfo(validatorId, nil)
+	validatorInfo, err := mp.GetValidatorInfoAndPubkey(validatorId, nil)
 	if err != nil {
 		return nil, err
 	}

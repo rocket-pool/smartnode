@@ -61,7 +61,7 @@ func canDissolveWithProof(c *cli.Context, validatorId uint32) (*api.CanDissolveW
 		return nil, err
 	}
 
-	validatorInfo, err := mp.GetValidatorInfo(validatorId, nil)
+	validatorInfo, err := mp.GetValidatorInfoAndPubkey(validatorId, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +149,7 @@ func dissolveWithProof(c *cli.Context, validatorId uint32) (*api.DissolveWithPro
 		return nil, err
 	}
 
-	validatorInfo, err := mp.GetValidatorInfo(validatorId, nil)
+	validatorInfo, err := mp.GetValidatorInfoAndPubkey(validatorId, nil)
 	if err != nil {
 		return nil, err
 	}

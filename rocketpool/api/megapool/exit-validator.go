@@ -106,7 +106,7 @@ func exitValidator(c *cli.Context, validatorId uint32) (*api.ExitValidatorRespon
 	}
 
 	// Get the validator pubkey
-	validatorInfo, err := mp.GetValidatorInfo(validatorId, nil)
+	validatorInfo, err := mp.GetValidatorInfoAndPubkey(validatorId, nil)
 	if err != nil {
 		return nil, err
 	}

@@ -74,7 +74,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 		return &response, nil
 	}
 
-	validatorInfo, err := mp.GetValidatorInfo(uint32(validatorId), nil)
+	validatorInfo, err := mp.GetValidatorInfoAndPubkey(uint32(validatorId), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 		return nil, err
 	}
 
-	validatorInfo, err := mp.GetValidatorInfo(uint32(validatorId), nil)
+	validatorInfo, err := mp.GetValidatorInfoAndPubkey(uint32(validatorId), nil)
 	if err != nil {
 		return nil, err
 	}

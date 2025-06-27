@@ -267,9 +267,9 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 		megapoolAddressMap := make(map[common.Address][]types.ValidatorPubkey)
 		for _, validator := range state.MegapoolValidatorGlobalIndex {
 			// Add the megapool address to a set
-			if len(validator.ValidatorInfo.PubKey) > 0 { // TODO CHECK  validators without a pubkey
-				megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], types.ValidatorPubkey(validator.ValidatorInfo.PubKey))
-				megapoolPubkeys = append(megapoolPubkeys, types.ValidatorPubkey(validator.ValidatorInfo.PubKey))
+			if len(validator.PubKey) > 0 { // TODO CHECK  validators without a pubkey
+				megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], types.ValidatorPubkey(validator.PubKey))
+				megapoolPubkeys = append(megapoolPubkeys, types.ValidatorPubkey(validator.PubKey))
 			}
 		}
 		state.MegapoolToPubkeysMap = megapoolAddressMap

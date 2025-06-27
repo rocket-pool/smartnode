@@ -481,7 +481,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 	for i := uint32(0); i < validatorCount; i++ {
 		i := i
 		wg.Go(func() error {
-			validatorDetails, err := mp.GetValidatorInfo(i, nil)
+			validatorDetails, err := mp.GetValidatorInfoAndPubkey(i, nil)
 			if err != nil {
 				return fmt.Errorf("Error retrieving validator %d details: %v\n", i, err)
 			}
