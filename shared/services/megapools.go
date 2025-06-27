@@ -487,7 +487,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 			}
 			validator := api.MegapoolValidatorDetails{
 				ValidatorId:        i,
-				PubKey:             types.BytesToValidatorPubkey(validatorDetails.PubKey),
+					PubKey:             types.BytesToValidatorPubkey(validatorDetails.Pubkey),
 				LastAssignmentTime: time.Unix(int64(validatorDetails.LastAssignmentTime), 0),
 				LastRequestedValue: validatorDetails.LastRequestedValue,
 				LastRequestedBond:  validatorDetails.LastRequestedBond,

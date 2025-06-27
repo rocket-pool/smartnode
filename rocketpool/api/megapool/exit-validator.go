@@ -111,7 +111,7 @@ func exitValidator(c *cli.Context, validatorId uint32) (*api.ExitValidatorRespon
 		return nil, err
 	}
 
-	validatorPubkey := types.ValidatorPubkey(validatorInfo.PubKey)
+	validatorPubkey := types.ValidatorPubkey(validatorInfo.Pubkey)
 
 	// Get validator private key
 	validatorKey, err := w.GetValidatorKeyByPubkey(validatorPubkey)

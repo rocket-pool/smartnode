@@ -89,7 +89,7 @@ type megapoolV1 struct {
 }
 
 const (
-	megapoolV1EncodedAbi string = "eJztWktv2zgQ/isLn4Nike320Fse7iJoWmTtZPcQFAYljR0iNKnlw45Q7H/foS3rLYuKpECt99Q6JIffDGe+GQ71+H1CuODRWhg1+bgkTMHZhPLQaPz5+B3/G8ALBJkhDZITdh+FMPk4Mfj7/PcPk7MJJ2v7B4KCuMbfOj/h37P2sjTFf8qSviUTvsCKhEKwS8GDGQTGR+HJfNgAArH7/vgKXoOnb7gvgaifWcXOZ6ilccC0IYwGRAt5E7yxkn8ddr5Qiq74Sah6Df8YMKehKlVKsM1J6Drlgx3rb+cOmuKkN1L0herTOFFUlPLVCWg61+T5Z8ujM9gSGagrRnDm8LpxEcBFj/ptBI73KVCCfupTnusBYA7QknqmhjNyJj++46LWf9JNSRiy6A5Qio5wojA6Fo9TlCYavhhNPMooDttD4yGJiMcymiwN9zUV3AFdlpcXR4k5A3BX6HwyPFDN+BzBpdJ9wnzDUAyaIEDuis8gt1Ozoa0vpysrfcXBeTtJsN5aL6DSWBsK21cdY2snS6z8v3lrHdHSbp8BmIoOIJTgo6RRxnewr+7HiS0ux5O8P9ABJYw/jPwV6AuckNHjKg7ZhijM2qzSTl293iKLL7KIreAFzVE5TCgiKNtLGAuWuKoe49lNX0IqiZ10yYT/PBaL3RKlkypqbOC+2ro3CCSohjRIkkklSIehHiHZDuhYTNSpFhsM1Qxw0rhoai4EB6X/pvopkGRrs8I0FP5TM74P7+vg4UhP6B4UyCsSUk3YWAw2EhLtrUDJqnTDl6KgkS/WIXoIr97UizRk6CU03meI0t32wzXFcRYsQ7rdZ/E1bnVfuuYmjbZGKTNbCyqdFgPdpMSc1loIFsxCUe0MwhOCpatVoTe0G21cBYUmodsqyv+Mi+eWy+4wf1ic7WGGNvM8qPZYg3Jv2900ubZi3bIisaVBZFs1ZZprlmC3viSMcB9es3xbQcxlqi0IwbrF+PqXGdYsoA+dxzlqQVZwSyKM73fFmC8xlDYhXhB6Is0kvbArCQGGOCWsISvvuKOaPA9Dg/YkPIz84727I/62MAqmez+/p/YQHBw2T6Upfd8Z79mJVGslzJFXiTYSXIXk8khMZddEk5kQuvoYDm0W2A5y0e2Y7ZrDbOEQZw5SFBPaZWFsusdvmbWhFGJZsi5OydpXaLqM7HXuB7UumztaqByQqYyvZl0dk8eLlSIq+lpKb58Udod5/msFrRcIUefnO4DZ905v+B9boC1yQ8rIlSYu5YHROP8nipLShDpsELRuU8vd1yOlm3BvfTgJuKTUWurykNE9+NtFnauX9BR0uctJizyatYBLsNaU9WVXR2F44VZQFhB7e3W8Jmn1Lo6UmshJy7bsXWIYZ9yAVHb4zW/mXV6RSz0xwYJrYFgk64zqSXus+ZW2JBCLoE4C2z/7HrZ7CFeSBL1/KFLScCnFuh/V3vTzhKl+sm94PtBOn0dVwynd4HX1zbhnnfAafYtbKf0QIj1Uq+WSGwhjHvGf6x8Acx42DJ/sXk2SwBlFX/uAZ/dMAQ3t7bwLFE+/p/eS5RJ2D3Fjs1TiiG7ABrJVswEWPPd6UmGM5HpAbaKnatgys9A4qCSOTDZvMvTr4DkwhNzzJoL5DzTANyg="
+	megapoolV1EncodedAbi string = "eJztW0uT2jgQ/itbnKk9ZHdzyI15JEXVJDWBYfeQSlHCbkA1QvJKbRhqK/99W2D8wAbLYE+cgdvMWGp93S196ofm238dLoMQTefDN/sjgpZMPK0D6HzoeEqiZh7+NlDeM+AQlWYz6NtBU+ZBp9uRbGEHjnV6QM/3NRhDn3Erh0V/+NHNLRHS7+/+ep8SNQFG634CCYabJ76ARM5u8I/v3Y5BhvA5RDbhguOavkolA7ZmE5GaQZIM6tAjYJvVGQ1aL1RI6k6ZMNDNau/DC/ipT8ehMhIksQBet7osPKhoNOAzzFiglLhR0h+AH3okPB4PSyAgb0PBO5hgX3oamHnLKr5pHz4CScF1LwgEP0dHOroOsJZMcJ/REe/7r6zn37uVe8bwmbwIVe/g3xDCy1CVG6PE8iJ0vZeNufWPdw6a0qBXUvSF42V4lBTlcnYBmj7Y6PMSXDpEdhmKjqQ406dtDI8GsGLaN7eC0cjmdZPKh16N+i0Vfa9ToAac1ynP1QF0r6Pmk/DAPXA4Ic5nqwf3T7Iooyh4HUXENFCFGIl3zmKnofSQK+mALn3Xjo9etimAm+D1Yyh9U47PEVwi3WPCCwWJIRP4dB9FPsisVG5ou5eTmYV7xWHzniXB7tbDAgqNteSwOsmNlTdZbOWreRs6Jd6cCQFyBjauqvMcp5awF0Mzon0INHgkqZUM5G9zynZii5LAODZpyEHxndSM/Blgjwak9LiNSKWEJ9I2K7TTaecyiywqnxC2vV1Qzht1kkUGlK3StQVLlMu10Xf3LwHXzA66sTF7Wyz2wAzGcV7rwG2SmzZ684vNGeL+zRFALB6UQxS3e+qDZLsebXHeWXFsY6gGQIPaRaBDpSQY/Ifj3NdsZe+r+0B583J87/88BI++1IRuZEDfsoAjE20xWEsIobbQKa1SX07VnkaeWgS0Q6TbooIIfRsnLGhKvjEcF5BLpQxstGkwCTfOkxJxU2UhFJIrw9EZxEQpkcw2e6XAzdfSWbBX/HabxeXXKDyvOO2R7gGLszrMwN4gI1Mdq5/v2bibJlMud5u2X6c8NGuf1pIjZItceZIrl2AB3zDBpAenTF8V0HJlIVvth0Jhfvb3XMFu+xQjek2yq/lGj0Ye2Jq44fd9vsixG4YBpT0tJLee9B/DyTNka3xXlruy3JXlriznxHJ8+1uW6Qpcs0ZIJV7BjnUw/bllDFlIjcf1qk+jDKQ4HRG3GnwiWc5ESRa3Wb842N59arT+PyHuPd4nO3J0x6GB+y3TPHG7JR3OftYRib8fi7daBQlDutkYhhpchWQ2XnSZ3DFkA5U+jWk37FoasGqkZHvm8Shnm7EDZ6XUVMin67p7Es0rue1p9eWnFXAXTs7Vm8ae7cfoZG7JK+NiE4uDrJ6x70dOwpJr6Beys3HS74vCV9lClfuaevNMNlf+q60tooGm5Cr953S+m3dpWVCVaLcLSxsw3BK0sZ9/Xukst9qJ/65QwCA/5f8LcgynhH8HggJILMJY/j4mJ5CuxLMEVn9ws1tuFMw082t/upbTcKrVoh7VXvVh2D3O7esJD/hZj42L4eQyaizOVGvWidLaB1rK4Cggsip5aZV+CpDZMc2Q16a7Gx+EVnS5dng27VQoaXZlXbrvzZr6utMpbB4MtM1S8cZyA9aQrRwCVJnppRYYI077uU1CuWk2tNxLCwuJIBU6lBn6NHguYRXF9RPmPbuO11veJPD/A5tFWH8="
 )
 
 // The decoded ABI for megapools
@@ -175,30 +175,69 @@ func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) 
 	return *validatorInfo, nil
 }
 
-type ValidatorInforWithPubkey struct {
+type ValidatorInfoWithPubkey struct {
+	Pubkey        []byte `abi:"pubkey"`
 	ValidatorInfo `abi:"validatorInfo"`
-	PubKey        []byte `abi:"pubKey"`
 }
 
-func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.CallOpts) (ValidatorInforWithPubkey, error) {
-	validatorWithPubkey := new(ValidatorInforWithPubkey)
+func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.CallOpts) (ValidatorInfoWithPubkey, error) {
+
+	validator := new(ValidatorInfoWithPubkey)
 
 	callData, err := mp.Contract.ABI.Pack("getValidatorInfoAndPubkey", validatorId)
 	if err != nil {
-		return ValidatorInforWithPubkey{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
+		return ValidatorInfoWithPubkey{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
 	}
 
 	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, nil)
 	if err != nil {
-		return ValidatorInforWithPubkey{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
+		return ValidatorInfoWithPubkey{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
 	}
 
-	err = mp.Contract.ABI.UnpackIntoInterface(&validatorWithPubkey, "getValidatorInfoAndPubkey", response)
+	iface, err := mp.Contract.ABI.Unpack("getValidatorInfoAndPubkey", response)
 	if err != nil {
-		return ValidatorInforWithPubkey{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
+		return ValidatorInfoWithPubkey{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
 	}
 
-	return *validatorWithPubkey, nil
+	src := iface[0].(struct {
+		LastAssignmentTime uint32 `json:"lastAssignmentTime"`
+		LastRequestedValue uint32 `json:"lastRequestedValue"`
+		LastRequestedBond  uint32 `json:"lastRequestedBond"`
+		DepositValue       uint32 `json:"depositValue"`
+		Staked             bool   `json:"staked"`
+		Exited             bool   `json:"exited"`
+		InQueue            bool   `json:"inQueue"`
+		InPrestake         bool   `json:"inPrestake"`
+		ExpressUsed        bool   `json:"expressUsed"`
+		Dissolved          bool   `json:"dissolved"`
+		Exiting            bool   `json:"exiting"`
+		Locked             bool   `json:"locked"`
+		ValidatorIndex     uint64 `json:"validatorIndex"`
+		ExitBalance        uint64 `json:"exitBalance"`
+		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
+		LockedSlot         uint64 `json:"lockedSlot"`
+	})
+	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
+	// copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
+	validator.Pubkey = iface[1].([]byte)
+	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
+	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
+	validator.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
+	validator.ValidatorInfo.Staked = src.Staked
+	validator.ValidatorInfo.DepositValue = src.DepositValue
+	validator.ValidatorInfo.ExitBalance = src.ExitBalance
+	validator.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
+	validator.ValidatorInfo.Exiting = src.Exiting
+	validator.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
+	validator.ValidatorInfo.Exited = src.Exited
+	validator.ValidatorInfo.InQueue = src.InQueue
+	validator.ValidatorInfo.InPrestake = src.InPrestake
+	validator.ValidatorInfo.ExpressUsed = src.ExpressUsed
+	validator.ValidatorInfo.Dissolved = src.Dissolved
+	validator.ValidatorInfo.Locked = src.Locked
+	validator.ValidatorInfo.LockedSlot = src.LockedSlot
+
+	return *validator, nil
 }
 
 // Get the number of validators currently exiting
@@ -529,7 +568,7 @@ func (mp *megapoolV1) GetMegapoolPubkeys(opts *bind.CallOpts) ([]rptypes.Validat
 					return err
 				}
 				lock.Lock()
-				pubkeys[mi] = rptypes.BytesToValidatorPubkey(validator.PubKey)
+				pubkeys[mi] = rptypes.BytesToValidatorPubkey(validator.Pubkey)
 				lock.Unlock()
 				return nil
 			})

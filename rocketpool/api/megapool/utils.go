@@ -280,7 +280,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 			}
 			validator := api.MegapoolValidatorDetails{
 				ValidatorId:        i,
-				PubKey:             types.BytesToValidatorPubkey(validatorDetails.PubKey),
+				PubKey:             types.BytesToValidatorPubkey(validatorDetails.Pubkey),
 				LastAssignmentTime: time.Unix(int64(validatorDetails.LastAssignmentTime), 0),
 				LastRequestedValue: validatorDetails.LastRequestedValue,
 				LastRequestedBond:  validatorDetails.LastRequestedBond,
@@ -368,7 +368,7 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 		return nil, nil
 	}
 
-	pos := position.Uint64()
+	pos := position.Uint64() + 1
 
 	queueIndex := queueDetails.QueueIndex.Uint64()
 	expressQueueLength := queueDetails.ExpressQueueLength.Uint64()

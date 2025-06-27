@@ -71,7 +71,7 @@ func canDissolveWithProof(c *cli.Context, validatorId uint32) (*api.CanDissolveW
 		return nil, err
 	}
 
-	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
+	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +159,7 @@ func dissolveWithProof(c *cli.Context, validatorId uint32) (*api.DissolveWithPro
 		return nil, err
 	}
 
-	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.PubKey))
+	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}

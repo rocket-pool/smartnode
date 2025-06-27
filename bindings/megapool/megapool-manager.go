@@ -36,7 +36,7 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 		return ValidatorInfoFromGlobalIndex{}, err
 	}
 
-	validatorInfo := new(ValidatorInfoFromGlobalIndex)
+	validator := new(ValidatorInfoFromGlobalIndex)
 
 	indexBig := new(big.Int).SetUint64(uint64(index))
 
@@ -69,31 +69,35 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 		ExpressUsed        bool   `json:"expressUsed"`
 		Dissolved          bool   `json:"dissolved"`
 		Exiting            bool   `json:"exiting"`
+		Locked             bool   `json:"locked"`
 		ValidatorIndex     uint64 `json:"validatorIndex"`
 		ExitBalance        uint64 `json:"exitBalance"`
 		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
+		LockedSlot         uint64 `json:"lockedSlot"`
 	})
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
 	// copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
-	validatorInfo.PubKey = iface[0].([]byte)
-	validatorInfo.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
-	validatorInfo.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
-	validatorInfo.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
-	validatorInfo.ValidatorInfo.Staked = src.Staked
-	validatorInfo.ValidatorInfo.DepositValue = src.DepositValue
-	validatorInfo.ValidatorInfo.ExitBalance = src.ExitBalance
-	validatorInfo.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
-	validatorInfo.ValidatorInfo.Exiting = src.Exiting
-	validatorInfo.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
-	validatorInfo.ValidatorInfo.Exited = src.Exited
-	validatorInfo.ValidatorInfo.InQueue = src.InQueue
-	validatorInfo.ValidatorInfo.InPrestake = src.InPrestake
-	validatorInfo.ValidatorInfo.ExpressUsed = src.ExpressUsed
-	validatorInfo.ValidatorInfo.Dissolved = src.Dissolved
-	validatorInfo.MegapoolAddress = iface[2].(common.Address)
-	validatorInfo.ValidatorId = iface[3].(uint32)
+	validator.PubKey = iface[0].([]byte)
+	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
+	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
+	validator.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
+	validator.ValidatorInfo.Staked = src.Staked
+	validator.ValidatorInfo.DepositValue = src.DepositValue
+	validator.ValidatorInfo.ExitBalance = src.ExitBalance
+	validator.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
+	validator.ValidatorInfo.Exiting = src.Exiting
+	validator.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
+	validator.ValidatorInfo.Exited = src.Exited
+	validator.ValidatorInfo.InQueue = src.InQueue
+	validator.ValidatorInfo.InPrestake = src.InPrestake
+	validator.ValidatorInfo.ExpressUsed = src.ExpressUsed
+	validator.ValidatorInfo.Dissolved = src.Dissolved
+	validator.ValidatorInfo.Locked = src.Locked
+	validator.ValidatorInfo.LockedSlot = src.LockedSlot
+	validator.MegapoolAddress = iface[2].(common.Address)
+	validator.ValidatorId = iface[3].(uint32)
 
-	return *validatorInfo, nil
+	return *validator, nil
 }
 
 // Estimate the gas of Stake
