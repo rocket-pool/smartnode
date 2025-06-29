@@ -340,7 +340,11 @@ func getStatus(c *cli.Context) error {
 				fmt.Printf("The unstaking period is currently %s\n", status.UnstakingPeriodDuration)
 				// Check if unstaking period passed considering the last unstake time
 				unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
-				fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat))
+				if unstakingPeriodEnd.After(status.LatestBlockTime) {
+					fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat))
+				} else {
+					fmt.Printf("Your node has %.6f RPL unstaked. That amount is currently withdrawable.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))
+				}
 			}
 			// Max withdrawable amount for megapools
 			var maxAmount big.Int
