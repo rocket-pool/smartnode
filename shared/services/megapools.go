@@ -26,7 +26,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
-	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
@@ -35,21 +34,6 @@ import (
 const MAX_WITHDRAWAL_SLOT_DISTANCE = 144000 // 20 days.
 
 func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, error) {
-	// Get validator private key
-	validatorKey, err := wallet.GetValidatorKeyByPubkey(validatorPubkey)
-	if err != nil {
-		return megapool.ValidatorProof{}, err
-	}
-
-	withdrawalCredentials := CalculateMegapoolWithdrawalCredentials(megapoolAddress)
-
-	depositAmount := uint64(31e9) // 31 ETH in gwei
-
-	depositData, _, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
-	if err != nil {
-		return megapool.ValidatorProof{}, err
-	}
-	signature := types.BytesToValidatorSignature(depositData.Signature)
 
 	bc, err := GetBeaconClient(c)
 	if err != nil {
@@ -63,11 +47,6 @@ func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.E
 	}
 
 	validatorIndex64, err := strconv.ParseUint(validatorIndex, 10, 64)
-	if err != nil {
-		return megapool.ValidatorProof{}, err
-	}
-
-	err = validateDepositInfo(eth2Config, uint64(depositAmount), validatorPubkey, withdrawalCredentials, signature)
 	if err != nil {
 		return megapool.ValidatorProof{}, err
 	}
@@ -107,15 +86,16 @@ func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.E
 		return megapool.ValidatorProof{}, err
 	}
 
+	validators := beaconState.GetValidators()
+
 	// Convert [][]byte to [][32]byte
 	proofWithFixedSize := ConvertToFixedSize(proofBytes)
 
 	proof := megapool.ValidatorProof{
-		Slot:                  block.Slot,
-		ValidatorIndex:        validatorIndex64,
-		Pubkey:                validatorPubkey[:],
-		WithdrawalCredentials: withdrawalCredentials,
-		Witnesses:             proofWithFixedSize,
+		Slot:           block.Slot,
+		ValidatorIndex: validatorIndex64,
+		Validator:      validators[validatorIndex64],
+		Witnesses:      proofWithFixedSize,
 	}
 
 	return proof, err
@@ -487,7 +467,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 			}
 			validator := api.MegapoolValidatorDetails{
 				ValidatorId:        i,
-					PubKey:             types.BytesToValidatorPubkey(validatorDetails.Pubkey),
+				PubKey:             types.BytesToValidatorPubkey(validatorDetails.Pubkey),
 				LastAssignmentTime: time.Unix(int64(validatorDetails.LastAssignmentTime), 0),
 				LastRequestedValue: validatorDetails.LastRequestedValue,
 				LastRequestedBond:  validatorDetails.LastRequestedBond,

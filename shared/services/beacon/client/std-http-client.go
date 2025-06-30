@@ -877,6 +877,36 @@ func (c *StandardHttpClient) getValidators(stateId string, pubkeys []string) (Va
 	return validators, nil
 }
 
+func (c *StandardHttpClient) GetAllValidators() ([]beacon.ValidatorStatus, error) {
+	response, err := c.getValidators("finalized", []string{})
+	if err != nil {
+		return []beacon.ValidatorStatus{}, fmt.Errorf("Could not get all validators: %w", err)
+	}
+
+	validators := make([]beacon.ValidatorStatus, len(response.Data))
+	for i, validator := range response.Data {
+
+		// Add status
+		validators[i] = beacon.ValidatorStatus{
+			Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+			Index:                      validator.Index,
+			WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
+			Balance:                    uint64(validator.Balance),
+			EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
+			Status:                     beacon.ValidatorState(validator.Status),
+			Slashed:                    validator.Validator.Slashed,
+			ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
+			ActivationEpoch:            uint64(validator.Validator.ActivationEpoch),
+			ExitEpoch:                  uint64(validator.Validator.ExitEpoch),
+			WithdrawableEpoch:          uint64(validator.Validator.WithdrawableEpoch),
+			Exists:                     true,
+		}
+
+	}
+	return validators, nil
+
+}
+
 // Get validators by pubkeys and status options
 func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts *beacon.ValidatorStatusOptions) (ValidatorsResponse, error) {
 
@@ -894,7 +924,7 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 			return ValidatorsResponse{}, err
 		}
 
-		// Get slot nuimber
+		// Get slot number
 		slot := *opts.Epoch * uint64(eth2Config.Data.SlotsPerEpoch)
 		stateId = strconv.FormatInt(int64(slot), 10)
 

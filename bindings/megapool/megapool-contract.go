@@ -12,15 +12,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	"golang.org/x/sync/errgroup"
 )
 
 type ValidatorProof struct {
-	Slot                  uint64
-	ValidatorIndex        uint64
-	Pubkey                []byte
-	WithdrawalCredentials [32]byte
-	Witnesses             [][32]byte
+	Slot           uint64
+	ValidatorIndex uint64
+	Validator      *generic.Validator
+	Witnesses      [][32]byte
 }
 
 type FinalBalanceProof struct {

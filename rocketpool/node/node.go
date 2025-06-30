@@ -46,6 +46,7 @@ const (
 	PrestakeMegapoolValidatorColor = color.FgHiGreen
 	StakeMegapoolValidatorColor    = color.FgHiBlue
 	NotifyValidatorExitColor       = color.FgHiYellow
+	DefendChallengeExitColor       = color.FgHiGreen
 )
 
 // Register node command
@@ -123,6 +124,10 @@ func run(c *cli.Context) error {
 
 	// Initialize tasks
 	manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
+	if err != nil {
+		return err
+	}
+	defendChallengeExit, err := newDefendChallengeExit(c, log.NewColorLogger(DefendChallengeExitColor))
 	if err != nil {
 		return err
 	}
@@ -229,6 +234,11 @@ func run(c *cli.Context) error {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
+
+			// Run the defend challenge exit task
+			if err := defendChallengeExit.run(state); err != nil {
+				errorLog.Println(err)
+			}
 
 			// Run the rewards download check
 			if err := downloadRewardsTrees.run(state); err != nil {

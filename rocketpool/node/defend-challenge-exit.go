@@ -5,6 +5,7 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	coretypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -21,10 +22,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
-const FarFutureEpoch uint64 = 0xffffffffffffffff
-
 // Stake megapool validator task
-type notifyValidatorExit struct {
+type defendChallengeExit struct {
 	c              *cli.Context
 	log            log.ColorLogger
 	cfg            *config.RocketPoolConfig
@@ -39,7 +38,7 @@ type notifyValidatorExit struct {
 }
 
 // Create stake megapool validator task
-func newNotifyValidatorExit(c *cli.Context, logger log.ColorLogger) (*notifyValidatorExit, error) {
+func newDefendChallengeExit(c *cli.Context, logger log.ColorLogger) (*defendChallengeExit, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -85,7 +84,7 @@ func newNotifyValidatorExit(c *cli.Context, logger log.ColorLogger) (*notifyVali
 	}
 
 	// Return task
-	return &notifyValidatorExit{
+	return &defendChallengeExit{
 		c:              c,
 		log:            logger,
 		cfg:            cfg,
@@ -102,13 +101,13 @@ func newNotifyValidatorExit(c *cli.Context, logger log.ColorLogger) (*notifyVali
 }
 
 // Prestake megapool validator
-func (t *notifyValidatorExit) run(state *state.NetworkState) error {
+func (t *defendChallengeExit) run(state *state.NetworkState) error {
 	if !state.IsSaturnDeployed {
 		return nil
 	}
 
 	// Log
-	t.log.Println("Checking if there are megapool validators exiting...")
+	t.log.Println("Checking for validators with an incorrect exit challenge ...")
 
 	// Get the latest state
 	opts := &bind.CallOpts{
@@ -142,7 +141,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 		return err
 	}
 
-	// Iterate over megapool validators checking whether they're ready to stake
+	// Iterate over megapool validators checking whether they were incorrectly challenged
 	validatorCount, err := mp.GetValidatorCount(nil)
 	if err != nil {
 		return err
@@ -153,13 +152,18 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 	}
 
 	for i := uint32(0); i < uint32(validatorCount); i++ {
-		if validatorInfo[i].WithdrawableEpoch < FarFutureEpoch && validatorInfo[i].Staked && !validatorInfo[i].Exited && !validatorInfo[i].Exiting {
-			// Log
-			t.log.Printlnf("The validator ID %d needs an exit proof", validatorInfo[i].ValidatorId)
-
-			// Call Stake
-			t.createExitProof(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
+		// Defend will be true if the validator was incorrectly challenged
+		exiting := false
+		if validatorInfo[i].Locked {
+			if validatorInfo[i].BeaconStatus.WithdrawableEpoch != FarFutureEpoch {
+				exiting = true
+				t.log.Printlnf("The validator %d was correctly challenged and needs an exit proof", validatorInfo[i].ValidatorId)
+			} else {
+				t.log.Printlnf("The validator %d was incorrectly challenged and needs a not-exiting proof", validatorInfo[i].ValidatorId)
+			}
 		}
+
+		t.defendChallenge(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), exiting, opts)
 	}
 
 	// Return
@@ -167,7 +171,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 
 }
 
-func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
+func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, exiting bool, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -175,7 +179,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 		return err
 	}
 
-	t.log.Printlnf("[STARTED] Crafting an exit proof. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
+	t.log.Printlnf("[STARTED] Crafting a validator proof. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
 	proof, err := services.GetValidatorProof(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
 	if err != nil {
@@ -183,13 +187,22 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 		return err
 	}
 
-	t.log.Printlnf("[FINISHED] The validator exit proof has been successfully created.")
+	t.log.Printlnf("[FINISHED] The beacon state proof has been successfully created.")
+	var gasInfo rocketpool.GasInfo
 
-	// Get the gas limit
-	gasInfo, err := megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, proof, opts)
-	if err != nil {
-		return err
+	if !exiting {
+		// Get the gas limit
+		gasInfo, err = megapool.EstimateNotifyNotExitGas(rp, mp.GetAddress(), validatorId, proof, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		gasInfo, err = megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, proof, opts)
+		if err != nil {
+			return err
+		}
 	}
+
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
 	// Get the max fee
 	maxFee := t.maxFee
@@ -209,8 +222,20 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
-	// Call stake
-	tx, err := megapool.NotifyExit(rp, mp.GetAddress(), validatorId, proof, opts)
+	var tx *coretypes.Transaction
+	if !exiting {
+		t.log.Printlnf("Notifying that validator %d is not exiting.", validatorId)
+		tx, err = megapool.NotifyNotExit(rp, mp.GetAddress(), validatorId, proof, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		t.log.Printlnf("Notifying that validator %d is exiting.", validatorId)
+		tx, err = megapool.NotifyExit(rp, mp.GetAddress(), validatorId, proof, opts)
+		if err != nil {
+			return err
+		}
+	}
 	if err != nil {
 		return err
 	}
@@ -222,7 +247,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 	}
 
 	// Log
-	t.log.Printlnf("Successfully notified validator %d exit.", validatorId)
+	t.log.Printlnf("Successfully responded to exit-challenge for validator %d.", validatorId)
 
 	// Return
 	return nil
