@@ -2,7 +2,6 @@ package state
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -68,44 +67,19 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 
 		for j := i; j < max; j++ {
 			j := j // Create a new variable `j` scoped to the loop iteration
-			wg.Go(func() error {
-				validators[j], err = megapool.GetValidatorInfo(rp, uint32(j), opts)
-				if err != nil {
-					return fmt.Errorf("error executing GetValidatorInfo with global index %d", j)
-				}
-				return nil
-			})
+			//wg.Go(func() error {
+			validators[j], err = megapool.GetValidatorInfo(rp, uint32(j), opts)
+			// if err != nil {
+			// 	return fmt.Errorf("error executing GetValidatorInfo with global index %d", j)
+			// }
+			//	return nil
+			//})
 		}
 	}
 
-	if err := wg.Wait(); err != nil {
-		return nil, fmt.Errorf("error getting all megapool validators: %w", err)
-	}
-
-	for i := 0; i < count; i += megapoolValidatorsBatchSize {
-		i := i
-		max := i + megapoolValidatorsBatchSize
-		if max > count {
-			max = count
-		}
-
-		for j := i; j < max; j++ {
-			j := j // Create a new variable `j` scoped to the loop iteration
-			wg.Go(func() error {
-				// Load the megapool contract
-				mp, err := megapool.NewMegaPoolV1(rp, validators[j].MegapoolAddress, nil)
-				if err != nil {
-					return fmt.Errorf("error loading megapool contract for global index %d: %w", j, err)
-				}
-				pubkey, err := mp.GetValidatorPubkey(uint32(j), opts)
-				validators[j].Pubkey = pubkey.Bytes()
-				if err != nil {
-					return fmt.Errorf("error executing GetValidatorPubkey with global index %d", j)
-				}
-				return nil
-			})
-		}
-	}
+	// if err := wg.Wait(); err != nil {
+	// 	return nil, fmt.Errorf("error getting all megapool validators: %w", err)
+	// }
 
 	return validators, nil
 }

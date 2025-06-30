@@ -91,10 +91,25 @@ func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.E
 	// Convert [][]byte to [][32]byte
 	proofWithFixedSize := ConvertToFixedSize(proofBytes)
 
+	withdrawalCredentials := validators[validatorIndex64].WithdrawalCredentials
+	// Convert the WithdrawalCredentials to the fixed size [32]byte
+	var withdrawalCredentialsFixed [32]byte
+	copy(withdrawalCredentialsFixed[:], withdrawalCredentials[:])
+
+	val := megapool.ProvedValidator{
+		Pubkey:                     validatorPubkey[:],
+		WithdrawalCredentials:      withdrawalCredentialsFixed,
+		EffectiveBalance:           big.NewInt(int64(validators[validatorIndex64].EffectiveBalance)),
+		Slashed:                    validators[validatorIndex64].Slashed,
+		ActivationEligibilityEpoch: validators[validatorIndex64].ActivationEligibilityEpoch,
+		ActivationEpoch:            validators[validatorIndex64].ActivationEpoch,
+		ExitEpoch:                  validators[validatorIndex64].ExitEpoch,
+		WithdrawableEpoch:          validators[validatorIndex64].WithdrawableEpoch,
+	}
 	proof := megapool.ValidatorProof{
 		Slot:           block.Slot,
 		ValidatorIndex: validatorIndex64,
-		Validator:      validators[validatorIndex64],
+		Validator:      val,
 		Witnesses:      proofWithFixedSize,
 	}
 
