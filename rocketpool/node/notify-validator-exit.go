@@ -153,7 +153,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 	}
 
 	for i := uint32(0); i < uint32(validatorCount); i++ {
-		if validatorInfo[i].WithdrawableEpoch < FarFutureEpoch && validatorInfo[i].Staked && !validatorInfo[i].Exited && !validatorInfo[i].Exiting {
+		if validatorInfo[i].Activated && validatorInfo[i].WithdrawableEpoch < FarFutureEpoch && validatorInfo[i].Staked && !validatorInfo[i].Exited && !validatorInfo[i].Exiting {
 			// Log
 			t.log.Printlnf("The validator ID %d needs an exit proof", validatorInfo[i].ValidatorId)
 
