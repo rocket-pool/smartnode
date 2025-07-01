@@ -40,7 +40,7 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 
 	indexBig := new(big.Int).SetUint64(uint64(index))
 
-	callData, err := megapoolManager.ABI.Pack("getValidatorInfoAndPubkey", indexBig)
+	callData, err := megapoolManager.ABI.Pack("getValidatorInfo", indexBig)
 	if err != nil {
 		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
 	}
@@ -52,7 +52,7 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 
 	// Both Call and UnpackIntoStruct were not working with this response (which contains a struct inside a struct)
 	// For the moment this was the only way for it to work. We should investigate further.
-	iface, err := megapoolManager.ABI.Unpack("getValidatorInfoAndPubkey", response)
+	iface, err := megapoolManager.ABI.Unpack("getValidatorInfo", response)
 	if err != nil {
 		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
 	}

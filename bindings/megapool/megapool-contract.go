@@ -175,6 +175,27 @@ func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) 
 	return *validatorInfo, nil
 }
 
+func (mp *megapoolV1) GetValidatorPubkey(validatorId uint32, opts *bind.CallOpts) (rptypes.ValidatorPubkey, error) {
+	pubkey := new(rptypes.ValidatorPubkey)
+
+	callData, err := mp.Contract.ABI.Pack("getValidatorPubkey", validatorId)
+	if err != nil {
+		return rptypes.ValidatorPubkey{}, fmt.Errorf("error creating calldata for getValidatorPubkey: %w", err)
+	}
+
+	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, nil)
+	if err != nil {
+		return rptypes.ValidatorPubkey{}, fmt.Errorf("error calling getValidatorPubkey: %w", err)
+	}
+
+	err = mp.Contract.ABI.UnpackIntoInterface(&pubkey, "getValidatorPubkey", response)
+	if err != nil {
+		return rptypes.ValidatorPubkey{}, fmt.Errorf("error unpacking getValidatorPubkey response: %w", err)
+	}
+
+	return *pubkey, nil
+}
+
 type ValidatorInfoWithPubkey struct {
 	Pubkey        []byte `abi:"pubkey"`
 	ValidatorInfo `abi:"validatorInfo"`
