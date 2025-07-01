@@ -152,7 +152,6 @@ func (t *defendChallengeExit) run(state *state.NetworkState) error {
 	}
 
 	for i := uint32(0); i < uint32(validatorCount); i++ {
-		// Defend will be true if the validator was incorrectly challenged
 		exiting := false
 		if validatorInfo[i].Locked {
 			if validatorInfo[i].BeaconStatus.WithdrawableEpoch != FarFutureEpoch {
@@ -161,9 +160,10 @@ func (t *defendChallengeExit) run(state *state.NetworkState) error {
 			} else {
 				t.log.Printlnf("The validator %d was incorrectly challenged and needs a not-exiting proof", validatorInfo[i].ValidatorId)
 			}
+
+			t.defendChallenge(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), exiting, opts)
 		}
 
-		t.defendChallenge(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), exiting, opts)
 	}
 
 	// Return
