@@ -180,7 +180,6 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
         --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
         --Pruning.FullPruningMaxDegreeOfParallelism=$RP_NETHERMIND_FULL_PRUNING_MAX_DEGREE_PARALLELISM \
-        --Pruning.FullPruningMemoryBudgetMb=$RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET \
         $EC_ADDITIONAL_FLAGS"
 
     if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
@@ -223,6 +222,10 @@ if [ "$CLIENT" = "nethermind" ]; then
         CMD="$CMD --Pruning.CacheMb $RP_NETHERMIND_PRUNE_MEM_SIZE"
     fi
 
+    if [ ! -z "$RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET" ]; then
+        CMD="$CMD --Pruning.FullPruningMemoryBudgetMb $RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET"
+    fi
+    
     exec ${CMD}
 
 fi
