@@ -227,6 +227,16 @@ func (m *BeaconClientManager) GetValidatorStatus(pubkey types.ValidatorPubkey, o
 	return result.(beacon.ValidatorStatus), nil
 }
 
+func (m *BeaconClientManager) GetAllValidators() ([]beacon.ValidatorStatus, error) {
+	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
+		return client.GetAllValidators()
+	})
+	if err != nil {
+		return []beacon.ValidatorStatus{}, err
+	}
+	return result.([]beacon.ValidatorStatus), nil
+}
+
 // Get the statuses of multiple validators by their pubkeys
 func (m *BeaconClientManager) GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[types.ValidatorPubkey]beacon.ValidatorStatus, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {

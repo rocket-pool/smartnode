@@ -26,6 +26,7 @@ import (
 var minTasksInterval, _ = time.ParseDuration("4m")
 var maxTasksInterval, _ = time.ParseDuration("6m")
 var taskCooldown, _ = time.ParseDuration("5s")
+var heavyTaskCooldown, _ = time.ParseDuration("1h")
 
 const (
 	MaxConcurrentEth1Requests = 200
@@ -37,6 +38,7 @@ const (
 	DissolveTimedOutMinipoolsColor  = color.FgMagenta
 	DissolveTimedOutMegapoolsColor  = color.FgCyan
 	DissolveInvalidCredentialsColor = color.FgHiRed
+	ChallengeValidatorsExitingColor = color.FgHiBlue
 	SubmitScrubMinipoolsColor       = color.FgHiGreen
 	ErrorColor                      = color.FgRed
 	MetricsColor                    = color.FgHiYellow
@@ -135,6 +137,10 @@ func run(c *cli.Context) error {
 	dissolveTimedOutMegapoolValidators, err := newDissolveTimedOutMegapoolValidators(c, log.NewColorLogger(DissolveTimedOutMinipoolsColor))
 	if err != nil {
 		return fmt.Errorf("error during timed-out minipools check: %w", err)
+	}
+	challengeValidatorsExiting, err := newChallengeValidatorsExiting(c, log.NewColorLogger(ChallengeValidatorsExitingColor))
+	if err != nil {
+		return fmt.Errorf("error during flag validators exiting: %w", err)
 	}
 	dissolveInvalidCredentials, err := newDissolveInvalidCredentials(c, log.NewColorLogger(DissolveInvalidCredentialsColor))
 	if err != nil {
@@ -237,6 +243,12 @@ func run(c *cli.Context) error {
 					time.Sleep(taskCooldown)
 					continue
 				}
+
+				// Flag validators that are exiting and didn't notify the exit
+				if err := challengeValidatorsExiting.run(state); err != nil {
+					errorLog.Println(err)
+				}
+				time.Sleep(heavyTaskCooldown)
 
 				// Run the megapool validator dissolve check
 				if err := dissolveTimedOutMegapoolValidators.run(state); err != nil {

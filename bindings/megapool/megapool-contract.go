@@ -16,11 +16,21 @@ import (
 )
 
 type ValidatorProof struct {
-	Slot                  uint64
-	ValidatorIndex        uint64
-	Pubkey                []byte
-	WithdrawalCredentials [32]byte
-	Witnesses             [][32]byte
+	Slot           uint64
+	ValidatorIndex uint64
+	Validator      ProvedValidator
+	Witnesses      [][32]byte
+}
+
+type ProvedValidator struct {
+	Pubkey                     []byte   `json:"pubkey" ssz-size:"48"`
+	WithdrawalCredentials      [32]byte `json:"withdrawal_credentials" ssz-size:"32"`
+	EffectiveBalance           *big.Int `json:"effective_balance"`
+	Slashed                    bool     `json:"slashed"`
+	ActivationEligibilityEpoch uint64   `json:"activation_eligibility_epoch"`
+	ActivationEpoch            uint64   `json:"activation_epoch"`
+	ExitEpoch                  uint64   `json:"exit_epoch"`
+	WithdrawableEpoch          uint64   `json:"withdrawable_epoch"`
 }
 
 type FinalBalanceProof struct {
@@ -89,7 +99,7 @@ type megapoolV1 struct {
 }
 
 const (
-	megapoolV1EncodedAbi string = "eJztW0uT2jgQ/itbnKk9ZHdzyI15JEXVJDWBYfeQSlHCbkA1QvJKbRhqK/99W2D8wAbLYE+cgdvMWGp93S196ofm238dLoMQTefDN/sjgpZMPK0D6HzoeEqiZh7+NlDeM+AQlWYz6NtBU+ZBp9uRbGEHjnV6QM/3NRhDn3Erh0V/+NHNLRHS7+/+ep8SNQFG634CCYabJ76ARM5u8I/v3Y5BhvA5RDbhguOavkolA7ZmE5GaQZIM6tAjYJvVGQ1aL1RI6k6ZMNDNau/DC/ipT8ehMhIksQBet7osPKhoNOAzzFiglLhR0h+AH3okPB4PSyAgb0PBO5hgX3oamHnLKr5pHz4CScF1LwgEP0dHOroOsJZMcJ/REe/7r6zn37uVe8bwmbwIVe/g3xDCy1CVG6PE8iJ0vZeNufWPdw6a0qBXUvSF42V4lBTlcnYBmj7Y6PMSXDpEdhmKjqQ406dtDI8GsGLaN7eC0cjmdZPKh16N+i0Vfa9ToAac1ynP1QF0r6Pmk/DAPXA4Ic5nqwf3T7Iooyh4HUXENFCFGIl3zmKnofSQK+mALn3Xjo9etimAm+D1Yyh9U47PEVwi3WPCCwWJIRP4dB9FPsisVG5ou5eTmYV7xWHzniXB7tbDAgqNteSwOsmNlTdZbOWreRs6Jd6cCQFyBjauqvMcp5awF0Mzon0INHgkqZUM5G9zynZii5LAODZpyEHxndSM/Blgjwak9LiNSKWEJ9I2K7TTaecyiywqnxC2vV1Qzht1kkUGlK3StQVLlMu10Xf3LwHXzA66sTF7Wyz2wAzGcV7rwG2SmzZ684vNGeL+zRFALB6UQxS3e+qDZLsebXHeWXFsY6gGQIPaRaBDpSQY/Ifj3NdsZe+r+0B583J87/88BI++1IRuZEDfsoAjE20xWEsIobbQKa1SX07VnkaeWgS0Q6TbooIIfRsnLGhKvjEcF5BLpQxstGkwCTfOkxJxU2UhFJIrw9EZxEQpkcw2e6XAzdfSWbBX/HabxeXXKDyvOO2R7gGLszrMwN4gI1Mdq5/v2bibJlMud5u2X6c8NGuf1pIjZItceZIrl2AB3zDBpAenTF8V0HJlIVvth0Jhfvb3XMFu+xQjek2yq/lGj0Ye2Jq44fd9vsixG4YBpT0tJLee9B/DyTNka3xXlruy3JXlriznxHJ8+1uW6Qpcs0ZIJV7BjnUw/bllDFlIjcf1qk+jDKQ4HRG3GnwiWc5ESRa3Wb842N59arT+PyHuPd4nO3J0x6GB+y3TPHG7JR3OftYRib8fi7daBQlDutkYhhpchWQ2XnSZ3DFkA5U+jWk37FoasGqkZHvm8Shnm7EDZ6XUVMin67p7Es0rue1p9eWnFXAXTs7Vm8ae7cfoZG7JK+NiE4uDrJ6x70dOwpJr6Beys3HS74vCV9lClfuaevNMNlf+q60tooGm5Cr953S+m3dpWVCVaLcLSxsw3BK0sZ9/Xukst9qJ/65QwCA/5f8LcgynhH8HggJILMJY/j4mJ5CuxLMEVn9ws1tuFMw082t/upbTcKrVoh7VXvVh2D3O7esJD/hZj42L4eQyaizOVGvWidLaB1rK4Cggsip5aZV+CpDZMc2Q16a7Gx+EVnS5dng27VQoaXZlXbrvzZr6utMpbB4MtM1S8cZyA9aQrRwCVJnppRYYI077uU1CuWk2tNxLCwuJIBU6lBn6NHguYRXF9RPmPbuO11veJPD/A5tFWH8="
+	megapoolV1EncodedAbi string = "eJztWktv2zgQ/isLn4M9tLs99OYk7iJAWmTtePdQFAYtjW0iNKmSIztGsf99h7ashyVbVCQZau1TIpMczoP85sWvP3pMKrlZqtD0Ps6YMHDT4zIIkT6//qB/fXgFPzWEoCUTz5sAeh97IX2/+/ND76Yn2dL+wIiQRPrG7IT/bqrTQk5/8pS+xRM+w5wFSolbJf0h+KFHxOP5sAJixO778wt4D1N8kJ4GZn5lEX9pGz4BUcFNPwgEryMj6tCBrRUT3Geo9IN/Zjn/2e/cN4bP5UWIeg/fQwgvQ1RujBKri5B1IFsz6/t3DpLSpDMJ+srxMixKgnI5vwBJH5X3chEmHSG7DEHHUtS0aRfDoyGsmfbNnWA0s33ZpPKh36B8K0XjTRLUgIsm6bkagPw6aj4Nj/iBjMpP7zg5en6STRlFwZsoIqaJKsSIPE0xyBA+h8imXHAatkaTAduwqUhJMgulh1xJB+7SvnZy0tmmGNwGr59C6Zty/hyZS6h7THihIDKkAp/8UWSDzE7lirZnOVlZeFYcDm8tCva0HidQqKwVh/WbzFj5kMVavqq3pVviLZgQIOdg46om73FqC+sY2iHtQ6DBI0qdRCB/l1N2k7coCYxjk5YMFPukdujPAfs0ISXHXQQqJTiR1lmhnt52L7OcReUT4u3gFJTjRpNgkWHKVum6wkuUy3XRdoPXgGtmJ93amL0rGntkBuM4r3PMbZObLlrzi80ZfF+DKQkhWDwpx9F+qEGWbNejK8arFce2xtUQaFK3AHSklASD/3Jc+Jqtrb8aBMpblPP34Y9j7NFIQ9yNDeg7FnBkoisK6wggNBY6pUV6kDN1IJGnlgGdEOm2qSBA38UJS1rynEv14wJyKZWhjTYNJuFGPSoRNlUmQiG5MhydmZgqJZLV5qAUuB0tXQUHxW+3VVz+HYXnFZc9kR+wfFZnM7AeZGyq8+rnezbuqsmUy92WHdYpj606hLXkCtkiVx7kyilYhm+ZYNKDtyxfF8ByZSI76UdCYX71t1zBjqKx0MPfhnYR7mu+I9IBm8Mj2xA2/H6IFzl0wzCgtKeD4NaX/lM4fYFsje+KcleUu6LcFeWcUI7vvrJIV2CaDUIq8Qr2qIPp4Y4hZCE0nparOYkyLMXpiLjT4BPIciZKsrjt/sXB9n6o1fr/lLD3dJ/sxNWdhAYGO6R55vZIOtz9rCESez8VH7UKFEbk2RiGGlyJZA5e5EzuGbKhSt/GtBn2LQ1Yt1KyrXk9ytFm4oBZKTEV8tmm6Z5E+0LueloP8q81cBdMztWbJp7tx+hkbVx2qqJicRTVM/r9xIlY4oZ+Ij0bJ/m+KDzLEarc19TbZ7K58l9jbRENtCRX6a/T+W7fpGVBVSLdPixtQXEr0MYOn710VueJTA5ElPDvQVCMhnAMSKoRJK9Ti2D1Ny377cbBXDO/8ddhOQlnWi2bEe2sb68GuLAPFDzgtd7zFrOTS1qxOBlsWCbKHB9pK4PjgPCgWCwXHCNHOmXey/G3A5kT1g6ebBuu8cXpRONpz8+2wwkl/afsETi0fkOt1tkMtj38rmkqPohujLWkK4eYUWbamwXKiDNxbvNCbtqN9g4ytULgSHnzMkW/jT0HhNA73CRm/gf86sw+"
 )
 
 // The decoded ABI for megapools

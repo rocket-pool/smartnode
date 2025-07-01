@@ -63,9 +63,11 @@ type MegapoolValidatorDetails struct {
 	ExpressUsed        bool                   `json:"expressUsed"`
 	Dissolved          bool                   `json:"dissolved"`
 	Exiting            bool                   `json:"exiting"`
+	Locked             bool                   `json:"locked"`
 	ValidatorIndex     uint64                 `json:"validatorIndex"`
 	ExitBalance        uint64                 `json:"exitBalance"`
 	WithdrawableEpoch  uint64                 `json:"withdrawableEpoch"`
+	LockedSlot         uint64                 `json:"lockedSlot"`
 	Activated          bool                   `json:"activated"`
 	BeaconStatus       beacon.ValidatorStatus `json:"beaconStatus"`
 }

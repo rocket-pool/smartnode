@@ -3,6 +3,7 @@ package megapool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -87,7 +88,7 @@ func canDissolveWithProof(c *cli.Context, validatorId uint32) (*api.CanDissolveW
 	if err != nil {
 		return nil, fmt.Errorf("error getting the exptected withdrawal credeentials: %w", err)
 	}
-	if expectedCredentials.Cmp(proof.WithdrawalCredentials) == 0 {
+	if expectedCredentials.Cmp(common.Hash(proof.Validator.WithdrawalCredentials)) == 0 {
 		response.CanDissolve = false
 		response.ValidCredentials = true
 		return &response, nil
