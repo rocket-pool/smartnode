@@ -207,7 +207,7 @@ func GetTrustedNodeSubmittedSpecificRewards(rp *rocketpool.RocketPool, nodeAddre
 	return result, nil
 }
 
-// Estimate the gas for submiting a Merkle Tree-based snapshot for a rewards interval
+// Estimate the gas for submitting a Merkle Tree-based snapshot for a rewards interval
 func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp, nil)
 	if err != nil {
