@@ -78,7 +78,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("The node has %d express ticket(s).\n", status.Megapool.NodeExpressTicketCount)
 		fmt.Printf("The megapool has %d validators.\n", status.Megapool.ActiveValidatorCount)
 	}
-	fmt.Println("")
+	fmt.Println()
 
 	// Delegate addresses
 	fmt.Printf("%s=== Megapool Delegate ===%s\n", colorGreen, colorReset)
@@ -104,7 +104,7 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("Your current megapool delegate expires at %sblock %d%s.\n", colorBlue, status.Megapool.DelegateExpiry, colorReset)
 		}
 	}
-	fmt.Println("")
+	fmt.Println()
 
 	// Balance and network commission
 	fmt.Printf("%s=== Megapool Balance ===%s\n", colorGreen, colorReset)
@@ -277,7 +277,7 @@ func getValidatorStatus(c *cli.Context) error {
 				return validators[i].ValidatorId < validators[j].ValidatorId
 			})
 			fmt.Printf("%d %s validator(s):\n", len(validators), status)
-			fmt.Println("")
+			fmt.Println()
 			for _, validator := range validators {
 				printValidatorDetails(validator, status)
 			}
@@ -294,12 +294,13 @@ func getValidatorStatus(c *cli.Context) error {
 func printValidatorDetails(validator api.MegapoolValidatorDetails, status string) {
 
 	fmt.Printf("--------------------\n")
-	fmt.Println("")
+	fmt.Println()
 
 	if status == "Prelaunch" {
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             no\n")
+		fmt.Printf("Beacon status:                %s\n", validator.BeaconStatus.Status)
 	}
 
 	if status == "Staking" {
@@ -311,6 +312,8 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 			fmt.Printf("Validator active:             no\n")
 		}
 		fmt.Printf("Validator index:              %s\n", validator.BeaconStatus.Index)
+		fmt.Printf("Beacon status:                %s\n", validator.BeaconStatus.Status)
+
 	}
 
 	if status == "Initialized" {
@@ -318,12 +321,22 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Expected pubkey:              0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             no\n")
 		fmt.Printf("Validator Queue Position:     %d\n", validator.QueuePosition)
+
 	}
 
 	if status == "Dissolved" {
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             no\n")
+
+	}
+
+	if status == "Exited" {
+		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
+		fmt.Printf("Validator active:             no\n")
+		fmt.Printf("Validator index:              %s\n", validator.BeaconStatus.Index)
+		fmt.Printf("Beacon status:                %s\n", validator.BeaconStatus.Status)
 	}
 
 	// Main details
@@ -333,6 +346,6 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Express Ticket Used:          no\n")
 	}
 
-	fmt.Println("")
+	fmt.Println()
 
 }
