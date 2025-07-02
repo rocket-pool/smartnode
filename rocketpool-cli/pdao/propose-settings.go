@@ -331,6 +331,11 @@ func proposeSettingMaximumMegapoolEthPenalty(c *cli.Context, value *big.Int) err
 	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue)
 }
 
+func proposeSettingMegapoolNotifyThreshold(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolNotifyThresholdPath, trueValue)
+}
+
 func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue)

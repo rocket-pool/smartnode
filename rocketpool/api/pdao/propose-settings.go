@@ -858,16 +858,26 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing TimeBeforeDissolve: %w", err)
 			}
-		}
-	// MaximumEthPenalty
-	case protocol.ReducedBondSettingPath:
-		newValue, err := cliutils.ValidateBigInt(valueName, value)
-		if err != nil {
-			return nil, err
-		}
-		response.GasInfo, err = protocol.EstimateProposeMaximumEthPenalty(rp, newValue, blockNumber, pollard, opts)
-		if err != nil {
-			return nil, fmt.Errorf("error estimating gas for proposing ReducedBond: %w", err)
+		// MaximumEthPenalty
+		case protocol.ReducedBondSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeMaximumEthPenalty(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MaximumEthPenalty: %w", err)
+			}
+		// NotifyThreshold
+		case protocol.MegapoolNotifyThresholdPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeNotifyThreshold(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing NotifyThreshold: %w", err)
+			}
 		}
 
 	}
@@ -1658,7 +1668,19 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing MaximumEthPenalty: %w", err)
 			}
+		// NotifyThreshold
+		case protocol.MegapoolNotifyThresholdPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeNotifyThreshold(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing NotifyThreshold: %w", err)
+			}
+
 		}
+
 	}
 
 	// Make sure a setting was actually hit
