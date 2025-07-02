@@ -2557,6 +2557,38 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 										},
 									},
+
+									{
+										Name:      "late-notify-fine",
+										Aliases:   []string{"lnf"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolMaximumMegapoolEthPenaltyPath, floatEthUsage),
+										UsageText: "rocketpool pdao propose setting megapool late-notify-fine value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingMegapoolLateNotifyFine(c, value)
+
+										},
+									},
 								},
 							},
 						},

@@ -336,6 +336,10 @@ func proposeSettingMegapoolNotifyThreshold(c *cli.Context, value time.Duration) 
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolNotifyThresholdPath, trueValue)
 }
 
+func proposeSettingMegapoolLateNotifyFine(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolLateNotifyFinePath, trueValue)
+}
 func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue)

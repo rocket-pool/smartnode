@@ -878,6 +878,17 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing NotifyThreshold: %w", err)
 			}
+		// LateNofifyFine
+		case protocol.MegapoolLateNotifyFinePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeLateNotifyFine(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing LateNofifyFine: %w", err)
+			}
+
 		}
 
 	}
@@ -1678,7 +1689,16 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing NotifyThreshold: %w", err)
 			}
-
+		// LateNotifyFine
+		case protocol.MegapoolLateNotifyFinePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeLateNotifyFine(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing LateNotifyFine: %w", err)
+			}
 		}
 
 	}
