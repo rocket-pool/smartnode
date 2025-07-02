@@ -19,7 +19,7 @@ const (
 	MegapoolTimeBeforeDissolveSettingsPath string = "megapool.time.before.dissolve"
 	MegapoolMaximumMegapoolEthPenaltyPath  string = "maximum.megapool.eth.penalty"
 	MegapoolNotifyThresholdPath            string = "notify.threshold"
-	MegapoolLateNotifyTimePath             string = "late.notify.fine"
+	MegapoolLateNotifyFinePath             string = "late.notify.fine"
 	MegapoolUserDistributeWindowLengthPath string = "user.distribute.window.length"
 )
 
@@ -64,7 +64,7 @@ func EstimateProposeMaximumEthPenalty(rp *rocketpool.RocketPool, value *big.Int,
 }
 
 // The amount of time before `withdrawable_epoch` a node operator must notify their exit
-func GetMegapoolNotifyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+func GetNotifyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
@@ -76,10 +76,10 @@ func GetMegapoolNotifyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) 
 	return (*value).Uint64(), nil
 }
 
-func ProposeMegapoolNotifyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+func ProposeNotifyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
 	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolNotifyThresholdPath), MegapoolSettingsContractName, MegapoolNotifyThresholdPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMegapoolNotifyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateProposeNotifyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolNotifyThresholdPath), MegapoolSettingsContractName, MegapoolNotifyThresholdPath, value, blockNumber, treeNodes, opts)
 }
 
@@ -97,10 +97,10 @@ func GetLateNotifyFine(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int
 }
 
 func ProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolLateNotifyTimePath), MegapoolSettingsContractName, MegapoolLateNotifyTimePath, value, blockNumber, treeNodes, opts)
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolLateNotifyFinePath), MegapoolSettingsContractName, MegapoolLateNotifyFinePath, value, blockNumber, treeNodes, opts)
 }
 func EstimateProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolLateNotifyTimePath), MegapoolSettingsContractName, MegapoolLateNotifyTimePath, value, blockNumber, treeNodes, opts)
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolLateNotifyFinePath), MegapoolSettingsContractName, MegapoolLateNotifyFinePath, value, blockNumber, treeNodes, opts)
 }
 
 // The amount of time a user must wait before distributing another node's megapool

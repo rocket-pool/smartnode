@@ -111,7 +111,6 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 			timeBeforeDissolve, err := protocol.GetMegapoolTimeBeforeDissolve(rp, nil)
 			if err == nil {
 				response.Megapool.TimeBeforeDissolve = time.Duration(timeBeforeDissolve) * time.Second
-
 			}
 			return err
 		})
@@ -119,6 +118,30 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 		wg.Go(func() error {
 			var err error
 			response.Megapool.MaximumEthPenalty, err = protocol.GetMaximumEthPenalty(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			notifyThreshold, err := protocol.GetNotifyThreshold(rp, nil)
+			if err == nil {
+				response.Megapool.NotifyThreshold = time.Duration(notifyThreshold) * time.Second
+			}
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.LateNotifyFine, err = protocol.GetLateNotifyFine(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			userDistributeWindowLength, err := protocol.GetUserDistributeWindowLength(rp, nil)
+			if err == nil {
+				response.Megapool.UserDistributeWindowLength = time.Duration(userDistributeWindowLength) * time.Second
+			}
 			return err
 		})
 
