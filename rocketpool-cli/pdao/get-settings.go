@@ -135,7 +135,7 @@ func getSettings(c *cli.Context) error {
 	if response.SaturnDeployed {
 		// Megapool
 		fmt.Println("== Megapool Settings ==")
-		fmt.Printf("\tNode Unstaking Period: %s\n", response.Megapool.TimeBeforeDissolve)
+		fmt.Printf("\tTime Before Dissolve: %s\n", response.Megapool.TimeBeforeDissolve)
 		fmt.Printf("\tMax ETH penalty:       %.6f ETH\n", eth.WeiToEth(response.Megapool.MaximumEthPenalty))
 	}
 
