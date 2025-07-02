@@ -2525,7 +2525,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingReducedBond(c, value)
+											return proposeSettingMaximumMegapoolEthPenalty(c, value)
 
 										},
 									},

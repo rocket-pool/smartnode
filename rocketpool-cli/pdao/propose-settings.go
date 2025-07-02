@@ -328,7 +328,7 @@ func proposeSettingMegapoolTimeBeforeDissolve(c *cli.Context, value time.Duratio
 
 func proposeSettingMaximumMegapoolEthPenalty(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue)
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolMaximumMegapoolEthPenaltyPath, trueValue)
 }
 
 func proposeSettingMegapoolNotifyThreshold(c *cli.Context, value time.Duration) error {

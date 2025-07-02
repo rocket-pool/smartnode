@@ -859,7 +859,7 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing TimeBeforeDissolve: %w", err)
 			}
 		// MaximumEthPenalty
-		case protocol.ReducedBondSettingPath:
+		case protocol.MegapoolMaximumMegapoolEthPenaltyPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
@@ -1670,7 +1670,7 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 				return nil, fmt.Errorf("error proposing TimeBeforeDissolve: %w", err)
 			}
 		// MaximumEthPenalty
-		case protocol.ReducedBondSettingPath:
+		case protocol.MegapoolMaximumMegapoolEthPenaltyPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
