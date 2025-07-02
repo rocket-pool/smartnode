@@ -340,6 +340,12 @@ func proposeSettingMegapoolLateNotifyFine(c *cli.Context, value *big.Int) error 
 	trueValue := value.String()
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolLateNotifyFinePath, trueValue)
 }
+
+func proposeSettingMegapoolUserDistributeLength(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeWindowLengthPath, trueValue)
+}
+
 func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue)
