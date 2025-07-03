@@ -6,6 +6,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -88,21 +90,18 @@ func (t *challengeValidatorsExiting) run(state *state.NetworkState) error {
 // Get megapool validators that can be dissolved due to using invalid credentials
 func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.NetworkState) error {
 
-	bcValidators, err := t.bc.GetAllValidators()
-	if err != nil {
-		return fmt.Errorf("error fetching validators from bc: %w", err)
-	}
-
 	// Calculate the current epoch based on state.BeaconSlotNumber
-
 	currentSlot := state.BeaconSlotNumber
 	currentEpoch := currentSlot / state.BeaconConfig.SlotsPerEpoch
 
-	batchSize := 20                          // TODO: Fetch from contract
-	notifyThresholdInSeconds := uint64(1000) // TODO: Fetch from contract
+	batchSize := 20 // TODO: Fetch from contract
+	notifyThresholdInSeconds, err := protocol.GetNotifyThreshold(t.rp, nil)
+	if err != nil {
+		return fmt.Errorf("error getting notify threshold: %w", err)
+	}
 
 	// Check which epoch would be near the notify threshold
-	notifyThresholdEpoch := currentEpoch + (notifyThresholdInSeconds / state.BeaconConfig.SlotsPerEpoch)
+	notifyThresholdInEpochs := notifyThresholdInSeconds / (state.BeaconConfig.SlotsPerEpoch * state.BeaconConfig.SecondsPerSlot)
 
 	challengeMegapoolAddressToIds := make(map[common.Address][]uint32)
 	batched := 0
@@ -112,9 +111,9 @@ func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.Net
 			break
 		}
 		if validator.ValidatorInfo.Staked && !validator.ValidatorInfo.Exited && !validator.ValidatorInfo.Exiting && !validator.ValidatorInfo.Locked {
-			validatorFromState := bcValidators[validator.ValidatorInfo.ValidatorIndex]
+			validatorFromState := state.MegapoolValidatorDetails[types.ValidatorPubkey(validator.Pubkey)]
 
-			if validatorFromState.WithdrawableEpoch <= notifyThresholdEpoch {
+			if validatorFromState.WithdrawableEpoch-notifyThresholdInEpochs <= currentEpoch {
 				t.log.Printlnf("Validator %d has an withdrawable epoch %d which is past the notify threshold... Challenging", validator.ValidatorInfo.ValidatorIndex, validatorFromState.WithdrawableEpoch)
 				batched++
 				challengeMegapoolAddressToIds[validator.MegapoolAddress] = append(challengeMegapoolAddressToIds[validator.MegapoolAddress], validator.ValidatorId)
@@ -139,8 +138,8 @@ func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.Net
 			// Create the challenge exit
 			validatorIds := challengeMegapoolAddressToIds[megapoolAddress]
 			exitChallenge := megapool.ExitChallenge{
-				MegapoolAddress: megapoolAddress,
-				ValidatorIds:    validatorIds,
+				Megapool:     megapoolAddress,
+				ValidatorIds: validatorIds,
 			}
 			exitChallenges = append(exitChallenges, exitChallenge)
 		}

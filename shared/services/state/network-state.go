@@ -260,15 +260,25 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 		if err != nil {
 			return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
 		}
+		megapoolValidatorPubkeys := make([]types.ValidatorPubkey, 0, len(state.MegapoolValidatorGlobalIndex))
 		// Iterate over the megapool validators to add their pubkey to the list of pubkeys
 		megapoolAddressMap := make(map[common.Address][]types.ValidatorPubkey)
 		for _, validator := range state.MegapoolValidatorGlobalIndex {
 			// Add the megapool address to a set
 			if len(validator.Pubkey) > 0 { // TODO CHECK  validators without a pubkey
 				megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], types.ValidatorPubkey(validator.Pubkey))
+				megapoolValidatorPubkeys = append(megapoolValidatorPubkeys, types.ValidatorPubkey(validator.Pubkey))
+
 			}
 		}
 		state.MegapoolToPubkeysMap = megapoolAddressMap
+		statusMap, err := m.bc.GetValidatorStatuses(megapoolValidatorPubkeys, &beacon.ValidatorStatusOptions{
+			Slot: &slotNumber,
+		})
+		if err != nil {
+			return nil, err
+		}
+		state.MegapoolValidatorDetails = statusMap
 
 		// initialize state.MegapoolDetails
 		state.MegapoolDetails = make(map[common.Address]rpstate.NativeMegapoolDetails)
