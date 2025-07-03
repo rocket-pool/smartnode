@@ -94,7 +94,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "execution-client-url, e",
-						Usage: "The URL of a separate execution client you want to use for generation (ignore this flag to use your primary exeuction client). Use this if your primary client is not an archive node, and you need to provide a separate archive node URL.",
+						Usage: "The URL of a separate execution client you want to use for generation (ignore this flag to use your primary execution client). Use this if your primary client is not an archive node, and you need to provide a separate archive node URL.",
 					},
 					cli.Uint64Flag{
 						Name:  "index",

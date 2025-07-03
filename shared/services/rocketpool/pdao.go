@@ -607,7 +607,7 @@ func (c *Client) PDAOFinalizeProposal(proposalID uint64) (api.PDAOFinalizePropos
 	return response, nil
 }
 
-// CanSetVotingDelegate estimates the gas required to set an on-chain voting delegate
+// EstimateSetVotingDelegateGas estimates the gas required to set an on-chain voting delegate
 func (c *Client) EstimateSetVotingDelegateGas(address common.Address) (api.PDAOCanSetVotingDelegateResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("pdao estimate-set-voting-delegate-gas %s", address.Hex()))
 	if err != nil {

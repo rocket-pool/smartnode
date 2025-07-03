@@ -1327,27 +1327,24 @@ func resyncEth2(c *cli.Context) error {
 		}
 	}
 
+	// Prompt for confirmation
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
+		fmt.Println("Cancelled.")
+		return nil
+	}
+
 	// Get the container prefix
 	prefix, err := rp.GetContainerPrefix()
 	if err != nil {
 		return fmt.Errorf("Error getting container prefix: %w", err)
 	}
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH2 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Stop ETH2
 	beaconContainerName := prefix + BeaconContainerSuffix
-	fmt.Printf("Stopping %s...\n", beaconContainerName)
-	result, err := rp.StopContainer(beaconContainerName)
+
+	// Find running containers using the ETH2 volume
+	containers, err := rp.GetContainersByPrefix(prefix)
 	if err != nil {
-		fmt.Printf("%sWARNING: Stopping ETH2 container failed: %s%s\n", colorYellow, err.Error(), colorReset)
-	}
-	if result != beaconContainerName {
-		fmt.Printf("%sWARNING: Unexpected output while stopping ETH2 container: %s%s\n", colorYellow, result, colorReset)
+		return fmt.Errorf("Error getting containers by prefix: %w", err)
 	}
 
 	// Get ETH2 volume name
@@ -1356,19 +1353,39 @@ func resyncEth2(c *cli.Context) error {
 		return fmt.Errorf("Error getting ETH2 volume name: %w", err)
 	}
 
-	// Remove ETH2
-	fmt.Printf("Deleting %s...\n", beaconContainerName)
-	result, err = rp.RemoveContainer(beaconContainerName)
-	if err != nil {
-		return fmt.Errorf("Error deleting ETH2 container: %w", err)
-	}
-	if result != beaconContainerName {
-		return fmt.Errorf("Unexpected output while deleting ETH2 container: %s", result)
+	// Stop and delete the containers if they are running
+	for _, container := range containers {
+
+		// Ignore containers that don't have the ETH2 volume
+		if !container.HasVolume(volume) {
+			continue
+		}
+
+		fmt.Println(container.Names, container.State)
+		if container.State != "exited" {
+			fmt.Printf("Stopping %s...\n", container.Names)
+			result, err := rp.StopContainer(container.Names)
+			if err != nil {
+				fmt.Printf("%sWARNING: Stopping container %s failed: %s%s\n", colorYellow, container.Names, err.Error(), colorReset)
+			}
+			if result != container.Names {
+				fmt.Printf("%sWARNING: Unexpected output while stopping container %s: %s%s\n", colorYellow, container.Names, result, colorReset)
+			}
+		}
+
+		fmt.Printf("Deleting %s...\n", container.Names)
+		result, err := rp.RemoveContainer(container.Names)
+		if err != nil {
+			fmt.Printf("%sWARNING: Deleting container %s failed: %s%s\n", colorYellow, container.Names, err.Error(), colorReset)
+		}
+		if result != container.Names {
+			fmt.Printf("%sWARNING: Unexpected output while deleting container %s: %s%s\n", colorYellow, container.Names, result, colorReset)
+		}
 	}
 
 	// Delete the ETH2 volume
 	fmt.Printf("Deleting volume %s...\n", volume)
-	result, err = rp.DeleteVolume(volume)
+	result, err := rp.DeleteVolume(volume)
 	if err != nil {
 		return fmt.Errorf("Error deleting volume: %w", err)
 	}

@@ -105,7 +105,7 @@ func clearSignallingAddress(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Println("The node's signalling address was sucessfully cleared.")
+	fmt.Println("The node's signalling address was successfully cleared.")
 	return nil
 
 }
