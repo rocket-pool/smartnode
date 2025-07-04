@@ -12,6 +12,8 @@ import (
 	"github.com/urfave/cli"
 )
 
+const FarFutureEpoch uint64 = 0xffffffffffffffff
+
 func notifyValidatorExit(c *cli.Context) error {
 
 	// Get RP client
@@ -46,7 +48,7 @@ func notifyValidatorExit(c *cli.Context) error {
 		activeValidators := []api.MegapoolValidatorDetails{}
 
 		for _, validator := range status.Megapool.Validators {
-			if validator.Activated && !validator.Exiting && !validator.Exited {
+			if validator.Activated && !validator.Exiting && !validator.Exited && validator.BeaconStatus.WithdrawableEpoch != FarFutureEpoch {
 				activeValidators = append(activeValidators, validator)
 			}
 		}
