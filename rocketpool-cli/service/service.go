@@ -220,11 +220,12 @@ func configureService(c *cli.Context) error {
 		oldCfg = cfg
 		cfg = cfg.CreateCopy()
 		err = cfg.UpdateDefaults()
-		cfg.ConfirmUpdateSuggestedSettings()
 		if err != nil {
 			return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
 		}
 	}
+
+	cfg.ConfirmUpdateSuggestedSettings()
 
 	// Save the config and exit in headless mode
 	if c.NumFlags() > 0 {
