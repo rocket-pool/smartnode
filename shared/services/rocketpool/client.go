@@ -780,6 +780,46 @@ func (c *Client) GetAllDockerImages() ([]DockerImage, error) {
 	return images, nil
 }
 
+type DockerContainer struct {
+	Names  string `json:"Names"`
+	State  string `json:"State"`
+	Mounts string `json:"Mounts"`
+}
+
+func (c *DockerContainer) HasVolume(volume string) bool {
+	mounts := strings.Split(c.Mounts, ",")
+	for _, mount := range mounts {
+		if mount == volume {
+			return true
+		}
+	}
+	return false
+}
+
+// Returns all Docker containers on the system with the given prefix
+func (c *Client) GetContainersByPrefix(prefix string) ([]DockerContainer, error) {
+	cmd := fmt.Sprintf("docker container ls -a --no-trunc --format json --filter label=com.docker.compose.project=%s", prefix)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	// docker container ls output puts each container as a json object on a new line (JSONL)
+	lines := strings.Split(string(output), "\n")
+	out := make([]DockerContainer, 0, len(lines))
+	for _, l := range lines {
+		if l == "" {
+			continue
+		}
+		var container DockerContainer
+		if err := json.Unmarshal([]byte(l), &container); err != nil {
+			return nil, fmt.Errorf("could not decode docker container: %w", err)
+		}
+		out = append(out, container)
+	}
+	return out, nil
+}
+
 // Gets the absolute file path of the client volume
 func (c *Client) GetClientVolumeSource(container string, volumeTarget string) (string, error) {
 

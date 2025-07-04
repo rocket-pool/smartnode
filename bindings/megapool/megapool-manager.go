@@ -14,8 +14,8 @@ import (
 )
 
 type ExitChallenge struct {
-	MegapoolAddress common.Address `json:"megapoolAddress"`
-	ValidatorIds    []uint32       `json:"validatorIds"`
+	Megapool     common.Address `json:"megapool"`
+	ValidatorIds []uint32       `json:"validatorIds"`
 }
 
 func GetValidatorCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint32, error) {
