@@ -376,16 +376,17 @@ type NodeUnstakeRplResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
-type CanNodeWithdrawLegacyRplResponse struct {
+
+type CanNodeUnstakeLegacyRplResponse struct {
 	Status                           string             `json:"status"`
 	Error                            string             `json:"error"`
-	CanWithdraw                      bool               `json:"canWithdraw"`
+	CanUnstake                       bool               `json:"canUnstake"`
 	InsufficientBalance              bool               `json:"insufficientBalance"`
-	BelowMaxRPLStake                 bool               `json:"belowMaxRPLStake"`
-	WithdrawalDelayActive            bool               `json:"withdrawalDelayActive"`
 	HasDifferentRPLWithdrawalAddress bool               `json:"hasDifferentRPLWithdrawalAddress"`
+	BelowMaxRPLStake                 bool               `json:"belowMaxRPLStake"`
 	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
 }
+
 type NodeWithdrawRplResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`

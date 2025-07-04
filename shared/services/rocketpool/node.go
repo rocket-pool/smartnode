@@ -537,34 +537,18 @@ func (c *Client) NodeWithdrawRpl() (api.NodeWithdrawRplResponse, error) {
 	return response, nil
 }
 
-// Check whether the node can withdraw RPL
-func (c *Client) CanNodeWithdrawLegacyRpl(amountWei *big.Int) (api.CanNodeWithdrawLegacyRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-legacy-rpl %s", amountWei.String()))
+// Check whether the node can unstake legacy RPL
+func (c *Client) CanNodeUnstakeLegacyRpl(amountWei *big.Int) (api.CanNodeUnstakeLegacyRplResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-unstake-legacy-rpl %s", amountWei.String()))
 	if err != nil {
-		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
+		return api.CanNodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not get can node unstake legacy RPL status: %w", err)
 	}
-	var response api.CanNodeWithdrawLegacyRplResponse
+	var response api.CanNodeUnstakeLegacyRplResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not decode can node withdraw RPL response: %w", err)
+		return api.CanNodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not decode can node unstake legacy RPL response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Withdraw RPL staked against the node
-func (c *Client) NodeWithdrawLegacyRpl(amountWei *big.Int) (api.NodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-legacy-rpl %s", amountWei.String()))
-	if err != nil {
-		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
-	}
-	var response api.NodeWithdrawRplResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not decode withdraw node RPL response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %s", response.Error)
+		return api.CanNodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not get can node unstake legacy RPL status: %s", response.Error)
 	}
 	return response, nil
 }
