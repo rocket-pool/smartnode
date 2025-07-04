@@ -377,24 +377,24 @@ func WithdrawRPL(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Has
 	return tx.Hash(), nil
 }
 
-// Estimate the gas of WithdrawLegacyRPL
-func EstimateWithdrawLegacyRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+// Estimate the gas of UnstakeLegacyRPL
+func EstimateUnstakeLegacyRPLGas(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeStaking.GetTransactionGasInfo(opts, "withdrawLegacyRPL", rplAmount)
+	return rocketNodeStaking.GetTransactionGasInfo(opts, "unstakeLegacyRPL", rplAmount)
 }
 
-// Withdraw legacy RPL
-func WithdrawLegacyRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+// Unstake legacy RPL
+func UnstakeLegacyRPL(rp *rocketpool.RocketPool, rplAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketNodeStaking.Transact(opts, "withdrawLegacyRPL", rplAmount)
+	tx, err := rocketNodeStaking.Transact(opts, "unstakeLegacyRPL", rplAmount)
 	if err != nil {
-		return common.Hash{}, fmt.Errorf("error withdrawing legacy RPL: %w", err)
+		return common.Hash{}, fmt.Errorf("error unstake legacy RPL: %w", err)
 	}
 	return tx.Hash(), nil
 }

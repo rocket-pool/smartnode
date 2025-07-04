@@ -770,7 +770,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "can-withdraw-legacy-rpl",
+				Name:      "can-unstake-legacy-rpl",
 				Usage:     "Check whether the node can withdraw legacy staked RPL",
 				UsageText: "rocketpool api node can-withdraw-legacy-rpl amount",
 				Action: func(c *cli.Context) error {
@@ -785,34 +785,11 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(canNodeWithdrawLegacyRpl(c, amountWei))
+					api.PrintResponse(canNodeUnstakeLegacyRpl(c, amountWei))
 					return nil
 
 				},
 			},
-			{
-				Name:      "withdraw-legacy-rpl",
-				Aliases:   []string{"l"},
-				Usage:     "Withdraw legacy RPL staked against the node",
-				UsageText: "rocketpool api node withdraw-legacy-rpl amount",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(nodeWithdrawLegacyRpl(c, amountWei))
-					return nil
-
-				},
-			},
-
 			{
 				Name:      "can-withdraw-rpl",
 				Usage:     "Check whether the node can withdraw staked RPL",
@@ -848,7 +825,49 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "can-withdraw-rpl-v131",
+				Usage:     "Check whether the node can withdraw staked RPL",
+				UsageText: "rocketpool api node can-withdraw-rpl-v131 amount",
+				Action: func(c *cli.Context) error {
 
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNodeWithdrawRplv1_3_1(c, amountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:      "withdraw-rpl-v131",
+				Aliases:   []string{"w"},
+				Usage:     "Withdraw RPL staked against the node",
+				UsageText: "rocketpool api node withdraw-rpl-v131 amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeWithdrawRplv1_3_1(c, amountWei))
+					return nil
+
+				},
+			},
 			{
 				Name:      "can-unstake-rpl",
 				Usage:     "Check whether the node can unstake RPL",

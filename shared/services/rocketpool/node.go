@@ -537,25 +537,43 @@ func (c *Client) NodeWithdrawRpl() (api.NodeWithdrawRplResponse, error) {
 	return response, nil
 }
 
-// Check whether the node can withdraw RPL
-func (c *Client) CanNodeWithdrawLegacyRpl(amountWei *big.Int) (api.CanNodeWithdrawLegacyRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-legacy-rpl %s", amountWei.String()))
+// Check whether the node can unstake legacy RPL
+func (c *Client) CanNodeUnstakeLegacyRpl(amountWei *big.Int) (api.CanNodeUnstakeLegacyRplResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-unstake-legacy-rpl %s", amountWei.String()))
 	if err != nil {
-		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
+		return api.CanNodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not get can node unstake legacy RPL status: %w", err)
 	}
-	var response api.CanNodeWithdrawLegacyRplResponse
+	var response api.CanNodeUnstakeLegacyRplResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not decode can node withdraw RPL response: %w", err)
+		return api.CanNodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not decode can node unstake legacy RPL response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanNodeWithdrawLegacyRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %s", response.Error)
+		return api.CanNodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not get can node unstake legacy RPL status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can withdraw RPL
+// Used if saturn is not deployed (v1.3.1)
+func (c *Client) CanNodeWithdrawRplV1_3_1(amountWei *big.Int) (api.CanNodeWithdrawRplv1_3_1Response, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl-v131 %s", amountWei.String()))
+	if err != nil {
+		return api.CanNodeWithdrawRplv1_3_1Response{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
+	}
+	var response api.CanNodeWithdrawRplv1_3_1Response
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNodeWithdrawRplv1_3_1Response{}, fmt.Errorf("Could not decode can node withdraw RPL response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNodeWithdrawRplv1_3_1Response{}, fmt.Errorf("Could not get can node withdraw RPL status: %s", response.Error)
 	}
 	return response, nil
 }
 
 // Withdraw RPL staked against the node
-func (c *Client) NodeWithdrawLegacyRpl(amountWei *big.Int) (api.NodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-legacy-rpl %s", amountWei.String()))
+// Used if saturn is not deployed (v1.3.1)
+func (c *Client) NodeWithdrawRplV1_3_1(amountWei *big.Int) (api.NodeWithdrawRplResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-rpl-v131 %s", amountWei.String()))
 	if err != nil {
 		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
 	}
