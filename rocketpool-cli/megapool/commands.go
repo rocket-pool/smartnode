@@ -212,6 +212,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 			{
 				Name:      "dissolve-validator",
+				Aliases:   []string{"i"},
 				Usage:     "Dissolve a megapool validator",
 				UsageText: "rocketpool megapool dissolve-validator",
 				Flags: []cli.Flag{
@@ -237,6 +238,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 			{
 				Name:      "exit-validator",
+				Aliases:   []string{"t"},
 				Usage:     "Request to exit a megapool validator",
 				UsageText: "rocketpool megapool exit-validator",
 				Flags: []cli.Flag{
@@ -288,7 +290,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 			{
 				Name:      "notify-final-balance",
-				Aliases:   []string{"n"},
+				Aliases:   []string{"f"},
 				Usage:     "Notify that a validator exit has completed and the final balance has been withdrawn",
 				UsageText: "rocketpool megapool notify-final-balance",
 				Flags: []cli.Flag{
