@@ -269,7 +269,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 	}
 
 	// Check RPL can be withdrawn
-	canWithdraw, err := rp.CanNodeWithdrawLegacyRpl(amountWei)
+	canWithdraw, err := rp.CanNodeWithdrawRplV1_3_1(amountWei)
 	if err != nil {
 		return err
 	}
@@ -302,7 +302,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 	}
 
 	// Withdraw RPL
-	response, err := rp.NodeWithdrawLegacyRpl(amountWei)
+	response, err := rp.NodeWithdrawRplV1_3_1(amountWei)
 	if err != nil {
 		return err
 	}

@@ -400,6 +400,17 @@ type CanNodeWithdrawRplResponse struct {
 	HasDifferentRPLWithdrawalAddress bool               `json:"hasDifferentRPLWithdrawalAddress"`
 	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
 }
+type CanNodeWithdrawRplv1_3_1Response struct {
+	Status                           string             `json:"status"`
+	Error                            string             `json:"error"`
+	CanWithdraw                      bool               `json:"canWithdraw"`
+	InsufficientBalance              bool               `json:"insufficientBalance"`
+	BelowMaxRPLStake                 bool               `json:"belowMaxRPLStake"`
+	MinipoolsUndercollateralized     bool               `json:"minipoolsUndercollateralized"`
+	WithdrawalDelayActive            bool               `json:"withdrawalDelayActive"`
+	HasDifferentRPLWithdrawalAddress bool               `json:"hasDifferentRPLWithdrawalAddress"`
+	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
+}
 
 type CanNodeDepositResponse struct {
 	Status                           string             `json:"status"`

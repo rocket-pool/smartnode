@@ -569,6 +569,40 @@ func (c *Client) NodeWithdrawLegacyRpl(amountWei *big.Int) (api.NodeWithdrawRplR
 	return response, nil
 }
 
+// Check whether the node can withdraw RPL
+// Used if saturn is not deployed (v1.3.1)
+func (c *Client) CanNodeWithdrawRplV1_3_1(amountWei *big.Int) (api.CanNodeWithdrawRplv1_3_1Response, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl-v131 %s", amountWei.String()))
+	if err != nil {
+		return api.CanNodeWithdrawRplv1_3_1Response{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
+	}
+	var response api.CanNodeWithdrawRplv1_3_1Response
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanNodeWithdrawRplv1_3_1Response{}, fmt.Errorf("Could not decode can node withdraw RPL response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanNodeWithdrawRplv1_3_1Response{}, fmt.Errorf("Could not get can node withdraw RPL status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Withdraw RPL staked against the node
+// Used if saturn is not deployed (v1.3.1)
+func (c *Client) NodeWithdrawRplV1_3_1(amountWei *big.Int) (api.NodeWithdrawRplResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-rpl-v131 %s", amountWei.String()))
+	if err != nil {
+		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
+	}
+	var response api.NodeWithdrawRplResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not decode withdraw node RPL response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can unstake RPL
 func (c *Client) CanNodeUnstakeRpl(amountWei *big.Int) (api.CanNodeUnstakeRplResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node can-unstake-rpl %s", amountWei.String()))
