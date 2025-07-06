@@ -68,7 +68,7 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
-	// Post a final warning about the dynamic comission boost
+	// Post a final warning about the dynamic commission boost
 	if !smoothie.NodeRegistered {
 		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sWARNING: Your node is not opted into the smoothing pool, which means newly launched minipools will not benefit from the 5-9%% dynamic commission boost. You can join the smoothing pool using: 'rocketpool node join-smoothing-pool'.\n%sAre you sure you'd like to continue without opting into the smoothing pool?", colorRed, colorReset))) {
 			fmt.Println("Cancelled.")
