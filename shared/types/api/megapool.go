@@ -27,6 +27,8 @@ type MegapoolDetails struct {
 	Deployed                 bool                       `json:"deployed"`
 	ValidatorCount           uint32                     `json:"validatorCount"`
 	ActiveValidatorCount     uint32                     `json:"activeValidatorCount"`
+	ExitingValidatorCount    uint32                     `json:"exitingValidatorCount"`
+	LockedValidatorCount     uint32                     `json:"lockedValidatorCount"`
 	NodeDebt                 *big.Int                   `json:"nodeDebt"`
 	RefundValue              *big.Int                   `json:"refundValue"`
 	DelegateExpiry           uint64                     `json:"delegateExpiry"`
@@ -130,9 +132,12 @@ type CanDistributeMegapoolResponse struct {
 	Status                string             `json:"status"`
 	Error                 string             `json:"error"`
 	MegapoolAddress       common.Address     `json:"megapoolAddress"`
-	MegapoolDeployed      bool               `json:"megapoolDeployed"`
+	MegapoolNotDeployed   bool               `json:"megapoolNotDeployed"`
 	LastDistributionBlock uint64             `json:"lastDistributionBlock"`
+	LockedValidatorCount  uint32             `json:"lockedValidatorCount"`
+	ExitingValidatorCount uint32             `json:"exitingValidatorCount"`
 	CanDistribute         bool               `json:"canDistribute"`
+	Details               MegapoolDetails    `json:"details"`
 	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
 }
 

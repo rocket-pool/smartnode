@@ -105,6 +105,16 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	})
 	wg.Go(func() error {
 		var err error
+		details.ExitingValidatorCount, err = mega.GetExitingValidatorCount(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.LockedValidatorCount, err = mega.GetLockedValidatorCount(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
 		details.PendingRewards, err = mega.GetPendingRewards(nil)
 		return err
 	})

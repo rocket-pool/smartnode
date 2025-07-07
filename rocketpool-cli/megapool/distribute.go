@@ -39,11 +39,33 @@ func distribute(c *cli.Context) error {
 
 	if !canResponse.CanDistribute {
 		fmt.Println("Could not distribute rewards")
-		if canResponse.MegapoolDeployed == false {
+		if canResponse.MegapoolNotDeployed {
 			fmt.Println("The node does not have a megapool deployed")
 		}
 		if canResponse.LastDistributionBlock == 0 {
 			fmt.Printf("The node's megapool: %s does not have any staking validators\n", canResponse.MegapoolAddress)
+		}
+		if canResponse.ExitingValidatorCount > 0 {
+			fmt.Printf("The megapool has %d validator(s) exiting", canResponse.ExitingValidatorCount)
+			fmt.Println()
+			for _, val := range canResponse.Details.Validators {
+				if val.BeaconStatus.WithdrawableEpoch != FarFutureEpoch {
+					if !val.Exiting && !val.Exited {
+						if !val.Exiting {
+							fmt.Printf("Validator ID %d needs an exit proof (run 'rp megapool notify-validator-exit')", val.ValidatorId)
+							fmt.Println()
+						} else {
+							if !val.Exited {
+								fmt.Printf("Validator ID %d needs a final balance proof (run 'rp megapool notify-final-balance')", val.ValidatorId)
+							}
+						}
+					}
+				}
+			}
+		}
+		if canResponse.LockedValidatorCount > 0 {
+			fmt.Printf("The megapool has %d validator(s) locked", canResponse.LockedValidatorCount)
+			fmt.Println()
 		}
 		return nil
 	}

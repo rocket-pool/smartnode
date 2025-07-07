@@ -15,6 +15,7 @@ type Megapool interface {
 	GetVersion() uint8
 	GetValidatorCount(opts *bind.CallOpts) (uint32, error)
 	GetActiveValidatorCount(opts *bind.CallOpts) (uint32, error)
+	GetLockedValidatorCount(opts *bind.CallOpts) (uint32, error)
 	GetExitingValidatorCount(opts *bind.CallOpts) (uint32, error)
 	GetSoonestWithdrawableEpoch(opts *bind.CallOpts) (uint32, error)
 	GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) (ValidatorInfo, error)

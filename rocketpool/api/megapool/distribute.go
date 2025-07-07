@@ -23,6 +23,10 @@ func canDistributeMegapool(c *cli.Context) (*api.CanDistributeMegapoolResponse, 
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.CanDistributeMegapoolResponse{}
@@ -39,21 +43,20 @@ func canDistributeMegapool(c *cli.Context) (*api.CanDistributeMegapoolResponse, 
 		return nil, err
 	}
 
-	// Check if the megapool is already deployed
-	response.MegapoolDeployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+	// Load the megapool details
+	details, err := GetNodeMegapoolDetails(rp, bc, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
 
-	if !response.MegapoolDeployed {
+	if !details.Deployed {
 		response.CanDistribute = false
+		response.MegapoolNotDeployed = true
 		return &response, nil
 	}
 
-	response.MegapoolAddress, err = megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
+	response.MegapoolAddress = details.Address
+	response.Details = details
 
 	// Load the megapool
 	mp, err := megapool.NewMegaPoolV1(rp, response.MegapoolAddress, nil)
@@ -61,13 +64,21 @@ func canDistributeMegapool(c *cli.Context) (*api.CanDistributeMegapoolResponse, 
 		return nil, err
 	}
 
-	// LastDistributionBlock is 0 if the megapool has never had a staking validator
-	response.LastDistributionBlock, err = mp.GetLastDistributionBlock(nil)
-	if err != nil {
-		return nil, err
-	}
+	response.LastDistributionBlock = details.LastDistributionBlock
 
 	if response.LastDistributionBlock == 0 {
+		response.CanDistribute = false
+		return &response, nil
+	}
+
+	if details.LockedValidatorCount > 0 {
+		response.CanDistribute = false
+		response.LockedValidatorCount = details.LockedValidatorCount
+		return &response, nil
+	}
+
+	if details.ExitingValidatorCount > 0 {
+		response.ExitingValidatorCount = details.ExitingValidatorCount
 		response.CanDistribute = false
 		return &response, nil
 	}

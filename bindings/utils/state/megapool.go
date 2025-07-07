@@ -24,6 +24,7 @@ type NativeMegapoolDetails struct {
 	Deployed                 bool           `json:"deployed"`
 	ValidatorCount           uint32         `json:"validatorCount"`
 	ActiveValidatorCount     uint32         `json:"activeValidatorCount"`
+	LockedValidatorCount     uint32         `json:"lockedValidatorCount"`
 	NodeDebt                 *big.Int       `json:"nodeDebt"`
 	RefundValue              *big.Int       `json:"refundValue"`
 	DelegateExpiry           uint64         `json:"delegateExpiry"`
@@ -155,6 +156,11 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 	wg.Go(func() error {
 		var err error
 		details.ActiveValidatorCount, err = mega.GetActiveValidatorCount(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.LockedValidatorCount, err = mega.GetLockedValidatorCount(nil)
 		return err
 	})
 	wg.Go(func() error {

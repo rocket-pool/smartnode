@@ -164,6 +164,15 @@ func (mp *megapoolV1) GetActiveValidatorCount(opts *bind.CallOpts) (uint32, erro
 	return validatorCount, nil
 }
 
+// Get the count of validators on a megapool, excluding inactive validators
+func (mp *megapoolV1) GetLockedValidatorCount(opts *bind.CallOpts) (uint32, error) {
+	var validatorCount uint32
+	if err := mp.Contract.Call(opts, &validatorCount, "getLockedValidatorCount"); err != nil {
+		return 0, fmt.Errorf("error getting megapool %s locked validator count: %w", mp.Address.Hex(), err)
+	}
+	return validatorCount, nil
+}
+
 func (mp *megapoolV1) GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) (ValidatorInfo, error) {
 	validatorInfo := new(ValidatorInfo)
 
