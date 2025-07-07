@@ -66,9 +66,11 @@ func notifyFinalBalance(c *cli.Context) error {
 		}
 	}
 	slot := uint64(0)
-	fmt.Println("The Smart Node needs to find the slot containing the validator withdrawal. This may take a while. If you know the slot, you can specify it using --slot or wait for the Smart Node to find it. ")
+
 	if c.IsSet("slot") {
-		fmt.Println("Using slot:", c.Uint64("slot"))
+		fmt.Println("Using withdrawal slot:", c.Uint64("slot"))
+	} else {
+		fmt.Println("The Smart Node needs to find the slot containing the validator withdrawal. This may take a while. If you know the slot, you can specify it using --slot or wait for the Smart Node to find it. ")
 	}
 
 	response, err := rp.CanNotifyFinalBalance(validatorId, slot)
