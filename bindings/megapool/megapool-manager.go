@@ -18,6 +18,14 @@ type ExitChallenge struct {
 	ValidatorIds []uint32       `json:"validatorIds"`
 }
 
+type WithdrawalProof struct {
+	Slot           uint64
+	WithdrawalSlot uint64
+	WithdrawalNum  uint64
+	Withdrawal     Withdrawal
+	Witnesses      [][32]byte `json:"witnesses"`
+}
+
 func GetValidatorCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint32, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, opts)
 	if err != nil {
@@ -189,21 +197,21 @@ func ChallengeExit(rp *rocketpool.RocketPool, exitChallenge []ExitChallenge, opt
 }
 
 // Estimate the gas to call NotifyFinalBalance
-func EstimateNotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal Withdrawal, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateNotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, withdrawalProof WithdrawalProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return megapoolManager.GetTransactionGasInfo(opts, "notifyFinalBalance", megapoolAddress, validatorId, withdrawalSlot, withdrawalNum, withdrawal, slot, exitProof)
+	return megapoolManager.GetTransactionGasInfo(opts, "notifyFinalBalance", megapoolAddress, validatorId, withdrawalProof)
 }
 
 // Notify the megapool of the final balance of an exited validator
-func NotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, withdrawalSlot uint64, withdrawalNum *big.Int, withdrawal Withdrawal, slot uint64, exitProof [][32]byte, opts *bind.TransactOpts) (*types.Transaction, error) {
+func NotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, withdrawalProof WithdrawalProof, opts *bind.TransactOpts) (*types.Transaction, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := megapoolManager.Transact(opts, "notifyFinalBalance", megapoolAddress, validatorId, withdrawalSlot, withdrawalNum, withdrawal, slot, exitProof)
+	tx, err := megapoolManager.Transact(opts, "notifyFinalBalance", megapoolAddress, validatorId, withdrawalProof)
 	if err != nil {
 		return nil, fmt.Errorf("error calling notify final balance: %w", err)
 	}

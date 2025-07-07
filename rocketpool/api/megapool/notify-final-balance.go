@@ -2,7 +2,6 @@ package megapool
 
 import (
 	"fmt"
-	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -82,8 +81,15 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 		AmountInGwei:          proof.Amount.Uint64(),
 	}
 
+	finalBalanceProof := megapool.WithdrawalProof{
+		Slot:           proof.Slot,
+		WithdrawalSlot: proof.WithdrawalSlot,
+		WithdrawalNum:  proof.WithdrawalIndex,
+		Withdrawal:     withdrawal,
+		Witnesses:      proof.Witnesses,
+	}
 	// Notify the validator exit
-	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, megapoolAddress, validatorId, proof.WithdrawalSlot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, proof.Slot, proof.Witnesses, opts)
+	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, megapoolAddress, validatorId, finalBalanceProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +170,14 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 		AmountInGwei:          proof.Amount.Uint64(),
 	}
 
+	finalBalanceProof := megapool.WithdrawalProof{
+		Slot:           proof.Slot,
+		WithdrawalSlot: proof.WithdrawalSlot,
+		WithdrawalNum:  proof.WithdrawalIndex,
+		Withdrawal:     withdrawal,
+		Witnesses:      proof.Witnesses,
+	}
+
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {
@@ -171,7 +185,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	}
 
 	// Notify the validator exit
-	tx, err := megapool.NotifyFinalBalance(rp, megapoolAddress, validatorId, proof.WithdrawalSlot, big.NewInt(int64(proof.WithdrawalIndex)), withdrawal, slot, proof.Witnesses, opts)
+	tx, err := megapool.NotifyFinalBalance(rp, megapoolAddress, validatorId, finalBalanceProof, opts)
 	if err != nil {
 		return nil, err
 	}
