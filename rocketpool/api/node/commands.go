@@ -779,7 +779,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("unstake amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -788,6 +788,26 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					api.PrintResponse(canNodeUnstakeLegacyRpl(c, amountWei))
 					return nil
 
+				},
+			},
+			{
+				Name:    "unstake-legacy-rpl",
+				Aliases: []string{"l"},
+				Usage:   "Unstake legacy RPL staked against the node",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("unstake amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeUnstakeLegacyRpl(c, amountWei))
+					return nil
 				},
 			},
 			{

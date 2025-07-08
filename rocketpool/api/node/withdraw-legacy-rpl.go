@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeUnstakeLegacyRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeUnstakeLegacyRplResponse, error) {
@@ -107,6 +109,48 @@ func canNodeUnstakeLegacyRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeUn
 
 	// Update & return response
 	response.CanUnstake = !(response.InsufficientBalance || response.HasDifferentRPLWithdrawalAddress)
+	return &response, nil
+
+}
+
+func nodeUnstakeLegacyRpl(c *cli.Context, amountWei *big.Int) (*api.NodeUnstakeLegacyRplResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.NodeUnstakeLegacyRplResponse{}
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	}
+	var hash common.Hash
+	// Unstake legacy RPL
+	hash, err = node.UnstakeLegacyRPL(rp, amountWei, opts)
+	if err != nil {
+		return nil, err
+	}
+	response.TxHash = hash
+
+	// Return response
 	return &response, nil
 
 }

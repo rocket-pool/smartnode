@@ -553,6 +553,22 @@ func (c *Client) CanNodeUnstakeLegacyRpl(amountWei *big.Int) (api.CanNodeUnstake
 	return response, nil
 }
 
+// Unstake legacy RPL staked against the node
+func (c *Client) NodeUnstakeLegacyRpl(amountWei *big.Int) (api.NodeUnstakeLegacyRplResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node unstake-legacy-rpl %s", amountWei.String()))
+	if err != nil {
+		return api.NodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not unstake node legacy RPL: %w", err)
+	}
+	var response api.NodeUnstakeLegacyRplResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not decode unstake node legacy RPL response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not unstake node legacy RPL: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can withdraw RPL
 // Used if saturn is not deployed (v1.3.1)
 func (c *Client) CanNodeWithdrawRplV1_3_1(amountWei *big.Int) (api.CanNodeWithdrawRplv1_3_1Response, error) {
