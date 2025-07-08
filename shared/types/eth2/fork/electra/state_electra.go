@@ -176,12 +176,8 @@ func (state *BeaconState) HistoricalSummaryProof(slot uint64) ([][]byte, error) 
 
 func (state *BeaconState) HistoricalSummaryBlockRootProof(slot int) ([][]byte, error) {
 	// If the state isn't aligned at the end of an 8192 slot era, throw an error
-	if state.Slot%generic.SlotsPerHistoricalRoot != generic.SlotsPerHistoricalRoot-1 {
+	if state.Slot%generic.SlotsPerHistoricalRoot != 0 {
 		return nil, fmt.Errorf("state is not aligned at the end of an 8192 slot era")
-	}
-
-	if slot < int(state.Slot)-int(generic.SlotsPerHistoricalRoot)-1 || slot+int(generic.SlotsPerHistoricalRoot)-1 >= int(state.Slot) {
-		return nil, fmt.Errorf("slot %d is out of range for historical summary proof", slot)
 	}
 
 	hsls := generic.HistoricalSummaryLists{

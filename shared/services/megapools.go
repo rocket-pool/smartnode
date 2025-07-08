@@ -603,7 +603,6 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	// Create a new response
 	response := megapool.FinalBalanceProof{}
 	response.ValidatorIndex = validatorIndex
-	response.Slot = slot
 	// Get services
 	if err := RequireNodeRegistered(c); err != nil {
 		return megapool.FinalBalanceProof{}, err
@@ -611,6 +610,25 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	bc, err := GetBeaconClient(c)
 	if err != nil {
 		return megapool.FinalBalanceProof{}, err
+	}
+
+	// Get the finalized block, requesting the next one until we have an execution payload
+	blockToRequest := "finalized"
+	var recentBlock beacon.BeaconBlock
+	const maxAttempts = 10
+	for attempts := 0; attempts < maxAttempts; attempts++ {
+		recentBlock, _, err = bc.GetBeaconBlock(blockToRequest)
+		if err != nil {
+			return megapool.FinalBalanceProof{}, err
+		}
+
+		if recentBlock.HasExecutionPayload {
+			break
+		}
+		if attempts == maxAttempts-1 {
+			return megapool.FinalBalanceProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
+		}
+		blockToRequest = fmt.Sprintf("%d", recentBlock.Slot+1)
 	}
 
 	// Find the most recent withdrawal to slot.
@@ -650,6 +668,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 				continue
 			}
 			response.WithdrawalSlot = candidateSlot
+			response.Slot = recentBlock.Slot
 			response.Amount = big.NewInt(0).SetUint64(withdrawal.Amount)
 			foundWithdrawal = true
 			response.IndexInWithdrawalsArray = uint(i)
@@ -675,7 +694,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	}
 
 	// Get beacon state
-	stateResponse, err := bc.GetBeaconStateSSZ(slot)
+	stateResponse, err := bc.GetBeaconStateSSZ(recentBlock.Slot)
 	if err != nil {
 		return megapool.FinalBalanceProof{}, err
 	}
@@ -688,7 +707,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	var summaryProof [][]byte
 
 	var stateProof [][]byte
-	if response.WithdrawalSlot+generic.SlotsPerHistoricalRoot > state.GetSlot() {
+	if response.WithdrawalSlot+generic.SlotsPerHistoricalRoot > recentBlock.Slot {
 		stateProof, err = state.BlockRootProof(response.WithdrawalSlot)
 		if err != nil {
 			return megapool.FinalBalanceProof{}, err
