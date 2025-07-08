@@ -49,16 +49,13 @@ func distribute(c *cli.Context) error {
 			fmt.Printf("The megapool has %d validator(s) exiting", canResponse.ExitingValidatorCount)
 			fmt.Println()
 			for _, val := range canResponse.Details.Validators {
-				if val.BeaconStatus.WithdrawableEpoch != FarFutureEpoch {
-					if !val.Exiting && !val.Exited {
-						if !val.Exiting {
-							fmt.Printf("Validator ID %d needs an exit proof (run 'rp megapool notify-validator-exit')", val.ValidatorId)
-							fmt.Println()
-						} else {
-							if !val.Exited {
-								fmt.Printf("Validator ID %d needs a final balance proof (run 'rp megapool notify-final-balance')", val.ValidatorId)
-							}
-						}
+				if val.Activated && val.BeaconStatus.WithdrawableEpoch != FarFutureEpoch && !val.Exited {
+					if !val.Exiting {
+						fmt.Printf("Validator ID %d needs an exit proof (run 'rp megapool notify-validator-exit')", val.ValidatorId)
+						fmt.Println()
+					} else {
+						fmt.Printf("Validator ID %d needs a final balance proof (run 'rp megapool notify-final-balance')", val.ValidatorId)
+						fmt.Println()
 					}
 				}
 			}
