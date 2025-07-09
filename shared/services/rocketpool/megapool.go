@@ -268,7 +268,7 @@ func (c *Client) CanNotifyFinalBalance(validatorId uint64, slot uint64) (api.Can
 
 // Notify final balance of a megapool validator
 func (c *Client) NotifyFinalBalance(validatorId uint64, slot uint64) (api.NotifyFinalBalanceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("megapool notify-final-balance %d", validatorId, slot))
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool notify-final-balance %d %d", validatorId, slot))
 	if err != nil {
 		return api.NotifyFinalBalanceResponse{}, fmt.Errorf("Could not notify final balance: %w", err)
 	}
