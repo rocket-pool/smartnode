@@ -97,7 +97,7 @@ func notifyFinalBalance(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to notify de final balance for validator id %d exit?", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to notify the final balance for validator id %d exit?", validatorId))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
