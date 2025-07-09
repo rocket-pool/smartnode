@@ -12,11 +12,6 @@ import (
 	"github.com/urfave/cli"
 )
 
-const (
-	colorReset  string = "\033[0m"
-	colorYellow string = "\033[33m"
-)
-
 func notifyFinalBalance(c *cli.Context) error {
 
 	// Get RP client
@@ -78,7 +73,7 @@ func notifyFinalBalance(c *cli.Context) error {
 		fmt.Println("The Smart Node needs to find the slot containing the validator withdrawal. This may take a while. If you know the slot, you can specify it using --slot or wait for the Smart Node to find it. ")
 	}
 
-	fmt.Printf("%sThis process can take several minutes and is CPU and memory intensive.%s", colorYellow, colorReset)
+	fmt.Printf("%sFetching the beacon state to craft a final balance proof. This process can take several minutes and is CPU and memory intensive.%s", colorYellow, colorReset)
 	fmt.Println()
 
 	response, err := rp.CanNotifyFinalBalance(validatorId, slot)

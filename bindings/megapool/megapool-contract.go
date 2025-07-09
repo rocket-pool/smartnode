@@ -48,10 +48,10 @@ type FinalBalanceProof struct {
 }
 
 type Withdrawal struct {
-	Index                 uint64
-	ValidatorIndex        uint64
-	WithdrawalCredentials [20]byte
-	AmountInGwei          uint64
+	Index                 uint64   `json:"index"`
+	ValidatorIndex        uint64   `json:"validatorIndex"`
+	WithdrawalCredentials [20]byte `json:"withdrawalCredentials"`
+	AmountInGwei          uint64   `json:"amountInGwei"`
 }
 
 type RewardSplit struct {
