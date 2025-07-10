@@ -152,13 +152,15 @@ func getValidatorMapAndRewards(rp *rocketpool.Client, status api.MegapoolStatusR
 		"Initialized": {},
 		"Prelaunch":   {},
 		"Dissolved":   {},
+		"Exiting":     {},
+		"Locked":      {},
 	}
 
 	var totalBeaconBalance uint64
 	var totalEffectiveBeaconBalance uint64
 	// Iterate over the validators and append them based on their statuses
 	for _, validator := range status.Megapool.Validators {
-		if validator.Staked {
+		if validator.Staked && !validator.Exited && !validator.Exiting {
 			statusValidators["Staking"] = append(statusValidators["Staking"], validator)
 			if validator.Activated {
 				totalBeaconBalance += validator.BeaconStatus.Balance
@@ -176,6 +178,12 @@ func getValidatorMapAndRewards(rp *rocketpool.Client, status api.MegapoolStatusR
 		}
 		if validator.Dissolved {
 			statusValidators["Dissolved"] = append(statusValidators["Dissolved"], validator)
+		}
+		if validator.Exiting {
+			statusValidators["Exiting"] = append(statusValidators["Exiting"], validator)
+		}
+		if validator.Locked {
+			statusValidators["Locked"] = append(statusValidators["Locked"], validator)
 		}
 	}
 
@@ -266,7 +274,7 @@ func getValidatorStatus(c *cli.Context) error {
 	fmt.Printf("There are %d validator(s) on the standard queue.\n", queueDetails.StandardLength)
 	fmt.Printf("The express queue rate is %d.\n\n", queueDetails.ExpressRate)
 
-	statusName := []string{"Staking", "Exited", "Prelaunch", "Initialized", "Dissolved"}
+	statusName := []string{"Staking", "Exited", "Prelaunch", "Initialized", "Dissolved", "Exiting", "Locked"}
 
 	// Print validators by status
 	noValidators := true
@@ -332,6 +340,22 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 	}
 
 	if status == "Exited" {
+		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
+		fmt.Printf("Validator active:             no\n")
+		fmt.Printf("Validator index:              %s\n", validator.BeaconStatus.Index)
+		fmt.Printf("Beacon status:                %s\n", validator.BeaconStatus.Status)
+	}
+
+	if status == "Exiting" {
+		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
+		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
+		fmt.Printf("Validator active:             no\n")
+		fmt.Printf("Validator index:              %s\n", validator.BeaconStatus.Index)
+		fmt.Printf("Beacon status:                %s\n", validator.BeaconStatus.Status)
+	}
+
+	if status == "Locked" {
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             no\n")

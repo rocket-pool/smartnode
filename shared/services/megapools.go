@@ -494,6 +494,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 				ExpressUsed:        validatorDetails.ExpressUsed,
 				Dissolved:          validatorDetails.Dissolved,
 				Exiting:            validatorDetails.Exiting,
+				Locked:             validatorDetails.Locked,
 				ValidatorIndex:     validatorDetails.ValidatorIndex,
 				ExitBalance:        validatorDetails.ExitBalance,
 			}
