@@ -19,6 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/storage"
+	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -325,6 +326,16 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	})
 	wg.Go(func() error {
 		var err error
+		details.ExitingValidatorCount, err = mega.GetExitingValidatorCount(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.LockedValidatorCount, err = mega.GetLockedValidatorCount(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
 		details.PendingRewards, err = mega.GetPendingRewards(nil)
 		return err
 	})
@@ -356,6 +367,24 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	wg.Go(func() error {
 		var err error
 		details.UserCapital, err = mega.GetUserCapital(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.Balances, err = tokens.GetBalances(rp, megapoolAddress, nil)
+		if err != nil {
+			return fmt.Errorf("error getting megapool %s balances: %w", megapoolAddress.Hex(), err)
+		}
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.PendingRewardSplit, err = mega.CalculatePendingRewards(nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.ReducedBond, err = protocol.GetReducedBondRaw(rp, nil)
 		return err
 	})
 
@@ -555,7 +584,7 @@ func findInQueue(rp *rocketpool.RocketPool, megapoolAddress common.Address, vali
 		positionOffset.Add(positionOffset, big.NewInt(1))
 	}
 	if slice.NextIndex.Cmp(big.NewInt(0)) == 0 {
-		return nil, err
+		return nil, nil
 	} else {
 		return findInQueue(rp, megapoolAddress, validatorId, queueKey, slice.NextIndex, positionOffset)
 	}
@@ -569,10 +598,10 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 		return nil, fmt.Errorf("Could not find position in queue %s for validatorId %d: %w", queueKey, validatorId, err)
 	}
 	if position == nil {
-		return nil, err
+		return nil, nil
 	}
 
-	pos := position.Uint64()
+	pos := position.Uint64() + 1
 
 	queueIndex := queueDetails.QueueIndex.Uint64()
 	expressQueueLength := queueDetails.ExpressQueueLength.Uint64()
@@ -583,13 +612,13 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 
 	var overallPosition uint64
 	if queueKey == "deposit.queue.express" {
-		standardEntriesBefore := (pos + (queueIndex%queueInterval)/expressQueueRate)
+		standardEntriesBefore := (pos + (queueIndex % queueInterval)) / expressQueueRate
 		if standardEntriesBefore > standardQueueLength {
 			standardEntriesBefore = standardQueueLength
 		}
 		overallPosition = pos + standardEntriesBefore
 	} else {
-		expressEntriesbefore := (pos*expressQueueLength + (expressQueueRate - (queueIndex % queueInterval)))
+		expressEntriesbefore := (pos * expressQueueLength) + (expressQueueRate - (queueIndex % queueInterval))
 		if expressEntriesbefore > expressQueueLength {
 			expressEntriesbefore = expressQueueLength
 		}

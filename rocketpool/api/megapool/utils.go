@@ -313,6 +313,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 				}
 				if currentEpoch > validator.BeaconStatus.ActivationEpoch {
 					validator.Activated = true
+					validator.WithdrawableEpoch = validator.BeaconStatus.WithdrawableEpoch
 				}
 			}
 
