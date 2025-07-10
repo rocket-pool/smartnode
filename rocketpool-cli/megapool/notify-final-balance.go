@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -55,7 +56,7 @@ func notifyFinalBalance(c *cli.Context) error {
 		exitingValidators := []api.MegapoolValidatorDetails{}
 
 		for _, validator := range status.Megapool.Validators {
-			if validator.Exiting {
+			if validator.Exiting && validator.BeaconStatus.Status == beacon.ValidatorState_WithdrawalDone {
 				exitingValidators = append(exitingValidators, validator)
 			}
 		}
@@ -72,7 +73,7 @@ func notifyFinalBalance(c *cli.Context) error {
 			validatorIndex = uint64(exitingValidators[selected].ValidatorIndex)
 
 		} else {
-			fmt.Println("No validators exiting at the moment")
+			fmt.Println("No validators at the state where the full withdrawal can be proved")
 			return nil
 		}
 	}
