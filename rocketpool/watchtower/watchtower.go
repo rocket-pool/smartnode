@@ -26,7 +26,6 @@ import (
 var minTasksInterval, _ = time.ParseDuration("4m")
 var maxTasksInterval, _ = time.ParseDuration("6m")
 var taskCooldown, _ = time.ParseDuration("5s")
-var heavyTaskCooldown, _ = time.ParseDuration("1h")
 
 const (
 	MaxConcurrentEth1Requests = 200
@@ -223,6 +222,9 @@ func run(c *cli.Context) error {
 				continue
 			}
 
+			isOnOdao = true
+			// REMOVE!
+
 			// Run the manual rewards tree generation
 			if err := generateRewardsTree.run(); err != nil {
 				errorLog.Println(err)
@@ -248,7 +250,7 @@ func run(c *cli.Context) error {
 				if err := challengeValidatorsExiting.run(state); err != nil {
 					errorLog.Println(err)
 				}
-				time.Sleep(heavyTaskCooldown)
+				time.Sleep(taskCooldown)
 
 				// Run the megapool validator dissolve check
 				if err := dissolveTimedOutMegapoolValidators.run(state); err != nil {
