@@ -222,9 +222,6 @@ func run(c *cli.Context) error {
 				continue
 			}
 
-			isOnOdao = true
-			// REMOVE!
-
 			// Run the manual rewards tree generation
 			if err := generateRewardsTree.run(); err != nil {
 				errorLog.Println(err)
