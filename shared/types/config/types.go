@@ -96,6 +96,7 @@ const (
 	MevRelayID_BloxrouteMaxProfit MevRelayID = "bloxrouteMaxProfit"
 	MevRelayID_BloxrouteRegulated MevRelayID = "bloxrouteRegulated"
 	MevRelayID_Ultrasound         MevRelayID = "ultrasound"
+	MevRelayID_UltrasoundFiltered MevRelayID = "ultrasoundFiltered"
 	MevRelayID_Aestus             MevRelayID = "aestus"
 	MevRelayID_TitanGlobal        MevRelayID = "titanGlobal"
 	MevRelayID_TitanRegional      MevRelayID = "titanRegional"
