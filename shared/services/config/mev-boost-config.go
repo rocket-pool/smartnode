@@ -227,6 +227,7 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.BloxRouteMaxProfitRelay,
 		&cfg.BloxRouteRegulatedRelay,
 		&cfg.UltrasoundRelay,
+		&cfg.UltrasoundFilteredRelay,
 		&cfg.AestusRelay,
 		&cfg.TitanGlobalRelay,
 		&cfg.TitanRegionalRelay,
