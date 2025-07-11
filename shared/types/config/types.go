@@ -100,6 +100,7 @@ const (
 	MevRelayID_Aestus             MevRelayID = "aestus"
 	MevRelayID_TitanGlobal        MevRelayID = "titanGlobal"
 	MevRelayID_TitanRegional      MevRelayID = "titanRegional"
+	MevRelayID_BTCSOfac           MevRelayID = "btcsOfac"
 )
 
 // Enum to describe MEV-Boost relay selection mode
