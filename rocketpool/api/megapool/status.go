@@ -41,7 +41,7 @@ func getStatus(c *cli.Context) (*api.MegapoolStatusResponse, error) {
 		return nil, err
 	}
 
-	details, err := GetNodeMegapoolDetails(rp, bc, nodeAccount.Address)
+	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address)
 	if err != nil {
 		return nil, err
 	}
