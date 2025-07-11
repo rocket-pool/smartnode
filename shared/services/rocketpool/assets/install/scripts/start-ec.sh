@@ -96,8 +96,12 @@ if [ "$CLIENT" = "geth" ]; then
             CMD="$CMD --miner.gaslimit $EC_SUGGESTED_BLOCK_GAS_LIMIT"
         fi
         
-        if [ "$GETH_ARCHIVE_MODE" = "true" ]; then
+        if [ "$EC_PRUNING_MODE" = "archive" ]; then
             CMD="$CMD --syncmode=full --gcmode=archive"
+        fi
+
+        if [ "$EC_PRUNING_MODE" = "historyExpire" ]; then
+            CMD="$CMD --history.chain postmerge"
         fi
 
         if [ ! -z "$GETH_EVM_TIMEOUT" ]; then
@@ -166,7 +170,6 @@ if [ "$CLIENT" = "nethermind" ]; then
 
     CMD="$PERF_PREFIX $NETHERMIND_BINARY \
         --config $RP_NETHERMIND_NETWORK \
-        --Sync.SnapSync true \
         --data-dir /ethclient/nethermind \
         --JsonRpc.Enabled true \
         --JsonRpc.Host 0.0.0.0 \
@@ -176,6 +179,7 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
+        --Pruning.Mode=None \
         --Pruning.FullPruningTrigger=VolumeFreeSpace \
         --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
         --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
@@ -184,6 +188,18 @@ if [ "$CLIENT" = "nethermind" ]; then
 
     if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --Blocks.TargetBlockGasLimit $EC_SUGGESTED_BLOCK_GAS_LIMIT"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "archive" ]; then
+        CMD="$CMD --Sync.DownloadBodiesInFastSync=false --Sync.DownloadReceiptsInFastSync=false --Sync.FastSync=false --Sync.SnapSync=false --Sync.FastBlocks=false --Sync.PivotNumber=0"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
+        CMD="$CMD --Sync.AncientBodiesBarrier=0 --Sync.AncientReceiptsBarrier=0"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "historyExpire" ]; then
+        CMD="$CMD --Sync.AncientBodiesBarrier=15537394 --Sync.AncientReceiptsBarrier=15537394"
     fi
     
     # Add optional supplemental primary JSON-RPC modules
@@ -281,10 +297,16 @@ if [ "$CLIENT" = "besu" ]; then
             CMD="$CMD --target-gas-limit=$EC_SUGGESTED_BLOCK_GAS_LIMIT"
         fi
         
-        if [ "$BESU_ARCHIVE_MODE" = "true" ]; then
+        if [ "$EC_PRUNING_MODE" = "archive" ]; then
             CMD="$CMD --sync-mode=FULL --data-storage-format=FOREST"
-        else 
-            CMD="$CMD --sync-mode=SNAP --data-storage-format=BONSAI"
+        fi
+
+        if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
+            CMD="$CMD --snapsync-synchronizer-pre-checkpoint-headers-only-enabled=false --snapsync-server-enabled"
+        fi
+
+        if [ "$EC_PRUNING_MODE" = "historyExpire" ]; then
+            CMD="$CMD --history-expiry-prune"
         fi
 
         if [ ! -z "$ETHSTATS_LABEL" ] && [ ! -z "$ETHSTATS_LOGIN" ]; then
@@ -348,12 +370,21 @@ if [ "$CLIENT" = "reth" ]; then
         CMD="$CMD --metrics 0.0.0.0:$EC_METRICS_PORT"
     fi
 
-    if [ "$RETH_ARCHIVE_MODE" = "false" ]; then
+    if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
         CMD="$CMD --block-interval 5"
         CMD="$CMD --prune.receipts.before 0"
         CMD="$CMD --prune.senderrecovery.full"
         CMD="$CMD --prune.accounthistory.distance 10064"
         CMD="$CMD --prune.storagehistory.distance 100064"
+    fi
+
+    if [ "$EC_PRUNING_MODE" = "historyExpire" ]; then
+        CMD="$CMD --block-interval 5"
+        CMD="$CMD --prune.senderrecovery.full"
+        CMD="$CMD --prune.accounthistory.distance 10064"
+        CMD="$CMD --prune.storagehistory.distance 100064"
+        CMD="$CMD --prune.bodies.pre-merge"
+        CMD="$CMD --prune.receipts.before 15537394"
     fi
 
     if [ ! -z "$EC_MAX_PEERS" ]; then
