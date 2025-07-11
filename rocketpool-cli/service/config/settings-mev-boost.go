@@ -26,6 +26,7 @@ type MevBoostConfigPage struct {
 	aestusBox             *parameterizedFormItem
 	titanGlobalBox        *parameterizedFormItem
 	titanRegionalBox      *parameterizedFormItem
+	btcsOfacBox           *parameterizedFormItem
 }
 
 // Creates a new page for the MEV-Boost settings
@@ -85,10 +86,11 @@ func (configPage *MevBoostConfigPage) createContent() {
 	configPage.aestusBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.AestusRelay)
 	configPage.titanGlobalBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.TitanGlobalRelay)
 	configPage.titanRegionalBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.TitanRegionalRelay)
+	configPage.btcsOfacBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BtcsOfacRelay)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox, configPage.selectionModeBox)
-	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteRegulatedBox, configPage.ultrasoundBox, configPage.aestusBox, configPage.titanGlobalBox, configPage.titanRegionalBox)
+	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteRegulatedBox, configPage.ultrasoundBox, configPage.aestusBox, configPage.titanGlobalBox, configPage.titanRegionalBox, configPage.btcsOfacBox)
 	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
 
@@ -177,6 +179,8 @@ func (configPage *MevBoostConfigPage) handleSelectionModeChanged() {
 				configPage.layout.form.AddFormItem(configPage.titanGlobalBox.item)
 			case cfgtypes.MevRelayID_TitanRegional:
 				configPage.layout.form.AddFormItem(configPage.titanRegionalBox.item)
+			case cfgtypes.MevRelayID_BTCSOfac:
+				configPage.layout.form.AddFormItem(configPage.btcsOfacBox.item)
 			}
 		}
 	}
