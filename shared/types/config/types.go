@@ -134,6 +134,7 @@ type LocalConsensusConfig interface {
 // Interface for External Consensus configurations
 type ExternalConsensusConfig interface {
 	GetApiUrl() string
+	GetSuggestedBlockGasLimit() string
 }
 
 // A setting that has changed
@@ -144,11 +145,20 @@ type ChangedSetting struct {
 	AffectedContainers map[ContainerID]bool
 }
 
+type UrlMap map[Network]string
+
+func (urlMap UrlMap) UrlExists(network Network) bool {
+	if url, exists := urlMap[network]; exists && url != "" {
+		return true
+	}
+	return false
+}
+
 // A MEV relay
 type MevRelay struct {
 	ID          MevRelayID
 	Name        string
 	Description string
-	Urls        map[Network]string
+	Urls        UrlMap
 	Regulated   bool
 }

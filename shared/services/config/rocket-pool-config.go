@@ -49,7 +49,7 @@ const defaultNodeMetricsPort uint16 = 9102
 const defaultExporterMetricsPort uint16 = 9103
 const defaultWatchtowerMetricsPort uint16 = 9104
 const defaultEcMetricsPort uint16 = 9105
-const oldBlockGasLimit = "30000000"
+const coreDevsSuggestedGasLimit = 45000000
 
 // The master configuration struct
 type RocketPoolConfig struct {
@@ -1052,6 +1052,29 @@ func (cfg *RocketPoolConfig) Graffiti() (string, error) {
 	return fmt.Sprintf("%s (%s)", prefix, customGraffiti), nil
 }
 
+func (cfg *RocketPoolConfig) SuggestedBlockGasLimit() string {
+	if cfg.ConsensusClientLocal() {
+		return cfg.ConsensusCommon.SuggestedBlockGasLimit.Value.(string)
+	}
+
+	cc, _ := cfg.GetSelectedConsensusClient()
+	switch cc {
+	case config.ConsensusClient_Lighthouse:
+		return cfg.ExternalLighthouse.SuggestedBlockGasLimit.Value.(string)
+	case config.ConsensusClient_Lodestar:
+		return cfg.ExternalLodestar.SuggestedBlockGasLimit.Value.(string)
+	case config.ConsensusClient_Nimbus:
+		return cfg.ExternalNimbus.SuggestedBlockGasLimit.Value.(string)
+	case config.ConsensusClient_Prysm:
+		return cfg.ExternalPrysm.SuggestedBlockGasLimit.Value.(string)
+	case config.ConsensusClient_Teku:
+		return cfg.ExternalTeku.SuggestedBlockGasLimit.Value.(string)
+	default:
+		return ""
+	}
+
+}
+
 // Used by text/template to format validator.yml
 func (cfg *RocketPoolConfig) RocketPoolVersion() string {
 	return shared.RocketPoolVersion()
@@ -1373,6 +1396,15 @@ func (cfg *RocketPoolConfig) GetPrometheusOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Prometheus.Port.Value.(uint16)))
 }
 
+// Used by text/template to format grafana.yml
+func (cfg *RocketPoolConfig) GetGrafanaOpenPorts() string {
+	portMode := cfg.Grafana.OpenPort.Value.(config.RPCMode)
+	if !portMode.Open() {
+		return ""
+	}
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(cfg.Grafana.Port.Value.(uint16)))
+}
+
 // Used by text/template to format mev-boost.yml
 func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 	portMode := cfg.MevBoost.OpenRpcPort.Value.(config.RPCMode)
@@ -1383,6 +1415,15 @@ func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 }
 
+// TODO: remove this code on the next Prysm release - so users can still rollback from 6.0.4
+// Used by text/template to select an entrypoint based on which consensus client is used.
+func (cfg *RocketPoolConfig) GetEth2Entrypoint() string {
+	if client, _ := cfg.GetSelectedConsensusClient(); client == config.ConsensusClient_Prysm {
+		return "bash"
+	}
+	return "sh"
+}
+
 // The title for the config
 func (cfg *RocketPoolConfig) GetConfigTitle() string {
 	return cfg.Title
@@ -1391,16 +1432,28 @@ func (cfg *RocketPoolConfig) GetConfigTitle() string {
 func (cfg *RocketPoolConfig) ConfirmUpdateSuggestedSettings() {
 
 	// If using the old consensus block gas limit, ask the user if they want to update it
-	if cfg.ConsensusCommon.SuggestedBlockGasLimit.Value == oldBlockGasLimit {
-		if prompt.Confirm("Your consensus block gas limit setting is currently '" + oldBlockGasLimit + "'. The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?") {
+	if cfg.ConsensusCommon.SuggestedBlockGasLimit.Value != "" {
+		blockGasLimit, err := strconv.Atoi(cfg.ConsensusCommon.SuggestedBlockGasLimit.Value.(string))
+		if err != nil {
 			cfg.ConsensusCommon.SuggestedBlockGasLimit.Value = ""
+		}
+		if blockGasLimit < coreDevsSuggestedGasLimit {
+			if prompt.Confirm(fmt.Sprintf("Your consensus block gas limit setting is currently '%d' . The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?", blockGasLimit)) {
+				cfg.ConsensusCommon.SuggestedBlockGasLimit.Value = ""
+			}
 		}
 	}
 
 	// If using the old execution block gas limit, ask the user if they want to update it
-	if cfg.ExecutionCommon.SuggestedBlockGasLimit.Value == oldBlockGasLimit {
-		if prompt.Confirm("Your execution block gas limit setting is currently '" + oldBlockGasLimit + "'. The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?") {
+	if cfg.ExecutionCommon.SuggestedBlockGasLimit.Value != "" {
+		blockGasLimit, err := strconv.Atoi(cfg.ExecutionCommon.SuggestedBlockGasLimit.Value.(string))
+		if err != nil {
 			cfg.ExecutionCommon.SuggestedBlockGasLimit.Value = ""
+		}
+		if blockGasLimit < coreDevsSuggestedGasLimit {
+			if prompt.Confirm(fmt.Sprintf("Your execution block gas limit setting is currently '%d' . The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?", blockGasLimit)) {
+				cfg.ExecutionCommon.SuggestedBlockGasLimit.Value = ""
+			}
 		}
 	}
 

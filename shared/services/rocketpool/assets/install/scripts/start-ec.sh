@@ -180,7 +180,6 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
         --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
         --Pruning.FullPruningMaxDegreeOfParallelism=$RP_NETHERMIND_FULL_PRUNING_MAX_DEGREE_PARALLELISM \
-        --Pruning.FullPruningMemoryBudgetMb=$RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET \
         $EC_ADDITIONAL_FLAGS"
 
     if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
@@ -223,6 +222,10 @@ if [ "$CLIENT" = "nethermind" ]; then
         CMD="$CMD --Pruning.CacheMb $RP_NETHERMIND_PRUNE_MEM_SIZE"
     fi
 
+    if [ ! -z "$RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET" ]; then
+        CMD="$CMD --Pruning.FullPruningMemoryBudgetMb $RP_NETHERMIND_FULL_PRUNE_MEMORY_BUDGET"
+    fi
+    
     exec ${CMD}
 
 fi
@@ -248,7 +251,7 @@ if [ "$CLIENT" = "besu" ]; then
     # Check for the prune flag and run that first if requested
     if [ -f "/ethclient/prune.lock" ]; then
 
-        $PERF_PREFIX /opt/besu/bin/besu $BESU_NETWORK --data-path=/ethclient/besu storage trie-log prune ; rm /ethclient/prune.lock
+        $PERF_PREFIX /opt/besu/bin/besu $BESU_NETWORK --data-path=/ethclient/besu --history-expiry-prune storage trie-log prune ; rm /ethclient/prune.lock
 
     # Run Besu normally
     else
@@ -346,7 +349,11 @@ if [ "$CLIENT" = "reth" ]; then
     fi
 
     if [ "$RETH_ARCHIVE_MODE" = "false" ]; then
-        CMD="$CMD --full"
+        CMD="$CMD --block-interval 5"
+        CMD="$CMD --prune.receipts.before 0"
+        CMD="$CMD --prune.senderrecovery.full"
+        CMD="$CMD --prune.accounthistory.distance 10064"
+        CMD="$CMD --prune.storagehistory.distance 100064"
     fi
 
     if [ ! -z "$EC_MAX_PEERS" ]; then

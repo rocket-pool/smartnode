@@ -39,7 +39,7 @@ type ExecutionCommonConfig struct {
 	P2pPort config.Parameter `yaml:"p2pPort,omitempty"`
 
 	// The suggested block gas limit
-	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,ommitempty"`
+	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
 
 	// Label for Ethstats
 	EthstatsLabel config.Parameter `yaml:"ethstatsLabel,omitempty"`

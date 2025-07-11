@@ -13,7 +13,7 @@ import (
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 )
 
-// Combine a node's address and a salt to retreive a new salt compatible with depositing
+// Combine a node's address and a salt to retrieve a new salt compatible with depositing
 func GetNodeSalt(nodeAddress common.Address, salt *big.Int) common.Hash {
 	// Create a new salt by hashing the original and the node address
 	saltBytes := [32]byte{}

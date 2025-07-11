@@ -149,7 +149,7 @@ func GetPendingETHRewards(rp *rocketpool.RocketPool, opts *bind.CallOpts, legacy
 	return *rewards, nil
 }
 
-// Estimate the gas for submiting a Merkle Tree-based snapshot for a rewards interval
+// Estimate the gas for submitting a Merkle Tree-based snapshot for a rewards interval
 func EstimateSubmitRewardSnapshotGas(rp *rocketpool.RocketPool, submission RewardSubmission, opts *bind.TransactOpts, legacyRocketRewardsPoolAddress *common.Address) (rocketpool.GasInfo, error) {
 	rocketRewardsPool, err := getRocketRewardsPool(rp, legacyRocketRewardsPoolAddress, nil)
 	if err != nil {

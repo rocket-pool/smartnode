@@ -63,16 +63,16 @@ type NativeMinipoolDetails struct {
 	UserShareOfBeaconBalance          *big.Int `json:"user_share_of_beacon_balance"`
 
 	// Atlas
-	UserDistributed              bool
-	Slashed                      bool
-	IsVacant                     bool
-	LastBondReductionTime        *big.Int
-	LastBondReductionPrevValue   *big.Int
-	LastBondReductionPrevNodeFee *big.Int
-	ReduceBondTime               *big.Int
-	ReduceBondCancelled          bool
-	ReduceBondValue              *big.Int
-	PreMigrationBalance          *big.Int
+	UserDistributed              bool     `json:"user_distributed"`
+	Slashed                      bool     `json:"slashed"`
+	IsVacant                     bool     `json:"is_vacant"`
+	LastBondReductionTime        *big.Int `json:"last_bond_reduction_time"`
+	LastBondReductionPrevValue   *big.Int `json:"last_bond_reduction_prev_value"`
+	LastBondReductionPrevNodeFee *big.Int `json:"last_bond_reduction_prev_node_fee"`
+	ReduceBondTime               *big.Int `json:"reduce_bond_time"`
+	ReduceBondCancelled          bool     `json:"reduce_bond_cancelled"`
+	ReduceBondValue              *big.Int `json:"reduce_bond_value"`
+	PreMigrationBalance          *big.Int `json:"pre_migration_balance"`
 }
 
 var sixteenEth = big.NewInt(0).Mul(big.NewInt(16), oneEth)
@@ -177,10 +177,7 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 	count := len(minipoolDetails)
 	for i := 0; i < count; i += minipoolCompleteShareBatchSize {
 		i := i
-		max := i + minipoolCompleteShareBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolCompleteShareBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -200,7 +197,7 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 
 				// Calculate the Beacon shares
 				beaconBalance := big.NewInt(0).Set(beaconBalances[j])
-				if beaconBalance.Cmp(zero) > 0 {
+				if beaconBalance.Sign() > 0 {
 					mc.AddCall(mpContract, &details.NodeShareOfBeaconBalance, "calculateNodeShare", beaconBalance)
 					mc.AddCall(mpContract, &details.UserShareOfBeaconBalance, "calculateUserShare", beaconBalance)
 				} else {
@@ -214,7 +211,7 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 				totalBalance.Sub(totalBalance, details.NodeRefundBalance) // Remove node refund
 
 				// Calculate the node and user shares
-				if totalBalance.Cmp(zero) > 0 {
+				if totalBalance.Sign() > 0 {
 					mc.AddCall(mpContract, &details.NodeShareOfBalanceIncludingBeacon, "calculateNodeShare", totalBalance)
 					mc.AddCall(mpContract, &details.UserShareOfBalanceIncludingBeacon, "calculateUserShare", totalBalance)
 				} else {
@@ -283,10 +280,7 @@ func getNodeMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkC
 	count := int(minipoolCount)
 	for i := 0; i < count; i += minipoolAddressBatchSize {
 		i := i
-		max := i + minipoolAddressBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -329,10 +323,7 @@ func getAllMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkCo
 	count := int(minipoolCount)
 	for i := 0; i < count; i += minipoolAddressBatchSize {
 		i := i
-		max := i + minipoolAddressBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -369,10 +360,7 @@ func getMinipoolVersionsFast(rp *rocketpool.RocketPool, contracts *NetworkContra
 	versions := make([]uint8, count)
 	for i := 0; i < count; i += minipoolVersionBatchSize {
 		i := i
-		max := i + minipoolVersionBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolVersionBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -426,10 +414,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	count := len(addresses)
 	for i := 0; i < count; i += minipoolBatchSize {
 		i := i
-		max := i + minipoolBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -464,10 +449,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	wg2.SetLimit(threadLimit)
 	for i := 0; i < count; i += minipoolBatchSize {
 		i := i
-		max := i + minipoolBatchSize
-		if max > count {
-			max = count
-		}
+		max := min(i+minipoolBatchSize, count)
 
 		wg2.Go(func() error {
 			var err error
@@ -581,7 +563,7 @@ func addMinipoolShareCalls(rp *rocketpool.RocketPool, mc *multicall.MultiCaller,
 	mpContract := mp.GetContract()
 
 	details.DistributableBalance = big.NewInt(0).Sub(details.Balance, details.NodeRefundBalance)
-	if details.DistributableBalance.Cmp(zero) >= 0 {
+	if details.DistributableBalance.Sign() >= 0 {
 		mc.AddCall(mpContract, &details.NodeShareOfBalance, "calculateNodeShare", details.DistributableBalance)
 		mc.AddCall(mpContract, &details.UserShareOfBalance, "calculateUserShare", details.DistributableBalance)
 	} else {

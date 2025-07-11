@@ -9,9 +9,6 @@ const (
 	threadLimit int = 10
 )
 
-// Global constants
-var zero = big.NewInt(0)
-
 // Converts a time on the chain (as Unix time in seconds) to a time.Time struct
 func convertToTime(value *big.Int) time.Time {
 	return time.Unix(value.Int64(), 0)
