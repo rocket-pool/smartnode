@@ -124,12 +124,12 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
-				Name:        "History Expire",
+				Name:        "History Expiry",
 				Description: "Client will drop historical data to save storage",
-				Value:       config.PruningMode_HistoryExpire,
+				Value:       config.PruningMode_HistoryExpiry,
 			}, {
 				Name:        "Full node",
-				Description: "Client will keep the usual full node data (without history expire)",
+				Description: "Client will keep the usual full node data (without history expiry)",
 				Value:       config.PruningMode_FullNode,
 			}, {
 				Name:        "Archive",

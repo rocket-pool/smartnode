@@ -100,7 +100,7 @@ if [ "$CLIENT" = "geth" ]; then
             CMD="$CMD --syncmode=full --gcmode=archive"
         fi
 
-        if [ "$EC_PRUNING_MODE" = "historyExpire" ]; then
+        if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
             CMD="$CMD --history.chain postmerge"
         fi
 
@@ -198,7 +198,7 @@ if [ "$CLIENT" = "nethermind" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=0 --Sync.AncientReceiptsBarrier=0"
     fi
 
-    if [ "$EC_PRUNING_MODE" = "historyExpire" ]; then
+    if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=15537394 --Sync.AncientReceiptsBarrier=15537394"
     fi
     
@@ -305,7 +305,7 @@ if [ "$CLIENT" = "besu" ]; then
             CMD="$CMD --snapsync-synchronizer-pre-checkpoint-headers-only-enabled=false --snapsync-server-enabled"
         fi
 
-        if [ "$EC_PRUNING_MODE" = "historyExpire" ]; then
+        if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
             CMD="$CMD --history-expiry-prune"
         fi
 
@@ -378,7 +378,7 @@ if [ "$CLIENT" = "reth" ]; then
         CMD="$CMD --prune.storagehistory.distance 100064"
     fi
 
-    if [ "$EC_PRUNING_MODE" = "historyExpire" ]; then
+    if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
         CMD="$CMD --block-interval 5"
         CMD="$CMD --prune.senderrecovery.full"
         CMD="$CMD --prune.accounthistory.distance 10064"

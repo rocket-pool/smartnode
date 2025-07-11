@@ -47,7 +47,7 @@ const (
 
 // Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)
 const (
-	PruningMode_HistoryExpire Mode = "historyExpire"
+	PruningMode_HistoryExpiry Mode = "historyExpiry"
 	PruningMode_FullNode      Mode = "fullNode"
 	PruningMode_Archive       Mode = "archive"
 )
