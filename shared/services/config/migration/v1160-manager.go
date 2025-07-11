@@ -43,5 +43,39 @@ func upgradeFromV1160(serializedConfig map[string]map[string]string) error {
 		}
 	}
 
+	executionClient, exists := serializedConfig["root"]["executionClient"]
+	if !exists {
+		return fmt.Errorf("expected a setting called `executionClient` but it didn't exist")
+	}
+	if executionClient == "besu" {
+		besuArchive, exists := serializedConfig["besu"]["archiveMode"]
+		if !exists {
+			return fmt.Errorf("expected a section called `besu` with a setting called `archiveMode` but it didn't exist")
+		}
+		if besuArchive == "true" {
+			serializedConfig["executionCommon"]["pruningMode"] = "archive"
+		}
+	}
+
+	if executionClient == "geth" {
+		gethArchive, exists := serializedConfig["geth"]["archiveMode"]
+		if !exists {
+			return fmt.Errorf("expected a section called `geth` with a setting called `archiveMode` but it didn't exist")
+		}
+		if gethArchive == "true" {
+			serializedConfig["executionCommon"]["pruningMode"] = "archive"
+		}
+	}
+
+	if executionClient == "reth" {
+		rethArchive, exists := serializedConfig["reth"]["archiveMode"]
+		if !exists {
+			return fmt.Errorf("expected a section called `reth` with a setting called `archiveMode` but it didn't exist")
+		}
+		if rethArchive == "true" {
+			serializedConfig["executionCommon"]["pruningMode"] = "archive"
+		}
+	}
+
 	return nil
 }

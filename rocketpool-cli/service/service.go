@@ -754,7 +754,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 
 	// Don't prune besu if it's in archive mode
-	if selectedEc == cfgtypes.ExecutionClient_Besu && cfg.Besu.ArchiveMode.Value == true {
+	if selectedEc == cfgtypes.ExecutionClient_Besu && cfg.ExecutionCommon.PruningMode.Value == cfgtypes.PruningMode_Archive {
 		fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
 		return nil
 	}

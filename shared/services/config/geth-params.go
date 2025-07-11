@@ -33,9 +33,6 @@ type GethConfig struct {
 	// Number of seconds EVM calls can run before timing out
 	EvmTimeout config.Parameter `yaml:"evmTimeout,omitempty"`
 
-	// The archive mode flag
-	ArchiveMode config.Parameter `yaml:"archiveMode,omitempty"`
-
 	// The Docker Hub tag for Geth
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -82,17 +79,6 @@ func NewGethConfig(cfg *RocketPoolConfig) *GethConfig {
 			OverwriteOnUpgrade: false,
 		},
 
-		ArchiveMode: config.Parameter{
-			ID:                 "archiveMode",
-			Name:               "Enable Archive Mode",
-			Description:        "When enabled, Geth will run in \"archive\" mode which means it can recreate the state of the chain for a previous block. This is required for manually generating the Merkle rewards tree.\n\nIf you are sure you will never be manually generating a tree, you can disable archive mode.",
-			Type:               config.ParameterType_Bool,
-			Default:            map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
-			CanBeBlank:         true,
-			OverwriteOnUpgrade: false,
-		},
-
 		ContainerTag: config.Parameter{
 			ID:          "containerTag",
 			Name:        "Container Tag",
@@ -134,7 +120,6 @@ func (cfg *GethConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.MaxPeers,
 		&cfg.EvmTimeout,
-		&cfg.ArchiveMode,
 		&cfg.ContainerTag,
 		&cfg.AdditionalFlags,
 	}
