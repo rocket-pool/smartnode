@@ -86,7 +86,7 @@ func EstimateProposeVoteDelayTimeGas(rp *rocketpool.RocketPool, value *big.Int, 
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", VoteDelayTimeSettingPath), ProposalsSettingsContractName, VoteDelayTimeSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-// How long after a succesful proposal can it be executed before it expires
+// How long after a successful proposal can it be executed before it expires
 func GetExecuteTime(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	proposalsSettingsContract, err := getProposalsSettingsContract(rp, opts)
 	if err != nil {
