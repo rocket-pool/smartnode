@@ -69,7 +69,13 @@ if [ "$CLIENT" = "geth" ]; then
     # Check for the prune flag and run that first if requested
     if [ -f "/ethclient/prune.lock" ]; then
 
-        $PERF_PREFIX /usr/local/bin/geth snapshot prune-state $GETH_NETWORK --datadir /ethclient/geth ; rm /ethclient/prune.lock
+        if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
+            $PERF_PREFIX /usr/local/bin/geth prune-history $GETH_NETWORK --datadir /ethclient/geth ; rm /ethclient/prune.lock    
+        fi
+
+        if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
+            $PERF_PREFIX /usr/local/bin/geth snapshot prune-state $GETH_NETWORK --datadir /ethclient/geth ; rm /ethclient/prune.lock
+        fi
 
     # Run Geth normally
     else
@@ -266,6 +272,7 @@ if [ "$CLIENT" = "besu" ]; then
 
     # Check for the prune flag and run that first if requested
     if [ -f "/ethclient/prune.lock" ]; then
+
 
         $PERF_PREFIX /opt/besu/bin/besu $BESU_NETWORK --data-path=/ethclient/besu --history-expiry-prune storage trie-log prune ; rm /ethclient/prune.lock
 
