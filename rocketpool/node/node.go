@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -118,6 +119,12 @@ func run(c *cli.Context) error {
 	// Create the state manager
 	m := state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bc, &updateLog)
 	stateLocker := collectors.NewStateLocker()
+
+	// Create a context for the daemon
+	ctx := context.Background()
+
+	// Start the HTTP server
+	startHTTP(ctx, cfg)
 
 	// Initialize tasks
 	manageFeeRecipient, err := newManageFeeRecipient(c, log.NewColorLogger(ManageFeeRecipientColor))
