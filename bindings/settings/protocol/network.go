@@ -36,6 +36,7 @@ const (
 	NetworkNodeCommissionSharePath                     string = "network.node.commission.share"
 	NetworkNodeCommissionShareSecurityCouncilAdderPath string = "network.node.commission.share.security.council.adder"
 	NetworkVoterSharePath                              string = "network.voter.share"
+	NetworkPDAOSharePath                               string = "network.pdao.share"
 	NetworkMaxNodeShareSecurityCouncilAdderPath        string = "network.max.node.commission.share.council.adder"
 	NetworkMaxRethBalanceDeltaPath                     string = "network.max.reth.balance.delta"
 )
@@ -456,6 +457,26 @@ func ProposeVoterShare(rp *rocketpool.RocketPool, value *big.Int, blockNumber ui
 }
 func EstimateProposeVoterShareGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkVoterSharePath), NetworkSettingsContractName, NetworkVoterSharePath, value, blockNumber, treeNodes, opts)
+}
+
+// Get the network.pdao.share setting
+func GetProtocolDAOShare(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	pdaoShare := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, pdaoShare, "getProtocolDAOShare"); err != nil {
+		return nil, fmt.Errorf("error getting network pdao commission share %w", err)
+	}
+	return *pdaoShare, nil
+}
+
+func ProposeProtocolDAOShare(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPDAOSharePath), NetworkSettingsContractName, NetworkPDAOSharePath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeProtocolDAOShare(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkPDAOSharePath), NetworkSettingsContractName, NetworkPDAOSharePath, value, blockNumber, treeNodes, opts)
 }
 
 // Get the network.max.node.commission.share.council.adder setting
