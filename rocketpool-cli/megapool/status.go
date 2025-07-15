@@ -120,10 +120,15 @@ func getStatus(c *cli.Context) error {
 		if status.Megapool.RefundValue.Cmp(big.NewInt(0)) > 0 {
 			fmt.Printf("The megapool refund value is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.Megapool.RefundValue), 6))
 		}
-		if status.Megapool.PendingRewards.Cmp(big.NewInt(0)) > 0 {
-			fmt.Printf("The megapool has %.6f ETH in pending rewards to claim.\n", math.RoundDown(eth.WeiToEth(status.Megapool.PendingRewardSplit.NodeRewards), 6))
+		if status.Megapool.ExitingValidatorCount > 0 {
+			fmt.Printf("The megapool has %d validators exiting. You'll be able to see claimable rewards once the exit process is completed.", status.Megapool.ExitingValidatorCount)
+			fmt.Println()
 		} else {
-			fmt.Println("The megapool does not have any pending rewards to claim.")
+			if status.Megapool.PendingRewards.Cmp(big.NewInt(0)) > 0 {
+				fmt.Printf("The megapool has %.6f ETH in pending rewards to claim.\n", math.RoundDown(eth.WeiToEth(status.Megapool.PendingRewardSplit.NodeRewards), 6))
+			} else {
+				fmt.Println("The megapool does not have any pending rewards to claim.")
+			}
 		}
 		fmt.Printf("Beacon balance (CL): %6f ETH\n", math.RoundDown(eth.WeiToEth(totalBeaconBalance), 6))
 		fmt.Printf("Your portion: %6f ETH\n", math.RoundDown(eth.WeiToEth(nodeShareOfCLBalance), 6))
