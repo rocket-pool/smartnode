@@ -29,6 +29,7 @@ services:
       - EC_MAX_PEERS={{.GetECMaxPeers}}
       - EC_P2P_PORT={{$p2p}}
       - EC_SUGGESTED_BLOCK_GAS_LIMIT={{.ExecutionCommon.SuggestedBlockGasLimit}}
+      - EC_PRUNING_MODE={{.ExecutionCommon.PruningMode}}
       - EC_ADDITIONAL_FLAGS={{.GetECAdditionalFlags}}
       - EC_HTTP_PORT={{.ExecutionCommon.HttpPort}}
       - EC_WS_PORT={{.ExecutionCommon.WsPort}}
@@ -40,7 +41,6 @@ services:
       {{- if eq .ExecutionClient.String "besu"}}
       - BESU_MAX_BACK_LAYERS={{.Besu.MaxBackLayers}}
       - BESU_JVM_HEAP_SIZE={{.Besu.JvmHeapSize}}
-      - BESU_ARCHIVE_MODE={{.Besu.ArchiveMode}}
       {{- else if eq .ExecutionClient.String "nethermind"}}
       - EC_CACHE_SIZE={{.Nethermind.CacheSize}}
       - RP_NETHERMIND_PRUNE_MEM_SIZE={{.Nethermind.PruneMemSize}}
@@ -50,10 +50,8 @@ services:
       - RP_NETHERMIND_FULL_PRUNING_MAX_DEGREE_PARALLELISM={{.Nethermind.FullPruningMaxDegreeOfParallelism}}
       - RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB={{.Nethermind.FullPruningThresholdMb}}
       {{- else if eq .ExecutionClient.String "geth"}}
-      - GETH_ARCHIVE_MODE={{.Geth.ArchiveMode}}
       - GETH_EVM_TIMEOUT={{.Geth.EvmTimeout}}
       {{- else if eq .ExecutionClient.String "reth"}}
-      - RETH_ARCHIVE_MODE={{.Reth.ArchiveMode}}
       - RETH_MAX_INBOUND_PEERS={{.Reth.MaxInboundPeers}}
       {{- end}}
     entrypoint: sh
