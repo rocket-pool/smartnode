@@ -1663,6 +1663,38 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									},
 
 									{
+										Name:      "pdao-share",
+										Aliases:   []string{"ps"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkPDAOSharePath, percentUsage),
+										UsageText: "rocketpool pdao propose setting node pdao-share value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingPDAOShare(c, value)
+
+										},
+									},
+
+									{
 										Name:      "max-node-share-security-council-adder",
 										Aliases:   []string{"mns"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkMaxNodeShareSecurityCouncilAdderPath, percentUsage),

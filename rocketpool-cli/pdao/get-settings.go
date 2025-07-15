@@ -84,6 +84,7 @@ func getSettings(c *cli.Context) error {
 		fmt.Printf("\tNode Commission Share:                        %.2f%%\n", eth.WeiToEth(response.Network.NodeCommissionShare)*100)
 		fmt.Printf("\tNode Commission Share Security Council Adder: %.2f%%\n", eth.WeiToEth(response.Network.NodeCommissionShareSecurityCouncilAdder)*100)
 		fmt.Printf("\tVoter Share:                                  %.2f%%\n", eth.WeiToEth(response.Network.VoterShare)*100)
+		fmt.Printf("\tProtocol DAO Share:                           %.2f%%\n", eth.WeiToEth(response.Network.ProtocolDAOShare)*100)
 		fmt.Printf("\tMax Commission Share Security Council Adder:  %.2f%%\n", eth.WeiToEth(response.Network.MaxNodeShareSecurityCouncilAdder)*100)
 		fmt.Printf("\tMax rETH balance delta:                       %.2f%%\n", eth.WeiToEth(response.Network.MaxRethBalanceDelta)*100)
 		fmt.Printf("\tAllow listed controllers:                     %v\n", response.Network.AllowListedControllers)
