@@ -45,6 +45,13 @@ const (
 	Mode_External Mode = "external"
 )
 
+// Enum to describe the mode for a client - local (Docker Mode) or external (Hybrid Mode)
+const (
+	PruningMode_HistoryExpiry Mode = "historyExpiry"
+	PruningMode_FullNode      Mode = "fullNode"
+	PruningMode_Archive       Mode = "archive"
+)
+
 // Enum to describe which data type a parameter's value will have, which
 // informs the corresponding UI element and value validation
 const (
@@ -96,9 +103,11 @@ const (
 	MevRelayID_BloxrouteMaxProfit MevRelayID = "bloxrouteMaxProfit"
 	MevRelayID_BloxrouteRegulated MevRelayID = "bloxrouteRegulated"
 	MevRelayID_Ultrasound         MevRelayID = "ultrasound"
+	MevRelayID_UltrasoundFiltered MevRelayID = "ultrasoundFiltered"
 	MevRelayID_Aestus             MevRelayID = "aestus"
 	MevRelayID_TitanGlobal        MevRelayID = "titanGlobal"
 	MevRelayID_TitanRegional      MevRelayID = "titanRegional"
+	MevRelayID_BTCSOfac           MevRelayID = "btcsOfac"
 )
 
 // Enum to describe MEV-Boost relay selection mode

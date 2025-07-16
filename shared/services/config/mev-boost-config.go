@@ -46,6 +46,9 @@ type MevBoostConfig struct {
 	// Ultra sound relay
 	UltrasoundRelay config.Parameter `yaml:"ultrasoundEnabled,omitempty"`
 
+	// Ultra sound filtered relay
+	UltrasoundFilteredRelay config.Parameter `yaml:"ultrasoundFilteredEnabled,omitempty"`
+
 	// Aestus relay
 	AestusRelay config.Parameter `yaml:"aestusEnabled,omitempty"`
 
@@ -54,6 +57,9 @@ type MevBoostConfig struct {
 
 	// Titan Regional relay
 	TitanRegionalRelay config.Parameter `yaml:"titanRegionalEnabled,omitempty"`
+
+	// BTCS OFAC+
+	BtcsOfacRelay config.Parameter `yaml:"btcsOfacEnabled,omitempty"`
 
 	// The RPC port
 	Port config.Parameter `yaml:"port,omitempty"`
@@ -143,9 +149,11 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		BloxRouteMaxProfitRelay: generateRelayParameter("bloxRouteMaxProfitEnabled", relayMap[config.MevRelayID_BloxrouteMaxProfit]),
 		BloxRouteRegulatedRelay: generateRelayParameter("bloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
 		UltrasoundRelay:         generateRelayParameter("ultrasoundEnabled", relayMap[config.MevRelayID_Ultrasound]),
+		UltrasoundFilteredRelay: generateRelayParameter("ultrasoundFilteredEnabled", relayMap[config.MevRelayID_UltrasoundFiltered]),
 		AestusRelay:             generateRelayParameter("aestusEnabled", relayMap[config.MevRelayID_Aestus]),
 		TitanGlobalRelay:        generateRelayParameter("titanGlobalEnabled", relayMap[config.MevRelayID_TitanGlobal]),
 		TitanRegionalRelay:      generateRelayParameter("titanRegionalEnabled", relayMap[config.MevRelayID_TitanRegional]),
+		BtcsOfacRelay:           generateRelayParameter("btcsOfacEnabled", relayMap[config.MevRelayID_BTCSOfac]),
 
 		Port: config.Parameter{
 			ID:                 "port",
@@ -223,9 +231,11 @@ func (cfg *MevBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.BloxRouteMaxProfitRelay,
 		&cfg.BloxRouteRegulatedRelay,
 		&cfg.UltrasoundRelay,
+		&cfg.UltrasoundFilteredRelay,
 		&cfg.AestusRelay,
 		&cfg.TitanGlobalRelay,
 		&cfg.TitanRegionalRelay,
+		&cfg.BtcsOfacRelay,
 		&cfg.Port,
 		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,
@@ -296,9 +306,12 @@ func (cfg *MevBoostConfig) GetEnabledMevRelays() []config.MevRelay {
 		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteMaxProfitRelay, config.MevRelayID_BloxrouteMaxProfit, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteRegulatedRelay, config.MevRelayID_BloxrouteRegulated, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.UltrasoundRelay, config.MevRelayID_Ultrasound, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.UltrasoundFilteredRelay, config.MevRelayID_UltrasoundFiltered, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.AestusRelay, config.MevRelayID_Aestus, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.TitanGlobalRelay, config.MevRelayID_TitanGlobal, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.TitanRegionalRelay, config.MevRelayID_TitanRegional, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.BtcsOfacRelay, config.MevRelayID_BTCSOfac, currentNetwork)
+
 	}
 
 	return relays
@@ -360,14 +373,27 @@ func createDefaultRelays() []config.MevRelay {
 		// Ultrasound
 		{
 			ID:          config.MevRelayID_Ultrasound,
-			Name:        "Ultra Sound",
+			Name:        "Ultra Sound (non-filtering)",
 			Description: "The ultra sound relay is a credibly-neutral and permissionless relay — a public good from the ultrasound.money team.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay.ultrasound.money?id=rocketpool",
-				config.Network_Testnet: "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
-				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-stag.ultrasound.money?id=rocketpool",
+				config.Network_Testnet: "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-hoodi.ultrasound.money?id=rocketpool",
+				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-hoodi.ultrasound.money?id=rocketpool",
 			},
 			Regulated: false,
+		},
+
+		// Ultrasound Filtered
+		{
+			ID:          config.MevRelayID_UltrasoundFiltered,
+			Name:        "Ultra Sound (filtering)",
+			Description: "The ultra sound relay is a credibly-neutral and permissionless relay — a public good from the ultrasound.money team. This is the filtering version.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay-filtered.ultrasound.money?id=rocketpool",
+				config.Network_Testnet: "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool",
+				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool",
+			},
+			Regulated: true,
 		},
 
 		// Aestus
@@ -403,6 +429,19 @@ func createDefaultRelays() []config.MevRelay {
 			Description: "Titan Relay is a neutral, Rust-based MEV-Boost Relay optimized for low latency throughput, geographical distribution, and robustness. Select this to enable the \"filtering\" relay from Titan.",
 			Urls: map[config.Network]string{
 				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
+				config.Network_Testnet: "",
+				config.Network_Devnet:  "",
+			},
+			Regulated: true,
+		},
+
+		// BTCS OFAC+
+		{
+			ID:          config.MevRelayID_BTCSOfac,
+			Name:        "BTCS OFAC+",
+			Description: "Select this to enable the BTCS OFAC+ regulated relay.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0xb66921e917a8f4cfc3c52e10c1e5c77b1255693d9e6ed6f5f444b71ca4bb610f2eff4fa98178efbf4dd43a30472c497e@relay.btcs.com",
 				config.Network_Testnet: "",
 				config.Network_Devnet:  "",
 			},

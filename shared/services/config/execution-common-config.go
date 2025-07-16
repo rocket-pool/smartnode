@@ -41,6 +41,9 @@ type ExecutionCommonConfig struct {
 	// The suggested block gas limit
 	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
 
+	// If the client should expire history
+	PruningMode config.Parameter `yaml:"pruningMode,omitempty"`
+
 	// Label for Ethstats
 	EthstatsLabel config.Parameter `yaml:"ethstatsLabel,omitempty"`
 
@@ -111,6 +114,30 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		PruningMode: config.Parameter{
+			ID:                 "pruningMode",
+			Name:               "PruningMode",
+			Description:        "Instructs the clients to either prune history, keep it, or act as an archive mode.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: config.PruningMode_FullNode},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+			Options: []config.ParameterOption{{
+				Name:        "History Expiry",
+				Description: "Client will drop historical data to save storage",
+				Value:       config.PruningMode_HistoryExpiry,
+			}, {
+				Name:        "Full node",
+				Description: "Client will keep the usual full node data (without history expiry)",
+				Value:       config.PruningMode_FullNode,
+			}, {
+				Name:        "Archive",
+				Description: "Client will work as an archive node",
+				Value:       config.PruningMode_Archive,
+			}},
+		},
+
 		P2pPort: config.Parameter{
 			ID:                 "p2pPort",
 			Name:               "P2P Port",
@@ -154,6 +181,7 @@ func (cfg *ExecutionCommonConfig) GetParameters() []*config.Parameter {
 		&cfg.EnginePort,
 		&cfg.OpenRpcPorts,
 		&cfg.SuggestedBlockGasLimit,
+		&cfg.PruningMode,
 		&cfg.P2pPort,
 		&cfg.EthstatsLabel,
 		&cfg.EthstatsLogin,
