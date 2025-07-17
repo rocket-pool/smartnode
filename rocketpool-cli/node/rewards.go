@@ -86,8 +86,6 @@ func getRewards(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("%sNOTE: Legacy rewards from pre-Redstone are temporarily not being included in the below figures. They will be added back in a future release. We apologize for the inconvenience!%s\n\n", colorYellow, colorReset)
-
 	fmt.Println("=== ETH ===")
 	fmt.Printf("You have earned %.4f ETH from the Beacon Chain (including your commissions) so far.\n", rewards.BeaconRewards)
 	fmt.Printf("You have claimed %.4f ETH from the Smoothing Pool.\n", rewards.CumulativeEthRewards)
@@ -97,8 +95,11 @@ func getRewards(c *cli.Context) error {
 	nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
 	timeToCheckpointString := time.Until(nextRewardsTime).Round(time.Second).String()
 
-	// Assume 365 days in a year, 24 hours per day
-	rplApr := rewards.EstimatedRewards / rewards.TotalRplStake / rewards.RewardsInterval.Hours() * (24 * 365) * 100
+	// // Assume 365 days in a year, 24 hours per day
+	rplApr := 0.0
+	if rewards.TotalRplStake != 0 && rewards.RewardsInterval.Hours() != 0 {
+		rplApr = rewards.EstimatedRewards / rewards.TotalRplStake / rewards.RewardsInterval.Hours() * (24 * 365) * 100
+	}
 
 	fmt.Println("\n=== RPL ===")
 	fmt.Printf("The current rewards cycle started on %s.\n", cliutils.GetDateTimeString(uint64(rewards.LastCheckpoint.Unix())))
@@ -126,7 +127,7 @@ func getRewards(c *cli.Context) error {
 	}
 
 	fmt.Println()
-	fmt.Println("You may claim these rewards at any time. You no longer need to claim them within this interval.")
+	fmt.Println("You may claim these rewards at any time.")
 
 	// Return
 	return nil
