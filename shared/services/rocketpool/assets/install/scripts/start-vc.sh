@@ -244,6 +244,9 @@ if [ "$CC_CLIENT" = "teku" ]; then
 
     if [ "$ENABLE_MEV_BOOST" = "true" ]; then
         CMD="$CMD --validators-builder-registration-default-enabled=true"
+        if [ ! -z "$BN_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
+            CMD="$CMD --validators-builder-registration-default-gas-limit=$BN_SUGGESTED_BLOCK_GAS_LIMIT"
+        fi
     fi
 
     if [ "$TEKU_USE_SLASHING_PROTECTION" = "true"]; then
