@@ -1,6 +1,6 @@
 module github.com/rocket-pool/smartnode
 
-go 1.21.8
+go 1.24.5
 
 // Do not update until you can test that its regression on ARM is resolved
 require github.com/herumi/bls-eth-go-binary v1.28.1
@@ -161,7 +161,7 @@ require (
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/sirupsen/logrus v1.9.0 // indirect
 	github.com/spaolacci/murmur3 v1.1.0 // indirect
-	github.com/supranational/blst v0.3.11 // indirect
+	github.com/supranational/blst v0.3.15 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/thomaso-mirodin/intmath v0.0.0-20160323211736-5dc6d854e46e // indirect
 	github.com/tklauser/go-sysconf v0.3.13 // indirect
