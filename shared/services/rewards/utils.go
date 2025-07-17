@@ -1,6 +1,7 @@
 package rewards
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"math/big"
@@ -258,7 +259,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 		errBuilder.WriteString(fmt.Sprintf("Downloading files with timeout %v failed.\n", timeout))
 	}
 
-	return fmt.Errorf(errBuilder.String())
+	return errors.New(errBuilder.String())
 
 }
 

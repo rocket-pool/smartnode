@@ -54,7 +54,7 @@ func newV8Test(t *testing.T, index uint64) *v8Test {
 
 func (t *v8Test) failIf(err error) {
 	if err != nil {
-		t.Fatalf(err.Error())
+		t.Fatal(err)
 	}
 }
 
