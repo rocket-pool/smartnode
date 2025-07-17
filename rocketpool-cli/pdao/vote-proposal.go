@@ -113,7 +113,7 @@ func voteOnProposal(c *cli.Context) error {
 	var voteDirection types.VoteDirection
 	var voteDirectionLabel string
 	if c.String("vote-direction") != "" {
-		// Parse vote dirrection
+		// Parse vote direction
 		var err error
 		voteDirection, err = cliutils.ValidateVoteDirection("vote-direction", c.String("vote-direction"))
 		if err != nil {
