@@ -87,9 +87,9 @@ func getRewards(c *cli.Context) error {
 	}
 
 	fmt.Println("=== ETH ===")
-	fmt.Printf("You have earned %.4f ETH from the Beacon Chain (including your commissions) so far.\n", rewards.BeaconRewards)
-	fmt.Printf("You have claimed %.4f ETH from the Smoothing Pool.\n", rewards.CumulativeEthRewards)
-	fmt.Printf("You still have %.4f ETH in unclaimed Smoothing Pool rewards.\n", rewards.UnclaimedEthRewards)
+	fmt.Printf("You have earned %.6f ETH from the Beacon Chain (including your commissions) so far.\n", rewards.BeaconRewards)
+	fmt.Printf("You have claimed %.6f ETH from the Smoothing Pool.\n", rewards.CumulativeEthRewards)
+	fmt.Printf("You still have %.6f ETH in unclaimed Smoothing Pool rewards.\n", rewards.UnclaimedEthRewards)
 
 	nextRewardsTime := rewards.LastCheckpoint.Add(rewards.RewardsInterval)
 	nextRewardsTimeString := cliutils.GetDateTimeString(uint64(nextRewardsTime.Unix()))
