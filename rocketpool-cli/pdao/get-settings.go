@@ -63,6 +63,9 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tMax Number of Minipools:      %d\n", response.Minipool.MaximumCount)
 	fmt.Printf("\tUser Distribute Start Wait:   %s\n", response.Minipool.UserDistributeWindowStart)
 	fmt.Printf("\tUser Distribute Window:       %s\n", response.Minipool.UserDistributeWindowLength)
+	// MaximumPenaltyCount is not live on devnet yet
+	// fmt.Printf("\tMax Penalty Count:            %d\n", response.Minipool.MaximumPenaltyCount)
+
 	fmt.Println()
 
 	// Network

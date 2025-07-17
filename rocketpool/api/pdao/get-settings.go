@@ -49,6 +49,15 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 			return err
 		})
 
+		// === Minipool ===
+
+		// MaximumPenaltyCount is not live on devnet yet
+		// wg.Go(func() error {
+		// 	var err error
+		// 	response.Minipool.MaximumPenaltyCount, err = protocol.GetMaximumPenaltyCount(rp, nil)
+		// 	return err
+		// })
+
 		// === Network ===
 
 		wg.Go(func() error {

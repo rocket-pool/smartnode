@@ -112,6 +112,7 @@ type GetPDAOSettingsResponse struct {
 		MaximumCount                uint64        `json:"maximumCount"`
 		UserDistributeWindowStart   time.Duration `json:"userDistributeWindowStart"`
 		UserDistributeWindowLength  time.Duration `json:"userDistributeWindowLength"`
+		MaximumPenaltyCount         uint64        `json:"maximumPenaltyCount"`
 	} `json:"minipool"`
 
 	Network struct {
