@@ -91,6 +91,7 @@ func canRepayDebt(c *cli.Context, amount *big.Int) (*api.CanRepayDebtResponse, e
 	if err != nil {
 		return nil, err
 	}
+	opts.Value = amount
 	gasInfo, err := mp.EstimateRepayDebtGas(opts)
 	if err != nil {
 		return nil, err

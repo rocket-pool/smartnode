@@ -38,7 +38,7 @@ func repayDebt(c *cli.Context) error {
 		return err
 	}
 	if megapoolDetails.Megapool.NodeDebt != nil && megapoolDetails.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
-		fmt.Printf("You have %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
+		fmt.Printf("You have %.6f ETH of megapool debt.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
 	} else {
 		fmt.Println("You have no megapool debt.")
 		return nil
@@ -76,7 +76,7 @@ func repayDebt(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to repay %.6f of megapool debt?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to repay %.6f ETH of megapool debt?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -94,7 +94,7 @@ func repayDebt(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully repaid %.6f of megapool debt.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully repaid %.6f ETH of megapool debt.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
 	return nil
 
 }
