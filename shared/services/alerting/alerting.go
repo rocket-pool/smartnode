@@ -218,7 +218,7 @@ const (
 func alertClientSyncComplete(cfg *config.RocketPoolConfig, client ClientKind) error {
 	alertName := fmt.Sprintf("%sClientSyncComplete", client)
 	if !isAlertingEnabled(cfg) {
-		logMessage(fmt.Sprintf("alerting is disabled, not sending %s.", alertName))
+		logMessage("alerting is disabled, not sending %s.", alertName)
 		return nil
 	}
 

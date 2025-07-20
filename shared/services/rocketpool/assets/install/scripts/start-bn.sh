@@ -136,8 +136,12 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
     fi
 
     if [ ! -z "$EXTERNAL_IP" ]; then
-        CMD="$CMD --enr.ip $EXTERNAL_IP --nat"
-    fi
+        if expr "$EXTERNAL_IP" : '.*:' >/dev/null; then
+            CMD="$CMD --enr.ip6 $EXTERNAL_IP --nat"
+        else
+            CMD="$CMD --enr.ip $EXTERNAL_IP --nat"
+        fi
+    fi	
 
     if [ ! -z "$CHECKPOINT_SYNC_URL" ]; then
         CMD="$CMD --checkpointSyncUrl $CHECKPOINT_SYNC_URL"
