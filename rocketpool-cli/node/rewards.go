@@ -87,7 +87,7 @@ func getRewards(c *cli.Context) error {
 	}
 
 	fmt.Println("=== ETH ===")
-	fmt.Printf("You have earned %.6f ETH from the Beacon Chain (including your commissions) so far.\n", rewards.BeaconRewards)
+	fmt.Printf("Your share of unskimmed Beacon Chain (CL) rewards is currently %.6f ETH.\n", rewards.BeaconRewards)
 	fmt.Printf("You have claimed %.6f ETH from the Smoothing Pool.\n", rewards.CumulativeEthRewards)
 	fmt.Printf("You still have %.6f ETH in unclaimed Smoothing Pool rewards.\n", rewards.UnclaimedEthRewards)
 
