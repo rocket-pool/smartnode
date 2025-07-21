@@ -436,12 +436,12 @@ type CanNodeDepositResponse struct {
 	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeDepositResponse struct {
-	Status          string                  `json:"status"`
-	Error           string                  `json:"error"`
-	TxHash          common.Hash             `json:"txHash"`
-	MinipoolAddress common.Address          `json:"minipoolAddress"`
-	ValidatorPubkey rptypes.ValidatorPubkey `json:"validatorPubkey"`
-	ScrubPeriod     time.Duration           `json:"scrubPeriod"`
+	Status          string                `json:"status"`
+	Error           string                `json:"error"`
+	TxHash          common.Hash           `json:"txHash"`
+	MinipoolAddress common.Address        `json:"minipoolAddress"`
+	DepositData     []rptypes.DepositData `json:"depositData"`
+	ScrubPeriod     time.Duration         `json:"scrubPeriod"`
 }
 
 type CanCreateVacantMinipoolResponse struct {
@@ -714,9 +714,11 @@ type CheckCollateralResponse struct {
 }
 
 type NodeEthBalanceResponse struct {
-	Status  string   `json:"status"`
-	Error   string   `json:"error"`
-	Balance *big.Int `json:"balance"`
+	Status             string   `json:"status"`
+	Error              string   `json:"error"`
+	Balance            *big.Int `json:"balance"`
+	CreditBalance      *big.Int `json:"creditBalance"`
+	DepositPoolBalance *big.Int `json:"depositPoolBalance"`
 }
 
 type NodeAlertsResponse struct {

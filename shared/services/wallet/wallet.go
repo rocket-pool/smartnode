@@ -41,7 +41,7 @@ type Wallet interface {
 	DeleteValidatorStores() error
 	GetChainID() *big.Int
 	GetInitialized() (bool, error)
-	GetNextValidatorKey() (*eth2types.BLSPrivateKey, error)
+	GetNextValidatorKey(offset uint) (*eth2types.BLSPrivateKey, error)
 	GetNodeAccount() (accounts.Account, error)
 	GetNodeAccountTransactor() (*bind.TransactOpts, error)
 	GetNodePrivateKeyBytes() ([]byte, error)

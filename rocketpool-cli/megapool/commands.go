@@ -37,9 +37,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "yes, y",
 						Usage: "Automatically confirm deposit",
 					},
-					cli.BoolFlag{
-						Name:  "use-express-ticket, e",
-						Usage: "Use an express ticket to create a new validator",
+					cli.Uint64Flag{
+						Name:  "num-express-tickets, e",
+						Usage: "Number of express tickets to use",
+					},
+					cli.Uint64Flag{
+						Name:  "num-validators",
+						Usage: "The number of validators to create",
 					},
 				},
 				Action: func(c *cli.Context) error {

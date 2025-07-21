@@ -102,6 +102,28 @@ func DepositWithCredit(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpres
 	return tx, nil
 }
 
+// Estimate the gas of DepositMulti
+func EstimateDepositMultiGas(rp *rocketpool.RocketPool, deposits []rptypes.DepositData, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "depositMulti", deposits)
+}
+
+// Make multiple validator deposits
+func DepositMulti(rp *rocketpool.RocketPool, deposits []rptypes.DepositData, opts *bind.TransactOpts) (*types.Transaction, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := rocketNodeDeposit.Transact(opts, "depositMulti", deposits)
+	if err != nil {
+		return nil, fmt.Errorf("error calling depositMulti: %w", err)
+	}
+	return tx, nil
+}
+
 // Estimate the gas of CreateVacantMinipool
 func EstimateCreateVacantMinipoolGas(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, salt *big.Int, expectedMinipoolAddress common.Address, currentBalance *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)

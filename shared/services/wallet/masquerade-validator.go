@@ -48,7 +48,7 @@ func (w *masqueradeWallet) DeleteValidatorStores() error {
 }
 
 // Returns the next validator key that will be generated without saving it
-func (w *masqueradeWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
+func (w *masqueradeWallet) GetNextValidatorKey(offset uint) (*eth2types.BLSPrivateKey, error) {
 	return nil, ErrIsMasquerading
 
 }

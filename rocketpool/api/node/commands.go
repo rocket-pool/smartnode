@@ -937,17 +937,15 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-deposit",
 				Usage:     "Check whether the node can make a deposit",
-				UsageText: "rocketpool api node can-deposit amount min-fee salt use-express-ticket",
+				UsageText: "rocketpool api node can-deposit num-validators min-fee salt num-express-tickets",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
+
+					numValidators, err := cliutils.ValidatePositiveUint("number of validators", c.Args().Get(0))
 
 					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
 					if err != nil {
@@ -958,14 +956,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					useExpressTicketString := c.Args().Get(3)
-					useExpressTicket, err := cliutils.ValidateBool("use-express-ticket", useExpressTicketString)
+					numExpressTicketString := c.Args().Get(3)
+					numExpressTicket, err := cliutils.ValidateUint32("num-express-ticket", numExpressTicketString)
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(canNodeDeposit(c, amountWei, minNodeFee, salt, useExpressTicket))
+					api.PrintResponse(canNodeDeposit(c, minNodeFee, salt, numValidators, numExpressTicket))
 					return nil
 
 				},
@@ -974,17 +972,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "deposit",
 				Aliases:   []string{"d"},
 				Usage:     "Make a deposit and create a minipool, or just make and sign the transaction (when submit = false)",
-				UsageText: "rocketpool api node deposit amount min-node-fee salt use-credit-balance use-express-ticket submit",
+				UsageText: "rocketpool api node deposit num-validators min-node-fee salt num-express-tickets submit",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 6); err != nil {
+					if err := cliutils.ValidateArgCount(c, 5); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
+					numValidators, err := cliutils.ValidatePositiveUint("number of validators", c.Args().Get(0))
 
 					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
 					if err != nil {
@@ -996,18 +991,12 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					useCreditBalanceString := c.Args().Get(3)
-					useCreditBalance, err := cliutils.ValidateBool("use-credit-balance", useCreditBalanceString)
+					numExpressTicketString := c.Args().Get(3)
+					numExpressTicket, err := cliutils.ValidateUint32("num-express-ticket", numExpressTicketString)
 					if err != nil {
 						return err
 					}
-
-					useExpressTicketString := c.Args().Get(4)
-					useExpressTicket, err := cliutils.ValidateBool("use-express-ticket", useExpressTicketString)
-					if err != nil {
-						return err
-					}
-					submit, err := cliutils.ValidateBool("submit", c.Args().Get(5))
+					submit, err := cliutils.ValidateBool("submit", c.Args().Get(4))
 					if err != nil {
 						return err
 					}
@@ -1017,7 +1006,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, useCreditBalance, useExpressTicket, submit)
+					response, err := nodeDeposit(c, numValidators, numExpressTicket, minNodeFee, salt, submit)
 					if submit {
 						api.PrintResponse(response, err)
 					} // else nodeDeposit already printed the encoded transaction

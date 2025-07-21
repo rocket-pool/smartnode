@@ -152,7 +152,7 @@ func (w *hdWallet) DeleteValidatorStores() error {
 }
 
 // Returns the next validator key that will be generated without saving it
-func (w *hdWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
+func (w *hdWallet) GetNextValidatorKey(offset uint) (*eth2types.BLSPrivateKey, error) {
 
 	// Check wallet is initialized
 	if !w.IsInitialized() {
@@ -161,6 +161,7 @@ func (w *hdWallet) GetNextValidatorKey() (*eth2types.BLSPrivateKey, error) {
 
 	// Get account index
 	index := w.ws.NextAccount
+	index += offset
 
 	// Get validator key
 	key, _, err := w.getValidatorPrivateKey(index)
