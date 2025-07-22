@@ -939,10 +939,6 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 		if !exists {
 			continue
 		}
-		// Ignore attestations delayed by more than 32 slots
-		if inclusionSlot-attestation.SlotIndex > r.beaconConfig.SlotsPerEpoch {
-			continue
-		}
 
 		for _, committeeIndex := range attestation.CommitteeIndices() {
 			rpCommittee, exists := slotInfo.Committees[uint64(committeeIndex)]
