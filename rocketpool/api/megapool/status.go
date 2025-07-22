@@ -230,6 +230,7 @@ func getValidatorMapAndBalances(c *cli.Context) (*api.MegapoolValidatorMapAndRew
 	}
 	response.TotalBeaconBalance = totalBeaconBalanceWei
 	response.NodeShareOfCLBalance = nodeShareOfCLBalance
+	response.NodeBond = status.Megapool.NodeBond
 
 	// Return response
 	return &response, nil

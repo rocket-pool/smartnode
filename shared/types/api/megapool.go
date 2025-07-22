@@ -80,6 +80,7 @@ type MegapoolValidatorMapAndRewardsResponse struct {
 	MegapoolValidatorMap map[string][]MegapoolValidatorDetails `json:"megapoolValidatorMap"`
 	TotalBeaconBalance   *big.Int                              `json:"totalBeaconBalance"`
 	NodeShareOfCLBalance *big.Int                              `json:"nodeShareOfCLBalance"`
+	NodeBond             *big.Int                              `json:"nodeBond"`
 }
 
 type MegapoolRewardSplitResponse struct {
