@@ -863,7 +863,7 @@ func (r *treeGeneratorImpl_v11) processEpoch(duringInterval bool, epoch uint64) 
 				if !exists {
 					continue
 				}
-				nnd := r.networkState.NodeDetailsByAddress[mpi.NodeAddress]
+				nnd := r.networkState.NodeDetailsByAddress[mpi.Node.Address]
 				nmd := r.networkState.MinipoolDetailsByAddress[mpi.Address]
 
 				// Check that the node is opted into the SP during this slot
@@ -964,7 +964,7 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 				delete(validator.MissingAttestationSlots, attestation.SlotIndex)
 
 				// Check if this minipool was opted into the SP for this block
-				nodeDetails := r.nodeDetails[validator.NodeIndex]
+				nodeDetails := r.nodeDetails[validator.Node.Index]
 				if blockTime.Before(nodeDetails.OptInTime) || blockTime.After(nodeDetails.OptOutTime) {
 					// Not opted in
 					continue
@@ -1036,7 +1036,7 @@ func (r *treeGeneratorImpl_v11) getDutiesForEpoch(committees beacon.Committees) 
 			}
 
 			// Check if this minipool was opted into the SP for this block
-			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.NodeAddress]
+			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.Node.Address]
 			isOptedIn := nodeDetails.SmoothingPoolRegistrationState
 			spRegistrationTime := time.Unix(nodeDetails.SmoothingPoolRegistrationChanged.Int64(), 0)
 			if (isOptedIn && blockTime.Sub(spRegistrationTime) < 0) || // If this block occurred before the node opted in, ignore it
@@ -1143,6 +1143,7 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 			wg.Go(func() error {
 				nativeNodeDetails := r.networkState.NodeDetails[iterationIndex]
 				nodeDetails := &NodeSmoothingDetails{
+					Index:            iterationIndex,
 					Address:          nativeNodeDetails.NodeAddress,
 					Minipools:        []*MinipoolInfo{},
 					SmoothingPoolEth: big.NewInt(0),
@@ -1180,8 +1181,7 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 						nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
 							Address:         mpd.MinipoolAddress,
 							ValidatorPubkey: mpd.Pubkey,
-							NodeAddress:     nodeDetails.Address,
-							NodeIndex:       iterationIndex,
+							Node:            nodeDetails,
 							Fee:             nativeMinipoolDetails.NodeFee,
 							//MissedAttestations:      0,
 							//GoodAttestations:        0,
@@ -1192,6 +1192,25 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 							NodeOperatorBond:        nativeMinipoolDetails.NodeDepositBalance,
 						})
 					}
+				}
+
+				if nativeNodeDetails.MegapoolDeployed {
+					// Get the megapool details
+					megapoolAddress := nativeNodeDetails.MegapoolAddress
+					validators := r.networkState.MegapoolToPubkeysMap[megapoolAddress]
+
+					mpInfo := &MegapoolInfo{
+						Address: megapoolAddress,
+					}
+
+					for _, validator := range validators {
+						mpInfo.Validators = append(mpInfo.Validators, &MegapoolValidatorInfo{
+							Pubkey:                  validator,
+							MissingAttestationSlots: map[uint64]bool{},
+							AttestationScore:        NewQuotedBigInt(0),
+						})
+					}
+					nodeDetails.Megapools = append(nodeDetails.Megapools, mpInfo)
 				}
 
 				nodeDetails.IsEligible = len(nodeDetails.Minipools) > 0

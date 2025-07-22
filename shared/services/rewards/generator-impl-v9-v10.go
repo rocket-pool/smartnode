@@ -868,7 +868,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 				if !exists {
 					continue
 				}
-				nnd := r.networkState.NodeDetailsByAddress[mpi.NodeAddress]
+				nnd := r.networkState.NodeDetailsByAddress[mpi.Node.Address]
 				nmd := r.networkState.MinipoolDetailsByAddress[mpi.Address]
 
 				// Check that the node is opted into the SP during this slot
@@ -973,7 +973,7 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 				delete(validator.MissingAttestationSlots, attestation.SlotIndex)
 
 				// Check if this minipool was opted into the SP for this block
-				nodeDetails := r.nodeDetails[validator.NodeIndex]
+				nodeDetails := r.nodeDetails[validator.Node.Index]
 				if blockTime.Before(nodeDetails.OptInTime) || blockTime.After(nodeDetails.OptOutTime) {
 					// Not opted in
 					continue
@@ -1045,7 +1045,7 @@ func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committee
 			}
 
 			// Check if this minipool was opted into the SP for this block
-			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.NodeAddress]
+			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.Node.Address]
 			isOptedIn := nodeDetails.SmoothingPoolRegistrationState
 			spRegistrationTime := time.Unix(nodeDetails.SmoothingPoolRegistrationChanged.Int64(), 0)
 			if (isOptedIn && blockTime.Sub(spRegistrationTime) < 0) || // If this block occurred before the node opted in, ignore it
@@ -1155,6 +1155,7 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 			wg.Go(func() error {
 				nativeNodeDetails := r.networkState.NodeDetails[iterationIndex]
 				nodeDetails := &NodeSmoothingDetails{
+					Index:            iterationIndex,
 					Address:          nativeNodeDetails.NodeAddress,
 					Minipools:        []*MinipoolInfo{},
 					SmoothingPoolEth: big.NewInt(0),
@@ -1192,8 +1193,7 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 						nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
 							Address:         mpd.MinipoolAddress,
 							ValidatorPubkey: mpd.Pubkey,
-							NodeAddress:     nodeDetails.Address,
-							NodeIndex:       iterationIndex,
+							Node:            nodeDetails,
 							Fee:             nativeMinipoolDetails.NodeFee,
 							//MissedAttestations:      0,
 							//GoodAttestations:        0,

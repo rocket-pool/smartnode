@@ -203,12 +203,26 @@ type IntervalInfo struct {
 	TotalNodeWeight *big.Int `json:"-"`
 }
 
+type MegapoolValidatorInfo struct {
+	Pubkey                  types.ValidatorPubkey `json:"pubkey"`
+	Index                   string                `json:"index"`
+	MissedAttestations      uint64                `json:"-"`
+	GoodAttestations        uint64                `json:"-"`
+	MissingAttestationSlots map[uint64]bool       `json:"missingAttestationSlots"`
+	AttestationScore        *QuotedBigInt         `json:"attestationScore"`
+	AttestationCount        int                   `json:"attestationCount"`
+}
+
+type MegapoolInfo struct {
+	Address    common.Address `json:"address"`
+	Validators []*MegapoolValidatorInfo
+}
+
 type MinipoolInfo struct {
 	Address                 common.Address        `json:"address"`
 	ValidatorPubkey         types.ValidatorPubkey `json:"pubkey"`
 	ValidatorIndex          string                `json:"index"`
-	NodeAddress             common.Address        `json:"nodeAddress"`
-	NodeIndex               uint64                `json:"-"`
+	Node                    *NodeSmoothingDetails `json:"node"`
 	Fee                     *big.Int              `json:"-"`
 	MissedAttestations      uint64                `json:"-"`
 	GoodAttestations        uint64                `json:"-"`
@@ -246,11 +260,13 @@ type CommitteeInfo struct {
 
 // Details about a node for the Smoothing Pool
 type NodeSmoothingDetails struct {
+	Index            uint64
 	Address          common.Address
 	IsEligible       bool
 	IsOptedIn        bool
 	StatusChangeTime time.Time
 	Minipools        []*MinipoolInfo
+	Megapools        []*MegapoolInfo
 	EligibleSeconds  *big.Int
 	StartSlot        uint64
 	EndSlot          uint64
