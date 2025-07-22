@@ -2593,7 +2593,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "late-notify-fine",
 										Aliases:   []string{"lnf"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolMaximumMegapoolEthPenaltyPath, floatEthUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolLateNotifyFinePath, floatEthUsage),
 										UsageText: "rocketpool pdao propose setting megapool late-notify-fine value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
