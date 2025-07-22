@@ -74,6 +74,14 @@ type MegapoolValidatorDetails struct {
 	BeaconStatus       beacon.ValidatorStatus `json:"beaconStatus"`
 }
 
+type MegapoolValidatorMapAndRewardsResponse struct {
+	Status               string                                `json:"status"`
+	Error                string                                `json:"error"`
+	MegapoolValidatorMap map[string][]MegapoolValidatorDetails `json:"megapoolValidatorMap"`
+	TotalBeaconBalance   *big.Int                              `json:"totalBeaconBalance"`
+	NodeShareOfCLBalance *big.Int                              `json:"nodeShareOfCLBalance"`
+}
+
 type MegapoolRewardSplitResponse struct {
 	Status      string               `json:"status"`
 	Error       string               `json:"error"`

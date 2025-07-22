@@ -56,8 +56,8 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
-	// Get the beacon balance and node share of rewards waiting to be skimmed
-	_, totalBeaconBalance, nodeShareOfCLBalance, err := getValidatorMapAndRewards(rp, status)
+	// Get the beacon balance and node share of beacon balance (rewards to be skimmed)
+	beaconBalances, err := rp.GetValidatorMapAndBalances()
 	if err != nil {
 		return err
 	}
@@ -130,8 +130,8 @@ func getStatus(c *cli.Context) error {
 				fmt.Println("The megapool does not have any pending rewards to claim.")
 			}
 		}
-		fmt.Printf("Beacon balance (CL): %6f ETH\n", math.RoundDown(eth.WeiToEth(totalBeaconBalance), 6))
-		fmt.Printf("Your portion: %6f ETH\n", math.RoundDown(eth.WeiToEth(nodeShareOfCLBalance), 6))
+		fmt.Printf("Beacon balance (CL): %6f ETH\n", math.RoundDown(eth.WeiToEth(beaconBalances.TotalBeaconBalance), 6))
+		fmt.Printf("Your portion: %6f ETH\n", math.RoundDown(eth.WeiToEth(beaconBalances.NodeShareOfCLBalance), 6))
 
 		networkCommission := math.RoundDown(eth.WeiToEth(status.Megapool.NodeShare)*100, 6)
 		effectiveNodeShare := math.RoundDown(eth.WeiToEth(status.Megapool.RevenueSplit.NodeShare)*100, 6)
@@ -145,73 +145,6 @@ func getStatus(c *cli.Context) error {
 	}
 
 	return nil
-
-}
-
-// Get the map of validator states, the total beacon balance, and the node share of beacon balance
-func getValidatorMapAndRewards(rp *rocketpool.Client, status api.MegapoolStatusResponse) (map[string][]api.MegapoolValidatorDetails, *big.Int, *big.Int, error) {
-
-	statusValidators := map[string][]api.MegapoolValidatorDetails{
-		"Staking":     {},
-		"Exited":      {},
-		"Initialized": {},
-		"Prelaunch":   {},
-		"Dissolved":   {},
-		"Exiting":     {},
-		"Locked":      {},
-	}
-
-	var totalBeaconBalance uint64
-	var totalEffectiveBeaconBalance uint64
-	// Iterate over the validators and append them based on their statuses
-	for _, validator := range status.Megapool.Validators {
-		if validator.Staked && !validator.Exited && !validator.Exiting {
-			statusValidators["Staking"] = append(statusValidators["Staking"], validator)
-			if validator.Activated {
-				totalBeaconBalance += validator.BeaconStatus.Balance
-				totalEffectiveBeaconBalance += validator.BeaconStatus.EffectiveBalance
-			}
-		}
-		if validator.Exited {
-			statusValidators["Exited"] = append(statusValidators["Exited"], validator)
-		}
-		if validator.InQueue {
-			statusValidators["Initialized"] = append(statusValidators["Initialized"], validator)
-		}
-		if validator.InPrestake {
-			statusValidators["Prelaunch"] = append(statusValidators["Prelaunch"], validator)
-		}
-		if validator.Dissolved {
-			statusValidators["Dissolved"] = append(statusValidators["Dissolved"], validator)
-		}
-		if validator.Exiting {
-			statusValidators["Exiting"] = append(statusValidators["Exiting"], validator)
-		}
-		if validator.Locked {
-			statusValidators["Locked"] = append(statusValidators["Locked"], validator)
-		}
-	}
-
-	weiPerGwei := big.NewInt(int64(eth.WeiPerGwei))
-	totalBeaconBalanceWei := new(big.Int).SetUint64(totalBeaconBalance)
-	totalEffectiveBeaconBalanceWei := new(big.Int).SetUint64(totalEffectiveBeaconBalance)
-	totalBeaconBalanceWei = totalBeaconBalanceWei.Mul(totalBeaconBalanceWei, weiPerGwei)
-	totalEffectiveBeaconBalanceWei = totalEffectiveBeaconBalanceWei.Mul(totalEffectiveBeaconBalanceWei, weiPerGwei)
-
-	// Get the node share of CL rewards
-	nodeShareOfCLBalance := big.NewInt(0)
-	if totalBeaconBalanceWei.Cmp(totalEffectiveBeaconBalanceWei) <= 0 {
-		nodeShareOfCLBalance = big.NewInt(0)
-	} else {
-		toBeSkimmed := new(big.Int).Sub(totalBeaconBalanceWei, totalEffectiveBeaconBalanceWei)
-		rewards, err := rp.CalculateRewards(toBeSkimmed)
-		if err != nil {
-			return statusValidators, totalBeaconBalanceWei, nodeShareOfCLBalance, fmt.Errorf("Error calculating the rewards split for amount %s: %w", toBeSkimmed.String(), err)
-		}
-		nodeShareOfCLBalance = nodeShareOfCLBalance.Add(rewards.RewardSplit.NodeRewards, status.Megapool.NodeBond)
-	}
-
-	return statusValidators, totalBeaconBalanceWei, nodeShareOfCLBalance, nil
 
 }
 
@@ -270,9 +203,10 @@ func getValidatorStatus(c *cli.Context) error {
 		return err
 	}
 
-	statusValidators, _, _, err := getValidatorMapAndRewards(rp, status)
+	// Get a map of the node's megapool validators
+	validatorMap, err := rp.GetValidatorMapAndBalances()
 	if err != nil {
-		return fmt.Errorf("Error while creating validator map %w:", err)
+		return err
 	}
 
 	fmt.Printf("There are %d validator(s) on the express queue.\n", queueDetails.ExpressLength)
@@ -284,7 +218,7 @@ func getValidatorStatus(c *cli.Context) error {
 	// Print validators by status
 	noValidators := true
 	for _, status := range statusName {
-		if validators := statusValidators[status]; len(validators) > 0 {
+		if validators := validatorMap.MegapoolValidatorMap[status]; len(validators) > 0 {
 			noValidators = false
 			sort.Slice(validators, func(i, j int) bool {
 				return validators[i].ValidatorId < validators[j].ValidatorId

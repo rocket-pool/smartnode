@@ -26,6 +26,22 @@ func (c *Client) MegapoolStatus() (api.MegapoolStatusResponse, error) {
 	return response, nil
 }
 
+// Get a map of the node's validators and beacon balances
+func (c *Client) GetValidatorMapAndBalances() (api.MegapoolValidatorMapAndRewardsResponse, error) {
+	responseBytes, err := c.callAPI("megapool validator-map-and-balances")
+	if err != nil {
+		return api.MegapoolValidatorMapAndRewardsResponse{}, fmt.Errorf("Could not get megapool validator-map-and-balances: %w", err)
+	}
+	var response api.MegapoolValidatorMapAndRewardsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.MegapoolValidatorMapAndRewardsResponse{}, fmt.Errorf("Could not decode megapool validator-map-and-balances response: %w", err)
+	}
+	if response.Error != "" {
+		return api.MegapoolValidatorMapAndRewardsResponse{}, fmt.Errorf("Could not get megapool validator-map-and-balances: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can repay megapool debt
 func (c *Client) CanClaimMegapoolRefund() (api.CanClaimRefundResponse, error) {
 	responseBytes, err := c.callAPI("megapool can-claim-refund")

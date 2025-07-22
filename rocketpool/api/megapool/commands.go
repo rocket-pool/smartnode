@@ -103,6 +103,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "validator-map-and-balances",
+				Aliases:   []string{"gvm"},
+				Usage:     "Get a map of the node's validators and beacon balances",
+				UsageText: "rocketpool api megapool validator-map-and-balances",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getValidatorMapAndBalances(c))
+					return nil
+
+				},
+			},
+			{
 				Name:      "can-repay-debt",
 				Usage:     "Check if we can repay the megapool debt",
 				UsageText: "rocketpool api megapool can-repay-debt amount",
