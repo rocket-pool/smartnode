@@ -60,7 +60,7 @@ type AlertmanagerConfig struct {
 
 	// Alerts configured in prometheus rule configuration file:
 	AlertEnabled_ClientSyncStatusBeacon    config.Parameter `yaml:"alertEnabled_ClientSyncStatusBeacon,omitempty"`
-	AlertEnabled_ClientSyncStatusExecution config.Parameter `yaml:"alertEnabled_ClientSyncStatusBeacon,omitempty"`
+	AlertEnabled_ClientSyncStatusExecution config.Parameter `yaml:"alertEnabled_ClientSyncStatusExecution,omitempty"`
 	AlertEnabled_UpcomingSyncCommittee     config.Parameter `yaml:"alertEnabled_UpcomingSyncCommittee,omitempty"`
 	AlertEnabled_ActiveSyncCommittee       config.Parameter `yaml:"alertEnabled_ActiveSyncCommittee,omitempty"`
 	AlertEnabled_UpcomingProposal          config.Parameter `yaml:"alertEnabled_UpcomingProposal,omitempty"`
