@@ -247,7 +247,6 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
 		fmt.Printf("Validator active:             no\n")
-		fmt.Printf("Beacon status:                %s\n", validator.BeaconStatus.Status)
 	}
 
 	if status == "Staking" {
