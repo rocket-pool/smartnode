@@ -32,6 +32,7 @@ var alertingParametersDockerMode map[string]interface{} = map[string]interface{}
 	"pushoverToken":                            nil,
 	"pushoverUserKey":                          nil,
 	"alertEnabled_ClientSyncStatusBeacon":      nil,
+	"alertEnabled_ClientSyncStatusExecution":   nil,
 	"alertEnabled_UpcomingSyncCommittee":       nil,
 	"alertEnabled_ActiveSyncCommittee":         nil,
 	"alertEnabled_UpcomingProposal":            nil,
