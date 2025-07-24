@@ -116,7 +116,7 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 
 		PruningMode: config.Parameter{
 			ID:                 "pruningMode",
-			Name:               "PruningMode",
+			Name:               "Pruning Mode",
 			Description:        "Instructs the clients to either prune history, keep it, or act as an archive mode.",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: config.PruningMode_FullNode},
