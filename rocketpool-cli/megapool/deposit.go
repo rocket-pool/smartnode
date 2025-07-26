@@ -170,11 +170,11 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	if usableBalance.Cmp(big.NewInt(0)) > 0 {
 		// Get how much credit to use
-		remainingAmount := big.NewInt(0).Sub(amountPerValidatorWei, usableBalance)
+		remainingAmount := big.NewInt(0).Sub(totalAmountNeeded, usableBalance)
 		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-			fmt.Printf("This deposit will use all %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node.\n\n", eth.WeiToEth(usableBalance), totalAmountSupplied)
+			fmt.Printf("This deposit will use all %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node.\n\n", eth.WeiToEth(usableBalance), eth.WeiToEth(totalAmountSupplied))
 		} else {
-			fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node.\n\n", amount)
+			fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node.\n\n", eth.WeiToEth(big.NewInt(0).Sub(totalAmountNeeded, totalAmountSupplied)))
 		}
 	} else {
 		fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new megapool validator; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue creating this megapool validator now, you will have to pay for the full bond amount.\n\n", colorYellow, eth.WeiToEth(balances.DepositPoolBalance), colorReset)

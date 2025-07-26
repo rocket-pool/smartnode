@@ -35,6 +35,7 @@ import (
 
 const (
 	prestakeDepositAmount float64 = 1.0
+	houstonBondAmount     float64 = 8.0
 	ValidatorEth          float64 = 32.0
 )
 
@@ -131,13 +132,17 @@ func canNodeDeposit(c *cli.Context, minNodeFee float64, salt *big.Int, numValida
 		return err
 	})
 
-	wg1.Go(func() error {
-		reducedBond, err = protocol.GetReducedBond(rp, nil)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	if saturnDeployed {
+		wg1.Go(func() error {
+			reducedBond, err = protocol.GetReducedBond(rp, nil)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	} else {
+		reducedBond = houstonBondAmount
+	}
 
 	// Wait for data
 	if err := wg1.Wait(); err != nil {
@@ -188,7 +193,6 @@ func canNodeDeposit(c *cli.Context, minNodeFee float64, salt *big.Int, numValida
 	deposits := make([]rptypes.DepositData, numValidators)
 	var usedExpressTickets uint32
 
-	availableBond := totalAmountSupplied
 	for i := uint64(0); i < numValidators; i++ {
 		// Get the next validator key
 		validatorKey, err := w.GetNextValidatorKey(uint(i))
@@ -229,12 +233,7 @@ func canNodeDeposit(c *cli.Context, minNodeFee float64, salt *big.Int, numValida
 		if err != nil {
 			return nil, err
 		}
-		if availableBond.Cmp(reducedBondWei) > 0 {
-			deposits[i].BondAmount = reducedBondWei
-		} else {
-			deposits[i].BondAmount = availableBond
-		}
-		availableBond = big.NewInt(0).Sub(availableBond, deposits[i].BondAmount)
+		deposits[i].BondAmount = reducedBondWei
 		deposits[i].DepositDataRoot = depositDataRoot
 		deposits[i].ValidatorPubkey = depositData.PublicKey
 		deposits[i].ValidatorSignature = depositData.Signature
@@ -384,13 +383,17 @@ func nodeDeposit(c *cli.Context, numValidators uint64, numExpressTickets uint32,
 		return err
 	})
 
-	wg1.Go(func() error {
-		reducedBond, err = protocol.GetReducedBond(rp, nil)
-		if err != nil {
-			return err
-		}
-		return nil
-	})
+	if saturnDeployed {
+		wg1.Go(func() error {
+			reducedBond, err = protocol.GetReducedBond(rp, nil)
+			if err != nil {
+				return err
+			}
+			return nil
+		})
+	} else {
+		reducedBond = houstonBondAmount
+	}
 
 	// Wait for data
 	if err := wg1.Wait(); err != nil {
@@ -420,7 +423,6 @@ func nodeDeposit(c *cli.Context, numValidators uint64, numExpressTickets uint32,
 	var minipoolAddress common.Address
 	var usedExpressTickets uint32
 	deposits := make([]rptypes.DepositData, numValidators)
-	availableBond := totalAmountSupplied
 	for i := uint64(0); i < numValidators; i++ {
 
 		// Create and save a new validator key
@@ -460,12 +462,7 @@ func nodeDeposit(c *cli.Context, numValidators uint64, numExpressTickets uint32,
 		if err != nil {
 			return nil, err
 		}
-		if availableBond.Cmp(reducedBondWei) > 0 {
-			deposits[i].BondAmount = reducedBondWei
-		} else {
-			deposits[i].BondAmount = availableBond
-		}
-		availableBond = big.NewInt(0).Sub(availableBond, deposits[i].BondAmount)
+		deposits[i].BondAmount = reducedBondWei
 		pubKey := depositData.PublicKey
 		signature := depositData.Signature
 		deposits[i].DepositDataRoot = depositDataRoot
