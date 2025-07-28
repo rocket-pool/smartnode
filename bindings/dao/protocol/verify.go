@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"slices"
 	"sync"
 	"time"
 
@@ -290,13 +291,7 @@ func GetRootSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64, int
 	if verifierAddresses == nil {
 		verifierAddresses = []common.Address{currentAddress}
 	} else {
-		found := false
-		for _, address := range verifierAddresses {
-			if address == currentAddress {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(verifierAddresses, currentAddress)
 		if !found {
 			verifierAddresses = append(verifierAddresses, currentAddress)
 		}
@@ -374,13 +369,7 @@ func GetChallengeSubmittedEvents(rp *rocketpool.RocketPool, proposalIDs []uint64
 	if verifierAddresses == nil {
 		verifierAddresses = []common.Address{currentAddress}
 	} else {
-		found := false
-		for _, address := range verifierAddresses {
-			if address == currentAddress {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(verifierAddresses, currentAddress)
 		if !found {
 			verifierAddresses = append(verifierAddresses, currentAddress)
 		}
