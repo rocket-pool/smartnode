@@ -164,6 +164,9 @@ func canNodeDeposit(c *cli.Context, minNodeFee float64, salt *big.Int, numValida
 	} else {
 		usableBalance = response.CreditBalance
 	}
+	if usableBalance.Cmp(totalAmountNeeded) > 0 {
+		usableBalance = totalAmountNeeded
+	}
 	totalAmountSupplied := big.NewInt(0).Sub(totalAmountNeeded, usableBalance)
 	// Update response
 	response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled)
@@ -409,6 +412,9 @@ func nodeDeposit(c *cli.Context, numValidators uint64, numExpressTickets uint32,
 	} else {
 		usableBalance = nodeCredit
 	}
+	if usableBalance.Cmp(totalAmountNeeded) > 0 {
+		usableBalance = totalAmountNeeded
+	}
 
 	totalAmountSupplied := big.NewInt(0).Sub(totalAmountNeeded, usableBalance)
 
@@ -473,8 +479,9 @@ func nodeDeposit(c *cli.Context, numValidators uint64, numExpressTickets uint32,
 			usedExpressTickets += 1
 		}
 
+		validatorPubkey := rptypes.BytesToValidatorPubkey(pubKey)
 		// Make sure a validator with this pubkey doesn't already exist
-		status, err := bc.GetValidatorStatus(rptypes.BytesToValidatorPubkey(pubKey), nil)
+		status, err := bc.GetValidatorStatus(validatorPubkey, nil)
 		if err != nil {
 			return nil, fmt.Errorf("Error checking for existing validator status: %w\nYour funds have not been deposited for your own safety.", err)
 		}
@@ -483,11 +490,12 @@ func nodeDeposit(c *cli.Context, numValidators uint64, numExpressTickets uint32,
 				"The following validator pubkey is already in use on the Beacon chain:\n\t%s\n"+
 				"Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.\n"+
 				"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.\n"+
-				"***************\n", pubKey)
+				"***************\n", validatorPubkey.Hex())
 		}
 
+		validatorSignature := rptypes.BytesToValidatorSignature(signature)
 		// Do a final sanity check
-		err = validateDepositInfo(eth2Config, depositAmount, rptypes.BytesToValidatorPubkey(pubKey), withdrawalCredentials, rptypes.BytesToValidatorSignature(signature))
+		err = validateDepositInfo(eth2Config, depositAmount, validatorPubkey, withdrawalCredentials, validatorSignature)
 		if err != nil {
 			return nil, fmt.Errorf("Your deposit failed the validation safety check: %w\n"+
 				"For your safety, this deposit will not be submitted and your ETH will not be staked.\n"+
@@ -504,9 +512,9 @@ func nodeDeposit(c *cli.Context, numValidators uint64, numExpressTickets uint32,
 				hex.EncodeToString(eth2Config.GenesisForkVersion),
 				hex.EncodeToString(eth2types.ZeroGenesisValidatorsRoot),
 				depositAmount,
-				pubKey,
+				validatorPubkey.Hex(),
 				withdrawalCredentials.Hex(),
-				signature,
+				validatorSignature.Hex(),
 			)
 		}
 	}
