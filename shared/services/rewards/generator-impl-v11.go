@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/fees"
@@ -44,7 +45,8 @@ type treeGeneratorImpl_v11 struct {
 	smoothingPoolBalance         *big.Int
 	intervalDutiesInfo           *IntervalDutiesInfo
 	slotsPerEpoch                uint64
-	validatorIndexMap            map[string]*MinipoolInfo
+	minipoolValidatorIndexMap    map[string]*MinipoolInfo
+	megapoolValidatorIndexMap    map[string]*MegapoolInfo
 	elStartTime                  time.Time
 	elEndTime                    time.Time
 	validNetworkCache            map[uint64]bool
@@ -53,6 +55,8 @@ type treeGeneratorImpl_v11 struct {
 	beaconConfig                 beacon.Eth2Config
 	validatorStatusMap           map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
 	totalAttestationScore        *big.Int
+	totalVoterScore              *big.Int
+	totalPdaoScore               *big.Int
 	successfulAttestations       uint64
 	genesisTime                  time.Time
 	invalidNetworkNodes          map[common.Address]uint64
@@ -85,15 +89,17 @@ func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint
 			NetworkRewards: ssz_types.NetworkRewards{},
 			NodeRewards:    ssz_types.NodeRewards{},
 		},
-		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
-		validatorIndexMap:     map[string]*MinipoolInfo{},
-		elSnapshotHeader:      elSnapshotHeader,
-		snapshotEnd:           snapshotEnd,
-		log:                   log,
-		logPrefix:             logPrefix,
-		totalAttestationScore: big.NewInt(0),
-		networkState:          state,
-		invalidNetworkNodes:   map[common.Address]uint64{},
+		validatorStatusMap:        map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
+		minipoolValidatorIndexMap: map[string]*MinipoolInfo{},
+		elSnapshotHeader:          elSnapshotHeader,
+		snapshotEnd:               snapshotEnd,
+		log:                       log,
+		logPrefix:                 logPrefix,
+		totalAttestationScore:     big.NewInt(0),
+		totalVoterScore:           big.NewInt(0),
+		totalPdaoScore:            big.NewInt(0),
+		networkState:              state,
+		invalidNetworkNodes:       map[common.Address]uint64{},
 		minipoolPerformanceFile: &MinipoolPerformanceFile_v2{
 			Index:               index,
 			MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
@@ -530,6 +536,44 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 
 					r.successfulAttestations++
 				}
+
+				// Repeat, for megapools
+				if nodeInfo.Megapools != nil {
+					for _, megapool := range nodeInfo.Megapools {
+						for _, validator := range megapool.Validators {
+							details := r.networkState.MegapoolDetails[megapool.Address]
+							bond := details.GetMegapoolBondNormalized()
+							nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
+							nodeFeeAdder := r.networkState.NetworkDetails.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder
+							voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
+							pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
+
+							effectiveNodeFee := big.NewInt(0).Add(nodeFee, nodeFeeAdder)
+							effectiveVoterFee := big.NewInt(0).Sub(voterFee, nodeFeeAdder)
+
+							megapoolScore := big.NewInt(0).Sub(oneEth, effectiveNodeFee) // 1 - nodeFee
+							megapoolScore.Mul(megapoolScore, bond)                       // Multiply by bond
+							megapoolScore.Div(megapoolScore, thirtyTwoEth)               // Divide by 32 to get the bond as a fraction of a total megapool
+							megapoolScore.Add(megapoolScore, effectiveNodeFee)           // Total = fee + (bond/32)(1 - fee)
+
+							// Add it to the megapool's score and the total score
+							validator.AttestationScore.Add(&validator.AttestationScore.Int, megapoolScore)
+							r.totalAttestationScore.Add(r.totalAttestationScore, megapoolScore)
+
+							voterScore := big.NewInt(0).Sub(oneEth, effectiveVoterFee) // 1 - voterFee
+							voterScore.Mul(voterScore, bond)                           // Multiply by bond
+							voterScore.Div(voterScore, thirtyTwoEth)                   // Divide by 32 to get the bond as a fraction of a total megapool
+							voterScore.Add(voterScore, effectiveVoterFee)              // Total = fee + (bond/32)(1 - fee)
+							r.totalVoterScore.Add(r.totalVoterScore, voterScore)
+
+							pdaoScore := big.NewInt(0).Sub(oneEth, pdaoFee) // 1 - pdaoFee
+							pdaoScore.Mul(pdaoScore, bond)                  // Multiply by bond
+							pdaoScore.Div(pdaoScore, thirtyTwoEth)          // Divide by 32 to get the bond as a fraction of a total megapool
+							pdaoScore.Add(pdaoScore, pdaoFee)               // Total = fee + (bond/32)(1 - fee)
+							r.totalPdaoScore.Add(r.totalPdaoScore, pdaoScore)
+						}
+					}
+				}
 			}
 		}
 	}
@@ -787,8 +831,13 @@ func (r *treeGeneratorImpl_v11) processAttestationsBalancesAndWithdrawalsForInte
 		return err
 	}
 
+	err = r.createMegapoolIndexMap()
+	if err != nil {
+		return err
+	}
+
 	// Check all of the attestations for each epoch
-	r.log.Printlnf("%s Checking participation of %d minipools for epochs %d to %d", r.logPrefix, len(r.validatorIndexMap), startEpoch, endEpoch)
+	r.log.Printlnf("%s Checking participation of %d minipools and %d megapool validators for epochs %d to %d", r.logPrefix, len(r.minipoolValidatorIndexMap), len(r.megapoolValidatorIndexMap), startEpoch, endEpoch)
 	r.log.Printlnf("%s NOTE: this will take a long time, progress is reported every 100 epochs", r.logPrefix)
 
 	epochsDone := 0
@@ -859,7 +908,7 @@ func (r *treeGeneratorImpl_v11) processEpoch(duringInterval bool, epoch uint64) 
 
 			for _, withdrawal := range beaconBlock.Withdrawals {
 				// Ignore non-RP validators
-				mpi, exists := r.validatorIndexMap[withdrawal.ValidatorIndex]
+				mpi, exists := r.minipoolValidatorIndexMap[withdrawal.ValidatorIndex]
 				if !exists {
 					continue
 				}
@@ -948,7 +997,7 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 			blockTime := r.genesisTime.Add(time.Second * time.Duration(r.networkState.BeaconConfig.SecondsPerSlot*attestation.SlotIndex))
 
 			// Check if each RP validator attested successfully
-			for position, validator := range rpCommittee.Positions {
+			for position, positionInfo := range rpCommittee.Positions {
 				if !attestation.ValidatorAttested(committeeIndex, position, slotInfo.CommitteeSizes) {
 					continue
 				}
@@ -961,10 +1010,10 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 				if len(slotInfo.Committees) == 0 {
 					delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
 				}
-				delete(validator.MissingAttestationSlots, attestation.SlotIndex)
+				positionInfo.DeleteMissingAttestationSlot(attestation.SlotIndex)
 
 				// Check if this minipool was opted into the SP for this block
-				nodeDetails := r.nodeDetails[validator.Node.Index]
+				nodeDetails := positionInfo.GetNodeDetails()
 				if blockTime.Before(nodeDetails.OptInTime) || blockTime.After(nodeDetails.OptOutTime) {
 					// Not opted in
 					continue
@@ -974,25 +1023,69 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
 
 				// Mark this duty as completed
-				validator.CompletedAttestations[attestation.SlotIndex] = true
+				positionInfo.MarkAttestationCompleted(attestation.SlotIndex)
 
-				// Get the pseudoscore for this attestation
-				details := r.networkState.MinipoolDetailsByAddress[validator.Address]
-				bond, fee := details.GetMinipoolBondAndNodeFee(blockTime)
+				if positionInfo.MinipoolInfo != nil {
+					validator := positionInfo.MinipoolInfo
 
-				if r.rewardsFile.RulesetVersion >= 10 {
-					fee = fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
+					// Get the pseudoscore for this attestation
+					details := r.networkState.MinipoolDetailsByAddress[validator.Address]
+					bond, fee := details.GetMinipoolBondAndNodeFee(blockTime)
+
+					if r.rewardsFile.RulesetVersion >= 10 {
+						fee = fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
+					}
+
+					minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
+					minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
+					minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
+					minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
+
+					// Add it to the minipool's score and the total score
+					validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
+					r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
+					r.successfulAttestations++
+					continue
 				}
 
-				minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
-				minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
-				minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
-				minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
+				megapool := positionInfo.Megapool
+				validator := megapool.GetValidator()
 
-				// Add it to the minipool's score and the total score
-				validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
-				r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
-				r.successfulAttestations++
+				// Get the pseudoscore for this attestation
+				details := r.networkState.MegapoolDetails[megapool.Info.Address]
+				bond := details.GetMegapoolBondNormalized()
+				nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
+				// The node fee adder is added to nodeFee and deducted from voter fee
+				nodeFeeAdder := r.networkState.NetworkDetails.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder
+				voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
+				pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
+
+				effectiveNodeFee := big.NewInt(0).Add(nodeFee, nodeFeeAdder)
+				effectiveVoterFee := big.NewInt(0).Sub(voterFee, nodeFeeAdder)
+
+				// Calculate the pseudoscore for this attestation
+				megapoolScore := big.NewInt(0).Sub(oneEth, effectiveNodeFee) // 1 - nodeFee
+				megapoolScore.Mul(megapoolScore, bond)                       // Multiply by bond
+				megapoolScore.Div(megapoolScore, thirtyTwoEth)               // Divide by 32 to get the bond as a fraction of a total megapool
+				megapoolScore.Add(megapoolScore, effectiveNodeFee)           // Total = fee + (bond/32)(1 - fee)
+
+				// Add it to the megapool's score and the total score
+				validator.AttestationScore.Add(&validator.AttestationScore.Int, megapoolScore)
+				r.totalAttestationScore.Add(r.totalAttestationScore, megapoolScore)
+
+				// Calculate the voter pseudoscore for this attestation
+				voterScore := big.NewInt(0).Sub(oneEth, effectiveVoterFee) // 1 - voterFee
+				voterScore.Mul(voterScore, bond)                           // Multiply by bond
+				voterScore.Div(voterScore, thirtyTwoEth)                   // Divide by 32 to get the bond as a fraction of a total megapool
+				voterScore.Add(voterScore, effectiveVoterFee)              // Total = fee + (bond/32)(1 - fee)
+				r.totalVoterScore.Add(r.totalVoterScore, voterScore)
+
+				// Calculate the pdao pseudoscore for this attestation
+				pdaoScore := big.NewInt(0).Sub(oneEth, pdaoFee) // 1 - pdaoFee
+				pdaoScore.Mul(pdaoScore, bond)                  // Multiply by bond
+				pdaoScore.Div(pdaoScore, thirtyTwoEth)          // Divide by 32 to get the bond as a fraction of a total megapool
+				pdaoScore.Add(pdaoScore, pdaoFee)               // Total = fee + (bond/32)(1 - fee)
+				r.totalPdaoScore.Add(r.totalPdaoScore, pdaoScore)
 			}
 		}
 	}
@@ -1027,16 +1120,23 @@ func (r *treeGeneratorImpl_v11) getDutiesForEpoch(committees beacon.Committees) 
 		slotInfo.CommitteeSizes[committeeIndex] = committees.ValidatorCount(idx)
 
 		// Check if there are any RP validators in this committee
-		rpValidators := map[int]*MinipoolInfo{}
+		rpValidators := map[int]*PositionInfo{}
 		for position, validator := range committees.Validators(idx) {
-			minipoolInfo, exists := r.validatorIndexMap[validator]
-			if !exists {
+			minipoolInfo, miniExists := r.minipoolValidatorIndexMap[validator]
+			megapoolInfo, megaExists := r.megapoolValidatorIndexMap[validator]
+			if !miniExists && !megaExists {
 				// This isn't an RP validator, so ignore it
 				continue
 			}
 
-			// Check if this minipool was opted into the SP for this block
-			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.Node.Address]
+			// Check if this validator was opted into the SP for this block
+			var nodeDetails *rpstate.NativeNodeDetails
+			if miniExists {
+				nodeDetails = r.networkState.NodeDetailsByAddress[minipoolInfo.Node.Address]
+			} else {
+				nodeDetails = r.networkState.NodeDetailsByAddress[megapoolInfo.Node.Address]
+			}
+
 			isOptedIn := nodeDetails.SmoothingPoolRegistrationState
 			spRegistrationTime := time.Unix(nodeDetails.SmoothingPoolRegistrationChanged.Int64(), 0)
 			if (isOptedIn && blockTime.Sub(spRegistrationTime) < 0) || // If this block occurred before the node opted in, ignore it
@@ -1044,16 +1144,42 @@ func (r *treeGeneratorImpl_v11) getDutiesForEpoch(committees beacon.Committees) 
 				continue
 			}
 
-			// Check if this minipool was in the `staking` state during this time
-			mpd := r.networkState.MinipoolDetailsByAddress[minipoolInfo.Address]
-			statusChangeTime := time.Unix(mpd.StatusTime.Int64(), 0)
-			if mpd.Status != rptypes.Staking || blockTime.Sub(statusChangeTime) < 0 {
+			// Check if this validator was in the `staking` state during this time
+			if miniExists {
+				mpd := r.networkState.MinipoolDetailsByAddress[minipoolInfo.Address]
+				statusChangeTime := time.Unix(mpd.StatusTime.Int64(), 0)
+				if mpd.Status != rptypes.Staking || blockTime.Sub(statusChangeTime) < 0 {
+					continue
+				}
+
+				// This was a legal RP validator opted into the SP during this slot so add it
+				rpValidators[position] = &PositionInfo{
+					MinipoolInfo: minipoolInfo,
+				}
+				minipoolInfo.MissingAttestationSlots[slotIndex] = true
+				continue
+			}
+			megapoolInfo, ok := r.megapoolValidatorIndexMap[validator]
+			if !ok {
+				return fmt.Errorf("megapool not found indexed by validator %s", validator)
+			}
+
+			validatorInfo, exists := megapoolInfo.ValidatorIndexMap[validator]
+			if !exists {
+				return fmt.Errorf("validator %s not found indexed in megapool %s", validator, megapoolInfo.Address.Hex())
+			}
+
+			if !validatorInfo.NativeValidatorInfo.ValidatorInfo.Staked {
 				continue
 			}
 
-			// This was a legal RP validator opted into the SP during this slot so add it
-			rpValidators[position] = minipoolInfo
-			minipoolInfo.MissingAttestationSlots[slotIndex] = true
+			rpValidators[position] = &PositionInfo{
+				Megapool: &MegapoolPositionInfo{
+					Info:           megapoolInfo,
+					ValidatorIndex: validator,
+				},
+			}
+			validatorInfo.MissingAttestationSlots[slotIndex] = true
 		}
 
 		// If there are some RP validators, add this committee to the map
@@ -1069,50 +1195,53 @@ func (r *treeGeneratorImpl_v11) getDutiesForEpoch(committees beacon.Committees) 
 
 }
 
-// Maps all minipools to their validator indices and creates a map of indices to minipool info
-func (r *treeGeneratorImpl_v11) createMinipoolIndexMap() error {
+// Maps all megapools to their validator indices and creates map of validator indices to megapool info
+func (r *treeGeneratorImpl_v11) createMegapoolIndexMap() error {
 
-	// Get the status for all uncached minipool validators and add them to the cache
-	r.validatorIndexMap = map[string]*MinipoolInfo{}
+	// Get the status for all uncached megapool validators and add them to the cache
+	r.megapoolValidatorIndexMap = map[string]*MegapoolInfo{}
 	for _, details := range r.nodeDetails {
-		if details.IsEligible {
-			for _, minipoolInfo := range details.Minipools {
-				status, exists := r.networkState.MinipoolValidatorDetails[minipoolInfo.ValidatorPubkey]
+		if !details.IsEligible {
+			continue
+		}
+		for _, megapoolInfo := range details.Megapools {
+			for _, validatorInfo := range megapoolInfo.Validators {
+				status, exists := r.networkState.MegapoolValidatorDetails[validatorInfo.Pubkey]
 				if !exists {
-					// Remove minipools that don't have indices yet since they're not actually viable
-					//r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
-					minipoolInfo.WasActive = false
-				} else {
-					switch status.Status {
-					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
-						// Remove minipools that don't have indices yet since they're not actually viable
-						//r.log.Printlnf("NOTE: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
-						minipoolInfo.WasActive = false
-					default:
-						// Get the validator index
-						minipoolInfo.ValidatorIndex = status.Index
-						r.validatorIndexMap[minipoolInfo.ValidatorIndex] = minipoolInfo
+					validatorInfo.WasActive = false
+					continue
+				}
 
-						// Get the validator's activation start and end slots
-						startSlot := status.ActivationEpoch * r.beaconConfig.SlotsPerEpoch
-						endSlot := status.ExitEpoch * r.beaconConfig.SlotsPerEpoch
+				switch status.Status {
 
-						// Verify this minipool has already started
-						if status.ActivationEpoch == FarEpoch {
-							//r.log.Printlnf("NOTE: minipool %s hasn't been scheduled for activation yet; removing it", minipoolInfo.Address.Hex())
-							minipoolInfo.WasActive = false
-							continue
-						} else if startSlot > r.rewardsFile.ConsensusEndBlock {
-							//r.log.Printlnf("NOTE: minipool %s activates on slot %d which is after interval end %d; removing it", minipoolInfo.Address.Hex(), startSlot, r.rewardsFile.ConsensusEndBlock)
-							minipoolInfo.WasActive = false
-						}
+				case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
+					// Remove megapool validators that don't have indices yet since they're not actually viable
+					//r.log.Printlnf("NOTE: megapool %s (index %s, pubkey %s) was in state %s; removing it", megapoolInfo.Address.Hex(), status.Index, validatorInfo.Pubkey.Hex(), string(status.Status))
+					validatorInfo.WasActive = false
+				default:
+					// Get the validator index
+					validatorInfo.Index = status.Index
+					r.megapoolValidatorIndexMap[validatorInfo.Index] = megapoolInfo
 
-						// Check if the minipool exited before this interval
-						if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
-							//r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
-							minipoolInfo.WasActive = false
-							continue
-						}
+					// Get the validator's activation start and end slots
+
+					// Get the validator's activation start and end slots
+					startSlot := status.ActivationEpoch * r.beaconConfig.SlotsPerEpoch
+					endSlot := status.ExitEpoch * r.beaconConfig.SlotsPerEpoch
+
+					// Verify this megapool has already started
+					if status.ActivationEpoch == FarEpoch {
+						//r.log.Printlnf("NOTE: megapool %s hasn't been scheduled for activation yet; removing it", megapoolInfo.Address.Hex())
+						validatorInfo.WasActive = false
+					} else if startSlot > r.rewardsFile.ConsensusEndBlock {
+						//r.log.Printlnf("NOTE: megapool %s activates on slot %d which is after interval end %d; removing it", megapoolInfo.Address.Hex(), startSlot, r.rewardsFile.ConsensusEndBlock)
+						validatorInfo.WasActive = false
+					}
+
+					// Check if the megapool exited before this interval
+					if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
+						//r.log.Printlnf("NOTE: megapool %s exited on slot %d which was before interval start %d; removing it", megapoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
+						validatorInfo.WasActive = false
 					}
 				}
 			}
@@ -1120,7 +1249,61 @@ func (r *treeGeneratorImpl_v11) createMinipoolIndexMap() error {
 	}
 
 	return nil
+}
 
+// Maps all minipools to their validator indices and creates a map of indices to minipool info
+func (r *treeGeneratorImpl_v11) createMinipoolIndexMap() error {
+
+	// Get the status for all uncached minipool validators and add them to the cache
+	r.minipoolValidatorIndexMap = map[string]*MinipoolInfo{}
+	for _, details := range r.nodeDetails {
+		if !details.IsEligible {
+			continue
+		}
+		for _, minipoolInfo := range details.Minipools {
+			status, exists := r.networkState.MinipoolValidatorDetails[minipoolInfo.ValidatorPubkey]
+			if !exists {
+				// Remove minipools that don't have indices yet since they're not actually viable
+				//r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
+				minipoolInfo.WasActive = false
+				continue
+			}
+
+			switch status.Status {
+			case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
+				// Remove minipools that don't have indices yet since they're not actually viable
+				//r.log.Printlnf("NOTE: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
+				minipoolInfo.WasActive = false
+			default:
+				// Get the validator index
+				minipoolInfo.ValidatorIndex = status.Index
+				r.minipoolValidatorIndexMap[minipoolInfo.ValidatorIndex] = minipoolInfo
+
+				// Get the validator's activation start and end slots
+				startSlot := status.ActivationEpoch * r.beaconConfig.SlotsPerEpoch
+				endSlot := status.ExitEpoch * r.beaconConfig.SlotsPerEpoch
+
+				// Verify this minipool has already started
+				if status.ActivationEpoch == FarEpoch {
+					//r.log.Printlnf("NOTE: minipool %s hasn't been scheduled for activation yet; removing it", minipoolInfo.Address.Hex())
+					minipoolInfo.WasActive = false
+					continue
+				} else if startSlot > r.rewardsFile.ConsensusEndBlock {
+					//r.log.Printlnf("NOTE: minipool %s activates on slot %d which is after interval end %d; removing it", minipoolInfo.Address.Hex(), startSlot, r.rewardsFile.ConsensusEndBlock)
+					minipoolInfo.WasActive = false
+				}
+
+				// Check if the minipool exited before this interval
+				if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
+					//r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
+					minipoolInfo.WasActive = false
+					continue
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
@@ -1179,12 +1362,10 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 
 						// This minipool is below the penalty count, so include it
 						nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
-							Address:         mpd.MinipoolAddress,
-							ValidatorPubkey: mpd.Pubkey,
-							Node:            nodeDetails,
-							Fee:             nativeMinipoolDetails.NodeFee,
-							//MissedAttestations:      0,
-							//GoodAttestations:        0,
+							Address:                 mpd.MinipoolAddress,
+							ValidatorPubkey:         mpd.Pubkey,
+							Node:                    nodeDetails,
+							Fee:                     nativeMinipoolDetails.NodeFee,
 							MissingAttestationSlots: map[uint64]bool{},
 							CompletedAttestations:   map[uint64]bool{},
 							WasActive:               true,
@@ -1200,20 +1381,43 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 					validators := r.networkState.MegapoolToPubkeysMap[megapoolAddress]
 
 					mpInfo := &MegapoolInfo{
-						Address: megapoolAddress,
+						Address:           megapoolAddress,
+						Node:              nodeDetails,
+						Validators:        []*MegapoolValidatorInfo{},
+						ValidatorIndexMap: make(map[string]*MegapoolValidatorInfo),
 					}
 
 					for _, validator := range validators {
-						mpInfo.Validators = append(mpInfo.Validators, &MegapoolValidatorInfo{
+						status, exists := r.networkState.MegapoolValidatorDetails[validator]
+						if !exists {
+							continue
+						}
+
+						nativeValidatorInfo, exists := r.networkState.MegapoolValidatorInfo[validator]
+						if !exists {
+							continue
+						}
+
+						v := &MegapoolValidatorInfo{
 							Pubkey:                  validator,
+							Index:                   status.Index,
 							MissingAttestationSlots: map[uint64]bool{},
 							AttestationScore:        NewQuotedBigInt(0),
-						})
-					}
-					nodeDetails.Megapools = append(nodeDetails.Megapools, mpInfo)
-				}
+							CompletedAttestations:   map[uint64]bool{},
+							NativeValidatorInfo:     nativeValidatorInfo,
+						}
 
-				nodeDetails.IsEligible = len(nodeDetails.Minipools) > 0
+						mpInfo.Validators = append(mpInfo.Validators, v)
+						mpInfo.ValidatorIndexMap[v.Index] = v
+					}
+
+					nodeDetails.Megapools = append(nodeDetails.Megapools, mpInfo)
+					// The node is eligible if it has a megapool or minipools
+					nodeDetails.IsEligible = len(validators) > 0 || len(nodeDetails.Minipools) > 0
+				} else {
+					// The node is eligible if it has minipools
+					nodeDetails.IsEligible = len(nodeDetails.Minipools) > 0
+				}
 				r.nodeDetails[iterationIndex] = nodeDetails
 				return nil
 			})

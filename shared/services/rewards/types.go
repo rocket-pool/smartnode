@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -209,13 +210,20 @@ type MegapoolValidatorInfo struct {
 	MissedAttestations      uint64                `json:"-"`
 	GoodAttestations        uint64                `json:"-"`
 	MissingAttestationSlots map[uint64]bool       `json:"missingAttestationSlots"`
+	WasActive               bool                  `json:"-"`
 	AttestationScore        *QuotedBigInt         `json:"attestationScore"`
+	CompletedAttestations   map[uint64]bool       `json:"-"`
 	AttestationCount        int                   `json:"attestationCount"`
+
+	NativeValidatorInfo *megapool.ValidatorInfoFromGlobalIndex `json:"nativeValidatorInfo"`
 }
 
 type MegapoolInfo struct {
-	Address    common.Address `json:"address"`
-	Validators []*MegapoolValidatorInfo
+	Address    common.Address           `json:"address"`
+	Node       *NodeSmoothingDetails    `json:"node"`
+	Validators []*MegapoolValidatorInfo `json:"validators"`
+	// Indexes over Validators slice above
+	ValidatorIndexMap map[string]*MegapoolValidatorInfo `json:"-"`
 }
 
 type MinipoolInfo struct {
@@ -253,9 +261,54 @@ type SlotInfo struct {
 	CommitteeSizes map[uint64]int
 }
 
+// MegapoolPositionInfo is a wrapper around MegapoolInfo with additional indexing and functionality
+type MegapoolPositionInfo struct {
+	Info           *MegapoolInfo
+	ValidatorIndex string
+}
+
+func (m *MegapoolPositionInfo) GetValidator() *MegapoolValidatorInfo {
+	return m.Info.ValidatorIndexMap[m.ValidatorIndex]
+}
+
+// PositionInfo is a union of MinipoolInfo and MegapoolInfo
+type PositionInfo struct {
+	MinipoolInfo *MinipoolInfo
+	Megapool     *MegapoolPositionInfo
+}
+
+func (m *MegapoolPositionInfo) GetValidatorInfo() *MegapoolValidatorInfo {
+	return m.Info.ValidatorIndexMap[m.ValidatorIndex]
+}
+
+func (p *PositionInfo) DeleteMissingAttestationSlot(slotIndex uint64) {
+	if p.MinipoolInfo != nil {
+		delete(p.MinipoolInfo.MissingAttestationSlots, slotIndex)
+		return
+	}
+	validatorInfo := p.Megapool.GetValidator()
+	delete(validatorInfo.MissingAttestationSlots, slotIndex)
+}
+
+func (p *PositionInfo) GetNodeDetails() *NodeSmoothingDetails {
+	if p.MinipoolInfo != nil {
+		return p.MinipoolInfo.Node
+	}
+	return p.Megapool.Info.Node
+}
+
+func (p *PositionInfo) MarkAttestationCompleted(slotIndex uint64) {
+	if p.MinipoolInfo != nil {
+		p.MinipoolInfo.CompletedAttestations[slotIndex] = true
+		return
+	}
+	validatorInfo := p.Megapool.GetValidator()
+	validatorInfo.CompletedAttestations[slotIndex] = true
+}
+
 type CommitteeInfo struct {
 	Index     uint64
-	Positions map[int]*MinipoolInfo
+	Positions map[int]*PositionInfo
 }
 
 // Details about a node for the Smoothing Pool

@@ -860,7 +860,7 @@ func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.Attestat
 			blockTime := r.genesisTime.Add(time.Second * time.Duration(r.networkState.BeaconConfig.SecondsPerSlot*attestation.SlotIndex))
 
 			// Check if each RP validator attested successfully
-			for position, validator := range rpCommittee.Positions {
+			for position, positionInfo := range rpCommittee.Positions {
 				if !attestation.ValidatorAttested(committeeIndex, position, slotInfo.CommitteeSizes) {
 					continue
 				}
@@ -873,20 +873,20 @@ func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.Attestat
 				if len(slotInfo.Committees) == 0 {
 					delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
 				}
-				delete(validator.MissingAttestationSlots, attestation.SlotIndex)
+				positionInfo.DeleteMissingAttestationSlot(attestation.SlotIndex)
 
 				// Check if this minipool was opted into the SP for this block
-				nodeDetails := r.nodeDetails[validator.Node.Index]
+				nodeDetails := positionInfo.GetNodeDetails()
 				if blockTime.Sub(nodeDetails.OptInTime) < 0 || nodeDetails.OptOutTime.Sub(blockTime) < 0 {
 					// Not opted in
 					continue
 				}
 
 				// Mark this duty as completed
-				validator.CompletedAttestations[attestation.SlotIndex] = true
+				positionInfo.MarkAttestationCompleted(attestation.SlotIndex)
 
 				// Get the pseudoscore for this attestation
-				details := r.networkState.MinipoolDetailsByAddress[validator.Address]
+				details := r.networkState.MinipoolDetailsByAddress[positionInfo.MinipoolInfo.Address]
 				bond, fee := r.getMinipoolBondAndNodeFee(details, blockTime)
 				minipoolScore := big.NewInt(0).Sub(one, fee)   // 1 - fee
 				minipoolScore.Mul(minipoolScore, bond)         // Multiply by bond
@@ -894,7 +894,7 @@ func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.Attestat
 				minipoolScore.Add(minipoolScore, fee)          // Total = fee + (bond/32)(1 - fee)
 
 				// Add it to the minipool's score and the total score
-				validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
+				positionInfo.MinipoolInfo.AttestationScore.Add(&positionInfo.MinipoolInfo.AttestationScore.Int, minipoolScore)
 				r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
 				r.successfulAttestations++
 			}
@@ -931,7 +931,7 @@ func (r *treeGeneratorImpl_v8) getDutiesForEpoch(committees beacon.Committees) e
 		slotInfo.CommitteeSizes[committeeIndex] = committees.ValidatorCount(idx)
 
 		// Check if there are any RP validators in this committee
-		rpValidators := map[int]*MinipoolInfo{}
+		rpValidators := map[int]*PositionInfo{}
 		for position, validator := range committees.Validators(idx) {
 			minipoolInfo, exists := r.validatorIndexMap[validator]
 			if !exists {
@@ -956,7 +956,9 @@ func (r *treeGeneratorImpl_v8) getDutiesForEpoch(committees beacon.Committees) e
 			}
 
 			// This was a legal RP validator opted into the SP during this slot so add it
-			rpValidators[position] = minipoolInfo
+			rpValidators[position] = &PositionInfo{
+				MinipoolInfo: minipoolInfo,
+			}
 			minipoolInfo.MissingAttestationSlots[slotIndex] = true
 		}
 

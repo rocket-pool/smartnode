@@ -2,12 +2,12 @@ package state
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
-	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"golang.org/x/sync/errgroup"
@@ -34,10 +34,15 @@ type NativeMegapoolDetails struct {
 	AssignedValue            *big.Int       `json:"assignedValue"`
 	NodeBond                 *big.Int       `json:"nodeBond"`
 	UserCapital              *big.Int       `json:"userCapital"`
-	NodeShare                *big.Int       `json:"nodeShare"`
 	BondRequirement          *big.Int       `json:"bondRequirement"`
 	EthBalance               *big.Int       `json:"ethBalance"`
 	LastDistributionBlock    uint64         `json:"lastDistributionBlock"`
+}
+
+// Get the normalized bond per 32 eth validator
+// This is used in treegen to calculate attestation scores
+func (m *NativeMegapoolDetails) GetMegapoolBondNormalized() *big.Int {
+	return big.NewInt(0).Div(m.NodeBond, big.NewInt(int64(m.ActiveValidatorCount)))
 }
 
 // Get all megapool validators using the multicaller
@@ -68,19 +73,12 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 
 		for j := i; j < max; j++ {
 			j := j // Create a new variable `j` scoped to the loop iteration
-			//wg.Go(func() error {
 			validators[j], err = megapool.GetValidatorInfo(rp, uint32(j), opts)
-			// if err != nil {
-			// 	return fmt.Errorf("error executing GetValidatorInfo with global index %d", j)
-			// }
-			//	return nil
-			//})
+			if err != nil {
+				return nil, fmt.Errorf("error executing GetValidatorInfo with global index %d", j)
+			}
 		}
 	}
-
-	// if err := wg.Wait(); err != nil {
-	// 	return nil, fmt.Errorf("error getting all megapool validators: %w", err)
-	// }
 
 	return validators, nil
 }
@@ -133,11 +131,6 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 	if err != nil {
 		return NativeMegapoolDetails{}, err
 	}
-	wg.Go(func() error {
-		var err error
-		details.NodeShare, err = network.GetCurrentNodeShare(rp, nil)
-		return err
-	})
 	wg.Go(func() error {
 		var err error
 		details.NodeDebt, err = mega.GetDebt(nil)

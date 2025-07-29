@@ -100,6 +100,8 @@ type NetworkState struct {
 	MinipoolValidatorDetails ValidatorDetailsMap `json:"validator_details"`
 	MegapoolValidatorDetails ValidatorDetailsMap `json:"megapool_validator_details"`
 
+	MegapoolValidatorInfo map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex `json:"-"`
+
 	// Oracle DAO details
 	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails `json:"oracle_dao_member_details"`
 
@@ -263,12 +265,13 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 		megapoolValidatorPubkeys := make([]types.ValidatorPubkey, 0, len(state.MegapoolValidatorGlobalIndex))
 		// Iterate over the megapool validators to add their pubkey to the list of pubkeys
 		megapoolAddressMap := make(map[common.Address][]types.ValidatorPubkey)
+		megapoolValidatorInfo := make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex)
 		for _, validator := range state.MegapoolValidatorGlobalIndex {
 			// Add the megapool address to a set
 			if len(validator.Pubkey) > 0 { // TODO CHECK  validators without a pubkey
 				megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], types.ValidatorPubkey(validator.Pubkey))
 				megapoolValidatorPubkeys = append(megapoolValidatorPubkeys, types.ValidatorPubkey(validator.Pubkey))
-
+				megapoolValidatorInfo[types.ValidatorPubkey(validator.Pubkey)] = &validator
 			}
 		}
 		state.MegapoolToPubkeysMap = megapoolAddressMap
@@ -279,6 +282,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 			return nil, err
 		}
 		state.MegapoolValidatorDetails = statusMap
+		state.MegapoolValidatorInfo = megapoolValidatorInfo
 
 		// initialize state.MegapoolDetails
 		state.MegapoolDetails = make(map[common.Address]rpstate.NativeMegapoolDetails)
@@ -615,6 +619,7 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 
 func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
 	eligibleBorrowedEth := big.NewInt(0)
+	intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
 
 	for _, mpd := range s.MinipoolDetailsByNode[node.NodeAddress] {
 
@@ -630,8 +635,6 @@ func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *
 			continue
 		}
 
-		intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
-
 		// Already exited
 		if validatorStatus.ExitEpoch <= intervalEndEpoch {
 			//s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
@@ -641,6 +644,31 @@ func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *
 		// It's eligible, so add up the borrowed and bonded amounts
 		eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance)
 	}
+
+	if node.MegapoolDeployed {
+		megapool := s.MegapoolDetails[node.MegapoolAddress]
+		validators := s.MegapoolToPubkeysMap[node.MegapoolAddress]
+		activeValidators := 0
+		for _, validator := range validators {
+			validatorStatus, exists := s.MegapoolValidatorDetails[validator]
+			if !exists {
+				continue
+			}
+
+			if validatorStatus.ExitEpoch <= intervalEndEpoch {
+				continue
+			}
+
+			activeValidators += 1
+		}
+		totalValidators := megapool.ValidatorCount
+		userCapital := big.NewInt(0).Mul(megapool.UserCapital, big.NewInt(int64(activeValidators)))
+		// Scale the userCapital by active validators / total validators
+		userCapital.Mul(userCapital, big.NewInt(int64(activeValidators)))
+		userCapital.Quo(userCapital, big.NewInt(int64(totalValidators)))
+		eligibleBorrowedEth.Add(eligibleBorrowedEth, userCapital)
+	}
+
 	return eligibleBorrowedEth
 }
 

@@ -64,6 +64,20 @@ type NetworkDetails struct {
 	// Houston
 	PricesSubmissionFrequency   uint64 `json:"prices_submission_frequency"`
 	BalancesSubmissionFrequency uint64 `json:"balances_submission_frequency"`
+
+	// Saturn
+	MegapoolRevenueSplitSettings struct {
+		NodeOperatorCommissionShare *big.Int `json:"node_operator_commission_share"`
+		NodeOperatorCommissionAdder *big.Int `json:"node_operator_commission_adder"`
+		VoterCommissionShare        *big.Int `json:"voter_commission_share"`
+		PdaoCommissionShare         *big.Int `json:"pdao_commission_share"`
+	}
+
+	MegapoolRevenueSplitTimeWeightedAverages struct {
+		NodeShare  *big.Int `json:"node_share"`
+		VoterShare *big.Int `json:"voter_share"`
+		PdaoShare  *big.Int `json:"pdao_share"`
+	}
 }
 
 // Create a snapshot of all of the network's details
@@ -135,6 +149,16 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	// Houston
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &pricesSubmissionFrequency, "getSubmitPricesFrequency")
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &balancesSubmissionFrequency, "getSubmitBalancesFrequency")
+
+	// Saturn
+	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.NodeOperatorCommissionShare, "getNodeShare")
+	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder, "getNodeShareSecurityCouncilAdder")
+	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.VoterCommissionShare, "getVoterShare")
+	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.PdaoCommissionShare, "getProtocolDAOShare")
+
+	contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.NodeShare, "getCurrentNodeShare")
+	contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.VoterShare, "getCurrentVoterShare")
+	contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare, "getCurrentProtocolDAOShare")
 
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
