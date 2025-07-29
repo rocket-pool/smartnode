@@ -11,7 +11,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/rewards/fees"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
 
@@ -48,54 +47,6 @@ func (h *MockHistory) GetNodeAddress() common.Address {
 
 var oneEth = big.NewInt(1000000000000000000)
 var thirtyTwoEth = big.NewInt(0).Mul(oneEth, big.NewInt(32))
-
-func (h *MockHistory) GetMinipoolAttestationScoreAndCount(address common.Address, state *state.NetworkState) (*big.Int, uint64) {
-	out := big.NewInt(0)
-	mpi := state.MinipoolDetailsByAddress[address]
-	nodeDetails := state.NodeDetailsByAddress[mpi.NodeAddress]
-
-	// Check every slot in the history
-	count := uint64(0)
-	for slot := h.GetConsensusStartBlock(); slot <= h.GetConsensusEndBlock(); slot++ {
-		// Get the time at the slot
-		blockTime := h.BeaconConfig.GetSlotTime(slot)
-		// Check the status of the minipool at this time
-		if mpi.Status != types.Staking {
-			continue
-		}
-		if mpi.Finalised {
-			continue
-		}
-		// Check if the minipool was opted in at this time
-		if !nodeDetails.WasOptedInAt(blockTime) {
-			continue
-		}
-		pubkey := mpi.Pubkey
-		validator := state.MinipoolValidatorDetails[pubkey]
-		// Check if the validator was exited before this slot
-		if validator.ExitEpoch <= h.BeaconConfig.SlotToEpoch(slot) {
-			continue
-		}
-		index := validator.Index
-		indexInt, _ := strconv.ParseUint(index, 10, 64)
-		// Count the attestation if index%32 == slot%32
-		if indexInt%32 == uint64(slot%32) {
-			count++
-
-			bond, fee := mpi.GetMinipoolBondAndNodeFee(blockTime)
-			// Give the minipool a score according to its fee
-			eligibleBorrowedEth := state.GetEligibleBorrowedEth(nodeDetails)
-			_, percentOfBorrowedEth := state.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
-			fee = fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
-			minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
-			minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
-			minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
-			minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
-			out.Add(out, minipoolScore)
-		}
-	}
-	return out, count
-}
 
 type MockMinipool struct {
 	Address            common.Address
