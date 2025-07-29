@@ -580,26 +580,38 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 						effectiveNodeFee := big.NewInt(0).Add(nodeFee, nodeFeeAdder)
 						effectiveVoterFee := big.NewInt(0).Sub(voterFee, nodeFeeAdder)
 
-						megapoolScore := big.NewInt(0).Sub(oneEth, effectiveNodeFee) // 1 - nodeFee
-						megapoolScore.Mul(megapoolScore, bond)                       // Multiply by bond
-						megapoolScore.Div(megapoolScore, thirtyTwoEth)               // Divide by 32 to get the bond as a fraction of a total megapool
-						megapoolScore.Add(megapoolScore, effectiveNodeFee)           // Total = fee + (bond/32)(1 - fee)
+						// The megapool score is given by:
+						// (bond + effectiveNodeFee*(32-bond)) / 32
+						// However, when multiplying eth values, we need to normalize the wei to eth
+						// So really it's (bond + (32*fee / 1E) - (32*bond / 1E)) / 32
+						// If we multiply the numerator by 1 eth each, we can avoid some
+						// integer math inaccuracy, and when we divide by 32 it is removed.
+						//
+						// (b*1 + 32f - f*b) / 32
+						megapoolScore := big.NewInt(0).Mul(oneEth, bond)                                    // b*1
+						megapoolScore.Add(megapoolScore, big.NewInt(0).Mul(thirtyTwoEth, effectiveNodeFee)) // b*1 + 32f
+						megapoolScore.Sub(megapoolScore, big.NewInt(0).Mul(effectiveNodeFee, bond))         // b*1 + 32f - f*b
+						megapoolScore.Div(megapoolScore, thirtyTwoEth)                                      // (b*1 + 32f - f*b) / 32
 
 						// Add it to the megapool's score and the total score
 						validator.AttestationScore.Add(&validator.AttestationScore.Int, megapoolScore)
 						r.totalAttestationScore.Add(r.totalAttestationScore, megapoolScore)
 
-						voterScore := big.NewInt(0).Sub(oneEth, effectiveVoterFee) // 1 - voterFee
-						voterScore.Mul(voterScore, bond)                           // Multiply by bond
-						voterScore.Div(voterScore, thirtyTwoEth)                   // Divide by 32 to get the bond as a fraction of a total megapool
-						voterScore.Add(voterScore, effectiveVoterFee)              // Total = fee + (bond/32)(1 - fee)
+						// Calculate the voter share
+						// This is simply (effectiveVoterFee * (32 - bond)) / 32
+						// Simplify to (32f - f*b) / 32
+						voterScore := big.NewInt(0).Mul(thirtyTwoEth, effectiveVoterFee)
+						voterScore.Sub(voterScore, big.NewInt(0).Mul(effectiveVoterFee, bond))
+						voterScore.Div(voterScore, thirtyTwoEth)
 						r.totalVoterScore.Add(r.totalVoterScore, voterScore)
 
-						pdaoScore := big.NewInt(0).Sub(oneEth, pdaoFee) // 1 - pdaoFee
-						pdaoScore.Mul(pdaoScore, bond)                  // Multiply by bond
-						pdaoScore.Div(pdaoScore, thirtyTwoEth)          // Divide by 32 to get the bond as a fraction of a total megapool
-						pdaoScore.Add(pdaoScore, pdaoFee)               // Total = fee + (bond/32)(1 - fee)
+						// Calculate the pdao share
+						// Same formula as the voter share
+						pdaoScore := big.NewInt(0).Mul(thirtyTwoEth, pdaoFee)
+						pdaoScore.Sub(pdaoScore, big.NewInt(0).Mul(pdaoFee, bond))
+						pdaoScore.Div(pdaoScore, thirtyTwoEth)
 						r.totalPdaoScore.Add(r.totalPdaoScore, pdaoScore)
+						r.successfulAttestations++
 					}
 				}
 			}
@@ -1090,30 +1102,38 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 
 				effectiveNodeFee := big.NewInt(0).Add(nodeFee, nodeFeeAdder)
 				effectiveVoterFee := big.NewInt(0).Sub(voterFee, nodeFeeAdder)
-
-				// Calculate the pseudoscore for this attestation
-				megapoolScore := big.NewInt(0).Sub(oneEth, effectiveNodeFee) // 1 - nodeFee
-				megapoolScore.Mul(megapoolScore, bond)                       // Multiply by bond
-				megapoolScore.Div(megapoolScore, thirtyTwoEth)               // Divide by 32 to get the bond as a fraction of a total megapool
-				megapoolScore.Add(megapoolScore, effectiveNodeFee)           // Total = fee + (bond/32)(1 - fee)
+				// The megapool score is given by:
+				// (bond + effectiveNodeFee*(32-bond)) / 32
+				// However, when multiplying eth values, we need to normalize the wei to eth
+				// So really it's (bond + (32*fee / 1E) - (32*bond / 1E)) / 32
+				// If we multiply the numerator by 1 eth each, we can avoid some
+				// integer math inaccuracy, and when we divide by 32 it is removed.
+				//
+				// (b*1 + 32f - f*b) / 32
+				megapoolScore := big.NewInt(0).Mul(oneEth, bond)                                    // b*1
+				megapoolScore.Add(megapoolScore, big.NewInt(0).Mul(thirtyTwoEth, effectiveNodeFee)) // b*1 + 32f
+				megapoolScore.Sub(megapoolScore, big.NewInt(0).Mul(effectiveNodeFee, bond))         // b*1 + 32f - f*b
+				megapoolScore.Div(megapoolScore, thirtyTwoEth)                                      // (b*1 + 32f - f*b) / 32
 
 				// Add it to the megapool's score and the total score
 				validator.AttestationScore.Add(&validator.AttestationScore.Int, megapoolScore)
 				r.totalAttestationScore.Add(r.totalAttestationScore, megapoolScore)
 
-				// Calculate the voter pseudoscore for this attestation
-				voterScore := big.NewInt(0).Sub(oneEth, effectiveVoterFee) // 1 - voterFee
-				voterScore.Mul(voterScore, bond)                           // Multiply by bond
-				voterScore.Div(voterScore, thirtyTwoEth)                   // Divide by 32 to get the bond as a fraction of a total megapool
-				voterScore.Add(voterScore, effectiveVoterFee)              // Total = fee + (bond/32)(1 - fee)
+				// Calculate the voter share
+				// This is simply (effectiveVoterFee * (32 - bond)) / 32
+				// Simplify to (32f - f*b) / 32
+				voterScore := big.NewInt(0).Mul(thirtyTwoEth, effectiveVoterFee)
+				voterScore.Sub(voterScore, big.NewInt(0).Mul(effectiveVoterFee, bond))
+				voterScore.Div(voterScore, thirtyTwoEth)
 				r.totalVoterScore.Add(r.totalVoterScore, voterScore)
 
-				// Calculate the pdao pseudoscore for this attestation
-				pdaoScore := big.NewInt(0).Sub(oneEth, pdaoFee) // 1 - pdaoFee
-				pdaoScore.Mul(pdaoScore, bond)                  // Multiply by bond
-				pdaoScore.Div(pdaoScore, thirtyTwoEth)          // Divide by 32 to get the bond as a fraction of a total megapool
-				pdaoScore.Add(pdaoScore, pdaoFee)               // Total = fee + (bond/32)(1 - fee)
+				// Calculate the pdao share
+				// Same formula as the voter share
+				pdaoScore := big.NewInt(0).Mul(thirtyTwoEth, pdaoFee)
+				pdaoScore.Sub(pdaoScore, big.NewInt(0).Mul(pdaoFee, bond))
+				pdaoScore.Div(pdaoScore, thirtyTwoEth)
 				r.totalPdaoScore.Add(r.totalPdaoScore, pdaoScore)
+				r.successfulAttestations++
 			}
 		}
 	}
