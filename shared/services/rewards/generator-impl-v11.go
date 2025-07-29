@@ -152,6 +152,15 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 		r.epsilon = big.NewInt(int64(nodeCount))
 	} else {
 		r.epsilon = big.NewInt(int64(minipoolCount))
+		if r.networkState.IsSaturnDeployed {
+			// Add the number of megapool validators
+			for _, nodeInfo := range r.nodeDetails {
+				if nodeInfo.Megapool == nil {
+					continue
+				}
+				r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
+			}
+		}
 	}
 
 	// Calculate the RPL rewards
@@ -165,6 +174,8 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 	if err != nil {
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
+
+	// Calculate the voter share distribution
 
 	// Sort and assign the maps to the ssz file lists
 	for nodeAddress, nodeReward := range r.nodeRewards {
@@ -234,6 +245,15 @@ func (r *treeGeneratorImpl_v11) approximateStakerShareOfSmoothingPool(rp Rewards
 		r.epsilon = big.NewInt(int64(nodeCount))
 	} else {
 		r.epsilon = big.NewInt(int64(minipoolCount))
+		if r.networkState.IsSaturnDeployed {
+			// Add the number of megapool validators
+			for _, nodeInfo := range r.nodeDetails {
+				if nodeInfo.Megapool == nil {
+					continue
+				}
+				r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
+			}
+		}
 	}
 
 	// Calculate the ETH rewards
@@ -451,6 +471,11 @@ func (r *treeGeneratorImpl_v11) calculateRplRewards() error {
 
 }
 
+// Calculate the voter rewards
+func (r *treeGeneratorImpl_v11) calculateVoterRewards() error {
+	return nil
+}
+
 // Calculates the ETH rewards for the given interval
 func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool) error {
 
@@ -490,12 +515,16 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 		return err
 	}
 	eligible := 0
+	megapools := 0
 	for _, nodeInfo := range r.nodeDetails {
 		if nodeInfo.IsEligible {
 			eligible++
+			if nodeInfo.Megapool != nil {
+				megapools++
+			}
 		}
 	}
-	r.log.Printlnf("%s %d / %d nodes were eligible for Smoothing Pool rewards", r.logPrefix, eligible, len(r.nodeDetails))
+	r.log.Printlnf("%s %d / %d nodes (%d with megapools) were eligible for Smoothing Pool rewards", r.logPrefix, eligible, len(r.nodeDetails), megapools)
 
 	// Process the attestation performance for each minipool during this interval
 	r.intervalDutiesInfo = &IntervalDutiesInfo{
@@ -1378,13 +1407,15 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 				if nativeNodeDetails.MegapoolDeployed {
 					// Get the megapool details
 					megapoolAddress := nativeNodeDetails.MegapoolAddress
+					nativeMegapoolDetails := r.networkState.MegapoolDetails[megapoolAddress]
 					validators := r.networkState.MegapoolToPubkeysMap[megapoolAddress]
 
 					mpInfo := &MegapoolInfo{
-						Address:           megapoolAddress,
-						Node:              nodeDetails,
-						Validators:        []*MegapoolValidatorInfo{},
-						ValidatorIndexMap: make(map[string]*MegapoolValidatorInfo),
+						Address:              megapoolAddress,
+						Node:                 nodeDetails,
+						Validators:           []*MegapoolValidatorInfo{},
+						ValidatorIndexMap:    make(map[string]*MegapoolValidatorInfo),
+						ActiveValidatorCount: nativeMegapoolDetails.ActiveValidatorCount,
 					}
 
 					for _, validator := range validators {

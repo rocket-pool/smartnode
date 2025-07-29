@@ -219,9 +219,10 @@ type MegapoolValidatorInfo struct {
 }
 
 type MegapoolInfo struct {
-	Address    common.Address           `json:"address"`
-	Node       *NodeSmoothingDetails    `json:"node"`
-	Validators []*MegapoolValidatorInfo `json:"validators"`
+	Address              common.Address           `json:"address"`
+	Node                 *NodeSmoothingDetails    `json:"node"`
+	Validators           []*MegapoolValidatorInfo `json:"validators"`
+	ActiveValidatorCount uint32                   `json:"active_validator_count"`
 	// Indexes over Validators slice above
 	ValidatorIndexMap map[string]*MegapoolValidatorInfo `json:"-"`
 }
