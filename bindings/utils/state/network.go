@@ -48,6 +48,7 @@ type NetworkDetails struct {
 	TotalRETHSupply                   *big.Int               `json:"total_reth_supply"`
 	TotalRPLStake                     *big.Int               `json:"total_rpl_stake"`
 	SmoothingPoolBalance              *big.Int               `json:"smoothing_pool_balance"`
+	PendingVoterShare                 *big.Int               `json:"pending_voter_share"`
 	NodeFee                           float64                `json:"node_fee"`
 	BalancesBlock                     uint64                 `json:"balances_block"`
 	LatestReportableBalancesBlock     uint64                 `json:"latest_reportable_balances_block"`
@@ -119,6 +120,7 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.TrustedNodeOperatorRewardsPercent, "getClaimingContractPerc", "rocketClaimTrustedNode")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.ProtocolDaoRewardsPercent, "getClaimingContractPerc", "rocketClaimDAO")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.PendingRPLRewards, "getPendingRPLRewards")
+	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.PendingVoterShare, "getPendingVoterShare")
 	contracts.Multicaller.AddCall(contracts.RocketDAONodeTrustedSettingsMinipool, &scrubPeriodSeconds, "getScrubPeriod")
 	contracts.Multicaller.AddCall(contracts.RocketDepositPool, &details.DepositPoolBalance, "getBalance")
 	contracts.Multicaller.AddCall(contracts.RocketDepositPool, &details.DepositPoolExcess, "getExcessBalance")
