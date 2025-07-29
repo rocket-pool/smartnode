@@ -319,7 +319,7 @@ type NodeSmoothingDetails struct {
 	IsOptedIn        bool
 	StatusChangeTime time.Time
 	Minipools        []*MinipoolInfo
-	Megapools        []*MegapoolInfo
+	Megapool         *MegapoolInfo
 	EligibleSeconds  *big.Int
 	StartSlot        uint64
 	EndSlot          uint64
