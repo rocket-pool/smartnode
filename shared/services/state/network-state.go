@@ -570,6 +570,7 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 		node := node
 		wg.Go(func() error {
 			eligibleBorrowedEth := s.GetEligibleBorrowedEth(&node)
+			rplStake := s.GetRplStake(&node)
 
 			// minCollateral := borrowedEth * minCollateralFraction / ratio
 			// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
@@ -578,12 +579,12 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 
 			// Calculate the weight
 			nodeWeight := big.NewInt(0)
-			if node.RplStake.Cmp(minCollateral) == -1 || eligibleBorrowedEth.Sign() <= 0 {
+			if rplStake.Cmp(minCollateral) == -1 || eligibleBorrowedEth.Sign() <= 0 {
 				weightSlice[i] = nodeWeight
 				return nil
 			}
 
-			nodeWeight.Set(s.GetNodeWeight(eligibleBorrowedEth, node.RplStake))
+			nodeWeight.Set(s.GetNodeWeight(eligibleBorrowedEth, rplStake))
 
 			// Scale the node weight by the participation in the current interval
 			// Get the timestamp of the node's registration
@@ -617,6 +618,16 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 	return weights, totalWeight, nil
 }
 
+func (s *NetworkState) GetRplStake(node *rpstate.NativeNodeDetails) *big.Int {
+	if !s.IsSaturnDeployed {
+		return node.RplStake
+	}
+
+	out := big.NewInt(0).Set(node.LegacyStakedRPL)
+	out.Add(out, node.MegapoolStakedRPL)
+	return out
+}
+
 func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
 	eligibleBorrowedEth := big.NewInt(0)
 	intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
@@ -647,26 +658,7 @@ func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *
 
 	if node.MegapoolDeployed {
 		megapool := s.MegapoolDetails[node.MegapoolAddress]
-		validators := s.MegapoolToPubkeysMap[node.MegapoolAddress]
-		activeValidators := 0
-		for _, validator := range validators {
-			validatorStatus, exists := s.MegapoolValidatorDetails[validator]
-			if !exists {
-				continue
-			}
-
-			if validatorStatus.ExitEpoch <= intervalEndEpoch {
-				continue
-			}
-
-			activeValidators += 1
-		}
-		totalValidators := megapool.ValidatorCount
-		userCapital := big.NewInt(0).Mul(megapool.UserCapital, big.NewInt(int64(activeValidators)))
-		// Scale the userCapital by active validators / total validators
-		userCapital.Mul(userCapital, big.NewInt(int64(activeValidators)))
-		userCapital.Quo(userCapital, big.NewInt(int64(totalValidators)))
-		eligibleBorrowedEth.Add(eligibleBorrowedEth, userCapital)
+		eligibleBorrowedEth.Add(eligibleBorrowedEth, megapool.UserCapital)
 	}
 
 	return eligibleBorrowedEth
