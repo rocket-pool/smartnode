@@ -8,8 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -36,6 +38,15 @@ type SnapshotCollector struct {
 
 	// the number of votes on closed Snapshot proposals
 	votesClosedProposals *prometheus.Desc
+
+	// the number of active onchain proposals pending
+	onchainPending *prometheus.Desc
+
+	// the number of active onchain proposals in Phase 1
+	onchainPhase1 *prometheus.Desc
+
+	// the number of active onchain proposals in Phase 2
+	onchainPhase2 *prometheus.Desc
 
 	// The current node voting power on Snapshot
 	nodeVotingPower *prometheus.Desc
@@ -99,6 +110,18 @@ func NewSnapshotCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfi
 			"The number of votes from user/delegate on closed Snapshot proposals",
 			nil, nil,
 		),
+		onchainPending: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "onchain_pending"),
+			"The number of pending onchain proposals",
+			nil, nil,
+		),
+		onchainPhase1: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "onchain_phase1"),
+			"The number of onchain proposals in Phase 1",
+			nil, nil,
+		),
+		onchainPhase2: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "onchain_phase2"),
+			"The number of onchain proposals in Phase 2",
+			nil, nil,
+		),
 		nodeVotingPower: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "node_vp"),
 			"The node current voting power on Snapshot",
 			nil, nil,
@@ -124,6 +147,9 @@ func (collector *SnapshotCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.closedProposals
 	channel <- collector.votesActiveProposals
 	channel <- collector.votesClosedProposals
+	channel <- collector.onchainPending
+	channel <- collector.onchainPhase1
+	channel <- collector.onchainPhase2
 	channel <- collector.nodeVotingPower
 	channel <- collector.delegateVotingPower
 }
@@ -138,6 +164,10 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	var blockNumber uint64
 	var onchainVotingDelegate common.Address
 	var isVotingInitialized bool
+	var onchainProposals []protocol.ProtocolDaoProposalDetails
+	onchainPending := float64(0)
+	onchainPhase1 := float64(0)
+	onchainPhase2 := float64(0)
 	activeProposals := float64(0)
 	closedProposals := float64(0)
 	blankAddress := common.Address{}
@@ -209,6 +239,26 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		return err
 	})
 
+	// Get onchain proposals
+	wg.Go(func() error {
+		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
+			onchainProposals, err = protocol.GetProposals(collector.rp, nil)
+			if err != nil {
+				return fmt.Errorf("error fetching onchain proposals: %w", err)
+			}
+			for _, proposal := range onchainProposals {
+				if proposal.State == types.ProtocolDaoProposalState_Pending {
+					onchainPending += 1
+				} else if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 {
+					onchainPhase1 += 1
+				} else if proposal.State == types.ProtocolDaoProposalState_ActivePhase2 {
+					onchainPhase2 += 1
+				}
+			}
+		}
+		return err
+	})
+
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		collector.logError(err)
@@ -269,6 +319,12 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.activeProposals, prometheus.GaugeValue, collector.cachedActiveProposals)
 	channel <- prometheus.MustNewConstMetric(
 		collector.closedProposals, prometheus.GaugeValue, collector.cachedClosedProposals)
+	channel <- prometheus.MustNewConstMetric(
+		collector.onchainPending, prometheus.GaugeValue, onchainPending)
+	channel <- prometheus.MustNewConstMetric(
+		collector.onchainPhase1, prometheus.GaugeValue, onchainPhase1)
+	channel <- prometheus.MustNewConstMetric(
+		collector.onchainPhase2, prometheus.GaugeValue, onchainPhase2)
 	channel <- prometheus.MustNewConstMetric(
 		collector.nodeVotingPower, prometheus.GaugeValue, collector.cachedNodeVotingPower)
 	channel <- prometheus.MustNewConstMetric(
