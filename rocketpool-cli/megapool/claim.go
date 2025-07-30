@@ -39,6 +39,9 @@ func claim(c *cli.Context) error {
 
 	if megapoolDetails.Megapool.RefundValue != nil && megapoolDetails.Megapool.RefundValue.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("You have %.6f ETH of megapool refund to claim.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.RefundValue), 6))
+		if megapoolDetails.Megapool.NodeDebt != nil && megapoolDetails.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
+			fmt.Printf("You have %.6f ETH of node debt to repay. This will be deducted from your refund.\n", math.RoundDown(eth.WeiToEth(megapoolDetails.Megapool.NodeDebt), 6))
+		}
 	} else {
 		fmt.Println("You have no megapool refund to claim.")
 		return nil
