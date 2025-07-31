@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
+	"slices"
 	"sync"
 	"time"
 
@@ -259,13 +260,7 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	if rocketRewardsPoolAddresses == nil {
 		rocketRewardsPoolAddresses = []common.Address{currentAddress}
 	} else {
-		found := false
-		for _, address := range rocketRewardsPoolAddresses {
-			if address == currentAddress {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(rocketRewardsPoolAddresses, currentAddress)
 		if !found {
 			rocketRewardsPoolAddresses = append(rocketRewardsPoolAddresses, currentAddress)
 		}

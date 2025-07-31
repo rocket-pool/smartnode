@@ -103,7 +103,7 @@ func EstimateProposeLotMaximumEthValueGas(rp *rocketpool.RocketPool, value *big.
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", LotMaximumEthValueSettingPath), AuctionSettingsContractName, LotMaximumEthValueSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-// // The lot duration
+// The lot duration
 func GetLotDuration(rp *rocketpool.RocketPool, opts *bind.CallOpts) (time.Duration, error) {
 	auctionSettingsContract, err := getAuctionSettingsContract(rp, opts)
 	if err != nil {

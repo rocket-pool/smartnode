@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -788,12 +789,7 @@ type DockerContainer struct {
 
 func (c *DockerContainer) HasVolume(volume string) bool {
 	mounts := strings.Split(c.Mounts, ",")
-	for _, mount := range mounts {
-		if mount == volume {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(mounts, volume)
 }
 
 // Returns all Docker containers on the system with the given prefix
