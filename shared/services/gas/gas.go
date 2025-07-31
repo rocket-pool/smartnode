@@ -7,6 +7,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/gas/etherchain"
 	"github.com/rocket-pool/smartnode/shared/services/gas/etherscan"
 	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -87,20 +88,21 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 
 	} else {
 		if headless {
-			maxFeeWei, err := GetHeadlessMaxFeeWei()
+			maxFeeWei, err := GetHeadlessMaxFeeWei(cfg)
 			if err != nil {
 				return Gas{}, err
 			}
 			maxFeeGwei = eth.WeiToGwei(maxFeeWei)
 		} else {
 			// Try to get the latest gas prices from Etherchain
-			etherchainData, err := etherchain.GetGasPrices()
+			etherchainData, err := etherchain.GetGasPrices(cfg)
 			if err == nil {
 				// Print the Etherchain data and ask for an amount
 				maxFeeGwei = handleEtherchainGasPrices(etherchainData, gasInfo, maxPriorityFeeGwei, gasLimit)
 
 			} else {
 				// Fallback to Etherscan
+				// Etherscan does not have a hoodi endpoint. Fallback uses the mainnet url in all cases.
 				fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
 				etherscanData, err := etherscan.GetGasPrices()
 				if err == nil {
@@ -141,11 +143,12 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 }
 
 // Get the suggested max fee for service operations
-func GetHeadlessMaxFeeWei() (*big.Int, error) {
-	etherchainData, err := etherchain.GetGasPrices()
+func GetHeadlessMaxFeeWei(cfg *config.RocketPoolConfig) (*big.Int, error) {
+	etherchainData, err := etherchain.GetGasPrices(cfg)
 	if err == nil {
 		return etherchainData.RapidWei, nil
 	} else {
+		// Etherscan does not have a hoodi endpoint. Fallback uses the mainnet url in all cases.
 		fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
 		etherscanData, err := etherscan.GetGasPrices()
 		if err == nil {
