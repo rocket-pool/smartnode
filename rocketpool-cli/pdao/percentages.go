@@ -91,7 +91,7 @@ func proposeRewardsPercentages(c *cli.Context) error {
 		return err
 	}
 	if !canResponse.CanPropose {
-		fmt.Println("Cannot propose rewards precentages:")
+		fmt.Println("Cannot propose rewards percentages:")
 		if canResponse.IsRplLockingDisallowed {
 			fmt.Println("Please enable RPL locking using the command 'rocketpool node allow-rpl-locking' to raise proposals.")
 		}
