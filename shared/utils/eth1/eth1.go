@@ -76,6 +76,7 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.RocketPoolConf
 		errMessage := err.Error()
 		printMessage(fmt.Sprintf("Error getting state for block %d: %s", blockNumber.Uint64(), errMessage))
 		if strings.Contains(errMessage, "missing trie node") || // Geth
+			strings.Contains(errMessage, "haven't been fully indexed yet") || // Also Geth
 			strings.Contains(errMessage, "No state available for block") || // Nethermind
 			strings.Contains(errMessage, "Internal error") { // Besu
 
