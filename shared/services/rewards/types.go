@@ -206,6 +206,8 @@ type IntervalInfo struct {
 	CollateralRplAmount    *QuotedBigInt `json:"collateralRplAmount"`
 	ODaoRplAmount          *QuotedBigInt `json:"oDaoRplAmount"`
 	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`
+	VoterShareEth          *QuotedBigInt `json:"voterShareEth"`
+	TotalEthAmount         *QuotedBigInt `json:"totalEthAmount"`
 	MerkleProof            []common.Hash `json:"merkleProof"`
 
 	TotalNodeWeight *big.Int `json:"-"`

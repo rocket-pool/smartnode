@@ -335,7 +335,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 				}
 
 				newRewards.Add(newRewards, &intervalInfo.CollateralRplAmount.Int)
-				newClaimedEthRewards.Add(newClaimedEthRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+				newClaimedEthRewards.Add(newClaimedEthRewards, &intervalInfo.TotalEthAmount.Int)
 				collector.handledIntervals[claimedInterval] = true
 			}
 		}
@@ -350,7 +350,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			}
 			if intervalInfo.NodeExists {
 				unclaimedRplWei.Add(unclaimedRplWei, &intervalInfo.CollateralRplAmount.Int)
-				unclaimedEthWei.Add(unclaimedEthWei, &intervalInfo.SmoothingPoolEthAmount.Int)
+				unclaimedEthWei.Add(unclaimedEthWei, &intervalInfo.TotalEthAmount.Int)
 			}
 		}
 

@@ -117,10 +117,12 @@ func nodeClaimRewards(c *cli.Context) error {
 			fmt.Printf("\tOracle DAO:     %.6f RPL\n", eth.WeiToEth(&intervalInfo.ODaoRplAmount.Int))
 		}
 		fmt.Printf("\tSmoothing Pool: %.6f ETH\n\n", eth.WeiToEth(&intervalInfo.SmoothingPoolEthAmount.Int))
+		fmt.Printf("\tVoter Share:    %.6f ETH\n", eth.WeiToEth(&intervalInfo.VoterShareEth.Int))
+		fmt.Printf("\tTotal:          %.6f ETH\n\n", eth.WeiToEth(&intervalInfo.TotalEthAmount.Int))
 
 		totalRpl.Add(totalRpl, &intervalInfo.CollateralRplAmount.Int)
 		totalRpl.Add(totalRpl, &intervalInfo.ODaoRplAmount.Int)
-		totalEth.Add(totalEth, &intervalInfo.SmoothingPoolEthAmount.Int)
+		totalEth.Add(totalEth, &intervalInfo.TotalEthAmount.Int)
 	}
 
 	fmt.Println("Total Pending Rewards:")
@@ -186,6 +188,7 @@ func nodeClaimRewards(c *cli.Context) error {
 				claimRpl.Add(claimRpl, &intervalInfo.CollateralRplAmount.Int)
 				claimRpl.Add(claimRpl, &intervalInfo.ODaoRplAmount.Int)
 				claimEth.Add(claimEth, &intervalInfo.SmoothingPoolEthAmount.Int)
+				claimEth.Add(claimEth, &intervalInfo.VoterShareEth.Int)
 			}
 		}
 	}

@@ -137,6 +137,8 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 	info.CollateralRplAmount = &QuotedBigInt{*proofWrapper.GetNodeCollateralRpl(nodeAddress)}
 	info.ODaoRplAmount = &QuotedBigInt{*proofWrapper.GetNodeOracleDaoRpl(nodeAddress)}
 	info.SmoothingPoolEthAmount = &QuotedBigInt{*proofWrapper.GetNodeSmoothingPoolEth(nodeAddress)}
+	info.VoterShareEth = &QuotedBigInt{*proofWrapper.GetNodeVoterShareEth(nodeAddress)}
+	info.TotalEthAmount = &QuotedBigInt{*proofWrapper.GetNodeEth(nodeAddress)}
 
 	proof, err := proofWrapper.GetMerkleProof(nodeAddress)
 	if proof == nil {
