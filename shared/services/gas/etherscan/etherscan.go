@@ -13,13 +13,9 @@ const gasOracleUrl string = "https://api.etherscan.io/api?module=gastracker&acti
 
 // Standard response
 type gasOracleResponse struct {
-	Status  uinteger `json:"status"`
-	Message string   `json:"message"`
-	Result  struct {
-		SafeGasPrice    uinteger `json:"SafeGasPrice"`
-		ProposeGasPrice uinteger `json:"ProposeGasPrice"`
-		FastGasPrice    uinteger `json:"FastGasPrice"`
-	} `json:"result"`
+	Status  string          `json:"status"`
+	Message string          `json:"message"`
+	Result  json.RawMessage `json:"result"`
 }
 
 type GasFeeSuggestion struct {
@@ -56,43 +52,52 @@ func GetGasPrices() (GasFeeSuggestion, error) {
 	if err := json.Unmarshal(body, &gOResponse); err != nil {
 		return GasFeeSuggestion{}, fmt.Errorf("Could not decode Etherscan gas oracle response: %w", err)
 	}
-	if gOResponse.Status != 1 {
-		return GasFeeSuggestion{}, fmt.Errorf("Error retrieving Etherscan gas oracle response: %s", gOResponse.Message)
+	if gOResponse.Status != "1" {
+		var errMsg string
+		if err := json.Unmarshal(gOResponse.Result, &errMsg); err == nil {
+			if errMsg == "Max rate limit reached, please use API Key for higher rate limit" {
+				return GasFeeSuggestion{}, fmt.Errorf("Rate limit of 1/5sec applied. Try again in a few seconds.")
+			}
+			return GasFeeSuggestion{}, fmt.Errorf("Etherscan gas oracle request failed: %s", errMsg)
+		}
+		return GasFeeSuggestion{}, fmt.Errorf("Could not decode Etherscan gas oracle response: %v", gOResponse)
+	}
+
+	// Unmarshal result if response is successful
+	var result struct {
+		LastBlock       string `json:"lastBlock"`
+		SafeGasPrice    string `json:"safeGasPrice"`
+		ProposeGasPrice string `json:"proposeGasPrice"`
+		FastGasPrice    string `json:"fastGasPrice"`
+		SuggestBaseFee  string `json:"suggestBaseFee"`
+		GasUsedRatio    string `json:"gasUsedRatio"`
+	}
+	if err := json.Unmarshal(gOResponse.Result, &result); err != nil {
+		return GasFeeSuggestion{}, fmt.Errorf("Could not decode Etherscan gas oracle result: %w", err)
+	}
+
+	safeGasPriceFloat, err := strconv.ParseFloat(result.SafeGasPrice, 64)
+	if err != nil {
+		return GasFeeSuggestion{}, fmt.Errorf("invalid SafeGasPrice: %v", err)
+	}
+
+	proposeGasPriceFloat, err := strconv.ParseFloat(result.ProposeGasPrice, 64)
+	if err != nil {
+		return GasFeeSuggestion{}, fmt.Errorf("invalid ProposeGasPrice: %v", err)
+	}
+
+	fastGasPriceFloat, err := strconv.ParseFloat(result.FastGasPrice, 64)
+	if err != nil {
+		return GasFeeSuggestion{}, fmt.Errorf("invalid FastGasPrice: %v", err)
 	}
 
 	suggestion := GasFeeSuggestion{
-		SlowGwei:     float64(gOResponse.Result.SafeGasPrice),
-		StandardGwei: float64(gOResponse.Result.ProposeGasPrice),
-		FastGwei:     float64(gOResponse.Result.FastGasPrice),
+		SlowGwei:     safeGasPriceFloat,
+		StandardGwei: proposeGasPriceFloat,
+		FastGwei:     fastGasPriceFloat,
 	}
 
 	// Return
 	return suggestion, nil
 
-}
-
-// Unsigned integer type
-type uinteger uint64
-
-func (i uinteger) MarshalJSON() ([]byte, error) {
-	return json.Marshal(strconv.FormatUint(uint64(i), 10))
-}
-
-func (i *uinteger) UnmarshalJSON(data []byte) error {
-
-	// Unmarshal string
-	var dataStr string
-	if err := json.Unmarshal(data, &dataStr); err != nil {
-		return err
-	}
-
-	// Parse integer value
-	value, err := strconv.ParseUint(dataStr, 10, 64)
-	if err != nil {
-		return err
-	}
-
-	// Set value and return
-	*i = uinteger(value)
-	return nil
 }
