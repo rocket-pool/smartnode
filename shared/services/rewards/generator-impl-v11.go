@@ -468,11 +468,6 @@ func (r *treeGeneratorImpl_v11) calculateRplRewards() error {
 
 }
 
-// Calculate the voter rewards
-func (r *treeGeneratorImpl_v11) calculateVoterRewards() error {
-	return nil
-}
-
 // Calculates the ETH rewards for the given interval
 func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool) error {
 
