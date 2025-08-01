@@ -345,6 +345,10 @@ type NodeSmoothingDetails struct {
 	BonusEth            *big.Int
 	EligibleBorrowedEth *big.Int
 	RplStake            *big.Int
+
+	// v11 Fields
+	MegapoolVoteEligibleRpl *big.Int
+	VoterShareEth           *big.Int
 }
 
 type QuotedBigInt struct {
