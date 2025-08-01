@@ -175,8 +175,6 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 		return nil, fmt.Errorf("error calculating ETH rewards: %w", err)
 	}
 
-	// Calculate the voter share distribution
-
 	// Sort and assign the maps to the ssz file lists
 	for nodeAddress, nodeReward := range r.nodeRewards {
 		copy(nodeReward.Address[:], nodeAddress[:])
@@ -619,12 +617,12 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 	}
 
 	// Determine how much ETH each node gets and how much the pool stakers get
-	poolStakerETH, nodeOpEth, bonusScalar, err := r.calculateNodeRewards()
+	nodeRewards, err := r.calculateNodeRewards()
 	if err != nil {
 		return err
 	}
 	if r.rewardsFile.RulesetVersion >= 10 {
-		r.minipoolPerformanceFile.BonusScalar = QuotedBigIntFromBigInt(bonusScalar)
+		r.minipoolPerformanceFile.BonusScalar = QuotedBigIntFromBigInt(nodeRewards.bonusScalar)
 	}
 
 	// Update the rewards maps
@@ -686,8 +684,8 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 	}
 
 	// Set the totals
-	r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Set(poolStakerETH)
-	r.rewardsFile.TotalRewards.NodeOperatorSmoothingPoolEth.Set(nodeOpEth)
+	r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Set(nodeRewards.poolStakerEth)
+	r.rewardsFile.TotalRewards.NodeOperatorSmoothingPoolEth.Set(nodeRewards.nodeOpEth)
 	r.rewardsFile.TotalRewards.TotalSmoothingPoolEth.Set(r.smoothingPoolBalance)
 	return nil
 
@@ -756,15 +754,29 @@ func (r *treeGeneratorImpl_v11) calculateNodeBonuses() (*big.Int, error) {
 	return totalConsensusBonus, nil
 }
 
+type nodeRewards struct {
+	poolStakerEth *big.Int
+	nodeOpEth     *big.Int
+	pdaoEth       *big.Int
+	voterEth      *big.Int
+	bonusScalar   *big.Int
+}
+
 // Calculate the distribution of Smoothing Pool ETH to each node
-func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*big.Int, *big.Int, *big.Int, error) {
+func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	var err error
 	bonusScalar := big.NewInt(0).Set(oneEth)
 
 	// If there weren't any successful attestations, everything goes to the pool stakers
 	if r.totalAttestationScore.Cmp(common.Big0) == 0 || r.successfulAttestations == 0 {
 		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", r.totalAttestationScore.String(), r.successfulAttestations)
-		return r.smoothingPoolBalance, big.NewInt(0), bonusScalar, nil
+		return &nodeRewards{
+			poolStakerEth: r.smoothingPoolBalance,
+			nodeOpEth:     big.NewInt(0),
+			pdaoEth:       big.NewInt(0),
+			voterEth:      big.NewInt(0),
+			bonusScalar:   bonusScalar,
+		}, nil
 	}
 
 	// Calculate the minipool bonuses
@@ -773,7 +785,7 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*big.Int, *big.Int, *big
 	if r.rewardsFile.RulesetVersion >= 10 && isEligibleInterval {
 		totalConsensusBonus, err = r.calculateNodeBonuses()
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 	}
 
@@ -831,7 +843,7 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*big.Int, *big.Int, *big
 	delta := big.NewInt(0).Sub(totalEthForMinipools, totalNodeOpShare)
 	delta.Abs(delta)
 	if delta.Cmp(r.epsilon) == 1 {
-		return nil, nil, nil, fmt.Errorf("error calculating smoothing pool ETH: total was %s, but expected %s; error was too large (%s wei)", totalEthForMinipools.String(), totalNodeOpShare.String(), delta.String())
+		return nil, fmt.Errorf("error calculating smoothing pool ETH: total was %s, but expected %s; error was too large (%s wei)", totalEthForMinipools.String(), totalNodeOpShare.String(), delta.String())
 	}
 
 	// Finally, award the bonuses
@@ -855,7 +867,13 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*big.Int, *big.Int, *big
 	r.log.Printlnf("%s (error = %s wei)", r.logPrefix, delta.String())
 	r.log.Printlnf("%s Adjusting pool staker ETH to %s to account for truncation", r.logPrefix, truePoolStakerAmount.String())
 
-	return truePoolStakerAmount, totalEthForMinipools, bonusScalar, nil
+	return &nodeRewards{
+		poolStakerEth: truePoolStakerAmount,
+		nodeOpEth:     totalEthForMinipools,
+		bonusScalar:   bonusScalar,
+		pdaoEth:       big.NewInt(0),
+		voterEth:      big.NewInt(0),
+	}, nil
 
 }
 
