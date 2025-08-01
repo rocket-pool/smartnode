@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types"
 	"github.com/wealdtech/go-merkletree"
 )
 
@@ -111,6 +112,8 @@ type IRewardsFile interface {
 	GetNodeCollateralRpl(common.Address) *big.Int
 	GetNodeOracleDaoRpl(common.Address) *big.Int
 	GetNodeSmoothingPoolEth(common.Address) *big.Int
+	GetNodeVoterShareEth(common.Address) *big.Int
+	GetNodeEth(common.Address) *big.Int
 	GetMerkleProof(common.Address) ([]common.Hash, error)
 
 	// Getters for network info
@@ -125,6 +128,10 @@ type IRewardsFile interface {
 	// Generate the Merkle Tree and its root from the rewards file's proofs
 	GenerateMerkleTree() error
 }
+
+// Type assertions for ssz rewards files
+var _ IRewardsFile = (*ssz_types.SSZFile_v1)(nil)
+var _ IRewardsFile = (*ssz_types.SSZFile_v2)(nil)
 
 // Rewards per network
 type NetworkRewardsInfo struct {

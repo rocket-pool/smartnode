@@ -279,6 +279,14 @@ func (f *RewardsFile_v1) GetNodeSmoothingPoolEth(addr common.Address) *big.Int {
 	return &nr.SmoothingPoolEth.Int
 }
 
+func (f *RewardsFile_v1) GetNodeVoterShareEth(addr common.Address) *big.Int {
+	return big.NewInt(0)
+}
+
+func (f *RewardsFile_v1) GetNodeEth(addr common.Address) *big.Int {
+	return f.GetNodeSmoothingPoolEth(addr)
+}
+
 // Getters for network info
 func (f *RewardsFile_v1) HasRewardsForNetwork(network uint64) bool {
 	_, ok := f.NetworkRewards[network]

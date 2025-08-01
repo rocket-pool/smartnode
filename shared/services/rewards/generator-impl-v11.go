@@ -26,13 +26,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Type assertion to ensure SSZFile_v1 is IRewardsFile
-var _ IRewardsFile = (*ssz_types.SSZFile_v1)(nil)
-
 // Implementation for tree generator ruleset v9
 type treeGeneratorImpl_v11 struct {
 	networkState                 *state.NetworkState
-	rewardsFile                  *ssz_types.SSZFile_v1
+	rewardsFile                  *ssz_types.SSZFile_v2
 	elSnapshotHeader             *types.Header
 	snapshotEnd                  *SnapshotEnd
 	log                          *log.ColorLogger
@@ -61,7 +58,7 @@ type treeGeneratorImpl_v11 struct {
 	genesisTime                  time.Time
 	invalidNetworkNodes          map[common.Address]uint64
 	minipoolPerformanceFile      *MinipoolPerformanceFile_v2
-	nodeRewards                  map[common.Address]*ssz_types.NodeReward
+	nodeRewards                  map[common.Address]*ssz_types.NodeReward_v2
 	networkRewards               map[ssz_types.Layer]*ssz_types.NetworkReward
 
 	// fields for RPIP-62 bonus calculations
@@ -72,12 +69,12 @@ type treeGeneratorImpl_v11 struct {
 // Create a new tree generator
 func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v11 {
 	return &treeGeneratorImpl_v11{
-		rewardsFile: &ssz_types.SSZFile_v1{
+		rewardsFile: &ssz_types.SSZFile_v2{
 			RewardsFileVersion: 3,
 			RulesetVersion:     11,
 			Index:              index,
 			IntervalsPassed:    intervalsPassed,
-			TotalRewards: &ssz_types.TotalRewards{
+			TotalRewards: &ssz_types.TotalRewards_v2{
 				ProtocolDaoRpl:               sszbig.NewUint256(0),
 				TotalCollateralRpl:           sszbig.NewUint256(0),
 				TotalOracleDaoRpl:            sszbig.NewUint256(0),
@@ -85,9 +82,11 @@ func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint
 				PoolStakerSmoothingPoolEth:   sszbig.NewUint256(0),
 				NodeOperatorSmoothingPoolEth: sszbig.NewUint256(0),
 				TotalNodeWeight:              sszbig.NewUint256(0),
+				TotalVoterShareEth:           sszbig.NewUint256(0),
+				SmoothingPoolVoterShareEth:   sszbig.NewUint256(0),
 			},
 			NetworkRewards: ssz_types.NetworkRewards{},
-			NodeRewards:    ssz_types.NodeRewards{},
+			NodeRewards:    ssz_types.NodeRewards_v2{},
 		},
 		validatorStatusMap:        map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
 		minipoolValidatorIndexMap: map[string]*MinipoolInfo{},
@@ -104,7 +103,7 @@ func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint
 			Index:               index,
 			MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
 		},
-		nodeRewards:         map[common.Address]*ssz_types.NodeReward{},
+		nodeRewards:         map[common.Address]*ssz_types.NodeReward_v2{},
 		networkRewards:      map[ssz_types.Layer]*ssz_types.NetworkReward{},
 		minipoolWithdrawals: map[common.Address]*big.Int{},
 	}
@@ -336,7 +335,7 @@ func (r *treeGeneratorImpl_v11) calculateRplRewards() error {
 						network = 0
 					}
 
-					rewardsForNode = ssz_types.NewNodeReward(
+					rewardsForNode = ssz_types.NewNodeReward_v2(
 						network,
 						ssz_types.AddressFromBytes(nodeDetails.NodeAddress.Bytes()),
 					)
@@ -425,7 +424,7 @@ func (r *treeGeneratorImpl_v11) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForNode = ssz_types.NewNodeReward(
+			rewardsForNode = ssz_types.NewNodeReward_v2(
 				network,
 				ssz_types.AddressFromBytes(address.Bytes()),
 			)
@@ -640,7 +639,7 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 					network = 0
 				}
 
-				rewardsForNode = ssz_types.NewNodeReward(
+				rewardsForNode = ssz_types.NewNodeReward_v2(
 					network,
 					ssz_types.AddressFromBytes(nodeInfo.Address.Bytes()),
 				)

@@ -25,9 +25,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Type assertion to ensure SSZFile_v1 is IRewardsFile
-var _ IRewardsFile = (*ssz_types.SSZFile_v1)(nil)
-
 // Implementation for tree generator ruleset v9
 type treeGeneratorImpl_v9_v10 struct {
 	networkState                 *state.NetworkState
