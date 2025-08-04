@@ -74,6 +74,7 @@ func (collector *GovernanceCollector) Collect(channel chan<- prometheus.Metric) 
 	onchainPending := float64(0)
 	onchainPhase1 := float64(0)
 	onchainPhase2 := float64(0)
+	onchainClosed := float64(0)
 
 	// Get onchain proposals
 	wg.Go(func() error {
