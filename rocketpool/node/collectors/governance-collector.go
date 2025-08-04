@@ -21,7 +21,7 @@ type GovernanceCollector struct {
 	// the number of active onchain proposals in Phase 2
 	onchainPhase2 *prometheus.Desc
 
-	// the number of closed onchain proposals 
+	// the number of closed onchain proposals
 	onchainClosed *prometheus.Desc
 
 	// The Rocket Pool Contract manager
@@ -91,6 +91,7 @@ func (collector *GovernanceCollector) Collect(channel chan<- prometheus.Metric) 
 				onchainPhase2 += 1
 			} else {
 				onchainClosed += 1
+			}
 		}
 		return err
 	})
