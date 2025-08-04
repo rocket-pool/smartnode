@@ -47,6 +47,10 @@ func NewGovernanceCollector(rp *rocketpool.RocketPool) *GovernanceCollector {
 			"The number of onchain proposals in Phase 2",
 			nil, nil,
 		),
+		onchainClosed: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "onchain_closed"),
+			"The number of closed onchain proposals",
+			nil, nil,
+		),
 		rp:        rp,
 		logPrefix: "Governance Collector",
 	}
