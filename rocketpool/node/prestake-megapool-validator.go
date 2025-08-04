@@ -200,7 +200,7 @@ func (t *prestakeMegapoolValidator) assignDeposit(callopts *bind.CallOpts) error
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+		maxFee, err = rpgas.GetHeadlessMaxFeeWei(t.cfg)
 		if err != nil {
 			return err
 		}

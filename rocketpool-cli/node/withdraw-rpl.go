@@ -74,7 +74,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 			"request to unstake RPL",
 			"request to unstake legacy RPL",
 		}
-		selected, _ := prompt.Select(fmt.Sprintf("Please select one of the three options below.\n"), options)
+		selected, _ := prompt.Select("Please select one of the three options below.\n", options)
 
 		// Selection 1
 		if options[selected] == "withdraw unstaked RPL" {
