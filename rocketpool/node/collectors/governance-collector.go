@@ -21,6 +21,9 @@ type GovernanceCollector struct {
 	// the number of active onchain proposals in Phase 2
 	onchainPhase2 *prometheus.Desc
 
+	// the number of closed onchain proposals 
+	onchainClosed *prometheus.Desc
+
 	// The Rocket Pool Contract manager
 	rp *rocketpool.RocketPool
 
