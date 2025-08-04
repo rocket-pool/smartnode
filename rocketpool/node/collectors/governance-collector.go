@@ -89,7 +89,8 @@ func (collector *GovernanceCollector) Collect(channel chan<- prometheus.Metric) 
 				onchainPhase1 += 1
 			} else if proposal.State == types.ProtocolDaoProposalState_ActivePhase2 {
 				onchainPhase2 += 1
-			}
+			} else {
+				onchainClosed += 1
 		}
 		return err
 	})
