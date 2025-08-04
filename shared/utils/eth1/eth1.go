@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
@@ -74,33 +73,27 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.RocketPoolConf
 	if err != nil {
 		errMessage := err.Error()
 		printMessage(fmt.Sprintf("Error getting state for block %d: %s", blockNumber.Uint64(), errMessage))
-		if strings.Contains(errMessage, "missing trie node") || // Geth
-			strings.Contains(errMessage, "No state available for block") || // Nethermind
-			strings.Contains(errMessage, "Internal error") { // Besu
-
-			// The state was missing so fall back to the archive node
-			archiveEcUrl := cfg.Smartnode.ArchiveECUrl.Value.(string)
-			if archiveEcUrl != "" {
-				printMessage(fmt.Sprintf("Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", blockNumber.Uint64(), archiveEcUrl))
-				ec, err := services.NewEthClient(archiveEcUrl)
-				if err != nil {
-					return nil, fmt.Errorf("Error connecting to archive EC: %w", err)
-				}
-				client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(cfg.Smartnode.GetStorageAddress()))
-				if err != nil {
-					return nil, fmt.Errorf("Error creating Rocket Pool client connected to archive EC: %w", err)
-				}
-
-				// Get the rETH address from the archive EC
-				address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
-				if err != nil {
-					return nil, fmt.Errorf("Error verifying rETH address with Archive EC: %w", err)
-				}
-			} else {
-				// No archive node specified
-				return nil, fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", blockNumber.Uint64())
+		// The state was missing so fall back to the archive node
+		archiveEcUrl := cfg.Smartnode.ArchiveECUrl.Value.(string)
+		if archiveEcUrl != "" {
+			printMessage(fmt.Sprintf("Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", blockNumber.Uint64(), archiveEcUrl))
+			ec, err := services.NewEthClient(archiveEcUrl)
+			if err != nil {
+				return nil, fmt.Errorf("Error connecting to archive EC: %w", err)
+			}
+			client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(cfg.Smartnode.GetStorageAddress()))
+			if err != nil {
+				return nil, fmt.Errorf("Error creating Rocket Pool client connected to archive EC: %w", err)
 			}
 
+			// Get the rETH address from the archive EC
+			address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
+			if err != nil {
+				return nil, fmt.Errorf("Error verifying rETH address with Archive EC: %w", err)
+			}
+		} else {
+			// No archive node specified
+			return nil, fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", blockNumber.Uint64())
 		}
 	}
 

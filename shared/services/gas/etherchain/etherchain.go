@@ -7,9 +7,11 @@ import (
 	"net/http"
 
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 const gasNowUrl string = "https://beaconcha.in/api/v1/execution/gasnow"
+const gasNowUrlHoodi string = "https://hoodi.beaconcha.in/api/v1/execution/gasnow"
 
 // Standard response
 type gasNowResponse struct {
@@ -39,10 +41,16 @@ type GasFeeSuggestion struct {
 }
 
 // Get gas prices
-func GetGasPrices() (GasFeeSuggestion, error) {
+func GetGasPrices(cfg *config.RocketPoolConfig) (GasFeeSuggestion, error) {
+
+	// Check network
+	url := gasNowUrl
+	if cfg.Smartnode.GetChainID() != 1 {
+		url = gasNowUrlHoodi
+	}
 
 	// Send request
-	response, err := http.Get(gasNowUrl)
+	response, err := http.Get(url)
 	if err != nil {
 		return GasFeeSuggestion{}, err
 	}
