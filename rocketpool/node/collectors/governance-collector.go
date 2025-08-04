@@ -61,6 +61,7 @@ func (collector *GovernanceCollector) Describe(channel chan<- *prometheus.Desc) 
 	channel <- collector.onchainPending
 	channel <- collector.onchainPhase1
 	channel <- collector.onchainPhase2
+	channel <- collector.onchainClosed
 }
 
 // Collect the latest metric values and pass them to Prometheus
