@@ -405,45 +405,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-propose-recurring-spend",
 				Usage:     "Check whether the node can propose a recurring spend of the Protocol DAO's treasury",
-				UsageText: "rocketpool api pdao can-propose-recurring-spend contract-name recipient amount-per-period period-length start-time number-of-periods",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 6); err != nil {
-						return err
-					}
-					contractName := c.Args().Get(0)
-					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
-					if err != nil {
-						return err
-					}
-					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
-					if err != nil {
-						return err
-					}
-					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
-					if err != nil {
-						return err
-					}
-					startTime, err := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
-					if err != nil {
-						return err
-					}
-					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canProposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, time.Unix(int64(startTime), 0), numberOfPeriods))
-					return nil
-
-				},
-			},
-			{
-				Name:      "propose-recurring-spend",
-				Usage:     "Propose a recurring spend of the Protocol DAO's treasury",
-				UsageText: "rocketpool api pdao propose-recurring-spend contract-name recipient amount-per-period period-length start-time number-of-periods block-number",
+				UsageText: "rocketpool api pdao can-propose-recurring-spend contract-name recipient amount-per-period period-length start-time number-of-periods custom-message",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -471,13 +433,50 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err != nil {
 						return err
 					}
+
+					// Run
+					api.PrintResponse(canProposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, time.Unix(int64(startTime), 0), numberOfPeriods, c.Args().Get(6)))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-recurring-spend",
+				Usage:     "Propose a recurring spend of the Protocol DAO's treasury",
+				UsageText: "rocketpool api pdao propose-recurring-spend contract-name recipient amount-per-period period-length start-time number-of-periods block-number custom-message",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 8); err != nil {
+						return err
+					}
+					contractName := c.Args().Get(0)
+					recipient, err := cliutils.ValidateAddress("recipient", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+					amountPerPeriod, err := cliutils.ValidateBigInt("amount-per-period", c.Args().Get(2))
+					if err != nil {
+						return err
+					}
+					periodLength, err := cliutils.ValidateDuration("period-length", c.Args().Get(3))
+					if err != nil {
+						return err
+					}
+					startTime, err := cliutils.ValidatePositiveUint("start-time", c.Args().Get(4))
+					if err != nil {
+						return err
+					}
+					numberOfPeriods, err := cliutils.ValidatePositiveUint("number-of-periods", c.Args().Get(5))
+					if err != nil {
+						return err
+					}
 					blockNumber, err := cliutils.ValidateUint32("blockNumber", c.Args().Get(6))
 					if err != nil {
 						return err
 					}
-
 					// Run
-					api.PrintResponse(proposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, time.Unix(int64(startTime), 0), numberOfPeriods, blockNumber))
+					api.PrintResponse(proposeRecurringSpend(c, contractName, recipient, amountPerPeriod, periodLength, time.Unix(int64(startTime), 0), numberOfPeriods, blockNumber, c.Args().Get(7)))
 					return nil
 
 				},

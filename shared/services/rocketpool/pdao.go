@@ -284,8 +284,8 @@ func (c *Client) PDAOProposeOneTimeSpend(invoiceID string, recipient common.Addr
 }
 
 // Check whether the node can propose a recurring spend of the Protocol DAO's treasury
-func (c *Client) PDAOCanProposeRecurringSpend(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64) (api.PDAOCanProposeRecurringSpendResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-recurring-spend %s %s %s %s %d %d", contractName, recipient.Hex(), amountPerPeriod.String(), periodLength.String(), startTime.Unix(), numberOfPeriods))
+func (c *Client) PDAOCanProposeRecurringSpend(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, customMessage string) (api.PDAOCanProposeRecurringSpendResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-recurring-spend %s %s %s %s %d %d %s", contractName, recipient.Hex(), amountPerPeriod.String(), periodLength.String(), startTime.Unix(), numberOfPeriods, customMessage))
 	if err != nil {
 		return api.PDAOCanProposeRecurringSpendResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-recurring-spend: %w", err)
 	}
@@ -300,8 +300,8 @@ func (c *Client) PDAOCanProposeRecurringSpend(contractName string, recipient com
 }
 
 // Propose a recurring spend of the Protocol DAO's treasury
-func (c *Client) PDAOProposeRecurringSpend(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32) (api.PDAOProposeRecurringSpendResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-recurring-spend %s %s %s %s %d %d %d", contractName, recipient.Hex(), amountPerPeriod.String(), periodLength.String(), startTime.Unix(), numberOfPeriods, blockNumber))
+func (c *Client) PDAOProposeRecurringSpend(contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32, customMessage string) (api.PDAOProposeRecurringSpendResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-recurring-spend %s %s %s %s %d %d %d %s", contractName, recipient.Hex(), amountPerPeriod.String(), periodLength.String(), startTime.Unix(), numberOfPeriods, blockNumber, customMessage))
 	if err != nil {
 		return api.PDAOProposeRecurringSpendResponse{}, fmt.Errorf("Could not get protocol DAO propose-recurring-spend: %w", err)
 	}
