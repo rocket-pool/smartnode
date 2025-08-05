@@ -4458,7 +4458,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 3,
+        "w": 6,
         "x": 0,
         "y": 47
       },
@@ -4519,6 +4519,20 @@
           "legendFormat": "Phase 2",
           "range": true,
           "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rocketpool_governance_onchain_closed",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Closed",
+          "range": true,
+          "refId": "D"
         }
       ],
       "title": "Onchain Proposals",
