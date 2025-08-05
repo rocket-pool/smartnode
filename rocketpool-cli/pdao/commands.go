@@ -366,6 +366,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Name:  "number-of-periods, n",
 								Usage: "The total number of payment periods for the spend",
 							},
+							cli.StringFlag{
+								Name:  "custom-message, m",
+								Usage: "A custom message for the proposal",
+							},
 						},
 						Action: func(c *cli.Context) error {
 
