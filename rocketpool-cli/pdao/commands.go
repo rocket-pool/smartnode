@@ -258,6 +258,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 								Name:  "amount, a",
 								Usage: "The amount of RPL to send",
 							},
+							cli.StringFlag{
+								Name:  "custom-message, m",
+								Usage: "A custom message for the proposal",
+							},
 						},
 						Action: func(c *cli.Context) error {
 
@@ -309,6 +313,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							cli.Uint64Flag{
 								Name:  "number-of-periods, n",
 								Usage: "The total number of payment periods for the spend",
+							},
+							cli.StringFlag{
+								Name:  "custom-message, m",
+								Usage: "A custom message for the proposal",
 							},
 						},
 						Action: func(c *cli.Context) error {

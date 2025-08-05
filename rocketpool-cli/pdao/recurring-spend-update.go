@@ -79,8 +79,17 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 		}
 	}
 
+	// Get the custom message
+	customMessage := c.String("custom-message")
+	if customMessage == "" {
+		customMessage = prompt.Prompt("Please enter a message for this recurring spend update (no blank spaces):", "^\\S*$", "Invalid message")
+	}
+	if customMessage == "" {
+		customMessage = fmt.Sprintf("update-recurring-spend-for-contract-%s", contractName)
+	}
+
 	// Check submissions
-	canResponse, err := rp.PDAOCanProposeRecurringSpendUpdate(contractName, recipient, amount, periodLength, numPeriods)
+	canResponse, err := rp.PDAOCanProposeRecurringSpendUpdate(contractName, recipient, amount, periodLength, numPeriods, customMessage)
 	if err != nil {
 		return err
 	}
@@ -105,7 +114,7 @@ func proposeRecurringSpendUpdate(c *cli.Context) error {
 	}
 
 	// Submit
-	response, err := rp.PDAOProposeRecurringSpendUpdate(contractName, recipient, amount, periodLength, numPeriods, canResponse.BlockNumber)
+	response, err := rp.PDAOProposeRecurringSpendUpdate(contractName, recipient, amount, periodLength, numPeriods, canResponse.BlockNumber, customMessage)
 	if err != nil {
 		return err
 	}
