@@ -108,6 +108,8 @@ func (collector *GovernanceCollector) Collect(channel chan<- prometheus.Metric) 
 		collector.onchainPhase1, prometheus.GaugeValue, onchainPhase1)
 	channel <- prometheus.MustNewConstMetric(
 		collector.onchainPhase2, prometheus.GaugeValue, onchainPhase2)
+	channel <- prometheus.MustNewConstMetric(
+		collector.onchainClosed, prometheus.GaugeValue, onchainClosed)
 }
 
 // Log error messages
