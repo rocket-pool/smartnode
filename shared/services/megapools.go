@@ -527,11 +527,10 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 				ValidatorIndex:     validatorDetails.ValidatorIndex,
 				ExitBalance:        validatorDetails.ExitBalance,
 			}
+
+			// Try to fetch the validator status. If it fails, we assume the first deposit was not processed yet
+			validator.BeaconStatus, _ = bc.GetValidatorStatus(validator.PubKey, nil)
 			if validator.Staked {
-				validator.BeaconStatus, err = bc.GetValidatorStatus(validator.PubKey, nil)
-				if err != nil {
-					return fmt.Errorf("error getting beacon status for validator ID %d: %w", validator.ValidatorId, err)
-				}
 				if currentEpoch > validator.BeaconStatus.ActivationEpoch {
 					validator.Activated = true
 					validator.WithdrawableEpoch = validator.BeaconStatus.WithdrawableEpoch

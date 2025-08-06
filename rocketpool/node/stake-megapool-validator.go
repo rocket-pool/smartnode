@@ -151,7 +151,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 
 	for i := uint32(0); i < uint32(validatorCount); i++ {
-		if validatorInfo[i].InPrestake && validatorInfo[i].ValidatorIndex > 0 {
+		if validatorInfo[i].InPrestake && validatorInfo[i].BeaconStatus.Index != "" {
 			// Log
 			t.log.Printlnf("The validator %d needs to be staked", validatorInfo[i].ValidatorId)
 
