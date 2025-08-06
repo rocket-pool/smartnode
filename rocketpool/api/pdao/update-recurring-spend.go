@@ -14,7 +14,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func canProposeRecurringSpendUpdate(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64) (*api.PDAOCanProposeRecurringSpendResponse, error) {
+func canProposeRecurringSpendUpdate(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, customMessage string) (*api.PDAOCanProposeRecurringSpendResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -67,12 +67,11 @@ func canProposeRecurringSpendUpdate(c *cli.Context, contractName string, recipie
 	}
 
 	// Try proposing
-	message := fmt.Sprintf("update recurring payment to %s", contractName)
 	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeRecurringTreasurySpendUpdateGas(rp, message, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, pollard, opts)
+	gasInfo, err := protocol.EstimateProposeRecurringTreasurySpendUpdateGas(rp, customMessage, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +82,7 @@ func canProposeRecurringSpendUpdate(c *cli.Context, contractName string, recipie
 	return &response, nil
 }
 
-func proposeRecurringSpendUpdate(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, blockNumber uint32) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeRecurringSpendUpdate(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, numberOfPeriods uint64, blockNumber uint32, customMessage string) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -118,12 +117,11 @@ func proposeRecurringSpendUpdate(c *cli.Context, contractName string, recipient 
 	}
 
 	// Propose
-	message := fmt.Sprintf("update recurring payment to %s", contractName)
 	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, err
 	}
-	proposalID, hash, err := protocol.ProposeRecurringTreasurySpendUpdate(rp, message, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, pollard, opts)
+	proposalID, hash, err := protocol.ProposeRecurringTreasurySpendUpdate(rp, customMessage, contractName, recipient, amountPerPeriod, periodLength, numberOfPeriods, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
