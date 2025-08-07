@@ -14,7 +14,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func canProposeRecurringSpend(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64) (*api.PDAOCanProposeRecurringSpendResponse, error) {
+func canProposeRecurringSpend(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, customMessage string) (*api.PDAOCanProposeRecurringSpendResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -67,12 +67,11 @@ func canProposeRecurringSpend(c *cli.Context, contractName string, recipient com
 	}
 
 	// Try proposing
-	message := fmt.Sprintf("recurring payment to %s", contractName)
 	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeRecurringTreasurySpendGas(rp, message, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, pollard, opts)
+	gasInfo, err := protocol.EstimateProposeRecurringTreasurySpendGas(rp, customMessage, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +82,7 @@ func canProposeRecurringSpend(c *cli.Context, contractName string, recipient com
 	return &response, nil
 }
 
-func proposeRecurringSpend(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeRecurringSpend(c *cli.Context, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32, customMessage string) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -118,12 +117,12 @@ func proposeRecurringSpend(c *cli.Context, contractName string, recipient common
 	}
 
 	// Propose
-	message := fmt.Sprintf("recurring payment to %s", contractName)
+
 	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, err
 	}
-	proposalID, hash, err := protocol.ProposeRecurringTreasurySpend(rp, message, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, pollard, opts)
+	proposalID, hash, err := protocol.ProposeRecurringTreasurySpend(rp, customMessage, contractName, recipient, amountPerPeriod, periodLength, startTime, numberOfPeriods, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -962,7 +962,7 @@ func getNetworkOptions() []config.ParameterOption {
 		},
 	}
 
-	if strings.HasSuffix(shared.RocketPoolVersion(), "-dev") {
+	if strings.Contains(shared.RocketPoolVersion(), "-dev") {
 		options = append(options, config.ParameterOption{
 			Name:        "Devnet",
 			Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.",
