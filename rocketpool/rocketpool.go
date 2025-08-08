@@ -63,7 +63,6 @@ func main() {
 		cli.UintFlag{
 			Name:  "metricsPort, r",
 			Usage: "Port to serve metrics on if enabled",
-			Value: 9102,
 		},
 		cli.BoolFlag{
 			Name:  "ignore-sync-check",
