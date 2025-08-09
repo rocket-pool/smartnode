@@ -112,6 +112,12 @@ type SmartnodeConfig struct {
 	// Threshold for automatic vote power initialization transactions
 	AutoInitVPThreshold config.Parameter `yaml:"autoInitVPThreshold,omitempty"`
 
+	// Port for the node's webserver
+	APIPort config.Parameter `yaml:"apiPort,omitempty"`
+
+	// Whether to expose the node's API port to the local network
+	OpenAPIPort config.Parameter `yaml:"openAPIPort,omitempty"`
+
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -413,6 +419,29 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: true,
 		},
 
+		APIPort: config.Parameter{
+			ID:                 "apiPort",
+			Name:               "API Port",
+			Description:        "The port your Smartnode's API should listen on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: uint16(8280)},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		OpenAPIPort: config.Parameter{
+			ID:                 "openAPIPort",
+			Name:               "Expose API Port",
+			Description:        "Expose the API port to other processes on your machine. For security reasons, you cannot expose the API port except to localhost. It is recommended to keep this CLOSED.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: config.RPC_Closed},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+			Options:            config.RestrictedPortModes(),
+		},
+
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
 			config.Network_Devnet:  "https://hoodi.etherscan.io/tx",
@@ -635,6 +664,8 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.ArchiveECUrl,
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
+		&cfg.APIPort,
+		&cfg.OpenAPIPort,
 	}
 }
 
