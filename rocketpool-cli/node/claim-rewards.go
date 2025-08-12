@@ -33,7 +33,8 @@ func nodeClaimRewards(c *cli.Context) error {
 	defer rp.Close()
 
 	// Provide a notice
-	fmt.Printf("%sWelcome to the new rewards system!\nYou no longer need to claim rewards at each interval - you can simply let them accumulate and claim them whenever you want.\nHere you can see which intervals you haven't claimed yet, and how many rewards you earned during each one.%s\n\n", colorBlue, colorReset)
+	fmt.Printf("%sWelcome to the new rewards system!\nYou no longer need to claim rewards at each interval - you can simply let them accumulate and claim them whenever you want.\nHere you can see which intervals you haven't claimed yet, and how many rewards you earned during each one.%s\n", colorBlue, colorReset)
+	fmt.Println()
 
 	// Get eligible intervals
 	rewardsInfoResponse, err := rp.GetRewardsInfo()
@@ -109,7 +110,8 @@ func nodeClaimRewards(c *cli.Context) error {
 
 	// Print the info for all available periods
 	totalRpl := big.NewInt(0)
-	totalEth := big.NewInt(0)
+	totalSmoothingEth := big.NewInt(0)
+	totalVoterShareEth := big.NewInt(0)
 	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 		fmt.Printf("Rewards for Interval %d (%s to %s):\n", intervalInfo.Index, intervalInfo.StartTime.Local(), intervalInfo.EndTime.Local())
 		fmt.Printf("\tStaking:        %.6f RPL\n", eth.WeiToEth(&intervalInfo.CollateralRplAmount.Int))
@@ -122,12 +124,14 @@ func nodeClaimRewards(c *cli.Context) error {
 
 		totalRpl.Add(totalRpl, &intervalInfo.CollateralRplAmount.Int)
 		totalRpl.Add(totalRpl, &intervalInfo.ODaoRplAmount.Int)
-		totalEth.Add(totalEth, &intervalInfo.TotalEthAmount.Int)
+		totalSmoothingEth.Add(totalSmoothingEth, &intervalInfo.SmoothingPoolEthAmount.Int)
+		totalVoterShareEth.Add(totalVoterShareEth, &intervalInfo.VoterShareEth.Int)
 	}
 
 	fmt.Println("Total Pending Rewards:")
 	fmt.Printf("\t%.6f RPL\n", eth.WeiToEth(totalRpl))
-	fmt.Printf("\t%.6f ETH\n\n", eth.WeiToEth(totalEth))
+	fmt.Printf("\t%.6f Smoothing Pool ETH\n", eth.WeiToEth(totalSmoothingEth))
+	fmt.Printf("\t%.6f Voter Share ETH\n\n", eth.WeiToEth(totalVoterShareEth))
 
 	// Get the list of intervals to claim
 	var indices []uint64

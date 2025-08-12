@@ -232,7 +232,7 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission
 // Get the event info for a rewards snapshot using the Atlas getter
 func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, RewardsEvent, error) {
 	// Check if the client is requesting interval 0 on mainnet, then return the hardcoded RewardsEvent
-	data, ok, err := getMainnetInterval0RewardsEvent(rp, index)
+	data, ok, err := getMainnetInterval0RewardsEvent(rp)
 	if err != nil {
 		return false, RewardsEvent{}, err
 	}
@@ -327,11 +327,8 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	return true, eventData, nil
 }
 
-// Check if the client is requesting interval 0 on mainnet, then return the hardcoded RewardsEvent
-func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool, index uint64) (RewardsEvent, bool, error) {
-	if index != 0 {
-		return RewardsEvent{}, false, nil
-	}
+// return the hardcoded RewardsEvent
+func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool) (RewardsEvent, bool, error) {
 	// Check if the ec is synced to mainnet
 	chainID, err := rp.Client.ChainID(context.Background())
 	if err != nil {

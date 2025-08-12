@@ -94,7 +94,6 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 		return
 	}
 
-	info.CID = event.MerkleTreeCID
 	info.StartTime = event.IntervalStartTime
 	info.EndTime = event.IntervalEndTime
 	merkleRootCanon := event.MerkleRoot
@@ -156,7 +155,6 @@ func GetIntervalInfo(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, no
 // Downloads the rewards file for this interval
 func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemon bool) error {
 	interval := i.Index
-	expectedCid := i.CID
 	expectedRoot := i.MerkleRoot
 	// Determine file name and path
 	rewardsTreePath, err := homedir.Expand(cfg.Smartnode.GetRewardsTreePath(interval, isDaemon, config.RewardsExtensionJSON))
@@ -164,12 +162,9 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 		return fmt.Errorf("error expanding rewards tree path: %w", err)
 	}
 	rewardsTreeFilename := filepath.Base(rewardsTreePath)
-	ipfsFilename := rewardsTreeFilename + config.RewardsTreeIpfsExtension
 
 	// Create URL list
 	urls := []string{
-		fmt.Sprintf(config.PrimaryRewardsFileUrl, expectedCid, ipfsFilename),
-		fmt.Sprintf(config.SecondaryRewardsFileUrl, expectedCid, ipfsFilename),
 		fmt.Sprintf(config.GithubRewardsFileUrl, string(cfg.Smartnode.Network.Value.(cfgtypes.Network)), rewardsTreeFilename),
 	}
 

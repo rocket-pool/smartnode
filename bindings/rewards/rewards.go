@@ -26,9 +26,9 @@ type RewardsEvent struct {
 	ExecutionBlock    *big.Int
 	ConsensusBlock    *big.Int
 	MerkleRoot        common.Hash
-	MerkleTreeCID     string
 	IntervalsPassed   *big.Int
 	TreasuryRPL       *big.Int
+	TreasuryETH       *big.Int
 	TrustedNodeRPL    []*big.Int
 	NodeRPL           []*big.Int
 	NodeETH           []*big.Int
@@ -232,7 +232,7 @@ func SubmitRewardSnapshot(rp *rocketpool.RocketPool, submission RewardSubmission
 // Get the event info for a rewards snapshot using the Atlas getter
 func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, RewardsEvent, error) {
 	// Check if the client is requesting interval 0 on mainnet, then return the hardcoded RewardsEvent
-	data, ok, err := getMainnetInterval0RewardsEvent(rp, index)
+	data, ok, err := getMainnetInterval0RewardsEvent(rp)
 	if err != nil {
 		return false, RewardsEvent{}, err
 	}
@@ -313,7 +313,6 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 		NodeETH:           submission.NodeETH,
 		UserETH:           submission.UserETH,
 		MerkleRoot:        submission.MerkleRoot,
-		MerkleTreeCID:     submission.MerkleTreeCID,
 		IntervalStartTime: time.Unix(snapshot.IntervalStartTime.Int64(), 0),
 		IntervalEndTime:   time.Unix(snapshot.IntervalEndTime.Int64(), 0),
 		SubmissionTime:    time.Unix(snapshot.Time.Int64(), 0),
@@ -327,11 +326,8 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	return true, eventData, nil
 }
 
-// Check if the client is requesting interval 0 on mainnet, then return the hardcoded RewardsEvent
-func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool, index uint64) (RewardsEvent, bool, error) {
-	if index != 0 {
-		return RewardsEvent{}, false, nil
-	}
+// return the hardcoded RewardsEvent
+func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool) (RewardsEvent, bool, error) {
 	// Check if the ec is synced to mainnet
 	chainID, err := rp.Client.ChainID(context.Background())
 	if err != nil {
@@ -360,7 +356,6 @@ func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool, index uint64) (R
 		NodeETH:           []*big.Int{big.NewInt(0)},
 		UserETH:           big.NewInt(0),
 		MerkleRoot:        common.HexToHash("0xb839fa0f5842bf3c8f19091361889fb0f1cb399d64b8da476d372b7de7a93463"),
-		MerkleTreeCID:     "bafybeidrck3sz24acv32h56xdb7ruarxq52oci32del7moxqtief3do73y",
 		IntervalStartTime: time.Unix(1659591339, 0),
 		IntervalEndTime:   time.Unix(1662010539, 0),
 		SubmissionTime:    time.Unix(1662011717, 0),
