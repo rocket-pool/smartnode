@@ -31,6 +31,11 @@ func testRecoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletRespo
 		}
 	}
 
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
+
 	// Create a blank wallet
 	chainId := cfg.Smartnode.GetChainID()
 	w, err := wallet.NewWallet("", "", chainId, nil, nil, 0, nil, nil)
@@ -68,7 +73,7 @@ func testRecoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletRespo
 	response.AccountAddress = nodeAccount.Address
 
 	if !c.Bool("skip-validator-key-recovery") {
-		response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, nodeAccount.Address, w, true)
+		response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, bc, nodeAccount.Address, w, true)
 		if err != nil {
 			return nil, err
 		}
@@ -95,6 +100,11 @@ func testSearchAndRecoverWallet(c *cli.Context, mnemonic string, address common.
 		if err != nil {
 			return nil, err
 		}
+	}
+
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create a blank wallet
@@ -160,7 +170,7 @@ func testSearchAndRecoverWallet(c *cli.Context, mnemonic string, address common.
 	response.AccountAddress = nodeAccount.Address
 
 	if !c.Bool("skip-validator-key-recovery") {
-		response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, nodeAccount.Address, w, true)
+		response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, bc, nodeAccount.Address, w, true)
 		if err != nil {
 			return nil, err
 		}
