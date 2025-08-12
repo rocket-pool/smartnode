@@ -210,18 +210,23 @@ func (f *SSZFile_v2) Proofs() (map[Address]MerkleProof, error) {
 		rplBytes := make([]byte, 32)
 		rplBytes = rpl.FillBytes(rplBytes)
 
-		eth := stdbig.NewInt(0)
-		eth.Add(eth, nr.SmoothingPoolEth.Int)
-		eth.Add(eth, nr.VoterShareEth.Int)
-		ethBytes := make([]byte, 32)
-		ethBytes = eth.FillBytes(ethBytes)
+		smoothingEth := stdbig.NewInt(0)
+		smoothingEth.Add(smoothingEth, nr.SmoothingPoolEth.Int)
+		smoothingEthBytes := make([]byte, 32)
+		smoothingEthBytes = smoothingEth.FillBytes(smoothingEthBytes)
 
-		const dataSize = 20 + 32*3
+		voterShareEth := stdbig.NewInt(0)
+		voterShareEth.Add(voterShareEth, nr.VoterShareEth.Int)
+		voterShareEthBytes := make([]byte, 32)
+		voterShareEthBytes = voterShareEth.FillBytes(voterShareEthBytes)
+
+		const dataSize = 20 + 32*4
 		nodeData := make([]byte, dataSize)
 		copy(nodeData[0:20], address[:])
 		copy(nodeData[20:20+32], network[:])
 		copy(nodeData[20+32:20+32*2], rplBytes[:])
-		copy(nodeData[20+32*2:20+32*3], ethBytes[:])
+		copy(nodeData[20+32*2:20+32*3], smoothingEthBytes[:])
+		copy(nodeData[20+32*3:20+32*4], voterShareEthBytes[:])
 
 		treeData = append(treeData, nodeData)
 		nodeDataMap[nr.Address] = nodeData
