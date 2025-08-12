@@ -669,7 +669,6 @@ func (h *MockHistory) GetPreviousRewardSnapshotEvent() rprewards.RewardsEvent {
 		ExecutionBlock:    big.NewInt(int64(consensusEndBlock + h.BlockOffset)),
 		ConsensusBlock:    big.NewInt(int64(consensusEndBlock)),
 		MerkleRoot:        common.Hash{},
-		MerkleTreeCID:     "",
 		IntervalsPassed:   big.NewInt(1),
 		TreasuryRPL:       big.NewInt(0),
 		TrustedNodeRPL:    []*big.Int{},
