@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/docker/docker/client"
@@ -11,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	rpSettings "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -159,10 +161,17 @@ func GetDocker(c *cli.Context) (*client.Client, error) {
 func getConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
 	var err error
 	initCfg.Do(func() {
-		settingsFile := os.ExpandEnv(c.GlobalString("settings"))
-		cfg, err = rp.LoadConfigFromFile(settingsFile)
+		settingsFile := c.GlobalString("settings")
+		if settingsFile == "" {
+			configDir := c.GlobalString("config-path")
+			if configDir != "" {
+				settingsFile = filepath.Join(configDir, rpSettings.SettingsFile)
+			}
+		}
+		expanded := os.ExpandEnv(settingsFile)
+		cfg, err = rp.LoadConfigFromFile(expanded)
 		if cfg == nil && err == nil {
-			err = fmt.Errorf("Settings file [%s] not found.", settingsFile)
+			err = fmt.Errorf("settings file [%s] not found", expanded)
 		}
 	})
 	return cfg, err

@@ -394,21 +394,6 @@ func getStatus(c *cli.Context) error {
 		fmt.Println("The node is not registered with Rocket Pool.")
 	}
 
-	// Alerts
-	if cfg.EnableMetrics.Value == true && len(status.Alerts) > 0 {
-		// only print alerts if enabled; to avoid misleading the user to thinking everything is fine (since we really don't know).
-		fmt.Printf("\n%s=== Alerts ===%s\n", colorGreen, colorReset)
-		for i, alert := range status.Alerts {
-			fmt.Println(alert.ColorString())
-			if i == maxAlertItems-1 {
-				break
-			}
-		}
-		if len(status.Alerts) > maxAlertItems {
-			fmt.Printf("... and %d more.\n", len(status.Alerts)-maxAlertItems)
-		}
-	}
-
 	if status.Warning != "" {
 		fmt.Printf("\n%sWARNING: %s%s\n", colorRed, status.Warning, colorReset)
 	}

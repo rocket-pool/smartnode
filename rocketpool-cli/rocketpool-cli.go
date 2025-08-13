@@ -18,7 +18,18 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+)
+
+const (
+	colorReset    string = "\033[0m"
+	colorRed      string = "\033[31m"
+	colorGreen    string = "\033[32m"
+	colorYellow   string = "\033[33m"
+	maxAlertItems int    = 3
 )
 
 // Run
@@ -123,11 +134,46 @@ A special thanks to the Rocket Pool community for all their contributions.
 		return nil
 	}
 
+	app.After = func(c *cli.Context) error {
+
+		// Create Rocket Pool client
+		rp := rocketpool.NewClientFromCtx(c)
+		defer rp.Close()
+
+		cfg, err := services.GetConfig(c)
+		if err != nil {
+			return err
+		}
+
+		// Fetch node alerts
+		alerts, err := alerting.FetchNodeAlerts(cfg)
+		if err != nil {
+			return err
+		}
+
+		// Display alerts if any exist
+		if len(alerts) > 0 {
+			fmt.Printf("\n%s=== Alerts ===%s\n", colorGreen, colorReset)
+			for i, alert := range alerts {
+				fmt.Println(alert.ColorString())
+				if i == maxAlertItems-1 {
+					break
+				}
+			}
+			if len(alerts) > maxAlertItems {
+				fmt.Printf("... and %d more.\n", len(alerts)-maxAlertItems)
+			}
+		}
+
+		return nil
+	}
+
 	// Run application
 	fmt.Println("")
 	if err := app.Run(os.Args); err != nil {
 		cliutils.PrettyPrintError(err)
 	}
+
 	fmt.Println("")
 
 }
