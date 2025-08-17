@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
@@ -30,8 +31,7 @@ const (
 	bucketLimit uint = 2000
 )
 
-func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress common.Address, w wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
-
+func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, w wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
@@ -87,6 +87,23 @@ func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, nodeAddress comm
 		}
 	}
 	pubkeys = filteredPubkeys
+
+	// Get validator statuses by pubkeys
+	statuses, err := bc.GetValidatorStatuses(pubkeys, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting validator statuses: %w", err)
+	}
+
+	// Filter out inactive validators
+	filteredPubkeys = []types.ValidatorPubkey{}
+	for _, pubkey := range pubkeys {
+		if statuses[pubkey].Status == beacon.ValidatorState_ActiveOngoing ||
+			statuses[pubkey].Status == beacon.ValidatorState_ActiveExiting ||
+			statuses[pubkey].Status == beacon.ValidatorState_PendingInitialized ||
+			statuses[pubkey].Status == beacon.ValidatorState_PendingQueued {
+			filteredPubkeys = append(filteredPubkeys, pubkey)
+		}
+	}
 
 	pubkeyMap := map[types.ValidatorPubkey]bool{}
 	for _, pubkey := range pubkeys {

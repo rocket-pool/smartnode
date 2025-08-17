@@ -100,6 +100,9 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *colle
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 	metricsAddress := c.GlobalString("metricsAddress")
 	metricsPort := c.GlobalUint("metricsPort")
+	if metricsPort == 0 {
+		metricsPort = uint(cfg.NodeMetricsPort.Value.(uint16))
+	}
 	logger.Printlnf("Starting metrics exporter on %s:%d.", metricsAddress, metricsPort)
 	metricsPath := "/metrics"
 	http.Handle(metricsPath, handler)
