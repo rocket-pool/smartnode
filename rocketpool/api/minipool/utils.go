@@ -144,13 +144,14 @@ func GetNodeMinipoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAdd
 	// Check the stake status of each minipool
 	for i, mpDetails := range details {
 		if mpDetails.Status.Status == types.Prelaunch {
+			details[i].DissolveTimeout = timeout
 			creationTime := mpDetails.Status.StatusTime
 			dissolveTime := creationTime.Add(timeout)
 			remainingTime := creationTime.Add(scrubPeriod).Sub(latestBlockTime)
 			if remainingTime < 0 {
 				details[i].CanStake = true
-				details[i].TimeUntilDissolve = time.Until(dissolveTime)
 			}
+			details[i].TimeUntilDissolve = time.Until(dissolveTime)
 		}
 	}
 
