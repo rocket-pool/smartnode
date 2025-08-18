@@ -4,8 +4,6 @@
 
 # Rocket Pool - Smart Node Package
 
----
-
 Rocket Pool is a next generation Ethereum Proof-of-Stake (PoS) infrastructure service designed to be highly decentralised, distributed, and compatible with Ethereum's new consensus protocol.
 
 Running a Rocket Pool smart node allows you to stake on Ethereum with only 16 ETH and 1.6 ETH worth of Rocket Pool's RPL token.
