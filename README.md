@@ -1,8 +1,8 @@
-# Rocket Pool - Smart Node Package
+<picture>
+  <img alt="Rocket Pool - Decentralised Ethereum Staking Protocol" src="https://raw.githubusercontent.com/rocket-pool/.github/main/assets/logo.svg" width="auto" height="120">
+</picture>
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/rocket-pool/rocketpool/master/images/logo.png?raw=true" alt="Rocket Pool - Next Generation Decentralised Ethereum Proof-of-Stake (PoS) Infrastructure Service and Pool" width="500" />
-</p>
+# Rocket Pool - Smart Node Package
 
 ---
 
