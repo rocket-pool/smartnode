@@ -40,6 +40,7 @@ func getStatus(c *cli.Context) error {
 	refundableMinipools := []api.MinipoolDetails{}
 	closeableMinipools := []api.MinipoolDetails{}
 	finalisedMinipools := []api.MinipoolDetails{}
+	minipoolsPastDissolveNotificationThreshold := []api.MinipoolDetails{}
 	for _, minipool := range status.Minipools {
 
 		if !minipool.Finalised {
@@ -56,6 +57,9 @@ func getStatus(c *cli.Context) error {
 			}
 			if minipool.CloseAvailable {
 				closeableMinipools = append(closeableMinipools, minipool)
+			}
+			if minipool.Status.Status == types.Prelaunch && minipool.TimeUntilDissolve.Hours() < minipool.DissolveTimeout.Hours()/2 {
+				minipoolsPastDissolveNotificationThreshold = append(minipoolsPastDissolveNotificationThreshold, minipool)
 			}
 		} else {
 			finalisedMinipools = append(finalisedMinipools, minipool)
@@ -126,6 +130,14 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("%d dissolved minipool(s) can be closed:\n", len(closeableMinipools))
 		for _, minipool := range closeableMinipools {
 			fmt.Printf("- %s (%.6f ETH to claim)\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(minipool.Balances.ETH), 6))
+		}
+		fmt.Println("")
+	}
+
+	if len(minipoolsPastDissolveNotificationThreshold) > 0 {
+		fmt.Printf("%sAttention! %d minipool(s) are close to being dissolved:\n%s", colorRed, len(minipoolsPastDissolveNotificationThreshold), colorReset)
+		for _, minipool := range minipoolsPastDissolveNotificationThreshold {
+			fmt.Printf("- %s (%s until dissolve)\n", minipool.Address.Hex(), minipool.TimeUntilDissolve)
 		}
 		fmt.Println("")
 	}
