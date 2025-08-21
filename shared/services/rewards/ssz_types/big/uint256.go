@@ -3,8 +3,8 @@ package big
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/big"
+	"strconv"
 
 	ssz "github.com/ferranbt/fastssz"
 	"github.com/holiman/uint256"
@@ -92,7 +92,7 @@ func (u *Uint256) MarshalJSON() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return []byte(fmt.Sprintf("\"%s\"", s)), nil
+	return []byte(strconv.Quote(string(s))), nil
 }
 
 func (u *Uint256) Bytes32() ([32]byte, error) {
