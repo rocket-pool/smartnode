@@ -55,3 +55,16 @@ func PortModes(warningOverride string) []ParameterOption {
 		Value:       RPC_OpenExternal,
 	}}
 }
+
+func RestrictedPortModes() []ParameterOption {
+
+	return []ParameterOption{{
+		Name:        "Closed",
+		Description: "Do not allow connections to the port",
+		Value:       RPC_Closed,
+	}, {
+		Name:        "Open to Localhost",
+		Description: "Allow connections from this host only",
+		Value:       RPC_OpenLocalhost,
+	}}
+}
