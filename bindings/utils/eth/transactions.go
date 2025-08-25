@@ -32,7 +32,7 @@ func EstimateSendTransactionGas(client rocketpool.ExecutionClient, toAddress com
 	gasLimit, err := client.EstimateGas(context.Background(), ethereum.CallMsg{
 		From:     opts.From,
 		To:       &toAddress,
-		GasPrice: big.NewInt(0), // set to 0 for simulation
+		GasPrice: nil,
 		Data:     data,
 		Value:    value,
 	})
@@ -83,7 +83,7 @@ func SendTransaction(client rocketpool.ExecutionClient, toAddress common.Address
 		gasLimit, err = client.EstimateGas(context.Background(), ethereum.CallMsg{
 			From:     opts.From,
 			To:       &toAddress,
-			GasPrice: big.NewInt(0), // use 0 gwei for simulation
+			GasPrice: nil,
 			Data:     data,
 			Value:    value,
 		})
