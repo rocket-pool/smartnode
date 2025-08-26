@@ -37,7 +37,8 @@ const (
 	clientDataVolumeName            string = "/ethclient"
 	dataFolderVolumeName            string = "/.rocketpool/data"
 
-	PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
+	PruneFreeSpaceRequired           uint64 = 50 * 1024 * 1024 * 1024
+	NethermindPruneFreeSpaceRequired uint64 = 250 * 1024 * 1024 * 1024
 
 	// Capture the entire image name, including the custom registry if present.
 	// Just ignore the version tag.
@@ -753,9 +754,9 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 
-	// Don't prune besu if it's in archive mode
-	if selectedEc == cfgtypes.ExecutionClient_Besu && cfg.ExecutionCommon.PruningMode.Value == cfgtypes.PruningMode_Archive {
-		fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
+	// Don't prune if the EC is in archive mode
+	if cfg.ExecutionCommon.PruningMode.Value == cfgtypes.PruningMode_Archive {
+		fmt.Println("Your Execution Client is being used as an archive node.\nArchive nodes should not be pruned. Aborting.")
 		return nil
 	}
 
@@ -813,8 +814,12 @@ func pruneExecutionClient(c *cli.Context) error {
 		return fmt.Errorf("Error getting free disk space available: %w", err)
 	}
 	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
-	if diskUsage.Free < PruneFreeSpaceRequired {
-		return fmt.Errorf("%sYour disk must have 50 GiB free to prune, but it only has %s free. Please free some space before pruning.%s", colorRed, freeSpaceHuman, colorReset)
+	pruneFreeSpaceRequired := PruneFreeSpaceRequired
+	if cfg.GetNetwork() == cfgtypes.Network_Mainnet && selectedEc == cfgtypes.ExecutionClient_Nethermind {
+		pruneFreeSpaceRequired = NethermindPruneFreeSpaceRequired
+	}
+	if diskUsage.Free < pruneFreeSpaceRequired {
+		return fmt.Errorf("%sYour disk must have %s GiB free to prune, but it only has %s free. Please free some space before pruning.%s", colorRed, humanize.IBytes(pruneFreeSpaceRequired), freeSpaceHuman, colorReset)
 	}
 
 	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
