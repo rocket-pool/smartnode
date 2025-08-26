@@ -28,7 +28,7 @@ type finalizePdaoProposals struct {
 	rp  *rocketpool.RocketPool
 }
 
-// Create finalize PDAO proposals task task
+// Create finalize PDAO proposals task
 func newFinalizePdaoProposals(c *cli.Context, logger log.ColorLogger) (*finalizePdaoProposals, error) {
 
 	// Get services
