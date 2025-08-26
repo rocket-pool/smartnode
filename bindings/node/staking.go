@@ -412,6 +412,32 @@ func GetNodeLockedRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 	return *value, nil
 }
 
+// Get the amount of ETH the node has borrowed from the deposit pool to create its minipools
+func GetNodeEthMatched(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	nodeEthMatched := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, nodeEthMatched, "getNodeETHMatched", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
+	}
+	return *nodeEthMatched, nil
+}
+
+// Get the amount of ETH the node can borrow from the deposit pool to create its minipools
+func GetNodeEthMatchedLimit(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	nodeEthMatchedLimit := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, nodeEthMatchedLimit, "getNodeETHMatchedLimit", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node ETH matched limit: %w", err)
+	}
+	return *nodeEthMatchedLimit, nil
+}
+
 // Get contracts
 var rocketNodeStakingLock sync.Mutex
 
