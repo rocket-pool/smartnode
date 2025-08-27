@@ -766,8 +766,8 @@ func (c *Client) GetAllDockerImages() ([]DockerImage, error) {
 
 	// docker images output puts each image as a json object on a new line (JSONL)
 	var images []DockerImage
-	lines := strings.Split(string(responseBytes), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(responseBytes), "\n")
+	for line := range lines {
 		if line == "" {
 			continue
 		}
@@ -1322,7 +1322,7 @@ func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, othe
 func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, string, string) {
 	// Sanitize arguments
 	var sanitizedArgs []string
-	for _, arg := range strings.Fields(args) {
+	for arg := range strings.FieldsSeq(args) {
 		sanitizedArg := shellescape.Quote(arg)
 		sanitizedArgs = append(sanitizedArgs, sanitizedArg)
 	}
