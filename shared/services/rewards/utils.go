@@ -174,8 +174,8 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 	rewardsTreeCustomUrl := cfg.Smartnode.RewardsTreeCustomUrl.Value.(string)
 	rewardsTreeCustomUrl = strings.TrimSpace(rewardsTreeCustomUrl)
 	if len(rewardsTreeCustomUrl) != 0 {
-		splitRewardsTreeCustomUrls := strings.Split(rewardsTreeCustomUrl, ";")
-		for _, customUrl := range splitRewardsTreeCustomUrls {
+		splitRewardsTreeCustomUrls := strings.SplitSeq(rewardsTreeCustomUrl, ";")
+		for customUrl := range splitRewardsTreeCustomUrls {
 			customUrl = strings.TrimSpace(customUrl)
 			urls = append(urls, fmt.Sprintf(customUrl, rewardsTreeFilename))
 		}
