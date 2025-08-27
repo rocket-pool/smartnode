@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/big"
 	"reflect"
 	"regexp"
 
@@ -139,7 +138,7 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
 	gasLimit, err := c.Client.EstimateGas(context.Background(), ethereum.CallMsg{
 		From:     opts.From,
 		To:       c.Address,
-		GasPrice: big.NewInt(0), // use 0 gwei for simulation
+		GasPrice: nil,
 		Value:    opts.Value,
 		Data:     input,
 	})
@@ -150,12 +149,8 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
 
 	// Pad and return gas limit
 	safeGasLimit := uint64(float64(gasLimit) * GasLimitMultiplier)
-	if gasLimit > MaxGasLimit {
-		return 0, 0, fmt.Errorf("estimated gas of %d is greater than the max gas limit of %d", gasLimit, MaxGasLimit)
-	}
-	if safeGasLimit > MaxGasLimit {
-		safeGasLimit = MaxGasLimit
-	}
+	gasLimit = min(gasLimit, MaxGasLimit)
+	safeGasLimit = min(safeGasLimit, MaxGasLimit)
 	return gasLimit, safeGasLimit, nil
 
 }

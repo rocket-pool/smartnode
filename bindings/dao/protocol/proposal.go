@@ -710,7 +710,7 @@ func simulateProposalExecution(rp *rocketpool.RocketPool, payload []byte) error 
 	_, err = rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
 		From:     *rocketDAOProtocolProposal.Address,
 		To:       rocketDAOProtocolProposals.Address,
-		GasPrice: big.NewInt(0),
+		GasPrice: nil,
 		Value:    nil,
 		Data:     payload,
 	})
