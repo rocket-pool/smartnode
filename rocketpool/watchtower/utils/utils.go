@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	MinWatchtowerMaxFee        float64 = 200
+	MinWatchtowerMaxFee        float64 = 50
 	MinWatchtowerPriorityFee   float64 = 3
 	BalanceSubmissionForcedGas uint64  = 64000
 	RewardsSubmissionForcedGas uint64  = 64000
