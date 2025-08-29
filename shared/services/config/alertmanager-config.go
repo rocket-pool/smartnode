@@ -69,6 +69,7 @@ type AlertmanagerConfig struct {
 	AlertEnabled_LowDiskSpaceCritical      config.Parameter `yaml:"alertEnabled_LowDiskSpaceCritical,omitempty"`
 	AlertEnabled_OSUpdatesAvailable        config.Parameter `yaml:"alertEnabled_OSUpdatesAvailable,omitempty"`
 	AlertEnabled_RPUpdatesAvailable        config.Parameter `yaml:"alertEnabled_RPUpdatesAvailable,omitempty"`
+	AlertEnabled_LowETHBalance             config.Parameter `yaml:"alertEnabled_LowETHBalance,omitempty"`
 	// Alerts manually sent in alerting.go:
 	AlertEnabled_FeeRecipientChanged         config.Parameter `yaml:"alertEnabled_FeeRecipientChanged,omitempty"`
 	AlertEnabled_MinipoolBondReduced         config.Parameter `yaml:"alertEnabled_MinipoolBondReduced,omitempty"`
@@ -253,6 +254,9 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		AlertEnabled_BeaconClientSyncComplete: createParameterForAlertEnablement(
 			"BeaconClientSyncComplete",
 			"beacon client is synced"),
+		AlertEnabled_LowETHBalance: createParameterForAlertEnablement(
+			"LowETHBalance",
+			"Low ETH Balance"),
 	}
 }
 
@@ -298,6 +302,7 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.AlertEnabled_MinipoolStaked,
 		&cfg.AlertEnabled_ExecutionClientSyncComplete,
 		&cfg.AlertEnabled_BeaconClientSyncComplete,
+		&cfg.AlertEnabled_LowETHBalance,
 	}
 }
 
