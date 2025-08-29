@@ -36,7 +36,7 @@ const (
 // Defaults
 const (
 	defaultProjectName       string = "rocketpool"
-	WatchtowerMaxFeeDefault  uint64 = 200
+	WatchtowerMaxFeeDefault  uint64 = 50
 	WatchtowerPrioFeeDefault uint64 = 3
 )
 
