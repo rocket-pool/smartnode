@@ -96,6 +96,12 @@ func getClientStatusString(clientStatus api.ClientStatus) string {
 // Check the status of the Execution and Consensus client(s) and provision the API with them
 func checkClientStatus(rp *Client) (bool, error) {
 
+	// Get the config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return false, fmt.Errorf("error loading user settings: %w", err)
+	}
+
 	// Check if the primary clients are up, synced, and able to respond to requests - if not, forces the use of the fallbacks for this command
 	response, err := rp.GetClientStatus()
 	if err != nil {
@@ -105,10 +111,36 @@ func checkClientStatus(rp *Client) (bool, error) {
 	ecMgrStatus := response.EcManagerStatus
 	bcMgrStatus := response.BcManagerStatus
 
-	// Primary EC and CC are good
-	if ecMgrStatus.PrimaryClientStatus.IsSynced && bcMgrStatus.PrimaryClientStatus.IsSynced {
-		rp.SetClientStatusFlags(true, false)
-		return true, nil
+	fallbackEnabled := ecMgrStatus.FallbackEnabled && bcMgrStatus.FallbackEnabled
+	if !fallbackEnabled {
+		if ecMgrStatus.PrimaryClientStatus.IsSynced && bcMgrStatus.PrimaryClientStatus.IsSynced {
+			rp.SetClientStatusFlags(true, false)
+			return true, nil
+		}
+
+		// Get the status messages
+		primaryEcStatus := getClientStatusString(ecMgrStatus.PrimaryClientStatus)
+		primaryBcStatus := getClientStatusString(bcMgrStatus.PrimaryClientStatus)
+
+		// Primary isn't ready and fallback isn't enabled
+		fmt.Printf("Error: primary client pair isn't ready and fallback clients aren't enabled.\n\tPrimary EC status: %s\n\tPrimary CC status: %s\n", primaryEcStatus, primaryBcStatus)
+		return false, nil
+	}
+
+	// Fallbacks are enabled. Check whether they're preferred.
+	preferFallback := cfg.PrioritizeValidation.Value.(bool)
+
+	// Preferred EC and CC are good
+	if !preferFallback {
+		if ecMgrStatus.PrimaryClientStatus.IsSynced && bcMgrStatus.PrimaryClientStatus.IsSynced {
+			rp.SetClientStatusFlags(true, false)
+			return true, nil
+		}
+	} else {
+		if ecMgrStatus.FallbackClientStatus.IsSynced && bcMgrStatus.FallbackClientStatus.IsSynced {
+			rp.SetClientStatusFlags(true, true)
+			return true, nil
+		}
 	}
 
 	// Get the status messages
@@ -117,23 +149,25 @@ func checkClientStatus(rp *Client) (bool, error) {
 	fallbackEcStatus := getClientStatusString(ecMgrStatus.FallbackClientStatus)
 	fallbackBcStatus := getClientStatusString(bcMgrStatus.FallbackClientStatus)
 
-	// Check the fallbacks if enabled
-	if ecMgrStatus.FallbackEnabled && bcMgrStatus.FallbackEnabled {
-
-		// Fallback EC and CC are good
+	// Check the non-preffered clients
+	if !preferFallback {
+		// Primary preferred but not synced, check the fallback
 		if ecMgrStatus.FallbackClientStatus.IsSynced && bcMgrStatus.FallbackClientStatus.IsSynced {
 			fmt.Printf("%sNOTE: primary clients are not ready, using fallback clients...\n\tPrimary EC status: %s\n\tPrimary CC status: %s%s\n\n", colorYellow, primaryEcStatus, primaryBcStatus, colorReset)
 			rp.SetClientStatusFlags(true, true)
 			return true, nil
 		}
-
-		// Both pairs aren't ready
-		fmt.Printf("Error: neither primary nor fallback client pairs are ready.\n\tPrimary EC status: %s\n\tFallback EC status: %s\n\tPrimary CC status: %s\n\tFallback CC status: %s\n", primaryEcStatus, fallbackEcStatus, primaryBcStatus, fallbackBcStatus)
-		return false, nil
+	} else {
+		// Fallback preferred but not synced, check the primary
+		if ecMgrStatus.PrimaryClientStatus.IsSynced && bcMgrStatus.PrimaryClientStatus.IsSynced {
+			fmt.Printf("%sNOTE: fallback clients are not ready, using primary clients despite prioritizing validation...\n\tFallback EC status: %s\n\tFallback CC status: %s%s\n\n", colorYellow, fallbackEcStatus, fallbackBcStatus, colorReset)
+			rp.SetClientStatusFlags(true, false)
+			return true, nil
+		}
 	}
 
-	// Primary isn't ready and fallback isn't enabled
-	fmt.Printf("Error: primary client pair isn't ready and fallback clients aren't enabled.\n\tPrimary EC status: %s\n\tPrimary CC status: %s\n", primaryEcStatus, primaryBcStatus)
+	// Both pairs aren't ready
+	fmt.Printf("Error: neither primary nor fallback client pairs are ready.\n\tPrimary EC status: %s\n\tFallback EC status: %s\n\tPrimary CC status: %s\n\tFallback CC status: %s\n", primaryEcStatus, fallbackEcStatus, primaryBcStatus, fallbackBcStatus)
 	return false, nil
 }
 
