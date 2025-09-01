@@ -820,6 +820,41 @@ func ClaimUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address
 	return tx.Hash(), nil
 }
 
+// Check if the node's express tickets have been provisioned yet
+func GetExpressTicketsProvisioned(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	provisioned := new(bool)
+	if err := rocketNodeManager.Call(opts, provisioned, "getExpressTicketsProvisioned", nodeAddress); err != nil {
+		return false, fmt.Errorf("error checking if node %s's express tickets are provisioned: %w", nodeAddress.Hex(), err)
+	}
+	return *provisioned, nil
+}
+
+// Estimate the gas for provisioning the node's express tickets
+func EstimateProvisionExpressTicketsGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "provisionExpressTickets", nodeAddress)
+}
+
+// Provision the node's express tickets
+func ProvisionExpressTickets(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNodeManager.Transact(opts, "provisionExpressTickets", nodeAddress)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error provisioning express tickets: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 

@@ -875,6 +875,29 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "provision-express-tickets",
+				Aliases:   []string{"pet"},
+				Usage:     "Provision the node's express tickets",
+				UsageText: "rocketpool node provision-express-tickets",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return provisionExpressTickets(c)
+				},
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm provision",
+					},
+				},
+			},
 		},
 	})
 }

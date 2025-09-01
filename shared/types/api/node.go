@@ -181,6 +181,19 @@ type RegisterNodeResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type CanProvisionExpressTicketsResponse struct {
+	Status             string             `json:"status"`
+	Error              string             `json:"error"`
+	CanProvision       bool               `json:"canProvision"`
+	AlreadyProvisioned bool               `json:"alreadyProvisioned"`
+	GasInfo            rocketpool.GasInfo `json:"gasInfo"`
+}
+type ProvisionExpressTicketsResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type CanSetNodePrimaryWithdrawalAddressResponse struct {
 	Status  string             `json:"status"`
 	Error   string             `json:"error"`
@@ -744,6 +757,12 @@ type GetExpressTicketCountResponse struct {
 	Status string `json:"status"`
 	Error  string `json:"error"`
 	Count  uint64 `json:"count"`
+}
+
+type GetExpressTicketsProvisionedResponse struct {
+	Status      string `json:"status"`
+	Error       string `json:"error"`
+	Provisioned bool   `json:"provisioned"`
 }
 
 type CanClaimRefundResponse struct {

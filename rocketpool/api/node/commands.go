@@ -1759,6 +1759,57 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "get-express-tickets-provisioned",
+				Usage:     "Get the number of express tickets provisioned for the node",
+				UsageText: "rocketpool api node get-express-tickets-provisioned",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getExpressTicketsProvisioned(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-provision-express-tickets",
+				Usage:     "Check if the node's express tickets can be provisioned",
+				UsageText: "rocketpool api node can-provision-express-tickets",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProvisionExpressTickets(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "provision-express-tickets",
+				Usage:     "Provision the node's express tickets",
+				UsageText: "rocketpool api node provision-express-tickets",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(provisionExpressTickets(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }
