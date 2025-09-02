@@ -135,11 +135,12 @@ func getActiveDAOProposals(c *cli.Context) error {
 	// Onchain Voting Status
 	fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
 
-	if snapshotProposalsResponse.OnchainVotingDelegate == blankAddress {
+	switch snapshotProposalsResponse.OnchainVotingDelegate {
+	case blankAddress:
 		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
-	} else if snapshotProposalsResponse.OnchainVotingDelegate == snapshotProposalsResponse.AccountAddress {
+	case snapshotProposalsResponse.AccountAddress:
 		fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
-	} else {
+	default:
 		fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, snapshotProposalsResponse.OnchainVotingDelegateFormatted, colorReset)
 	}
 	fmt.Printf("The node's local voting power: %.10f\n", eth.WeiToEth(snapshotProposalsResponse.VotingPower))

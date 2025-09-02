@@ -173,48 +173,41 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		// Check if an Archive EC is provided, and if using it would potentially resolve the error
 		errMessage := err.Error()
 		t.log.Printlnf("%s Error getting state for block %d: %s", generationPrefix, elBlockHeader.Number.Uint64(), errMessage)
-		if strings.Contains(errMessage, "missing trie node") || // Geth
-			strings.Contains(errMessage, "No state available for block") || // Nethermind
-			strings.Contains(errMessage, "Internal error") { // Besu
-			// TODO add Reth string
-
-			// The state was missing so fall back to the archive node
-			archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
-			if archiveEcUrl != "" {
-				t.log.Printlnf("%s Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", generationPrefix, elBlockHeader.Number.Uint64(), archiveEcUrl)
-				ec, err := services.NewEthClient(archiveEcUrl)
-				if err != nil {
-					t.handleError(fmt.Errorf("Error connecting to archive EC: %w", err))
-					return
-				}
-				client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()))
-				if err != nil {
-					t.handleError(fmt.Errorf("Error creating Rocket Pool client connected to archive EC: %w", err))
-					return
-				}
-
-				// Get the rETH address from the archive EC
-				address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
-				if err != nil {
-					t.handleError(fmt.Errorf("Error verifying rETH address with Archive EC: %w", err))
-					return
-				}
-
-				// Create a new rocketpool-go instance
-				archiveRP, err := rocketpool.NewRocketPool(ec, *t.rp.RocketStorageContract.Address)
-				if err != nil {
-					t.handleError(fmt.Errorf("Error instantiating client with Archive EC: %w", err))
-					return
-				}
-
-				// Create the state manager with the archive EC
-				stateManager = state.NewNetworkStateManager(archiveRP, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, &t.log)
-			} else {
-				// No archive node specified
-				t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", elBlockHeader.Number.Uint64()))
+		// The state was missing so fall back to the archive node
+		archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
+		if archiveEcUrl != "" {
+			t.log.Printlnf("%s Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", generationPrefix, elBlockHeader.Number.Uint64(), archiveEcUrl)
+			ec, err := services.NewEthClient(archiveEcUrl)
+			if err != nil {
+				t.handleError(fmt.Errorf("Error connecting to archive EC: %w", err))
+				return
+			}
+			client, err = rocketpool.NewRocketPool(ec, common.HexToAddress(t.cfg.Smartnode.GetStorageAddress()))
+			if err != nil {
+				t.handleError(fmt.Errorf("Error creating Rocket Pool client connected to archive EC: %w", err))
 				return
 			}
 
+			// Get the rETH address from the archive EC
+			address, err = client.RocketStorage.GetAddress(opts, crypto.Keccak256Hash([]byte("contract.addressrocketTokenRETH")))
+			if err != nil {
+				t.handleError(fmt.Errorf("Error verifying rETH address with Archive EC: %w", err))
+				return
+			}
+
+			// Create a new rocketpool-go instance
+			archiveRP, err := rocketpool.NewRocketPool(ec, *t.rp.RocketStorageContract.Address)
+			if err != nil {
+				t.handleError(fmt.Errorf("Error instantiating client with Archive EC: %w", err))
+				return
+			}
+
+			// Create the state manager with the archive EC
+			stateManager = state.NewNetworkStateManager(archiveRP, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, &t.log)
+		} else {
+			// No archive node specified
+			t.handleError(fmt.Errorf("***ERROR*** Primary EC cannot retrieve state for historical block %d and the Archive EC is not specified.", elBlockHeader.Number.Uint64()))
+			return
 		}
 	}
 

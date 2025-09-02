@@ -41,6 +41,7 @@ type MinipoolDetails struct {
 	PreviousDelegate      common.Address         `json:"previousDelegate"`
 	EffectiveDelegate     common.Address         `json:"effectiveDelegate"`
 	TimeUntilDissolve     time.Duration          `json:"timeUntilDissolve"`
+	DissolveTimeout       time.Duration          `json:"dissolveTimeout"`
 	Penalties             uint64                 `json:"penalties"`
 	ReduceBondTime        time.Time              `json:"reduceBondTime"`
 	ReduceBondCancelled   bool                   `json:"reduceBondCancelled"`

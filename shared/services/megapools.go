@@ -52,8 +52,8 @@ func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.E
 		return megapool.ValidatorProof{}, err
 	}
 
-	// Get the finalized block, requesting the next one until we have an execution payload
-	blockToRequest := "finalized"
+	// Get the head block, requesting the previous one until we have an execution payload
+	blockToRequest := "head"
 	var block beacon.BeaconBlock
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
@@ -68,7 +68,7 @@ func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.E
 		if attempts == maxAttempts-1 {
 			return megapool.ValidatorProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
 		}
-		blockToRequest = fmt.Sprintf("%d", block.Slot+1)
+		blockToRequest = fmt.Sprintf("%d", block.Slot-1)
 	}
 
 	// Get the beacon state for that slot
@@ -134,8 +134,8 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 		return api.ValidatorWithdrawableEpochProof{}, err
 	}
 
-	// Get the finalized block, requesting the next one until we have an execution payload
-	blockToRequest := "finalized"
+	// Get the head block, requesting the previous one until we have an execution payload
+	blockToRequest := "head"
 	var block beacon.BeaconBlock
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
@@ -150,7 +150,7 @@ func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config
 		if attempts == maxAttempts-1 {
 			return api.ValidatorWithdrawableEpochProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
 		}
-		blockToRequest = fmt.Sprintf("%d", block.Slot+1)
+		blockToRequest = fmt.Sprintf("%d", block.Slot-1)
 	}
 
 	// Get the beacon state for that slot
@@ -527,11 +527,10 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 				ValidatorIndex:     validatorDetails.ValidatorIndex,
 				ExitBalance:        validatorDetails.ExitBalance,
 			}
+
+			// Try to fetch the validator status. If it fails, we assume the first deposit was not processed yet
+			validator.BeaconStatus, _ = bc.GetValidatorStatus(validator.PubKey, nil)
 			if validator.Staked {
-				validator.BeaconStatus, err = bc.GetValidatorStatus(validator.PubKey, nil)
-				if err != nil {
-					return fmt.Errorf("error getting beacon status for validator ID %d: %w", validator.ValidatorId, err)
-				}
 				if currentEpoch > validator.BeaconStatus.ActivationEpoch {
 					validator.Activated = true
 					validator.WithdrawableEpoch = validator.BeaconStatus.WithdrawableEpoch
@@ -642,8 +641,8 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		return megapool.FinalBalanceProof{}, err
 	}
 
-	// Get the finalized block, requesting the next one until we have an execution payload
-	blockToRequest := "finalized"
+	// Get the head block, requesting the previous one until we have an execution payload
+	blockToRequest := "head"
 	var recentBlock beacon.BeaconBlock
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
@@ -658,7 +657,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		if attempts == maxAttempts-1 {
 			return megapool.FinalBalanceProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
 		}
-		blockToRequest = fmt.Sprintf("%d", recentBlock.Slot+1)
+		blockToRequest = fmt.Sprintf("%d", recentBlock.Slot-1)
 	}
 
 	// Find the most recent withdrawal to slot.

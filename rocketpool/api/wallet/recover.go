@@ -35,6 +35,10 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 			return nil, err
 		}
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.RecoverWalletResponse{}
@@ -71,7 +75,7 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 	response.AccountAddress = nodeAccount.Address
 
 	if !c.Bool("skip-validator-key-recovery") {
-		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, nodeAccount.Address, w, false)
+		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, false)
 		if err != nil {
 			return nil, err
 		}
@@ -103,6 +107,10 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 		if err != nil {
 			return nil, err
 		}
+	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
 	}
 
 	// Response
@@ -166,7 +174,7 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 	response.AccountAddress = nodeAccount.Address
 
 	if !c.Bool("skip-validator-key-recovery") {
-		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, nodeAccount.Address, w, false)
+		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, false)
 		if err != nil {
 			return nil, err
 		}

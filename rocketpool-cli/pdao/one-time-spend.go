@@ -59,8 +59,17 @@ func proposeOneTimeSpend(c *cli.Context) error {
 		return err
 	}
 
+	// Get the custom message
+	message := c.String("custom-message")
+	if message == "" {
+		message = prompt.Prompt("Please enter a custom message for this one-time spend (no blank spaces):", "^\\S*$", "Invalid message")
+	}
+	if message == "" {
+		message = fmt.Sprintf("one-time-spend-for-invoice-%s", invoiceID)
+	}
+
 	// Check submissions
-	canResponse, err := rp.PDAOCanProposeOneTimeSpend(invoiceID, recipient, amount)
+	canResponse, err := rp.PDAOCanProposeOneTimeSpend(invoiceID, recipient, amount, message)
 	if err != nil {
 		return err
 	}
@@ -85,7 +94,7 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	}
 
 	// Submit
-	response, err := rp.PDAOProposeOneTimeSpend(invoiceID, recipient, amount, canResponse.BlockNumber)
+	response, err := rp.PDAOProposeOneTimeSpend(invoiceID, recipient, amount, canResponse.BlockNumber, message)
 	if err != nil {
 		return err
 	}

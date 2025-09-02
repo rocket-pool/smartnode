@@ -431,7 +431,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0xb5E573454086c1ddbd66F27DCCE29426D7689ECC",
+			config.Network_Devnet:  "0xf4D539F1babDAa6E47b1112Bc9Fa1C83cF0FfE59",
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
@@ -443,13 +443,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0x7D7a0Bae617a9314E69D30A3426Bf6d966752FE7",
+			config.Network_Devnet:  "0xf2C10508eC528a01628a621abADBff902CB9c1e5",
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  "0xC18362C68eD65454E9a7E69797409E6301a8F84D",
+			config.Network_Devnet:  "0xdFC45ac8Bcb5906499Bf040d49f04f12A08175b2",
 			config.Network_Testnet: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
@@ -962,7 +962,7 @@ func getNetworkOptions() []config.ParameterOption {
 		},
 	}
 
-	if strings.HasSuffix(shared.RocketPoolVersion(), "-dev") {
+	if strings.Contains(shared.RocketPoolVersion(), "-dev") {
 		options = append(options, config.ParameterOption{
 			Name:        "Devnet",
 			Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.",

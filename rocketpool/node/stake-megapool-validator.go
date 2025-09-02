@@ -151,7 +151,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 
 	for i := uint32(0); i < uint32(validatorCount); i++ {
-		if validatorInfo[i].InPrestake {
+		if validatorInfo[i].InPrestake && validatorInfo[i].BeaconStatus.Index != "" {
 			// Log
 			t.log.Printlnf("The validator %d needs to be staked", validatorInfo[i].ValidatorId)
 
@@ -192,7 +192,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp me
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei()
+		maxFee, err = rpgas.GetHeadlessMaxFeeWei(t.cfg)
 		if err != nil {
 			return err
 		}

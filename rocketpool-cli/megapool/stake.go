@@ -42,23 +42,35 @@ func stake(c *cli.Context) error {
 			return err
 		}
 
-		validatorsInPrestake := []api.MegapoolValidatorDetails{}
+		validatorsReadyToStake := []api.MegapoolValidatorDetails{}
+		validatorsDepositPending := []api.MegapoolValidatorDetails{}
 
 		for _, validator := range status.Megapool.Validators {
 			if validator.InPrestake {
-				validatorsInPrestake = append(validatorsInPrestake, validator)
+				if validator.BeaconStatus.Index != "" {
+					validatorsReadyToStake = append(validatorsReadyToStake, validator)
+				} else {
+					validatorsDepositPending = append(validatorsDepositPending, validator)
+				}
 			}
 		}
-		if len(validatorsInPrestake) > 0 {
-
-			options := make([]string, len(validatorsInPrestake))
-			for vi, v := range validatorsInPrestake {
+		if len(validatorsDepositPending) > 0 {
+			fmt.Println("The following validators have a pending deposit. Please wait until the deposit is processed before trying again:")
+			for _, v := range validatorsDepositPending {
+				fmt.Printf(" - Pubkey: 0x%s (Last ETH assignment: %s)\n", v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+			}
+			fmt.Println()
+		}
+		if len(validatorsReadyToStake) > 0 {
+			fmt.Println("The following validators are ready to be staked:")
+			options := make([]string, len(validatorsReadyToStake))
+			for vi, v := range validatorsReadyToStake {
 				options[vi] = fmt.Sprintf("Pubkey: 0x%s (Last ETH assignment: %s)", v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
 			}
 			selected, _ := prompt.Select("Please select a validator to stake:", options)
 
 			// Get validators
-			validatorId = uint64(validatorsInPrestake[selected].ValidatorId)
+			validatorId = uint64(validatorsReadyToStake[selected].ValidatorId)
 
 		} else {
 			fmt.Println("No validators can be staked at the moment")

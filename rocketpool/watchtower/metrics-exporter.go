@@ -41,6 +41,9 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, scrubCollector *co
 	// Start the HTTP server
 	metricsAddress := c.GlobalString("metricsAddress")
 	metricsPort := c.GlobalUint("metricsPort")
+	if metricsPort == 0 {
+		metricsPort = uint(cfg.WatchtowerMetricsPort.Value.(uint16))
+	}
 	logger.Printlnf("Starting metrics exporter on %s:%d.", metricsAddress, metricsPort)
 	metricsPath := "/metrics"
 	http.Handle(metricsPath, handler)

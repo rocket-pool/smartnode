@@ -13,7 +13,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int) (*api.PDAOCanProposeOneTimeSpendResponse, error) {
+func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int, customMessage string) (*api.PDAOCanProposeOneTimeSpendResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -66,12 +66,11 @@ func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.A
 	}
 
 	// Try proposing
-	message := fmt.Sprintf("one-time spend for invoice %s", invoiceID)
 	blockNumber, pollard, err := createPollard(rp, cfg, bc)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := protocol.EstimateProposeOneTimeTreasurySpendGas(rp, message, invoiceID, recipient, amount, blockNumber, pollard, opts)
+	gasInfo, err := protocol.EstimateProposeOneTimeTreasurySpendGas(rp, customMessage, invoiceID, recipient, amount, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -82,7 +81,7 @@ func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.A
 	return &response, nil
 }
 
-func proposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, customMessage string) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -117,12 +116,11 @@ func proposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Addr
 	}
 
 	// Propose
-	message := fmt.Sprintf("one-time spend for invoice %s", invoiceID)
 	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, err
 	}
-	proposalID, hash, err := protocol.ProposeOneTimeTreasurySpend(rp, message, invoiceID, recipient, amount, blockNumber, pollard, opts)
+	proposalID, hash, err := protocol.ProposeOneTimeTreasurySpend(rp, customMessage, invoiceID, recipient, amount, blockNumber, pollard, opts)
 	if err != nil {
 		return nil, err
 	}

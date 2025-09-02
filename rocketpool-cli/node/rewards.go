@@ -2,10 +2,12 @@ package node
 
 import (
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -84,6 +86,22 @@ func getRewards(c *cli.Context) error {
 	rewards, err := rp.NodeRewards()
 	if err != nil {
 		return err
+	}
+
+	// Check if Saturn is already deployed
+	saturnResp, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if saturnResp.IsSaturnDeployed {
+		beaconBalances, err := rp.GetValidatorMapAndBalances()
+		if err != nil {
+			return err
+		}
+		megapoolUnskimmedRewards := new(big.Int).Sub(beaconBalances.NodeBond, beaconBalances.NodeShareOfCLBalance)
+		megapoolUnskimmedRewardsFloat := eth.WeiToEth(megapoolUnskimmedRewards)
+		// Add the megapool unskimmed beacon rewards
+		rewards.BeaconRewards = rewards.BeaconRewards + megapoolUnskimmedRewardsFloat
 	}
 
 	fmt.Println("=== ETH ===")

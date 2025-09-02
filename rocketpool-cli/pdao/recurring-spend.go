@@ -95,8 +95,18 @@ func proposeRecurringSpend(c *cli.Context) error {
 		}
 	}
 
+	// Get the custom message
+	customMessage := c.String("custom-message")
+	if customMessage == "" {
+		// Prompt for a custom message without blank spaces
+		customMessage = prompt.Prompt("Please enter an optional message for this recurring payment (no blank spaces):", "^\\S*$", "Invalid message")
+	}
+	if customMessage == "" {
+		customMessage = "recurring-payment-to-" + contractName
+	}
+
 	// Check submissions
-	canResponse, err := rp.PDAOCanProposeRecurringSpend(contractName, recipient, amount, periodLength, startTime, numPeriods)
+	canResponse, err := rp.PDAOCanProposeRecurringSpend(contractName, recipient, amount, periodLength, startTime, numPeriods, customMessage)
 	if err != nil {
 		return err
 	}
@@ -121,7 +131,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 	}
 
 	// Submit
-	response, err := rp.PDAOProposeRecurringSpend(contractName, recipient, amount, periodLength, startTime, numPeriods, canResponse.BlockNumber)
+	response, err := rp.PDAOProposeRecurringSpend(contractName, recipient, amount, periodLength, startTime, numPeriods, canResponse.BlockNumber, customMessage)
 	if err != nil {
 		return err
 	}

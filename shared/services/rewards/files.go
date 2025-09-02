@@ -50,7 +50,7 @@ type ISerializable interface {
 }
 
 // A wrapper around ISerializable representing a local rewards file or minipool performance file.
-// Can be used with anything that can be serialzed to bytes or parsed from bytes.
+// Can be used with anything that can be serialized to bytes or parsed from bytes.
 type LocalFile[T ISerializable] struct {
 	f        T
 	fullPath string

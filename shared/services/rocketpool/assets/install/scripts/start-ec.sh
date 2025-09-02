@@ -185,7 +185,6 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
-        --Pruning.Mode=None \
         --Pruning.FullPruningTrigger=VolumeFreeSpace \
         --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
         --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
@@ -198,14 +197,17 @@ if [ "$CLIENT" = "nethermind" ]; then
 
     if [ "$EC_PRUNING_MODE" = "archive" ]; then
         CMD="$CMD --Sync.DownloadBodiesInFastSync=false --Sync.DownloadReceiptsInFastSync=false --Sync.FastSync=false --Sync.SnapSync=false --Sync.FastBlocks=false --Sync.PivotNumber=0"
+        CMD="$CMD --Pruning.Mode=None"
     fi
 
     if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=0 --Sync.AncientReceiptsBarrier=0"
+        CMD="$CMD --Pruning.Mode=Hybrid"
     fi
 
     if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=15537394 --Sync.AncientReceiptsBarrier=15537394"
+        CMD="$CMD --Pruning.Mode=Hybrid"
     fi
     
     # Add optional supplemental primary JSON-RPC modules
