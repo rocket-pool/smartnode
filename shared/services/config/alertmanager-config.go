@@ -24,6 +24,7 @@ const AlertingRulesConfigFile string = "alerting/rules/default.yml"
 const defaultAlertmanagerPort uint16 = 9093
 const defaultAlertmanagerHost string = "localhost"
 const defaultAlertmanagerOpenPort config.RPCMode = config.RPC_Closed
+const defaultLowETHBalanceThreshold float64 = 0.05
 
 // Configuration for Alertmanager
 type AlertmanagerConfig struct {
@@ -70,6 +71,7 @@ type AlertmanagerConfig struct {
 	AlertEnabled_OSUpdatesAvailable        config.Parameter `yaml:"alertEnabled_OSUpdatesAvailable,omitempty"`
 	AlertEnabled_RPUpdatesAvailable        config.Parameter `yaml:"alertEnabled_RPUpdatesAvailable,omitempty"`
 	AlertEnabled_LowETHBalance             config.Parameter `yaml:"alertEnabled_LowETHBalance,omitempty"`
+	LowETHBalanceThreshold                 config.Parameter `yaml:"lowETHBalanceThreshold,omitempty"`
 	// Alerts manually sent in alerting.go:
 	AlertEnabled_FeeRecipientChanged         config.Parameter `yaml:"alertEnabled_FeeRecipientChanged,omitempty"`
 	AlertEnabled_MinipoolBondReduced         config.Parameter `yaml:"alertEnabled_MinipoolBondReduced,omitempty"`
@@ -257,6 +259,17 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		AlertEnabled_LowETHBalance: createParameterForAlertEnablement(
 			"LowETHBalance",
 			"Low ETH Balance"),
+
+		LowETHBalanceThreshold: config.Parameter{
+			ID:                 "lowETHBalanceThreshold",
+			Name:               "Low ETH Balance Threshold",
+			Description:        "The threshold for the low ETH balance alert.",
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultLowETHBalanceThreshold},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Prometheus},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
 	}
 }
 
@@ -303,6 +316,7 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.AlertEnabled_ExecutionClientSyncComplete,
 		&cfg.AlertEnabled_BeaconClientSyncComplete,
 		&cfg.AlertEnabled_LowETHBalance,
+		&cfg.LowETHBalanceThreshold,
 	}
 }
 

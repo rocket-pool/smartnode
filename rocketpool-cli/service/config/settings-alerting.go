@@ -22,6 +22,7 @@ var alertingParametersNativeMode map[string]interface{} = map[string]interface{}
 	"alertEnabled_ExecutionClientSyncComplete": nil,
 	"alertEnabled_BeaconClientSyncComplete":    nil,
 	"alertEnabled_LowETHBalance":               nil,
+	"lowETHBalanceThreshold":                   nil,
 }
 
 var alertingParametersDockerMode map[string]interface{} = map[string]interface{}{
@@ -50,6 +51,7 @@ var alertingParametersDockerMode map[string]interface{} = map[string]interface{}
 	"alertEnabled_ExecutionClientSyncComplete": nil,
 	"alertEnabled_BeaconClientSyncComplete":    nil,
 	"alertEnabled_LowETHBalance":               nil,
+	"lowETHBalanceThreshold":                   nil,
 }
 
 // The page wrapper for the alerting config

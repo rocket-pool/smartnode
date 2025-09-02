@@ -132,12 +132,12 @@ groups:
 
       {{{- if .AlertEnabled_LowETHBalance.Value }}}
       - alert: LowETHBalance
-        expr: rocketpool_node_balance{job="rocketpool",Token="ETH"} < 0.01
+        expr: rocketpool_node_balance{job="rocketpool",Token="ETH"} < rocketpool_node_low_eth_balance_threshold
         for: 1h
         labels:
           severity: critical
           job: node
         annotations:
           summary: "Low ETH Balance"
-          description: "The node ETH balance is low. Currently has {{ humanize $value }} ETH."
+          description: "The node ETH balance is low."
       {{{- end }}}
