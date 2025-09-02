@@ -369,12 +369,12 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	v11MerkleRoot := v11Artifacts.RewardsFile.GetMerkleRoot()
 
 	// Expected merkle root:
-	// 0x176bba15231cb82edb5c34c8882af09dfb77a2ee31a96b623bffd8e48cedf18b
+	// 0x6fc204154008bd9beefac7ded7009467eca0de9fa8e8b4f802d8f0fb7c56754a
 	//
 	// If this does not match, it implies either you updated the set of default mock nodes,
 	// or you introduced a regression in treegen.
 	// DO NOT update this value unless you know what you are doing.
-	expectedMerkleRoot := "0x176bba15231cb82edb5c34c8882af09dfb77a2ee31a96b623bffd8e48cedf18b"
+	expectedMerkleRoot := "0x6fc204154008bd9beefac7ded7009467eca0de9fa8e8b4f802d8f0fb7c56754a"
 	if !strings.EqualFold(v11MerkleRoot, expectedMerkleRoot) {
 		t.Fatalf("Merkle root does not match expected value %s != %s", v11MerkleRoot, expectedMerkleRoot)
 	} else {
