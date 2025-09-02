@@ -132,8 +132,8 @@ groups:
 
       {{{- if .AlertEnabled_LowETHBalance.Value }}}
       - alert: LowETHBalance
-        expr: rocketpool_node_balance{job="rocketpool",Token="ETH"} < rocketpool_node_low_eth_balance_threshold
-        for: 1h
+        expr: rocketpool_node_balance{job="rocketpool",Token="ETH"} < scalar(rocketpool_node_low_eth_balance_threshold)
+        for: 60m
         labels:
           severity: critical
           job: node
