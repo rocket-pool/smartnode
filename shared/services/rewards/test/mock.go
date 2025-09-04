@@ -1,11 +1,14 @@
 package test
 
 import (
+	"crypto/sha256"
 	"math/big"
 	"strconv"
+	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	rprewards "github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -123,8 +126,20 @@ type MockNode struct {
 	borrowedEth *big.Int
 	Minipools   []*MockMinipool
 
+	Megapool            bool
+	MegapoolEthBorrowed *big.Int
+	MegapoolEthBonded   *big.Int
+	MegapoolStakedRPL   *big.Int
+	MegapoolValidators  int
+
 	Notes string
 	Class string
+}
+
+func (n *MockNode) clearMinipoolWithdrawals() {
+	for _, minipool := range n.Minipools {
+		minipool.SPWithdrawals = nil
+	}
 }
 
 func (n *MockNode) AddMinipool(minipool *MockMinipool) {
@@ -185,11 +200,29 @@ func (h *MockHistory) SetWithdrawals(mockBeaconClient *MockBeaconClient) {
 	}
 }
 
+func (n *MockNode) MegapoolAddress() common.Address {
+	// Just hash the node address with a string "megapool"
+	// use sha256 out of laziness
+	h := sha256.New()
+	h.Write([]byte("megapool"))
+	h.Write(n.Address.Bytes())
+	return common.BytesToAddress(h.Sum(nil))
+}
+
+type MegapoolParams struct {
+	Validators  int
+	EthBorrowed *big.Int
+	EthBonded   *big.Int
+	StakedRPL   *big.Int
+}
+
 type NewMockNodeParams struct {
 	SmoothingPool       bool
 	EightEthMinipools   int
 	SixteenEthMinipools int
 	CollateralRpl       int64
+
+	Megapool *MegapoolParams
 }
 
 func (h *MockHistory) GetNewDefaultMockNode(params *NewMockNodeParams) *MockNode {
@@ -209,6 +242,14 @@ func (h *MockHistory) GetNewDefaultMockNode(params *NewMockNodeParams) *MockNode
 		bondedEth:   big.NewInt(0),
 	}
 
+	if params.Megapool != nil {
+		out.Megapool = true
+		out.MegapoolEthBorrowed = params.Megapool.EthBorrowed
+		out.MegapoolEthBonded = params.Megapool.EthBonded
+		out.MegapoolStakedRPL = params.Megapool.StakedRPL
+		out.MegapoolValidators = params.Megapool.Validators
+	}
+
 	for i := 0; i < params.EightEthMinipools; i++ {
 		out.AddMinipool(h.GetNewDefaultMockMinipool(BondSizeEightEth))
 	}
@@ -223,9 +264,149 @@ func (h *MockHistory) GetNewDefaultMockNode(params *NewMockNodeParams) *MockNode
 	// Opt nodes in an epoch before the start of the interval
 	if params.SmoothingPool {
 		out.SmoothingPoolRegistrationChanged = h.BeaconConfig.GetSlotTime(h.BeaconConfig.FirstSlotOfEpoch(h.StartEpoch - 1))
+	} else {
+		out.clearMinipoolWithdrawals()
 	}
 
 	return out
+}
+
+// Returns a list of nodes with megapools
+// Added for v11
+func (h *MockHistory) GetDefaultMockMegapoolNodes() []*MockNode {
+	nodes := []*MockNode{}
+
+	for minipools := range 2 {
+		makeMinipools := minipools != 0
+		// Create a few nodes with megapools
+		// and no staked rpl, but members of the smoothing pool
+		for i := range 2 {
+			params := &NewMockNodeParams{
+				Megapool: &MegapoolParams{
+					Validators:  3,
+					EthBorrowed: big.NewInt(0).Mul(oneEth, big.NewInt(24*3)),
+					EthBonded:   big.NewInt(0).Mul(oneEth, big.NewInt(4*3)),
+				},
+				SmoothingPool: true,
+			}
+			if makeMinipools {
+				params.EightEthMinipools = 2
+				params.SixteenEthMinipools = 2
+				if i == 1 {
+					params.CollateralRpl = 10
+				}
+			}
+			node := h.GetNewDefaultMockNode(params)
+			node.Notes = "Opted in node with a no-rpl megapool"
+			node.Class = "megapool_no_rpl_sp"
+			if makeMinipools {
+				node.Notes += " and minipools"
+				node.Class += "_minipools"
+				if i == 1 {
+					node.Notes += " and collateral"
+					node.Class += "_collateral"
+				}
+			}
+			nodes = append(nodes, node)
+		}
+
+		for i := range int64(2) {
+			params := &NewMockNodeParams{
+				Megapool: &MegapoolParams{
+					Validators:  int(i + 1),
+					EthBorrowed: big.NewInt(0).Mul(oneEth, big.NewInt(24*(i+1))),
+					EthBonded:   big.NewInt(0).Mul(oneEth, big.NewInt(4*(i+1))),
+				},
+			}
+			if makeMinipools {
+				params.EightEthMinipools = 2
+				params.SixteenEthMinipools = 2
+				if i == 1 {
+					params.CollateralRpl = 10
+				}
+			}
+			node := h.GetNewDefaultMockNode(params)
+			node.Notes = "Opted out node with a no-rpl megapool"
+			node.Class = "megapool_no_rpl_no_sp"
+			if makeMinipools {
+				node.Notes += " and minipools"
+				node.Class += "_minipools"
+				if i == 1 {
+					node.Notes += " and collateral"
+					node.Class += "_collateral"
+				}
+			}
+			nodes = append(nodes, node)
+		}
+
+		// Create a few nodes with megapools
+		// and staked rpl, but not members of the smoothing pool
+		// so they earn voter share
+		for i := range int64(2) {
+			params := &NewMockNodeParams{
+				Megapool: &MegapoolParams{
+					Validators:  int(i + 1),
+					EthBorrowed: big.NewInt(0).Mul(oneEth, big.NewInt(24*(i+1))),
+					EthBonded:   big.NewInt(0).Mul(oneEth, big.NewInt(4*(i+1))),
+					StakedRPL:   big.NewInt(0).Mul(oneEth, big.NewInt(int64(i+1))),
+				},
+			}
+			if makeMinipools {
+				params.EightEthMinipools = 2
+				params.SixteenEthMinipools = 2
+				if i == 1 {
+					params.CollateralRpl = 10
+				}
+			}
+			node := h.GetNewDefaultMockNode(params)
+			node.Notes = "Opted out node with a megapool and staked RPL"
+			node.Class = "megapool_staked_rpl_no_sp"
+			if makeMinipools {
+				node.Notes += " and minipools"
+				node.Class += "_minipools"
+				if i == 1 {
+					node.Notes += " and collateral"
+					node.Class += "_collateral"
+				}
+			}
+			nodes = append(nodes, node)
+		}
+
+		// Create a few nodes with megapools
+		// and staked rpl, and members of the smoothing pool
+		for i := range int64(2) {
+			params := &NewMockNodeParams{
+				Megapool: &MegapoolParams{
+					Validators:  int(i + 1),
+					EthBorrowed: big.NewInt(0).Mul(oneEth, big.NewInt(24*(i+1))),
+					EthBonded:   big.NewInt(0).Mul(oneEth, big.NewInt(4*(i+1))),
+					StakedRPL:   big.NewInt(0).Mul(oneEth, big.NewInt(int64(i+1))),
+				},
+				SmoothingPool: true,
+			}
+			if makeMinipools {
+				params.EightEthMinipools = 2
+				params.SixteenEthMinipools = 2
+				if i == 1 {
+					params.CollateralRpl = 10
+				}
+			}
+			node := h.GetNewDefaultMockNode(params)
+			node.Notes = "Opted in node with a megapool and staked RPL"
+			node.Class = "megapool_staked_rpl_sp"
+			if makeMinipools {
+				node.Notes += " and minipools"
+				node.Class += "_minipools"
+				if i == 1 {
+					node.Notes += " and collateral"
+					node.Class += "_collateral"
+				}
+			}
+			nodes = append(nodes, node)
+		}
+	}
+
+	return nodes
 }
 
 // Returns a list of nodes with various attributes-
@@ -244,7 +425,7 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		})
 		node.Notes = "Regular node with one regular 8-eth minipool"
 		node.Class = "single_eight_eth"
-		node.Minipools[0].SPWithdrawals = nil
+		node.clearMinipoolWithdrawals()
 		node.Minipools[0].OptedOutWithdrawals = big.NewInt(1e18)
 		nodes = append(nodes, node)
 	}
@@ -269,7 +450,7 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		})
 		node.Notes = "Regular node with one regular 16-eth minipool"
 		node.Class = "single_sixteen_eth"
-		node.Minipools[0].SPWithdrawals = nil
+		node.clearMinipoolWithdrawals()
 		node.Minipools[0].OptedOutWithdrawals = big.NewInt(1e18)
 		nodes = append(nodes, node)
 	}
@@ -358,7 +539,7 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		CollateralRpl:     10,
 	})
 	node.Minipools[0].Status = types.Prelaunch
-	node.Minipools[0].SPWithdrawals = nil
+	node.clearMinipoolWithdrawals()
 	node.Notes = "Node with one 8-eth minipool that is pending"
 	node.Class = "single_eight_eth_pending"
 	nodes = append(nodes, node)
@@ -369,7 +550,7 @@ func (h *MockHistory) GetDefaultMockNodes() []*MockNode {
 		CollateralRpl:     10,
 	})
 	node.Minipools[0].Finalised = true
-	node.Minipools[0].SPWithdrawals = nil
+	node.clearMinipoolWithdrawals()
 	node.Notes = "Node with one 8-eth minipool that is finalized"
 	node.Class = "single_eight_eth_finalized"
 	nodes = append(nodes, node)
@@ -451,6 +632,22 @@ func NewDefaultMockHistoryNoNodes() *MockHistory {
 			// Put 100 ether in the smoothing pool
 			SmoothingPoolBalance: big.NewInt(0).Mul(big.NewInt(100), big.NewInt(1000000000000000000)),
 
+			// Saturn
+			MegapoolRevenueSplitSettings: rpstate.MegapoolRevenueSplitSettings{
+				// These numbers are nonsensical except NodeOperatorCommissionAddr
+				// this ensures the time-weighted averages are the onces referenced.
+				NodeOperatorCommissionShare: big.NewInt(0).Mul(oneEth, big.NewInt(2)),
+				NodeOperatorCommissionAdder: big.NewInt(1e16),
+				VoterCommissionShare:        big.NewInt(0).Mul(oneEth, big.NewInt(2)),
+				PdaoCommissionShare:         big.NewInt(0).Mul(oneEth, big.NewInt(2)),
+			},
+			MegapoolRevenueSplitTimeWeightedAverages: rpstate.MegapoolRevenueSplitTimeWeightedAverages{
+				NodeShare:  big.NewInt(4e16),
+				VoterShare: big.NewInt(6e16),
+				PdaoShare:  big.NewInt(5e16),
+			},
+			SmoothingPoolPendingVoterShare: big.NewInt(0).Mul(big.NewInt(10), oneEth),
+
 			// The rest of the fields seem unimportant and are left empty
 		},
 		lastNodeAddress:     common.BigToAddress(big.NewInt(2000)),
@@ -461,9 +658,12 @@ func NewDefaultMockHistoryNoNodes() *MockHistory {
 	return out
 }
 
-func NewDefaultMockHistory() *MockHistory {
+func NewDefaultMockHistory(megapools bool) *MockHistory {
 	out := NewDefaultMockHistoryNoNodes()
 	out.Nodes = out.GetDefaultMockNodes()
+	if megapools {
+		out.Nodes = append(out.Nodes, out.GetDefaultMockMegapoolNodes()...)
+	}
 	return out
 }
 
@@ -483,6 +683,12 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		MinipoolValidatorDetails:   make(state.ValidatorDetailsMap),
 		OracleDaoMemberDetails:     []rpstate.OracleDaoMemberDetails{},
 		ProtocolDaoProposalDetails: nil,
+
+		MegapoolValidatorGlobalIndex: []megapool.ValidatorInfoFromGlobalIndex{},
+		MegapoolToPubkeysMap:         make(map[common.Address][]types.ValidatorPubkey),
+		MegapoolValidatorInfo:        make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex),
+		MegapoolDetails:              make(map[common.Address]rpstate.NativeMegapoolDetails),
+		MegapoolValidatorDetails:     make(state.ValidatorDetailsMap),
 	}
 
 	// Add nodes
@@ -541,6 +747,24 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 
 			// Ratio of bonded to bonded plus borrowed
 			CollateralisationRatio: collateralisationRatio,
+
+			MegapoolAddress:  node.MegapoolAddress(),
+			MegapoolDeployed: node.Megapool,
+
+			MegapoolETHBorrowed: big.NewInt(0),
+			MegapoolEthBonded:   big.NewInt(0),
+			MegapoolStakedRPL:   big.NewInt(0),
+			LegacyStakedRPL:     node.RplStake,
+		}
+
+		if node.MegapoolEthBorrowed != nil {
+			details.MegapoolETHBorrowed = node.MegapoolEthBorrowed
+		}
+		if node.MegapoolEthBonded != nil {
+			details.MegapoolEthBonded = node.MegapoolEthBonded
+		}
+		if node.MegapoolStakedRPL != nil {
+			details.MegapoolStakedRPL = node.MegapoolStakedRPL
 		}
 
 		out.NodeDetails = append(out.NodeDetails, details)
@@ -630,6 +854,48 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			}
 			out.OracleDaoMemberDetails = append(out.OracleDaoMemberDetails, details)
 		}
+
+		// Add megapool details
+		if node.Megapool {
+			out.MegapoolDetails[node.MegapoolAddress()] = rpstate.NativeMegapoolDetails{
+				ActiveValidatorCount: uint32(node.MegapoolValidators),
+				UserCapital:          big.NewInt(0).Set(node.MegapoolEthBorrowed),
+				NodeBond:             big.NewInt(0).Set(node.MegapoolEthBonded),
+			}
+			for i := 0; i < node.MegapoolValidators; i++ {
+				pubkey := h.GetValidatorPubkey()
+				idx := h.GetValidatorIndex()
+				intIdx, err := strconv.ParseUint(idx, 10, 64)
+				if err != nil {
+					panic(err)
+				}
+				vifgi := megapool.ValidatorInfoFromGlobalIndex{
+					Pubkey: pubkey.Bytes(),
+					ValidatorInfo: megapool.ValidatorInfo{
+						ValidatorIndex: intIdx,
+						Staked:         true,
+					},
+					MegapoolAddress: node.MegapoolAddress(),
+					ValidatorId:     uint32(intIdx),
+				}
+				out.MegapoolValidatorGlobalIndex = append(out.MegapoolValidatorGlobalIndex, vifgi)
+				out.MegapoolToPubkeysMap[node.MegapoolAddress()] = append(out.MegapoolToPubkeysMap[node.MegapoolAddress()], pubkey)
+				out.MegapoolValidatorInfo[pubkey] = &vifgi
+				out.MegapoolValidatorDetails[pubkey] = beacon.ValidatorStatus{
+					Pubkey:                     pubkey,
+					Index:                      idx,
+					WithdrawalCredentials:      common.Hash{},
+					Balance:                    (*big.Int)(_bondSizeThirtyTwoEth).Uint64(),
+					EffectiveBalance:           (*big.Int)(_bondSizeThirtyTwoEth).Uint64(),
+					Slashed:                    false,
+					ActivationEligibilityEpoch: 0,
+					ActivationEpoch:            0,
+					ExitEpoch:                  FarFutureEpoch,
+					WithdrawableEpoch:          FarFutureEpoch,
+					Exists:                     true,
+				}
+			}
+		}
 	}
 
 	return out
@@ -681,10 +947,25 @@ func (h *MockHistory) GetPreviousRewardSnapshotEvent() rprewards.RewardsEvent {
 	}
 }
 
-func (h *MockHistory) GetNodeSummary() map[string][]*MockNode {
+type nodeSummary map[string][]*MockNode
+
+func (h *MockHistory) GetNodeSummary() nodeSummary {
 	out := make(map[string][]*MockNode)
 	for _, node := range h.Nodes {
 		out[node.Class] = append(out[node.Class], node)
 	}
 	return out
+}
+
+func (s nodeSummary) GetClass(class string) ([]*MockNode, bool) {
+	nodes, ok := s[class]
+	return nodes, ok
+}
+
+func (s nodeSummary) MustGetClass(t *testing.T, class string) []*MockNode {
+	nodes, ok := s.GetClass(class)
+	if !ok {
+		t.Fatalf("Class %s not found", class)
+	}
+	return nodes
 }

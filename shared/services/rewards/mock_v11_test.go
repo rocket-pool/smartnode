@@ -7,6 +7,7 @@ package rewards
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -22,7 +23,7 @@ import (
 
 func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 
-	history := test.NewDefaultMockHistory()
+	history := test.NewDefaultMockHistory(true)
 	// Add a node which is earning some bonus commission
 	node := history.GetNewDefaultMockNode(&test.NewMockNodeParams{
 		SmoothingPool:     true,
@@ -32,6 +33,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	node.Minipools[0].NodeFee, _ = big.NewInt(0).SetString("50000000000000000", 10)
 	history.Nodes = append(history.Nodes, node)
 	state := history.GetEndNetworkState()
+	state.IsSaturnDeployed = true
 
 	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
@@ -52,18 +54,21 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	for _, validator := range state.MinipoolValidatorDetails {
 		t.bc.SetMinipoolPerformance(validator.Index, make([]uint64, 0))
 	}
+	for _, validator := range state.MegapoolValidatorGlobalIndex {
+		t.bc.SetMinipoolPerformance(strconv.Itoa(int(validator.ValidatorInfo.ValidatorIndex)), make([]uint64, 0))
+	}
 
 	// Set some custom balances for the validators that opt in and out of smoothing pool
 	nodeSummary := history.GetNodeSummary()
-	customBalanceNodes := nodeSummary["single_eight_eth_opted_in_quarter"]
+	customBalanceNodes := nodeSummary.MustGetClass(tt, "single_eight_eth_opted_in_quarter")
 	for _, node := range customBalanceNodes {
 		node.Minipools[0].SPWithdrawals = eth.EthToWei(0.75)
 	}
-	customBalanceNodes = nodeSummary["single_eight_eth_opted_out_three_quarters"]
+	customBalanceNodes = nodeSummary.MustGetClass(tt, "single_eight_eth_opted_out_three_quarters")
 	for _, node := range customBalanceNodes {
 		node.Minipools[0].SPWithdrawals = eth.EthToWei(0.75)
 	}
-	customBalanceNodes = nodeSummary["single_bond_reduction"]
+	customBalanceNodes = nodeSummary.MustGetClass(tt, "single_bond_reduction")
 	for _, node := range customBalanceNodes {
 		node.Minipools[0].SPWithdrawals = eth.EthToWei(0.5)
 	}
@@ -103,13 +108,13 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	rewardsFile := v11Artifacts.RewardsFile
 	minipoolPerformanceFile := v11Artifacts.MinipoolPerformanceFile
 
-	singleEightEthNodes := nodeSummary["single_eight_eth"]
-	singleSixteenEthNodes := nodeSummary["single_sixteen_eth"]
+	singleEightEthNodes := nodeSummary.MustGetClass(tt, "single_eight_eth")
+	singleSixteenEthNodes := nodeSummary.MustGetClass(tt, "single_sixteen_eth")
 	for _, node := range append(singleEightEthNodes, singleSixteenEthNodes...) {
 		// Check the rewards amount in the rewards file
 		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
 
-		expectedRewardsAmount, _ := big.NewInt(0).SetString("1019308880071990649542", 10)
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("911258527391109533960", 10)
 
 		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
 			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
@@ -127,14 +132,20 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		if oDaoRplAmount.Sign() != 0 {
 			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
 		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
 	}
-	singleEightEthNodesSP := nodeSummary["single_eight_eth_sp"]
-	singleSixteenEthNodesSP := nodeSummary["single_sixteen_eth_sp"]
+	singleEightEthNodesSP := nodeSummary.MustGetClass(tt, "single_eight_eth_sp")
+	singleSixteenEthNodesSP := nodeSummary.MustGetClass(tt, "single_sixteen_eth_sp")
 	for _, node := range append(singleEightEthNodesSP, singleSixteenEthNodesSP...) {
 		// Check the rewards amount in the rewards file
 		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
 
-		expectedRewardsAmount, _ := big.NewInt(0).SetString("1019308880071990649542", 10)
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("911258527391109533960", 10)
 
 		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
 			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
@@ -145,7 +156,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		expectedEthAmount := big.NewInt(0)
 		if node.SmoothingPoolRegistrationState {
 			if node.Class == "single_eight_eth_sp" {
-				expectedEthAmount.SetString("1450562599049128367", 10)
+				expectedEthAmount.SetString("571616314199395770", 10)
 				// There should be a bonus for these nodes' minipools
 				if len(node.Minipools) != 1 {
 					t.Fatalf("Expected 1 minipool for node %s, got %d", node.Notes, len(node.Minipools))
@@ -168,7 +179,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 				}
 			} else {
 				// 16-eth minipools earn more eth! A bit less than double.
-				expectedEthAmount.SetString("2200871632329635499", 10)
+				expectedEthAmount.SetString("839123867069486404", 10)
 				if len(node.Minipools) != 1 {
 					t.Fatalf("Expected 1 minipool for node %s, got %d", node.Notes, len(node.Minipools))
 				}
@@ -197,11 +208,17 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		if oDaoRplAmount.Sign() != 0 {
 			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
 		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
 	}
 
 	optingInNodesSP := append(
-		nodeSummary["single_eight_eth_opted_in_quarter"],
-		nodeSummary["single_sixteen_eth_opted_in_quarter"]...,
+		nodeSummary.MustGetClass(tt, "single_eight_eth_opted_in_quarter"),
+		nodeSummary.MustGetClass(tt, "single_sixteen_eth_opted_in_quarter")...,
 	)
 	for _, node := range optingInNodesSP {
 		// Check the rewards amount in the rewards file
@@ -213,10 +230,10 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		// Node has 20 RPL and only 1 8-eth minpool which puts it above the linear curve
 		expectedRewardsAmount := big.NewInt(0)
 		if node.Class == "single_eight_eth_opted_in_quarter" {
-			expectedRewardsAmount.SetString("1784353229014464268647", 10)
+			expectedRewardsAmount.SetString("1595205464807146635862", 10)
 		} else {
 			// 16-eth minipools earn less for the same RPL stake, due to RPIP-30
-			expectedRewardsAmount.SetString("1310160289473732090952", 10)
+			expectedRewardsAmount.SetString("1171278656914890979185", 10)
 			if perf.GetBonusEthEarned().Sign() != 0 {
 				// 16 eth minipools should not get bonus commission
 				t.Fatalf("Minipool %s shouldn't have earned bonus eth and did", mp.Address.Hex())
@@ -232,7 +249,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		expectedEthAmount := big.NewInt(0)
 		if node.Class == "single_eight_eth_opted_in_quarter" {
 			// About 3/4 what the full nodes got
-			expectedEthAmount.SetString("1091438193343898573", 10)
+			expectedEthAmount.SetString("430052870090634441", 10)
 			// Earns 3/4 the bonus of a node that was in for the whole interval
 			expectedBonusEthEarned, _ := big.NewInt(0).SetString("22500000000000000", 10)
 			if perf.GetBonusEthEarned().Cmp(expectedBonusEthEarned) != 0 {
@@ -240,7 +257,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 			}
 		} else {
 			// 16-eth minipools earn more eth! A bit less than double.
-			expectedEthAmount.SetString("1656101426307448494", 10)
+			expectedEthAmount.SetString("631419939577039274", 10)
 		}
 		if ethAmount.Cmp(expectedEthAmount) != 0 {
 			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
@@ -251,11 +268,17 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		if oDaoRplAmount.Sign() != 0 {
 			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
 		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
 	}
 
 	optingOutNodesSP := append(
-		nodeSummary["single_eight_eth_opted_out_three_quarters"],
-		nodeSummary["single_sixteen_eth_opted_out_three_quarters"]...,
+		nodeSummary.MustGetClass(tt, "single_eight_eth_opted_out_three_quarters"),
+		nodeSummary.MustGetClass(tt, "single_sixteen_eth_opted_out_three_quarters")...,
 	)
 	for _, node := range optingOutNodesSP {
 		// Check the rewards amount in the rewards file
@@ -267,10 +290,10 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		// Node has 20 RPL and only 1 8-eth minpool which puts it above the linear curve
 		expectedRewardsAmount := big.NewInt(0)
 		if node.Class == "single_eight_eth_opted_out_three_quarters" {
-			expectedRewardsAmount.SetString("1784353229014464268647", 10)
+			expectedRewardsAmount.SetString("1595205464807146635862", 10)
 		} else {
 			// 16-eth minipools earn less for the same RPL stake, due to RPIP-30
-			expectedRewardsAmount.SetString("1310160289473732090952", 10)
+			expectedRewardsAmount.SetString("1171278656914890979185", 10)
 		}
 
 		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
@@ -282,7 +305,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		expectedEthAmount := big.NewInt(0)
 		if node.Class == "single_eight_eth_opted_out_three_quarters" {
 			// About 3/4 what the full nodes got
-			expectedEthAmount.SetString("1077373217115689381", 10)
+			expectedEthAmount.SetString("424690332326283987", 10)
 			// Earns 3/4 the bonus of a node that was in for the whole interval
 			expectedBonusEthEarned, _ := big.NewInt(0).SetString("22500000000000000", 10)
 			if perf.GetBonusEthEarned().Cmp(expectedBonusEthEarned) != 0 {
@@ -290,7 +313,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 			}
 		} else {
 			// 16-eth minipools earn more eth! A bit less than double.
-			expectedEthAmount.SetString("1634310618066561014", 10)
+			expectedEthAmount.SetString("623111782477341389", 10)
 			if perf.GetBonusEthEarned().Sign() != 0 {
 				// 16 eth minipools should not get bonus commission
 				t.Fatalf("Minipool %s shouldn't have earned bonus eth and did", mp.Address.Hex())
@@ -305,9 +328,15 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		if oDaoRplAmount.Sign() != 0 {
 			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
 		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
 	}
 
-	bondReductionNode := nodeSummary["single_bond_reduction"]
+	bondReductionNode := nodeSummary.MustGetClass(tt, "single_bond_reduction")
 	for _, node := range bondReductionNode {
 
 		mp := node.Minipools[0]
@@ -318,7 +347,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 
 		// Nodes that bond reduce are treated as having their new bond for the full interval,
 		// when it comes to RPL rewards.
-		expectedRewardsAmount, _ := big.NewInt(0).SetString("1019308880071990649542", 10)
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("911258527391109533960", 10)
 
 		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
 			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
@@ -326,7 +355,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 
 		// Make sure it got reduced ETH
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
-		expectedEthAmount, _ := big.NewInt(0).SetString("1920903328050713153", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("741661631419939577", 10)
 		if ethAmount.Cmp(expectedEthAmount) != 0 {
 			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
 		}
@@ -342,9 +371,15 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		if oDaoRplAmount.Sign() != 0 {
 			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
 		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
 	}
 
-	noMinipoolsNodes := nodeSummary["no_minipools"]
+	noMinipoolsNodes := nodeSummary.MustGetClass(tt, "no_minipools")
 	for _, node := range noMinipoolsNodes {
 		// Check the rewards amount in the rewards file
 		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
@@ -363,7 +398,292 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		if oDaoRplAmount.Sign() != 0 {
 			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
 		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
 	}
+
+	megapoolNoRplNoSpNodes := nodeSummary.MustGetClass(tt, "megapool_no_rpl_no_sp")
+	for _, node := range megapoolNoRplNoSpNodes {
+		// Check the rewards amount in the rewards file
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Sign() != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), "0")
+		}
+
+		// Make sure it didn't get any ETH
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Sign() != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), "0")
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
+	}
+
+	megapoolNoRplNoSpMinipoolsNodes := nodeSummary.MustGetClass(tt, "megapool_no_rpl_no_sp_minipools")
+	for _, node := range megapoolNoRplNoSpMinipoolsNodes {
+		// Check the rewards amount in the rewards file
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Sign() != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), "0")
+		}
+
+		// Make sure it didn't get any ETH
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Sign() != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), "0")
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
+	}
+
+	megapoolNoRplNoSpMinipoolsCollateralNodes := nodeSummary.MustGetClass(tt, "megapool_no_rpl_no_sp_minipools_collateral")
+	for _, node := range megapoolNoRplNoSpMinipoolsCollateralNodes {
+		// Check the rewards amount in the rewards file
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("911258527391109533960", 10)
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
+			t.Logf("Node %+v", node)
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
+		}
+
+		// Make sure it didn't get any ETH
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Sign() != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), "0")
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
+	}
+
+	megapoolNoRplSpNodes := nodeSummary.MustGetClass(tt, "megapool_no_rpl_sp")
+	for _, node := range megapoolNoRplSpNodes {
+		// Check the rewards amount in the rewards file
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Sign() != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), "0")
+		}
+
+		// Make sure it got ETH
+		expectedEthAmount, _ := big.NewInt(0).SetString("772375377643504530", 10)
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Cmp(expectedEthAmount) != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
+	}
+
+	megapoolNoRplSpMinipoolsNodes := nodeSummary.MustGetClass(tt, "megapool_no_rpl_sp_minipools")
+	for _, node := range megapoolNoRplSpMinipoolsNodes {
+		// Check the rewards amount in the rewards file
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Sign() != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), "0")
+		}
+
+		// Make sure it got ETH
+		expectedEthAmount, _ := big.NewInt(0).SetString("3442314954682779452", 10)
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Cmp(expectedEthAmount) != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
+	}
+
+	megapoolNoRplSpMinipoolsCollateralNodes := nodeSummary.MustGetClass(tt, "megapool_no_rpl_sp_minipools_collateral")
+	for _, node := range megapoolNoRplSpMinipoolsCollateralNodes {
+		// Check the rewards amount in the rewards file
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("911258527391109533960", 10)
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
+		}
+
+		// Make sure it got ETH
+		expectedEthAmount, _ := big.NewInt(0).SetString("3466242447129909356", 10)
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Cmp(expectedEthAmount) != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got 0 voter share ETH
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Sign() != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), "0")
+		}
+	}
+
+	megapoolStakedRplNoSpNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_no_sp")
+	for _, node := range megapoolStakedRplNoSpNodes {
+		validatorCount := node.MegapoolValidators
+		// Check the rewards amount in the rewards file
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("91125852739110953396", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		expectedRewardsAmount.Mul(expectedRewardsAmount, big.NewInt(int64(validatorCount)))
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
+		}
+
+		// Make sure it got no ETH
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Sign() != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), "0")
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got voter share ETH
+		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("933456067472306143", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Cmp(exepectedVoterShareEthAmount) != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+		}
+	}
+
+	megapoolStakedRplNoSpMinipoolsNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_no_sp_minipools")
+	for _, node := range megapoolStakedRplNoSpMinipoolsNodes {
+		validatorCount := node.MegapoolValidators
+		// Check the rewards amount in the rewards file
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("91125852739110953396", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		expectedRewardsAmount.Mul(expectedRewardsAmount, big.NewInt(int64(validatorCount)))
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
+		}
+
+		// Make sure it got no ETH
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Sign() != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), "0")
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got voter share ETH
+		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("933456067472306143", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Cmp(exepectedVoterShareEthAmount) != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+		}
+	}
+
+	megapoolStakedRplNoSpMinipoolsCollateralNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_no_sp_minipools_collateral")
+	for _, node := range megapoolStakedRplNoSpMinipoolsCollateralNodes {
+		validatorCount := node.MegapoolValidators
+		// Check the rewards amount in the rewards file
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("91125852739110953396", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		expectedRewardsAmount.Mul(expectedRewardsAmount, big.NewInt(int64(validatorCount)))
+		// Add a constant amount for minipool rewards
+		minipoolRewardsAmount, _ := big.NewInt(0).SetString("911258527391109533960", 10)
+		expectedRewardsAmount.Add(expectedRewardsAmount, minipoolRewardsAmount)
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
+		}
+
+		// Make sure it got no ETH
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Sign() != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), "0")
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got voter share ETH
+		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("933456067472306143", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Cmp(exepectedVoterShareEthAmount) != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+		}
+	}
+	/*
+
+		megapoolStakedRplSpNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_sp")
+		megapoolStakedRplSpMinipoolsNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_sp_minipools")
+		megapoolStakedRplSpMinipoolsCollateralNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_sp_minipools_collateral")
+	*/
 
 	// Validate merkle root
 	v11MerkleRoot := v11Artifacts.RewardsFile.GetMerkleRoot()
@@ -374,7 +694,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	// If this does not match, it implies either you updated the set of default mock nodes,
 	// or you introduced a regression in treegen.
 	// DO NOT update this value unless you know what you are doing.
-	expectedMerkleRoot := "0x6fc204154008bd9beefac7ded7009467eca0de9fa8e8b4f802d8f0fb7c56754a"
+	expectedMerkleRoot := "0x96bec9241c41bff45204aaadfe4bf28c5ced44328d0e2206720ceeecab3b4ede"
 	if !strings.EqualFold(v11MerkleRoot, expectedMerkleRoot) {
 		t.Fatalf("Merkle root does not match expected value %s != %s", v11MerkleRoot, expectedMerkleRoot)
 	} else {
@@ -407,6 +727,7 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	// Ovewrite the SP balance to a value under the bonus commission
 	history.NetworkDetails.SmoothingPoolBalance = big.NewInt(1000)
 	state := history.GetEndNetworkState()
+	state.IsSaturnDeployed = true
 
 	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
@@ -512,6 +833,7 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
 	state := history.GetEndNetworkState()
+	state.IsSaturnDeployed = true
 
 	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
@@ -640,6 +962,7 @@ func TestMockOptedOutAndThenBondReducedV11(tt *testing.T) {
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
 	state := history.GetEndNetworkState()
+	state.IsSaturnDeployed = true
 
 	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 
@@ -756,6 +1079,7 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
 	state := history.GetEndNetworkState()
+	state.IsSaturnDeployed = true
 
 	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
 

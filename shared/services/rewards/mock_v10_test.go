@@ -22,7 +22,7 @@ import (
 
 func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 
-	history := test.NewDefaultMockHistory()
+	history := test.NewDefaultMockHistory(false)
 	// Add a node which is earning some bonus commission
 	node := history.GetNewDefaultMockNode(&test.NewMockNodeParams{
 		SmoothingPool:     true,

@@ -18,6 +18,8 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
+var Magicv2 [4]byte = [4]byte{0x52, 0x50, 0x52, 0x55}
+
 type NodeRewards_v2 []*NodeReward_v2
 
 type SSZFile_v2 struct {
@@ -73,7 +75,7 @@ type SSZFile_v2 struct {
 
 func NewSSZFile_v2() *SSZFile_v2 {
 	return &SSZFile_v2{
-		Magic: Magic,
+		Magic: Magicv2,
 	}
 }
 
@@ -163,7 +165,7 @@ func (f *SSZFile_v2) FinalizeSSZ() ([]byte, error) {
 }
 
 func (f *SSZFile_v2) FinalizeSSZTo(buf []byte) ([]byte, error) {
-	copy(f.Magic[:], Magic[:])
+	copy(f.Magic[:], Magicv2[:])
 	if err := f.Verify(); err != nil {
 		return nil, err
 	}
@@ -173,7 +175,7 @@ func (f *SSZFile_v2) FinalizeSSZTo(buf []byte) ([]byte, error) {
 
 // Parsing wrapper that adds verification to the merkle root and magic header
 func ParseSSZFile_v2(buf []byte) (*SSZFile_v2, error) {
-	if !bytes.HasPrefix(buf, Magic[:]) {
+	if !bytes.HasPrefix(buf, Magicv2[:]) {
 		return nil, errors.New("magic header not found in reward ssz file")
 	}
 
@@ -362,7 +364,7 @@ func (n NodeRewards_v2) Find(addr Address) *NodeReward_v2 {
 
 // Functions to implement IRewardsFile
 func (f *SSZFile_v2) Deserialize(data []byte) error {
-	if bytes.HasPrefix(data, Magic[:]) {
+	if bytes.HasPrefix(data, Magicv2[:]) {
 		if err := f.UnmarshalSSZ(data); err != nil {
 			return err
 		}

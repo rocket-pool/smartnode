@@ -18,6 +18,18 @@ const (
 	networkEffectiveStakeBatchSize int = 250
 )
 
+type MegapoolRevenueSplitSettings struct {
+	NodeOperatorCommissionShare *big.Int `json:"node_operator_commission_share"`
+	NodeOperatorCommissionAdder *big.Int `json:"node_operator_commission_adder"`
+	VoterCommissionShare        *big.Int `json:"voter_commission_share"`
+	PdaoCommissionShare         *big.Int `json:"pdao_commission_share"`
+}
+type MegapoolRevenueSplitTimeWeightedAverages struct {
+	NodeShare  *big.Int `json:"node_share"`
+	VoterShare *big.Int `json:"voter_share"`
+	PdaoShare  *big.Int `json:"pdao_share"`
+}
+
 type NetworkDetails struct {
 	// Redstone
 	RplPrice                          *big.Int               `json:"rpl_price"`
@@ -67,18 +79,9 @@ type NetworkDetails struct {
 	BalancesSubmissionFrequency uint64 `json:"balances_submission_frequency"`
 
 	// Saturn
-	MegapoolRevenueSplitSettings struct {
-		NodeOperatorCommissionShare *big.Int `json:"node_operator_commission_share"`
-		NodeOperatorCommissionAdder *big.Int `json:"node_operator_commission_adder"`
-		VoterCommissionShare        *big.Int `json:"voter_commission_share"`
-		PdaoCommissionShare         *big.Int `json:"pdao_commission_share"`
-	}
-
-	MegapoolRevenueSplitTimeWeightedAverages struct {
-		NodeShare  *big.Int `json:"node_share"`
-		VoterShare *big.Int `json:"voter_share"`
-		PdaoShare  *big.Int `json:"pdao_share"`
-	}
+	MegapoolRevenueSplitSettings             MegapoolRevenueSplitSettings
+	MegapoolRevenueSplitTimeWeightedAverages MegapoolRevenueSplitTimeWeightedAverages
+	SmoothingPoolPendingVoterShare           *big.Int `json:"smoothing_pool_earmarked_voter_share_eth"`
 }
 
 // Create a snapshot of all of the network's details
@@ -161,6 +164,7 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.NodeShare, "getCurrentNodeShare")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.VoterShare, "getCurrentVoterShare")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare, "getCurrentProtocolDAOShare")
+	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.SmoothingPoolPendingVoterShare, "getPendingVoterShare")
 
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {

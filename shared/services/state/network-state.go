@@ -572,14 +572,21 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 			eligibleBorrowedEth := s.GetEligibleBorrowedEth(&node)
 			rplStake := s.GetRplStake(&node)
 
-			// minCollateral := borrowedEth * minCollateralFraction / ratio
-			// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
-			minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, s.NetworkDetails.MinCollateralFraction)
-			minCollateral.Div(minCollateral, s.NetworkDetails.RplPrice)
+			minCollateral := big.NewInt(0)
+			if !s.IsSaturnDeployed {
+				// minCollateral := borrowedEth * minCollateralFraction / ratio
+				// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
+				minCollateral = minCollateral.Mul(eligibleBorrowedEth, s.NetworkDetails.MinCollateralFraction)
+				minCollateral.Div(minCollateral, s.NetworkDetails.RplPrice)
+			}
 
 			// Calculate the weight
 			nodeWeight := big.NewInt(0)
-			if rplStake.Cmp(minCollateral) == -1 || eligibleBorrowedEth.Sign() <= 0 {
+			if eligibleBorrowedEth.Sign() <= 0 {
+				weightSlice[i] = nodeWeight
+				return nil
+			}
+			if rplStake.Cmp(minCollateral) == -1 && !s.IsSaturnDeployed {
 				weightSlice[i] = nodeWeight
 				return nil
 			}
