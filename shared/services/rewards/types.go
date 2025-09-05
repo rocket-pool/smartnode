@@ -57,7 +57,7 @@ type RewardsBeaconClient interface {
 }
 
 // Interface for version-agnostic minipool performance
-type IMinipoolPerformanceFile interface {
+type IPerformanceFile interface {
 	// Serialize a minipool performance file into bytes
 	Serialize() ([]byte, error)
 	SerializeSSZ() ([]byte, error)
@@ -72,8 +72,18 @@ type IMinipoolPerformanceFile interface {
 	// NOTE: the order of minipool addresses is not guaranteed to be stable, so don't rely on it
 	GetMinipoolAddresses() []common.Address
 
+	// Get all of the megapools
+	// NOTE: the order of megapool addresses is not guaranteed to be stable, so don't rely on it
+	GetMegapoolAddresses() []common.Address
+
 	// Get a minipool's smoothing pool performance if it was present
-	GetSmoothingPoolPerformance(minipoolAddress common.Address) (ISmoothingPoolMinipoolPerformance, bool)
+	GetMinipoolPerformance(minipoolAddress common.Address) (ISmoothingPoolPerformance, bool)
+
+	// Get a megapool's validator pubkeys
+	GetMegapoolValidatorPubkeys(megapoolAddress common.Address) ([]types.ValidatorPubkey, error)
+
+	// Get a megapool's performance if it was present
+	GetMegapoolPerformance(megapoolAddress common.Address, pubkey types.ValidatorPubkey) (ISmoothingPoolPerformance, bool)
 }
 
 // Interface for version-agnostic rewards files
@@ -152,7 +162,7 @@ type TotalRewards struct {
 }
 
 // Minipool stats
-type ISmoothingPoolMinipoolPerformance interface {
+type ISmoothingPoolPerformance interface {
 	GetPubkey() (types.ValidatorPubkey, error)
 	GetSuccessfulAttestationCount() uint64
 	GetMissedAttestationCount() uint64
@@ -420,7 +430,7 @@ func (versionHeader *VersionHeader) deserializeRewardsFile(bytes []byte) (IRewar
 	panic("unreachable section of code reached, please report this error to the maintainers")
 }
 
-func (versionHeader *VersionHeader) deserializeMinipoolPerformanceFile(bytes []byte) (IMinipoolPerformanceFile, error) {
+func (versionHeader *VersionHeader) deserializeMinipoolPerformanceFile(bytes []byte) (IPerformanceFile, error) {
 	if err := versionHeader.checkVersion(); err != nil {
 		return nil, err
 	}

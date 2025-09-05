@@ -327,7 +327,7 @@ func DeserializeRewardsFile(bytes []byte) (IRewardsFile, error) {
 }
 
 // Deserializes a byte array into a rewards file interface
-func DeserializeMinipoolPerformanceFile(bytes []byte) (IMinipoolPerformanceFile, error) {
+func DeserializeMinipoolPerformanceFile(bytes []byte) (IPerformanceFile, error) {
 	header, err := deserializeVersionHeader(bytes)
 	if err != nil {
 		return nil, fmt.Errorf("error deserializing rewards file header: %w", err)

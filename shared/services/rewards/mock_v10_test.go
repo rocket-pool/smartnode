@@ -151,7 +151,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 				if len(node.Minipools) != 1 {
 					t.Fatalf("Expected 1 minipool for node %s, got %d", node.Notes, len(node.Minipools))
 				}
-				minipoolPerf, _ := minipoolPerformanceFile.GetSmoothingPoolPerformance(node.Minipools[0].Address)
+				minipoolPerf, _ := minipoolPerformanceFile.GetMinipoolPerformance(node.Minipools[0].Address)
 				// 8 eth minipools with 10% collateral earn 14% commission overall.
 				// They earned 10% on 24/32 of the 1 eth of consensus rewards already, which is 0.075 eth.
 				// Their bonus is therefore 4/10 of 0.075 eth, which is 0.03 eth.
@@ -173,7 +173,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 				if len(node.Minipools) != 1 {
 					t.Fatalf("Expected 1 minipool for node %s, got %d", node.Notes, len(node.Minipools))
 				}
-				minipoolPerf, _ := minipoolPerformanceFile.GetSmoothingPoolPerformance(node.Minipools[0].Address)
+				minipoolPerf, _ := minipoolPerformanceFile.GetMinipoolPerformance(node.Minipools[0].Address)
 				// The 16 eth minipools earn 10% on 24/32.
 				expectedAttestationScore := big.NewInt(0).Sub(oneEth, big.NewInt(1e17))
 				expectedAttestationScore.Mul(expectedAttestationScore, sixteenEth)
@@ -209,7 +209,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
 
 		mp := node.Minipools[0]
-		perf, _ := minipoolPerformanceFile.GetSmoothingPoolPerformance(mp.Address)
+		perf, _ := minipoolPerformanceFile.GetMinipoolPerformance(mp.Address)
 
 		// Node has 20 RPL and only 1 8-eth minpool which puts it above the linear curve
 		expectedRewardsAmount := big.NewInt(0)
@@ -263,7 +263,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
 
 		mp := node.Minipools[0]
-		perf, _ := minipoolPerformanceFile.GetSmoothingPoolPerformance(mp.Address)
+		perf, _ := minipoolPerformanceFile.GetMinipoolPerformance(mp.Address)
 
 		// Node has 20 RPL and only 1 8-eth minpool which puts it above the linear curve
 		expectedRewardsAmount := big.NewInt(0)
@@ -312,7 +312,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 	for _, node := range bondReductionNode {
 
 		mp := node.Minipools[0]
-		perf, _ := minipoolPerformanceFile.GetSmoothingPoolPerformance(mp.Address)
+		perf, _ := minipoolPerformanceFile.GetMinipoolPerformance(mp.Address)
 
 		// Check the rewards amount in the rewards file
 		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
@@ -473,14 +473,14 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 
 	// Check the minipool performance file
 	minipoolPerformanceFile := v10Artifacts.MinipoolPerformanceFile
-	perfOne, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeOne.Minipools[0].Address)
+	perfOne, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeOne.Minipools[0].Address)
 	if !ok {
 		t.Fatalf("Node one minipool performance not found")
 	}
 	if perfOne.GetBonusEthEarned().Uint64() != 416 {
 		t.Fatalf("Node one bonus does not match expected value: %s != %d", perfOne.GetBonusEthEarned().String(), 416)
 	}
-	perfTwo, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeTwo.Minipools[0].Address)
+	perfTwo, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeTwo.Minipools[0].Address)
 	if !ok {
 		t.Fatalf("Node two minipool performance not found")
 	}
@@ -585,11 +585,11 @@ func TestMockNoRPLRewards(tt *testing.T) {
 
 	// Check the minipool performance file
 	minipoolPerformanceFile := v10Artifacts.MinipoolPerformanceFile
-	_, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeOne.Minipools[0].Address)
+	_, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeOne.Minipools[0].Address)
 	if ok {
 		t.Fatalf("Node one minipool performance should not be found")
 	}
-	perfTwo, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeTwo.Minipools[0].Address)
+	perfTwo, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeTwo.Minipools[0].Address)
 	if !ok {
 		t.Fatalf("Node two minipool one performance not found")
 	}
@@ -600,7 +600,7 @@ func TestMockNoRPLRewards(tt *testing.T) {
 	if perfTwo.GetEffectiveCommission().Uint64() != 100000000000000000 {
 		t.Fatalf("Node two minipool one effective commission does not match expected value: %s != %d", perfTwo.GetEffectiveCommission().String(), 100000000000000000)
 	}
-	perfThree, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeTwo.Minipools[1].Address)
+	perfThree, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeTwo.Minipools[1].Address)
 	if !ok {
 		t.Fatalf("Node two minipool two performance not found")
 	}
@@ -714,14 +714,14 @@ func TestMockOptedOutAndThenBondReduced(tt *testing.T) {
 
 	// Check the minipool performance file
 	minipoolPerformanceFile := v10Artifacts.MinipoolPerformanceFile
-	perfOne, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeOne.Minipools[0].Address)
+	perfOne, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeOne.Minipools[0].Address)
 	if !ok {
 		t.Fatalf("Node one minipool performance should be found")
 	}
 	if perfOne.GetBonusEthEarned().Uint64() != 0 {
 		t.Fatalf("Node one minipool one bonus does not match expected value: %s != %d", perfOne.GetBonusEthEarned().String(), 0)
 	}
-	perfTwo, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeTwo.Minipools[0].Address)
+	perfTwo, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeTwo.Minipools[0].Address)
 	if !ok {
 		t.Fatalf("Node two minipool one performance not found")
 	}
@@ -835,7 +835,7 @@ func TestMockWithdrawableEpoch(tt *testing.T) {
 
 	// Check the minipool performance file
 	minipoolPerformanceFile := v10Artifacts.MinipoolPerformanceFile
-	perfOne, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeOne.Minipools[0].Address)
+	perfOne, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeOne.Minipools[0].Address)
 	if !ok {
 		t.Fatalf("Node one minipool performance should be found")
 	}
@@ -848,7 +848,7 @@ func TestMockWithdrawableEpoch(tt *testing.T) {
 	if perfOne.GetConsensusIncome().Uint64() != 1000000000000000000 {
 		t.Fatalf("Node one minipool one consensus income does not match expected value: %s != %d", perfOne.GetConsensusIncome().String(), 1000000000000000000)
 	}
-	perfTwo, ok := minipoolPerformanceFile.GetSmoothingPoolPerformance(nodeTwo.Minipools[0].Address)
+	perfTwo, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeTwo.Minipools[0].Address)
 	if !ok {
 		t.Fatalf("Node two minipool one performance not found")
 	}

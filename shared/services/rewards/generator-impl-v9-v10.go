@@ -93,7 +93,7 @@ func newTreeGeneratorImpl_v9_v10(rulesetVersion uint64, log *log.ColorLogger, lo
 		invalidNetworkNodes:   map[common.Address]uint64{},
 		minipoolPerformanceFile: &MinipoolPerformanceFile_v2{
 			Index:               index,
-			MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
+			MinipoolPerformance: map[common.Address]*MinipoolPerformance_v2{},
 		},
 		nodeRewards:         map[common.Address]*ssz_types.NodeReward{},
 		networkRewards:      map[ssz_types.Layer]*ssz_types.NetworkReward{},
@@ -567,7 +567,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 			for _, minipoolInfo := range nodeInfo.Minipools {
 				successfulAttestations := uint64(len(minipoolInfo.CompletedAttestations))
 				missingAttestations := uint64(len(minipoolInfo.MissingAttestationSlots))
-				performance := &SmoothingPoolMinipoolPerformance_v2{
+				performance := &MinipoolPerformance_v2{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					SuccessfulAttestations:  successfulAttestations,
 					MissedAttestations:      missingAttestations,

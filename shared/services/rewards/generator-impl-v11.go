@@ -57,7 +57,7 @@ type treeGeneratorImpl_v11 struct {
 	successfulAttestations       uint64
 	genesisTime                  time.Time
 	invalidNetworkNodes          map[common.Address]uint64
-	minipoolPerformanceFile      *MinipoolPerformanceFile_v2
+	performanceFile              *PerformanceFile_v1
 	nodeRewards                  map[common.Address]*ssz_types.NodeReward_v2
 	networkRewards               map[ssz_types.Layer]*ssz_types.NetworkReward
 
@@ -99,9 +99,10 @@ func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint
 		totalPdaoScore:            big.NewInt(0),
 		networkState:              state,
 		invalidNetworkNodes:       map[common.Address]uint64{},
-		minipoolPerformanceFile: &MinipoolPerformanceFile_v2{
+		performanceFile: &PerformanceFile_v1{
 			Index:               index,
-			MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
+			MinipoolPerformance: map[common.Address]*MinipoolPerformance_v2{},
+			MegapoolPerformance: map[common.Address]*MegapoolPerformance_v1{},
 		},
 		nodeRewards:         map[common.Address]*ssz_types.NodeReward_v2{},
 		networkRewards:      map[ssz_types.Layer]*ssz_types.NetworkReward{},
@@ -128,9 +129,9 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 
 	// Set the network name
 	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(networkName)
-	r.minipoolPerformanceFile.Network = networkName
-	r.minipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
-	r.minipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
+	r.performanceFile.Network = networkName
+	r.performanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.performanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -192,7 +193,7 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 	}
 
 	// Sort all of the missed attestations so the files are always generated in the same state
-	for _, minipoolInfo := range r.minipoolPerformanceFile.MinipoolPerformance {
+	for _, minipoolInfo := range r.performanceFile.MinipoolPerformance {
 		sort.Slice(minipoolInfo.MissingAttestationSlots, func(i, j int) bool {
 			return minipoolInfo.MissingAttestationSlots[i] < minipoolInfo.MissingAttestationSlots[j]
 		})
@@ -201,7 +202,7 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 	return &GenerateTreeResult{
 		RewardsFile:             r.rewardsFile,
 		InvalidNetworkNodes:     r.invalidNetworkNodes,
-		MinipoolPerformanceFile: r.minipoolPerformanceFile,
+		MinipoolPerformanceFile: r.performanceFile,
 	}, nil
 
 }
@@ -219,9 +220,9 @@ func (r *treeGeneratorImpl_v11) approximateStakerShareOfSmoothingPool(rp Rewards
 
 	// Set the network name
 	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(networkName)
-	r.minipoolPerformanceFile.Network = networkName
-	r.minipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
-	r.minipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
+	r.performanceFile.Network = networkName
+	r.performanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.performanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -617,7 +618,7 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 		return err
 	}
 	if r.rewardsFile.RulesetVersion >= 10 {
-		r.minipoolPerformanceFile.BonusScalar = QuotedBigIntFromBigInt(nodeRewards.bonusScalar)
+		r.performanceFile.BonusScalar = QuotedBigIntFromBigInt(nodeRewards.bonusScalar)
 	}
 
 	// Update the rewards maps
@@ -679,7 +680,7 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 			for _, minipoolInfo := range nodeInfo.Minipools {
 				successfulAttestations := uint64(len(minipoolInfo.CompletedAttestations))
 				missingAttestations := uint64(len(minipoolInfo.MissingAttestationSlots))
-				performance := &SmoothingPoolMinipoolPerformance_v2{
+				performance := &MinipoolPerformance_v2{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					SuccessfulAttestations:  successfulAttestations,
 					MissedAttestations:      missingAttestations,
@@ -697,7 +698,7 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 				for slot := range minipoolInfo.MissingAttestationSlots {
 					performance.MissingAttestationSlots = append(performance.MissingAttestationSlots, slot)
 				}
-				r.minipoolPerformanceFile.MinipoolPerformance[minipoolInfo.Address] = performance
+				r.performanceFile.MinipoolPerformance[minipoolInfo.Address] = performance
 			}
 
 			// Add the rewards to the running total for the specified network
@@ -1683,19 +1684,19 @@ func (r *treeGeneratorImpl_v11) getBlocksAndTimesForInterval(previousIntervalEve
 	endTime := r.beaconConfig.GetSlotTime(r.snapshotEnd.Slot)
 
 	r.rewardsFile.StartTime = startTime
-	r.minipoolPerformanceFile.StartTime = startTime
+	r.performanceFile.StartTime = startTime
 
 	r.rewardsFile.EndTime = endTime
-	r.minipoolPerformanceFile.EndTime = endTime
+	r.performanceFile.EndTime = endTime
 
 	r.rewardsFile.ConsensusStartBlock = nextEpoch * r.beaconConfig.SlotsPerEpoch
-	r.minipoolPerformanceFile.ConsensusStartBlock = r.rewardsFile.ConsensusStartBlock
+	r.performanceFile.ConsensusStartBlock = r.rewardsFile.ConsensusStartBlock
 
 	r.rewardsFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
-	r.minipoolPerformanceFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
+	r.performanceFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
 
 	r.rewardsFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
-	r.minipoolPerformanceFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
+	r.performanceFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
 
 	// Get the first block that isn't missing
 	var elBlockNumber uint64
@@ -1706,7 +1707,7 @@ func (r *treeGeneratorImpl_v11) getBlocksAndTimesForInterval(previousIntervalEve
 		}
 		if !exists {
 			r.rewardsFile.ConsensusStartBlock++
-			r.minipoolPerformanceFile.ConsensusStartBlock++
+			r.performanceFile.ConsensusStartBlock++
 		} else {
 			elBlockNumber = beaconBlock.ExecutionBlockNumber
 			break
@@ -1717,7 +1718,7 @@ func (r *treeGeneratorImpl_v11) getBlocksAndTimesForInterval(previousIntervalEve
 	if elBlockNumber == 0 {
 		// We are pre-merge, so get the first block after the one from the previous interval
 		r.rewardsFile.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
-		r.minipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
+		r.performanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
 		startElHeader, err = r.rp.HeaderByNumber(context.Background(), big.NewInt(int64(r.rewardsFile.ExecutionStartBlock)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL start block %d: %w", r.rewardsFile.ExecutionStartBlock, err)
@@ -1725,7 +1726,7 @@ func (r *treeGeneratorImpl_v11) getBlocksAndTimesForInterval(previousIntervalEve
 	} else {
 		// We are post-merge, so get the EL block corresponding to the BC block
 		r.rewardsFile.ExecutionStartBlock = elBlockNumber
-		r.minipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
+		r.performanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
 		startElHeader, err = r.rp.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL header for block %d: %w", elBlockNumber, err)

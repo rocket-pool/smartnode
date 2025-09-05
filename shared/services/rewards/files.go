@@ -39,7 +39,7 @@ func ReadLocalMinipoolPerformanceFile(path string) (*LocalMinipoolPerformanceFil
 		return nil, fmt.Errorf("error unmarshaling rewards file from %s: %w", path, err)
 	}
 
-	return NewLocalFile[IMinipoolPerformanceFile](minipoolPerformance, path), nil
+	return NewLocalFile[IPerformanceFile](minipoolPerformance, path), nil
 }
 
 // Interface for local rewards or minipool performance files
@@ -67,7 +67,7 @@ type ILocalFile interface {
 
 // Type aliases
 type LocalRewardsFile = LocalFile[IRewardsFile]
-type LocalMinipoolPerformanceFile = LocalFile[IMinipoolPerformanceFile]
+type LocalMinipoolPerformanceFile = LocalFile[IPerformanceFile]
 
 // NewLocalFile creates the wrapper, but doesn't write to disk.
 // This should be used when generating new trees / performance files.
@@ -198,7 +198,7 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 	files := []ILocalFile{
 		// Do not reorder!
 		// i == 0 - minipool performance file
-		NewLocalFile[IMinipoolPerformanceFile](
+		NewLocalFile[IPerformanceFile](
 			treeResult.MinipoolPerformanceFile,
 			smartnode.GetMinipoolPerformancePath(currentIndex, true),
 		),

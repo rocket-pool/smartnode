@@ -15,16 +15,22 @@ import (
 )
 
 type MinipoolPerformanceFile_v1 struct {
-	Index               uint64                                                  `json:"index"`
-	Network             string                                                  `json:"network"`
-	StartTime           time.Time                                               `json:"startTime,omitempty"`
-	EndTime             time.Time                                               `json:"endTime,omitempty"`
-	ConsensusStartBlock uint64                                                  `json:"consensusStartBlock,omitempty"`
-	ConsensusEndBlock   uint64                                                  `json:"consensusEndBlock,omitempty"`
-	ExecutionStartBlock uint64                                                  `json:"executionStartBlock,omitempty"`
-	ExecutionEndBlock   uint64                                                  `json:"executionEndBlock,omitempty"`
-	MinipoolPerformance map[common.Address]*SmoothingPoolMinipoolPerformance_v1 `json:"minipoolPerformance"`
+	Index               uint64                                     `json:"index"`
+	Network             string                                     `json:"network"`
+	StartTime           time.Time                                  `json:"startTime,omitempty"`
+	EndTime             time.Time                                  `json:"endTime,omitempty"`
+	ConsensusStartBlock uint64                                     `json:"consensusStartBlock,omitempty"`
+	ConsensusEndBlock   uint64                                     `json:"consensusEndBlock,omitempty"`
+	ExecutionStartBlock uint64                                     `json:"executionStartBlock,omitempty"`
+	ExecutionEndBlock   uint64                                     `json:"executionEndBlock,omitempty"`
+	MinipoolPerformance map[common.Address]*MinipoolPerformance_v1 `json:"minipoolPerformance"`
 }
+
+// Type assertion to implement IPerformanceFile
+var _ IPerformanceFile = (*MinipoolPerformanceFile_v1)(nil)
+
+// Type assertion to implement IRewardsFile
+var _ IRewardsFile = (*RewardsFile_v1)(nil)
 
 // Serialize a minipool performance file into bytes
 func (f *MinipoolPerformanceFile_v1) Serialize() ([]byte, error) {
@@ -57,14 +63,26 @@ func (f *MinipoolPerformanceFile_v1) GetMinipoolAddresses() []common.Address {
 	return addresses
 }
 
+func (f *MinipoolPerformanceFile_v1) GetMegapoolAddresses() []common.Address {
+	return nil
+}
+
+func (f *MinipoolPerformanceFile_v1) GetMegapoolPerformance(megapoolAddress common.Address, pubkey types.ValidatorPubkey) (ISmoothingPoolPerformance, bool) {
+	return nil, false
+}
+
+func (f *MinipoolPerformanceFile_v1) GetMegapoolValidatorPubkeys(megapoolAddress common.Address) ([]types.ValidatorPubkey, error) {
+	return nil, nil
+}
+
 // Get a minipool's smoothing pool performance if it was present
-func (f *MinipoolPerformanceFile_v1) GetSmoothingPoolPerformance(minipoolAddress common.Address) (ISmoothingPoolMinipoolPerformance, bool) {
+func (f *MinipoolPerformanceFile_v1) GetMinipoolPerformance(minipoolAddress common.Address) (ISmoothingPoolPerformance, bool) {
 	perf, exists := f.MinipoolPerformance[minipoolAddress]
 	return perf, exists
 }
 
 // Minipool stats
-type SmoothingPoolMinipoolPerformance_v1 struct {
+type MinipoolPerformance_v1 struct {
 	Pubkey                  string   `json:"pubkey"`
 	StartSlot               uint64   `json:"startSlot,omitempty"`
 	EndSlot                 uint64   `json:"endSlot,omitempty"`
@@ -76,31 +94,34 @@ type SmoothingPoolMinipoolPerformance_v1 struct {
 	EthEarned               float64  `json:"ethEarned"`
 }
 
-func (p *SmoothingPoolMinipoolPerformance_v1) GetPubkey() (types.ValidatorPubkey, error) {
+// Type assertion to implement ISmoothingPoolPerformance
+var _ ISmoothingPoolPerformance = (*MinipoolPerformance_v1)(nil)
+
+func (p *MinipoolPerformance_v1) GetPubkey() (types.ValidatorPubkey, error) {
 	return types.HexToValidatorPubkey(p.Pubkey)
 }
-func (p *SmoothingPoolMinipoolPerformance_v1) GetSuccessfulAttestationCount() uint64 {
+func (p *MinipoolPerformance_v1) GetSuccessfulAttestationCount() uint64 {
 	return p.SuccessfulAttestations
 }
-func (p *SmoothingPoolMinipoolPerformance_v1) GetMissedAttestationCount() uint64 {
+func (p *MinipoolPerformance_v1) GetMissedAttestationCount() uint64 {
 	return p.MissedAttestations
 }
-func (p *SmoothingPoolMinipoolPerformance_v1) GetMissingAttestationSlots() []uint64 {
+func (p *MinipoolPerformance_v1) GetMissingAttestationSlots() []uint64 {
 	return p.MissingAttestationSlots
 }
-func (p *SmoothingPoolMinipoolPerformance_v1) GetEthEarned() *big.Int {
+func (p *MinipoolPerformance_v1) GetEthEarned() *big.Int {
 	return eth.EthToWei(p.EthEarned)
 }
-func (p *SmoothingPoolMinipoolPerformance_v1) GetBonusEthEarned() *big.Int {
+func (p *MinipoolPerformance_v1) GetBonusEthEarned() *big.Int {
 	return big.NewInt(0)
 }
-func (p *SmoothingPoolMinipoolPerformance_v1) GetEffectiveCommission() *big.Int {
+func (p *MinipoolPerformance_v1) GetEffectiveCommission() *big.Int {
 	return big.NewInt(0)
 }
-func (p *SmoothingPoolMinipoolPerformance_v1) GetConsensusIncome() *big.Int {
+func (p *MinipoolPerformance_v1) GetConsensusIncome() *big.Int {
 	return big.NewInt(0)
 }
-func (p *SmoothingPoolMinipoolPerformance_v1) GetAttestationScore() *big.Int {
+func (p *MinipoolPerformance_v1) GetAttestationScore() *big.Int {
 	return big.NewInt(0)
 }
 
