@@ -83,6 +83,9 @@ type NodeCollector struct {
 	// The collateral ratio with respect to the amount of bonded ETH
 	bondedCollateralRatio *prometheus.Desc
 
+	// The low ETH balance threshold
+	lowETHBalanceThreshold *prometheus.Desc
+
 	// The Rocket Pool contract manager
 	rp *rocketpool.RocketPool
 
@@ -212,6 +215,10 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManage
 			"The collateral ratio with respect to the amount of bonded ETH",
 			nil, nil,
 		),
+		lowETHBalanceThreshold: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "low_eth_balance_threshold"),
+			"The low ETH balance threshold",
+			nil, nil,
+		),
 		rp:               rp,
 		bc:               bc,
 		ec:               ec,
@@ -246,6 +253,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.unclaimedEthRewards
 	channel <- collector.borrowedCollateralRatio
 	channel <- collector.bondedCollateralRatio
+	channel <- collector.lowETHBalanceThreshold
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -279,6 +287,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	var beaconHead beacon.BeaconHead
 	unclaimedEthRewards := float64(0)
 	unclaimedRplRewards := float64(0)
+	lowETHBalanceThreshold := collector.cfg.Alertmanager.LowETHBalanceThreshold.Value.(float64)
 
 	// Get the cumulative claimed and unclaimed RPL rewards
 	wg.Go(func() error {
@@ -636,6 +645,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.borrowedCollateralRatio, prometheus.GaugeValue, borrowedCollateralRatio)
 	channel <- prometheus.MustNewConstMetric(
 		collector.bondedCollateralRatio, prometheus.GaugeValue, bondedCollateralRatio)
+	channel <- prometheus.MustNewConstMetric(
+		collector.lowETHBalanceThreshold, prometheus.GaugeValue, lowETHBalanceThreshold)
 }
 
 // Log error messages
