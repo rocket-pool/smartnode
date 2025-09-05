@@ -1040,15 +1040,9 @@ func serviceLogs(c *cli.Context, aliasedNames ...string) error {
 }
 
 // View the Rocket Pool service stats
-func serviceStats(c *cli.Context) error {
-
-	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
-	defer rp.Close()
-
-	// Print service stats
-	return rp.PrintServiceStats(getComposeFiles(c))
-
+func serviceStats() error {
+	fmt.Println("No longer supported - please run 'docker stats -a' instead.")
+	return nil
 }
 
 // View the Rocket Pool service compose config
