@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -215,7 +216,7 @@ func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRew
 	}
 
 	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +226,7 @@ func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRew
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimGas(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, opts)
+	gasInfo, err := rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -263,7 +264,7 @@ func claimRewards(c *cli.Context, indicesString string) (*api.NodeClaimRewardsRe
 	}
 
 	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -281,7 +282,7 @@ func claimRewards(c *cli.Context, indicesString string) (*api.NodeClaimRewardsRe
 	}
 
 	// Claim rewards
-	hash, err := rewards.Claim(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, opts)
+	hash, err := rewards.Claim(rp, nodeAccount.Address, claims, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -321,7 +322,7 @@ func canClaimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *
 	}
 
 	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -331,7 +332,7 @@ func canClaimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimAndStakeGas(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
+	gasInfo, err := rewards.EstimateClaimAndStakeGas(rp, nodeAccount.Address, claims, stakeAmount, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -375,7 +376,7 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 	}
 
 	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -387,7 +388,7 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 	}
 
 	// Claim rewards
-	hash, err := rewards.ClaimAndStake(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
+	hash, err := rewards.ClaimAndStake(rp, nodeAccount.Address, claims, stakeAmount, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -399,7 +400,7 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 }
 
 // Get the rewards for the provided interval indices
-func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) ([]*big.Int, []*big.Int, []*big.Int, [][]common.Hash, error) {
+func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) (types.Claims, error) {
 
 	// Get the indices
 	seenIndices := map[uint64]bool{}
@@ -408,7 +409,7 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 	for _, element := range elements {
 		index, err := strconv.ParseUint(element, 0, 64)
 		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("cannot convert index %s to a number: %w", element, err)
+			return nil, fmt.Errorf("cannot convert index %s to a number: %w", element, err)
 		}
 		// Ignore duplicates
 		_, exists := seenIndices[index]
@@ -419,24 +420,22 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 	}
 
 	// Read the tree files to get the details
-	amountRPL := []*big.Int{}
-	amountETH := []*big.Int{}
-	merkleProofs := [][]common.Hash{}
+	claims := types.Claims{}
 
 	// Populate the interval info for each one
 	for _, index := range indices {
 
 		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, index.Uint64(), nil)
 		if err != nil {
-			return nil, nil, nil, nil, err
+			return nil, err
 		}
 
 		// Validate
 		if !intervalInfo.TreeFileExists {
-			return nil, nil, nil, nil, fmt.Errorf("rewards tree file '%s' doesn't exist", intervalInfo.TreeFilePath)
+			return nil, fmt.Errorf("rewards tree file '%s' doesn't exist", intervalInfo.TreeFilePath)
 		}
 		if !intervalInfo.MerkleRootValid {
-			return nil, nil, nil, nil, fmt.Errorf("merkle root for rewards tree file '%s' doesn't match the canonical merkle root for interval %d", intervalInfo.TreeFilePath, index.Uint64())
+			return nil, fmt.Errorf("merkle root for rewards tree file '%s' doesn't match the canonical merkle root for interval %d", intervalInfo.TreeFilePath, index.Uint64())
 		}
 
 		// Get the rewards from it
@@ -445,16 +444,23 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 			rplForInterval.Add(rplForInterval, &intervalInfo.CollateralRplAmount.Int)
 			rplForInterval.Add(rplForInterval, &intervalInfo.ODaoRplAmount.Int)
 
-			ethForInterval := big.NewInt(0)
-			ethForInterval.Add(ethForInterval, &intervalInfo.SmoothingPoolEthAmount.Int)
+			smoothingEthForInterval := big.NewInt(0)
+			smoothingEthForInterval.Add(smoothingEthForInterval, &intervalInfo.SmoothingPoolEthAmount.Int)
 
-			amountRPL = append(amountRPL, rplForInterval)
-			amountETH = append(amountETH, ethForInterval)
-			merkleProofs = append(merkleProofs, intervalInfo.MerkleProof)
+			voterShareEthForInterval := big.NewInt(0)
+			voterShareEthForInterval.Add(voterShareEthForInterval, &intervalInfo.VoterShareEth.Int)
+
+			claims = append(claims, types.Claim{
+				Index:               index,
+				AmountRPL:           rplForInterval,
+				AmountSmoothingETH:  smoothingEthForInterval,
+				AmountVoterShareETH: voterShareEthForInterval,
+				Proof:               intervalInfo.MerkleProof,
+			})
 		}
 	}
 
 	// Return
-	return indices, amountRPL, amountETH, merkleProofs, nil
+	return claims, nil
 
 }

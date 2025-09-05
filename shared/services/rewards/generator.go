@@ -216,7 +216,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 
 type GenerateTreeResult struct {
 	RewardsFile             IRewardsFile
-	MinipoolPerformanceFile IMinipoolPerformanceFile
+	MinipoolPerformanceFile IPerformanceFile
 	InvalidNetworkNodes     map[common.Address]uint64
 }
 

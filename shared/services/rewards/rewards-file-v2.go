@@ -14,19 +14,22 @@ import (
 )
 
 type MinipoolPerformanceFile_v2 struct {
-	RewardsFileVersion  uint64                                                  `json:"rewardsFileVersion"`
-	RulesetVersion      uint64                                                  `json:"rulesetVersion"`
-	Index               uint64                                                  `json:"index"`
-	Network             string                                                  `json:"network"`
-	StartTime           time.Time                                               `json:"startTime,omitempty"`
-	EndTime             time.Time                                               `json:"endTime,omitempty"`
-	ConsensusStartBlock uint64                                                  `json:"consensusStartBlock,omitempty"`
-	ConsensusEndBlock   uint64                                                  `json:"consensusEndBlock,omitempty"`
-	ExecutionStartBlock uint64                                                  `json:"executionStartBlock,omitempty"`
-	ExecutionEndBlock   uint64                                                  `json:"executionEndBlock,omitempty"`
-	MinipoolPerformance map[common.Address]*SmoothingPoolMinipoolPerformance_v2 `json:"minipoolPerformance"`
-	BonusScalar         *QuotedBigInt                                           `json:"bonusScalar,omitempty"`
+	RewardsFileVersion  uint64                                     `json:"rewardsFileVersion"`
+	RulesetVersion      uint64                                     `json:"rulesetVersion"`
+	Index               uint64                                     `json:"index"`
+	Network             string                                     `json:"network"`
+	StartTime           time.Time                                  `json:"startTime,omitempty"`
+	EndTime             time.Time                                  `json:"endTime,omitempty"`
+	ConsensusStartBlock uint64                                     `json:"consensusStartBlock,omitempty"`
+	ConsensusEndBlock   uint64                                     `json:"consensusEndBlock,omitempty"`
+	ExecutionStartBlock uint64                                     `json:"executionStartBlock,omitempty"`
+	ExecutionEndBlock   uint64                                     `json:"executionEndBlock,omitempty"`
+	MinipoolPerformance map[common.Address]*MinipoolPerformance_v2 `json:"minipoolPerformance"`
+	BonusScalar         *QuotedBigInt                              `json:"bonusScalar,omitempty"`
 }
+
+// Type assertion to implement IPerformanceFile
+var _ IPerformanceFile = (*MinipoolPerformanceFile_v2)(nil)
 
 // Serialize a minipool performance file into bytes
 func (f *MinipoolPerformanceFile_v2) Serialize() ([]byte, error) {
@@ -59,14 +62,26 @@ func (f *MinipoolPerformanceFile_v2) GetMinipoolAddresses() []common.Address {
 	return addresses
 }
 
+func (f *MinipoolPerformanceFile_v2) GetMegapoolAddresses() []common.Address {
+	return nil
+}
+
+func (f *MinipoolPerformanceFile_v2) GetMegapoolPerformance(megapoolAddress common.Address, pubkey types.ValidatorPubkey) (ISmoothingPoolPerformance, bool) {
+	return nil, false
+}
+
+func (f *MinipoolPerformanceFile_v2) GetMegapoolValidatorPubkeys(megapoolAddress common.Address) ([]types.ValidatorPubkey, error) {
+	return nil, nil
+}
+
 // Get a minipool's smoothing pool performance if it was present
-func (f *MinipoolPerformanceFile_v2) GetSmoothingPoolPerformance(minipoolAddress common.Address) (ISmoothingPoolMinipoolPerformance, bool) {
+func (f *MinipoolPerformanceFile_v2) GetMinipoolPerformance(minipoolAddress common.Address) (ISmoothingPoolPerformance, bool) {
 	perf, exists := f.MinipoolPerformance[minipoolAddress]
 	return perf, exists
 }
 
 // Minipool stats
-type SmoothingPoolMinipoolPerformance_v2 struct {
+type MinipoolPerformance_v2 struct {
 	Pubkey                  string        `json:"pubkey"`
 	SuccessfulAttestations  uint64        `json:"successfulAttestations"`
 	MissedAttestations      uint64        `json:"missedAttestations"`
@@ -78,40 +93,43 @@ type SmoothingPoolMinipoolPerformance_v2 struct {
 	EffectiveCommission     *QuotedBigInt `json:"effectiveCommission,omitempty"`
 }
 
-func (p *SmoothingPoolMinipoolPerformance_v2) GetPubkey() (types.ValidatorPubkey, error) {
+// Type assertion to implement ISmoothingPoolPerformance
+var _ ISmoothingPoolPerformance = (*MinipoolPerformance_v2)(nil)
+
+func (p *MinipoolPerformance_v2) GetPubkey() (types.ValidatorPubkey, error) {
 	return types.HexToValidatorPubkey(p.Pubkey)
 }
-func (p *SmoothingPoolMinipoolPerformance_v2) GetSuccessfulAttestationCount() uint64 {
+func (p *MinipoolPerformance_v2) GetSuccessfulAttestationCount() uint64 {
 	return p.SuccessfulAttestations
 }
-func (p *SmoothingPoolMinipoolPerformance_v2) GetMissedAttestationCount() uint64 {
+func (p *MinipoolPerformance_v2) GetMissedAttestationCount() uint64 {
 	return p.MissedAttestations
 }
-func (p *SmoothingPoolMinipoolPerformance_v2) GetMissingAttestationSlots() []uint64 {
+func (p *MinipoolPerformance_v2) GetMissingAttestationSlots() []uint64 {
 	return p.MissingAttestationSlots
 }
-func (p *SmoothingPoolMinipoolPerformance_v2) GetEthEarned() *big.Int {
+func (p *MinipoolPerformance_v2) GetEthEarned() *big.Int {
 	return &p.EthEarned.Int
 }
-func (p *SmoothingPoolMinipoolPerformance_v2) GetBonusEthEarned() *big.Int {
+func (p *MinipoolPerformance_v2) GetBonusEthEarned() *big.Int {
 	if p.BonusEthEarned == nil {
 		return big.NewInt(0)
 	}
 	return &p.BonusEthEarned.Int
 }
-func (p *SmoothingPoolMinipoolPerformance_v2) GetEffectiveCommission() *big.Int {
+func (p *MinipoolPerformance_v2) GetEffectiveCommission() *big.Int {
 	if p.EffectiveCommission == nil {
 		return big.NewInt(0)
 	}
 	return &p.EffectiveCommission.Int
 }
-func (p *SmoothingPoolMinipoolPerformance_v2) GetConsensusIncome() *big.Int {
+func (p *MinipoolPerformance_v2) GetConsensusIncome() *big.Int {
 	if p.ConsensusIncome == nil {
 		return big.NewInt(0)
 	}
 	return &p.ConsensusIncome.Int
 }
-func (p *SmoothingPoolMinipoolPerformance_v2) GetAttestationScore() *big.Int {
+func (p *MinipoolPerformance_v2) GetAttestationScore() *big.Int {
 	return &p.AttestationScore.Int
 }
 
@@ -287,6 +305,14 @@ func (f *RewardsFile_v2) GetNodeSmoothingPoolEth(addr common.Address) *big.Int {
 		return big.NewInt(0)
 	}
 	return &nr.SmoothingPoolEth.Int
+}
+
+func (f *RewardsFile_v2) GetNodeVoterShareEth(addr common.Address) *big.Int {
+	return big.NewInt(0)
+}
+
+func (f *RewardsFile_v2) GetNodeEth(addr common.Address) *big.Int {
+	return f.GetNodeSmoothingPoolEth(addr)
 }
 
 // Getters for network info
