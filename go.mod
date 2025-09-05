@@ -1,6 +1,6 @@
 module github.com/rocket-pool/smartnode
 
-go 1.24.5
+go 1.25.1
 
 // Do not update until you can test that its regression on ARM is resolved
 require github.com/herumi/bls-eth-go-binary v1.28.1
