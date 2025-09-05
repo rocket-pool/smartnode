@@ -678,13 +678,118 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
 		}
 	}
-	/*
 
-		megapoolStakedRplSpNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_sp")
-		megapoolStakedRplSpMinipoolsNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_sp_minipools")
-		megapoolStakedRplSpMinipoolsCollateralNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_sp_minipools_collateral")
-	*/
+	megapoolStakedRplSpNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_sp")
+	for _, node := range megapoolStakedRplSpNodes {
+		validatorCount := node.MegapoolValidators
+		// Check the rewards amount in the rewards file
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("91125852739110953396", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		expectedRewardsAmount.Mul(expectedRewardsAmount, big.NewInt(int64(validatorCount)))
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
+		}
 
+		// Make sure it got ETH
+		expectedEthAmount, _ := big.NewInt(0).SetString("257458459214501510", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		expectedEthAmount.Mul(expectedEthAmount, big.NewInt(int64(validatorCount)))
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Cmp(expectedEthAmount) != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got voter share ETH
+		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("933456067472306143", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Cmp(exepectedVoterShareEthAmount) != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+		}
+	}
+
+	megapoolStakedRplSpMinipoolsNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_sp_minipools")
+	for _, node := range megapoolStakedRplSpMinipoolsNodes {
+		validatorCount := node.MegapoolValidators
+		// Check the rewards amount in the rewards file
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("91125852739110953396", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		expectedRewardsAmount.Mul(expectedRewardsAmount, big.NewInt(int64(validatorCount)))
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
+		}
+
+		// Make sure it got ETH
+		expectedEthAmount, _ := big.NewInt(0).SetString("2927398036253776432", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		expectedEthAmount.Mul(expectedEthAmount, big.NewInt(int64(validatorCount)))
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Cmp(expectedEthAmount) != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got voter share ETH
+		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("933456067472306143", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Cmp(exepectedVoterShareEthAmount) != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+		}
+	}
+
+	megapoolStakedRplSpMinipoolsCollateralNodes := nodeSummary.MustGetClass(tt, "megapool_staked_rpl_sp_minipools_collateral")
+	for _, node := range megapoolStakedRplSpMinipoolsCollateralNodes {
+		validatorCount := node.MegapoolValidators
+		// Check the rewards amount in the rewards file
+		expectedRewardsAmount, _ := big.NewInt(0).SetString("91125852739110953396", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		expectedRewardsAmount.Mul(expectedRewardsAmount, big.NewInt(int64(validatorCount)))
+		// Add a constant amount for minipool rewards
+		minipoolRewardsAmount, _ := big.NewInt(0).SetString("911258527391109533960", 10)
+		expectedRewardsAmount.Add(expectedRewardsAmount, minipoolRewardsAmount)
+		rewardsAmount := rewardsFile.GetNodeCollateralRpl(node.Address)
+		if rewardsAmount.Cmp(expectedRewardsAmount) != 0 {
+			t.Fatalf("Rewards amount does not match expected value for node %s: %s != %s", node.Notes, rewardsAmount.String(), expectedRewardsAmount.String())
+		}
+
+		// Make sure it got ETH
+		expectedEthAmount, _ := big.NewInt(0).SetString("3213270392749244710", 10)
+		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
+		if ethAmount.Cmp(expectedEthAmount) != 0 {
+			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
+		}
+
+		// Make sure it got 0 oDAO rpl
+		oDaoRplAmount := rewardsFile.GetNodeOracleDaoRpl(node.Address)
+		if oDaoRplAmount.Sign() != 0 {
+			t.Fatalf("oDAO rpl amount does not match expected value for node %s: %s != %s", node.Notes, oDaoRplAmount.String(), "0")
+		}
+
+		// Make sure it got voter share ETH
+		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("933456067472306143", 10)
+		// Multiply by i+1 since the number of validators scales with i+1
+		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
+		if voterShareEthAmount.Cmp(exepectedVoterShareEthAmount) != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+		}
+	}
 	// Validate merkle root
 	v11MerkleRoot := v11Artifacts.RewardsFile.GetMerkleRoot()
 
