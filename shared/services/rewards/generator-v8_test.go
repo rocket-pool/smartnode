@@ -31,7 +31,7 @@ func (t *v8Test) saveArtifacts(prefix string, result *GenerateTreeResult) {
 		f:        result.RewardsFile,
 	}
 	performanceLocalFile := LocalFile[IPerformanceFile]{
-		fullPath: filepath.Join(tmpDir, fmt.Sprintf("%s-minipool-performance.json", prefix)),
+		fullPath: filepath.Join(tmpDir, fmt.Sprintf("%s-performance.json", prefix)),
 		f:        result.MinipoolPerformanceFile,
 	}
 	_, err = rewardsLocalFile.Write()

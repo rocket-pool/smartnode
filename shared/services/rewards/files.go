@@ -195,15 +195,22 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 	var primaryCid *cid.Cid
 	out := make(map[string]cid.Cid, 4)
 
+	var performancePath string
+	if treeResult.RulesetVersion < 11 {
+		performancePath = smartnode.GetMinipoolPerformancePath(currentIndex, true)
+	} else {
+		performancePath = smartnode.GetPerformancePath(currentIndex)
+	}
+
 	files := []ILocalFile{
 		// Do not reorder!
-		// i == 0 - minipool performance file
-		NewLocalFile[IPerformanceFile](
+		// i == 0 - performance file
+		NewLocalFile(
 			treeResult.MinipoolPerformanceFile,
-			smartnode.GetMinipoolPerformancePath(currentIndex, true),
+			performancePath,
 		),
 		// i == 1 - rewards file
-		NewLocalFile[IRewardsFile](
+		NewLocalFile(
 			rewardsFile,
 			smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON),
 		),
@@ -216,7 +223,7 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 		files = append(
 			files,
 			// i == 2 - ssz rewards file
-			NewLocalFile[IRewardsFile](
+			NewLocalFile(
 				rewardsFile,
 				smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionSSZ),
 			),

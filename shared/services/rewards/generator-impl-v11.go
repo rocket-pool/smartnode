@@ -205,6 +205,7 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 	}
 
 	return &GenerateTreeResult{
+		RulesetVersion:          r.rewardsFile.RulesetVersion,
 		RewardsFile:             r.rewardsFile,
 		InvalidNetworkNodes:     r.invalidNetworkNodes,
 		MinipoolPerformanceFile: r.performanceFile,
