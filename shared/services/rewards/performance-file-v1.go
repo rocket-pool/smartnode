@@ -3,6 +3,7 @@ package rewards
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -32,8 +33,8 @@ var _ IPerformanceFile = (*PerformanceFile_v1)(nil)
 type MegapoolPerformanceMap map[types.ValidatorPubkey]*MegapoolValidatorPerformance_v1
 
 type MegapoolPerformance_v1 struct {
-	VoterShare           *QuotedBigInt          `json:"voterShare"`
-	ValidatorPerformance MegapoolPerformanceMap `json:"validatorPerformance"`
+	VoterShare           *QuotedBigInt          `json:"voterShare,omitempty"`
+	ValidatorPerformance MegapoolPerformanceMap `json:"validatorPerformance,omitempty"`
 }
 
 // MegapoolPerformanceMap has a custom JSON marshaler to avoid the issue with ValidatorPubkey not being a valid dict key.
@@ -60,15 +61,56 @@ func (m *MegapoolPerformanceMap) UnmarshalJSON(data []byte) error {
 		if err != nil {
 			return fmt.Errorf("error decoding pubkey %s: %w", pubkey, err)
 		}
+		perf.pubkey = pubkey
 		(*m)[types.ValidatorPubkey(pubkeyBytes)] = perf
 	}
 	return nil
 }
 
-// Conveniently, v2 minipool performance tracks all the same fields
-// as a single megapool validator, but has 3 extras.
-// Those fields are omitempty anyway, so we will just leave them nil
-type MegapoolValidatorPerformance_v1 = MinipoolPerformance_v2
+type MegapoolValidatorPerformance_v1 struct {
+	pubkey                  string        `json:"-"`
+	SuccessfulAttestations  uint64        `json:"successfulAttestations"`
+	MissedAttestations      uint64        `json:"missedAttestations"`
+	AttestationScore        *QuotedBigInt `json:"attestationScore"`
+	MissingAttestationSlots []uint64      `json:"missingAttestationSlots"`
+	EthEarned               *QuotedBigInt `json:"ethEarned"`
+}
+
+func (p *MegapoolValidatorPerformance_v1) GetAttestationScore() *big.Int {
+	return &p.AttestationScore.Int
+}
+
+func (p *MegapoolValidatorPerformance_v1) GetBonusEthEarned() *big.Int {
+	return nil
+}
+
+func (p *MegapoolValidatorPerformance_v1) GetConsensusIncome() *big.Int {
+	return nil
+}
+
+func (p *MegapoolValidatorPerformance_v1) GetEffectiveCommission() *big.Int {
+	return nil
+}
+
+func (p *MegapoolValidatorPerformance_v1) GetEthEarned() *big.Int {
+	return &p.EthEarned.Int
+}
+
+func (p *MegapoolValidatorPerformance_v1) GetPubkey() (types.ValidatorPubkey, error) {
+	return types.HexToValidatorPubkey(p.pubkey)
+}
+
+func (p *MegapoolValidatorPerformance_v1) GetMissedAttestationCount() uint64 {
+	return p.MissedAttestations
+}
+
+func (p *MegapoolValidatorPerformance_v1) GetMissingAttestationSlots() []uint64 {
+	return p.MissingAttestationSlots
+}
+
+func (p *MegapoolValidatorPerformance_v1) GetSuccessfulAttestationCount() uint64 {
+	return p.SuccessfulAttestations
+}
 
 // Type assertion to implement ISmoothingPoolPerformance
 var _ ISmoothingPoolPerformance = (*MegapoolValidatorPerformance_v1)(nil)

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"sort"
+	"slices"
 	"sync"
 	"time"
 
@@ -70,7 +70,7 @@ type treeGeneratorImpl_v11 struct {
 func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v11 {
 	return &treeGeneratorImpl_v11{
 		rewardsFile: &ssz_types.SSZFile_v2{
-			RewardsFileVersion: 3,
+			RewardsFileVersion: 4,
 			RulesetVersion:     11,
 			Index:              index,
 			IntervalsPassed:    intervalsPassed,
@@ -84,6 +84,7 @@ func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint
 				TotalNodeWeight:              sszbig.NewUint256(0),
 				TotalVoterShareEth:           sszbig.NewUint256(0),
 				SmoothingPoolVoterShareEth:   sszbig.NewUint256(0),
+				TotalPdaoShareEth:            sszbig.NewUint256(0),
 			},
 			NetworkRewards: ssz_types.NetworkRewards{},
 			NodeRewards:    ssz_types.NodeRewards_v2{},
@@ -194,9 +195,13 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 
 	// Sort all of the missed attestations so the files are always generated in the same state
 	for _, minipoolInfo := range r.performanceFile.MinipoolPerformance {
-		sort.Slice(minipoolInfo.MissingAttestationSlots, func(i, j int) bool {
-			return minipoolInfo.MissingAttestationSlots[i] < minipoolInfo.MissingAttestationSlots[j]
-		})
+		slices.Sort(minipoolInfo.MissingAttestationSlots)
+	}
+
+	for _, megapoolInfo := range r.performanceFile.MegapoolPerformance {
+		for _, validatorInfo := range megapoolInfo.ValidatorPerformance {
+			slices.Sort(validatorInfo.MissingAttestationSlots)
+		}
 	}
 
 	return &GenerateTreeResult{
@@ -707,14 +712,11 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 					successfulAttestations := uint64(len(validator.CompletedAttestations))
 					missingAttestations := uint64(len(validator.MissingAttestationSlots))
 					performance := &MegapoolValidatorPerformance_v1{
-						Pubkey:                  validator.Pubkey.Hex(),
+						pubkey:                  validator.Pubkey.Hex(),
 						SuccessfulAttestations:  successfulAttestations,
 						MissedAttestations:      missingAttestations,
 						AttestationScore:        validator.AttestationScore,
 						EthEarned:               QuotedBigIntFromBigInt(validator.MegapoolValidatorShare),
-						BonusEthEarned:          nil,
-						ConsensusIncome:         nil,
-						EffectiveCommission:     nil,
 						MissingAttestationSlots: []uint64{},
 					}
 					if successfulAttestations+missingAttestations == 0 {
@@ -743,12 +745,25 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 			}
 			rewardsForNetwork.SmoothingPoolEth.Add(rewardsForNetwork.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
 		}
+
+		// Finally, take care of adding voter share to the performance file
+		if nodeInfo.VoterShareEth.Cmp(common.Big0) > 0 {
+			performance, exists := r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address]
+			if !exists {
+				performance = &MegapoolPerformance_v1{
+					VoterShare: QuotedBigIntFromBigInt(nodeInfo.VoterShareEth),
+				}
+				r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address] = performance
+			}
+		}
 	}
 
 	// Set the totals
 	r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Set(nodeRewards.poolStakerEth)
 	r.rewardsFile.TotalRewards.NodeOperatorSmoothingPoolEth.Set(nodeRewards.nodeOpEth)
 	r.rewardsFile.TotalRewards.TotalSmoothingPoolEth.Set(r.smoothingPoolBalance)
+	r.rewardsFile.TotalRewards.TotalVoterShareEth.Set(nodeRewards.voterEth)
+	r.rewardsFile.TotalRewards.TotalPdaoShareEth.Set(nodeRewards.pdaoEth)
 	return nil
 
 }
@@ -851,6 +866,9 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 		voterEth.Mul(smoothingPoolBalance, r.totalVoterScore)
 		voterEth.Div(voterEth, big.NewInt(int64(r.successfulAttestations)))
 		voterEth.Div(voterEth, oneEth)
+
+		// Set the voter share eth in the rewards file
+		r.rewardsFile.TotalRewards.SmoothingPoolVoterShareEth.Set(voterEth)
 
 		// Add in the earmarked voter share
 		voterEth.Add(voterEth, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare)

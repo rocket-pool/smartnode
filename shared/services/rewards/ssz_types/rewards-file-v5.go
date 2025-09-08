@@ -299,6 +299,8 @@ type TotalRewards_v2 struct {
 	// Smoothing Pool Voter Share is the portion of TotalVoterShareEth that comes from
 	// the Smoothing Pool contract (as opposed to megapool distribution)
 	SmoothingPoolVoterShareEth big.Uint256 `ssz-size:"32" json:"smoothingPoolVoterShareEth"`
+	// Total amount of Eth sent to the pDAO
+	TotalPdaoShareEth big.Uint256 `ssz-size:"32" json:"totalPdaoShareEth"`
 }
 
 type NodeReward_v2 struct {
