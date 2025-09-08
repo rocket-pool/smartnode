@@ -60,6 +60,8 @@ type treeGeneratorImpl_v11 struct {
 	performanceFile              *PerformanceFile_v1
 	nodeRewards                  map[common.Address]*ssz_types.NodeReward_v2
 	networkRewards               map[ssz_types.Layer]*ssz_types.NetworkReward
+	// Whether the interval is eligible for consensus bonuses
+	isEligibleInterval bool
 
 	// fields for RPIP-62 bonus calculations
 	// Withdrawals made by a minipool's validator.
@@ -67,7 +69,7 @@ type treeGeneratorImpl_v11 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v11 {
+func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, isEligibleInterval bool) *treeGeneratorImpl_v11 {
 	return &treeGeneratorImpl_v11{
 		rewardsFile: &ssz_types.SSZFile_v2{
 			RewardsFileVersion: 4,
@@ -108,6 +110,7 @@ func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint
 		nodeRewards:         map[common.Address]*ssz_types.NodeReward_v2{},
 		networkRewards:      map[ssz_types.Layer]*ssz_types.NetworkReward{},
 		minipoolWithdrawals: map[common.Address]*big.Int{},
+		isEligibleInterval:  isEligibleInterval,
 	}
 }
 
@@ -916,9 +919,8 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	}
 
 	// Calculate the minipool bonuses
-	isEligibleInterval := true // TODO - check on-chain for saturn 1
 	var totalConsensusBonus *big.Int
-	if r.rewardsFile.RulesetVersion >= 10 && isEligibleInterval {
+	if r.rewardsFile.RulesetVersion >= 10 && r.isEligibleInterval {
 		totalConsensusBonus, err = r.calculateNodeBonuses()
 		if err != nil {
 			return nil, err

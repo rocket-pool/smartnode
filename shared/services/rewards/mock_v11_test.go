@@ -90,6 +90,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		},
 		/* intervalsPassed= */ 1,
 		state,
+		true,
 	)
 
 	v11Artifacts, err := generatorv11.generateTree(
@@ -878,6 +879,7 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 		},
 		/* intervalsPassed= */ 1,
 		state,
+		true,
 	)
 
 	v11Artifacts, err := generatorv11.generateTree(
@@ -988,6 +990,7 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 		},
 		/* intervalsPassed= */ 1,
 		state,
+		true,
 	)
 
 	v11Artifacts, err := generatorv11.generateTree(
@@ -1116,6 +1119,7 @@ func TestMockOptedOutAndThenBondReducedV11(tt *testing.T) {
 		},
 		/* intervalsPassed= */ 1,
 		state,
+		true,
 	)
 
 	v11Artifacts, err := generatorv11.generateTree(
@@ -1238,6 +1242,7 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 		},
 		/* intervalsPassed= */ 1,
 		state,
+		true,
 	)
 
 	v11Artifacts, err := generatorv11.generateTree(
