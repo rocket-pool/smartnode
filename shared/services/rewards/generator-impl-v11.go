@@ -1149,10 +1149,9 @@ func (r *treeGeneratorImpl_v11) processEpoch(duringInterval bool, epoch uint64) 
 
 	// Process all of the slots in the epoch
 	for i := uint64(0); i < r.slotsPerEpoch; i++ {
-		inclusionSlot := epoch*r.slotsPerEpoch + i
 		attestations := attestationsPerSlot[i]
 		if len(attestations) > 0 {
-			r.checkAttestations(attestations, inclusionSlot)
+			r.checkAttestations(attestations)
 		}
 	}
 
@@ -1160,7 +1159,7 @@ func (r *treeGeneratorImpl_v11) processEpoch(duringInterval bool, epoch uint64) 
 
 }
 
-func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.AttestationInfo, inclusionSlot uint64) error {
+func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.AttestationInfo) error {
 
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
