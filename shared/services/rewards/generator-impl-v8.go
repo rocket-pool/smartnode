@@ -83,7 +83,7 @@ func newTreeGeneratorImpl_v8(log *log.ColorLogger, logPrefix string, index uint6
 				EndTime:             endTime.UTC(),
 				ConsensusEndBlock:   consensusBlock,
 				ExecutionEndBlock:   elSnapshotHeader.Number.Uint64(),
-				MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
+				MinipoolPerformance: map[common.Address]*MinipoolPerformance_v2{},
 			},
 		},
 		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
@@ -170,6 +170,7 @@ func (r *treeGeneratorImpl_v8) generateTree(rp RewardsExecutionClient, networkNa
 	}
 
 	return &GenerateTreeResult{
+		RulesetVersion:          r.rewardsFile.RulesetVersion,
 		RewardsFile:             r.rewardsFile,
 		InvalidNetworkNodes:     r.invalidNetworkNodes,
 		MinipoolPerformanceFile: &r.rewardsFile.MinipoolPerformanceFile,
@@ -634,7 +635,7 @@ func (r *treeGeneratorImpl_v8) calculateEthRewards(checkBeaconPerformance bool) 
 			for _, minipoolInfo := range nodeInfo.Minipools {
 				successfulAttestations := uint64(len(minipoolInfo.CompletedAttestations))
 				missingAttestations := uint64(len(minipoolInfo.MissingAttestationSlots))
-				performance := &SmoothingPoolMinipoolPerformance_v2{
+				performance := &MinipoolPerformance_v2{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					SuccessfulAttestations:  successfulAttestations,
 					MissedAttestations:      missingAttestations,
@@ -860,7 +861,7 @@ func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.Attestat
 			blockTime := r.genesisTime.Add(time.Second * time.Duration(r.networkState.BeaconConfig.SecondsPerSlot*attestation.SlotIndex))
 
 			// Check if each RP validator attested successfully
-			for position, validator := range rpCommittee.Positions {
+			for position, positionInfo := range rpCommittee.Positions {
 				if !attestation.ValidatorAttested(committeeIndex, position, slotInfo.CommitteeSizes) {
 					continue
 				}
@@ -873,20 +874,20 @@ func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.Attestat
 				if len(slotInfo.Committees) == 0 {
 					delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
 				}
-				delete(validator.MissingAttestationSlots, attestation.SlotIndex)
+				positionInfo.DeleteMissingAttestationSlot(attestation.SlotIndex)
 
 				// Check if this minipool was opted into the SP for this block
-				nodeDetails := r.nodeDetails[validator.NodeIndex]
+				nodeDetails := positionInfo.GetNodeDetails()
 				if blockTime.Sub(nodeDetails.OptInTime) < 0 || nodeDetails.OptOutTime.Sub(blockTime) < 0 {
 					// Not opted in
 					continue
 				}
 
 				// Mark this duty as completed
-				validator.CompletedAttestations[attestation.SlotIndex] = true
+				positionInfo.MarkAttestationCompleted(attestation.SlotIndex)
 
 				// Get the pseudoscore for this attestation
-				details := r.networkState.MinipoolDetailsByAddress[validator.Address]
+				details := r.networkState.MinipoolDetailsByAddress[positionInfo.MinipoolInfo.Address]
 				bond, fee := r.getMinipoolBondAndNodeFee(details, blockTime)
 				minipoolScore := big.NewInt(0).Sub(one, fee)   // 1 - fee
 				minipoolScore.Mul(minipoolScore, bond)         // Multiply by bond
@@ -894,7 +895,7 @@ func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.Attestat
 				minipoolScore.Add(minipoolScore, fee)          // Total = fee + (bond/32)(1 - fee)
 
 				// Add it to the minipool's score and the total score
-				validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
+				positionInfo.MinipoolInfo.AttestationScore.Add(&positionInfo.MinipoolInfo.AttestationScore.Int, minipoolScore)
 				r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
 				r.successfulAttestations++
 			}
@@ -931,7 +932,7 @@ func (r *treeGeneratorImpl_v8) getDutiesForEpoch(committees beacon.Committees) e
 		slotInfo.CommitteeSizes[committeeIndex] = committees.ValidatorCount(idx)
 
 		// Check if there are any RP validators in this committee
-		rpValidators := map[int]*MinipoolInfo{}
+		rpValidators := map[int]*PositionInfo{}
 		for position, validator := range committees.Validators(idx) {
 			minipoolInfo, exists := r.validatorIndexMap[validator]
 			if !exists {
@@ -940,7 +941,7 @@ func (r *treeGeneratorImpl_v8) getDutiesForEpoch(committees beacon.Committees) e
 			}
 
 			// Check if this minipool was opted into the SP for this block
-			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.NodeAddress]
+			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.Node.Address]
 			isOptedIn := nodeDetails.SmoothingPoolRegistrationState
 			spRegistrationTime := time.Unix(nodeDetails.SmoothingPoolRegistrationChanged.Int64(), 0)
 			if (isOptedIn && blockTime.Sub(spRegistrationTime) < 0) || // If this block occurred before the node opted in, ignore it
@@ -956,7 +957,9 @@ func (r *treeGeneratorImpl_v8) getDutiesForEpoch(committees beacon.Committees) e
 			}
 
 			// This was a legal RP validator opted into the SP during this slot so add it
-			rpValidators[position] = minipoolInfo
+			rpValidators[position] = &PositionInfo{
+				MinipoolInfo: minipoolInfo,
+			}
 			minipoolInfo.MissingAttestationSlots[slotIndex] = true
 		}
 
@@ -1050,6 +1053,7 @@ func (r *treeGeneratorImpl_v8) getSmoothingPoolNodeDetails() error {
 			wg.Go(func() error {
 				nativeNodeDetails := r.networkState.NodeDetails[iterationIndex]
 				nodeDetails := &NodeSmoothingDetails{
+					Index:            iterationIndex,
 					Address:          nativeNodeDetails.NodeAddress,
 					Minipools:        []*MinipoolInfo{},
 					SmoothingPoolEth: big.NewInt(0),
@@ -1086,8 +1090,7 @@ func (r *treeGeneratorImpl_v8) getSmoothingPoolNodeDetails() error {
 						nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
 							Address:         mpd.MinipoolAddress,
 							ValidatorPubkey: mpd.Pubkey,
-							NodeAddress:     nodeDetails.Address,
-							NodeIndex:       iterationIndex,
+							Node:            nodeDetails,
 							Fee:             nativeMinipoolDetails.NodeFee,
 							//MissedAttestations:      0,
 							//GoodAttestations:        0,

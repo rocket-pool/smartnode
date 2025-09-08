@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"slices"
 	"sync"
 	"time"
 
@@ -27,9 +26,9 @@ type RewardsEvent struct {
 	ExecutionBlock    *big.Int
 	ConsensusBlock    *big.Int
 	MerkleRoot        common.Hash
+	MerkleTreeCID     string
 	IntervalsPassed   *big.Int
 	TreasuryRPL       *big.Int
-	TreasuryETH       *big.Int
 	TrustedNodeRPL    []*big.Int
 	NodeRPL           []*big.Int
 	NodeETH           []*big.Int
@@ -260,7 +259,13 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	if rocketRewardsPoolAddresses == nil {
 		rocketRewardsPoolAddresses = []common.Address{currentAddress}
 	} else {
-		found := slices.Contains(rocketRewardsPoolAddresses, currentAddress)
+		found := false
+		for _, address := range rocketRewardsPoolAddresses {
+			if address == currentAddress {
+				found = true
+				break
+			}
+		}
 		if !found {
 			rocketRewardsPoolAddresses = append(rocketRewardsPoolAddresses, currentAddress)
 		}
@@ -308,6 +313,7 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 		NodeETH:           submission.NodeETH,
 		UserETH:           submission.UserETH,
 		MerkleRoot:        submission.MerkleRoot,
+		MerkleTreeCID:     submission.MerkleTreeCID,
 		IntervalStartTime: time.Unix(snapshot.IntervalStartTime.Int64(), 0),
 		IntervalEndTime:   time.Unix(snapshot.IntervalEndTime.Int64(), 0),
 		SubmissionTime:    time.Unix(snapshot.Time.Int64(), 0),
@@ -351,6 +357,7 @@ func getMainnetInterval0RewardsEvent(rp *rocketpool.RocketPool) (RewardsEvent, b
 		NodeETH:           []*big.Int{big.NewInt(0)},
 		UserETH:           big.NewInt(0),
 		MerkleRoot:        common.HexToHash("0xb839fa0f5842bf3c8f19091361889fb0f1cb399d64b8da476d372b7de7a93463"),
+		MerkleTreeCID:     "bafybeidrck3sz24acv32h56xdb7ruarxq52oci32del7moxqtief3do73y",
 		IntervalStartTime: time.Unix(1659591339, 0),
 		IntervalEndTime:   time.Unix(1662010539, 0),
 		SubmissionTime:    time.Unix(1662011717, 0),

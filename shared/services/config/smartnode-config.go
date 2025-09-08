@@ -18,6 +18,7 @@ const (
 	SnapshotID                         string = "rocketpool-dao.eth"
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
+	performanceFilenameFormat          string = "rp-performance-%s-%d%s"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
 	ChecksumTableFilename              string = "checksums.sha384"
@@ -803,6 +804,10 @@ func (cfg *SmartnodeConfig) GetMinipoolPerformanceFilename(interval uint64) stri
 	return cfg.formatRewardsFilename(minipoolPerformanceFilenameFormat, interval, RewardsExtensionJSON)
 }
 
+func (cfg *SmartnodeConfig) GetPerformanceFilename(interval uint64) string {
+	return cfg.formatRewardsFilename(performanceFilenameFormat, interval, RewardsExtensionJSON)
+}
+
 func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool, extension RewardsExtension) string {
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
@@ -814,6 +819,13 @@ func (cfg *SmartnodeConfig) GetMinipoolPerformancePath(interval uint64, daemon b
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
 		cfg.GetMinipoolPerformanceFilename(interval),
+	)
+}
+
+func (cfg *SmartnodeConfig) GetPerformancePath(interval uint64) string {
+	return filepath.Join(
+		cfg.GetRewardsTreeDirectory(false),
+		cfg.GetPerformanceFilename(interval),
 	)
 }
 
