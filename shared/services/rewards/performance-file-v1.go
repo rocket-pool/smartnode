@@ -1,6 +1,7 @@
 package rewards
 
 import (
+	"encoding/hex"
 	"fmt"
 	"time"
 
@@ -28,9 +29,40 @@ type PerformanceFile_v1 struct {
 // Type assertion to implement IPerformanceFile
 var _ IPerformanceFile = (*PerformanceFile_v1)(nil)
 
+type MegapoolPerformanceMap map[types.ValidatorPubkey]*MegapoolValidatorPerformance_v1
+
 type MegapoolPerformance_v1 struct {
-	VoterShare           *QuotedBigInt                                              `json:"voterShare"`
-	ValidatorPerformance map[types.ValidatorPubkey]*MegapoolValidatorPerformance_v1 `json:"validatorPerformance"`
+	VoterShare           *QuotedBigInt          `json:"voterShare"`
+	ValidatorPerformance MegapoolPerformanceMap `json:"validatorPerformance"`
+}
+
+// MegapoolPerformanceMap has a custom JSON marshaler to avoid the issue with ValidatorPubkey not being a valid dict key.
+// encoding/json/v2 will fix this once it's stable, and the custom marshaler can be removed.
+func (m MegapoolPerformanceMap) MarshalJSON() ([]byte, error) {
+	out := make(map[string]*MegapoolValidatorPerformance_v1)
+	for pubkey, perf := range m {
+		out[pubkey.Hex()] = perf
+	}
+	return json.Marshal(out)
+}
+
+// And a custom unmarshaler to avoid the issue with ValidatorPubkey not being a valid dict key.
+// encoding/json/v2 will fix this once it's stable, and the custom unmarshaler can be removed.
+func (m *MegapoolPerformanceMap) UnmarshalJSON(data []byte) error {
+	var out map[string]*MegapoolValidatorPerformance_v1
+	err := json.Unmarshal(data, &out)
+	if err != nil {
+		return err
+	}
+	*m = make(MegapoolPerformanceMap, len(out))
+	for pubkey, perf := range out {
+		pubkeyBytes, err := hex.DecodeString(pubkey)
+		if err != nil {
+			return fmt.Errorf("error decoding pubkey %s: %w", pubkey, err)
+		}
+		(*m)[types.ValidatorPubkey(pubkeyBytes)] = perf
+	}
+	return nil
 }
 
 // Conveniently, v2 minipool performance tracks all the same fields

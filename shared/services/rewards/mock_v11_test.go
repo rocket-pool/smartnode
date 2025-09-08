@@ -769,11 +769,14 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got ETH
-		expectedEthAmount, _ := big.NewInt(0).SetString("3213270392749244710", 10)
+		minipoolEthAmount, _ := big.NewInt(0).SetString("2698353474320241690", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("257458459214501510", 10)
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
 		// Multiply by i+1 since the number of validators scales with i+1
 		expectedEthAmount.Mul(expectedEthAmount, big.NewInt(int64(validatorCount)))
+		expectedEthAmount.Add(expectedEthAmount, minipoolEthAmount)
 		if ethAmount.Cmp(expectedEthAmount) != 0 {
+			fmt.Printf("Node: %+v\n", node)
 			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
 		}
 
