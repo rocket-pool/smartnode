@@ -974,7 +974,13 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 		remainingBalance := big.NewInt(0).Sub(r.smoothingPoolBalance, totalEthForMinipools)
 		remainingBalance.Sub(remainingBalance, totalEthForMegapools)
 		remainingBalance.Sub(remainingBalance, pdaoEth)
-		remainingBalance.Sub(remainingBalance, trueVoterEth)
+		if trueVoterEth.Sign() > 0 {
+			remainingBalance.Sub(remainingBalance, trueVoterEth)
+		} else {
+			// Nobody earned voter share.
+			// Subtract voter share- it shouldn't be used to pay bonuses, or we could have a deficit later.
+			remainingBalance.Sub(remainingBalance, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare)
+		}
 		if remainingBalance.Cmp(totalConsensusBonus) < 0 {
 			r.log.Printlnf("WARNING: Remaining balance is less than total consensus bonus... Balance = %s, total consensus bonus = %s", remainingBalance.String(), totalConsensusBonus.String())
 			// Scale bonuses down to fit the remaining balance

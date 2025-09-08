@@ -835,7 +835,10 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
 	// Ovewrite the SP balance to a value under the bonus commission
-	history.NetworkDetails.SmoothingPoolBalance = big.NewInt(1000)
+	history.NetworkDetails.SmoothingPoolBalance = big.NewInt(1100)
+	// Set the SP voter share to 0
+	history.NetworkDetails.SmoothingPoolPendingVoterShare = big.NewInt(100)
+	// Set the pdao share to 0
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
@@ -1007,7 +1010,7 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 		t.Fatalf("Node one ETH amount does not match expected value: %s != %d", ethOne.String(), 0)
 	}
 	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
-	expectedEthTwo, _ := big.NewInt(0).SetString("32575000000000000000", 10)
+	expectedEthTwo, _ := big.NewInt(0).SetString("29325000000000000000", 10)
 	if ethTwo.Cmp(expectedEthTwo) != 0 {
 		t.Fatalf("Node two ETH amount does not match expected value: %s != %s", ethTwo.String(), expectedEthTwo.String())
 	}
@@ -1131,12 +1134,12 @@ func TestMockOptedOutAndThenBondReducedV11(tt *testing.T) {
 	rewardsFile := v11Artifacts.RewardsFile
 	ethOne := rewardsFile.GetNodeSmoothingPoolEth(nodeOne.Address)
 	// Node one was in the SP so it should have some ETH, but no bonuses
-	expectedEthOne, _ := big.NewInt(0).SetString("11309523809523809523", 10)
+	expectedEthOne, _ := big.NewInt(0).SetString("10178571428571428571", 10)
 	if ethOne.Cmp(expectedEthOne) != 0 {
 		t.Fatalf("Node one ETH amount does not match expected value: %s != %s", ethOne.String(), expectedEthOne.String())
 	}
 	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
-	expectedEthTwo, _ := big.NewInt(0).SetString("26089087301587301587", 10)
+	expectedEthTwo, _ := big.NewInt(0).SetString("23483928571428571428", 10)
 	if ethTwo.Cmp(expectedEthTwo) != 0 {
 		t.Fatalf("Node two ETH amount does not match expected value: %s != %s", ethTwo.String(), expectedEthTwo.String())
 	}
@@ -1252,12 +1255,12 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 	// Check the rewards file
 	rewardsFile := v11Artifacts.RewardsFile
 	ethOne := rewardsFile.GetNodeSmoothingPoolEth(nodeOne.Address)
-	expectedEthOne, _ := big.NewInt(0).SetString("21920833333333333333", 10)
+	expectedEthOne, _ := big.NewInt(0).SetString("19732500000000000000", 10)
 	if ethOne.Cmp(expectedEthOne) != 0 {
 		t.Fatalf("Node one ETH amount does not match expected value: %s != %s", ethOne.String(), expectedEthOne.String())
 	}
 	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
-	expectedEthTwo, _ := big.NewInt(0).SetString("10654166666666666666", 10)
+	expectedEthTwo, _ := big.NewInt(0).SetString("9592500000000000000", 10)
 	if ethTwo.Cmp(expectedEthTwo) != 0 {
 		t.Fatalf("Node two ETH amount does not match expected value: %s != %s", ethTwo.String(), expectedEthTwo.String())
 	}
