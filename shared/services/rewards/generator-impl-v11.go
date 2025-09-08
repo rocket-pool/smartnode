@@ -701,6 +701,40 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 				r.performanceFile.MinipoolPerformance[minipoolInfo.Address] = performance
 			}
 
+			// Add megapool rewards to the JSON
+			if nodeInfo.Megapool != nil {
+				for _, validator := range nodeInfo.Megapool.Validators {
+					successfulAttestations := uint64(len(validator.CompletedAttestations))
+					missingAttestations := uint64(len(validator.MissingAttestationSlots))
+					performance := &MegapoolValidatorPerformance_v1{
+						Pubkey:                  validator.Pubkey.Hex(),
+						SuccessfulAttestations:  successfulAttestations,
+						MissedAttestations:      missingAttestations,
+						AttestationScore:        validator.AttestationScore,
+						EthEarned:               QuotedBigIntFromBigInt(validator.MegapoolValidatorShare),
+						BonusEthEarned:          nil,
+						ConsensusIncome:         nil,
+						EffectiveCommission:     nil,
+						MissingAttestationSlots: []uint64{},
+					}
+					if successfulAttestations+missingAttestations == 0 {
+						// Don't include megapools that have zero attestations
+						continue
+					}
+					for slot := range validator.MissingAttestationSlots {
+						performance.MissingAttestationSlots = append(performance.MissingAttestationSlots, slot)
+					}
+					mpPerformance, exists := r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address]
+					if !exists {
+						mpPerformance = &MegapoolPerformance_v1{
+							ValidatorPerformance: make(MegapoolPerformanceMap),
+						}
+						r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address] = mpPerformance
+					}
+					mpPerformance.ValidatorPerformance[validator.Pubkey] = performance
+				}
+			}
+
 			// Add the rewards to the running total for the specified network
 			rewardsForNetwork, exists := r.networkRewards[rewardsForNode.Network]
 			if !exists {
