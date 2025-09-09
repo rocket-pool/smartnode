@@ -129,3 +129,15 @@ groups:
             There are updates available for the Rocket Pool Smartnode that haven't been applied yet. You should update the smartnode stack.
             For more information on updating see the documentation at https://docs.rocketpool.net/guides/node/updates#updating-the-smartnode-stack
       {{{- end }}}
+
+      {{{- if .AlertEnabled_LowETHBalance.Value }}}
+      - alert: LowETHBalance
+        expr: rocketpool_node_balance{job="rocketpool",Token="ETH"} < scalar(rocketpool_node_low_eth_balance_threshold)
+        for: 60m
+        labels:
+          severity: critical
+          job: node
+        annotations:
+          summary: "Low ETH Balance"
+          description: "The node ETH balance is low."
+      {{{- end }}}

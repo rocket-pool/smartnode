@@ -523,25 +523,6 @@ func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNam
 	return c.printOutput(cmd)
 }
 
-// Print the Rocket Pool service stats
-func (c *Client) PrintServiceStats(composeFiles []string) error {
-
-	// Get service container IDs
-	cmd, err := c.compose(composeFiles, "ps -q")
-	if err != nil {
-		return err
-	}
-	containers, err := c.readOutput(cmd)
-	if err != nil {
-		return err
-	}
-	containerIds := strings.Split(strings.TrimSpace(string(containers)), "\n")
-
-	// Print stats
-	return c.printOutput(fmt.Sprintf("docker stats %s", strings.Join(containerIds, " ")))
-
-}
-
 // Print the Rocket Pool service compose config
 func (c *Client) PrintServiceCompose(composeFiles []string) error {
 	cmd, err := c.compose(composeFiles, "config")
@@ -742,6 +723,18 @@ func (c *Client) GetComposeImages(composeFiles []string) ([]string, error) {
 	return strings.Fields(string(output)), nil
 }
 
+func (c *Client) PullComposeImages(composeFiles []string) error {
+	cmd, err := c.compose(composeFiles, "pull -q")
+	if err != nil {
+		return err
+	}
+	err = c.printOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error pulling images: %w", err)
+	}
+	return nil
+}
+
 type DockerImage struct {
 	Repository string `json:"Repository"`
 	Tag        string `json:"Tag"`
@@ -766,8 +759,8 @@ func (c *Client) GetAllDockerImages() ([]DockerImage, error) {
 
 	// docker images output puts each image as a json object on a new line (JSONL)
 	var images []DockerImage
-	lines := strings.Split(string(responseBytes), "\n")
-	for _, line := range lines {
+	lines := strings.SplitSeq(string(responseBytes), "\n")
+	for line := range lines {
 		if line == "" {
 			continue
 		}
@@ -1322,7 +1315,7 @@ func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, othe
 func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, string, string) {
 	// Sanitize arguments
 	var sanitizedArgs []string
-	for _, arg := range strings.Fields(args) {
+	for arg := range strings.FieldsSeq(args) {
 		sanitizedArg := shellescape.Quote(arg)
 		sanitizedArgs = append(sanitizedArgs, sanitizedArg)
 	}

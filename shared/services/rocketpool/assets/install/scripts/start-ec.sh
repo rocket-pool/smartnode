@@ -391,9 +391,10 @@ if [ "$CLIENT" = "reth" ]; then
         CMD="$CMD --block-interval 5"
         CMD="$CMD --prune.senderrecovery.full"
         CMD="$CMD --prune.accounthistory.distance 10064"
-        CMD="$CMD --prune.storagehistory.distance 100064"
+        CMD="$CMD --prune.storagehistory.distance 10064"
         CMD="$CMD --prune.bodies.pre-merge"
-        CMD="$CMD --prune.receipts.before 15537394"
+        CMD="$CMD --prune.receipts.pre-merge"
+        CMD="$CMD --prune.transactionlookup.distance=10064"
     fi
 
     if [ ! -z "$EC_MAX_PEERS" ]; then
