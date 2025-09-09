@@ -1277,7 +1277,7 @@ func (c *Client) DeployMegapool() (api.DeployMegapoolResponse, error) {
 
 // Get the number of express tickets available for the node
 func (c *Client) GetExpressTicketCount() (api.GetExpressTicketCountResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node get-express-ticket-count"))
+	responseBytes, err := c.callAPI("node get-express-ticket-count")
 	if err != nil {
 		return api.GetExpressTicketCountResponse{}, fmt.Errorf("Could not get express ticket count: %w", err)
 	}
@@ -1287,6 +1287,52 @@ func (c *Client) GetExpressTicketCount() (api.GetExpressTicketCountResponse, err
 	}
 	if response.Error != "" {
 		return api.GetExpressTicketCountResponse{}, fmt.Errorf("Could not get express ticket count: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check if the node's express tickets have been provisioned
+func (c *Client) GetExpressTicketsProvisioned() (api.GetExpressTicketsProvisionedResponse, error) {
+	responseBytes, err := c.callAPI("node get-express-tickets-provisioned")
+	if err != nil {
+		return api.GetExpressTicketsProvisionedResponse{}, fmt.Errorf("Could not get express tickets provisioned: %w", err)
+	}
+	var response api.GetExpressTicketsProvisionedResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetExpressTicketsProvisionedResponse{}, fmt.Errorf("Could not decode express ticket count response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetExpressTicketsProvisionedResponse{}, fmt.Errorf("Could not get express ticket count: %s", response.Error)
+	}
+	return response, nil
+}
+
+func (c *Client) CanProvisionExpressTickets() (api.CanProvisionExpressTicketsResponse, error) {
+	responseBytes, err := c.callAPI("node can-provision-express-tickets")
+	if err != nil {
+		return api.CanProvisionExpressTicketsResponse{}, fmt.Errorf("Could not get can-provision-express-tickets response: %w", err)
+	}
+	var response api.CanProvisionExpressTicketsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanProvisionExpressTicketsResponse{}, fmt.Errorf("Could not decode can-provision-express-tickets response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanProvisionExpressTicketsResponse{}, fmt.Errorf("Could not get can-provision-express-tickets response: %s", response.Error)
+	}
+	return response, nil
+}
+
+func (c *Client) ProvisionExpressTickets() (api.ProvisionExpressTicketsResponse, error) {
+	responseBytes, err := c.callAPI("node provision-express-tickets")
+	if err != nil {
+		return api.ProvisionExpressTicketsResponse{}, fmt.Errorf("Could not get provision-express-tickets response: %w", err)
+	}
+	var response api.ProvisionExpressTicketsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.ProvisionExpressTicketsResponse{}, fmt.Errorf("Could not decode provision-express-tickets response: %w", err)
+	}
+	if response.Error != "" {
+		return api.ProvisionExpressTicketsResponse{}, fmt.Errorf("Could not get provision-express-tickets response: %s", response.Error)
 	}
 	return response, nil
 }
