@@ -723,6 +723,18 @@ func (c *Client) GetComposeImages(composeFiles []string) ([]string, error) {
 	return strings.Fields(string(output)), nil
 }
 
+func (c *Client) PullComposeImages(composeFiles []string) error {
+	cmd, err := c.compose(composeFiles, "pull -q")
+	if err != nil {
+		return err
+	}
+	err = c.printOutput(cmd)
+	if err != nil {
+		return fmt.Errorf("error pulling images: %w", err)
+	}
+	return nil
+}
+
 type DockerImage struct {
 	Repository string `json:"Repository"`
 	Tag        string `json:"Tag"`

@@ -306,6 +306,13 @@ func configureService(c *cli.Context) error {
 				return nil
 			}
 
+			// Let's reduce potential downtime by pulling the new containers before restarting
+			fmt.Println("Pulling potential new container images...")
+			err = rp.PullComposeImages(getComposeFiles(c))
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: couldn't pull new images for updated containers: %s\n", err.Error())
+			}
+
 			fmt.Println()
 			for _, container := range md.ContainersToRestart {
 				fullName := fmt.Sprintf("%s_%s", prefix, container)
