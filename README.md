@@ -157,6 +157,8 @@ The following commands are available via the Smartnode client:
   - `rocketpool service resync-eth1` - Deletes the main ETH1 client's chain data and resyncs it from scratch. Only use this as a last resort!
   - `rocketpool service resync-eth2` - Deletes the ETH2 client's chain data and resyncs it from scratch. Only use this as a last resort!
   - `rocketpool service terminate, t` - Deletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Only use this if you are cleaning up the Smartnode and want to start over!
+- **update**, u - Update Rocket Pool
+  - `rocketpool update cli, c` - Update the Rocket Pool Client (CLI)
 - **wallet**, w - Manage the node wallet
   - `rocketpool wallet status, s` - Get the node wallet status
   - `rocketpool wallet init, i` - Initialize the node wallet
