@@ -26,6 +26,7 @@ type BeaconClientManager struct {
 	primaryReady    bool
 	fallbackReady   bool
 	ignoreSyncCheck bool
+	preferFallback  bool
 }
 
 // This is a signature for a wrapped Beacon client function that only returns an error
@@ -39,6 +40,7 @@ type bcFunction2 func(beacon.Client) (interface{}, interface{}, error)
 
 // Creates a new BeaconClientManager instance based on the Rocket Pool config
 func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager, error) {
+	var preferFallback bool
 
 	// Primary CC
 	var primaryProvider string
@@ -65,6 +67,7 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 	if cfg.UseFallbackClients.Value == true {
 		if cfg.IsNativeMode {
 			fallbackProvider = cfg.FallbackNormal.CcHttpUrl.Value.(string)
+			preferFallback = cfg.PrioritizeValidation.Value.(bool)
 		} else {
 			switch selectedCC {
 			case cfgtypes.ConsensusClient_Prysm:
@@ -72,6 +75,7 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 			default:
 				fallbackProvider = cfg.FallbackNormal.CcHttpUrl.Value.(string)
 			}
+			preferFallback = cfg.PrioritizeValidation.Value.(bool)
 		}
 	}
 
@@ -83,11 +87,12 @@ func NewBeaconClientManager(cfg *config.RocketPoolConfig) (*BeaconClientManager,
 	}
 
 	return &BeaconClientManager{
-		primaryBc:     primaryBc,
-		fallbackBc:    fallbackBc,
-		logger:        log.NewColorLogger(color.FgHiBlue),
-		primaryReady:  true,
-		fallbackReady: fallbackBc != nil,
+		primaryBc:      primaryBc,
+		fallbackBc:     fallbackBc,
+		logger:         log.NewColorLogger(color.FgHiBlue),
+		primaryReady:   true,
+		fallbackReady:  fallbackBc != nil,
+		preferFallback: preferFallback,
 	}, nil
 
 }
@@ -438,42 +443,59 @@ func (m *BeaconClientManager) runFunction0(function bcFunction0) error {
 	return fmt.Errorf("no Beacon clients were ready")
 }
 
-// Attempts to run a function progressively through each client until one succeeds or they all fail.
+// Attempts to run a function progressively through each client in the preferred order until one succeeds or they all fail.
 func (m *BeaconClientManager) runFunction1(function bcFunction1) (interface{}, error) {
+	const (
+		primary  = iota
+		fallback = iota
+	)
 
-	// Check if we can use the primary
-	if m.primaryReady {
-		// Try to run the function on the primary
-		result, err := function(m.primaryBc)
-		if err != nil {
-			if m.isDisconnected(err) {
-				// If it's disconnected, log it and try the fallback
-				m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
-				m.primaryReady = false
-				return m.runFunction1(function)
-			}
-			// If it's a different error, just return it
-			return nil, err
-		}
-		// If there's no error, return the result
-		return result, nil
+	var order []int
+	if !m.preferFallback {
+		order = []int{primary, fallback}
+	} else {
+		order = []int{fallback, primary}
 	}
+	for _, client := range order {
+		switch client {
+		case primary:
 
-	if m.fallbackReady {
-		// Try to run the function on the fallback
-		result, err := function(m.fallbackBc)
-		if err != nil {
-			if m.isDisconnected(err) {
-				// If it's disconnected, log it and try the fallback
-				m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
-				m.fallbackReady = false
-				return nil, fmt.Errorf("all Beacon clients failed")
+			// Check if we can use the primary
+			if m.primaryReady {
+				// Try to run the function on the primary
+				result, err := function(m.primaryBc)
+				if err != nil {
+					if m.isDisconnected(err) {
+						// If it's disconnected, log it and try the fallback
+						m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
+						m.primaryReady = false
+						return m.runFunction1(function)
+					}
+					// If it's a different error, just return it
+					return nil, err
+				}
+				// If there's no error, return the result
+				return result, nil
 			}
-			// If it's a different error, just return it
-			return nil, err
+		case fallback:
+
+			if m.fallbackReady {
+				// Try to run the function on the fallback
+				result, err := function(m.fallbackBc)
+				if err != nil {
+					if m.isDisconnected(err) {
+						// If it's disconnected, log it and try the fallback
+						m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
+						m.fallbackReady = false
+						return m.runFunction1(function)
+					}
+					// If it's a different error, just return it
+					return nil, err
+				}
+				// If there's no error, return the result
+				return result, nil
+			}
 		}
-		// If there's no error, return the result
-		return result, nil
 	}
 
 	return nil, fmt.Errorf("no Beacon clients were ready")
@@ -482,40 +504,57 @@ func (m *BeaconClientManager) runFunction1(function bcFunction1) (interface{}, e
 
 // Attempts to run a function progressively through each client until one succeeds or they all fail.
 func (m *BeaconClientManager) runFunction2(function bcFunction2) (interface{}, interface{}, error) {
+	const (
+		primary  = iota
+		fallback = iota
+	)
 
-	// Check if we can use the primary
-	if m.primaryReady {
-		// Try to run the function on the primary
-		result1, result2, err := function(m.primaryBc)
-		if err != nil {
-			if m.isDisconnected(err) {
-				// If it's disconnected, log it and try the fallback
-				m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
-				m.primaryReady = false
-				return m.runFunction2(function)
-			}
-			// If it's a different error, just return it
-			return nil, nil, err
-		}
-		// If there's no error, return the result
-		return result1, result2, nil
+	var order []int
+	if !m.preferFallback {
+		order = []int{primary, fallback}
+	} else {
+		order = []int{fallback, primary}
 	}
+	for _, client := range order {
+		switch client {
+		case primary:
 
-	if m.fallbackReady {
-		// Try to run the function on the fallback
-		result1, result2, err := function(m.fallbackBc)
-		if err != nil {
-			if m.isDisconnected(err) {
-				// If it's disconnected, log it and try the fallback
-				m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
-				m.fallbackReady = false
-				return nil, nil, fmt.Errorf("all Beacon clients failed")
+			// Check if we can use the primary
+			if m.primaryReady {
+				// Try to run the function on the primary
+				result1, result2, err := function(m.primaryBc)
+				if err != nil {
+					if m.isDisconnected(err) {
+						// If it's disconnected, log it and try the fallback
+						m.logger.Printlnf("WARNING: Primary Beacon client disconnected (%s), using fallback...", err.Error())
+						m.primaryReady = false
+						return m.runFunction2(function)
+					}
+					// If it's a different error, just return it
+					return nil, nil, err
+				}
+				// If there's no error, return the result
+				return result1, result2, nil
 			}
-			// If it's a different error, just return it
-			return nil, nil, err
+		case fallback:
+
+			if m.fallbackReady {
+				// Try to run the function on the fallback
+				result1, result2, err := function(m.fallbackBc)
+				if err != nil {
+					if m.isDisconnected(err) {
+						// If it's disconnected, log it and try the fallback
+						m.logger.Printlnf("WARNING: Fallback Beacon client disconnected (%s)", err.Error())
+						m.fallbackReady = false
+						return m.runFunction2(function)
+					}
+					// If it's a different error, just return it
+					return nil, nil, err
+				}
+				// If there's no error, return the result
+				return result1, result2, nil
+			}
 		}
-		// If there's no error, return the result
-		return result1, result2, nil
 	}
 
 	return nil, nil, fmt.Errorf("no Beacon clients were ready")
