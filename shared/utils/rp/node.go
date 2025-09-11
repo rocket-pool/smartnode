@@ -123,8 +123,6 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 		return nil
 	})
 	for i, address := range addresses {
-		i := i
-		address := address
 		wg.Go(func() error {
 			reduceBondTime, err := minipool.GetReduceBondTime(rp, address, opts)
 			if err != nil {
