@@ -276,5 +276,9 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 		}
 
 	}
+
+	if primaryCid == nil {
+		return cid.Cid{}, out, nil
+	}
 	return *primaryCid, out, nil
 }
