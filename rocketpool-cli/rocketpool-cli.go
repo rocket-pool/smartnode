@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"strings"
 
 	"github.com/urfave/cli"
 
@@ -86,12 +87,20 @@ A special thanks to the Rocket Pool community for all their contributions.
 			Usage: "Some commands may print sensitive information to your terminal. " +
 				"Use this flag when nobody can see your screen to allow sensitive data to be printed without prompting",
 		},
+		cli.BoolFlag{
+			Name: "enable-saturn, e",
+			Usage: "Enables Saturn-only commands. " +
+				"Use this flag if you want to use Saturn-specific functionality",
+		},
 	}
+	enableSaturn := strings.Contains(strings.Join(os.Args, " "), "--enable-saturn")
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
-	megapool.RegisterCommands(app, "megapool", []string{"g"})
+	if enableSaturn {
+		megapool.RegisterCommands(app, "megapool", []string{"g"})
+	}
 	network.RegisterCommands(app, "network", []string{"e"})
 	node.RegisterCommands(app, "node", []string{"n"})
 	odao.RegisterCommands(app, "odao", []string{"o"})

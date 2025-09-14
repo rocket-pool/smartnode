@@ -504,7 +504,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "withdraw-credit",
 				Aliases:   []string{"wc"},
-				Usage:     "Withdraw ETH credit from the node as rETH",
+				Usage:     "(Saturn) Withdraw ETH credit from the node as rETH",
 				UsageText: "rocketpool node withdraw-credit [options]",
 				Flags: []cli.Flag{
 					cli.StringFlag{

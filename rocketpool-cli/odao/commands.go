@@ -92,7 +92,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "penalise-megapool",
 				Aliases:   []string{"pm"},
-				Usage:     "Penalise a megapool",
+				Usage:     "(Saturn) Penalise a megapool",
 				UsageText: "rocketpool odao penalise-megapool megapool-adress block",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
