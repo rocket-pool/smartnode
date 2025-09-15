@@ -52,6 +52,7 @@ const (
 	MainnetV10Interval uint64 = 30
 	MainnetV11Interval uint64 = 9000 // TODO: schedule v11
 	// Devnet intervals
+	DevnetV11Interval uint64 = 21
 
 	// Testnet intervals
 	TestnetV10Interval uint64 = 0
@@ -162,12 +163,14 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 			rewardsRulesetVersion: 11,
 			mainnetStartInterval:  MainnetV11Interval,
 			testnetStartInterval:  TestnetV11Interval,
+			devnetStartInterval:   DevnetV11Interval,
 			generator:             v11_generator,
 		},
 		{
 			rewardsRulesetVersion: 10,
 			mainnetStartInterval:  MainnetV10Interval,
 			testnetStartInterval:  TestnetV10Interval,
+			devnetStartInterval:   0,
 			generator:             v10_generator,
 		},
 		{
