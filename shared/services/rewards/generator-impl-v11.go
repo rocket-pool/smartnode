@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/big"
-	"sort"
+	"slices"
 	"sync"
 	"time"
 
@@ -15,6 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/fees"
@@ -26,9 +27,9 @@ import (
 )
 
 // Implementation for tree generator ruleset v9
-type treeGeneratorImpl_v9_v10 struct {
+type treeGeneratorImpl_v11 struct {
 	networkState                 *state.NetworkState
-	rewardsFile                  *ssz_types.SSZFile_v1
+	rewardsFile                  *ssz_types.SSZFile_v2
 	elSnapshotHeader             *types.Header
 	snapshotEnd                  *SnapshotEnd
 	log                          *log.ColorLogger
@@ -41,7 +42,8 @@ type treeGeneratorImpl_v9_v10 struct {
 	smoothingPoolBalance         *big.Int
 	intervalDutiesInfo           *IntervalDutiesInfo
 	slotsPerEpoch                uint64
-	validatorIndexMap            map[string]*MinipoolInfo
+	minipoolValidatorIndexMap    map[string]*MinipoolInfo
+	megapoolValidatorIndexMap    map[string]*MegapoolInfo
 	elStartTime                  time.Time
 	elEndTime                    time.Time
 	validNetworkCache            map[uint64]bool
@@ -50,12 +52,16 @@ type treeGeneratorImpl_v9_v10 struct {
 	beaconConfig                 beacon.Eth2Config
 	validatorStatusMap           map[rptypes.ValidatorPubkey]beacon.ValidatorStatus
 	totalAttestationScore        *big.Int
+	totalVoterScore              *big.Int
+	totalPdaoScore               *big.Int
 	successfulAttestations       uint64
 	genesisTime                  time.Time
 	invalidNetworkNodes          map[common.Address]uint64
-	minipoolPerformanceFile      *MinipoolPerformanceFile_v2
-	nodeRewards                  map[common.Address]*ssz_types.NodeReward
+	performanceFile              *PerformanceFile_v1
+	nodeRewards                  map[common.Address]*ssz_types.NodeReward_v2
 	networkRewards               map[ssz_types.Layer]*ssz_types.NetworkReward
+	// Whether the interval is eligible for consensus bonuses
+	isEligibleInterval bool
 
 	// fields for RPIP-62 bonus calculations
 	// Withdrawals made by a minipool's validator.
@@ -63,14 +69,14 @@ type treeGeneratorImpl_v9_v10 struct {
 }
 
 // Create a new tree generator
-func newTreeGeneratorImpl_v9_v10(rulesetVersion uint64, log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState) *treeGeneratorImpl_v9_v10 {
-	return &treeGeneratorImpl_v9_v10{
-		rewardsFile: &ssz_types.SSZFile_v1{
-			RewardsFileVersion: 3,
-			RulesetVersion:     rulesetVersion,
+func newTreeGeneratorImpl_v11(log *log.ColorLogger, logPrefix string, index uint64, snapshotEnd *SnapshotEnd, elSnapshotHeader *types.Header, intervalsPassed uint64, state *state.NetworkState, isEligibleInterval bool) *treeGeneratorImpl_v11 {
+	return &treeGeneratorImpl_v11{
+		rewardsFile: &ssz_types.SSZFile_v2{
+			RewardsFileVersion: 4,
+			RulesetVersion:     11,
 			Index:              index,
 			IntervalsPassed:    intervalsPassed,
-			TotalRewards: &ssz_types.TotalRewards{
+			TotalRewards: &ssz_types.TotalRewards_v2{
 				ProtocolDaoRpl:               sszbig.NewUint256(0),
 				TotalCollateralRpl:           sszbig.NewUint256(0),
 				TotalOracleDaoRpl:            sszbig.NewUint256(0),
@@ -78,35 +84,42 @@ func newTreeGeneratorImpl_v9_v10(rulesetVersion uint64, log *log.ColorLogger, lo
 				PoolStakerSmoothingPoolEth:   sszbig.NewUint256(0),
 				NodeOperatorSmoothingPoolEth: sszbig.NewUint256(0),
 				TotalNodeWeight:              sszbig.NewUint256(0),
+				TotalVoterShareEth:           sszbig.NewUint256(0),
+				SmoothingPoolVoterShareEth:   sszbig.NewUint256(0),
+				TotalPdaoShareEth:            sszbig.NewUint256(0),
 			},
 			NetworkRewards: ssz_types.NetworkRewards{},
-			NodeRewards:    ssz_types.NodeRewards{},
+			NodeRewards:    ssz_types.NodeRewards_v2{},
 		},
-		validatorStatusMap:    map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
-		validatorIndexMap:     map[string]*MinipoolInfo{},
-		elSnapshotHeader:      elSnapshotHeader,
-		snapshotEnd:           snapshotEnd,
-		log:                   log,
-		logPrefix:             logPrefix,
-		totalAttestationScore: big.NewInt(0),
-		networkState:          state,
-		invalidNetworkNodes:   map[common.Address]uint64{},
-		minipoolPerformanceFile: &MinipoolPerformanceFile_v2{
+		validatorStatusMap:        map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{},
+		minipoolValidatorIndexMap: map[string]*MinipoolInfo{},
+		elSnapshotHeader:          elSnapshotHeader,
+		snapshotEnd:               snapshotEnd,
+		log:                       log,
+		logPrefix:                 logPrefix,
+		totalAttestationScore:     big.NewInt(0),
+		totalVoterScore:           big.NewInt(0),
+		totalPdaoScore:            big.NewInt(0),
+		networkState:              state,
+		invalidNetworkNodes:       map[common.Address]uint64{},
+		performanceFile: &PerformanceFile_v1{
 			Index:               index,
 			MinipoolPerformance: map[common.Address]*MinipoolPerformance_v2{},
+			MegapoolPerformance: map[common.Address]*MegapoolPerformance_v1{},
 		},
-		nodeRewards:         map[common.Address]*ssz_types.NodeReward{},
+		nodeRewards:         map[common.Address]*ssz_types.NodeReward_v2{},
 		networkRewards:      map[ssz_types.Layer]*ssz_types.NetworkReward{},
 		minipoolWithdrawals: map[common.Address]*big.Int{},
+		isEligibleInterval:  isEligibleInterval,
 	}
 }
 
 // Get the version of the ruleset used by this generator
-func (r *treeGeneratorImpl_v9_v10) getRulesetVersion() uint64 {
+func (r *treeGeneratorImpl_v11) getRulesetVersion() uint64 {
 	return r.rewardsFile.RulesetVersion
 }
 
-func (r *treeGeneratorImpl_v9_v10) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error) {
+func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error) {
 
 	r.log.Printlnf("%s Generating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
@@ -120,9 +133,9 @@ func (r *treeGeneratorImpl_v9_v10) generateTree(rp RewardsExecutionClient, netwo
 
 	// Set the network name
 	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(networkName)
-	r.minipoolPerformanceFile.Network = networkName
-	r.minipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
-	r.minipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
+	r.performanceFile.Network = networkName
+	r.performanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.performanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -143,6 +156,15 @@ func (r *treeGeneratorImpl_v9_v10) generateTree(rp RewardsExecutionClient, netwo
 		r.epsilon = big.NewInt(int64(nodeCount))
 	} else {
 		r.epsilon = big.NewInt(int64(minipoolCount))
+		if r.networkState.IsSaturnDeployed {
+			// Add the number of megapool validators
+			for _, nodeInfo := range r.nodeDetails {
+				if nodeInfo.Megapool == nil {
+					continue
+				}
+				r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
+			}
+		}
 	}
 
 	// Calculate the RPL rewards
@@ -175,24 +197,28 @@ func (r *treeGeneratorImpl_v9_v10) generateTree(rp RewardsExecutionClient, netwo
 	}
 
 	// Sort all of the missed attestations so the files are always generated in the same state
-	for _, minipoolInfo := range r.minipoolPerformanceFile.MinipoolPerformance {
-		sort.Slice(minipoolInfo.MissingAttestationSlots, func(i, j int) bool {
-			return minipoolInfo.MissingAttestationSlots[i] < minipoolInfo.MissingAttestationSlots[j]
-		})
+	for _, minipoolInfo := range r.performanceFile.MinipoolPerformance {
+		slices.Sort(minipoolInfo.MissingAttestationSlots)
+	}
+
+	for _, megapoolInfo := range r.performanceFile.MegapoolPerformance {
+		for _, validatorInfo := range megapoolInfo.ValidatorPerformance {
+			slices.Sort(validatorInfo.MissingAttestationSlots)
+		}
 	}
 
 	return &GenerateTreeResult{
 		RulesetVersion:          r.rewardsFile.RulesetVersion,
 		RewardsFile:             r.rewardsFile,
 		InvalidNetworkNodes:     r.invalidNetworkNodes,
-		MinipoolPerformanceFile: r.minipoolPerformanceFile,
+		MinipoolPerformanceFile: r.performanceFile,
 	}, nil
 
 }
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v9_v10) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error) {
+func (r *treeGeneratorImpl_v11) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
@@ -203,9 +229,9 @@ func (r *treeGeneratorImpl_v9_v10) approximateStakerShareOfSmoothingPool(rp Rewa
 
 	// Set the network name
 	r.rewardsFile.Network, _ = ssz_types.NetworkFromString(networkName)
-	r.minipoolPerformanceFile.Network = networkName
-	r.minipoolPerformanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
-	r.minipoolPerformanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
+	r.performanceFile.Network = networkName
+	r.performanceFile.RewardsFileVersion = r.rewardsFile.RewardsFileVersion
+	r.performanceFile.RulesetVersion = r.rewardsFile.RulesetVersion
 
 	// Get the Beacon config
 	r.beaconConfig = r.networkState.BeaconConfig
@@ -226,6 +252,15 @@ func (r *treeGeneratorImpl_v9_v10) approximateStakerShareOfSmoothingPool(rp Rewa
 		r.epsilon = big.NewInt(int64(nodeCount))
 	} else {
 		r.epsilon = big.NewInt(int64(minipoolCount))
+		if r.networkState.IsSaturnDeployed {
+			// Add the number of megapool validators
+			for _, nodeInfo := range r.nodeDetails {
+				if nodeInfo.Megapool == nil {
+					continue
+				}
+				r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
+			}
+		}
 	}
 
 	// Calculate the ETH rewards
@@ -237,7 +272,7 @@ func (r *treeGeneratorImpl_v9_v10) approximateStakerShareOfSmoothingPool(rp Rewa
 	return r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Int, nil
 }
 
-func (r *treeGeneratorImpl_v9_v10) calculateNodeRplRewards(
+func (r *treeGeneratorImpl_v11) calculateNodeRplRewards(
 	collateralRewards *big.Int,
 	nodeWeight *big.Int,
 	totalNodeWeight *big.Int,
@@ -255,7 +290,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeRplRewards(
 }
 
 // Calculates the RPL rewards for the given interval
-func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
+func (r *treeGeneratorImpl_v11) calculateRplRewards() error {
 	pendingRewards := r.networkState.NetworkDetails.PendingRPLRewards
 	r.log.Printlnf("%s Pending RPL rewards: %s (%.3f)", r.logPrefix, pendingRewards.String(), eth.WeiToEth(pendingRewards))
 	if pendingRewards.Cmp(common.Big0) == 0 {
@@ -310,7 +345,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 						network = 0
 					}
 
-					rewardsForNode = ssz_types.NewNodeReward(
+					rewardsForNode = ssz_types.NewNodeReward_v2(
 						network,
 						ssz_types.AddressFromBytes(nodeDetails.NodeAddress.Bytes()),
 					)
@@ -399,7 +434,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 				network = 0
 			}
 
-			rewardsForNode = ssz_types.NewNodeReward(
+			rewardsForNode = ssz_types.NewNodeReward_v2(
 				network,
 				ssz_types.AddressFromBytes(address.Bytes()),
 			)
@@ -444,11 +479,12 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 }
 
 // Calculates the ETH rewards for the given interval
-func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bool) error {
+func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool) error {
 
 	// Get the Smoothing Pool contract's balance
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
-	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
+	r.log.Printlnf("%s Smoothing Pool Balance:\t%s\t(%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
+	r.log.Printlnf("%s  Earmarked Voter Share:\t%s\t(%.3f)", r.logPrefix, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare.String(), eth.WeiToEth(r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare))
 
 	// Ignore the ETH calculation if there are no rewards
 	if r.smoothingPoolBalance.Cmp(common.Big0) == 0 {
@@ -482,12 +518,16 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 		return err
 	}
 	eligible := 0
+	megapools := 0
 	for _, nodeInfo := range r.nodeDetails {
 		if nodeInfo.IsEligible {
 			eligible++
+			if nodeInfo.Megapool != nil {
+				megapools++
+			}
 		}
 	}
-	r.log.Printlnf("%s %d / %d nodes were eligible for Smoothing Pool rewards", r.logPrefix, eligible, len(r.nodeDetails))
+	r.log.Printlnf("%s %d / %d nodes (%d with megapools) were eligible for Smoothing Pool rewards", r.logPrefix, eligible, len(r.nodeDetails), megapools)
 
 	// Process the attestation performance for each minipool during this interval
 	r.intervalDutiesInfo = &IntervalDutiesInfo{
@@ -528,21 +568,102 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 
 					r.successfulAttestations++
 				}
+
+				// Repeat, for megapools
+				if nodeInfo.Megapool != nil {
+					megapool := nodeInfo.Megapool
+					for _, validator := range megapool.Validators {
+						details := r.networkState.MegapoolDetails[megapool.Address]
+						bond := details.GetMegapoolBondNormalized()
+						nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
+						nodeFeeAdder := r.networkState.NetworkDetails.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder
+						voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
+						pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
+
+						effectiveNodeFee := big.NewInt(0).Add(nodeFee, nodeFeeAdder)
+						effectiveVoterFee := big.NewInt(0).Sub(voterFee, nodeFeeAdder)
+
+						// The megapool score is given by:
+						// (bond + effectiveNodeFee*(32-bond)) / 32
+						// However, when multiplying eth values, we need to normalize the wei to eth
+						// So really it's (bond + (32*fee / 1E) - (32*bond / 1E)) / 32
+						// If we multiply the numerator by 1 eth each, we can avoid some
+						// integer math inaccuracy, and when we divide by 32 it is removed.
+						//
+						// (b*1 + 32f - f*b) / 32
+						megapoolScore := big.NewInt(0).Mul(oneEth, bond)                                    // b*1
+						megapoolScore.Add(megapoolScore, big.NewInt(0).Mul(thirtyTwoEth, effectiveNodeFee)) // b*1 + 32f
+						megapoolScore.Sub(megapoolScore, big.NewInt(0).Mul(effectiveNodeFee, bond))         // b*1 + 32f - f*b
+						megapoolScore.Div(megapoolScore, thirtyTwoEth)                                      // (b*1 + 32f - f*b) / 32
+
+						// Add it to the megapool's score and the total score
+						validator.AttestationScore.Add(&validator.AttestationScore.Int, megapoolScore)
+						r.totalAttestationScore.Add(r.totalAttestationScore, megapoolScore)
+
+						// Calculate the voter share
+						// This is simply (effectiveVoterFee * (32 - bond)) / 32
+						// Simplify to (32f - f*b) / 32
+						voterScore := big.NewInt(0).Mul(thirtyTwoEth, effectiveVoterFee)
+						voterScore.Sub(voterScore, big.NewInt(0).Mul(effectiveVoterFee, bond))
+						voterScore.Div(voterScore, thirtyTwoEth)
+						r.totalVoterScore.Add(r.totalVoterScore, voterScore)
+
+						// Calculate the pdao share
+						// Same formula as the voter share
+						pdaoScore := big.NewInt(0).Mul(thirtyTwoEth, pdaoFee)
+						pdaoScore.Sub(pdaoScore, big.NewInt(0).Mul(pdaoFee, bond))
+						pdaoScore.Div(pdaoScore, thirtyTwoEth)
+						r.totalPdaoScore.Add(r.totalPdaoScore, pdaoScore)
+						r.successfulAttestations++
+					}
+				}
 			}
 		}
 	}
 
 	// Determine how much ETH each node gets and how much the pool stakers get
-	poolStakerETH, nodeOpEth, bonusScalar, err := r.calculateNodeRewards()
+	nodeRewards, err := r.calculateNodeRewards()
 	if err != nil {
 		return err
 	}
 	if r.rewardsFile.RulesetVersion >= 10 {
-		r.minipoolPerformanceFile.BonusScalar = QuotedBigIntFromBigInt(bonusScalar)
+		r.performanceFile.BonusScalar = QuotedBigIntFromBigInt(nodeRewards.bonusScalar)
 	}
 
 	// Update the rewards maps
 	for _, nodeInfo := range r.nodeDetails {
+		// First, take care of voter share
+		if nodeInfo.VoterShareEth.Cmp(common.Big0) > 0 {
+			rewardsForNode, exists := r.nodeRewards[nodeInfo.Address]
+			if !exists {
+				network := nodeInfo.RewardsNetwork
+				validNetwork, err := r.validateNetwork(network)
+				if err != nil {
+					return err
+				}
+				if !validNetwork {
+					r.invalidNetworkNodes[nodeInfo.Address] = network
+					network = 0
+				}
+
+				rewardsForNode = ssz_types.NewNodeReward_v2(
+					network,
+					ssz_types.AddressFromBytes(nodeInfo.Address.Bytes()),
+				)
+				r.nodeRewards[nodeInfo.Address] = rewardsForNode
+			}
+			rewardsForNode.VoterShareEth.Add(rewardsForNode.VoterShareEth.Int, nodeInfo.VoterShareEth)
+
+			// Add the rewards to the running total for the specified network
+			rewardsForNetwork, exists := r.networkRewards[rewardsForNode.Network]
+			if !exists {
+				rewardsForNetwork = ssz_types.NewNetworkReward(rewardsForNode.Network)
+				r.networkRewards[rewardsForNode.Network] = rewardsForNetwork
+			}
+			rewardsForNetwork.SmoothingPoolEth.Add(rewardsForNetwork.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
+		}
+
+		// Next, take care of smoothing pool ETH
 		if nodeInfo.IsEligible && nodeInfo.SmoothingPoolEth.Cmp(common.Big0) > 0 {
 			rewardsForNode, exists := r.nodeRewards[nodeInfo.Address]
 			if !exists {
@@ -556,7 +677,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 					network = 0
 				}
 
-				rewardsForNode = ssz_types.NewNodeReward(
+				rewardsForNode = ssz_types.NewNodeReward_v2(
 					network,
 					ssz_types.AddressFromBytes(nodeInfo.Address.Bytes()),
 				)
@@ -586,7 +707,38 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 				for slot := range minipoolInfo.MissingAttestationSlots {
 					performance.MissingAttestationSlots = append(performance.MissingAttestationSlots, slot)
 				}
-				r.minipoolPerformanceFile.MinipoolPerformance[minipoolInfo.Address] = performance
+				r.performanceFile.MinipoolPerformance[minipoolInfo.Address] = performance
+			}
+
+			// Add megapool rewards to the JSON
+			if nodeInfo.Megapool != nil {
+				for _, validator := range nodeInfo.Megapool.Validators {
+					successfulAttestations := uint64(len(validator.CompletedAttestations))
+					missingAttestations := uint64(len(validator.MissingAttestationSlots))
+					performance := &MegapoolValidatorPerformance_v1{
+						pubkey:                  validator.Pubkey.Hex(),
+						SuccessfulAttestations:  successfulAttestations,
+						MissedAttestations:      missingAttestations,
+						AttestationScore:        validator.AttestationScore,
+						EthEarned:               QuotedBigIntFromBigInt(validator.MegapoolValidatorShare),
+						MissingAttestationSlots: []uint64{},
+					}
+					if successfulAttestations+missingAttestations == 0 {
+						// Don't include megapools that have zero attestations
+						continue
+					}
+					for slot := range validator.MissingAttestationSlots {
+						performance.MissingAttestationSlots = append(performance.MissingAttestationSlots, slot)
+					}
+					mpPerformance, exists := r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address]
+					if !exists {
+						mpPerformance = &MegapoolPerformance_v1{
+							ValidatorPerformance: make(MegapoolPerformanceMap),
+						}
+						r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address] = mpPerformance
+					}
+					mpPerformance.ValidatorPerformance[validator.Pubkey] = performance
+				}
 			}
 
 			// Add the rewards to the running total for the specified network
@@ -597,22 +749,30 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 			}
 			rewardsForNetwork.SmoothingPoolEth.Add(rewardsForNetwork.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
 		}
+
+		// Finally, take care of adding voter share to the performance file
+		if nodeInfo.VoterShareEth.Cmp(common.Big0) > 0 {
+			performance, exists := r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address]
+			if !exists {
+				performance = &MegapoolPerformance_v1{
+					VoterShare: QuotedBigIntFromBigInt(nodeInfo.VoterShareEth),
+				}
+				r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address] = performance
+			}
+		}
 	}
 
 	// Set the totals
-	r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Set(poolStakerETH)
-	r.rewardsFile.TotalRewards.NodeOperatorSmoothingPoolEth.Set(nodeOpEth)
+	r.rewardsFile.TotalRewards.PoolStakerSmoothingPoolEth.Set(nodeRewards.poolStakerEth)
+	r.rewardsFile.TotalRewards.NodeOperatorSmoothingPoolEth.Set(nodeRewards.nodeOpEth)
 	r.rewardsFile.TotalRewards.TotalSmoothingPoolEth.Set(r.smoothingPoolBalance)
+	r.rewardsFile.TotalRewards.TotalVoterShareEth.Set(nodeRewards.voterEth)
+	r.rewardsFile.TotalRewards.TotalPdaoShareEth.Set(nodeRewards.pdaoEth)
 	return nil
 
 }
 
-var oneEth = big.NewInt(1000000000000000000)
-var eightEth = big.NewInt(0).Mul(oneEth, big.NewInt(8))
-var fourteenPercentEth = big.NewInt(14e16)
-var thirtyTwoEth = big.NewInt(0).Mul(oneEth, big.NewInt(32))
-
-func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
+func (r *treeGeneratorImpl_v11) calculateNodeBonuses() (*big.Int, error) {
 	totalConsensusBonus := big.NewInt(0)
 	for _, nsd := range r.nodeDetails {
 		if !nsd.IsEligible {
@@ -675,30 +835,102 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 	return totalConsensusBonus, nil
 }
 
+type nodeRewards struct {
+	poolStakerEth *big.Int
+	nodeOpEth     *big.Int
+	pdaoEth       *big.Int
+	voterEth      *big.Int
+	bonusScalar   *big.Int
+}
+
 // Calculate the distribution of Smoothing Pool ETH to each node
-func (r *treeGeneratorImpl_v9_v10) calculateNodeRewards() (*big.Int, *big.Int, *big.Int, error) {
+func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	var err error
 	bonusScalar := big.NewInt(0).Set(oneEth)
+
+	voterEth := big.NewInt(0)
+	pdaoEth := big.NewInt(0)
+
+	smoothingPoolBalance := big.NewInt(0).Set(r.smoothingPoolBalance)
+	// Subtract the earmarked voter share
+	smoothingPoolBalance.Sub(smoothingPoolBalance, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare)
+	if smoothingPoolBalance.Sign() <= 0 {
+		return nil, fmt.Errorf("smoothing pool balance is less than or equal to the earmarked voter share")
+	}
+
+	// If pdao score is greater than 0, calculate the pdao share
+	if r.totalPdaoScore.Cmp(common.Big0) > 0 {
+		pdaoEth.Mul(smoothingPoolBalance, r.totalPdaoScore)
+		pdaoEth.Div(pdaoEth, big.NewInt(int64(r.successfulAttestations)))
+		pdaoEth.Div(pdaoEth, oneEth)
+	}
+
+	// If voter score is greater than 0, calculate the voter share
+	if r.totalVoterScore.Cmp(common.Big0) > 0 {
+		voterEth.Mul(smoothingPoolBalance, r.totalVoterScore)
+		voterEth.Div(voterEth, big.NewInt(int64(r.successfulAttestations)))
+		voterEth.Div(voterEth, oneEth)
+
+		// Set the voter share eth in the rewards file
+		r.rewardsFile.TotalRewards.SmoothingPoolVoterShareEth.Set(voterEth)
+
+		// Add in the earmarked voter share
+		voterEth.Add(voterEth, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare)
+	}
+
+	totalMegapoolVoteEligibleRpl := big.NewInt(0)
+	for _, nodeInfo := range r.nodeDetails {
+		// Check if the node is eligible for voter share
+		if nodeInfo.Megapool == nil {
+			continue
+		}
+		totalMegapoolVoteEligibleRpl.Add(totalMegapoolVoteEligibleRpl, nodeInfo.MegapoolVoteEligibleRpl)
+	}
+	// Calculate the voter share for each node
+	trueVoterEth := big.NewInt(0)
+	for _, nodeInfo := range r.nodeDetails {
+		if nodeInfo.Megapool == nil {
+			continue
+		}
+		if nodeInfo.MegapoolVoteEligibleRpl.Cmp(common.Big0) == 0 {
+			continue
+		}
+
+		// The node's voter share is nodeRpl*voterEth/totalMegapoolVoteEligibleRpl
+		nodeInfo.VoterShareEth.Set(nodeInfo.MegapoolVoteEligibleRpl)
+		nodeInfo.VoterShareEth.Mul(nodeInfo.VoterShareEth, voterEth)
+		nodeInfo.VoterShareEth.Div(nodeInfo.VoterShareEth, totalMegapoolVoteEligibleRpl)
+		trueVoterEth.Add(trueVoterEth, nodeInfo.VoterShareEth)
+	}
 
 	// If there weren't any successful attestations, everything goes to the pool stakers
 	if r.totalAttestationScore.Cmp(common.Big0) == 0 || r.successfulAttestations == 0 {
 		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", r.totalAttestationScore.String(), r.successfulAttestations)
-		return r.smoothingPoolBalance, big.NewInt(0), bonusScalar, nil
+		poolStakerEth := big.NewInt(0).Set(smoothingPoolBalance)
+		poolStakerEth.Sub(poolStakerEth, trueVoterEth)
+		poolStakerEth.Sub(poolStakerEth, pdaoEth)
+		return &nodeRewards{
+			poolStakerEth: poolStakerEth,
+			nodeOpEth:     big.NewInt(0),
+			pdaoEth:       pdaoEth,
+			voterEth:      trueVoterEth,
+			bonusScalar:   bonusScalar,
+		}, nil
 	}
 
 	// Calculate the minipool bonuses
-	isEligibleInterval := true // TODO - check on-chain for saturn 1
 	var totalConsensusBonus *big.Int
-	if r.rewardsFile.RulesetVersion >= 10 && isEligibleInterval {
+	if r.rewardsFile.RulesetVersion >= 10 && r.isEligibleInterval {
 		totalConsensusBonus, err = r.calculateNodeBonuses()
 		if err != nil {
-			return nil, nil, nil, err
+			return nil, err
 		}
 	}
 
 	totalEthForMinipools := big.NewInt(0)
+	totalEthForMegapools := big.NewInt(0)
 	totalNodeOpShare := big.NewInt(0)
-	totalNodeOpShare.Mul(r.smoothingPoolBalance, r.totalAttestationScore)
+	totalNodeOpShare.Mul(smoothingPoolBalance, r.totalAttestationScore)
 	totalNodeOpShare.Div(totalNodeOpShare, big.NewInt(int64(r.successfulAttestations)))
 	totalNodeOpShare.Div(totalNodeOpShare, oneEth)
 
@@ -722,10 +954,35 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeRewards() (*big.Int, *big.Int, *
 			nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, minipoolEth)
 		}
 		totalEthForMinipools.Add(totalEthForMinipools, nodeInfo.SmoothingPoolEth)
+
+		// Check megapool eth as well
+		if nodeInfo.Megapool != nil {
+			for _, validator := range nodeInfo.Megapool.Validators {
+				validatorEth := big.NewInt(0).Set(totalNodeOpShare)
+				validatorEth.Mul(validatorEth, &validator.AttestationScore.Int)
+				validatorEth.Div(validatorEth, r.totalAttestationScore)
+				validator.MegapoolValidatorShare = validatorEth
+				nodeInfo.SmoothingPoolEth.Add(nodeInfo.SmoothingPoolEth, validatorEth)
+
+				totalEthForMegapools.Add(totalEthForMegapools, validatorEth)
+			}
+		}
 	}
 
 	if r.rewardsFile.RulesetVersion >= 10 {
+		// NB: We use the raw smoothing pool balance here, not the adjusted one
+		// (r.smoothingPoolBalance instead of smoothingPoolBalance)
+		// Otherwise, when we subtract trueVoterEth, we subtract the earmarked voter share twice.
 		remainingBalance := big.NewInt(0).Sub(r.smoothingPoolBalance, totalEthForMinipools)
+		remainingBalance.Sub(remainingBalance, totalEthForMegapools)
+		remainingBalance.Sub(remainingBalance, pdaoEth)
+		if trueVoterEth.Sign() > 0 {
+			remainingBalance.Sub(remainingBalance, trueVoterEth)
+		} else {
+			// Nobody earned voter share.
+			// Subtract voter share- it shouldn't be used to pay bonuses, or we could have a deficit later.
+			remainingBalance.Sub(remainingBalance, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare)
+		}
 		if remainingBalance.Cmp(totalConsensusBonus) < 0 {
 			r.log.Printlnf("WARNING: Remaining balance is less than total consensus bonus... Balance = %s, total consensus bonus = %s", remainingBalance.String(), totalConsensusBonus.String())
 			// Scale bonuses down to fit the remaining balance
@@ -743,43 +1000,69 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeRewards() (*big.Int, *big.Int, *
 					mpd.MinipoolBonus.Div(mpd.MinipoolBonus, totalConsensusBonus)
 				}
 			}
+		} else {
+			r.log.Printlnf("%s Smoothing Pool has %s (%.3f) Pool Staker ETH before bonuses which is enough for %s (%.3f) in bonuses.", r.logPrefix, remainingBalance.String(), eth.WeiToEth(remainingBalance), totalConsensusBonus.String(), eth.WeiToEth(totalConsensusBonus))
 		}
-	}
-
-	// Sanity check the totalNodeOpShare before bonuses are awarded
-	delta := big.NewInt(0).Sub(totalEthForMinipools, totalNodeOpShare)
-	delta.Abs(delta)
-	if delta.Cmp(r.epsilon) == 1 {
-		return nil, nil, nil, fmt.Errorf("error calculating smoothing pool ETH: total was %s, but expected %s; error was too large (%s wei)", totalEthForMinipools.String(), totalNodeOpShare.String(), delta.String())
 	}
 
 	// Finally, award the bonuses
+	totalEthForBonuses := big.NewInt(0)
 	if r.rewardsFile.RulesetVersion >= 10 {
 		for _, nsd := range r.nodeDetails {
 			nsd.SmoothingPoolEth.Add(nsd.SmoothingPoolEth, nsd.BonusEth)
-			totalEthForMinipools.Add(totalEthForMinipools, nsd.BonusEth)
+			totalEthForBonuses.Add(totalEthForBonuses, nsd.BonusEth)
 		}
 	}
 
+	trueNodeOperatorAmount := big.NewInt(0)
+	trueNodeOperatorAmount.Add(trueNodeOperatorAmount, totalEthForMinipools)
+	trueNodeOperatorAmount.Add(trueNodeOperatorAmount, totalEthForMegapools)
+
+	delta := big.NewInt(0).Sub(trueNodeOperatorAmount, totalNodeOpShare)
+	delta.Abs(delta)
+	if delta.Cmp(r.epsilon) == 1 {
+		return nil, fmt.Errorf("error calculating smoothing pool ETH: total was %s, but expected %s; error was too large (%s wei)", trueNodeOperatorAmount.String(), totalNodeOpShare.String(), delta.String())
+	}
+
+	trueNodeOperatorAmount.Add(trueNodeOperatorAmount, totalEthForBonuses)
+
 	// This is how much actually goes to the pool stakers - it should ideally be equal to poolStakerShare but this accounts for any cumulative floating point errors
-	truePoolStakerAmount := big.NewInt(0).Sub(r.smoothingPoolBalance, totalEthForMinipools)
+	// NB: We use the raw smoothing pool balance here, not the adjusted one
+	// (r.smoothingPoolBalance instead of smoothingPoolBalance)
+	// Otherwise, when we subtract trueVoterEth, we subtract the earmarked voter share twice.
+	truePoolStakerAmount := big.NewInt(0).Sub(r.smoothingPoolBalance, trueNodeOperatorAmount)
+	truePoolStakerAmount.Sub(truePoolStakerAmount, pdaoEth)
+	truePoolStakerAmount.Sub(truePoolStakerAmount, trueVoterEth)
 
-	// Calculate the staking pool share and the node op share
-	poolStakerShareBeforeBonuses := big.NewInt(0).Sub(r.smoothingPoolBalance, totalNodeOpShare)
-
-	r.log.Printlnf("%s Pool staker ETH before bonuses:    %s (%.3f)", r.logPrefix, poolStakerShareBeforeBonuses.String(), eth.WeiToEth(poolStakerShareBeforeBonuses))
-	r.log.Printlnf("%s Pool staker ETH after bonuses:     %s (%.3f)", r.logPrefix, truePoolStakerAmount.String(), eth.WeiToEth(truePoolStakerAmount))
-	r.log.Printlnf("%s Node Op ETH before bonuses:        %s (%.3f)", r.logPrefix, totalNodeOpShare.String(), eth.WeiToEth(totalNodeOpShare))
-	r.log.Printlnf("%s Node Op ETH after bonuses:         %s (%.3f)", r.logPrefix, totalEthForMinipools.String(), eth.WeiToEth(totalEthForMinipools))
+	r.log.Printlnf("%s Smoothing Pool ETH:               \t%s\t(%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
+	r.log.Printlnf("%s Pool staker ETH:                  \t%s\t(%.3f)", r.logPrefix, truePoolStakerAmount.String(), eth.WeiToEth(truePoolStakerAmount))
+	r.log.Printlnf("%s Node Op Eth:                      \t%s\t(%.3f)", r.logPrefix, trueNodeOperatorAmount.String(), eth.WeiToEth(trueNodeOperatorAmount))
+	r.log.Printlnf("%s        '--> minipool attestations:\t%s\t(%.3f)", r.logPrefix, totalEthForMinipools.String(), eth.WeiToEth(totalEthForMinipools))
+	r.log.Printlnf("%s        '----------------> bonuses:\t%s\t(%.3f)", r.logPrefix, totalEthForBonuses.String(), eth.WeiToEth(totalEthForBonuses))
+	r.log.Printlnf("%s        '--> megapool attestations:\t%s\t(%.3f)", r.logPrefix, totalEthForMegapools.String(), eth.WeiToEth(totalEthForMegapools))
+	r.log.Printlnf("%s Voter Share:                      \t%s\t(%.3f)", r.logPrefix, trueVoterEth.String(), eth.WeiToEth(trueVoterEth))
+	r.log.Printlnf("%s PDAO ETH:                         \t%s\t(%.3f)", r.logPrefix, pdaoEth.String(), eth.WeiToEth(pdaoEth))
+	// Sum the actual values to determine how much eth is distributed
+	toBeDistributed := big.NewInt(0)
+	toBeDistributed.Add(toBeDistributed, truePoolStakerAmount)
+	toBeDistributed.Add(toBeDistributed, trueNodeOperatorAmount)
+	toBeDistributed.Add(toBeDistributed, trueVoterEth)
+	toBeDistributed.Add(toBeDistributed, pdaoEth)
+	r.log.Printlnf("%s TOTAL to be distributed:          \t%s\t(%.3f)", r.logPrefix, toBeDistributed.String(), eth.WeiToEth(toBeDistributed))
 	r.log.Printlnf("%s (error = %s wei)", r.logPrefix, delta.String())
-	r.log.Printlnf("%s Adjusting pool staker ETH to %s to account for truncation", r.logPrefix, truePoolStakerAmount.String())
 
-	return truePoolStakerAmount, totalEthForMinipools, bonusScalar, nil
+	return &nodeRewards{
+		poolStakerEth: truePoolStakerAmount,
+		nodeOpEth:     trueNodeOperatorAmount,
+		bonusScalar:   bonusScalar,
+		pdaoEth:       pdaoEth,
+		voterEth:      trueVoterEth,
+	}, nil
 
 }
 
 // Get all of the duties for a range of epochs
-func (r *treeGeneratorImpl_v9_v10) processAttestationsBalancesAndWithdrawalsForInterval() error {
+func (r *treeGeneratorImpl_v11) processAttestationsBalancesAndWithdrawalsForInterval() error {
 
 	startEpoch := r.rewardsFile.ConsensusStartBlock / r.beaconConfig.SlotsPerEpoch
 	endEpoch := r.rewardsFile.ConsensusEndBlock / r.beaconConfig.SlotsPerEpoch
@@ -790,8 +1073,13 @@ func (r *treeGeneratorImpl_v9_v10) processAttestationsBalancesAndWithdrawalsForI
 		return err
 	}
 
+	err = r.createMegapoolIndexMap()
+	if err != nil {
+		return err
+	}
+
 	// Check all of the attestations for each epoch
-	r.log.Printlnf("%s Checking participation of %d minipools for epochs %d to %d", r.logPrefix, len(r.validatorIndexMap), startEpoch, endEpoch)
+	r.log.Printlnf("%s Checking participation of %d minipools and %d megapool validators for epochs %d to %d", r.logPrefix, len(r.minipoolValidatorIndexMap), len(r.megapoolValidatorIndexMap), startEpoch, endEpoch)
 	r.log.Printlnf("%s NOTE: this will take a long time, progress is reported every 100 epochs", r.logPrefix)
 
 	epochsDone := 0
@@ -824,7 +1112,7 @@ func (r *treeGeneratorImpl_v9_v10) processAttestationsBalancesAndWithdrawalsForI
 }
 
 // Process an epoch, optionally getting the duties for all eligible minipools in it and checking each one's attestation performance
-func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint64) error {
+func (r *treeGeneratorImpl_v11) processEpoch(duringInterval bool, epoch uint64) error {
 
 	// Get the committee info and attestation records for this epoch
 	var committeeData beacon.Committees
@@ -862,7 +1150,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 
 			for _, withdrawal := range beaconBlock.Withdrawals {
 				// Ignore non-RP validators
-				mpi, exists := r.validatorIndexMap[withdrawal.ValidatorIndex]
+				mpi, exists := r.minipoolValidatorIndexMap[withdrawal.ValidatorIndex]
 				if !exists {
 					continue
 				}
@@ -922,10 +1210,9 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 
 	// Process all of the slots in the epoch
 	for i := uint64(0); i < r.slotsPerEpoch; i++ {
-		inclusionSlot := epoch*r.slotsPerEpoch + i
 		attestations := attestationsPerSlot[i]
 		if len(attestations) > 0 {
-			r.checkAttestations(attestations, inclusionSlot)
+			r.checkAttestations(attestations)
 		}
 	}
 
@@ -933,17 +1220,13 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 
 }
 
-func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.AttestationInfo, inclusionSlot uint64) error {
+func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.AttestationInfo) error {
 
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
 		// Get the RP committees for this attestation's slot and index
 		slotInfo, exists := r.intervalDutiesInfo.Slots[attestation.SlotIndex]
 		if !exists {
-			continue
-		}
-		// Ignore attestations delayed by more than 32 slots
-		if inclusionSlot-attestation.SlotIndex > r.beaconConfig.SlotsPerEpoch {
 			continue
 		}
 
@@ -983,22 +1266,74 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 				// Mark this duty as completed
 				positionInfo.MarkAttestationCompleted(attestation.SlotIndex)
 
-				// Get the pseudoscore for this attestation
-				details := r.networkState.MinipoolDetailsByAddress[positionInfo.MinipoolInfo.Address]
-				bond, fee := details.GetMinipoolBondAndNodeFee(blockTime)
+				if positionInfo.MinipoolInfo != nil {
+					validator := positionInfo.MinipoolInfo
 
-				if r.rewardsFile.RulesetVersion >= 10 {
-					fee = fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
+					// Get the pseudoscore for this attestation
+					details := r.networkState.MinipoolDetailsByAddress[validator.Address]
+					bond, fee := details.GetMinipoolBondAndNodeFee(blockTime)
+
+					if r.rewardsFile.RulesetVersion >= 10 {
+						fee = fees.GetMinipoolFeeWithBonus(bond, fee, percentOfBorrowedEth)
+					}
+
+					minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
+					minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
+					minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
+					minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
+
+					// Add it to the minipool's score and the total score
+					validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
+					r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
+					r.successfulAttestations++
+					continue
 				}
 
-				minipoolScore := big.NewInt(0).Sub(oneEth, fee) // 1 - fee
-				minipoolScore.Mul(minipoolScore, bond)          // Multiply by bond
-				minipoolScore.Div(minipoolScore, thirtyTwoEth)  // Divide by 32 to get the bond as a fraction of a total validator
-				minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
+				megapool := positionInfo.Megapool
+				validator := megapool.GetValidator()
 
-				// Add it to the minipool's score and the total score
-				positionInfo.MinipoolInfo.AttestationScore.Add(&positionInfo.MinipoolInfo.AttestationScore.Int, minipoolScore)
-				r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
+				// Get the pseudoscore for this attestation
+				details := r.networkState.MegapoolDetails[megapool.Info.Address]
+				bond := details.GetMegapoolBondNormalized()
+				nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
+				// The node fee adder is added to nodeFee and deducted from voter fee
+				nodeFeeAdder := r.networkState.NetworkDetails.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder
+				voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
+				pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
+
+				effectiveNodeFee := big.NewInt(0).Add(nodeFee, nodeFeeAdder)
+				effectiveVoterFee := big.NewInt(0).Sub(voterFee, nodeFeeAdder)
+				// The megapool score is given by:
+				// (bond + effectiveNodeFee*(32-bond)) / 32
+				// However, when multiplying eth values, we need to normalize the wei to eth
+				// So really it's (bond + (32*fee / 1E) - (32*bond / 1E)) / 32
+				// If we multiply the numerator by 1 eth each, we can avoid some
+				// integer math inaccuracy, and when we divide by 32 it is removed.
+				//
+				// (b*1 + 32f - f*b) / 32
+				megapoolScore := big.NewInt(0).Mul(oneEth, bond)                                    // b*1
+				megapoolScore.Add(megapoolScore, big.NewInt(0).Mul(thirtyTwoEth, effectiveNodeFee)) // b*1 + 32f
+				megapoolScore.Sub(megapoolScore, big.NewInt(0).Mul(effectiveNodeFee, bond))         // b*1 + 32f - f*b
+				megapoolScore.Div(megapoolScore, thirtyTwoEth)                                      // (b*1 + 32f - f*b) / 32
+
+				// Add it to the megapool's score and the total score
+				validator.AttestationScore.Add(&validator.AttestationScore.Int, megapoolScore)
+				r.totalAttestationScore.Add(r.totalAttestationScore, megapoolScore)
+
+				// Calculate the voter share
+				// This is simply (effectiveVoterFee * (32 - bond)) / 32
+				// Simplify to (32f - f*b) / 32
+				voterScore := big.NewInt(0).Mul(thirtyTwoEth, effectiveVoterFee)
+				voterScore.Sub(voterScore, big.NewInt(0).Mul(effectiveVoterFee, bond))
+				voterScore.Div(voterScore, thirtyTwoEth)
+				r.totalVoterScore.Add(r.totalVoterScore, voterScore)
+
+				// Calculate the pdao share
+				// Same formula as the voter share
+				pdaoScore := big.NewInt(0).Mul(thirtyTwoEth, pdaoFee)
+				pdaoScore.Sub(pdaoScore, big.NewInt(0).Mul(pdaoFee, bond))
+				pdaoScore.Div(pdaoScore, thirtyTwoEth)
+				r.totalPdaoScore.Add(r.totalPdaoScore, pdaoScore)
 				r.successfulAttestations++
 			}
 		}
@@ -1009,7 +1344,7 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 }
 
 // Maps out the attestaion duties for the given epoch
-func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committees) error {
+func (r *treeGeneratorImpl_v11) getDutiesForEpoch(committees beacon.Committees) error {
 
 	// Crawl the committees
 	for idx := 0; idx < committees.Count(); idx++ {
@@ -1036,14 +1371,21 @@ func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committee
 		// Check if there are any RP validators in this committee
 		rpValidators := map[int]*PositionInfo{}
 		for position, validator := range committees.Validators(idx) {
-			minipoolInfo, exists := r.validatorIndexMap[validator]
-			if !exists {
+			minipoolInfo, miniExists := r.minipoolValidatorIndexMap[validator]
+			megapoolInfo, megaExists := r.megapoolValidatorIndexMap[validator]
+			if !miniExists && !megaExists {
 				// This isn't an RP validator, so ignore it
 				continue
 			}
 
-			// Check if this minipool was opted into the SP for this block
-			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.Node.Address]
+			// Check if this validator was opted into the SP for this block
+			var nodeDetails *rpstate.NativeNodeDetails
+			if miniExists {
+				nodeDetails = r.networkState.NodeDetailsByAddress[minipoolInfo.Node.Address]
+			} else {
+				nodeDetails = r.networkState.NodeDetailsByAddress[megapoolInfo.Node.Address]
+			}
+
 			isOptedIn := nodeDetails.SmoothingPoolRegistrationState
 			spRegistrationTime := time.Unix(nodeDetails.SmoothingPoolRegistrationChanged.Int64(), 0)
 			if (isOptedIn && blockTime.Sub(spRegistrationTime) < 0) || // If this block occurred before the node opted in, ignore it
@@ -1051,18 +1393,42 @@ func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committee
 				continue
 			}
 
-			// Check if this minipool was in the `staking` state during this time
-			mpd := r.networkState.MinipoolDetailsByAddress[minipoolInfo.Address]
-			statusChangeTime := time.Unix(mpd.StatusTime.Int64(), 0)
-			if mpd.Status != rptypes.Staking || blockTime.Sub(statusChangeTime) < 0 {
+			// Check if this validator was in the `staking` state during this time
+			if miniExists {
+				mpd := r.networkState.MinipoolDetailsByAddress[minipoolInfo.Address]
+				statusChangeTime := time.Unix(mpd.StatusTime.Int64(), 0)
+				if mpd.Status != rptypes.Staking || blockTime.Sub(statusChangeTime) < 0 {
+					continue
+				}
+
+				// This was a legal RP validator opted into the SP during this slot so add it
+				rpValidators[position] = &PositionInfo{
+					MinipoolInfo: minipoolInfo,
+				}
+				minipoolInfo.MissingAttestationSlots[slotIndex] = true
+				continue
+			}
+			megapoolInfo, ok := r.megapoolValidatorIndexMap[validator]
+			if !ok {
+				return fmt.Errorf("megapool not found indexed by validator %s", validator)
+			}
+
+			validatorInfo, exists := megapoolInfo.ValidatorIndexMap[validator]
+			if !exists {
+				return fmt.Errorf("validator %s not found indexed in megapool %s", validator, megapoolInfo.Address.Hex())
+			}
+
+			if !validatorInfo.NativeValidatorInfo.ValidatorInfo.Staked {
 				continue
 			}
 
-			// This was a legal RP validator opted into the SP during this slot so add it
 			rpValidators[position] = &PositionInfo{
-				MinipoolInfo: minipoolInfo,
+				Megapool: &MegapoolPositionInfo{
+					Info:           megapoolInfo,
+					ValidatorIndex: validator,
+				},
 			}
-			minipoolInfo.MissingAttestationSlots[slotIndex] = true
+			validatorInfo.MissingAttestationSlots[slotIndex] = true
 		}
 
 		// If there are some RP validators, add this committee to the map
@@ -1078,65 +1444,120 @@ func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committee
 
 }
 
-// Maps all minipools to their validator indices and creates a map of indices to minipool info
-func (r *treeGeneratorImpl_v9_v10) createMinipoolIndexMap() error {
+// Maps all megapools to their validator indices and creates map of validator indices to megapool info
+func (r *treeGeneratorImpl_v11) createMegapoolIndexMap() error {
 
-	// Get the status for all uncached minipool validators and add them to the cache
-	r.validatorIndexMap = map[string]*MinipoolInfo{}
+	// Get the status for all uncached megapool validators and add them to the cache
+	r.megapoolValidatorIndexMap = map[string]*MegapoolInfo{}
 	for _, details := range r.nodeDetails {
-		if details.IsEligible {
-			for _, minipoolInfo := range details.Minipools {
-				status, exists := r.networkState.MinipoolValidatorDetails[minipoolInfo.ValidatorPubkey]
-				if !exists {
-					// Remove minipools that don't have indices yet since they're not actually viable
-					//r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
-					minipoolInfo.WasActive = false
-				} else {
-					switch status.Status {
-					case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
-						// Remove minipools that don't have indices yet since they're not actually viable
-						//r.log.Printlnf("NOTE: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
-						minipoolInfo.WasActive = false
-					default:
-						// Get the validator index
-						minipoolInfo.ValidatorIndex = status.Index
-						r.validatorIndexMap[minipoolInfo.ValidatorIndex] = minipoolInfo
+		if !details.IsEligible {
+			continue
+		}
+		if details.Megapool == nil {
+			continue
+		}
+		for _, validatorInfo := range details.Megapool.Validators {
+			status, exists := r.networkState.MegapoolValidatorDetails[validatorInfo.Pubkey]
+			if !exists {
+				validatorInfo.WasActive = false
+				continue
+			}
 
-						// Get the validator's activation start and end slots
-						startSlot := status.ActivationEpoch * r.beaconConfig.SlotsPerEpoch
-						endSlot := status.ExitEpoch * r.beaconConfig.SlotsPerEpoch
+			switch status.Status {
 
-						// Verify this minipool has already started
-						if status.ActivationEpoch == FarEpoch {
-							//r.log.Printlnf("NOTE: minipool %s hasn't been scheduled for activation yet; removing it", minipoolInfo.Address.Hex())
-							minipoolInfo.WasActive = false
-							continue
-						} else if startSlot > r.rewardsFile.ConsensusEndBlock {
-							//r.log.Printlnf("NOTE: minipool %s activates on slot %d which is after interval end %d; removing it", minipoolInfo.Address.Hex(), startSlot, r.rewardsFile.ConsensusEndBlock)
-							minipoolInfo.WasActive = false
-						}
+			case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
+				// Remove megapool validators that don't have indices yet since they're not actually viable
+				//r.log.Printlnf("NOTE: megapool %s (index %s, pubkey %s) was in state %s; removing it", megapoolInfo.Address.Hex(), status.Index, validatorInfo.Pubkey.Hex(), string(status.Status))
+				validatorInfo.WasActive = false
+			default:
+				// Get the validator index
+				validatorInfo.Index = status.Index
+				r.megapoolValidatorIndexMap[validatorInfo.Index] = details.Megapool
 
-						// Check if the minipool exited before this interval
-						if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
-							//r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
-							minipoolInfo.WasActive = false
-							continue
-						}
-					}
+				// Get the validator's activation start and end slots
+
+				// Get the validator's activation start and end slots
+				startSlot := status.ActivationEpoch * r.beaconConfig.SlotsPerEpoch
+				endSlot := status.ExitEpoch * r.beaconConfig.SlotsPerEpoch
+
+				// Verify this megapool has already started
+				if status.ActivationEpoch == FarEpoch {
+					//r.log.Printlnf("NOTE: megapool %s hasn't been scheduled for activation yet; removing it", megapoolInfo.Address.Hex())
+					validatorInfo.WasActive = false
+				} else if startSlot > r.rewardsFile.ConsensusEndBlock {
+					//r.log.Printlnf("NOTE: megapool %s activates on slot %d which is after interval end %d; removing it", megapoolInfo.Address.Hex(), startSlot, r.rewardsFile.ConsensusEndBlock)
+					validatorInfo.WasActive = false
+				}
+
+				// Check if the megapool exited before this interval
+				if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
+					//r.log.Printlnf("NOTE: megapool %s exited on slot %d which was before interval start %d; removing it", megapoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
+					validatorInfo.WasActive = false
 				}
 			}
 		}
 	}
 
 	return nil
-
 }
 
-var farFutureTimestamp int64 = 1000000000000000000 // Far into the future
-var farPastTimestamp int64 = 0
+// Maps all minipools to their validator indices and creates a map of indices to minipool info
+func (r *treeGeneratorImpl_v11) createMinipoolIndexMap() error {
+
+	// Get the status for all uncached minipool validators and add them to the cache
+	r.minipoolValidatorIndexMap = map[string]*MinipoolInfo{}
+	for _, details := range r.nodeDetails {
+		if !details.IsEligible {
+			continue
+		}
+		for _, minipoolInfo := range details.Minipools {
+			status, exists := r.networkState.MinipoolValidatorDetails[minipoolInfo.ValidatorPubkey]
+			if !exists {
+				// Remove minipools that don't have indices yet since they're not actually viable
+				//r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
+				minipoolInfo.WasActive = false
+				continue
+			}
+
+			switch status.Status {
+			case beacon.ValidatorState_PendingInitialized, beacon.ValidatorState_PendingQueued:
+				// Remove minipools that don't have indices yet since they're not actually viable
+				//r.log.Printlnf("NOTE: minipool %s (index %s, pubkey %s) was in state %s; removing it", minipoolInfo.Address.Hex(), status.Index, minipoolInfo.ValidatorPubkey.Hex(), string(status.Status))
+				minipoolInfo.WasActive = false
+			default:
+				// Get the validator index
+				minipoolInfo.ValidatorIndex = status.Index
+				r.minipoolValidatorIndexMap[minipoolInfo.ValidatorIndex] = minipoolInfo
+
+				// Get the validator's activation start and end slots
+				startSlot := status.ActivationEpoch * r.beaconConfig.SlotsPerEpoch
+				endSlot := status.ExitEpoch * r.beaconConfig.SlotsPerEpoch
+
+				// Verify this minipool has already started
+				if status.ActivationEpoch == FarEpoch {
+					//r.log.Printlnf("NOTE: minipool %s hasn't been scheduled for activation yet; removing it", minipoolInfo.Address.Hex())
+					minipoolInfo.WasActive = false
+					continue
+				} else if startSlot > r.rewardsFile.ConsensusEndBlock {
+					//r.log.Printlnf("NOTE: minipool %s activates on slot %d which is after interval end %d; removing it", minipoolInfo.Address.Hex(), startSlot, r.rewardsFile.ConsensusEndBlock)
+					minipoolInfo.WasActive = false
+				}
+
+				// Check if the minipool exited before this interval
+				if status.ExitEpoch != FarEpoch && endSlot < r.rewardsFile.ConsensusStartBlock {
+					//r.log.Printlnf("NOTE: minipool %s exited on slot %d which was before interval start %d; removing it", minipoolInfo.Address.Hex(), endSlot, r.rewardsFile.ConsensusStartBlock)
+					minipoolInfo.WasActive = false
+					continue
+				}
+			}
+		}
+	}
+
+	return nil
+}
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
-func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
+func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 
 	// For each NO, get their opt-in status and time of last change in batches
 	r.log.Printlnf("%s Getting details of nodes for Smoothing Pool calculation...", r.logPrefix)
@@ -1155,13 +1576,15 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 			wg.Go(func() error {
 				nativeNodeDetails := r.networkState.NodeDetails[iterationIndex]
 				nodeDetails := &NodeSmoothingDetails{
-					Index:            iterationIndex,
-					Address:          nativeNodeDetails.NodeAddress,
-					Minipools:        []*MinipoolInfo{},
-					SmoothingPoolEth: big.NewInt(0),
-					BonusEth:         big.NewInt(0),
-					RewardsNetwork:   nativeNodeDetails.RewardNetwork.Uint64(),
-					RplStake:         nativeNodeDetails.RplStake,
+					Index:                   iterationIndex,
+					Address:                 nativeNodeDetails.NodeAddress,
+					Minipools:               []*MinipoolInfo{},
+					SmoothingPoolEth:        big.NewInt(0),
+					BonusEth:                big.NewInt(0),
+					RewardsNetwork:          nativeNodeDetails.RewardNetwork.Uint64(),
+					RplStake:                nativeNodeDetails.RplStake,
+					MegapoolVoteEligibleRpl: big.NewInt(0),
+					VoterShareEth:           big.NewInt(0),
 				}
 
 				nodeDetails.IsOptedIn = nativeNodeDetails.SmoothingPoolRegistrationState
@@ -1191,12 +1614,10 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 
 						// This minipool is below the penalty count, so include it
 						nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
-							Address:         mpd.MinipoolAddress,
-							ValidatorPubkey: mpd.Pubkey,
-							Node:            nodeDetails,
-							Fee:             nativeMinipoolDetails.NodeFee,
-							//MissedAttestations:      0,
-							//GoodAttestations:        0,
+							Address:                 mpd.MinipoolAddress,
+							ValidatorPubkey:         mpd.Pubkey,
+							Node:                    nodeDetails,
+							Fee:                     nativeMinipoolDetails.NodeFee,
 							MissingAttestationSlots: map[uint64]bool{},
 							CompletedAttestations:   map[uint64]bool{},
 							WasActive:               true,
@@ -1206,7 +1627,70 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 					}
 				}
 
-				nodeDetails.IsEligible = len(nodeDetails.Minipools) > 0
+				if nativeNodeDetails.MegapoolDeployed {
+					// Get the megapool details
+					megapoolAddress := nativeNodeDetails.MegapoolAddress
+					nativeMegapoolDetails := r.networkState.MegapoolDetails[megapoolAddress]
+					validators := r.networkState.MegapoolToPubkeysMap[megapoolAddress]
+
+					mpInfo := &MegapoolInfo{
+						Address:              megapoolAddress,
+						Node:                 nodeDetails,
+						Validators:           []*MegapoolValidatorInfo{},
+						ValidatorIndexMap:    make(map[string]*MegapoolValidatorInfo),
+						ActiveValidatorCount: nativeMegapoolDetails.ActiveValidatorCount,
+					}
+
+					for _, validator := range validators {
+						status, exists := r.networkState.MegapoolValidatorDetails[validator]
+						if !exists {
+							continue
+						}
+
+						nativeValidatorInfo, exists := r.networkState.MegapoolValidatorInfo[validator]
+						if !exists {
+							continue
+						}
+
+						v := &MegapoolValidatorInfo{
+							Pubkey:                  validator,
+							Index:                   status.Index,
+							MissingAttestationSlots: map[uint64]bool{},
+							AttestationScore:        NewQuotedBigInt(0),
+							CompletedAttestations:   map[uint64]bool{},
+							NativeValidatorInfo:     nativeValidatorInfo,
+						}
+
+						mpInfo.Validators = append(mpInfo.Validators, v)
+						mpInfo.ValidatorIndexMap[v.Index] = v
+
+						// Check if the megapool has staked RPL
+						if nativeNodeDetails.MegapoolStakedRPL.Sign() > 0 {
+							// The megapool's eligible staked RPL is defined by
+							// min(1.5*RPL value of megapool bonded_eth, megapool staked rpl)
+							bondedEth := nativeNodeDetails.MegapoolEthBonded
+							rplPrice := r.networkState.NetworkDetails.RplPrice
+							// Price is eth per rpl, so to calculate the rpl value of the bonded eth,
+							// we need to divide the bonded eth by the price. This nukes the 1eth unit, so
+							// multiply by 1.5 eth first.
+							bondedEthRplValue := big.NewInt(0).Mul(bondedEth, big.NewInt(15e17))
+							bondedEthRplValue.Div(bondedEthRplValue, rplPrice)
+							// Now take the minimum of the node's actual rpl vs bondedEthRplValue
+							if nativeNodeDetails.MegapoolStakedRPL.Cmp(bondedEthRplValue) < 0 {
+								nodeDetails.MegapoolVoteEligibleRpl = nativeNodeDetails.MegapoolStakedRPL
+							} else {
+								nodeDetails.MegapoolVoteEligibleRpl = bondedEthRplValue
+							}
+						}
+					}
+
+					nodeDetails.Megapool = mpInfo
+					// The node is eligible if it has a megapool or minipools
+					nodeDetails.IsEligible = len(validators) > 0 || len(nodeDetails.Minipools) > 0
+				} else {
+					// The node is eligible if it has minipools
+					nodeDetails.IsEligible = len(nodeDetails.Minipools) > 0
+				}
 				r.nodeDetails[iterationIndex] = nodeDetails
 				return nil
 			})
@@ -1227,7 +1711,7 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 }
 
 // Validates that the provided network is legal
-func (r *treeGeneratorImpl_v9_v10) validateNetwork(network uint64) (bool, error) {
+func (r *treeGeneratorImpl_v11) validateNetwork(network uint64) (bool, error) {
 	valid, exists := r.validNetworkCache[network]
 	if !exists {
 		var err error
@@ -1242,7 +1726,7 @@ func (r *treeGeneratorImpl_v9_v10) validateNetwork(network uint64) (bool, error)
 }
 
 // Gets the start blocks for the given interval
-func (r *treeGeneratorImpl_v9_v10) getBlocksAndTimesForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
+func (r *treeGeneratorImpl_v11) getBlocksAndTimesForInterval(previousIntervalEvent rewards.RewardsEvent) (*types.Header, error) {
 	// Sanity check to confirm the BN can access the block from the previous interval
 	_, exists, err := r.bc.GetBeaconBlock(previousIntervalEvent.ConsensusBlock.String())
 	if err != nil {
@@ -1260,19 +1744,19 @@ func (r *treeGeneratorImpl_v9_v10) getBlocksAndTimesForInterval(previousInterval
 	endTime := r.beaconConfig.GetSlotTime(r.snapshotEnd.Slot)
 
 	r.rewardsFile.StartTime = startTime
-	r.minipoolPerformanceFile.StartTime = startTime
+	r.performanceFile.StartTime = startTime
 
 	r.rewardsFile.EndTime = endTime
-	r.minipoolPerformanceFile.EndTime = endTime
+	r.performanceFile.EndTime = endTime
 
 	r.rewardsFile.ConsensusStartBlock = nextEpoch * r.beaconConfig.SlotsPerEpoch
-	r.minipoolPerformanceFile.ConsensusStartBlock = r.rewardsFile.ConsensusStartBlock
+	r.performanceFile.ConsensusStartBlock = r.rewardsFile.ConsensusStartBlock
 
 	r.rewardsFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
-	r.minipoolPerformanceFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
+	r.performanceFile.ConsensusEndBlock = r.snapshotEnd.ConsensusBlock
 
 	r.rewardsFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
-	r.minipoolPerformanceFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
+	r.performanceFile.ExecutionEndBlock = r.snapshotEnd.ExecutionBlock
 
 	// Get the first block that isn't missing
 	var elBlockNumber uint64
@@ -1283,7 +1767,7 @@ func (r *treeGeneratorImpl_v9_v10) getBlocksAndTimesForInterval(previousInterval
 		}
 		if !exists {
 			r.rewardsFile.ConsensusStartBlock++
-			r.minipoolPerformanceFile.ConsensusStartBlock++
+			r.performanceFile.ConsensusStartBlock++
 		} else {
 			elBlockNumber = beaconBlock.ExecutionBlockNumber
 			break
@@ -1294,7 +1778,7 @@ func (r *treeGeneratorImpl_v9_v10) getBlocksAndTimesForInterval(previousInterval
 	if elBlockNumber == 0 {
 		// We are pre-merge, so get the first block after the one from the previous interval
 		r.rewardsFile.ExecutionStartBlock = previousIntervalEvent.ExecutionBlock.Uint64() + 1
-		r.minipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
+		r.performanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
 		startElHeader, err = r.rp.HeaderByNumber(context.Background(), big.NewInt(int64(r.rewardsFile.ExecutionStartBlock)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL start block %d: %w", r.rewardsFile.ExecutionStartBlock, err)
@@ -1302,7 +1786,7 @@ func (r *treeGeneratorImpl_v9_v10) getBlocksAndTimesForInterval(previousInterval
 	} else {
 		// We are post-merge, so get the EL block corresponding to the BC block
 		r.rewardsFile.ExecutionStartBlock = elBlockNumber
-		r.minipoolPerformanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
+		r.performanceFile.ExecutionStartBlock = r.rewardsFile.ExecutionStartBlock
 		startElHeader, err = r.rp.HeaderByNumber(context.Background(), big.NewInt(int64(elBlockNumber)))
 		if err != nil {
 			return nil, fmt.Errorf("error getting EL header for block %d: %w", elBlockNumber, err)
@@ -1312,6 +1796,6 @@ func (r *treeGeneratorImpl_v9_v10) getBlocksAndTimesForInterval(previousInterval
 	return startElHeader, nil
 }
 
-func (r *treeGeneratorImpl_v9_v10) saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
+func (r *treeGeneratorImpl_v11) saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
 	return saveRewardsArtifacts(smartnode, treeResult, nodeTrusted)
 }

@@ -27,9 +27,9 @@ type RewardsEvent struct {
 	ExecutionBlock    *big.Int
 	ConsensusBlock    *big.Int
 	MerkleRoot        common.Hash
-	MerkleTreeCID     string
 	IntervalsPassed   *big.Int
 	TreasuryRPL       *big.Int
+	TreasuryETH       *big.Int
 	TrustedNodeRPL    []*big.Int
 	NodeRPL           []*big.Int
 	NodeETH           []*big.Int
@@ -308,7 +308,6 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 		NodeETH:           submission.NodeETH,
 		UserETH:           submission.UserETH,
 		MerkleRoot:        submission.MerkleRoot,
-		MerkleTreeCID:     submission.MerkleTreeCID,
 		IntervalStartTime: time.Unix(snapshot.IntervalStartTime.Int64(), 0),
 		IntervalEndTime:   time.Unix(snapshot.IntervalEndTime.Int64(), 0),
 		SubmissionTime:    time.Unix(snapshot.Time.Int64(), 0),
@@ -342,7 +341,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock    *big.Int
 		intervalsPassed   *big.Int
 		merkleRoot        common.Hash
-		merkleTreeCID     string
 		intervalStartTime time.Time
 		intervalEndTime   time.Time
 		submissionTime    time.Time
@@ -360,7 +358,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(4598879)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xb839fa0f5842bf3c8f19091361889fb0f1cb399d64b8da476d372b7de7a93463")
-		merkleTreeCID = "bafybeidrck3sz24acv32h56xdb7ruarxq52oci32del7moxqtief3do73y"
 		intervalStartTime = time.Unix(1659591339, 0)
 		intervalEndTime = time.Unix(1662010539, 0)
 		submissionTime = time.Unix(1662011717, 0)
@@ -374,7 +371,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(4800479)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xb060f0964ce14117075608a69835f4e5e3b872936d3fba2dbb17e202b5c2a7d1")
-		merkleTreeCID = "bafybeiabhjduq23d6yncrmook3hhw6d2lp6wm4rwav6mkwh7uzmimw4ona"
 		intervalStartTime = time.Unix(1662010539, 0)
 		intervalEndTime = time.Unix(1664429739, 0)
 		submissionTime = time.Unix(1664436887, 0)
@@ -388,7 +384,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(5002079)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x278fd75797e2a9eddc128c0199b448877e30d1196c12306bdc95fb731647c18f")
-		merkleTreeCID = "bafybeihi4m4jdj76746gzqvwxfphvocqrpcylqbs2b746kryoajjqrppzu"
 		intervalStartTime = time.Unix(1664429739, 0)
 		intervalEndTime = time.Unix(1666848939, 0)
 		submissionTime = time.Unix(1666874939, 0)
@@ -402,7 +397,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(5203679)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xc0c736dccc4371b8a9d4ded4b50213dd820504430350d157350f52dfd04869ab")
-		merkleTreeCID = "bafybeihhngkpe7aoz3uk6aocjujcbssjjbjtzzh6qzau74vixzsovjb5ae"
 		intervalStartTime = time.Unix(1666848939, 0)
 		intervalEndTime = time.Unix(1669268139, 0)
 		submissionTime = time.Unix(1669275119, 0)
@@ -416,7 +410,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(5405279)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x21c047f0035a64ca5b21c42bdad08d329f2121b5f1fe47e51222f9701f373826")
-		merkleTreeCID = "bafybeicdqywie7v7a73y4eh6jtdqtronsduvq57e5v6747lqynqkqze4am"
 		intervalStartTime = time.Unix(1669268139, 0)
 		intervalEndTime = time.Unix(1671687339, 0)
 		submissionTime = time.Unix(1671695987, 0)
@@ -430,7 +423,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(5606879)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xde0604812161f69253e6bdaf0f623c63e1d7c49d43a78b5333564b24dae2e450")
-		merkleTreeCID = "bafybeia5iqj7yzwfn77xpmf3hqtu7k52h4fpiyan4pkz2enyp6rbmvkotq"
 		intervalStartTime = time.Unix(1671687339, 0)
 		intervalEndTime = time.Unix(1674106539, 0)
 		submissionTime = time.Unix(1674113807, 0)
@@ -444,7 +436,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(5808479)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x804d82caab67b8bcfff14f044cb6745ed3ba59c5fd06f52c27b25c96c95e3290")
-		merkleTreeCID = "bafybeid3fzvkb2bihyy4gpx555yagxytotfjkimauehy7dakehkdu5d63y"
 		intervalStartTime = time.Unix(1674106539, 0)
 		intervalEndTime = time.Unix(1676525739, 0)
 		submissionTime = time.Unix(1676533163, 0)
@@ -458,7 +449,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(6010079)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x64692e59bb20ed13f5401b659fb53868c319a9dad410cb5b3c35a99c56db0ba1")
-		merkleTreeCID = "bafybeihhsblaladk7e2bsudr455cb2qt22ireq6xp6mvfzxfnu45pguxey"
 		intervalStartTime = time.Unix(1676525739, 0)
 		intervalEndTime = time.Unix(1678944939, 0)
 		submissionTime = time.Unix(1678986371, 0)
@@ -472,7 +462,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(6211679)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x9e53fc60a6e330b8aece2d2475dcc23e17426c5a552c7b4374ddddd46fa6599b")
-		merkleTreeCID = "bafybeiagazxkhdlyjqpba2hox4xhtf4jo5x5j4c3alc3kipfrt2g7seage"
 		intervalStartTime = time.Unix(1678944939, 0)
 		intervalEndTime = time.Unix(1681364139, 0)
 		submissionTime = time.Unix(1681371923, 0)
@@ -486,7 +475,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(6413279)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x2238938633ae1f6a3275b52492dc64018f2245912b708f91bd21cc8472fa3f45")
-		merkleTreeCID = "bafybeichtj4if3nwxfdlnmt4xcbyzhf4vooa3lgjcy7mtlkds7g2druivq"
 		intervalStartTime = time.Unix(1681364139, 0)
 		intervalEndTime = time.Unix(1683783339, 0)
 		submissionTime = time.Unix(1683791075, 0)
@@ -500,7 +488,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(6614879)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xc16b52575ec0494ef72ec419f7660f65d35abe65a51c277e3a8b4f581988ab25")
-		merkleTreeCID = "bafybeiaqpdzdpngpt6py464xjcheoilaggrscvzzlol7c6stvvbhhyg4pu"
 		intervalStartTime = time.Unix(1683783339, 0)
 		intervalEndTime = time.Unix(1686202539, 0)
 		submissionTime = time.Unix(1686209267, 0)
@@ -514,7 +501,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(6816479)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x280677fb18f06701851bd057f52558e59c6a8534f31bf0222e424dd4e2b6d2d2")
-		merkleTreeCID = "bafybeihoq5a4fdfagu3cd5zskbeklr7urza5pwg2htahtaf5v46qlzodmi"
 		intervalStartTime = time.Unix(1686202539, 0)
 		intervalEndTime = time.Unix(1688621739, 0)
 		submissionTime = time.Unix(1688629187, 0)
@@ -528,7 +514,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(7018079)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xae4e2bb2dc3efee5a20bedc83be1a7b5450de064867edae2aae59e1df08313fe")
-		merkleTreeCID = "bafybeiaiwlnry6uefw5pw2oq2xueeat5nmvsnfhfkcdyksrfx3ml6vydky"
 		intervalStartTime = time.Unix(1688621739, 0)
 		intervalEndTime = time.Unix(1691040939, 0)
 		submissionTime = time.Unix(1691045351, 0)
@@ -542,7 +527,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(7219679)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x8e1a38feed2f3e88782a7bbb3ff24c650f3903beb3169c3d196b358ce70a9080")
-		merkleTreeCID = "bafybeihalpqr5o2bmvzx2x4x7her33jh4k6s3ngbvypejjl52nss2oedzi"
 		intervalStartTime = time.Unix(1691040939, 0)
 		intervalEndTime = time.Unix(1693460139, 0)
 		submissionTime = time.Unix(1693462895, 0)
@@ -556,7 +540,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(7421279)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x8b2e52188d616a19f50477d1d2d2e3ddc8a2a056f9486ec7cc25d7140c75217b")
-		merkleTreeCID = "bafybeiem7aj4oz7soasl2nvyvl24bab62i33ofak65c5ozpqnngaoa5dma"
 		intervalStartTime = time.Unix(1693460139, 0)
 		intervalEndTime = time.Unix(1695879339, 0)
 		submissionTime = time.Unix(1695887015, 0)
@@ -570,7 +553,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(7622879)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xa1afd40dfecdde96b59d2a85eac5fd0c618bc336cdfad6ee9c093cf30a02335b")
-		merkleTreeCID = "bafybeighiqr4fyqrsnkxbz5vhndmt4cuokg3vbc542jtxh2er4z35hynva"
 		intervalStartTime = time.Unix(1695879339, 0)
 		intervalEndTime = time.Unix(1698298539, 0)
 		submissionTime = time.Unix(1698299831, 0)
@@ -584,7 +566,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(7824479)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x72515a30759d598e36aea4b2729ee38136da3da8c3d40c17e8ddaf6381746b61")
-		merkleTreeCID = "bafybeiez5n7vn4jrzsk3dy7npdorqe2letdvyojqbo4ltxubzujaj63ndu"
 		intervalStartTime = time.Unix(1698298539, 0)
 		intervalEndTime = time.Unix(1700717739, 0)
 		submissionTime = time.Unix(1700719223, 0)
@@ -598,7 +579,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(8026079)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x8466396383460910d80e9a5af0b962213b3a0e33c4a41f3b817a84487364c123")
-		merkleTreeCID = "bafybeifldymulw6qvlfjgntj6mrlbwcl46xn6njickcydlquxc33nseoxi"
 		intervalStartTime = time.Unix(1700717739, 0)
 		intervalEndTime = time.Unix(1703136939, 0)
 		submissionTime = time.Unix(1703138135, 0)
@@ -612,7 +592,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(8227679)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xd37ce5368a3790cfd9f3fff6a56079b0026a9a06f2fee02a5055f6838cfd5a00")
-		merkleTreeCID = "bafybeigfgadbxblmn45ab7c2m7zt3bvimt66wwp543fl6a33hxfuiopvha"
 		intervalStartTime = time.Unix(1703136939, 0)
 		intervalEndTime = time.Unix(1705556139, 0)
 		submissionTime = time.Unix(1705557263, 0)
@@ -626,7 +605,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(8429279)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x35d1be64d49aa71dc5b5ea13dd6f91d8613c81aef2593796d6dee599cd228aea")
-		merkleTreeCID = "bafybeiazkzsqe7molppbhbxg2khdgocrip36eoezroa7anbe53za7mxjpq"
 		intervalStartTime = time.Unix(1705556139, 0)
 		intervalEndTime = time.Unix(1707975339, 0)
 		submissionTime = time.Unix(1707976475, 0)
@@ -640,7 +618,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(8630879)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x55afb0387fb4c1c8e479f49433b996bce1d1c4658cf8e58f7a9ea3d3c5099eb2")
-		merkleTreeCID = "bafybeiazuw7gubmv3csk54hqy6hhtr2uyvcsvhykw36ofbrrp436g23yme"
 		intervalStartTime = time.Unix(1707975339, 0)
 		intervalEndTime = time.Unix(1710394539, 0)
 		submissionTime = time.Unix(1710395711, 0)
@@ -654,7 +631,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(8832479)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x7273138f110f464d45c3ec8b42aec0280b0e5a434a93907a5c9db047cb180866")
-		merkleTreeCID = "bafybeiagdvc6chbfeyyttovpkhx4ltfyd3itah42lzmr445nxzjxgygmgu"
 		intervalStartTime = time.Unix(1710394539, 0)
 		intervalEndTime = time.Unix(1712813739, 0)
 		submissionTime = time.Unix(1712824835, 0)
@@ -668,7 +644,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(9034079)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xc2724d07659bb0cb7bbc926b873a56226ebf368bea729c007e214f464e8aa69d")
-		merkleTreeCID = "bafybeig73barjh4kyj2inqgq255zeefnl2pozz7dyi5wqfddqmmgulxopq"
 		intervalStartTime = time.Unix(1712813739, 0)
 		intervalEndTime = time.Unix(1715232939, 0)
 		submissionTime = time.Unix(1715234147, 0)
@@ -682,7 +657,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(9235679)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xde037dafa7973dbab1cbe8cf46d85e2e125fd5bf193fc69b9f7811a5b6b7dc9d")
-		merkleTreeCID = "bafybeifw6dledle4a4tnqti4b6dzvus3iezkkm2e32zaqliun4gnbgkwhm"
 		intervalStartTime = time.Unix(1715232939, 0)
 		intervalEndTime = time.Unix(1717652139, 0)
 		submissionTime = time.Unix(1717653455, 0)
@@ -696,7 +670,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(9437279)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x2dccc9f3a86e7c857177c0f84abd314eeae162c398adcfbf5c94bd62812f1f1d")
-		merkleTreeCID = "bafybeiebk3s32zmilztud4gxpwuagaddig4ildgqhomdx7eii6h5n7gzie"
 		intervalStartTime = time.Unix(1717652139, 0)
 		intervalEndTime = time.Unix(1720071339, 0)
 		submissionTime = time.Unix(1720072511, 0)
@@ -710,7 +683,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(9638879)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xd8f3480bb44f993586001225adcc8f87f22d12184cd804d8f717dc9d26cacaa2")
-		merkleTreeCID = "bafybeigb5v2oj7vcc7aarfqypiudksuyn3t2pkxegtvxjoynysttcxf5vy"
 		intervalStartTime = time.Unix(1720071339, 0)
 		intervalEndTime = time.Unix(1722490539, 0)
 		submissionTime = time.Unix(1722491723, 0)
@@ -724,7 +696,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(9840479)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0xbffdc74404912050acccc79ec6556bd159f7a6f9db3be0c045519461c96047ef")
-		merkleTreeCID = "bafybeiar5swdyqenqmdi25h5ihnyrcaf3vof5325mbsdb2w62fcvrvlpey"
 		intervalStartTime = time.Unix(1722490539, 0)
 		intervalEndTime = time.Unix(1724909739, 0)
 		submissionTime = time.Unix(1724911139, 0)
@@ -738,7 +709,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(10042079)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x19f080c89283f80aa29cef2155457400d3e1a3989a16108f214fbf0e1a683e13")
-		merkleTreeCID = "bafybeiecbehhk4xsp5eonauycaflwwpzbiq7dwtbvzochwzo6uotmebehu"
 		intervalStartTime = time.Unix(1724909739, 0)
 		intervalEndTime = time.Unix(1727328939, 0)
 		submissionTime = time.Unix(1727330339, 0)
@@ -752,7 +722,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(10243679)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x5fd98bc90296e3ebcdf7098a539f3c04388aa639d885bacfea2b088796375d8c")
-		merkleTreeCID = "bafybeihoaivrxlnqhstydoditx4pyr4waihduawgodieen6axv2km24imi"
 		intervalStartTime = time.Unix(1727328939, 0)
 		intervalEndTime = time.Unix(1729748139, 0)
 		submissionTime = time.Unix(1729749551, 0)
@@ -766,7 +735,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(10445279)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x82e89c1b2cfa0248ee5d2ff9bd4b0013388bc0da2005ee03e666c83c7bb51a92")
-		merkleTreeCID = "bafybeigp23ay6zk3rsrqtzukbsire5fyak5q3tke2nyjip2irkk2imy24m"
 		intervalStartTime = time.Unix(1729748139, 0)
 		intervalEndTime = time.Unix(1732167339, 0)
 		submissionTime = time.Unix(1732168487, 0)
@@ -780,7 +748,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(10646879)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x021b434c4f6bc565225d03d77ba722f41668f5805574f8825c49d4f68b4e89b9")
-		merkleTreeCID = "bafybeiemh5r7e7imqdxvmt4oc6pyktv6kqiwwyyqtps3wozf374ztvzpqi"
 		intervalStartTime = time.Unix(1732167339, 0)
 		intervalEndTime = time.Unix(1734586539, 0)
 		submissionTime = time.Unix(1734594971, 0)
@@ -794,7 +761,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(10848479)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x6502a89b162c41b1cbc019aaa82c6c1e76f872bfca0cd7dfd688bf217b9a820d")
-		merkleTreeCID = "bafybeigbvc6vtvsu3azzzjn3tzb4lhnt63xfkpzpxjgzt6y2fgsjwptesu"
 		intervalStartTime = time.Unix(1734586539, 0)
 		intervalEndTime = time.Unix(1737005739, 0)
 		submissionTime = time.Unix(1737017999, 0)
@@ -808,7 +774,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(11050079)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x44941bda178c03ca6d8a5e72fd9433fd566ac801d57cb5ccb8d833436bc07f95")
-		merkleTreeCID = "bafybeicimfw4h73vpgwnukkkro5iecgrxomqvvdr66ecy54ulihi3bnixy"
 		intervalStartTime = time.Unix(1737005739, 0)
 		intervalEndTime = time.Unix(1739424939, 0)
 		submissionTime = time.Unix(1739436551, 0)
@@ -822,7 +787,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(11251679)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x6c71cf2beb6bf80c90a0bed50b2eff376919bf3016ac5102ce403a4bd74c35b3")
-		merkleTreeCID = "bafybeiavd6deyed4b2t73g7wthhr3ozsw7s5x2ektglhwepbd44mi2hm2i"
 		intervalStartTime = time.Unix(1739424939, 0)
 		intervalEndTime = time.Unix(1741844139, 0)
 		submissionTime = time.Unix(1741856879, 0)
@@ -836,7 +800,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(11453279)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x0311e81c20f7161dd37db58cec5108bc687ba7b4352ccbc797a04028b08fd8a1")
-		merkleTreeCID = "bafybeidmkskyk2po4dzyak3t5ve6stujyd3diyolim4hwsnejrv5cv2b3a"
 		intervalStartTime = time.Unix(1741844139, 0)
 		intervalEndTime = time.Unix(1744263339, 0)
 		submissionTime = time.Unix(1744283327, 0)
@@ -850,7 +813,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		consensusBlock = big.NewInt(11654879)
 		intervalsPassed = big.NewInt(1)
 		merkleRoot = common.HexToHash("0x057eb4b982774871cd1aefd2962589620fee1e9cfcbf36d0f08e292da837dc49")
-		merkleTreeCID = "bafybeid4ttvmr547lz57opya7sjhlorpi3egdo7qccvokfx5w72ziul6uu"
 		intervalStartTime = time.Unix(1744263339, 0)
 		intervalEndTime = time.Unix(1746682539, 0)
 		submissionTime = time.Unix(1746691523, 0)
@@ -870,7 +832,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		NodeETH:           []*big.Int{nodeETH},
 		UserETH:           userETH,
 		MerkleRoot:        merkleRoot,
-		MerkleTreeCID:     merkleTreeCID,
 		IntervalStartTime: intervalStartTime,
 		IntervalEndTime:   intervalEndTime,
 		SubmissionTime:    submissionTime,

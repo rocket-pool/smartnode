@@ -118,6 +118,13 @@ func (m *MockBeaconClient) SetState(state *state.NetworkState) {
 		}
 		m.validatorPubkeys[validatorIndex(v.Index)] = v.Pubkey
 	}
+	for _, v := range state.MegapoolValidatorGlobalIndex {
+		vIndex := strconv.FormatUint(v.ValidatorInfo.ValidatorIndex, 10)
+		if _, ok := m.validatorPubkeys[validatorIndex(vIndex)]; ok {
+			m.t.Fatalf("Validator %s already set", vIndex)
+		}
+		m.validatorPubkeys[validatorIndex(vIndex)] = types.ValidatorPubkey(v.Pubkey)
+	}
 }
 
 type mockBeaconCommitteeSlot struct {
@@ -193,7 +200,10 @@ func (bc *MockBeaconClient) isValidatorActive(validator validatorIndex, e epoch)
 	}
 	validatorDetails, ok := bc.state.MinipoolValidatorDetails[validatorPubkey]
 	if !ok {
-		return false, fmt.Errorf("validator %s not found", validatorPubkey)
+		validatorDetails, ok = bc.state.MegapoolValidatorDetails[validatorPubkey]
+		if !ok {
+			return false, fmt.Errorf("validator %s details not found", validatorPubkey)
+		}
 	}
 	// Validators are assigned duties in the epoch they are activated
 	// but not in the epoch they exit

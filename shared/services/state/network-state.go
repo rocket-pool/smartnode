@@ -100,6 +100,8 @@ type NetworkState struct {
 	MinipoolValidatorDetails ValidatorDetailsMap `json:"validator_details"`
 	MegapoolValidatorDetails ValidatorDetailsMap `json:"megapool_validator_details"`
 
+	MegapoolValidatorInfo map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex `json:"-"`
+
 	// Oracle DAO details
 	OracleDaoMemberDetails []rpstate.OracleDaoMemberDetails `json:"oracle_dao_member_details"`
 
@@ -263,12 +265,13 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 		megapoolValidatorPubkeys := make([]types.ValidatorPubkey, 0, len(state.MegapoolValidatorGlobalIndex))
 		// Iterate over the megapool validators to add their pubkey to the list of pubkeys
 		megapoolAddressMap := make(map[common.Address][]types.ValidatorPubkey)
+		megapoolValidatorInfo := make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex)
 		for _, validator := range state.MegapoolValidatorGlobalIndex {
 			// Add the megapool address to a set
 			if len(validator.Pubkey) > 0 { // TODO CHECK  validators without a pubkey
 				megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], types.ValidatorPubkey(validator.Pubkey))
 				megapoolValidatorPubkeys = append(megapoolValidatorPubkeys, types.ValidatorPubkey(validator.Pubkey))
-
+				megapoolValidatorInfo[types.ValidatorPubkey(validator.Pubkey)] = &validator
 			}
 		}
 		state.MegapoolToPubkeysMap = megapoolAddressMap
@@ -279,6 +282,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 			return nil, err
 		}
 		state.MegapoolValidatorDetails = statusMap
+		state.MegapoolValidatorInfo = megapoolValidatorInfo
 
 		// initialize state.MegapoolDetails
 		state.MegapoolDetails = make(map[common.Address]rpstate.NativeMegapoolDetails)
@@ -566,20 +570,28 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 		node := node
 		wg.Go(func() error {
 			eligibleBorrowedEth := s.GetEligibleBorrowedEth(&node)
+			rplStake := s.GetRplStake(&node)
 
-			// minCollateral := borrowedEth * minCollateralFraction / ratio
-			// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
-			minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, s.NetworkDetails.MinCollateralFraction)
-			minCollateral.Div(minCollateral, s.NetworkDetails.RplPrice)
+			minCollateral := big.NewInt(0)
+			if !s.IsSaturnDeployed {
+				// minCollateral := borrowedEth * minCollateralFraction / ratio
+				// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
+				minCollateral = minCollateral.Mul(eligibleBorrowedEth, s.NetworkDetails.MinCollateralFraction)
+				minCollateral.Div(minCollateral, s.NetworkDetails.RplPrice)
+			}
 
 			// Calculate the weight
 			nodeWeight := big.NewInt(0)
-			if node.RplStake.Cmp(minCollateral) == -1 || eligibleBorrowedEth.Sign() <= 0 {
+			if eligibleBorrowedEth.Sign() <= 0 {
+				weightSlice[i] = nodeWeight
+				return nil
+			}
+			if rplStake.Cmp(minCollateral) == -1 && !s.IsSaturnDeployed {
 				weightSlice[i] = nodeWeight
 				return nil
 			}
 
-			nodeWeight.Set(s.GetNodeWeight(eligibleBorrowedEth, node.RplStake))
+			nodeWeight.Set(s.GetNodeWeight(eligibleBorrowedEth, rplStake))
 
 			// Scale the node weight by the participation in the current interval
 			// Get the timestamp of the node's registration
@@ -613,8 +625,19 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 	return weights, totalWeight, nil
 }
 
+func (s *NetworkState) GetRplStake(node *rpstate.NativeNodeDetails) *big.Int {
+	if !s.IsSaturnDeployed {
+		return node.RplStake
+	}
+
+	out := big.NewInt(0).Set(node.LegacyStakedRPL)
+	out.Add(out, node.MegapoolStakedRPL)
+	return out
+}
+
 func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
 	eligibleBorrowedEth := big.NewInt(0)
+	intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
 
 	for _, mpd := range s.MinipoolDetailsByNode[node.NodeAddress] {
 
@@ -630,8 +653,6 @@ func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *
 			continue
 		}
 
-		intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
-
 		// Already exited
 		if validatorStatus.ExitEpoch <= intervalEndEpoch {
 			//s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
@@ -641,6 +662,12 @@ func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *
 		// It's eligible, so add up the borrowed and bonded amounts
 		eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance)
 	}
+
+	if node.MegapoolDeployed {
+		megapool := s.MegapoolDetails[node.MegapoolAddress]
+		eligibleBorrowedEth.Add(eligibleBorrowedEth, megapool.UserCapital)
+	}
+
 	return eligibleBorrowedEth
 }
 

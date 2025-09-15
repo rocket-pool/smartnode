@@ -139,7 +139,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 			}
 			rplRewards.Add(rplRewards, &intervalInfo.CollateralRplAmount.Int)
-			ethRewards.Add(ethRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+			ethRewards.Add(ethRewards, &intervalInfo.TotalEthAmount.Int)
 		}
 
 		// Get the unclaimed rewards
@@ -153,7 +153,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 			}
 			if intervalInfo.NodeExists {
 				unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.CollateralRplAmount.Int)
-				unclaimedEthRewardsWei.Add(unclaimedEthRewardsWei, &intervalInfo.SmoothingPoolEthAmount.Int)
+				unclaimedEthRewardsWei.Add(unclaimedEthRewardsWei, &intervalInfo.TotalEthAmount.Int)
 			}
 		}
 
