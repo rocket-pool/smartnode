@@ -8,14 +8,15 @@ import (
 
 // The page wrapper for the fallback config
 type FallbackConfigPage struct {
-	home                *settingsHome
-	page                *page
-	layout              *standardLayout
-	masterConfig        *config.RocketPoolConfig
-	useFallbackBox      *parameterizedFormItem
-	reconnectDelay      *parameterizedFormItem
-	fallbackNormalItems []*parameterizedFormItem
-	fallbackPrysmItems  []*parameterizedFormItem
+	home                 *settingsHome
+	page                 *page
+	layout               *standardLayout
+	masterConfig         *config.RocketPoolConfig
+	useFallbackBox       *parameterizedFormItem
+	reconnectDelay       *parameterizedFormItem
+	fallbackNormalItems  []*parameterizedFormItem
+	fallbackPrysmItems   []*parameterizedFormItem
+	prioritizeValidation *parameterizedFormItem
 }
 
 // Creates a new page for the fallback client settings
@@ -57,11 +58,13 @@ func (configPage *FallbackConfigPage) createContent() {
 	configPage.reconnectDelay = createParameterizedStringField(&configPage.masterConfig.ReconnectDelay)
 	configPage.fallbackNormalItems = createParameterizedFormItems(configPage.masterConfig.FallbackNormal.GetParameters(), configPage.layout.descriptionBox)
 	configPage.fallbackPrysmItems = createParameterizedFormItems(configPage.masterConfig.FallbackPrysm.GetParameters(), configPage.layout.descriptionBox)
+	configPage.prioritizeValidation = createParameterizedCheckbox(&configPage.masterConfig.PrioritizeValidation)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.useFallbackBox, configPage.reconnectDelay)
 	configPage.layout.mapParameterizedFormItems(configPage.fallbackNormalItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.fallbackPrysmItems...)
+	configPage.layout.mapParameterizedFormItems(configPage.prioritizeValidation)
 
 	// Set up the setting callbacks
 	configPage.useFallbackBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
@@ -94,6 +97,7 @@ func (configPage *FallbackConfigPage) handleUseFallbackChanged() {
 	default:
 		configPage.layout.addFormItems(configPage.fallbackNormalItems)
 	}
+	configPage.layout.form.AddFormItem(configPage.prioritizeValidation.item)
 
 	configPage.layout.refresh()
 }

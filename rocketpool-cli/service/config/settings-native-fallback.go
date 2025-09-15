@@ -7,13 +7,14 @@ import (
 
 // The page wrapper for the fallback config
 type NativeFallbackConfigPage struct {
-	home           *settingsNativeHome
-	page           *page
-	layout         *standardLayout
-	masterConfig   *config.RocketPoolConfig
-	useFallbackBox *parameterizedFormItem
-	reconnectDelay *parameterizedFormItem
-	fallbackItems  []*parameterizedFormItem
+	home                 *settingsNativeHome
+	page                 *page
+	layout               *standardLayout
+	masterConfig         *config.RocketPoolConfig
+	useFallbackBox       *parameterizedFormItem
+	reconnectDelay       *parameterizedFormItem
+	fallbackItems        []*parameterizedFormItem
+	prioritizeValidation *parameterizedFormItem
 }
 
 // Creates a new page for the fallback client settings
@@ -54,10 +55,12 @@ func (configPage *NativeFallbackConfigPage) createContent() {
 	configPage.useFallbackBox = createParameterizedCheckbox(&configPage.masterConfig.UseFallbackClients)
 	configPage.reconnectDelay = createParameterizedStringField(&configPage.masterConfig.ReconnectDelay)
 	configPage.fallbackItems = createParameterizedFormItems(configPage.masterConfig.FallbackNormal.GetParameters(), configPage.layout.descriptionBox)
+	configPage.fallbackItems = createParameterizedFormItems(configPage.masterConfig.FallbackNormal.GetParameters(), configPage.layout.descriptionBox)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.useFallbackBox, configPage.reconnectDelay)
 	configPage.layout.mapParameterizedFormItems(configPage.fallbackItems...)
+	configPage.prioritizeValidation = createParameterizedCheckbox(&configPage.masterConfig.PrioritizeValidation)
 
 	// Set up the setting callbacks
 	configPage.useFallbackBox.item.(*tview.Checkbox).SetChangedFunc(func(checked bool) {
@@ -83,6 +86,7 @@ func (configPage *NativeFallbackConfigPage) handleUseFallbackChanged() {
 	}
 	configPage.layout.form.AddFormItem(configPage.reconnectDelay.item)
 	configPage.layout.addFormItems(configPage.fallbackItems)
+	configPage.layout.form.AddFormItem(configPage.prioritizeValidation.item)
 
 	configPage.layout.refresh()
 }

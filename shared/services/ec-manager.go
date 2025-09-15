@@ -29,6 +29,7 @@ type ExecutionClientManager struct {
 	primaryReady    bool
 	fallbackReady   bool
 	ignoreSyncCheck bool
+	preferFallback  bool
 }
 
 // This is a signature for a wrapped ethclient.Client function
@@ -39,6 +40,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 
 	var primaryEcUrl string
 	var fallbackEcUrl string
+	var preferFallback bool
 
 	// Get the primary EC url
 	if cfg.IsNativeMode {
@@ -53,6 +55,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 	if cfg.UseFallbackClients.Value == true {
 		if cfg.IsNativeMode {
 			fallbackEcUrl = cfg.FallbackNormal.EcHttpUrl.Value.(string)
+			preferFallback = cfg.PrioritizeValidation.Value.(bool)
 		} else {
 			cc, _ := cfg.GetSelectedConsensusClient()
 			switch cc {
@@ -61,6 +64,7 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 			default:
 				fallbackEcUrl = cfg.FallbackNormal.EcHttpUrl.Value.(string)
 			}
+			preferFallback = cfg.PrioritizeValidation.Value.(bool)
 		}
 	}
 
@@ -78,13 +82,14 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 	}
 
 	return &ExecutionClientManager{
-		primaryEcUrl:  primaryEcUrl,
-		fallbackEcUrl: fallbackEcUrl,
-		primaryEc:     primaryEc,
-		fallbackEc:    fallbackEc,
-		logger:        log.NewColorLogger(color.FgYellow),
-		primaryReady:  true,
-		fallbackReady: fallbackEc != nil,
+		primaryEcUrl:   primaryEcUrl,
+		fallbackEcUrl:  fallbackEcUrl,
+		primaryEc:      primaryEc,
+		fallbackEc:     fallbackEc,
+		logger:         log.NewColorLogger(color.FgYellow),
+		primaryReady:   true,
+		fallbackReady:  fallbackEc != nil,
+		preferFallback: preferFallback,
 	}, nil
 
 }
@@ -466,46 +471,62 @@ func checkEcStatus(client *ethclient.Client) api.ClientStatus {
 
 }
 
-// Attempts to run a function progressively through each client until one succeeds or they all fail.
+// Attempts to run a function progressively through each client in the preferred order until one succeeds or they all fail.
 func (p *ExecutionClientManager) runFunction(function ecFunction) (interface{}, error) {
 
-	// Check if we can use the primary
-	if p.primaryReady {
-		// Try to run the function on the primary
-		result, err := function(p.primaryEc)
-		if err != nil {
-			if p.isDisconnected(err) {
-				// If it's disconnected, log it and try the fallback
-				p.logger.Printlnf("WARNING: Primary Execution client disconnected (%s), using fallback...", err.Error())
-				p.primaryReady = false
-				return p.runFunction(function)
-			}
+	const (
+		primary  = iota
+		fallback = iota
+	)
 
-			// If it's a different error, just return it
-			return nil, err
-		}
-
-		// If there's no error, return the result
-		return result, nil
+	var order []int
+	if !p.preferFallback {
+		order = []int{primary, fallback}
+	} else {
+		order = []int{fallback, primary}
 	}
+	for _, client := range order {
+		switch client {
+		case primary:
+			// Check if we can use the primary
+			if p.primaryReady {
+				// Try to run the function on the primary
+				result, err := function(p.primaryEc)
+				if err != nil {
+					if p.isDisconnected(err) {
+						// If it's disconnected, log it and try the fallback
+						p.logger.Printlnf("WARNING: Primary Execution client disconnected (%s), using fallback...", err.Error())
+						p.primaryReady = false
+						return p.runFunction(function)
+					}
 
-	if p.fallbackReady {
-		// Try to run the function on the fallback
-		result, err := function(p.fallbackEc)
-		if err != nil {
-			if p.isDisconnected(err) {
-				// If it's disconnected, log it and try the fallback
-				p.logger.Printlnf("WARNING: Fallback Execution client disconnected (%s)", err.Error())
-				p.fallbackReady = false
-				return nil, fmt.Errorf("all Execution clients failed")
+					// If it's a different error, just return it
+					return nil, err
+				}
+
+				// If there's no error, return the result
+				return result, nil
 			}
+		case fallback:
+			if p.fallbackReady {
+				// Try to run the function on the fallback
+				result, err := function(p.fallbackEc)
+				if err != nil {
+					if p.isDisconnected(err) {
+						// If it's disconnected, log it and try the fallback
+						p.logger.Printlnf("WARNING: Fallback Execution client disconnected (%s)", err.Error())
+						p.fallbackReady = false
+						return p.runFunction(function)
+					}
 
-			// If it's a different error, just return it
-			return nil, err
+					// If it's a different error, just return it
+					return nil, err
+				}
+
+				// If there's no error, return the result
+				return result, nil
+			}
 		}
-
-		// If there's no error, return the result
-		return result, nil
 	}
 
 	return nil, fmt.Errorf("no Execution clients were ready")
