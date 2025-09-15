@@ -129,11 +129,6 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
-		wg.Go(func() error {
-			var err error
-			response.EffectiveRplStake, err = node131.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
 	}
 
 	wg.Go(func() error {
@@ -172,10 +167,6 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		trueMinimumStake.Div(trueMinimumStake, response.RplPrice)
 
 		response.MinimumRplStake = trueMinimumStake
-
-		if response.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
-			response.EffectiveRplStake.SetUint64(0)
-		}
 
 		response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
 		response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
