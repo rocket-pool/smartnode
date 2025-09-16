@@ -2,6 +2,7 @@ package security
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/urfave/cli"
@@ -75,6 +76,11 @@ func proposeSettingNodeIsDepositingEnabled(c *cli.Context, value bool) error {
 func proposeSettingNodeAreVacantMinipoolsEnabled(c *cli.Context, value bool) error {
 	trueValue := fmt.Sprint(value)
 	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.VacantMinipoolsEnabledSettingPath, trueValue)
+}
+
+func proposeSettingNodeComissionShareSecurityCouncilAdder(c *cli.Context, value *big.Int) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NodeComissionShareSecurityCouncilAdder, trueValue)
 }
 
 // Master general proposal function

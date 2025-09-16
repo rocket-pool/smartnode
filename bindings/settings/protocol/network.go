@@ -17,20 +17,28 @@ import (
 
 // Config
 const (
-	NetworkSettingsContractName         string = "rocketDAOProtocolSettingsNetwork"
-	NodeConsensusThresholdSettingPath   string = "network.consensus.threshold"
-	SubmitBalancesEnabledSettingPath    string = "network.submit.balances.enabled"
-	SubmitBalancesFrequencySettingPath  string = "network.submit.balances.frequency"
-	SubmitPricesEnabledSettingPath      string = "network.submit.prices.enabled"
-	SubmitPricesFrequencySettingPath    string = "network.submit.prices.frequency"
-	MinimumNodeFeeSettingPath           string = "network.node.fee.minimum"
-	TargetNodeFeeSettingPath            string = "network.node.fee.target"
-	MaximumNodeFeeSettingPath           string = "network.node.fee.maximum"
-	NodeFeeDemandRangeSettingPath       string = "network.node.fee.demand.range"
-	TargetRethCollateralRateSettingPath string = "network.reth.collateral.target"
-	NetworkPenaltyThresholdSettingPath  string = "network.penalty.threshold"
-	NetworkPenaltyPerRateSettingPath    string = "network.penalty.per.rate"
-	SubmitRewardsEnabledSettingPath     string = "network.submit.rewards.enabled"
+	NetworkSettingsContractName                        string = "rocketDAOProtocolSettingsNetwork"
+	NodeConsensusThresholdSettingPath                  string = "network.consensus.threshold"
+	SubmitBalancesEnabledSettingPath                   string = "network.submit.balances.enabled"
+	SubmitBalancesFrequencySettingPath                 string = "network.submit.balances.frequency"
+	SubmitPricesEnabledSettingPath                     string = "network.submit.prices.enabled"
+	SubmitPricesFrequencySettingPath                   string = "network.submit.prices.frequency"
+	MinimumNodeFeeSettingPath                          string = "network.node.fee.minimum"
+	TargetNodeFeeSettingPath                           string = "network.node.fee.target"
+	MaximumNodeFeeSettingPath                          string = "network.node.fee.maximum"
+	NodeFeeDemandRangeSettingPath                      string = "network.node.fee.demand.range"
+	NodeComissionShareSecurityCouncilAdder             string = "network.node.commission.share.security.council.adder"
+	TargetRethCollateralRateSettingPath                string = "network.reth.collateral.target"
+	NetworkPenaltyThresholdSettingPath                 string = "network.penalty.threshold"
+	NetworkPenaltyPerRateSettingPath                   string = "network.penalty.per.rate"
+	SubmitRewardsEnabledSettingPath                    string = "network.submit.rewards.enabled"
+	NetworkAllowListedControllersPath                  string = "network.allow.listed.controllers"
+	NetworkNodeCommissionSharePath                     string = "network.node.commission.share"
+	NetworkNodeCommissionShareSecurityCouncilAdderPath string = "network.node.commission.share.security.council.adder"
+	NetworkVoterSharePath                              string = "network.voter.share"
+	NetworkPDAOSharePath                               string = "network.pdao.share"
+	NetworkMaxNodeShareSecurityCouncilAdderPath        string = "network.max.node.commission.share.council.adder"
+	NetworkMaxRethBalanceDeltaPath                     string = "network.max.reth.balance.delta"
 )
 
 // The threshold of trusted nodes that must reach consensus on oracle data to commit it
@@ -369,6 +377,146 @@ func ProposeSubmitRewardsEnabled(rp *rocketpool.RocketPool, value bool, blockNum
 }
 func EstimateProposeSubmitRewardsEnabledGas(rp *rocketpool.RocketPool, value bool, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", SubmitRewardsEnabledSettingPath), NetworkSettingsContractName, SubmitRewardsEnabledSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+// Returns a list of allow listed controller addresses
+func GetAllowListedControllers(rp *rocketpool.RocketPool, opts *bind.CallOpts) ([]common.Address, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new([]common.Address)
+	if err := networkSettingsContract.Call(opts, value, "getAllowListedControllers"); err != nil {
+		return nil, fmt.Errorf("error getting network allow listed controllers list: %w", err)
+	}
+	return *value, nil
+}
+
+func ProposeAllowListedControllers(rp *rocketpool.RocketPool, value []common.Address, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetAddressList(rp, fmt.Sprintf("set %s", NetworkAllowListedControllersPath), NetworkSettingsContractName, NetworkAllowListedControllersPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeAllowListedControllersGas(rp *rocketpool.RocketPool, value []common.Address, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetAddressListGas(rp, fmt.Sprintf("set %s", NetworkAllowListedControllersPath), NetworkSettingsContractName, NetworkAllowListedControllersPath, value, blockNumber, treeNodes, opts)
+}
+
+// Get the network.node.commission.share setting
+func GetNodeShare(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	nodeShare := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, nodeShare, "getNodeShare"); err != nil {
+		return nil, fmt.Errorf("error getting network node commission share %w", err)
+	}
+	return *nodeShare, nil
+}
+
+func ProposeNodeShare(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkNodeCommissionSharePath), NetworkSettingsContractName, NetworkNodeCommissionSharePath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeNodeShareGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkNodeCommissionSharePath), NetworkSettingsContractName, NetworkNodeCommissionSharePath, value, blockNumber, treeNodes, opts)
+}
+
+// Get the network.node.commission.share.security.council.adder setting
+func GetNodeShareSecurityCouncilAdder(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	nodeShareSecurityCouncilAdder := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, nodeShareSecurityCouncilAdder, "getNodeShareSecurityCouncilAdder"); err != nil {
+		return nil, fmt.Errorf("error getting network node commission share %w", err)
+	}
+	return *nodeShareSecurityCouncilAdder, nil
+}
+
+func ProposeNodeShareSecurityCouncilAdder(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkNodeCommissionShareSecurityCouncilAdderPath), NetworkSettingsContractName, NetworkNodeCommissionShareSecurityCouncilAdderPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeNodeShareSecurityCouncilAdderGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkNodeCommissionShareSecurityCouncilAdderPath), NetworkSettingsContractName, NetworkNodeCommissionShareSecurityCouncilAdderPath, value, blockNumber, treeNodes, opts)
+}
+
+// Get the network.voter.share setting
+func GetVoterShare(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	voterShare := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, voterShare, "getVoterShare"); err != nil {
+		return nil, fmt.Errorf("error getting network node commission share %w", err)
+	}
+	return *voterShare, nil
+}
+
+func ProposeVoterShare(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkVoterSharePath), NetworkSettingsContractName, NetworkVoterSharePath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeVoterShareGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkVoterSharePath), NetworkSettingsContractName, NetworkVoterSharePath, value, blockNumber, treeNodes, opts)
+}
+
+// Get the network.pdao.share setting
+func GetProtocolDAOShare(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	pdaoShare := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, pdaoShare, "getProtocolDAOShare"); err != nil {
+		return nil, fmt.Errorf("error getting network pdao commission share %w", err)
+	}
+	return *pdaoShare, nil
+}
+
+func ProposeProtocolDAOShare(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkPDAOSharePath), NetworkSettingsContractName, NetworkPDAOSharePath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeProtocolDAOShare(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkPDAOSharePath), NetworkSettingsContractName, NetworkPDAOSharePath, value, blockNumber, treeNodes, opts)
+}
+
+// Get the network.max.node.commission.share.council.adder setting
+func GetMaxNodeShareSecurityCouncilAdder(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	maxNodeShareSecurityCouncilAdder := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, maxNodeShareSecurityCouncilAdder, "getMaxNodeShareSecurityCouncilAdder"); err != nil {
+		return nil, fmt.Errorf("error getting network node commission share %w", err)
+	}
+	return *maxNodeShareSecurityCouncilAdder, nil
+}
+
+func ProposeMaxNodeShareSecurityCouncilAdder(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkMaxNodeShareSecurityCouncilAdderPath), NetworkSettingsContractName, NetworkMaxNodeShareSecurityCouncilAdderPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateMaxNodeShareSecurityCouncilAdder(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkMaxNodeShareSecurityCouncilAdderPath), NetworkSettingsContractName, NetworkMaxNodeShareSecurityCouncilAdderPath, value, blockNumber, treeNodes, opts)
+}
+
+// Get the network.max.reth.balance.delta setting
+func GetMaxRethDelta(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	networkSettingsContract, err := getNetworkSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	maxRethDelta := new(*big.Int)
+	if err := networkSettingsContract.Call(opts, maxRethDelta, "getMaxRethDelta"); err != nil {
+		return nil, fmt.Errorf("error getting network node commission share %w", err)
+	}
+	return *maxRethDelta, nil
+}
+
+func ProposeMaxRethDelta(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", NetworkMaxRethBalanceDeltaPath), NetworkSettingsContractName, NetworkMaxRethBalanceDeltaPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateMaxRethDeltaGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", NetworkMaxRethBalanceDeltaPath), NetworkSettingsContractName, NetworkMaxRethBalanceDeltaPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts

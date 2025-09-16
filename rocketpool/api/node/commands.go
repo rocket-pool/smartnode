@@ -684,6 +684,49 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-withdraw-credit",
+				Usage:     "Check whether the node can withdraw credit",
+				UsageText: "rocketpool api node can-withdraw-credit amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNodeWithdrawCredit(c, amountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:      "withdraw-credit",
+				Aliases:   []string{"wc"},
+				Usage:     "Withdraw credit from the node",
+				UsageText: "rocketpool api node withdraw-credit amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeWithdrawCredit(c, amountWei))
+					return nil
+
+				},
+			},
+			{
 				Name:      "can-withdraw-eth",
 				Usage:     "Check whether the node can withdraw ETH staked on its behalf",
 				UsageText: "rocketpool api node can-withdraw-eth amount",
@@ -727,9 +770,85 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
+				Name:      "can-unstake-legacy-rpl",
+				Usage:     "Check whether the node can withdraw legacy staked RPL",
+				UsageText: "rocketpool api node can-withdraw-legacy-rpl amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("unstake amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNodeUnstakeLegacyRpl(c, amountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:    "unstake-legacy-rpl",
+				Aliases: []string{"l"},
+				Usage:   "Unstake legacy RPL staked against the node",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("unstake amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeUnstakeLegacyRpl(c, amountWei))
+					return nil
+				},
+			},
+			{
 				Name:      "can-withdraw-rpl",
 				Usage:     "Check whether the node can withdraw staked RPL",
-				UsageText: "rocketpool api node can-withdraw-rpl amount",
+				UsageText: "rocketpool api node can-withdraw-rpl",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNodeWithdrawRpl(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "withdraw-rpl",
+				Aliases:   []string{"w"},
+				Usage:     "Withdraw RPL staked against the node",
+				UsageText: "rocketpool api node withdraw-rpl",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeWithdrawRpl(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-withdraw-rpl-v131",
+				Usage:     "Check whether the node can withdraw staked RPL",
+				UsageText: "rocketpool api node can-withdraw-rpl-v131 amount",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
@@ -742,15 +861,59 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					api.PrintResponse(canNodeWithdrawRpl(c, amountWei))
+					api.PrintResponse(canNodeWithdrawRplv1_3_1(c, amountWei))
 					return nil
 
 				},
 			},
 			{
-				Name:      "withdraw-rpl",
-				Aliases:   []string{"i"},
+				Name:      "withdraw-rpl-v131",
+				Aliases:   []string{"w"},
 				Usage:     "Withdraw RPL staked against the node",
+				UsageText: "rocketpool api node withdraw-rpl-v131 amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeWithdrawRplv1_3_1(c, amountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-unstake-rpl",
+				Usage:     "Check whether the node can unstake RPL",
+				UsageText: "rocketpool api node can-unstake-rpl amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("unstake amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canNodeUnstakeRpl(c, amountWei))
+					return nil
+
+				},
+			},
+			{
+				Name:      "unstake-rpl",
+				Aliases:   []string{"u"},
+				Usage:     "Unstake RPL from the node",
 				UsageText: "rocketpool api node withdraw-rpl amount",
 				Action: func(c *cli.Context) error {
 
@@ -758,13 +921,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					amountWei, err := cliutils.ValidatePositiveWeiAmount("withdrawal amount", c.Args().Get(0))
+
+					amountWei, err := cliutils.ValidatePositiveWeiAmount("unstake amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(nodeWithdrawRpl(c, amountWei))
+					api.PrintResponse(nodeUnstakeRpl(c, amountWei))
 					return nil
 
 				},
@@ -773,17 +937,18 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "can-deposit",
 				Usage:     "Check whether the node can make a deposit",
-				UsageText: "rocketpool api node can-deposit amount min-fee salt",
+				UsageText: "rocketpool api node can-deposit amount min-fee salt use-express-ticket",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 3); err != nil {
+					if err := cliutils.ValidateArgCount(c, 4); err != nil {
 						return err
 					}
 					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
+
 					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
 					if err != nil {
 						return err
@@ -793,8 +958,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
+					useExpressTicketString := c.Args().Get(3)
+					useExpressTicket, err := cliutils.ValidateBool("use-express-ticket", useExpressTicketString)
+					if err != nil {
+						return err
+					}
+
 					// Run
-					api.PrintResponse(canNodeDeposit(c, amountWei, minNodeFee, salt))
+					api.PrintResponse(canNodeDeposit(c, amountWei, minNodeFee, salt, useExpressTicket))
 					return nil
 
 				},
@@ -803,36 +974,50 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "deposit",
 				Aliases:   []string{"d"},
 				Usage:     "Make a deposit and create a minipool, or just make and sign the transaction (when submit = false)",
-				UsageText: "rocketpool api node deposit amount min-fee salt use-credit-balance submit",
+				UsageText: "rocketpool api node deposit amount min-node-fee salt use-credit-balance use-express-ticket submit",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 5); err != nil {
+					if err := cliutils.ValidateArgCount(c, 6); err != nil {
 						return err
 					}
 					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
+
 					minNodeFee, err := cliutils.ValidateFraction("minimum node fee", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
+
 					salt, err := cliutils.ValidateBigInt("salt", c.Args().Get(2))
 					if err != nil {
 						return err
 					}
-					useCreditBalance, err := cliutils.ValidateBool("use-credit-balance", c.Args().Get(3))
+
+					useCreditBalanceString := c.Args().Get(3)
+					useCreditBalance, err := cliutils.ValidateBool("use-credit-balance", useCreditBalanceString)
 					if err != nil {
 						return err
 					}
-					submit, err := cliutils.ValidateBool("submit", c.Args().Get(4))
+
+					useExpressTicketString := c.Args().Get(4)
+					useExpressTicket, err := cliutils.ValidateBool("use-express-ticket", useExpressTicketString)
+					if err != nil {
+						return err
+					}
+					submit, err := cliutils.ValidateBool("submit", c.Args().Get(5))
+					if err != nil {
+						return err
+					}
+
 					if err != nil {
 						return err
 					}
 
 					// Run
-					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, useCreditBalance, submit)
+					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, useCreditBalance, useExpressTicket, submit)
 					if submit {
 						api.PrintResponse(response, err)
 					} // else nodeDeposit already printed the encoded transaction
@@ -1515,6 +1700,112 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(sendMessage(c, address, message))
+					return nil
+
+				},
+			},
+			{
+				Name:      "get-express-ticket-count",
+				Usage:     "Get the number of express tickets available for the node",
+				UsageText: "rocketpool api node get-express-ticket-count",
+				Action: func(c *cli.Context) error {
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					api.PrintResponse(getExpressTicketCount(c))
+					return nil
+				},
+			},
+			{
+				Name:      "can-claim-unclaimed-rewards",
+				Usage:     "Check if any unclaimed rewards can be sent to the node's withdrawal address",
+				UsageText: "rocketpool api node can-claim-unclaimed-rewards address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					// Get amount
+					nodeAddress, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(canClaimUnclaimedRewards(c, nodeAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "claim-unclaimed-rewards",
+				Usage:     "Send unclaimed rewards to the node's withdrawal address",
+				UsageText: "rocketpool api node claim-unclaimed-rewards address",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					// Get amount
+					nodeAddress, err := cliutils.ValidateAddress("address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(canClaimUnclaimedRewards(c, nodeAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "get-express-tickets-provisioned",
+				Usage:     "Get the number of express tickets provisioned for the node",
+				UsageText: "rocketpool api node get-express-tickets-provisioned",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getExpressTicketsProvisioned(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-provision-express-tickets",
+				Usage:     "Check if the node's express tickets can be provisioned",
+				UsageText: "rocketpool api node can-provision-express-tickets",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canProvisionExpressTickets(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "provision-express-tickets",
+				Usage:     "Provision the node's express tickets",
+				UsageText: "rocketpool api node provision-express-tickets",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(provisionExpressTickets(c))
 					return nil
 
 				},

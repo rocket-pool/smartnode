@@ -88,63 +88,6 @@ func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, mult
 	return votingInfos, nil
 }
 
-// Check whether or not on-chain voting has been initialized for the given node
-func GetVotingInitialized(rp *rocketpool.RocketPool, address common.Address, opts *bind.CallOpts) (bool, error) {
-	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
-	if err != nil {
-		return false, err
-	}
-	value := new(bool)
-	if err := rocketNetworkVoting.Call(opts, value, "getVotingInitialised", address); err != nil {
-		return false, fmt.Errorf("error getting voting initialized status: %w", err)
-	}
-	return *value, nil
-}
-
-// Estimate the gas of InitializeVoting
-func EstimateInitializeVotingGas(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketNetworkVoting.GetTransactionGasInfo(opts, "initialiseVoting")
-}
-
-// Initialize on-chain voting for the node
-func InitializeVoting(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketNetworkVoting.Transact(opts, "initialiseVoting")
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error initializing voting: %w", err)
-	}
-	return tx.Hash(), nil
-}
-
-// Estimate the gas of InitializeVotingWithDelegate
-func EstimateInitializeVotingWithDelegateGas(rp *rocketpool.RocketPool, delegateAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketNetworkVoting.GetTransactionGasInfo(opts, "initialiseVotingWithDelegate", delegateAddress)
-}
-
-// Initialize on-chain voting for the node and delegate voting power at the same transaction
-func InitializeVotingWithDelegate(rp *rocketpool.RocketPool, delegateAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)
-	if err != nil {
-		return common.Hash{}, err
-	}
-	tx, err := rocketNetworkVoting.Transact(opts, "initialiseVotingWithDelegate", delegateAddress)
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error initializing voting with delegate: %w", err)
-	}
-	return tx.Hash(), nil
-}
-
 // Get the number of nodes that were present in the network at the provided block
 func GetVotingNodeCount(rp *rocketpool.RocketPool, blockNumber uint32, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNetworkVoting, err := getRocketNetworkVoting(rp, nil)

@@ -32,8 +32,8 @@ func (c *Client) QueueStatus() (api.QueueStatusResponse, error) {
 }
 
 // Check whether the queue can be processed
-func (c *Client) CanProcessQueue() (api.CanProcessQueueResponse, error) {
-	responseBytes, err := c.callAPI("queue can-process")
+func (c *Client) CanProcessQueue(max uint32) (api.CanProcessQueueResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("queue can-process %d", max))
 	if err != nil {
 		return api.CanProcessQueueResponse{}, fmt.Errorf("Could not get can process queue status: %w", err)
 	}
@@ -48,8 +48,8 @@ func (c *Client) CanProcessQueue() (api.CanProcessQueueResponse, error) {
 }
 
 // Process the queue
-func (c *Client) ProcessQueue() (api.ProcessQueueResponse, error) {
-	responseBytes, err := c.callAPI("queue process")
+func (c *Client) ProcessQueue(max uint32) (api.ProcessQueueResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("queue process %d", max))
 	if err != nil {
 		return api.ProcessQueueResponse{}, fmt.Errorf("Could not process queue: %w", err)
 	}
@@ -59,6 +59,21 @@ func (c *Client) ProcessQueue() (api.ProcessQueueResponse, error) {
 	}
 	if response.Error != "" {
 		return api.ProcessQueueResponse{}, fmt.Errorf("Could not process queue: %s", response.Error)
+	}
+	return response, nil
+}
+
+func (c *Client) GetQueueDetails() (api.GetQueueDetailsResponse, error) {
+	responseBytes, err := c.callAPI("queue get-queue-details")
+	if err != nil {
+		return api.GetQueueDetailsResponse{}, fmt.Errorf("Could not get total queue length: %w", err)
+	}
+	var response api.GetQueueDetailsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetQueueDetailsResponse{}, fmt.Errorf("Could not decode get total queue length response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetQueueDetailsResponse{}, fmt.Errorf("Could not get total queue length: %s", response.Error)
 	}
 	return response, nil
 }

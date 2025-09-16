@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/deposit"
+	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
+	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -29,7 +29,9 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := services.GetConfig(c)
+
+	// Check if Saturn is already deployed
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -115,30 +117,43 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		return err
 	})
 
-	// Get total RPL staked
-	wg.Go(func() error {
-		totalStaked, err := node.GetTotalRPLStake(rp, nil)
-		if err == nil {
-			response.TotalRplStaked = eth.WeiToEth(totalStaked)
-		}
-		return err
-	})
+	if saturnDeployed {
+		// Get total RPL staked
+		wg.Go(func() error {
+			totalStaked, err := node.GetTotalStakedRPL(rp, nil)
+			if err == nil {
+				response.TotalRplStaked = eth.WeiToEth(totalStaked)
+			}
+			return err
+		})
 
-	// Get total effective RPL staked
-	wg.Go(func() error {
-		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, nil)
-		if err != nil {
-			return fmt.Errorf("error getting network contracts: %w", err)
-		}
-		totalEffectiveStake, err := rpstate.GetTotalEffectiveRplStake(rp, contracts)
-		if err != nil {
-			return fmt.Errorf("error getting total effective stake: %w", err)
-		}
-		response.EffectiveRplStaked = eth.WeiToEth(totalEffectiveStake)
-		return nil
-	})
+		// Get RPL staked on megapools
+		wg.Go(func() error {
+			megapoolStaked, err := node.GetTotalMegapoolStakedRPL(rp, nil)
+			if err == nil {
+				response.TotalMegapoolRplStaked = eth.WeiToEth(megapoolStaked)
+			}
+			return err
+		})
+
+		// Get legacy RPL staked
+		wg.Go(func() error {
+			legacyStaked, err := node.GetTotalLegacyStakedRPL(rp, nil)
+			if err == nil {
+				response.TotalLegacyRplStaked = eth.WeiToEth(legacyStaked)
+			}
+			return err
+		})
+
+	} else {
+		wg.Go(func() error {
+			totalStaked, err := node131.GetTotalRPLStake(rp, nil)
+			if err == nil {
+				response.TotalRplStaked = eth.WeiToEth(totalStaked)
+			}
+			return err
+		})
+	}
 
 	// Get rETH price
 	wg.Go(func() error {

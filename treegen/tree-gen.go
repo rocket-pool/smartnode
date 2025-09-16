@@ -15,11 +15,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/fatih/color"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -125,7 +125,7 @@ func GenerateTree(c *cli.Context) error {
 	}
 
 	// Create the EC and BN clients
-	ec, err := ethclient.Dial(ecUrl)
+	ec, err := services.NewEthClient(ecUrl)
 	if err != nil {
 		return fmt.Errorf("error connecting to the EC: %w", err)
 	}

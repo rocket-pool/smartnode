@@ -71,7 +71,7 @@ func (t *v8Test) SetMinipoolPerformance(canonicalMinipoolPerformance IMinipoolPe
 		pubkey, err := perf.GetPubkey()
 
 		// Get the minipool's validator index
-		validatorStatus := networkState.ValidatorDetails[pubkey]
+		validatorStatus := networkState.MinipoolValidatorDetails[pubkey]
 
 		if err != nil {
 			t.Fatalf("Minipool %s pubkey could not be parsed: %s", address.Hex(), err.Error())

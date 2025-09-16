@@ -36,6 +36,12 @@ func nodeStakeRpl(c *cli.Context) error {
 		return err
 	}
 
+	// Check if Saturn is deployed
+	saturnDeployed, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+
 	// Show the pDAO disclaimer
 	fmt.Println(stakeRPLDisclaimer)
 	fmt.Println()
@@ -168,11 +174,17 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 	var amountWei *big.Int
 	var stakePercent float64
+	// Borrow amount for a new LEB8
+	ethBorrowed := eth.EthToWei(24)
+	// Borrow amount for a new megapool validator
+	if saturnDeployed.IsSaturnDeployed {
+		ethBorrowed = new(big.Int).Sub(eth.EthToWei(32), status.ReducedBond)
+	}
 
 	// Amount flag custom percentage input
 	if strings.HasSuffix(c.String("amount"), "%") {
 		fmt.Sscanf(c.String("amount"), "%f%%", &stakePercent)
-		amountWei = rplStakeForLEB8(eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
+		amountWei = rplStakePerValidator(ethBorrowed, eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
 
 	} else if c.String("amount") == "all" {
 		// Set amount to node's entire RPL balance
@@ -187,18 +199,18 @@ func nodeStakeRpl(c *cli.Context) error {
 		amountWei = eth.EthToWei(stakeAmount)
 
 	} else {
-		// Get the RPL stake amounts for 5,10,15% borrowed ETH per LEB8
-		fivePercentBorrowedPerMinipool := new(big.Int)
-		fivePercentBorrowedPerMinipool.SetString("50000000000000000", 10)
-		fivePercentBorrowedRplStake := rplStakeForLEB8(fivePercentBorrowedPerMinipool, rplPrice.RplPrice)
+		// Get the RPL stake amounts for 5,10,15% borrowed ETH per Validator
+		fivePercentBorrowedPerValidator := new(big.Int)
+		fivePercentBorrowedPerValidator.SetString("50000000000000000", 10)
+		fivePercentBorrowedRplStake := rplStakePerValidator(ethBorrowed, fivePercentBorrowedPerValidator, rplPrice.RplPrice)
 		tenPercentBorrowedRplStake := new(big.Int).Mul(fivePercentBorrowedRplStake, big.NewInt(2))
 		fifteenPercentBorrowedRplStake := new(big.Int).Mul(fivePercentBorrowedRplStake, big.NewInt(3))
 
 		// Prompt for amount option
 		amountOptions := []string{
-			fmt.Sprintf("5%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(fivePercentBorrowedRplStake), 6)),
-			fmt.Sprintf("10%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(tenPercentBorrowedRplStake), 6)),
-			fmt.Sprintf("15%% of borrowed ETH (%.6f RPL) for one minipool?", math.RoundUp(eth.WeiToEth(fifteenPercentBorrowedRplStake), 6)),
+			fmt.Sprintf("5%% of borrowed ETH (%.6f RPL) for one validator?", math.RoundUp(eth.WeiToEth(fivePercentBorrowedRplStake), 6)),
+			fmt.Sprintf("10%% of borrowed ETH (%.6f RPL) for one validator?", math.RoundUp(eth.WeiToEth(tenPercentBorrowedRplStake), 6)),
+			fmt.Sprintf("15%% of borrowed ETH (%.6f RPL) for one validator?", math.RoundUp(eth.WeiToEth(fifteenPercentBorrowedRplStake), 6)),
 			fmt.Sprintf("Your entire RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&rplBalance), 6)),
 			"A custom amount",
 		}
@@ -220,7 +232,7 @@ func nodeStakeRpl(c *cli.Context) error {
 			inputAmountOrPercent := prompt.Prompt("Please enter an amount of RPL or percentage of borrowed ETH to stake. (e.g '50' for 50 RPL or '5%' for 5% borrowed ETH as RPL):", "^(0|[1-9]\\d*)(\\.\\d+)?%?$", "Invalid amount")
 			if strings.HasSuffix(inputAmountOrPercent, "%") {
 				fmt.Sscanf(inputAmountOrPercent, "%f%%", &stakePercent)
-				amountWei = rplStakeForLEB8(eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
+				amountWei = rplStakePerValidator(ethBorrowed, eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
 			} else {
 				stakeAmount, err := strconv.ParseFloat(inputAmountOrPercent, 64)
 				if err != nil {
@@ -308,12 +320,21 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach %.6f staked RPL (%.0f%% of bonded eth)!",
-		math.RoundDown(eth.WeiToEth(amountWei), 6),
-		math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6),
-		status.MaximumStakeFraction*100))) {
-		fmt.Println("Cancelled.")
-		return nil
+	if saturnDeployed.IsSaturnDeployed {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You may request to unstake your staked RPL at any time. The unstaked RPL will be withdrawable after an unstaking period of %s.",
+			math.RoundDown(eth.WeiToEth(amountWei), 6),
+			status.UnstakingPeriodDuration))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	} else {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach %.6f staked RPL (%.0f%% of bonded eth)!",
+			math.RoundDown(eth.WeiToEth(amountWei), 6),
+			math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6),
+			status.MaximumStakeFraction*100))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
 	}
 
 	// Stake RPL
@@ -334,11 +355,10 @@ func nodeStakeRpl(c *cli.Context) error {
 
 }
 
-func rplStakeForLEB8(borrowedPerMinipool *big.Int, rplPrice *big.Int) *big.Int {
+func rplStakePerValidator(ethBorrowed *big.Int, percentBorrowedPerValidator *big.Int, rplPrice *big.Int) *big.Int {
 	percentBorrowedRplStake := big.NewInt(0)
-	percentBorrowedRplStake.Mul(eth.EthToWei(24), borrowedPerMinipool)
+	percentBorrowedRplStake.Mul(ethBorrowed, percentBorrowedPerValidator)
 	percentBorrowedRplStake.Div(percentBorrowedRplStake, rplPrice)
-	percentBorrowedRplStake.Add(percentBorrowedRplStake, big.NewInt(1))
 	amountWei := percentBorrowedRplStake
 
 	return amountWei

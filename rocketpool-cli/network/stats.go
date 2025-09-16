@@ -35,9 +35,9 @@ func getStats(c *cli.Context) error {
 	// Print & return
 	fmt.Printf("%s========== General Stats ==========%s\n", colorGreen, colorReset)
 	fmt.Printf("Total Value Locked:      %f ETH\n", response.TotalValueLocked)
-	fmt.Printf("Staking Pool Balance:    %f ETH\n", response.DepositPoolBalance)
+	fmt.Printf("Deposit Pool Balance:    %f ETH\n", response.DepositPoolBalance)
 	fmt.Printf("Minipool Queue Demand:   %f ETH\n", response.MinipoolCapacity)
-	fmt.Printf("Staking Pool ETH Used:   %f%%\n\n", response.StakerUtilization*100)
+	fmt.Printf("Deposit Pool ETH Used:   %f%%\n\n", response.StakerUtilization*100)
 
 	fmt.Printf("%s============== Nodes ==============%s\n", colorGreen, colorReset)
 	fmt.Printf("Current Commission Rate: %f%%\n", response.NodeFee*100)
@@ -59,7 +59,6 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("rETH Price (ETH / rETH): %f ETH\n", response.RethPrice)
 	fmt.Printf("RPL Price (ETH / RPL):   %f ETH\n", response.RplPrice)
 	fmt.Printf("Total RPL staked:        %f RPL\n", response.TotalRplStaked)
-	fmt.Printf("Effective RPL staked:    %f RPL\n", response.EffectiveRplStaked)
 
 	return nil
 

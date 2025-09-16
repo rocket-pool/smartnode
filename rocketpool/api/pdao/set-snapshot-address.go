@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
@@ -37,10 +36,6 @@ func canSetSignallingAddress(c *cli.Context, signallingAddress common.Address, s
 	if err != nil {
 		return nil, err
 	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
@@ -56,11 +51,6 @@ func canSetSignallingAddress(c *cli.Context, signallingAddress common.Address, s
 
 	// Response
 	response := api.PDAOCanSetSignallingAddressResponse{}
-
-	response.VotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
-	if !response.VotingInitialized {
-		return nil, fmt.Errorf("Voting must be initialized to set a signalling address. Use 'rocketpool pdao initialize-voting' to initialize voting first.")
-	}
 
 	// Get signer registry contract address
 	addressString := cfg.Smartnode.GetRocketSignerRegistryAddress()

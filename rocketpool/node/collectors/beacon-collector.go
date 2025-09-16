@@ -100,7 +100,7 @@ func (collector *BeaconCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Get sync committee duties
 	for _, mpd := range state.MinipoolDetailsByNode[collector.nodeAddress] {
-		validator := state.ValidatorDetails[mpd.Pubkey]
+		validator := state.MinipoolValidatorDetails[mpd.Pubkey]
 		if validator.Exists {
 			validatorIndices = append(validatorIndices, validator.Index)
 		}

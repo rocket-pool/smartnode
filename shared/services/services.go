@@ -105,6 +105,14 @@ func GetEthClient(c *cli.Context) (*ExecutionClientManager, error) {
 	return ec, nil
 }
 
+func dialProtectedEthClient(url string) (*ethClient, error) {
+	ec, err := ethclient.Dial(url)
+	if err != nil {
+		return nil, err
+	}
+	return &ethClient{ec}, nil
+}
+
 func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
@@ -113,7 +121,7 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 	var ec rocketpool.ExecutionClient
 	if c.GlobalBool("use-protected-api") {
 		url := cfg.Smartnode.GetFlashbotsProtectUrl()
-		ec, err = ethclient.Dial(url)
+		ec, err = dialProtectedEthClient(url)
 	} else {
 		ec, err = getEthClient(c, cfg)
 	}

@@ -71,7 +71,7 @@ func (h *MockHistory) GetMinipoolAttestationScoreAndCount(address common.Address
 			continue
 		}
 		pubkey := mpi.Pubkey
-		validator := state.ValidatorDetails[pubkey]
+		validator := state.MinipoolValidatorDetails[pubkey]
 		// Check if the validator was exited before this slot
 		if validator.ExitEpoch <= h.BeaconConfig.SlotToEpoch(slot) {
 			continue
@@ -529,7 +529,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		MinipoolDetails:            []rpstate.NativeMinipoolDetails{},
 		MinipoolDetailsByAddress:   make(map[common.Address]*rpstate.NativeMinipoolDetails),
 		MinipoolDetailsByNode:      make(map[common.Address][]*rpstate.NativeMinipoolDetails),
-		ValidatorDetails:           make(state.ValidatorDetailsMap),
+		MinipoolValidatorDetails:   make(state.ValidatorDetailsMap),
 		OracleDaoMemberDetails:     []rpstate.OracleDaoMemberDetails{},
 		ProtocolDaoProposalDetails: nil,
 	}
@@ -551,8 +551,8 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 		maxRplStake.Div(maxRplStake, rplPrice)
 
 		// Eth matching limit is rpl stake times the price divided by the collateral fraction
-		ethMatchingLimit := big.NewInt(0).Mul(node.RplStake, rplPrice)
-		ethMatchingLimit.Div(ethMatchingLimit, h.NetworkDetails.MinCollateralFraction)
+		ethBorrowingLimit := big.NewInt(0).Mul(node.RplStake, rplPrice)
+		ethBorrowingLimit.Div(ethBorrowingLimit, h.NetworkDetails.MinCollateralFraction)
 		collateralisationRatio := big.NewInt(0)
 		if node.borrowedEth.Sign() > 0 {
 			collateralisationRatio.Div(node.bondedEth, big.NewInt(0).Add(big.NewInt(0).Mul(node.bondedEth, eth.EthToWei(1)), node.borrowedEth))
@@ -568,8 +568,8 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			EffectiveRPLStake: rplStake,
 			MinimumRPLStake:   minRplStake,
 			MaximumRPLStake:   maxRplStake,
-			EthMatched:        node.borrowedEth,
-			EthMatchedLimit:   ethMatchingLimit,
+			EthBorrowed:       node.borrowedEth,
+			EthBorrowedLimit:  ethBorrowingLimit,
 			MinipoolCount:     big.NewInt(int64(len(node.Minipools))),
 			// Empty node wallet
 			BalanceETH:                       big.NewInt(0),
@@ -660,7 +660,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			if minipool.Finalised {
 				details.Status = beacon.ValidatorState_WithdrawalDone
 			}
-			out.ValidatorDetails[pubkey] = details
+			out.MinipoolValidatorDetails[pubkey] = details
 		}
 
 		// Calculate the AverageNodeFee and DistributorShares

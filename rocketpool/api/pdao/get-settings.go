@@ -8,6 +8,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -22,8 +23,144 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 	// Response
 	response := api.GetPDAOSettingsResponse{}
 
+	// Check if Saturn is already deployed
+	response.SaturnDeployed, err = state.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Data
 	var wg errgroup.Group
+
+	// New calls introduced in Saturn
+	if response.SaturnDeployed {
+
+		// === Deposit ===
+
+		wg.Go(func() error {
+			var err error
+			response.Deposit.ExpressQueueRate, err = protocol.GetExpressQueueRate(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Deposit.ExpressQueueTicketsBaseProvision, err = protocol.GetExpressQueueTicketsBaseProvision(rp, nil)
+			return err
+		})
+
+		// === Minipool ===
+
+		// MaximumPenaltyCount is not live on devnet yet
+		// wg.Go(func() error {
+		// 	var err error
+		// 	response.Minipool.MaximumPenaltyCount, err = protocol.GetMaximumPenaltyCount(rp, nil)
+		// 	return err
+		// })
+
+		// === Network ===
+
+		wg.Go(func() error {
+			var err error
+			response.Network.NodeCommissionShare, err = protocol.GetNodeShare(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.NodeCommissionShareSecurityCouncilAdder, err = protocol.GetNodeShareSecurityCouncilAdder(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.VoterShare, err = protocol.GetVoterShare(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.ProtocolDAOShare, err = protocol.GetProtocolDAOShare(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.MaxNodeShareSecurityCouncilAdder, err = protocol.GetMaxNodeShareSecurityCouncilAdder(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.MaxRethBalanceDelta, err = protocol.GetMaxRethDelta(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.AllowListedControllers, err = protocol.GetAllowListedControllers(rp, nil)
+			return err
+		})
+
+		// === Node ===
+
+		wg.Go(func() error {
+			var err error
+			response.Node.ReducedBond, err = protocol.GetReducedBond(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			nodeUnstakingPeriod, err := protocol.GetNodeUnstakingPeriod(rp, nil)
+			if err == nil {
+				response.Node.NodeUnstakingPeriod = time.Duration(nodeUnstakingPeriod.Int64()) * time.Second
+			}
+			return err
+		})
+
+		// === Megapool ===
+
+		wg.Go(func() error {
+			var err error
+			timeBeforeDissolve, err := protocol.GetMegapoolTimeBeforeDissolve(rp, nil)
+			if err == nil {
+				response.Megapool.TimeBeforeDissolve = time.Duration(timeBeforeDissolve) * time.Second
+			}
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.MaximumEthPenalty, err = protocol.GetMaximumEthPenalty(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			notifyThreshold, err := protocol.GetNotifyThreshold(rp, nil)
+			if err == nil {
+				response.Megapool.NotifyThreshold = time.Duration(notifyThreshold) * time.Second
+			}
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.LateNotifyFine, err = protocol.GetLateNotifyFine(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			userDistributeWindowLength, err := protocol.GetUserDistributeWindowLength(rp, nil)
+			if err == nil {
+				response.Megapool.UserDistributeWindowLength = time.Duration(userDistributeWindowLength) * time.Second
+			}
+			return err
+		})
+
+	}
 
 	// === Auction ===
 

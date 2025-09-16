@@ -27,6 +27,16 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 	defer rp.Close()
 
+	// Check if Saturn is already deployed
+	saturnDeployed, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if saturnDeployed.IsSaturnDeployed {
+		fmt.Println("You cannot create a vacant minipool because Saturn is already deployed.")
+		return nil
+	}
+
 	// Make sure ETH2 is on the correct chain
 	depositContractInfo, err := rp.DepositContractInfo()
 	if err != nil {

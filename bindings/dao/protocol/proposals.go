@@ -125,6 +125,32 @@ func ProposeSetAddress(rp *rocketpool.RocketPool, message, contractName, setting
 	return submitProposal(rp, message, payload, blockNumber, treeNodes, opts)
 }
 
+// Estimate the gas of proposalSettingAddressList
+func EstimateProposeSetAddressListGas(rp *rocketpool.RocketPool, message, contractName, settingPath string, value []common.Address, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalSettingAddressList", contractName, settingPath, value)
+	if err != nil {
+		return rocketpool.GasInfo{}, fmt.Errorf("error encoding set address list setting proposal payload: %w", err)
+	}
+	return estimateProposalGas(rp, message, payload, blockNumber, treeNodes, opts)
+}
+
+// Submit a proposal to update an address list Protocol DAO setting
+func ProposeSetAddressList(rp *rocketpool.RocketPool, message, contractName, settingPath string, value []common.Address, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)
+	if err != nil {
+		return 0, common.Hash{}, err
+	}
+	payload, err := rocketDAOProtocolProposals.ABI.Pack("proposalSettingAddressList", contractName, settingPath, value)
+	if err != nil {
+		return 0, common.Hash{}, fmt.Errorf("error encoding set address list setting proposal payload: %w", err)
+	}
+	return submitProposal(rp, message, payload, blockNumber, treeNodes, opts)
+}
+
 // Estimate the gas of ProposeSetRewardsPercentage
 func EstimateProposeSetRewardsPercentageGas(rp *rocketpool.RocketPool, message string, odaoPercentage *big.Int, pdaoPercentage *big.Int, nodePercentage *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDAOProtocolProposals, err := getRocketDAOProtocolProposals(rp, nil)

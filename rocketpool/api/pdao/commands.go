@@ -1,8 +1,10 @@
 package pdao
 
 import (
+	"fmt"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -922,106 +924,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "can-initialize-voting-with-delegate",
-				Aliases:   []string{"civd"},
-				Usage:     "Checks if voting can be initialized.",
-				UsageText: "rocketpool api pdao can-initialize-voting-with-delegate delegate-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-
-					delegateAddress, err := cliutils.ValidateAddress("delegate address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canNodeInitializeVotingWithDelegate(c, delegateAddress))
-					return nil
-
-				},
-			},
-			{
-				Name:      "initialize-voting-with-delegate",
-				Aliases:   []string{"ivd"},
-				Usage:     "Initialize voting with delegate.",
-				UsageText: "rocketpool api pdao initialize-voting-with-delegate delegate-address",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-
-					delegateAddress, err := cliutils.ValidateAddress("delegate address", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(nodeInitializeVotingWithDelegate(c, delegateAddress))
-					return nil
-
-				},
-			},
-			{
-				Name:      "is-voting-initialized",
-				Aliases:   []string{"ivi"},
-				Usage:     "Checks if voting is initialized.",
-				UsageText: "rocketpool api pdao is-voting-initialized",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(isVotingInitialized(c))
-					return nil
-
-				},
-			},
-			{
-				Name:      "can-initialize-voting",
-				Aliases:   []string{"civ"},
-				Usage:     "Checks if voting can be initialized.",
-				UsageText: "rocketpool api pdao can-initialize-voting",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canNodeInitializeVoting(c))
-					return nil
-
-				},
-			},
-			{
-				Name:      "initialize-voting",
-				Aliases:   []string{"iv"},
-				Usage:     "Initialize voting.",
-				UsageText: "rocketpool api pdao initialize-voting",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(nodeInitializeVoting(c))
-					return nil
-
-				},
-			},
-			{
 				Name:      "estimate-set-voting-delegate-gas",
 				Usage:     "Estimate the gas required to set an on-chain voting delegate",
 				UsageText: "rocketpool api pdao estimate-set-voting-delegate-gas address",
@@ -1124,7 +1026,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
-
 			{
 				Name:      "set-signalling-address",
 				Usage:     "Set the signalling address for the node",
@@ -1178,6 +1079,69 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 					// Run
 					api.PrintResponse(clearSignallingAddress(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "can-propose-allow-listed-controllers",
+				Usage:     "Check whether the node can propose a list of addresses that can update commission share parameters",
+				UsageText: "rocketpool api pdao can-propose-allow-listed-controllers addresses",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if c.NArg() > 2 {
+						return fmt.Errorf("Incorrect argument count;")
+					}
+
+					var addressList []common.Address
+					var err error
+					if c.NArg() != 0 {
+						addressList, err = cliutils.ValidateAddresses("addressList", c.Args().Get(0))
+						if err != nil {
+							return err
+						}
+					}
+					// Run
+					api.PrintResponse(canProposeAllowListedControllers(c, addressList))
+					return nil
+
+				},
+			},
+			{
+				Name:      "propose-allow-listed-controllers",
+				Usage:     "Propose a list of addresses that can update commission share parameters",
+				UsageText: "rocketpool api pdao propose-allow-listed-controllers addresses block-number",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if c.NArg() > 3 || c.NArg() < 1 {
+						return fmt.Errorf("Incorrect argument count;")
+					}
+
+					var addressList []common.Address
+					var blockNumber uint32
+					var err error
+
+					// Handles a case where an empty addressList is passed, to propose an empty addressList
+					if c.NArg() == 1 {
+						blockNumber, err = cliutils.ValidateUint32("blockNumber", c.Args().Get(0))
+						if err != nil {
+							return err
+						}
+					} else {
+						addressList, err = cliutils.ValidateAddresses("addressList", c.Args().Get(0))
+						if err != nil {
+							return err
+						}
+						blockNumber, err = cliutils.ValidateUint32("blockNumber", c.Args().Get(1))
+						if err != nil {
+							return err
+						}
+					}
+
+					// Run
+					api.PrintResponse(proposeAllowListedControllers(c, addressList, blockNumber))
 					return nil
 
 				},

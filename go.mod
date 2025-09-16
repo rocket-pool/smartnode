@@ -15,7 +15,7 @@ require (
 	github.com/ethereum/go-ethereum v1.13.5
 	github.com/fatih/color v1.14.1
 	github.com/felixge/fgprof v0.9.5
-	github.com/ferranbt/fastssz v0.1.3
+	github.com/ferranbt/fastssz v0.1.4
 	github.com/gdamore/tcell/v2 v2.6.0
 	github.com/glendc/go-external-ip v0.1.0
 	github.com/go-openapi/errors v0.21.0
@@ -80,6 +80,7 @@ require (
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
+	github.com/emicklei/dot v1.6.2 // indirect
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/ethereum/c-kzg-4844 v0.4.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

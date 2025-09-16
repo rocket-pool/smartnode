@@ -2,18 +2,23 @@ package queue
 
 import (
 	"fmt"
+	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	nodev131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
+func canProcessQueue(c *cli.Context, max int64) (*api.CanProcessQueueResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -27,6 +32,11 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -52,7 +62,12 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 		if err != nil {
 			return err
 		}
-		gasInfo, err := deposit.EstimateAssignDepositsGas(rp, opts)
+		var gasInfo rocketpool.GasInfo
+		if !saturnDeployed {
+			gasInfo, err = nodev131.EstimateAssignDepositsGas(rp, opts)
+		} else {
+			gasInfo, err = deposit.EstimateAssignDepositsGas(rp, big.NewInt(max), opts)
+		}
 		if err == nil {
 			response.GasInfo = gasInfo
 		}
@@ -70,7 +85,7 @@ func canProcessQueue(c *cli.Context) (*api.CanProcessQueueResponse, error) {
 
 }
 
-func processQueue(c *cli.Context) (*api.ProcessQueueResponse, error) {
+func processQueue(c *cli.Context, max int64) (*api.ProcessQueueResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -88,6 +103,10 @@ func processQueue(c *cli.Context) (*api.ProcessQueueResponse, error) {
 		return nil, err
 	}
 
+	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
 	// Response
 	response := api.ProcessQueueResponse{}
 
@@ -104,7 +123,13 @@ func processQueue(c *cli.Context) (*api.ProcessQueueResponse, error) {
 	}
 
 	// Process queue
-	hash, err := deposit.AssignDeposits(rp, opts)
+	var hash common.Hash
+	if !saturnDeployed {
+		hash, err = nodev131.AssignDeposits(rp, opts)
+	} else {
+		hash, err = deposit.AssignDeposits(rp, big.NewInt(max), opts)
+	}
+
 	if err != nil {
 		return nil, err
 	}

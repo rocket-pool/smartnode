@@ -137,7 +137,6 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	var propMgr *proposals.ProposalManager
 	var blockNumber uint64
 	var onchainVotingDelegate common.Address
-	var isVotingInitialized bool
 	activeProposals := float64(0)
 	closedProposals := float64(0)
 	blankAddress := common.Address{}
@@ -198,17 +197,6 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		return err
 	})
 
-	// Get Voting Initialized status
-	wg.Go(func() error {
-		if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
-			isVotingInitialized, err = network.GetVotingInitialized(collector.rp, collector.nodeAddress, nil)
-			if err != nil {
-				return fmt.Errorf("Error checking if voting is initialized: %w", err)
-			}
-		}
-		return err
-	})
-
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		collector.logError(err)
@@ -216,7 +204,7 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// Check if sufficient time has passed and voting is initialized
-	if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait && isVotingInitialized {
+	if time.Since(collector.lastApiCallTimestamp).Hours() >= hoursToWait {
 		// Get voting power for the node
 		nodeVotingPower, err := getVotingPower(propMgr, uint32(blockNumber), collector.nodeAddress)
 		if err != nil {

@@ -39,6 +39,8 @@ type NetworkStatsResponse struct {
 	FinalizedMinipoolCount    uint64         `json:"finalizedMinipoolCount"`
 	RplPrice                  float64        `json:"rplPrice"`
 	TotalRplStaked            float64        `json:"totalRplStaked"`
+	TotalMegapoolRplStaked    float64        `json:"totalMegapoolRplStaked"`
+	TotalLegacyRplStaked      float64        `json:"totalLegacyRplStaked"`
 	EffectiveRplStaked        float64        `json:"effectiveRplStaked"`
 	RethPrice                 float64        `json:"rethPrice"`
 	SmoothingPoolNodes        uint64         `json:"smoothingPoolNodes"`
@@ -80,7 +82,6 @@ type NetworkDAOProposalsResponse struct {
 	TotalDelegatedVp               *big.Int               `json:"totalDelegateVp"`
 	SumVotingPower                 *big.Int               `json:"sumVotingPower"`
 	VotingDelegate                 common.Address         `json:"votingDelegate"`
-	IsVotingInitialized            bool                   `json:"isVotingInitialized"`
 	VotingPower                    *big.Int               `json:"votingPower"`
 	BlockNumber                    uint32                 `json:"blockNumber"`
 	IsNodeRegistered               bool                   `json:"isNodeRegistered"`
@@ -115,8 +116,8 @@ type GetLatestDelegateResponse struct {
 	Address common.Address `json:"address"`
 }
 
-type IsHoustonHotfixDeployedResponse struct {
-	Status                  string `json:"status"`
-	Error                   string `json:"error"`
-	IsHoustonHotfixDeployed bool   `json:"isHoustonHotfixDeployed"`
+type IsSaturnDeployedResponse struct {
+	Status           string `json:"status"`
+	Error            string `json:"error"`
+	IsSaturnDeployed bool   `json:"isSaturnDeployed"`
 }

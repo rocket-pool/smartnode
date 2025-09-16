@@ -3,8 +3,10 @@ package pdao
 import (
 	"fmt"
 	"math/big"
+	"strings"
 	"time"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli"
@@ -78,6 +80,16 @@ func proposeSettingDepositMaximumAssignmentsPerDeposit(c *cli.Context, value uin
 func proposeSettingDepositMaximumSocialisedAssignmentsPerDeposit(c *cli.Context, value uint64) error {
 	trueValue := fmt.Sprint(value)
 	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.MaximumSocializedDepositAssignmentsSettingPath, trueValue)
+}
+
+func proposeSettingDepositExpressQueueRate(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.ExpressQueueRatePath, trueValue)
+}
+
+func proposeSettingDepositExpressQueueTicketsBaseProvision(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.ExpressQueueTicketsBaseProvisionPath, trueValue)
 }
 
 func proposeSettingDepositDepositFee(c *cli.Context, value *big.Int) error {
@@ -210,6 +222,16 @@ func proposeSettingNodeMaximumPerMinipoolStake(c *cli.Context, value *big.Int) e
 	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.MaximumPerMinipoolStakeSettingPath, trueValue)
 }
 
+func proposeSettingReducedBond(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.ReducedBondSettingPath, trueValue)
+}
+
+func proposeSettingNodeUnstakingPeriod(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.NodeUnstakingPeriodSettingPath, trueValue)
+}
+
 func proposeSettingProposalsVotePhase1Time(c *cli.Context, value time.Duration) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(c, protocol.ProposalsSettingsContractName, protocol.VotePhase1TimeSettingPath, trueValue)
@@ -290,6 +312,70 @@ func proposeSettingSecurityProposalActionTime(c *cli.Context, value time.Duratio
 	return proposeSetting(c, protocol.SecuritySettingsContractName, protocol.SecurityProposalActionTimeSettingPath, trueValue)
 }
 
+func proposeSettingNetworkAllowListedControllers(c *cli.Context, value []common.Address) error {
+	strs := make([]string, len(value))
+	for i, addr := range value {
+		strs[i] = addr.Hex()
+	}
+	trueValue := strings.Join(strs, "")
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkAllowListedControllersPath, trueValue)
+}
+
+func proposeSettingMegapoolTimeBeforeDissolve(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolTimeBeforeDissolveSettingsPath, trueValue)
+}
+
+func proposeSettingMaximumMegapoolEthPenalty(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolMaximumMegapoolEthPenaltyPath, trueValue)
+}
+
+func proposeSettingMegapoolNotifyThreshold(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolNotifyThresholdPath, trueValue)
+}
+
+func proposeSettingMegapoolLateNotifyFine(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolLateNotifyFinePath, trueValue)
+}
+
+func proposeSettingMegapoolUserDistributeLength(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeWindowLengthPath, trueValue)
+}
+
+func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue)
+}
+
+func proposeSettingNodeCommissionShareSecurityCouncilAdder(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, trueValue)
+}
+
+func proposeSettingVoterShare(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkVoterSharePath, trueValue)
+}
+
+func proposeSettingPDAOShare(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkPDAOSharePath, trueValue)
+}
+
+func proposeMaxNodeShareSecurityCouncilAdder(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkMaxNodeShareSecurityCouncilAdderPath, trueValue)
+}
+
+func proposeMaxRethBalanceDelta(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkMaxRethBalanceDeltaPath, trueValue)
+}
+
 // Master general proposal function
 func proposeSetting(c *cli.Context, contract string, setting string, value string) error {
 	// Get RP client
@@ -298,6 +384,16 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 		return err
 	}
 	defer rp.Close()
+
+	// Check if Saturn is already deployed
+	saturnResp, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+	if !saturnResp.IsSaturnDeployed && isSaturnOnlySetting(setting) {
+		fmt.Println("This command is only available after the Saturn upgrade.")
+		return nil
+	}
 
 	// Check if proposal can be made
 	canPropose, err := rp.PDAOCanProposeSetting(contract, setting, value)
@@ -344,4 +440,31 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 	// Log & return
 	fmt.Printf("Successfully submitted a %s setting update proposal.\n", setting)
 	return nil
+}
+
+// Returns true if the given setting is only available after the Saturn upgrade.
+func isSaturnOnlySetting(setting string) bool {
+
+	// Map of saturn only settings
+	saturnOnlySettings := map[string]struct{}{
+		protocol.ExpressQueueRatePath:                               {},
+		protocol.ExpressQueueTicketsBaseProvisionPath:               {},
+		protocol.NetworkAllowListedControllersPath:                  {},
+		protocol.NetworkNodeCommissionSharePath:                     {},
+		protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath: {},
+		protocol.NetworkVoterSharePath:                              {},
+		protocol.NetworkPDAOSharePath:                               {},
+		protocol.NetworkMaxNodeShareSecurityCouncilAdderPath:        {},
+		protocol.NetworkMaxRethBalanceDeltaPath:                     {},
+		protocol.ReducedBondSettingPath:                             {},
+		protocol.NodeUnstakingPeriodSettingPath:                     {},
+		protocol.MegapoolTimeBeforeDissolveSettingsPath:             {},
+		protocol.MegapoolMaximumMegapoolEthPenaltyPath:              {},
+		protocol.MegapoolNotifyThresholdPath:                        {},
+		protocol.MegapoolLateNotifyFinePath:                         {},
+		protocol.MegapoolUserDistributeWindowLengthPath:             {},
+	}
+
+	_, exists := saturnOnlySettings[setting]
+	return exists
 }

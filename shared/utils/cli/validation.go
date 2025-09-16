@@ -14,7 +14,9 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
@@ -378,4 +380,41 @@ func ValidateVoteDirection(name, value string) (types.VoteDirection, error) {
 		return types.VoteDirection_AgainstWithVeto, nil
 	}
 	return 0, fmt.Errorf("Invalid %s '%s': not a valid vote direction name", name, value)
+}
+
+// Validate a float
+// isFraction should be true for percentage inputs or false for unbounded percentage inputs
+func ValidateFloat(c *cli.Context, name string, value string, isFraction bool) (*big.Int, error) {
+	var floatValue float64
+	if c.Bool("raw") {
+		val, err := ValidatePositiveWeiAmount(name, value)
+		if err != nil {
+			return nil, err
+		}
+		return val, nil
+	} else if isFraction {
+		val, err := ValidateFraction(name, value)
+		if err != nil {
+			return nil, err
+		}
+		floatValue = val
+	} else {
+		val, err := strconv.ParseFloat(value, 64)
+		if err != nil {
+			return nil, err
+		}
+		floatValue = val
+	}
+
+	trueVal := eth.EthToWei(floatValue)
+	fmt.Printf("Your value will be multiplied by 10^18 to be used in the contracts, which results in:\n\n\t[%s]\n\n", trueVal.String())
+	if !(c.Bool("yes") || prompt.Confirm("Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?")) {
+		value = prompt.Prompt("Please enter the wei amount:", "^[0-9]+$", "Invalid amount")
+		val, err := ValidatePositiveWeiAmount(name, value)
+		if err != nil {
+			return nil, err
+		}
+		return val, nil
+	}
+	return trueVal, nil
 }

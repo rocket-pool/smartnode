@@ -36,6 +36,64 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "get-beacon-state",
+				Aliases:   []string{"b"},
+				Usage:     "Returns the beacon state for a given slot number",
+				UsageText: "rocketpool api debug get-beacon-state slot-number validator-index",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+
+					slotNumber, err := cliutils.ValidatePositiveUint("slot number", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					validatorIndex, err := cliutils.ValidatePositiveUint("validator index", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					if err := getBeaconStateForSlot(c, slotNumber, validatorIndex); err != nil {
+						fmt.Printf("An error occurred: %s\n", err)
+					}
+					return nil
+
+				},
+			},
+			{
+				Name:      "get-withdrawal-proof",
+				Aliases:   []string{"w"},
+				Usage:     "Returns a withdrawal proof for a given validator index and given slot, for the withdrawal most recent to that slot",
+				UsageText: "rocketpool api debug get-withdrawal-proof slot-number validator-index",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+
+					slotNumber, err := cliutils.ValidatePositiveUint("slot number", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					validatorIndex, err := cliutils.ValidatePositiveUint("validator index", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					if err := getWithdrawalProofForSlot(c, slotNumber, validatorIndex); err != nil {
+						fmt.Printf("An error occurred: %s\n", err)
+					}
+					return nil
+
+				},
+			},
 		},
 	})
 }

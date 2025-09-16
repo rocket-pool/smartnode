@@ -322,7 +322,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of RPL to stake (also accepts custom percentages for 8-ETH minipools (eg. 3% of borrowed ETH as RPL), or 'all' for all of your RPL)",
+						Usage: "The amount of RPL to stake (also accepts custom percentages for a validator (eg. 3% of borrowed ETH as RPL), or 'all' for all of your RPL)",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -502,6 +502,41 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
+				Name:      "withdraw-credit",
+				Aliases:   []string{"wc"},
+				Usage:     "(Saturn) Withdraw ETH credit from the node as rETH",
+				UsageText: "rocketpool node withdraw-credit [options]",
+				Flags: []cli.Flag{
+					cli.StringFlag{
+						Name:  "amount, a",
+						Usage: "The amount of ETH to withdraw (or 'max')",
+					},
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm ETH withdrawal",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Validate flags
+					if c.String("amount") != "" && c.String("amount") != "max" {
+						if _, err := cliutils.ValidatePositiveEthAmount("withdrawal amount", c.String("amount")); err != nil {
+							return err
+						}
+					}
+
+					// Run
+					return nodeWithdrawCredit(c)
+
+				},
+			},
+
+			{
 				Name:      "deposit",
 				Aliases:   []string{"d"},
 				Usage:     "Make a deposit and create a minipool",
@@ -522,6 +557,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					cli.StringFlag{
 						Name:  "salt, l",
 						Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
+					},
+					cli.BoolFlag{
+						Name:  "use-express-ticket, e",
+						Usage: "Use an express ticket to create a new validator",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -817,6 +856,46 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					// Run
 					return sendMessage(c, c.Args().Get(0), message)
 
+				},
+			},
+
+			{
+				Name:      "claim-unclaimed-rewards",
+				Aliases:   []string{"cur"},
+				Usage:     "Sends any unclaimed rewards to the node's withdrawal address",
+				UsageText: "rocketpool node claim-unclaimed-rewards",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					return claimUnclaimedRewards(c)
+
+				},
+			},
+
+			{
+				Name:      "provision-express-tickets",
+				Aliases:   []string{"pet"},
+				Usage:     "Provision the node's express tickets",
+				UsageText: "rocketpool node provision-express-tickets",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return provisionExpressTickets(c)
+				},
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm provision",
+					},
 				},
 			},
 		},

@@ -2,6 +2,7 @@ package queue
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/urfave/cli"
 
@@ -12,7 +13,6 @@ import (
 )
 
 func processQueue(c *cli.Context) error {
-
 	// Get RP client
 	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
 	if err != nil {
@@ -20,8 +20,32 @@ func processQueue(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	// Check if Saturn is already deployed
+	saturnResp, err := rp.IsSaturnDeployed()
+	if err != nil {
+		return err
+	}
+
+	var maxValidators uint64
+
+	if saturnResp.IsSaturnDeployed {
+		queueLength, err := rp.GetQueueDetails()
+		if err != nil {
+			return err
+		}
+		if queueLength.TotalLength == 0 {
+			fmt.Println("There are no validators waiting to be processed")
+			return nil
+		}
+		maxValidatorsStr := prompt.Prompt(fmt.Sprintf("There is a total of %d validators in the queue. How many do you want to process?", queueLength.TotalLength), "^\\d+$", "Invalid number.")
+		maxValidators, err = strconv.ParseUint(maxValidatorsStr, 0, 64)
+		if err != nil {
+			return fmt.Errorf("'%s' is not a valid number: %w.\n", maxValidatorsStr, err)
+		}
+	}
+
 	// Check deposit queue can be processed
-	canProcess, err := rp.CanProcessQueue()
+	canProcess, err := rp.CanProcessQueue(uint32(maxValidators))
 	if err != nil {
 		return err
 	}
@@ -46,7 +70,7 @@ func processQueue(c *cli.Context) error {
 	}
 
 	// Process deposit queue
-	response, err := rp.ProcessQueue()
+	response, err := rp.ProcessQueue(uint32(maxValidators))
 	if err != nil {
 		return err
 	}

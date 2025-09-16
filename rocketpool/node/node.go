@@ -31,19 +31,22 @@ var taskCooldown, _ = time.ParseDuration("10s")
 const (
 	MaxConcurrentEth1Requests = 200
 
-	StakePrelaunchMinipoolsColor = color.FgBlue
-	DownloadRewardsTreesColor    = color.FgGreen
-	MetricsColor                 = color.FgHiYellow
-	ManageFeeRecipientColor      = color.FgHiCyan
-	PromoteMinipoolsColor        = color.FgMagenta
-	ReduceBondAmountColor        = color.FgHiBlue
-	DefendPdaoPropsColor         = color.FgYellow
-	VerifyPdaoPropsColor         = color.FgYellow
-	AutoInitVotingPowerColor     = color.FgHiYellow
-	DistributeMinipoolsColor     = color.FgHiGreen
-	ErrorColor                   = color.FgRed
-	WarningColor                 = color.FgYellow
-	UpdateColor                  = color.FgHiWhite
+	StakePrelaunchMinipoolsColor   = color.FgBlue
+	DownloadRewardsTreesColor      = color.FgGreen
+	MetricsColor                   = color.FgHiYellow
+	ManageFeeRecipientColor        = color.FgHiCyan
+	PromoteMinipoolsColor          = color.FgMagenta
+	ReduceBondAmountColor          = color.FgHiBlue
+	DefendPdaoPropsColor           = color.FgYellow
+	VerifyPdaoPropsColor           = color.FgYellow
+	DistributeMinipoolsColor       = color.FgHiGreen
+	ErrorColor                     = color.FgRed
+	WarningColor                   = color.FgYellow
+	UpdateColor                    = color.FgHiWhite
+	PrestakeMegapoolValidatorColor = color.FgHiGreen
+	StakeMegapoolValidatorColor    = color.FgHiBlue
+	NotifyValidatorExitColor       = color.FgHiYellow
+	DefendChallengeExitColor       = color.FgHiGreen
 )
 
 // Register node command
@@ -124,11 +127,23 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	defendChallengeExit, err := newDefendChallengeExit(c, log.NewColorLogger(DefendChallengeExitColor))
+	if err != nil {
+		return err
+	}
 	distributeMinipools, err := newDistributeMinipools(c, log.NewColorLogger(DistributeMinipoolsColor))
 	if err != nil {
 		return err
 	}
 	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
+	if err != nil {
+		return err
+	}
+	stakeMegapoolValidators, err := newStakeMegapoolValidator(c, log.NewColorLogger(StakeMegapoolValidatorColor))
+	if err != nil {
+		return err
+	}
+	notifyValidatorExit, err := newNotifyValidatorExit(c, log.NewColorLogger(NotifyValidatorExitColor))
 	if err != nil {
 		return err
 	}
@@ -157,14 +172,11 @@ func run(c *cli.Context) error {
 			return err
 		}
 	}
-	var autoInitVotingPower *autoInitVotingPower
-	// Make sure the user opted into this duty
-	AutoInitVPThreshold := cfg.Smartnode.AutoInitVPThreshold.Value.(float64)
-	if AutoInitVPThreshold != 0 {
-		autoInitVotingPower, err = newAutoInitVotingPower(c, log.NewColorLogger(AutoInitVotingPowerColor), AutoInitVPThreshold)
-		if err != nil {
-			return err
-		}
+
+	var prestakeMegapoolValidator *prestakeMegapoolValidator
+	prestakeMegapoolValidator, err = newPrestakeMegapoolValidator(c, log.NewColorLogger(PrestakeMegapoolValidatorColor))
+	if err != nil {
+		return err
 	}
 
 	// Wait group to handle the various threads
@@ -223,6 +235,11 @@ func run(c *cli.Context) error {
 			}
 			time.Sleep(taskCooldown)
 
+			// Run the defend challenge exit task
+			if err := defendChallengeExit.run(state); err != nil {
+				errorLog.Println(err)
+			}
+
 			// Run the rewards download check
 			if err := downloadRewardsTrees.run(state); err != nil {
 				errorLog.Println(err)
@@ -243,9 +260,9 @@ func run(c *cli.Context) error {
 				time.Sleep(taskCooldown)
 			}
 
-			// Run the auto vote initilization check
-			if autoInitVotingPower != nil {
-				if err := autoInitVotingPower.run(state); err != nil {
+			// Run the megapool prestake check
+			if prestakeMegapoolValidator != nil {
+				if err := prestakeMegapoolValidator.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
@@ -253,6 +270,18 @@ func run(c *cli.Context) error {
 
 			// Run the minipool stake check
 			if err := stakePrelaunchMinipools.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the megapool stake check
+			if err := stakeMegapoolValidators.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the megapool notify validator exit check
+			if err := notifyValidatorExit.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)

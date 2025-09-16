@@ -53,7 +53,7 @@ func TestMockIntervalDefaultsTreegenv8v9(tt *testing.T) {
 	t.bc.SetBeaconBlock(fmt.Sprint(consensusStartBlock), beacon.BeaconBlock{ExecutionBlockNumber: executionStartBlock})
 	t.rp.SetHeaderByNumber(big.NewInt(int64(executionStartBlock)), &types.Header{Time: uint64(history.GetStartTime().Unix())})
 
-	for _, validator := range state.ValidatorDetails {
+	for _, validator := range state.MinipoolValidatorDetails {
 		t.bc.SetMinipoolPerformance(validator.Index, make([]uint64, 0))
 	}
 

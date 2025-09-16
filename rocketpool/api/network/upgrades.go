@@ -7,7 +7,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func isHoustonHotfixDeployed(c *cli.Context) (*api.IsHoustonHotfixDeployedResponse, error) {
+func isSaturnDeployed(c *cli.Context) (*api.IsSaturnDeployedResponse, error) {
 
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {
@@ -19,13 +19,13 @@ func isHoustonHotfixDeployed(c *cli.Context) (*api.IsHoustonHotfixDeployedRespon
 	}
 
 	// Response
-	response := api.IsHoustonHotfixDeployedResponse{}
+	response := api.IsSaturnDeployedResponse{}
 
-	isHoustonHotfixDeployed, err := state.IsHoustonHotfixDeployed(rp, nil)
+	isSaturnDeployed, err := state.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	response.IsHoustonHotfixDeployed = isHoustonHotfixDeployed
+	response.IsSaturnDeployed = isSaturnDeployed
 
 	// Return response
 	return &response, nil
