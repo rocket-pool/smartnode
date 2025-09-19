@@ -824,7 +824,7 @@ func (cfg *SmartnodeConfig) GetMinipoolPerformancePath(interval uint64, daemon b
 
 func (cfg *SmartnodeConfig) GetPerformancePath(interval uint64) string {
 	return filepath.Join(
-		cfg.GetRewardsTreeDirectory(false),
+		cfg.GetRewardsTreeDirectory(true),
 		cfg.GetPerformanceFilename(interval),
 	)
 }
