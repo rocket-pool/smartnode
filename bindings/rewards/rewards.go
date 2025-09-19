@@ -41,17 +41,17 @@ type RewardsEvent struct {
 
 // Struct for submitting the rewards for a checkpoint
 type RewardSubmission struct {
-	RewardIndex     *big.Int   `json:"rewardIndex"`
-	ExecutionBlock  *big.Int   `json:"executionBlock"`
-	ConsensusBlock  *big.Int   `json:"consensusBlock"`
-	MerkleRoot      [32]byte   `json:"merkleRoot"`
-	MerkleTreeCID   string     `json:"merkleTreeCID"`
-	IntervalsPassed *big.Int   `json:"intervalsPassed"`
-	TreasuryRPL     *big.Int   `json:"treasuryRPL"`
-	TrustedNodeRPL  []*big.Int `json:"trustedNodeRPL"`
-	NodeRPL         []*big.Int `json:"nodeRPL"`
-	NodeETH         []*big.Int `json:"nodeETH"`
-	UserETH         *big.Int   `json:"userETH"`
+	RewardIndex      *big.Int   `json:"rewardIndex"`
+	ExecutionBlock   *big.Int   `json:"executionBlock"`
+	ConsensusBlock   *big.Int   `json:"consensusBlock"`
+	MerkleRoot       [32]byte   `json:"merkleRoot"`
+	MerkleTreeCID    string     `json:"merkleTreeCID"`
+	IntervalsPassed  *big.Int   `json:"intervalsPassed"`
+	TreasuryRPL      *big.Int   `json:"treasuryRPL"`
+	TrustedNodeRPL   []*big.Int `json:"trustedNodeRPL"`
+	NodeRPL          []*big.Int `json:"nodeRPL"`
+	NodeETH          []*big.Int `json:"nodeETH"`
+	SmoothingPoolETH *big.Int   `json:"smoothingPoolETH"`
 }
 
 // Internal struct - this is the structure of what gets returned by the RewardSnapshot event
@@ -306,7 +306,7 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 		TrustedNodeRPL:    submission.TrustedNodeRPL,
 		NodeRPL:           submission.NodeRPL,
 		NodeETH:           submission.NodeETH,
-		UserETH:           submission.UserETH,
+		UserETH:           submission.SmoothingPoolETH,
 		MerkleRoot:        submission.MerkleRoot,
 		IntervalStartTime: time.Unix(snapshot.IntervalStartTime.Int64(), 0),
 		IntervalEndTime:   time.Unix(snapshot.IntervalEndTime.Int64(), 0),
