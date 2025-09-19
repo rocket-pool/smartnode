@@ -292,6 +292,8 @@ func (f *SSZFile_v1) Proofs() (map[Address]MerkleProof, error) {
 }
 
 type TotalRewards struct {
+	// Total amount of ETH sent to the pDAO
+	TotalProtocolDaoEth big.Uint256 `ssz-size:"32" json:"totalProtocolDaoEth"`
 	// Total amount of RPL sent to the pDAO
 	ProtocolDaoRpl big.Uint256 `ssz-size:"32" json:"protocolDaoRpl"`
 	// Total amount of RPL sent to Node Operators
@@ -597,4 +599,8 @@ func (f *SSZFile_v1) GetTotalPoolStakerSmoothingPoolEth() *stdbig.Int {
 
 func (f *SSZFile_v1) GetTotalProtocolDaoRpl() *stdbig.Int {
 	return f.TotalRewards.ProtocolDaoRpl.Int
+}
+
+func (f *SSZFile_v1) GetTotalProtocolDaoEth() *stdbig.Int {
+	return f.TotalRewards.TotalProtocolDaoEth.Int
 }

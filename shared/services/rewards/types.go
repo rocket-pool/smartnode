@@ -101,6 +101,7 @@ type IRewardsFile interface {
 	GetTotalNodeWeight() *big.Int
 	GetMerkleRoot() string
 	GetIntervalsPassed() uint64
+	GetTotalProtocolDaoEth() *big.Int
 	GetTotalProtocolDaoRpl() *big.Int
 	GetTotalOracleDaoRpl() *big.Int
 	GetTotalCollateralRpl() *big.Int

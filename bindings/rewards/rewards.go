@@ -47,10 +47,12 @@ type RewardSubmission struct {
 	MerkleRoot       [32]byte   `json:"merkleRoot"`
 	MerkleTreeCID    string     `json:"merkleTreeCID"`
 	IntervalsPassed  *big.Int   `json:"intervalsPassed"`
+	TreasuryETH      *big.Int   `json:"treasuryETH"`
 	TreasuryRPL      *big.Int   `json:"treasuryRPL"`
 	TrustedNodeRPL   []*big.Int `json:"trustedNodeRPL"`
 	NodeRPL          []*big.Int `json:"nodeRPL"`
 	NodeETH          []*big.Int `json:"nodeETH"`
+	UserETH          *big.Int   `json:"userETH"`
 	SmoothingPoolETH *big.Int   `json:"smoothingPoolETH"`
 }
 
@@ -187,6 +189,7 @@ func GetTrustedNodeSubmittedSpecificRewards(rp *rocketpool.RocketPool, nodeAddre
 		{Name: "nodeRPL", Type: "uint256[]"},
 		{Name: "nodeETH", Type: "uint256[]"},
 		{Name: "userETH", Type: "uint256"},
+		{Name: "smoothingPoolETH", Type: "uint256"},
 	})
 
 	args := abi.Arguments{
@@ -306,7 +309,7 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 		TrustedNodeRPL:    submission.TrustedNodeRPL,
 		NodeRPL:           submission.NodeRPL,
 		NodeETH:           submission.NodeETH,
-		UserETH:           submission.SmoothingPoolETH,
+		UserETH:           submission.UserETH,
 		MerkleRoot:        submission.MerkleRoot,
 		IntervalStartTime: time.Unix(snapshot.IntervalStartTime.Int64(), 0),
 		IntervalEndTime:   time.Unix(snapshot.IntervalEndTime.Int64(), 0),

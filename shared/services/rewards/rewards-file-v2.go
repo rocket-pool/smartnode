@@ -211,6 +211,11 @@ func (f *RewardsFile_v2) GetTotalProtocolDaoRpl() *big.Int {
 	return &f.RewardsFileHeader.TotalRewards.ProtocolDaoRpl.Int
 }
 
+// Get the total Eth sent to the pDAO
+func (f *RewardsFile_v2) GetTotalProtocolDaoEth() *big.Int {
+	return big.NewInt(0)
+}
+
 // Get the total RPL sent to the pDAO
 func (f *RewardsFile_v2) GetTotalOracleDaoRpl() *big.Int {
 	return &f.RewardsFileHeader.TotalRewards.TotalOracleDaoRpl.Int

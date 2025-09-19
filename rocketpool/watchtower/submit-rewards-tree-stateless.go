@@ -395,17 +395,19 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 
 	// Create the submission
 	submission := rewards.RewardSubmission{
-		RewardIndex:      index,
-		ExecutionBlock:   big.NewInt(0).SetUint64(executionBlock),
-		ConsensusBlock:   big.NewInt(0).SetUint64(consensusBlock),
-		MerkleRoot:       treeRoot,
-		MerkleTreeCID:    cid,
-		IntervalsPassed:  intervalsPassed,
-		TreasuryRPL:      rewardsFile.GetTotalProtocolDaoRpl(),
-		NodeRPL:          collateralRplRewards,
-		TrustedNodeRPL:   oDaoRplRewards,
-		NodeETH:          smoothingPoolEthRewards,
-		SmoothingPoolETH: rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
+		RewardIndex:     index,
+		ExecutionBlock:  big.NewInt(0).SetUint64(executionBlock),
+		ConsensusBlock:  big.NewInt(0).SetUint64(consensusBlock),
+		MerkleRoot:      treeRoot,
+		MerkleTreeCID:   cid,
+		IntervalsPassed: intervalsPassed,
+		TreasuryETH:     rewardsFile.GetTotalProtocolDaoEth(),
+		TreasuryRPL:     rewardsFile.GetTotalProtocolDaoRpl(),
+		NodeRPL:         collateralRplRewards,
+		TrustedNodeRPL:  oDaoRplRewards,
+		NodeETH:         smoothingPoolEthRewards,
+		UserETH:         rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
+		//SmoothingPoolETH: ,
 	}
 
 	// Get the gas limit

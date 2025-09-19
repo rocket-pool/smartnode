@@ -562,3 +562,7 @@ func (f *SSZFile_v2) GetTotalPoolStakerSmoothingPoolEth() *stdbig.Int {
 func (f *SSZFile_v2) GetTotalProtocolDaoRpl() *stdbig.Int {
 	return f.TotalRewards.ProtocolDaoRpl.Int
 }
+
+func (f *SSZFile_v2) GetTotalProtocolDaoEth() *stdbig.Int {
+	return f.TotalRewards.TotalPdaoShareEth.Int
+}
