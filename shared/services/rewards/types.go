@@ -107,6 +107,7 @@ type IRewardsFile interface {
 	GetTotalCollateralRpl() *big.Int
 	GetTotalNodeOperatorSmoothingPoolEth() *big.Int
 	GetTotalPoolStakerSmoothingPoolEth() *big.Int
+	GetTotalSmoothingPoolBalance() *big.Int
 	GetExecutionStartBlock() uint64
 	GetConsensusStartBlock() uint64
 	GetExecutionEndBlock() uint64

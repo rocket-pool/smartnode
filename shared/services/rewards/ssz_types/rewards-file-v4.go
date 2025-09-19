@@ -597,6 +597,10 @@ func (f *SSZFile_v1) GetTotalPoolStakerSmoothingPoolEth() *stdbig.Int {
 	return f.TotalRewards.PoolStakerSmoothingPoolEth.Int
 }
 
+func (f *SSZFile_v1) GetTotalSmoothingPoolBalance() *stdbig.Int {
+	return f.TotalRewards.TotalSmoothingPoolEth.Int
+}
+
 func (f *SSZFile_v1) GetTotalProtocolDaoRpl() *stdbig.Int {
 	return f.TotalRewards.ProtocolDaoRpl.Int
 }

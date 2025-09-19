@@ -101,6 +101,11 @@ func (f *RewardsFile_v3) GetTotalPoolStakerSmoothingPoolEth() *big.Int {
 	return &f.RewardsFileHeader.TotalRewards.PoolStakerSmoothingPoolEth.Int
 }
 
+// Get the total SP balance
+func (f *RewardsFile_v3) GetTotalSmoothingPoolBalance() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.TotalSmoothingPoolEth.Int
+}
+
 // Get the total rpl sent to stakers
 func (f *RewardsFile_v3) GetTotalCollateralRpl() *big.Int {
 	return &f.RewardsFileHeader.TotalRewards.TotalCollateralRpl.Int
