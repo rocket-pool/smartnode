@@ -40,13 +40,11 @@ type NodeStatusResponse struct {
 	RplStake                                 *big.Int        `json:"rplStake"`
 	RplStakeMegapool                         *big.Int        `json:"rplStakeMegapool"`
 	RplStakeLegacy                           *big.Int        `json:"rplStakeLegacy"`
-	EffectiveRplStake                        *big.Int        `json:"effectiveRplStake"`
 	MaximumRplStake                          *big.Int        `json:"maximumRplStake"`
 	MinimumRplStake                          *big.Int        `json:"minimumRplStake"`
 	MaximumStakeFraction                     float64         `json:"maximumStakeFraction"`
 	BorrowedCollateralRatio                  float64         `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio                    float64         `json:"bondedCollateralRatio"`
-	PendingEffectiveRplStake                 *big.Int        `json:"pendingEffectiveRplStake"`
 	PendingMinimumRplStake                   *big.Int        `json:"pendingMinimumRplStake"`
 	PendingMaximumRplStake                   *big.Int        `json:"pendingMaximumRplStake"`
 	PendingBorrowedCollateralRatio           float64         `json:"pendingBorrowedCollateralRatio"`
@@ -614,7 +612,6 @@ type NodeGetRewardsInfoResponse struct {
 	RplStake                *big.Int               `json:"rplStake"`
 	RplPrice                *big.Int               `json:"rplPrice"`
 	ActiveMinipools         int                    `json:"activeMinipools"`
-	EffectiveRplStake       *big.Int               `json:"effectiveRplStake"`
 	MinimumRplStake         *big.Int               `json:"minimumRplStake"`
 	EthBorrowed             *big.Int               `json:"ethBorrowed"`
 	EthBorrowLimit          *big.Int               `json:"ethBorrowLimit"`

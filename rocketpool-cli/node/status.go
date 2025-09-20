@@ -363,8 +363,6 @@ func getStatus(c *cli.Context) error {
 			}
 		}
 
-		fmt.Printf(
-			"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of 150%% of bonded ETH. Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n")
 		fmt.Println()
 
 		// Minipool details

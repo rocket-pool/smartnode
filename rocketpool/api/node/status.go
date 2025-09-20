@@ -270,11 +270,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		})
 		wg.Go(func() error {
 			var err error
-			response.EffectiveRplStake, err = node131.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
 			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
@@ -511,12 +506,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		response.MinimumRplStake = trueMinimumStake
 		response.MaximumRplStake = trueMaximumStake
 
-		if response.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
-			response.EffectiveRplStake.SetUint64(0)
-		} else if response.EffectiveRplStake.Cmp(trueMaximumStake) > 0 {
-			response.EffectiveRplStake.Set(trueMaximumStake)
-		}
-
 		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
 		response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
 
@@ -537,13 +526,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		response.PendingMinimumRplStake = pendingTrueMinimumStake
 		response.PendingMaximumRplStake = pendingTrueMaximumStake
 
-		response.PendingEffectiveRplStake = big.NewInt(0).Set(response.RplStake)
-		if response.PendingEffectiveRplStake.Cmp(pendingTrueMinimumStake) < 0 {
-			response.PendingEffectiveRplStake.SetUint64(0)
-		} else if response.PendingEffectiveRplStake.Cmp(pendingTrueMaximumStake) > 0 {
-			response.PendingEffectiveRplStake.Set(pendingTrueMaximumStake)
-		}
-
 		pendingEligibleBondedEthFloat := eth.WeiToEth(pendingEligibleBondedEth)
 		if pendingEligibleBondedEthFloat == 0 {
 			response.PendingBondedCollateralRatio = 0
@@ -560,7 +542,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	} else {
 		response.BorrowedCollateralRatio = -1
 		response.BondedCollateralRatio = -1
-		response.PendingEffectiveRplStake = big.NewInt(0)
 		response.PendingMinimumRplStake = big.NewInt(0)
 		response.PendingMaximumRplStake = big.NewInt(0)
 		response.PendingBondedCollateralRatio = -1
