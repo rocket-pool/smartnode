@@ -399,7 +399,6 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 		ExecutionBlock:   big.NewInt(0).SetUint64(executionBlock),
 		ConsensusBlock:   big.NewInt(0).SetUint64(consensusBlock),
 		MerkleRoot:       treeRoot,
-		MerkleTreeCID:    cid,
 		IntervalsPassed:  intervalsPassed,
 		TreasuryETH:      rewardsFile.GetTotalProtocolDaoEth(),
 		TreasuryRPL:      rewardsFile.GetTotalProtocolDaoRpl(),

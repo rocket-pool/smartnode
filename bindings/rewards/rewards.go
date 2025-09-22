@@ -45,15 +45,14 @@ type RewardSubmission struct {
 	ExecutionBlock   *big.Int   `json:"executionBlock"`
 	ConsensusBlock   *big.Int   `json:"consensusBlock"`
 	MerkleRoot       [32]byte   `json:"merkleRoot"`
-	MerkleTreeCID    string     `json:"merkleTreeCID"`
 	IntervalsPassed  *big.Int   `json:"intervalsPassed"`
-	TreasuryETH      *big.Int   `json:"treasuryETH"`
+	SmoothingPoolETH *big.Int   `json:"smoothingPoolETH"`
 	TreasuryRPL      *big.Int   `json:"treasuryRPL"`
+	TreasuryETH      *big.Int   `json:"treasuryETH"`
+	UserETH          *big.Int   `json:"userETH"`
 	TrustedNodeRPL   []*big.Int `json:"trustedNodeRPL"`
 	NodeRPL          []*big.Int `json:"nodeRPL"`
 	NodeETH          []*big.Int `json:"nodeETH"`
-	UserETH          *big.Int   `json:"userETH"`
-	SmoothingPoolETH *big.Int   `json:"smoothingPoolETH"`
 }
 
 // Internal struct - this is the structure of what gets returned by the RewardSnapshot event
