@@ -466,7 +466,10 @@ func (r *treeGeneratorImpl_v11) calculateRplRewards() error {
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get actual protocol DAO rewards
-	pDaoRewards.Sub(pDaoRewards, totalCalculatedOdaoRewards)
+	if totalNodeWeight.Sign() > 0 {
+		// Subtract oDAO rewards only in case node operators had rewards, otherwise pDaoRewards is already correct
+		pDaoRewards.Sub(pDaoRewards, totalCalculatedOdaoRewards)
+	}
 	r.rewardsFile.TotalRewards.ProtocolDaoRpl = sszbig.NewUint256(0)
 	r.rewardsFile.TotalRewards.ProtocolDaoRpl.Set(pDaoRewards)
 	r.log.Printlnf("%s Actual Protocol DAO rewards:  %s to account for truncation", r.logPrefix, pDaoRewards.String())
