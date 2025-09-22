@@ -660,7 +660,7 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 				rewardsForNetwork = ssz_types.NewNetworkReward(rewardsForNode.Network)
 				r.networkRewards[rewardsForNode.Network] = rewardsForNetwork
 			}
-			rewardsForNetwork.SmoothingPoolEth.Add(rewardsForNetwork.SmoothingPoolEth.Int, nodeInfo.SmoothingPoolEth)
+			rewardsForNetwork.SmoothingPoolEth.Add(rewardsForNetwork.SmoothingPoolEth.Int, nodeInfo.VoterShareEth)
 		}
 
 		// Next, take care of smoothing pool ETH
@@ -851,23 +851,16 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	voterEth := big.NewInt(0)
 	pdaoEth := big.NewInt(0)
 
-	smoothingPoolBalance := big.NewInt(0).Set(r.smoothingPoolBalance)
-	// Subtract the earmarked voter share
-	smoothingPoolBalance.Sub(smoothingPoolBalance, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare)
-	if smoothingPoolBalance.Sign() <= 0 {
-		return nil, fmt.Errorf("smoothing pool balance is less than or equal to the earmarked voter share")
-	}
-
 	// If pdao score is greater than 0, calculate the pdao share
 	if r.totalPdaoScore.Cmp(common.Big0) > 0 {
-		pdaoEth.Mul(smoothingPoolBalance, r.totalPdaoScore)
+		pdaoEth.Mul(r.smoothingPoolBalance, r.totalPdaoScore)
 		pdaoEth.Div(pdaoEth, big.NewInt(int64(r.successfulAttestations)))
 		pdaoEth.Div(pdaoEth, oneEth)
 	}
 
 	// If voter score is greater than 0, calculate the voter share
 	if r.totalVoterScore.Cmp(common.Big0) > 0 {
-		voterEth.Mul(smoothingPoolBalance, r.totalVoterScore)
+		voterEth.Mul(r.smoothingPoolBalance, r.totalVoterScore)
 		voterEth.Div(voterEth, big.NewInt(int64(r.successfulAttestations)))
 		voterEth.Div(voterEth, oneEth)
 
@@ -906,7 +899,7 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	// If there weren't any successful attestations, everything goes to the pool stakers
 	if r.totalAttestationScore.Cmp(common.Big0) == 0 || r.successfulAttestations == 0 {
 		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", r.totalAttestationScore.String(), r.successfulAttestations)
-		poolStakerEth := big.NewInt(0).Set(smoothingPoolBalance)
+		poolStakerEth := big.NewInt(0).Set(r.smoothingPoolBalance)
 		poolStakerEth.Sub(poolStakerEth, trueVoterEth)
 		poolStakerEth.Sub(poolStakerEth, pdaoEth)
 		return &nodeRewards{
@@ -930,7 +923,7 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	totalEthForMinipools := big.NewInt(0)
 	totalEthForMegapools := big.NewInt(0)
 	totalNodeOpShare := big.NewInt(0)
-	totalNodeOpShare.Mul(smoothingPoolBalance, r.totalAttestationScore)
+	totalNodeOpShare.Mul(r.smoothingPoolBalance, r.totalAttestationScore)
 	totalNodeOpShare.Div(totalNodeOpShare, big.NewInt(int64(r.successfulAttestations)))
 	totalNodeOpShare.Div(totalNodeOpShare, oneEth)
 
@@ -970,9 +963,6 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	}
 
 	if r.rewardsFile.RulesetVersion >= 10 {
-		// NB: We use the raw smoothing pool balance here, not the adjusted one
-		// (r.smoothingPoolBalance instead of smoothingPoolBalance)
-		// Otherwise, when we subtract trueVoterEth, we subtract the earmarked voter share twice.
 		remainingBalance := big.NewInt(0).Sub(r.smoothingPoolBalance, totalEthForMinipools)
 		remainingBalance.Sub(remainingBalance, totalEthForMegapools)
 		remainingBalance.Sub(remainingBalance, pdaoEth)
@@ -1027,9 +1017,6 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	trueNodeOperatorAmount.Add(trueNodeOperatorAmount, totalEthForBonuses)
 
 	// This is how much actually goes to the pool stakers - it should ideally be equal to poolStakerShare but this accounts for any cumulative floating point errors
-	// NB: We use the raw smoothing pool balance here, not the adjusted one
-	// (r.smoothingPoolBalance instead of smoothingPoolBalance)
-	// Otherwise, when we subtract trueVoterEth, we subtract the earmarked voter share twice.
 	truePoolStakerAmount := big.NewInt(0).Sub(r.smoothingPoolBalance, trueNodeOperatorAmount)
 	truePoolStakerAmount.Sub(truePoolStakerAmount, pdaoEth)
 	truePoolStakerAmount.Sub(truePoolStakerAmount, trueVoterEth)
