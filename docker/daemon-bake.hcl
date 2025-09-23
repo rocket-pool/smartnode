@@ -2,6 +2,14 @@ variable "VERSION" {
   default = "$VERSION"
 }
 
+variable "GIT_BRANCH" {
+  default = "$GIT_BRANCH"
+}
+
+variable "GIT_COMMIT" {
+  default = "$GIT_COMMIT"
+}
+
 group "default" {
   targets = ["builder", "smartnode"]
 }
@@ -21,6 +29,11 @@ target "smartnode" {
   args = {
     BUILDPLATFORM = "linux/amd64"
     VERSION = "${VERSION}"
+  }
+  labels = {
+    "org.opencontainers.image.ref.name" = "${GIT_BRANCH}"
+    "org.opencontainers.image.revision" = "${GIT_COMMIT}"
+    "org.opencontainers.image.source" = "https://github.com/rocket-pool/smartnode"
   }
   tags = [
     "rocketpool/smartnode:${VERSION}",
