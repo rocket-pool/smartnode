@@ -1,6 +1,9 @@
 VERSION=v$(shell cat shared/version.txt)
 LOCAL_OS=$(shell go env GOOS)
 LOCAL_ARCH=$(shell go env GOARCH)
+GIT_BRANCH=$(shell git branch --show-current)
+GIT_COMMIT=$(shell git rev-parse HEAD)$(shell git diff --quiet && git diff --cached --quiet || echo "-with-uncommitted-changes")
+SOURCE=GIT_BRANCH=${GIT_BRANCH} GIT_COMMIT=${GIT_COMMIT}
 # Needed for binary artifacts of format `rocketpool-cli-linux-amd64`
 LOCAL_TARGET=${LOCAL_OS}-${LOCAL_ARCH}
 # Needed for docker --platform arguments of format `linux/amd64`
@@ -144,20 +147,20 @@ ${BUILD_DIR}/docker-buildx-builder: ${BUILD_DIR}
 .PHONY: docker
 docker: ${BUILD_DIR}/docker-buildx-builder
 	# override the platform so we can load the resulting image into docker
-	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.platform=${LOCAL_PLATFORM}"
+	VERSION=${VERSION} ${SOURCE} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.platform=${LOCAL_PLATFORM}"
 
 .PHONY: docker-push
 docker-push: ${BUILD_DIR}/docker-buildx-builder
 	echo -n "Building ${VERSION} and publishing containers. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	# override the output type to push to dockerhub
-	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry"
+	VERSION=${VERSION} ${SOURCE} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry"
 	echo "Done!"
 
 .PHONY: docker-latest
 docker-latest: ${BUILD_DIR}/docker-buildx-builder
 	echo -n "Building ${VERSION}, tagging as latest, and publishing. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	# override the output type to push to dockerhub, and the tags array to tag latest
-	VERSION=${VERSION} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry" --set "smartnode.tags=rocketpool/smartnode:latest"
+	VERSION=${VERSION} ${SOURCE} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry" --set "smartnode.tags=rocketpool/smartnode:latest"
 
 .PHONY: docker-prune
 docker-prune:
