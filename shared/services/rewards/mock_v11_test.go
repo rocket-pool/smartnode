@@ -1013,7 +1013,7 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 		t.Fatalf("Node one ETH amount does not match expected value: %s != %d", ethOne.String(), 0)
 	}
 	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
-	expectedEthTwo, _ := big.NewInt(0).SetString("29325000000000000000", 10)
+	expectedEthTwo, _ := big.NewInt(0).SetString("32575000000000000000", 10)
 	if ethTwo.Cmp(expectedEthTwo) != 0 {
 		t.Fatalf("Node two ETH amount does not match expected value: %s != %s", ethTwo.String(), expectedEthTwo.String())
 	}
@@ -1260,12 +1260,12 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 	// Check the rewards file
 	rewardsFile := v11Artifacts.RewardsFile
 	ethOne := rewardsFile.GetNodeSmoothingPoolEth(nodeOne.Address)
-	expectedEthOne, _ := big.NewInt(0).SetString("19732500000000000000", 10)
+	expectedEthOne, _ := big.NewInt(0).SetString("21920833333333333333", 10)
 	if ethOne.Cmp(expectedEthOne) != 0 {
 		t.Fatalf("Node one ETH amount does not match expected value: %s != %s", ethOne.String(), expectedEthOne.String())
 	}
 	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
-	expectedEthTwo, _ := big.NewInt(0).SetString("9592500000000000000", 10)
+	expectedEthTwo, _ := big.NewInt(0).SetString("10654166666666666666", 10)
 	if ethTwo.Cmp(expectedEthTwo) != 0 {
 		t.Fatalf("Node two ETH amount does not match expected value: %s != %s", ethTwo.String(), expectedEthTwo.String())
 	}
