@@ -17,7 +17,7 @@ import (
 
 type ValidatorProof struct {
 	Slot           uint64
-	ValidatorIndex uint64
+	ValidatorIndex *big.Int
 	Validator      ProvedValidator
 	Witnesses      [][32]byte
 }
@@ -25,7 +25,7 @@ type ValidatorProof struct {
 type ProvedValidator struct {
 	Pubkey                     []byte   `json:"pubkey" ssz-size:"48"`
 	WithdrawalCredentials      [32]byte `json:"withdrawal_credentials" ssz-size:"32"`
-	EffectiveBalance           *big.Int `json:"effective_balance"`
+	EffectiveBalance           uint64   `json:"effective_balance"`
 	Slashed                    bool     `json:"slashed"`
 	ActivationEligibilityEpoch uint64   `json:"activation_eligibility_epoch"`
 	ActivationEpoch            uint64   `json:"activation_epoch"`

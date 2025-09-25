@@ -100,7 +100,7 @@ func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.E
 	val := megapool.ProvedValidator{
 		Pubkey:                     validatorPubkey[:],
 		WithdrawalCredentials:      withdrawalCredentialsFixed,
-		EffectiveBalance:           big.NewInt(int64(validators[validatorIndex64].EffectiveBalance)),
+		EffectiveBalance:           validators[validatorIndex64].EffectiveBalance,
 		Slashed:                    validators[validatorIndex64].Slashed,
 		ActivationEligibilityEpoch: validators[validatorIndex64].ActivationEligibilityEpoch,
 		ActivationEpoch:            validators[validatorIndex64].ActivationEpoch,
@@ -109,7 +109,7 @@ func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.E
 	}
 	proof := megapool.ValidatorProof{
 		Slot:           block.Slot,
-		ValidatorIndex: validatorIndex64,
+		ValidatorIndex: big.NewInt(int64(validatorIndex64)),
 		Validator:      val,
 		Witnesses:      proofWithFixedSize,
 	}
