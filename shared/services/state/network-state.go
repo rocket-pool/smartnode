@@ -214,7 +214,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(m.rp, contracts)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(m.rp, contracts, isSaturnDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
@@ -406,7 +406,7 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 	if err != nil {
 		return nil, fmt.Errorf("error getting network contracts: %w", err)
 	}
-	state.NetworkDetails, err = rpstate.NewNetworkDetails(m.rp, contracts)
+	state.NetworkDetails, err = rpstate.NewNetworkDetails(m.rp, contracts, isSaturnDeployed)
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
