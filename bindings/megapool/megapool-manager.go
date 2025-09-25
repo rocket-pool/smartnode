@@ -21,7 +21,7 @@ type ExitChallenge struct {
 type WithdrawalProof struct {
 	Slot           uint64     `json:"slot"`
 	WithdrawalSlot uint64     `json:"withdrawalSlot"`
-	WithdrawalNum  uint64     `json:"withdrawalNum"`
+	WithdrawalNum  uint16     `json:"withdrawalNum"`
 	Withdrawal     Withdrawal `json:"withdrawal"`
 	Witnesses      [][32]byte `json:"witnesses"`
 }

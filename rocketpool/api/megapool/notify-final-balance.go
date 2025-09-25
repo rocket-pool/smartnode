@@ -84,7 +84,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	finalBalanceProof := megapool.WithdrawalProof{
 		Slot:           proof.Slot,
 		WithdrawalSlot: proof.WithdrawalSlot,
-		WithdrawalNum:  uint64(proof.IndexInWithdrawalsArray),
+		WithdrawalNum:  uint16(proof.IndexInWithdrawalsArray),
 		Withdrawal:     withdrawal,
 		Witnesses:      proof.Witnesses,
 	}
@@ -173,7 +173,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	finalBalanceProof := megapool.WithdrawalProof{
 		Slot:           proof.Slot,
 		WithdrawalSlot: proof.WithdrawalSlot,
-		WithdrawalNum:  uint64(proof.IndexInWithdrawalsArray),
+		WithdrawalNum:  uint16(proof.IndexInWithdrawalsArray),
 		Withdrawal:     withdrawal,
 		Witnesses:      proof.Witnesses,
 	}
