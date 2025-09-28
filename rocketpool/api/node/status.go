@@ -469,8 +469,12 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return nil, err
 	}
 
-	activeMinipools := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
-	if activeMinipools > 0 {
+	totalActiveValidators := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
+	if saturnDeployed {
+		totalActiveValidators = totalActiveValidators + int(response.MegapoolActiveValidatorCount)
+	}
+
+	if totalActiveValidators > 0 {
 		var wg2 errgroup.Group
 		var minStakeFraction *big.Int
 		var maxStakeFraction *big.Int
@@ -497,16 +501,16 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 		// Calculate the *real* maximum, including the pending bond reductions
 		trueMaximumStake := eth.EthToWei(32)
-		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(activeMinipools)))
+		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(totalActiveValidators)))
 		trueMaximumStake.Sub(trueMaximumStake, response.EthBorrowed)
-		trueMaximumStake.Sub(trueMaximumStake, response.PendingBorrowAmount) // (32 * activeMinipools - ethBorrowed - pendingBorrow)
+		trueMaximumStake.Sub(trueMaximumStake, response.PendingBorrowAmount) // (32 * totalActiveValidators - ethBorrowed - pendingBorrow)
 		trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
 		trueMaximumStake.Div(trueMaximumStake, rplPrice)
 
 		response.MinimumRplStake = trueMinimumStake
 		response.MaximumRplStake = trueMaximumStake
 
-		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
+		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(totalActiveValidators)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
 		response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
 
 		// Calculate the "eligible" info (ignoring pending bond reductions) based on the Beacon Chain

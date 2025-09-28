@@ -87,7 +87,7 @@ type NodeStatusResponse struct {
 	LatestDelegate               common.Address    `json:"latestDelegate"`
 	MegapoolDeployed             bool              `json:"megapoolDeployed"`
 	MegapoolAddress              common.Address    `json:"megapoolAddress"`
-	MegapoolActiveValidatorCount uint16            `json:"megapoolValidatorCount"`
+	MegapoolActiveValidatorCount uint16            `json:"megapoolActiveValidatorCount"`
 	MegapoolNodeDebt             *big.Int          `json:"megapoolNodeDebt"`
 	MegapoolRefundValue          *big.Int          `json:"megapoolRefundValue"`
 	IsSaturnDeployed             bool              `json:"isSaturnDeployed"`
