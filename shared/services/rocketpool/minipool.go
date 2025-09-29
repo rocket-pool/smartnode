@@ -535,3 +535,18 @@ func (c *Client) RescueDissolvedMinipool(address common.Address, amount *big.Int
 	}
 	return response, nil
 }
+
+func (c *Client) GetBondReductionEnabled() (api.GetBondReductionEnabledResponse, error) {
+	responseBytes, err := c.callAPI("minipool get-bond-reduction-enabled")
+	if err != nil {
+		return api.GetBondReductionEnabledResponse{}, fmt.Errorf("Could not get bond reduction enabled status: %w", err)
+	}
+	var response api.GetBondReductionEnabledResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetBondReductionEnabledResponse{}, fmt.Errorf("Could not decode bond reduction enabled response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetBondReductionEnabledResponse{}, fmt.Errorf("Could not get bond reduction enabled status: %s", response.Error)
+	}
+	return response, nil
+}

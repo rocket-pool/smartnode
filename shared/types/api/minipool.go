@@ -350,3 +350,9 @@ type RescueDissolvedMinipoolResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type GetBondReductionEnabledResponse struct {
+	Status               string `json:"status"`
+	Error                string `json:"error"`
+	BondReductionEnabled bool   `json:"bondReductionEnabled"`
+}

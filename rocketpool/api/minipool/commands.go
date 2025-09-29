@@ -799,6 +799,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "get-bond-reduction-enabled",
+				Usage:     "Check whether bond reduction is enabled",
+				UsageText: "rocketpool api minipool get-bond-reduction-enabled",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getBondReductionEnabled(c))
+					return nil
+				},
+			},
 		},
 	})
 }
