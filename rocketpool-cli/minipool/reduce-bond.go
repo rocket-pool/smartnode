@@ -38,6 +38,16 @@ func beginReduceBondAmount(c *cli.Context) error {
 		return nil
 	}
 
+	// Check if bond reduction is enabled
+	bondReductionEnabledResponse, err := rp.GetBondReductionEnabled()
+	if err != nil {
+		return fmt.Errorf("error checking if bond reduction is enabled: %w", err)
+	}
+	if !bondReductionEnabledResponse.BondReductionEnabled {
+		fmt.Println("Bond reductions are currently disabled.")
+		return nil
+	}
+
 	// Get minipool statuses
 	status, err := rp.MinipoolStatus()
 	if err != nil {
