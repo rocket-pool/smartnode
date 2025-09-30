@@ -337,7 +337,15 @@ func getStatus(c *cli.Context) error {
 			}
 			var unstakingPeriodEnd time.Time
 			if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("The unstaking period is currently %s\n", status.UnstakingPeriodDuration)
+				days := int(status.UnstakingPeriodDuration.Hours()) / 24
+				hours := int(status.UnstakingPeriodDuration.Hours()) % 24
+				var unstakingDurationString string
+				if hours > 0 {
+					unstakingDurationString = fmt.Sprintf("%d days, %d hours", days, hours)
+				} else {
+					unstakingDurationString = fmt.Sprintf("%d days", days)
+				}
+				fmt.Printf("The unstaking period is currently %s.\n", unstakingDurationString)
 				// Check if unstaking period passed considering the last unstake time
 				unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
 				if unstakingPeriodEnd.After(status.LatestBlockTime) {
