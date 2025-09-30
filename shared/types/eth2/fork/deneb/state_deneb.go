@@ -96,6 +96,10 @@ func (state *BeaconState) validatorStateProof(index uint64) ([][]byte, error) {
 
 }
 
+func (state *BeaconState) SlotProof(slot uint64) ([][]byte, error) {
+	return nil, errors.New("not implemented yet")
+}
+
 // ValidatorProof computes the merkle proof for an entire validator container at a specific index in the validator registry.
 func (state *BeaconState) ValidatorProof(index uint64) ([][]byte, error) {
 

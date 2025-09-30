@@ -15,6 +15,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type SlotProof struct {
+	Slot      uint64
+	Witnesses [][32]byte
+}
+
 type ValidatorProof struct {
 	Slot           uint64
 	ValidatorIndex *big.Int
