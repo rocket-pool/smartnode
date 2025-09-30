@@ -160,8 +160,8 @@ func nodeWithdrawRpl(c *cli.Context) error {
 			// Get the maximum withdrawable amount for megapool staked rpl
 			var maxAmount big.Int
 			var amountWei *big.Int
-			withdrawableFromLocked := new(big.Int).Sub(status.RplStake, status.NodeRPLLocked)
-			withdrawableFromLegacy := new(big.Int).Sub(status.RplStake, status.RplStakeLegacy)
+			withdrawableFromLocked := new(big.Int).Sub(status.TotalRplStake, status.NodeRPLLocked)
+			withdrawableFromLegacy := new(big.Int).Sub(status.TotalRplStake, status.RplStakeLegacy)
 
 			// maxAmount = min(withdrawableFromLocked, withdrawableFromLegacy, RplStakeMegapool)
 			if withdrawableFromLocked.Cmp(withdrawableFromLegacy) < 0 {
@@ -249,7 +249,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 			var maxAmount big.Int
 			var amountWei *big.Int
 			withdrawableFromLegacy := new(big.Int).Sub(status.RplStakeLegacy, status.MaximumRplStake)
-			withdrawableFromTotal := new(big.Int).Sub(status.RplStake, status.NodeRPLLocked)
+			withdrawableFromTotal := new(big.Int).Sub(status.TotalRplStake, status.NodeRPLLocked)
 			if withdrawableFromLegacy.Cmp(withdrawableFromTotal) < 0 {
 				maxAmount.Set(withdrawableFromLegacy)
 			} else {
@@ -341,8 +341,8 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 		// Set amount to maximum withdrawable amount
 		var maxAmount big.Int
-		if status.RplStake.Cmp(status.MaximumRplStake) > 0 {
-			maxAmount.Sub(status.RplStake, status.MaximumRplStake)
+		if status.TotalRplStake.Cmp(status.MaximumRplStake) > 0 {
+			maxAmount.Sub(status.TotalRplStake, status.MaximumRplStake)
 		}
 		amountWei = &maxAmount
 
@@ -365,7 +365,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 		// Get maximum withdrawable amount
 		var maxAmount big.Int
-		maxAmount.Sub(status.RplStake, status.MaximumRplStake)
+		maxAmount.Sub(status.TotalRplStake, status.MaximumRplStake)
 		maxAmount.Sub(&maxAmount, status.NodeRPLLocked)
 		if maxAmount.Sign() == 1 {
 			// Prompt for maximum amount
@@ -384,7 +384,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 			}
 		} else {
 			fmt.Printf("Cannot withdraw staked RPL - you have %.6f RPL staked, but are not allowed to withdraw below %.6f RPL (%d%% collateral).\n",
-				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
+				math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6),
 				math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6),
 				uint32(status.MaximumStakeFraction*100),
 			)

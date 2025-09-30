@@ -324,7 +324,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("%s=== RPL Stake ===%s\n", colorGreen, colorReset)
 		fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.")
 		fmt.Println()
-		fmt.Printf("The node has a total stake of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStake), 6))
+		fmt.Printf("The node has a total stake of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6))
 		if status.BorrowedCollateralRatio > 0 {
 			fmt.Printf("This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n", status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
 		}
@@ -333,7 +333,7 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("The node has %.6f megapool staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6))
 			if status.RplStakeLegacy != nil && status.RplStakeLegacy.Cmp(big.NewInt(0)) != 0 {
 				fmt.Printf("The node has %6f legacy staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6))
-				fmt.Printf("The node has a total stake (legacy minipool RPL plus megapool RPL) of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStake), 6))
+				fmt.Printf("The node has a total stake (legacy minipool RPL plus megapool RPL) of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6))
 			}
 			var unstakingPeriodEnd time.Time
 			if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
@@ -349,8 +349,8 @@ func getStatus(c *cli.Context) error {
 
 			// Get the maximum withdrawable amount for megapool staked rpl
 			var maxAmount big.Int
-			withdrawableFromLocked := new(big.Int).Sub(status.RplStake, status.NodeRPLLocked)
-			withdrawableFromLegacy := new(big.Int).Sub(status.RplStake, status.RplStakeLegacy)
+			withdrawableFromLocked := new(big.Int).Sub(status.TotalRplStake, status.NodeRPLLocked)
+			withdrawableFromLegacy := new(big.Int).Sub(status.TotalRplStake, status.RplStakeLegacy)
 
 			// maxAmount = min(withdrawableFromLocked, withdrawableFromLegacy, RplStakeMegapool)
 			if withdrawableFromLocked.Cmp(withdrawableFromLegacy) < 0 {
@@ -365,7 +365,7 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
 		} else {
 			// Withdrawal limit pre-saturn 1
-			rplTotalStake := math.RoundDown(eth.WeiToEth(status.RplStake), 6)
+			rplTotalStake := math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6)
 			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6)
 			if rplTotalStake > rplWithdrawalLimit {
 				fmt.Printf(
