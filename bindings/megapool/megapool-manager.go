@@ -197,7 +197,7 @@ func ChallengeExit(rp *rocketpool.RocketPool, exitChallenge []ExitChallenge, opt
 }
 
 // Estimate the gas to call NotifyFinalBalance
-func EstimateNotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, withdrawalProof WithdrawalProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateNotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, withdrawalProof WithdrawalProof, validatorProof ValidatorProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
@@ -206,7 +206,7 @@ func EstimateNotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress commo
 }
 
 // Notify the megapool of the final balance of an exited validator
-func NotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, withdrawalProof WithdrawalProof, opts *bind.TransactOpts) (*types.Transaction, error) {
+func NotifyFinalBalance(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, withdrawalProof WithdrawalProof, validatorProof ValidatorProof, opts *bind.TransactOpts) (*types.Transaction, error) {
 	megapoolManager, err := getRocketMegapoolManager(rp, nil)
 	if err != nil {
 		return nil, err
