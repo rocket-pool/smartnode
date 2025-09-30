@@ -346,12 +346,22 @@ func getStatus(c *cli.Context) error {
 					fmt.Printf("Your node has %.6f RPL unstaked. That amount is currently withdrawable.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))
 				}
 			}
-			// Max withdrawable amount for megapools
+
+			// Get the maximum withdrawable amount for megapool staked rpl
 			var maxAmount big.Int
-			maxAmount.Sub(status.RplStake, status.NodeRPLLocked)
-			if maxAmount.Cmp(status.RplStakeMegapool) < 0 {
+			withdrawableFromLocked := new(big.Int).Sub(status.RplStake, status.NodeRPLLocked)
+			withdrawableFromLegacy := new(big.Int).Sub(status.RplStake, status.RplStakeLegacy)
+
+			// maxAmount = min(withdrawableFromLocked, withdrawableFromLegacy, RplStakeMegapool)
+			if withdrawableFromLocked.Cmp(withdrawableFromLegacy) < 0 {
+				maxAmount.Set(withdrawableFromLocked)
+			} else {
+				maxAmount.Set(withdrawableFromLegacy)
+			}
+			if status.RplStakeMegapool.Cmp(&maxAmount) < 0 {
 				maxAmount.Set(status.RplStakeMegapool)
 			}
+
 			fmt.Printf("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
 		} else {
 			// Withdrawal limit pre-saturn 1

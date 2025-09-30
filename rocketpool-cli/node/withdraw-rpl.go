@@ -157,11 +157,19 @@ func nodeWithdrawRpl(c *cli.Context) error {
 				return nil
 			}
 
-			// Get maximum withdrawable amount
-			var amountWei *big.Int
+			// Get the maximum withdrawable amount for megapool staked rpl
 			var maxAmount big.Int
-			maxAmount.Sub(status.RplStake, status.NodeRPLLocked)
-			if maxAmount.Cmp(status.RplStakeMegapool) < 0 {
+			var amountWei *big.Int
+			withdrawableFromLocked := new(big.Int).Sub(status.RplStake, status.NodeRPLLocked)
+			withdrawableFromLegacy := new(big.Int).Sub(status.RplStake, status.RplStakeLegacy)
+
+			// maxAmount = min(withdrawableFromLocked, withdrawableFromLegacy, RplStakeMegapool)
+			if withdrawableFromLocked.Cmp(withdrawableFromLegacy) < 0 {
+				maxAmount.Set(withdrawableFromLocked)
+			} else {
+				maxAmount.Set(withdrawableFromLegacy)
+			}
+			if status.RplStakeMegapool.Cmp(&maxAmount) < 0 {
 				maxAmount.Set(status.RplStakeMegapool)
 			}
 
