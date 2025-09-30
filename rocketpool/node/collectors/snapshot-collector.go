@@ -25,7 +25,7 @@ const hoursToWait float64 = 6
 
 // Represents the collector for Snapshot metrics
 type SnapshotCollector struct {
-	// the number of active Snashot proposals
+	// the number of active Snapshot proposals
 	activeProposals *prometheus.Desc
 
 	// the number of past Snapshot proposals

@@ -328,7 +328,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		AutoAssignmentDelay: config.Parameter{
 			ID:                 "autoAssignmentDelay",
-			Name:               "Automatic queue assigment delay",
+			Name:               "Automatic queue assignment delay",
 			Description:        "The Smartnode will periodically check whether its megapool is next in the queue. It will wait for the number of hours specified by this parameter after the last assignment before performing the assignment automatically.\n\n",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: uint16(48)},
