@@ -775,3 +775,30 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 
 	return response, nil
 }
+
+func GetChildBlockTimestampForSlot(c *cli.Context, slot uint64) (uint64, error) {
+	bc, err := GetBeaconClient(c)
+	if err != nil {
+		return 0, err
+	}
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return 0, err
+	}
+
+	// Find the timestamp of the child block starting at slot + 1, crawl up to two epochs
+	for candidateSlot := slot + 1; candidateSlot <= slot+64; candidateSlot++ {
+		_, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
+		if err != nil {
+			return 0, fmt.Errorf("Error getting the beacon block for slot %d: %w", slot, err)
+		}
+		if !found {
+			continue
+		}
+
+		slotTimestamp := uint64(eth2Config.GetSlotTime(candidateSlot).Unix())
+		return slotTimestamp, nil
+	}
+
+	return 0, fmt.Errorf("Error finding a non-skipped slot for 2 epochs (64 slots) after slot: %d. It is likely that the Beacon Client was checkpoint synced after slot %d", slot, slot)
+}
