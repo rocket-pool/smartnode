@@ -86,7 +86,7 @@ func canDissolveWithProof(c *cli.Context, validatorId uint32) (*api.CanDissolveW
 	// Check if the withdrawal credentials mismatch the expected ones
 	expectedCredentials, err := mp.GetWithdrawalCredentials(nil)
 	if err != nil {
-		return nil, fmt.Errorf("error getting the exptected withdrawal credeentials: %w", err)
+		return nil, fmt.Errorf("error getting the expected withdrawal credeentials: %w", err)
 	}
 	if expectedCredentials.Cmp(common.Hash(proof.Validator.WithdrawalCredentials)) == 0 {
 		response.CanDissolve = false
