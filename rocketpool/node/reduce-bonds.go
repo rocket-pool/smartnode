@@ -150,7 +150,7 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 	}
 	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
 
-	// Get reduceable minipools
+	// Get reducible minipools
 	minipools, err := t.getReduceableMinipools(nodeAccount.Address, windowStart, windowLength, latestBlockTime, state, opts)
 	if err != nil {
 		return err

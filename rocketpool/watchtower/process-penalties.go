@@ -477,7 +477,7 @@ func (t *processPenalties) submitPenalty(minipoolAddress common.Address, block *
 	slotBig.FillBytes(blockNumberBuf)
 	penaltyExecuted, err := t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.penalties.executed"), minipoolAddress.Bytes(), blockNumberBuf))
 	if err != nil {
-		return fmt.Errorf("Could not check if penality has already been applied for block %d, minipool %s: %w", block.Slot, minipoolAddress.Hex(), err)
+		return fmt.Errorf("Could not check if penalty has already been applied for block %d, minipool %s: %w", block.Slot, minipoolAddress.Hex(), err)
 	}
 	if penaltyExecuted {
 		t.log.Printlnf("NOTE: Minipool %s was already penalized on block %d, skipping...", minipoolAddress.Hex(), block.Slot)
