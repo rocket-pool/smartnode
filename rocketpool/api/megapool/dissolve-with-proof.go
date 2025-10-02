@@ -72,7 +72,7 @@ func canDissolveWithProof(c *cli.Context, validatorId uint32) (*api.CanDissolveW
 		return nil, err
 	}
 
-	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	proof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func canDissolveWithProof(c *cli.Context, validatorId uint32) (*api.CanDissolveW
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := megapool.EstimateDissolveWithProof(rp, megapoolAddress, validatorId, proof, opts)
+	gasInfo, err := megapool.EstimateDissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, proof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -160,7 +160,7 @@ func dissolveWithProof(c *cli.Context, validatorId uint32) (*api.DissolveWithPro
 		return nil, err
 	}
 
-	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	proof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func dissolveWithProof(c *cli.Context, validatorId uint32) (*api.DissolveWithPro
 	}
 
 	// Dissolve
-	tx, err := megapool.DissolveWithProof(rp, megapoolAddress, validatorId, proof, opts)
+	tx, err := megapool.DissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, proof, opts)
 	if err != nil {
 		return nil, err
 	}

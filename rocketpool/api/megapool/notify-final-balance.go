@@ -98,13 +98,13 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	if err != nil {
 		return nil, err
 	}
-	validatorProof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	proof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}
 
 	// Notify the validator exit
-	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, megapoolAddress, validatorId, finalBalanceProof, validatorProof, opts)
+	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, megapoolAddress, validatorId, slotTimestamp, finalBalanceProof, proof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	if err != nil {
 		return nil, err
 	}
-	validatorProof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	proof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	}
 
 	// Notify the validator exit
-	tx, err := megapool.NotifyFinalBalance(rp, megapoolAddress, validatorId, finalBalanceProof, validatorProof, opts)
+	tx, err := megapool.NotifyFinalBalance(rp, megapoolAddress, validatorId, slotTimestamp, finalBalanceProof, proof, opts)
 	if err != nil {
 		return nil, err
 	}
