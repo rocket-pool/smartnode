@@ -160,7 +160,7 @@ func dissolveWithProof(c *cli.Context, validatorId uint32) (*api.DissolveWithPro
 		return nil, err
 	}
 
-	proof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}
@@ -178,7 +178,7 @@ func dissolveWithProof(c *cli.Context, validatorId uint32) (*api.DissolveWithPro
 	}
 
 	// Dissolve
-	tx, err := megapool.DissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, proof, opts)
+	tx, err := megapool.DissolveWithProof(rp, megapoolAddress, validatorId, slotTimestamp, validatorProof, opts)
 	if err != nil {
 		return nil, err
 	}

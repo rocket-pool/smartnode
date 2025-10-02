@@ -175,7 +175,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp me
 
 	t.log.Printlnf("[STARTED] Crafting a proof that the correct credentials were used on the first beacon chain deposit. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
-	proof, slotTimestamp, err := services.GetValidatorProof(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
+	validatorProof, slotTimestamp, err := services.GetValidatorProof(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
@@ -184,7 +184,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp me
 	t.log.Printlnf("[FINISHED] The beacon state proof has been successfully created.")
 
 	// Get the gas limit
-	gasInfo, err := megapool.EstimateStakeGas(rp, mp.GetAddress(), validatorId, slotTimestamp, proof, opts)
+	gasInfo, err := megapool.EstimateStakeGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, opts)
 	if err != nil {
 		return err
 	}
@@ -208,7 +208,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp me
 	opts.GasLimit = gas.Uint64()
 
 	// Call stake
-	tx, err := megapool.Stake(rp, mp.GetAddress(), validatorId, slotTimestamp, proof, opts)
+	tx, err := megapool.Stake(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, opts)
 	if err != nil {
 		return err
 	}

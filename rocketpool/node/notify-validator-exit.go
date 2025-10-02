@@ -177,7 +177,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 
 	t.log.Printlnf("[STARTED] Crafting an exit proof. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
-	proof, slotTimestamp, err := services.GetValidatorProof(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
+	validatorProof, slotTimestamp, err := services.GetValidatorProof(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
@@ -186,7 +186,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 	t.log.Printlnf("[FINISHED] The validator exit proof has been successfully created.")
 
 	// Get the gas limit
-	gasInfo, err := megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, proof, opts)
+	gasInfo, err := megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, opts)
 	if err != nil {
 		return err
 	}
@@ -210,7 +210,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 	opts.GasLimit = gas.Uint64()
 
 	// Call stake
-	tx, err := megapool.NotifyExit(rp, mp.GetAddress(), validatorId, slotTimestamp, proof, opts)
+	tx, err := megapool.NotifyExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, opts)
 	if err != nil {
 		return err
 	}
