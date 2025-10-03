@@ -93,7 +93,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 				"Use this flag if you want to use Saturn-specific functionality",
 		},
 	}
-	enableSaturn := strings.Contains(strings.Join(os.Args, " "), "--enable-saturn")
+	enableSaturn := strings.Contains(strings.Join(os.Args, " "), "--enable-saturn") || strings.Contains(strings.Join(os.Args, " "), "-e")
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})

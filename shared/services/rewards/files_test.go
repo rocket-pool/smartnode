@@ -43,7 +43,7 @@ func TestFilesFromTree(t *testing.T) {
 	}
 
 	minipoolPerformanceFile := &f.MinipoolPerformanceFile
-	localMinipoolPerformanceFile := NewLocalFile[IMinipoolPerformanceFile](
+	localMinipoolPerformanceFile := NewLocalFile[IPerformanceFile](
 		minipoolPerformanceFile,
 		path.Join(dir, "performance.json"),
 	)
@@ -102,7 +102,7 @@ func TestCompressionAndCids(t *testing.T) {
 	)
 
 	minipoolPerformanceFile := &f.MinipoolPerformanceFile
-	localMinipoolPerformanceFile := NewLocalFile[IMinipoolPerformanceFile](
+	localMinipoolPerformanceFile := NewLocalFile[IPerformanceFile](
 		minipoolPerformanceFile,
 		path.Join(dir, "performance.json"),
 	)
