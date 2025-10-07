@@ -125,9 +125,14 @@ func getStatus(c *cli.Context) error {
 				}
 			} else {
 				fmt.Println("The node does not have a megapool deployed yet.")
-				fmt.Println()
 			}
-			fmt.Printf("The node has %d express ticket(s).", status.ExpressTicketCount)
+
+			if status.ExpressTicketsProvisioned {
+				fmt.Printf("The node has %d express queue ticket(s).", status.ExpressTicketCount)
+			} else {
+				fmt.Printf("%sThe node has unprovisioned express queue ticket(s). Please provision them using the `rocketpool node provision-express-tickets` command. You are eligible for %d express tickets.%s", colorYellow, status.ExpressTicketCount, colorReset)
+			}
+
 			fmt.Println()
 			fmt.Println()
 		}

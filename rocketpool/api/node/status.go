@@ -135,6 +135,13 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			}
 			return err
 		})
+		wg.Go(func() error {
+			provisioned, err := node.GetExpressTicketsProvisioned(rp, nodeAccount.Address, nil)
+			if err == nil {
+				response.ExpressTicketsProvisioned = provisioned
+			}
+			return err
+		})
 
 	}
 
