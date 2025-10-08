@@ -114,7 +114,7 @@ func GenerateTree(c *cli.Context) error {
 	logger := log.NewColorLogger(color.FgHiWhite)
 	errLogger := log.NewColorLogger(color.FgRed)
 
-	// URL acquisiton
+	// URL acquisition
 	ecUrl := c.String("ec-endpoint")
 	if ecUrl == "" {
 		return fmt.Errorf("ec-endpoint must be provided")
