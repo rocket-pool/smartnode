@@ -21,7 +21,6 @@ type SlotProof struct {
 }
 
 type ValidatorProof struct {
-	Slot           uint64
 	ValidatorIndex *big.Int
 	Validator      ProvedValidator
 	Witnesses      [][32]byte

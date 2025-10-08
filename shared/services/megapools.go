@@ -118,7 +118,6 @@ func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Co
 		WithdrawableEpoch:          validators[validatorIndex64].WithdrawableEpoch,
 	}
 	proof := megapool.ValidatorProof{
-		Slot:           block.Slot,
 		ValidatorIndex: big.NewInt(int64(validatorIndex64)),
 		Validator:      val,
 		Witnesses:      proofWithFixedSize,
