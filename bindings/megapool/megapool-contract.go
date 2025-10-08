@@ -39,7 +39,6 @@ type ProvedValidator struct {
 }
 
 type FinalBalanceProof struct {
-	Slot           uint64
 	WithdrawalSlot uint64
 	ValidatorIndex uint64
 	Amount         *big.Int

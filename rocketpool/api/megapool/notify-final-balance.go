@@ -68,7 +68,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 
 	}
 
-	withdrawalProof, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
+	withdrawalProof, proofSlot, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
@@ -86,7 +86,6 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	}
 
 	finalBalanceProof := megapool.WithdrawalProof{
-		Slot:           withdrawalProof.Slot,
 		WithdrawalSlot: withdrawalProof.WithdrawalSlot,
 		WithdrawalNum:  uint16(withdrawalProof.IndexInWithdrawalsArray),
 		Withdrawal:     withdrawal,
@@ -98,7 +97,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	if err != nil {
 		return nil, err
 	}
-	validatorProof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimestamp, err := services.GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}
@@ -177,7 +176,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 
 	}
 
-	withdrawalProof, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
+	withdrawalProof, proofSlot, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
@@ -190,7 +189,6 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	}
 
 	finalBalanceProof := megapool.WithdrawalProof{
-		Slot:           withdrawalProof.Slot,
 		WithdrawalSlot: withdrawalProof.WithdrawalSlot,
 		WithdrawalNum:  uint16(withdrawalProof.IndexInWithdrawalsArray),
 		Withdrawal:     withdrawal,
@@ -202,7 +200,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	if err != nil {
 		return nil, err
 	}
-	validatorProof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimestamp, err := services.GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}

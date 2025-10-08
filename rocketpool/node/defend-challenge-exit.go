@@ -181,7 +181,7 @@ func (t *defendChallengeExit) defendChallenge(rp *rocketpool.RocketPool, mp mega
 
 	t.log.Printlnf("[STARTED] Crafting a validator proof. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
-	validatorProof, slotTimestamp, err := services.GetValidatorProof(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
+	validatorProof, slotTimestamp, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err

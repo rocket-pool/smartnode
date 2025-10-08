@@ -89,7 +89,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 		return nil, err
 	}
 
-	validatorProof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimestamp, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		if strings.Contains(err.Error(), "index not found") {
 			response.CanStake = false
@@ -165,7 +165,7 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 		return nil, err
 	}
 
-	validatorProof, slotTimestamp, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimestamp, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
 	if err != nil {
 		return nil, err
 	}

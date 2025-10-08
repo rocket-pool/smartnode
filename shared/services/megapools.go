@@ -34,7 +34,7 @@ import (
 
 const MAX_WITHDRAWAL_SLOT_DISTANCE = 144000 // 20 days.
 
-func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, uint64, error) {
+func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, uint64, error) {
 
 	bc, err := GetBeaconClient(c)
 	if err != nil {
@@ -52,8 +52,13 @@ func GetValidatorProof(c *cli.Context, wallet wallet.Wallet, eth2Config beacon.E
 		return megapool.ValidatorProof{}, 0, err
 	}
 
-	// Get the head block, requesting the previous one until we have an execution payload
-	blockToRequest := "head"
+	var blockToRequest string
+	if slot == 0 {
+		// Get the head block, requesting the previous one until we have an execution payload
+		blockToRequest = "head"
+	} else {
+		blockToRequest = fmt.Sprintf("%d", slot)
+	}
 	var block beacon.BeaconBlock
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
@@ -633,17 +638,17 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 
 }
 
-func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint64) (megapool.FinalBalanceProof, error) {
+func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint64) (megapool.FinalBalanceProof, uint64, error) {
 	// Create a new response
 	response := megapool.FinalBalanceProof{}
 	response.ValidatorIndex = validatorIndex
 	// Get services
 	if err := RequireNodeRegistered(c); err != nil {
-		return megapool.FinalBalanceProof{}, err
+		return megapool.FinalBalanceProof{}, 0, err
 	}
 	bc, err := GetBeaconClient(c)
 	if err != nil {
-		return megapool.FinalBalanceProof{}, err
+		return megapool.FinalBalanceProof{}, 0, err
 	}
 
 	// Get the head block, requesting the previous one until we have an execution payload
@@ -653,14 +658,14 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	for attempts := 0; attempts < maxAttempts; attempts++ {
 		recentBlock, _, err = bc.GetBeaconBlock(blockToRequest)
 		if err != nil {
-			return megapool.FinalBalanceProof{}, err
+			return megapool.FinalBalanceProof{}, 0, err
 		}
 
 		if recentBlock.HasExecutionPayload {
 			break
 		}
 		if attempts == maxAttempts-1 {
-			return megapool.FinalBalanceProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
+			return megapool.FinalBalanceProof{}, 0, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
 		}
 		blockToRequest = fmt.Sprintf("%d", recentBlock.Slot-1)
 	}
@@ -668,17 +673,18 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	// Find the most recent withdrawal to slot.
 	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
 	notFounds := 0
+	var foundWithdrawal bool
 	var block eth2.SignedBeaconBlock
 	for candidateSlot := slot; candidateSlot <= slot+MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot++ {
 		// Get the block at the candidate slot.
 		blockResponse, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
 		if err != nil {
-			return megapool.FinalBalanceProof{}, err
+			return megapool.FinalBalanceProof{}, 0, err
 		}
 		if !found {
 			notFounds++
 			if notFounds >= 64 {
-				return megapool.FinalBalanceProof{}, fmt.Errorf("2 epochs of missing slots detected. It is likely that the Beacon Client was checkpoint synced after the most recent withdrawal to slot %d, and does not have the history required to generate a withdrawal proof", slot)
+				return megapool.FinalBalanceProof{}, 0, fmt.Errorf("2 epochs of missing slots detected. It is likely that the Beacon Client was checkpoint synced after the most recent withdrawal to slot %d, and does not have the history required to generate a withdrawal proof", slot)
 			}
 			continue
 		} else {
@@ -687,7 +693,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 
 		beaconBlock, err := eth2.NewSignedBeaconBlock(blockResponse.Data, blockResponse.Fork)
 		if err != nil {
-			return megapool.FinalBalanceProof{}, err
+			return megapool.FinalBalanceProof{}, 0, err
 		}
 
 		if !beaconBlock.HasExecutionPayload() {
@@ -702,7 +708,6 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 				continue
 			}
 			response.WithdrawalSlot = candidateSlot
-			response.Slot = recentBlock.Slot
 			response.Amount = big.NewInt(0).SetUint64(withdrawal.Amount)
 			foundWithdrawal = true
 			response.IndexInWithdrawalsArray = uint(i)
@@ -717,25 +722,25 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		}
 	}
 
-	if response.Slot == 0 {
-		return megapool.FinalBalanceProof{}, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
+	if !foundWithdrawal {
+		return megapool.FinalBalanceProof{}, 0, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
 	}
 
 	// Start by proving from the withdrawal to the block_root
 	proof, err := block.ProveWithdrawal(uint64(response.IndexInWithdrawalsArray))
 	if err != nil {
-		return megapool.FinalBalanceProof{}, err
+		return megapool.FinalBalanceProof{}, 0, err
 	}
 
 	// Get beacon state
 	stateResponse, err := bc.GetBeaconStateSSZ(recentBlock.Slot)
 	if err != nil {
-		return megapool.FinalBalanceProof{}, err
+		return megapool.FinalBalanceProof{}, 0, err
 	}
 
 	state, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Fork)
 	if err != nil {
-		return megapool.FinalBalanceProof{}, err
+		return megapool.FinalBalanceProof{}, 0, err
 	}
 
 	var summaryProof [][]byte
@@ -744,12 +749,12 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	if response.WithdrawalSlot+generic.SlotsPerHistoricalRoot > recentBlock.Slot {
 		stateProof, err = state.BlockRootProof(response.WithdrawalSlot)
 		if err != nil {
-			return megapool.FinalBalanceProof{}, err
+			return megapool.FinalBalanceProof{}, 0, err
 		}
 	} else {
 		stateProof, err = state.HistoricalSummaryProof(response.WithdrawalSlot)
 		if err != nil {
-			return megapool.FinalBalanceProof{}, err
+			return megapool.FinalBalanceProof{}, 0, err
 		}
 
 		// Additionally, we need to prove from the block_root in the historical summary
@@ -758,15 +763,15 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		// get the state that has the block roots tree
 		blockRootsStateResponse, err := bc.GetBeaconStateSSZ(blockRootsStateSlot)
 		if err != nil {
-			return megapool.FinalBalanceProof{}, err
+			return megapool.FinalBalanceProof{}, 0, err
 		}
 		blockRootsState, err := eth2.NewBeaconState(blockRootsStateResponse.Data, blockRootsStateResponse.Fork)
 		if err != nil {
-			return megapool.FinalBalanceProof{}, err
+			return megapool.FinalBalanceProof{}, 0, err
 		}
 		summaryProof, err = blockRootsState.HistoricalSummaryBlockRootProof(int(response.WithdrawalSlot))
 		if err != nil {
-			return megapool.FinalBalanceProof{}, err
+			return megapool.FinalBalanceProof{}, 0, err
 		}
 
 	}
@@ -778,7 +783,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	proofWithFixedSize := ConvertToFixedSize(withdrawalProof)
 	response.Witnesses = proofWithFixedSize
 
-	return response, nil
+	return response, recentBlock.Slot, nil
 }
 
 func GetChildBlockTimestampForSlot(c *cli.Context, slot uint64) (uint64, error) {
