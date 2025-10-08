@@ -432,7 +432,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0xf4D539F1babDAa6E47b1112Bc9Fa1C83cF0FfE59",
+			config.Network_Devnet:  "0x0ae814B1c2D1269D7e8c6904aef9153348Cb001A",
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
@@ -444,7 +444,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0xf2C10508eC528a01628a621abADBff902CB9c1e5",
+			config.Network_Devnet:  "0xcF333A7463F38ec2e3879D0dF3BDB8235Bf9E1c3",
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
