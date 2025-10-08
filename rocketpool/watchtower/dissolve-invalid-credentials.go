@@ -128,13 +128,13 @@ func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapoo
 		return err
 	}
 
-	validatorProof, slotTimestamp, err := services.GetValidatorProof(t.c, 0, t.w, eth2Config, validator.MegapoolAddress, types.ValidatorPubkey(validator.Pubkey))
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, eth2Config, validator.MegapoolAddress, types.ValidatorPubkey(validator.Pubkey))
 	if err != nil {
 		return fmt.Errorf("error getting validator proof: %w", err)
 	}
 
 	// Get the gas limit
-	gasInfo, err := megapool.EstimateDissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, opts)
+	gasInfo, err := megapool.EstimateDissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return fmt.Errorf("could not estimate the gas required to dissolve the minipool: %w", err)
 	}
@@ -151,7 +151,7 @@ func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapoo
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Dissolve
-	tx, err := megapool.DissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, opts)
+	tx, err := megapool.DissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return err
 	}
