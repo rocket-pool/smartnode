@@ -302,7 +302,7 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	return true, nil
 }
 
-// Get reduceable minipools
+// Get reducible minipools
 func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	// Filter minipools
