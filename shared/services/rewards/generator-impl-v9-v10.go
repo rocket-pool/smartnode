@@ -909,7 +909,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 		defer committeeData.Release()
 	}
 	if err != nil {
-		return fmt.Errorf("error getting committee and attestaion records for epoch %d: %w", epoch, err)
+		return fmt.Errorf("error getting committee and attestation records for epoch %d: %w", epoch, err)
 	}
 
 	if duringInterval {
@@ -1008,7 +1008,7 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 
 }
 
-// Maps out the attestaion duties for the given epoch
+// Maps out the attestation duties for the given epoch
 func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committees) error {
 
 	// Crawl the committees

@@ -812,7 +812,7 @@ func (r *treeGeneratorImpl_v8) processEpoch(getDuties bool, epoch uint64) error 
 	}
 	err := wg.Wait()
 	if err != nil {
-		return fmt.Errorf("error getting committee and attestaion records for epoch %d: %w", epoch, err)
+		return fmt.Errorf("error getting committee and attestation records for epoch %d: %w", epoch, err)
 	}
 
 	if getDuties {
@@ -906,7 +906,7 @@ func (r *treeGeneratorImpl_v8) checkDutiesForSlot(attestations []beacon.Attestat
 
 }
 
-// Maps out the attestaion duties for the given epoch
+// Maps out the attestation duties for the given epoch
 func (r *treeGeneratorImpl_v8) getDutiesForEpoch(committees beacon.Committees) error {
 
 	// Crawl the committees
