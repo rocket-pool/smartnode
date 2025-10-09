@@ -62,10 +62,13 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 		return &response, nil
 	}
 
-	// If the slot was not provided, use the withdrawable slot
+	// If the slot was not provided, query the beacon client for the validator's withdrawable epoch
 	if slot == 0 {
-		slot = validatorInfo.WithdrawableEpoch * 32
-
+		validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+		if err != nil {
+			return nil, fmt.Errorf("error getting validator status from beacon chain: %w", err)
+		}
+		slot = validatorStatus.WithdrawableEpoch * 32
 	}
 
 	withdrawalProof, slotUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
@@ -170,10 +173,13 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 		return nil, err
 	}
 
-	// If the slot was not provided, use the withdrawable slot
+	// If the slot was not provided, query the beacon client for the validator's withdrawable epoch
 	if slot == 0 {
-		slot = validatorInfo.WithdrawableEpoch * 32
-
+		validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+		if err != nil {
+			return nil, fmt.Errorf("error getting validator status from beacon chain: %w", err)
+		}
+		slot = validatorStatus.WithdrawableEpoch * 32
 	}
 
 	withdrawalProof, proofSlot, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)

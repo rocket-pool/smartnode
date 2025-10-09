@@ -80,7 +80,6 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 		Locked             bool   `json:"locked"`
 		ValidatorIndex     uint64 `json:"validatorIndex"`
 		ExitBalance        uint64 `json:"exitBalance"`
-		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
 		LockedSlot         uint64 `json:"lockedSlot"`
 	})
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
@@ -92,7 +91,6 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 	validator.ValidatorInfo.Staked = src.Staked
 	validator.ValidatorInfo.DepositValue = src.DepositValue
 	validator.ValidatorInfo.ExitBalance = src.ExitBalance
-	validator.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
 	validator.ValidatorInfo.Exiting = src.Exiting
 	validator.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
 	validator.ValidatorInfo.Exited = src.Exited

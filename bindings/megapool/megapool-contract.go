@@ -83,7 +83,6 @@ type ValidatorInfo struct {
 	Locked             bool   `abi:"locked"`
 	ValidatorIndex     uint64 `abi:"validatorIndex"`
 	ExitBalance        uint64 `abi:"exitBalance"`
-	WithdrawableEpoch  uint64 `abi:"withdrawableEpoch"`
 	LockedSlot         uint64 `abi:"lockedSlot"`
 }
 
@@ -258,7 +257,6 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 		Locked             bool   `json:"locked"`
 		ValidatorIndex     uint64 `json:"validatorIndex"`
 		ExitBalance        uint64 `json:"exitBalance"`
-		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
 		LockedSlot         uint64 `json:"lockedSlot"`
 	})
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
@@ -270,7 +268,6 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 	validator.ValidatorInfo.Staked = src.Staked
 	validator.ValidatorInfo.DepositValue = src.DepositValue
 	validator.ValidatorInfo.ExitBalance = src.ExitBalance
-	validator.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
 	validator.ValidatorInfo.Exiting = src.Exiting
 	validator.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
 	validator.ValidatorInfo.Exited = src.Exited
