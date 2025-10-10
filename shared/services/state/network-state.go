@@ -562,8 +562,6 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
 	for i, node := range s.NodeDetails {
-		i := i
-		node := node
 		wg.Go(func() error {
 			eligibleBorrowedEth := s.GetEligibleBorrowedEth(&node)
 
@@ -661,8 +659,6 @@ func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool, a
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)
 	for i, node := range s.NodeDetails {
-		i := i
-		node := node
 		wg.Go(func() error {
 			eligibleBorrowedEth := big.NewInt(0)
 			eligibleBondedEth := big.NewInt(0)
