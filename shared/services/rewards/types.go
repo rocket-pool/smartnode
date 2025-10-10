@@ -10,9 +10,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types"
 	"github.com/wealdtech/go-merkletree"
 )
 
@@ -55,7 +57,7 @@ type RewardsBeaconClient interface {
 }
 
 // Interface for version-agnostic minipool performance
-type IMinipoolPerformanceFile interface {
+type IPerformanceFile interface {
 	// Serialize a minipool performance file into bytes
 	Serialize() ([]byte, error)
 	SerializeSSZ() ([]byte, error)
@@ -70,8 +72,18 @@ type IMinipoolPerformanceFile interface {
 	// NOTE: the order of minipool addresses is not guaranteed to be stable, so don't rely on it
 	GetMinipoolAddresses() []common.Address
 
+	// Get all of the megapools
+	// NOTE: the order of megapool addresses is not guaranteed to be stable, so don't rely on it
+	GetMegapoolAddresses() []common.Address
+
 	// Get a minipool's smoothing pool performance if it was present
-	GetSmoothingPoolPerformance(minipoolAddress common.Address) (ISmoothingPoolMinipoolPerformance, bool)
+	GetMinipoolPerformance(minipoolAddress common.Address) (ISmoothingPoolPerformance, bool)
+
+	// Get a megapool's validator pubkeys
+	GetMegapoolValidatorPubkeys(megapoolAddress common.Address) ([]types.ValidatorPubkey, error)
+
+	// Get a megapool's performance if it was present
+	GetMegapoolPerformance(megapoolAddress common.Address, pubkey types.ValidatorPubkey) (ISmoothingPoolPerformance, bool)
 }
 
 // Interface for version-agnostic rewards files
@@ -89,11 +101,13 @@ type IRewardsFile interface {
 	GetTotalNodeWeight() *big.Int
 	GetMerkleRoot() string
 	GetIntervalsPassed() uint64
+	GetTotalProtocolDaoEth() *big.Int
 	GetTotalProtocolDaoRpl() *big.Int
 	GetTotalOracleDaoRpl() *big.Int
 	GetTotalCollateralRpl() *big.Int
 	GetTotalNodeOperatorSmoothingPoolEth() *big.Int
 	GetTotalPoolStakerSmoothingPoolEth() *big.Int
+	GetTotalSmoothingPoolBalance() *big.Int
 	GetExecutionStartBlock() uint64
 	GetConsensusStartBlock() uint64
 	GetExecutionEndBlock() uint64
@@ -110,6 +124,8 @@ type IRewardsFile interface {
 	GetNodeCollateralRpl(common.Address) *big.Int
 	GetNodeOracleDaoRpl(common.Address) *big.Int
 	GetNodeSmoothingPoolEth(common.Address) *big.Int
+	GetNodeVoterShareEth(common.Address) *big.Int
+	GetNodeEth(common.Address) *big.Int
 	GetMerkleProof(common.Address) ([]common.Hash, error)
 
 	// Getters for network info
@@ -124,6 +140,10 @@ type IRewardsFile interface {
 	// Generate the Merkle Tree and its root from the rewards file's proofs
 	GenerateMerkleTree() error
 }
+
+// Type assertions for ssz rewards files
+var _ IRewardsFile = (*ssz_types.SSZFile_v1)(nil)
+var _ IRewardsFile = (*ssz_types.SSZFile_v2)(nil)
 
 // Rewards per network
 type NetworkRewardsInfo struct {
@@ -144,7 +164,7 @@ type TotalRewards struct {
 }
 
 // Minipool stats
-type ISmoothingPoolMinipoolPerformance interface {
+type ISmoothingPoolPerformance interface {
 	GetPubkey() (types.ValidatorPubkey, error)
 	GetSuccessfulAttestationCount() uint64
 	GetMissedAttestationCount() uint64
@@ -191,24 +211,51 @@ type IntervalInfo struct {
 	TreeFileExists         bool          `json:"treeFileExists"`
 	MerkleRootValid        bool          `json:"merkleRootValid"`
 	MerkleRoot             common.Hash   `json:"merkleRoot"`
-	CID                    string        `json:"cid"`
 	StartTime              time.Time     `json:"startTime"`
 	EndTime                time.Time     `json:"endTime"`
 	NodeExists             bool          `json:"nodeExists"`
 	CollateralRplAmount    *QuotedBigInt `json:"collateralRplAmount"`
 	ODaoRplAmount          *QuotedBigInt `json:"oDaoRplAmount"`
 	SmoothingPoolEthAmount *QuotedBigInt `json:"smoothingPoolEthAmount"`
+	VoterShareEth          *QuotedBigInt `json:"voterShareEth"`
+	TotalEthAmount         *QuotedBigInt `json:"totalEthAmount"`
 	MerkleProof            []common.Hash `json:"merkleProof"`
 
 	TotalNodeWeight *big.Int `json:"-"`
+}
+
+type MegapoolValidatorInfo struct {
+	Pubkey                  types.ValidatorPubkey `json:"pubkey"`
+	Index                   string                `json:"index"`
+	MissedAttestations      uint64                `json:"-"`
+	GoodAttestations        uint64                `json:"-"`
+	MissingAttestationSlots map[uint64]bool       `json:"missingAttestationSlots"`
+	WasActive               bool                  `json:"-"`
+	AttestationScore        *QuotedBigInt         `json:"attestationScore"`
+	CompletedAttestations   map[uint64]bool       `json:"-"`
+	AttestationCount        int                   `json:"attestationCount"`
+
+	NativeValidatorInfo *megapool.ValidatorInfoFromGlobalIndex `json:"nativeValidatorInfo"`
+
+	// Amount of eth earned by this validator in the smoothing pool
+	MegapoolValidatorShare *big.Int `json:"megapoolValidatorShare"`
+}
+
+type MegapoolInfo struct {
+	Address              common.Address           `json:"address"`
+	Node                 *NodeSmoothingDetails    `json:"node"`
+	Validators           []*MegapoolValidatorInfo `json:"validators"`
+	ActiveValidatorCount uint32                   `json:"active_validator_count"`
+	// Indexes over Validators slice above
+	ValidatorIndexMap map[string]*MegapoolValidatorInfo `json:"-"`
+	VoteEligibleRpl   *big.Int                          `json:"vote_eligible_rpl"`
 }
 
 type MinipoolInfo struct {
 	Address                 common.Address        `json:"address"`
 	ValidatorPubkey         types.ValidatorPubkey `json:"pubkey"`
 	ValidatorIndex          string                `json:"index"`
-	NodeAddress             common.Address        `json:"nodeAddress"`
-	NodeIndex               uint64                `json:"-"`
+	Node                    *NodeSmoothingDetails `json:"node"`
 	Fee                     *big.Int              `json:"-"`
 	MissedAttestations      uint64                `json:"-"`
 	GoodAttestations        uint64                `json:"-"`
@@ -239,18 +286,65 @@ type SlotInfo struct {
 	CommitteeSizes map[uint64]int
 }
 
+// MegapoolPositionInfo is a wrapper around MegapoolInfo with additional indexing and functionality
+type MegapoolPositionInfo struct {
+	Info           *MegapoolInfo
+	ValidatorIndex string
+}
+
+func (m *MegapoolPositionInfo) GetValidator() *MegapoolValidatorInfo {
+	return m.Info.ValidatorIndexMap[m.ValidatorIndex]
+}
+
+// PositionInfo is a union of MinipoolInfo and MegapoolInfo
+type PositionInfo struct {
+	MinipoolInfo *MinipoolInfo
+	Megapool     *MegapoolPositionInfo
+}
+
+func (m *MegapoolPositionInfo) GetValidatorInfo() *MegapoolValidatorInfo {
+	return m.Info.ValidatorIndexMap[m.ValidatorIndex]
+}
+
+func (p *PositionInfo) DeleteMissingAttestationSlot(slotIndex uint64) {
+	if p.MinipoolInfo != nil {
+		delete(p.MinipoolInfo.MissingAttestationSlots, slotIndex)
+		return
+	}
+	validatorInfo := p.Megapool.GetValidator()
+	delete(validatorInfo.MissingAttestationSlots, slotIndex)
+}
+
+func (p *PositionInfo) GetNodeDetails() *NodeSmoothingDetails {
+	if p.MinipoolInfo != nil {
+		return p.MinipoolInfo.Node
+	}
+	return p.Megapool.Info.Node
+}
+
+func (p *PositionInfo) MarkAttestationCompleted(slotIndex uint64) {
+	if p.MinipoolInfo != nil {
+		p.MinipoolInfo.CompletedAttestations[slotIndex] = true
+		return
+	}
+	validatorInfo := p.Megapool.GetValidator()
+	validatorInfo.CompletedAttestations[slotIndex] = true
+}
+
 type CommitteeInfo struct {
 	Index     uint64
-	Positions map[int]*MinipoolInfo
+	Positions map[int]*PositionInfo
 }
 
 // Details about a node for the Smoothing Pool
 type NodeSmoothingDetails struct {
+	Index            uint64
 	Address          common.Address
 	IsEligible       bool
 	IsOptedIn        bool
 	StatusChangeTime time.Time
 	Minipools        []*MinipoolInfo
+	Megapool         *MegapoolInfo
 	EligibleSeconds  *big.Int
 	StartSlot        uint64
 	EndSlot          uint64
@@ -265,6 +359,10 @@ type NodeSmoothingDetails struct {
 	BonusEth            *big.Int
 	EligibleBorrowedEth *big.Int
 	RplStake            *big.Int
+
+	// v11 Fields
+	MegapoolVoteEligibleRpl *big.Int
+	VoterShareEth           *big.Int
 }
 
 type QuotedBigInt struct {
@@ -334,7 +432,7 @@ func (versionHeader *VersionHeader) deserializeRewardsFile(bytes []byte) (IRewar
 	panic("unreachable section of code reached, please report this error to the maintainers")
 }
 
-func (versionHeader *VersionHeader) deserializeMinipoolPerformanceFile(bytes []byte) (IMinipoolPerformanceFile, error) {
+func (versionHeader *VersionHeader) deserializeMinipoolPerformanceFile(bytes []byte) (IPerformanceFile, error) {
 	if err := versionHeader.checkVersion(); err != nil {
 		return nil, err
 	}
