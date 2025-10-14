@@ -334,20 +334,20 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 	}
 
 	var (
-		treasuryRPL       *big.Int
-		trustedNodeRPL    *big.Int
-		nodeRPL           *big.Int
-		nodeETH           *big.Int
-		executionBlock    *big.Int
-		consensusBlock    *big.Int
-		intervalsPassed   *big.Int
 		merkleRoot        common.Hash
 		merkleTreeCID     string
 		intervalStartTime time.Time
 		intervalEndTime   time.Time
 		submissionTime    time.Time
-		userETH           *big.Int
 	)
+	treasuryRPL := big.NewInt(0)
+	trustedNodeRPL := big.NewInt(0)
+	nodeRPL := big.NewInt(0)
+	nodeETH := big.NewInt(0)
+	userETH := big.NewInt(0)
+	executionBlock := big.NewInt(0)
+	consensusBlock := big.NewInt(0)
+	intervalsPassed := big.NewInt(0)
 
 	// Hardcoded RewardsEvent for old intervals on mainnet
 	switch index {
@@ -355,7 +355,6 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 		treasuryRPL.SetString("10633670478560109530497", 10)
 		trustedNodeRPL.SetString("10633670478560109529794", 10)
 		nodeRPL.SetString("49623795566613844471758", 10)
-		nodeETH = big.NewInt(0)
 		executionBlock = big.NewInt(15451078)
 		consensusBlock = big.NewInt(4598879)
 		intervalsPassed = big.NewInt(1)
