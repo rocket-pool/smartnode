@@ -93,6 +93,17 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		}
 	}
 
+	for _, claimedInterval := range response.ClaimedIntervals {
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAccount.Address, claimedInterval, nil)
+		if err != nil {
+			return nil, err
+		}
+		if !intervalInfo.TreeFileExists {
+			response.InvalidIntervals = append(response.InvalidIntervals, intervalInfo)
+			continue
+		}
+	}
+
 	// Get collateral info for restaking
 	var totalMinipools int
 	var finalizedMinipools int
