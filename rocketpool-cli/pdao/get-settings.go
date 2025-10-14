@@ -100,11 +100,14 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tSmoothing Pool Opt-In Enabled: %t\n", response.Node.IsSmoothingPoolRegistrationEnabled)
 	fmt.Printf("\tNode Deposits Enabled:         %t\n", response.Node.IsDepositingEnabled)
 	fmt.Printf("\tVacant Minipools Enabled:      %t\n", response.Node.AreVacantMinipoolsEnabled)
-	fmt.Printf("\tMin Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MinimumPerMinipoolStake)*100)
-	fmt.Printf("\tMax Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MaximumPerMinipoolStake)*100)
+	if !response.SaturnDeployed {
+		fmt.Printf("\tMin Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MinimumPerMinipoolStake)*100)
+		fmt.Printf("\tMax Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MaximumPerMinipoolStake)*100)
+	}
 	if response.SaturnDeployed {
 		fmt.Printf("\tReduced Bond:                  %.6f ETH\n", response.Node.ReducedBond)
 		fmt.Printf("\tNode Unstaking Period:         %s\n", response.Node.NodeUnstakingPeriod)
+		fmt.Printf("\tMin Legacy RPL Stake:          %s\n", response.Node.MinimumLegacyRplStake)
 	}
 	fmt.Println()
 

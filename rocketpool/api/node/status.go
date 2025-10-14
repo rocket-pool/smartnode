@@ -24,6 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -242,7 +243,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		})
 		wg.Go(func() error {
 			var err error
-			response.MaximumRplStake, err = node.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
+			response.MaximumRplStake, err = node131.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
 			return err
 		})
 		wg.Go(func() error {
@@ -299,7 +300,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	wg.Go(func() error {
 		var err error
-		response.MaximumStakeFraction, err = protocol.GetMaximumPerMinipoolStake(rp, nil)
+		response.MaximumStakeFraction, err = protocol131.GetMaximumPerMinipoolStake(rp, nil)
 		return err
 	})
 	wg.Go(func() error {
@@ -480,12 +481,12 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		var maxStakeFraction *big.Int
 		wg2.Go(func() error {
 			var err error
-			minStakeFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
+			minStakeFraction, err = protocol131.GetMinimumPerMinipoolStakeRaw(rp, nil)
 			return err
 		})
 		wg2.Go(func() error {
 			var err error
-			maxStakeFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
+			maxStakeFraction, err = protocol131.GetMaximumPerMinipoolStakeRaw(rp, nil)
 			return err
 		})
 

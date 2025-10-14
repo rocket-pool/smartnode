@@ -285,6 +285,19 @@ func GetNodeRPLLocked(rp *rocketpool.RocketPool, nodeAddress common.Address, opt
 	return *value, nil
 }
 
+// Get a node's maximum RPL stake to collateralize their minipools
+func GetNodeMaximumRPLStakeForMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	nodeMaximumRplStake := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, nodeMaximumRplStake, "getNodeMaximumRPLStakeForMinipools", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting maximum node RPL stake for minipools: %w", err)
+	}
+	return *nodeMaximumRplStake, nil
+}
+
 // Get contracts
 var rocketNodeStakingLock sync.Mutex
 

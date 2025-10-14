@@ -11,12 +11,13 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	rewards131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/rewards"
+
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -149,7 +150,7 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		var minStakeFraction *big.Int
 		wg2.Go(func() error {
 			var err error
-			minStakeFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
+			minStakeFraction, err = protocol131.GetMinimumPerMinipoolStakeRaw(rp, nil)
 			return err
 		})
 		wg2.Go(func() error {

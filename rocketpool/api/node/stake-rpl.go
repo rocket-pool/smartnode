@@ -6,8 +6,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
-	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/urfave/cli"
@@ -65,7 +66,7 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 	}
 
 	// Get the max stake fraction
-	maxStakeFraction, err := protocol.GetMaximumPerMinipoolStake(rp, nil)
+	maxStakeFraction, err := protocol131.GetMaximumPerMinipoolStake(rp, nil)
 	if err != nil {
 		return nil, err
 	}

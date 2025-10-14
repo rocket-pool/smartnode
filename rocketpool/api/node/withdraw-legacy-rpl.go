@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -77,7 +78,7 @@ func canNodeUnstakeLegacyRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeUn
 	// Get the minimum requirement for minipool bond
 	wg.Go(func() error {
 		var err error
-		maximumRplStake, err = node.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
+		maximumRplStake, err = node131.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
 		return err
 	})
 
