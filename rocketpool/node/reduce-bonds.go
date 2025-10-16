@@ -150,7 +150,7 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 	}
 	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
 
-	// Get reduceable minipools
+	// Get reducible minipools
 	minipools, err := t.getReduceableMinipools(nodeAccount.Address, windowStart, windowLength, latestBlockTime, state, opts)
 	if err != nil {
 		return err
@@ -302,7 +302,7 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	return true, nil
 }
 
-// Get reduceable minipools
+// Get reducible minipools
 func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	// Filter minipools

@@ -66,7 +66,6 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         --http \
         --http-address 0.0.0.0 \
         --http-port ${BN_API_PORT:-5052} \
-        --eth1-blocks-per-log-query 150 \
         --disable-upnp \
         --staking \
         --execution-jwt=/secrets/jwtsecret \

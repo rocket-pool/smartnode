@@ -6,7 +6,7 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:25.9.0"
+	besuTagTest          string = "hyperledger/besu:25.10.0-RC2"
 	besuTagProd          string = "hyperledger/besu:25.9.0"
 	besuEventLogInterval int    = 1000
 	besuMaxPeers         uint16 = 25
