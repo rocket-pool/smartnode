@@ -189,6 +189,19 @@ func GetNodeMinipoolETHBorrowed(rp *rocketpool.RocketPool, nodeAddress common.Ad
 	return *nodeMinipoolETHBorrowed, nil
 }
 
+// Get the minimum amount of legacy staked RPL a node must have after unstaking
+func GetNodeMinimumLegacyRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	nodeMinimumLegacyRplStake := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, nodeMinimumLegacyRplStake, "getNodeMinimumLegacyRPLStake", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node minimum legacy rpl stake: %w", err)
+	}
+	return *nodeMinimumLegacyRplStake, nil
+}
+
 // Get the amount of ETH the node has bonded
 func GetNodeEthBonded(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)

@@ -243,7 +243,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		})
 		wg.Go(func() error {
 			var err error
-			response.RplStakeThreshold, err = node131.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
+			response.RplStakeThreshold, err = node.GetNodeMinimumLegacyRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
 		wg.Go(func() error {
@@ -263,7 +263,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.NodeRPLLocked, err = node131.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
 			return err
 		})
-
 		wg.Go(func() error {
 			var err error
 			response.RplStakeThreshold, err = node131.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
