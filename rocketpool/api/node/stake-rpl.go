@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
@@ -47,13 +46,6 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 		return nil, err
 	}
 	response.InsufficientBalance = (amountWei.Cmp(rplBalance) > 0)
-
-	// Get the max stake fraction
-	maxStakeFraction, err := protocol131.GetMaximumPerMinipoolStake(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-	response.MaximumStakeFraction = maxStakeFraction
 
 	// Get gas estimates
 	opts, err := w.GetNodeAccountTransactor()

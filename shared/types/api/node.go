@@ -295,13 +295,12 @@ type NodeSwapRplAllowanceResponse struct {
 }
 
 type CanNodeStakeRplResponse struct {
-	Status               string             `json:"status"`
-	Error                string             `json:"error"`
-	CanStake             bool               `json:"canStake"`
-	InsufficientBalance  bool               `json:"insufficientBalance"`
-	InConsensus          bool               `json:"inConsensus"`
-	MaximumStakeFraction float64            `json:"maximumStakeFraction"`
-	GasInfo              rocketpool.GasInfo `json:"gasInfo"`
+	Status              string             `json:"status"`
+	Error               string             `json:"error"`
+	CanStake            bool               `json:"canStake"`
+	InsufficientBalance bool               `json:"insufficientBalance"`
+	InConsensus         bool               `json:"inConsensus"`
+	GasInfo             rocketpool.GasInfo `json:"gasInfo"`
 }
 type NodeStakeRplApproveGasResponse struct {
 	Status  string             `json:"status"`
