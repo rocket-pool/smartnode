@@ -37,7 +37,7 @@ type NodeStatusResponse struct {
 	AccountBalances                          tokens.Balances `json:"accountBalances"`
 	PrimaryWithdrawalBalances                tokens.Balances `json:"primaryWithdrawalBalances"`
 	RPLWithdrawalBalances                    tokens.Balances `json:"rplWithdrawalBalances"`
-	RplStake                                 *big.Int        `json:"rplStake"`
+	TotalRplStake                            *big.Int        `json:"TotalRplStake"`
 	RplStakeMegapool                         *big.Int        `json:"rplStakeMegapool"`
 	RplStakeLegacy                           *big.Int        `json:"rplStakeLegacy"`
 	MaximumRplStake                          *big.Int        `json:"maximumRplStake"`
@@ -87,11 +87,12 @@ type NodeStatusResponse struct {
 	LatestDelegate               common.Address    `json:"latestDelegate"`
 	MegapoolDeployed             bool              `json:"megapoolDeployed"`
 	MegapoolAddress              common.Address    `json:"megapoolAddress"`
-	MegapoolActiveValidatorCount uint16            `json:"megapoolValidatorCount"`
+	MegapoolActiveValidatorCount uint16            `json:"megapoolActiveValidatorCount"`
 	MegapoolNodeDebt             *big.Int          `json:"megapoolNodeDebt"`
 	MegapoolRefundValue          *big.Int          `json:"megapoolRefundValue"`
 	IsSaturnDeployed             bool              `json:"isSaturnDeployed"`
 	ExpressTicketCount           uint64            `json:"expressTicketCount"`
+	ExpressTicketsProvisioned    bool              `json:"expressTicketsProvisioned"`
 	UnstakingRPL                 *big.Int          `json:"unstakingRPL"`
 	LastRPLUnstakeTime           time.Time         `json:"lastRPLUnstakeTime"`
 	UnstakingPeriodDuration      time.Duration     `json:"unstakingPeriodDuration"`

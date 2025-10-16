@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
 // Check if the given node has already claimed rewards for the given interval
@@ -38,21 +37,21 @@ func MerkleRoots(rp *rocketpool.RocketPool, interval *big.Int, opts *bind.CallOp
 }
 
 // Estimate claim rewards gas
-func EstimateClaimGas(rp *rocketpool.RocketPool, address common.Address, claims types.Claims, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketDistributorMainnet.GetTransactionGasInfo(opts, "claim", address, claims)
+	return rocketDistributorMainnet.GetTransactionGasInfo(opts, "claim", address, indices, amountRPL, amountETH, merkleProofs)
 }
 
 // Claim rewards
-func Claim(rp *rocketpool.RocketPool, address common.Address, claims types.Claims, opts *bind.TransactOpts) (common.Hash, error) {
+func Claim(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketDistributorMainnet.Transact(opts, "claim", address, claims)
+	tx, err := rocketDistributorMainnet.Transact(opts, "claim", address, indices, amountRPL, amountETH, merkleProofs)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error claiming rewards: %w", err)
 	}
@@ -60,21 +59,21 @@ func Claim(rp *rocketpool.RocketPool, address common.Address, claims types.Claim
 }
 
 // Estimate claim and restake rewards gas
-func EstimateClaimAndStakeGas(rp *rocketpool.RocketPool, address common.Address, claims types.Claims, stakeAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateClaimAndStakeGas(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, stakeAmount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketDistributorMainnet.GetTransactionGasInfo(opts, "claimAndStake", address, claims, stakeAmount)
+	return rocketDistributorMainnet.GetTransactionGasInfo(opts, "claimAndStake", address, indices, amountRPL, amountETH, merkleProofs, stakeAmount)
 }
 
 // Claim and restake rewards
-func ClaimAndStake(rp *rocketpool.RocketPool, address common.Address, claims types.Claims, stakeAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func ClaimAndStake(rp *rocketpool.RocketPool, address common.Address, indices []*big.Int, amountRPL []*big.Int, amountETH []*big.Int, merkleProofs [][]common.Hash, stakeAmount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDistributorMainnet, err := getRocketDistributorMainnet(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketDistributorMainnet.Transact(opts, "claimAndStake", address, claims, stakeAmount)
+	tx, err := rocketDistributorMainnet.Transact(opts, "claimAndStake", address, indices, amountRPL, amountETH, merkleProofs, stakeAmount)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error claiming rewards: %w", err)
 	}

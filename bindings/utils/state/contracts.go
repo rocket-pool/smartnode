@@ -57,6 +57,7 @@ type NetworkContracts struct {
 	// Saturn
 	RocketMegapoolFactory *rocketpool.Contract
 	RocketMegapoolManager *rocketpool.Contract
+	RocketNetworkRevenues *rocketpool.Contract
 }
 
 type contractArtifacts struct {
@@ -186,6 +187,9 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, isSaturnDeployed bool, multi
 		}, contractArtifacts{
 			name:     "rocketMegapoolManager",
 			contract: &contracts.RocketMegapoolManager,
+		}, contractArtifacts{
+			name:     "rocketNetworkRevenues",
+			contract: &contracts.RocketNetworkRevenues,
 		})
 	}
 
