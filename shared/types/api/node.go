@@ -41,7 +41,6 @@ type NodeStatusResponse struct {
 	RplStakeMegapool                         *big.Int        `json:"rplStakeMegapool"`
 	RplStakeLegacy                           *big.Int        `json:"rplStakeLegacy"`
 	MaximumRplStake                          *big.Int        `json:"maximumRplStake"`
-	MinimumRplStake                          *big.Int        `json:"minimumRplStake"`
 	MaximumStakeFraction                     float64         `json:"maximumStakeFraction"`
 	BorrowedCollateralRatio                  float64         `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio                    float64         `json:"bondedCollateralRatio"`
@@ -300,7 +299,6 @@ type CanNodeStakeRplResponse struct {
 	Error                string             `json:"error"`
 	CanStake             bool               `json:"canStake"`
 	InsufficientBalance  bool               `json:"insufficientBalance"`
-	MinimumRplStake      *big.Int           `json:"minimumRplStake"`
 	InConsensus          bool               `json:"inConsensus"`
 	MaximumStakeFraction float64            `json:"maximumStakeFraction"`
 	GasInfo              rocketpool.GasInfo `json:"gasInfo"`
@@ -612,7 +610,6 @@ type NodeGetRewardsInfoResponse struct {
 	RplStake                *big.Int               `json:"rplStake"`
 	RplPrice                *big.Int               `json:"rplPrice"`
 	ActiveMinipools         int                    `json:"activeMinipools"`
-	MinimumRplStake         *big.Int               `json:"minimumRplStake"`
 	EthBorrowed             *big.Int               `json:"ethBorrowed"`
 	EthBorrowLimit          *big.Int               `json:"ethBorrowLimit"`
 	PendingBorrowAmount     *big.Int               `json:"pendingBorrowAmount"`

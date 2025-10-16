@@ -271,11 +271,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		})
 		wg.Go(func() error {
 			var err error
-			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
 			response.RplStake, err = node131.GetNodeRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
@@ -477,13 +472,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	if totalActiveValidators > 0 {
 		var wg2 errgroup.Group
-		var minStakeFraction *big.Int
 		var maxStakeFraction *big.Int
-		wg2.Go(func() error {
-			var err error
-			minStakeFraction, err = protocol131.GetMinimumPerMinipoolStakeRaw(rp, nil)
-			return err
-		})
 		wg2.Go(func() error {
 			var err error
 			maxStakeFraction, err = protocol131.GetMaximumPerMinipoolStakeRaw(rp, nil)
@@ -495,11 +484,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			return nil, err
 		}
 
-		// Calculate the *real* minimum, including the pending bond reductions
-		trueMinimumStake := big.NewInt(0).Add(response.EthBorrowed, response.PendingBorrowAmount)
-		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
-		trueMinimumStake.Div(trueMinimumStake, rplPrice)
-
 		// Calculate the *real* maximum, including the pending bond reductions
 		trueMaximumStake := eth.EthToWei(32)
 		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(totalActiveValidators)))
@@ -508,7 +492,6 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
 		trueMaximumStake.Div(trueMaximumStake, rplPrice)
 
-		response.MinimumRplStake = trueMinimumStake
 		response.MaximumRplStake = trueMaximumStake
 
 		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(totalActiveValidators)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
@@ -520,15 +503,10 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			return nil, fmt.Errorf("error calculating eligible borrowed and bonded amounts: %w", err)
 		}
 
-		// Calculate the "eligible real" minimum based on the Beacon Chain, including pending bond reductions
-		pendingTrueMinimumStake := big.NewInt(0).Mul(pendingEligibleBorrowedEth, minStakeFraction)
-		pendingTrueMinimumStake.Div(pendingTrueMinimumStake, rplPrice)
-
 		// Calculate the "eligible real" maximum based on the Beacon Chain, including the pending bond reductions
 		pendingTrueMaximumStake := big.NewInt(0).Mul(pendingEligibleBondedEth, maxStakeFraction)
 		pendingTrueMaximumStake.Div(pendingTrueMaximumStake, rplPrice)
 
-		response.PendingMinimumRplStake = pendingTrueMinimumStake
 		response.PendingMaximumRplStake = pendingTrueMaximumStake
 
 		pendingEligibleBondedEthFloat := eth.WeiToEth(pendingEligibleBondedEth)
