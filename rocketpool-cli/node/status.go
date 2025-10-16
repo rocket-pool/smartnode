@@ -356,10 +356,10 @@ func getStatus(c *cli.Context) error {
 		} else {
 			// Withdrawal limit pre-saturn 1
 			rplTotalStake := math.RoundDown(eth.WeiToEth(status.RplStake), 6)
-			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6)
+			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6)
 			if rplTotalStake > rplWithdrawalLimit {
 				fmt.Printf(
-					"You can withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6), (status.MaximumStakeFraction)*100)
+					"You can withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6), (status.RplStakeThresholdFraction)*100)
 			}
 		}
 

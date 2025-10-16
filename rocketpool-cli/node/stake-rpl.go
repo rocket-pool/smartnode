@@ -330,8 +330,8 @@ func nodeStakeRpl(c *cli.Context) error {
 	} else {
 		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach %.6f staked RPL (%.0f%% of bonded eth)!",
 			math.RoundDown(eth.WeiToEth(amountWei), 6),
-			math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6),
-			status.MaximumStakeFraction*100))) {
+			math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6),
+			status.RplStakeThresholdFraction*100))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
