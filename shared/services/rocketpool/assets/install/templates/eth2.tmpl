@@ -44,6 +44,9 @@ services:
       - {{.Smartnode.DataPath}}/secrets:/secrets:ro
       - eth2clientdata:/ethclient
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
+      - {{.RocketPoolDirectory}}/genesis.ssz:/genesis/genesis.ssz:ro
+      - {{.RocketPoolDirectory}}/config.yaml:/genesis/config.yaml:ro
+      - {{.RocketPoolDirectory}}/deposit_contract_block.txt:/genesis/deposit_contract_block.txt:ro
     networks:
       - net
     environment:

@@ -57,11 +57,22 @@ fi
 # Lighthouse startup
 if [ "$CC_CLIENT" = "lighthouse" ]; then
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_LH_NETWORK="--network $LH_NETWORK"
+    else
+        CMD_LH_NETWORK="--testnet-dir /genesis  \
+        --enr-address 177.116.225.43 \
+        --enr-tcp-port $BN_P2P_PORT \
+        --enr-udp-port $BN_P2P_PORT \
+        --enr-address $EXTERNAL_IP \
+        --boot-nodes enr:-OK4QDwaZ_OyUmkcc6yo_FK101V8ijG6oDUlXf1GMyPXIfIIXxiEHFSYAX1984RJ0uRpqnRFtky2huM5g9KrsQDGjKoHh2F0dG5ldHOIAAAYAAAAAACGY2xpZW501opMaWdodGhvdXNlijguMC4wLXJjLjCEZXRoMpDk6yg0YAAAOP__________gmlkgnY0gmlwhDmAFB-EcXVpY4KA64lzZWNwMjU2azGhAkoE2cCx5k2fBwUo4Ni7iJ5Q6zARbu2DCOf-Es72CiaIiHN5bmNuZXRzD4N0Y3CCgOiDdWRwgoDo"
+    fi
+
     CMD="$PERF_PREFIX /usr/local/bin/lighthouse beacon \
-        --network $LH_NETWORK \
-        --datadir /ethclient/lighthouse \
+        $CMD_LH_NETWORK \
         --port $BN_P2P_PORT \
         --discovery-port $BN_P2P_PORT \
+        --datadir /data \
         --execution-endpoint $EC_ENGINE_ENDPOINT \
         --http \
         --http-address 0.0.0.0 \
@@ -106,8 +117,19 @@ fi
 # Lodestar startup
 if [ "$CC_CLIENT" = "lodestar" ]; then
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="--network $LODESTAR_NETWORK"
+    else
+        CMD_NETWORK="--paramsFile /genesis/config.yaml \
+        --genesisStateFile /genesis/genesis.ssz \
+        --eth1.depositContractDeployBlock 0 \
+        --enr.ip $EXTERNAL_IP \
+        --enr.udp $BN_P2P_PORT \
+        --bootnodes enr:-OK4QDwaZ_OyUmkcc6yo_FK101V8ijG6oDUlXf1GMyPXIfIIXxiEHFSYAX1984RJ0uRpqnRFtky2huM5g9KrsQDGjKoHh2F0dG5ldHOIAAAYAAAAAACGY2xpZW501opMaWdodGhvdXNlijguMC4wLXJjLjCEZXRoMpDk6yg0YAAAOP__________gmlkgnY0gmlwhDmAFB-EcXVpY4KA64lzZWNwMjU2azGhAkoE2cCx5k2fBwUo4Ni7iJ5Q6zARbu2DCOf-Es72CiaIiHN5bmNuZXRzD4N0Y3CCgOiDdWRwgoDo"
+    fi
+
     CMD="$PERF_PREFIX /usr/local/bin/node --max-http-header-size=65536 /usr/app/packages/cli/bin/lodestar beacon \
-        --network $LODESTAR_NETWORK \
+        $CMD_NETWORK \
         --dataDir /ethclient/lodestar \
         --serveHistoricalState \
         --port $BN_P2P_PORT \

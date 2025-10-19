@@ -36,7 +36,7 @@ if [ "$NETWORK" = "mainnet" ]; then
     BESU_NETWORK="--network=mainnet"
     RETH_NETWORK="--chain mainnet"
 elif [ "$NETWORK" = "devnet" ]; then
-    GETH_NETWORK="--hoodi"
+    GETH_NETWORK="--networkid 3151908"
     RP_NETHERMIND_NETWORK="hoodi"
     BESU_NETWORK="--network=hoodi"
     RETH_NETWORK="--chain hoodi"
@@ -80,6 +80,10 @@ if [ "$CLIENT" = "geth" ]; then
     # Run Geth normally
     else
 
+        if [ "$NETWORK" = "devnet" ]; then
+            geth init --datadir /ethclient/geth /etc/custom/genesis.json 
+        fi
+
         CMD="$PERF_PREFIX /usr/local/bin/geth $GETH_NETWORK \
             --datadir /ethclient/geth \
             --http \
@@ -98,6 +102,10 @@ if [ "$CLIENT" = "geth" ]; then
             --pprof \
             $EC_ADDITIONAL_FLAGS"
 
+        if [ "$NETWORK" = "devnet" ]; then
+            CMD="$CMD --bootnodes enode://edf16ef10348444679aa8c22cc665f2a44640fb062bc8e051fae8f0cb490fb83ac3bb41ee02c7af1bd7d4bbb05ac5f050249302553516e5d7f125844410b9ed0@57.128.20.31:32000"
+            CMD="$CMD "
+        fi
         if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --miner.gaslimit $EC_SUGGESTED_BLOCK_GAS_LIMIT"
         fi

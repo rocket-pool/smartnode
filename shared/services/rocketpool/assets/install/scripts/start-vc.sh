@@ -40,8 +40,14 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CC_URL_STRING="$CC_API_ENDPOINT,$FALLBACK_CC_API_ENDPOINT"
     fi
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_LH_NETWORK="--network $LH_NETWORK"
+    else
+        CMD_LH_NETWORK="--testnet-dir /genesis"
+    fi
+
     CMD="/usr/local/bin/lighthouse validator \
-        --network $LH_NETWORK \
+        $CMD_LH_NETWORK \
         --datadir /validators/lighthouse \
         --init-slashing-protection \
         --logfile-max-number 0 \
