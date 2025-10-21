@@ -424,9 +424,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		chainID: map[config.Network]uint{
-			config.Network_Mainnet: 1,      // Mainnet
-			config.Network_Devnet:  560048, // Hoodi
-			config.Network_Testnet: 560048, // Hoodi
+			config.Network_Mainnet: 1,       // Mainnet
+			config.Network_Devnet:  3151908, // Private Devnet
+			config.Network_Testnet: 560048,  // Hoodi
 		},
 
 		storageAddress: map[config.Network]string{
