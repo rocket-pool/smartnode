@@ -258,6 +258,7 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 		Locked             bool   `json:"locked"`
 		ValidatorIndex     uint64 `json:"validatorIndex"`
 		ExitBalance        uint64 `json:"exitBalance"`
+		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
 		LockedSlot         uint64 `json:"lockedSlot"`
 	})
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
@@ -278,7 +279,7 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 	validator.ValidatorInfo.Dissolved = src.Dissolved
 	validator.ValidatorInfo.Locked = src.Locked
 	validator.ValidatorInfo.LockedSlot = src.LockedSlot
-
+	validator.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
 	return *validator, nil
 }
 
