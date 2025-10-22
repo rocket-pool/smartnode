@@ -24,6 +24,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -242,7 +243,7 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		})
 		wg.Go(func() error {
 			var err error
-			response.MaximumRplStake, err = node.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
+			response.RplStakeThreshold, err = node.GetNodeMinimumLegacyRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
 		wg.Go(func() error {
@@ -262,15 +263,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			response.NodeRPLLocked, err = node131.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
 			return err
 		})
-
 		wg.Go(func() error {
 			var err error
-			response.MaximumRplStake, err = node131.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
+			response.RplStakeThreshold, err = node131.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
 		wg.Go(func() error {
@@ -297,11 +292,21 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	wg.Go(func() error {
-		var err error
-		response.MaximumStakeFraction, err = protocol.GetMaximumPerMinipoolStake(rp, nil)
-		return err
-	})
+	// MinimumLegacyRPLStake and MaximumPerMinipoolStake are both used to compute the RPL amount that a node cannot fall under when withdrawing
+	if saturnDeployed {
+		wg.Go(func() error {
+			var err error
+			response.RplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStake(rp, nil)
+			return err
+		})
+	} else {
+		wg.Go(func() error {
+			var err error
+			response.RplStakeThresholdFraction, err = protocol131.GetMaximumPerMinipoolStake(rp, nil)
+			return err
+		})
+	}
+
 	wg.Go(func() error {
 		var err error
 		response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(saturnDeployed, rp, nodeAccount.Address, nil)
@@ -469,44 +474,46 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return nil, err
 	}
 
-	activeMinipools := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
-	if activeMinipools > 0 {
+	totalActiveValidators := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
+	if saturnDeployed {
+		totalActiveValidators = totalActiveValidators + int(response.MegapoolActiveValidatorCount)
+	}
+
+	if totalActiveValidators > 0 {
 		var wg2 errgroup.Group
-		var minStakeFraction *big.Int
-		var maxStakeFraction *big.Int
-		wg2.Go(func() error {
-			var err error
-			minStakeFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
-			return err
-		})
-		wg2.Go(func() error {
-			var err error
-			maxStakeFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
-			return err
-		})
+		var rplStakeThresholdFraction *big.Int
+
+		// MinimumLegacyRPLStake and MaximumPerMinipoolStake are both used to compute the RPL amount that a node cannot fall under when withdrawing
+		if saturnDeployed {
+			wg2.Go(func() error {
+				var err error
+				rplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
+				return err
+			})
+		} else {
+			wg2.Go(func() error {
+				var err error
+				rplStakeThresholdFraction, err = protocol131.GetMaximumPerMinipoolStakeRaw(rp, nil)
+				return err
+			})
+		}
 
 		// Wait for data
 		if err := wg2.Wait(); err != nil {
 			return nil, err
 		}
 
-		// Calculate the *real* minimum, including the pending bond reductions
-		trueMinimumStake := big.NewInt(0).Add(response.EthBorrowed, response.PendingBorrowAmount)
-		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
-		trueMinimumStake.Div(trueMinimumStake, rplPrice)
-
 		// Calculate the *real* maximum, including the pending bond reductions
-		trueMaximumStake := eth.EthToWei(32)
-		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(activeMinipools)))
-		trueMaximumStake.Sub(trueMaximumStake, response.EthBorrowed)
-		trueMaximumStake.Sub(trueMaximumStake, response.PendingBorrowAmount) // (32 * activeMinipools - ethBorrowed - pendingBorrow)
-		trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
-		trueMaximumStake.Div(trueMaximumStake, rplPrice)
+		trueRplStakeThreshold := eth.EthToWei(32)
+		trueRplStakeThreshold.Mul(trueRplStakeThreshold, big.NewInt(int64(totalActiveValidators)))
+		trueRplStakeThreshold.Sub(trueRplStakeThreshold, response.EthBorrowed)
+		trueRplStakeThreshold.Sub(trueRplStakeThreshold, response.PendingBorrowAmount) // (32 * totalActiveValidators - ethBorrowed - pendingBorrow)
+		trueRplStakeThreshold.Mul(trueRplStakeThreshold, rplStakeThresholdFraction)
+		trueRplStakeThreshold.Div(trueRplStakeThreshold, rplPrice)
 
-		response.MinimumRplStake = trueMinimumStake
-		response.MaximumRplStake = trueMaximumStake
+		response.RplStakeThreshold = trueRplStakeThreshold
 
-		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
+		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(totalActiveValidators)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
 		response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
 
 		// Calculate the "eligible" info (ignoring pending bond reductions) based on the Beacon Chain
@@ -515,15 +522,10 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			return nil, fmt.Errorf("error calculating eligible borrowed and bonded amounts: %w", err)
 		}
 
-		// Calculate the "eligible real" minimum based on the Beacon Chain, including pending bond reductions
-		pendingTrueMinimumStake := big.NewInt(0).Mul(pendingEligibleBorrowedEth, minStakeFraction)
-		pendingTrueMinimumStake.Div(pendingTrueMinimumStake, rplPrice)
-
 		// Calculate the "eligible real" maximum based on the Beacon Chain, including the pending bond reductions
-		pendingTrueMaximumStake := big.NewInt(0).Mul(pendingEligibleBondedEth, maxStakeFraction)
+		pendingTrueMaximumStake := big.NewInt(0).Mul(pendingEligibleBondedEth, rplStakeThresholdFraction)
 		pendingTrueMaximumStake.Div(pendingTrueMaximumStake, rplPrice)
 
-		response.PendingMinimumRplStake = pendingTrueMinimumStake
 		response.PendingMaximumRplStake = pendingTrueMaximumStake
 
 		pendingEligibleBondedEthFloat := eth.WeiToEth(pendingEligibleBondedEth)

@@ -111,19 +111,6 @@ func GetNodeUnstakingRPL(rp *rocketpool.RocketPool, nodeAddress common.Address, 
 	return *unstakingRpl, nil
 }
 
-// Get a node's maximum RPL stake to collateralize their minipools
-func GetNodeMaximumRPLStakeForMinipools(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
-	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	nodeMaximumRplStake := new(*big.Int)
-	if err := rocketNodeStaking.Call(opts, nodeMaximumRplStake, "getNodeMaximumRPLStakeForMinipools", nodeAddress); err != nil {
-		return nil, fmt.Errorf("error getting maximum node RPL stake for minipools: %w", err)
-	}
-	return *nodeMaximumRplStake, nil
-}
-
 // Get the time a node last staked RPL
 func GetNodeRPLStakedTime(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
 	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
@@ -200,6 +187,19 @@ func GetNodeMinipoolETHBorrowed(rp *rocketpool.RocketPool, nodeAddress common.Ad
 		return nil, fmt.Errorf("error getting node ETH matched: %w", err)
 	}
 	return *nodeMinipoolETHBorrowed, nil
+}
+
+// Get the minimum amount of legacy staked RPL a node must have after unstaking
+func GetNodeMinimumLegacyRPLStake(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeStaking, err := getRocketNodeStaking(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	nodeMinimumLegacyRplStake := new(*big.Int)
+	if err := rocketNodeStaking.Call(opts, nodeMinimumLegacyRplStake, "getNodeMinimumLegacyRPLStake", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node minimum legacy rpl stake: %w", err)
+	}
+	return *nodeMinimumLegacyRplStake, nil
 }
 
 // Get the amount of ETH the node has bonded

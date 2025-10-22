@@ -15,8 +15,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type SlotProof struct {
+	Slot      uint64
+	Witnesses [][32]byte
+}
+
 type ValidatorProof struct {
-	Slot           uint64
 	ValidatorIndex *big.Int
 	Validator      ProvedValidator
 	Witnesses      [][32]byte
@@ -34,7 +38,6 @@ type ProvedValidator struct {
 }
 
 type FinalBalanceProof struct {
-	Slot           uint64
 	WithdrawalSlot uint64
 	ValidatorIndex uint64
 	Amount         *big.Int
@@ -80,7 +83,6 @@ type ValidatorInfo struct {
 	Locked             bool   `abi:"locked"`
 	ValidatorIndex     uint64 `abi:"validatorIndex"`
 	ExitBalance        uint64 `abi:"exitBalance"`
-	WithdrawableEpoch  uint64 `abi:"withdrawableEpoch"`
 	LockedSlot         uint64 `abi:"lockedSlot"`
 }
 
@@ -100,7 +102,7 @@ type megapoolV1 struct {
 }
 
 const (
-	megapoolV1EncodedAbi string = "eJztWkuT2jgQ/itbnKf2kN3NITfmkdRUTbKzMOweUilK2A2oRkheqQ1Dpfa/bwuMH9hgGduUEzgljKRWv/z1S1+/95hUcr1Qoel9mDJh4KbHZRAi/fz6nf7rwxv4qSUELZl4WQfQ+9AL6fe7P973bnqSLewfGBGSSL8xu+G/m+q0kNM/eUrf4g2fYcYCpcStkv4A/NAj4vF+WAIxYu/98QW8hwk+Sk8DMz+ziD+1DZ+BqOC6HwSC15ERdejA1pIJ7jNU+tE/s5x/727uG8Nn8iJEvYd/QwgvQ1RujBLLi5D1QbZm1t/eOUhKm84k6BvHy7AoCcrl7AIkfVLe60WYdIjsMgQdSVHTpl1MjwawYto3d4LRzvZlk8qHfoPyLRWtN0lQA86bpOdqAIrrqPkkPBAHMio/fuP4oP8klzLKgtdRRkwbVYgRedpikCF8DpFNuOC0bI0mA7ZmE5GSZBpKD7mSDtylY+34aLBNMbhJXj+G0jfl/Dkyl1D3mPBCQWRIBT7Fo8gGmZvKFW19OTlZ6CsOzluLQqAVKo+qt/6ftehYrz9MoFDpSw6rk9yhsrPG1rqa6YxmOuWr9eZMCJAzsHlek7iSusIGqnZI+xBo8IhSJxHR39a43eQtKkrjXKklA8Uxsh36M8A+bUjJcReBUwnepHVWqKfTvsssZ1E7h3jb84Jy3GgSLDJM2a5hV3iJassu2u7hLeCa2U23toboisaemME47+wcc5tiq4vW/GJrGN/XYEpSERZvynG0W2qQJTuF6YrxauXVrXE1ANrULQAdKiXB4D8c575mKxuvHgLlzcv5e//7IfZopSHuRgb0HQs4MtEVhXUEEBpLndIiPcqp2pPIU4uAPES6XSoI0Ld5woKOvORaD3FDu5TKwGabBpN0ox6VCJsqE6GUXBmOzkxMlBLJabPXmtyslp6CvWa82yku/4rS84rHnikOWD6rsxnYCDIy1Xn18zMkd9Vk2vdux/b7podO7cNa8gnZplse5MopWIZvmWDSg1OOrwpguTKRrfRDoTB/+luugUjZWOjhLwN7CHc96CHpgM3gia0JG37dx4scumEYUNnTQXDrS/85nLxCtud4Rbkryl1R7opyTijHt7+ySFdgmjVCqvAKdqiD6eWOIWQhNB6XqzmJMizF5Yi40+ATyHImSqq4zf3FyfZuqdU5woSw9/jc7sinOw4NPGyR5oVbl3T49rOGSOz9XOxqFSgMKbIxDDW4Esk4XhRM7hmygUp/jWkz7EYjsGqlZVvz8yhHm7EDZqXEVMin66ZnEu0LuZ2NPcpPK+AumJzrN409O4/Rydm47VRFxeIgqmf0+5ETsSQM/UB6Nk7yfVF4FheqPB/Vm2e7ufZfY2MRDXQk1+mvM4lv36RlSVUi3S4tbUFxS9DGLp+9dVbnyU4ORJTw70FQjoZwCEiqEaSoU4tg9Tc2u+tGwUwzv/HXajkJp1otmhHtrG/BHnBuHzp4wGu9Ly5mJ1e0YnEx2LBMVDk+0VUGRwHhQbFYLjhGgXTCvNfDbwcyHtYOnmwGrvGH04nB046fzYQTSuZPWRfYt35Do9bpFDYz/K5pKnZEN8Za0pVDzigz480CZcSVOLd1ITftZnt7lVohcKSieZmiT2PPASH0FjeJmf8BlNf8Ng=="
+	megapoolV1EncodedAbi string = "eJztWktv2zgQ/isLn4M9tLs99OYk7iJA2k2dePdQFAYtjm0iNKmSIztGsf99h7b1smRLsiRDjXNqHZHDbx6cJ7/97DGl1XqhA9v7OGXSwlVPKD9A+vntJ/2XwwvwxCcEo5h8WvvQ+9gL6Pe7Pz/0rnqKLdwfGBFSSL8xveC/q+q0UNA/WUrfowWfYcZ8reW1VnwIPPCIeLQelkBA3Lm/PoO3MME75Rlg9jWz+Kp1+ABEBdd935eiDo9oghKwlkwKzlCbO35mPv8JT+5bK2bqIli9hR8BBJfBqrBWy+VF8DpQran1/bsSnNKiMzH6IvAyNEqMCjW7AE7vtfd8ESp9RHYZjI6UrKnTLqZHQ1gxw+2NZLSyfd6U5tBvkL+lpu9NEjSA8ybp+Uaj9ii/ZrpJsmX1SukCGjEJDoSXlCaPnzg+aJbxoYyS6/Uu0aaFOsAdeVpikSF8DpBNhBT02dmC8tmaTWSCk2mgPBRalUCXDOHjozE8AXCTE38KFLfF+EqCi6l7THqBJDIkAk5hbqeD1EnFgnZXJN6Zaysl7kQtCpHR9v+uRcddpsMEcoW+FLA6yRwqG2ukrTc1nVFNp9xab86kBDUDlz426VcSR7j41w5pDr4Bjyh10iPybencTWy7WjdKwVpSUBQj26E/A+zTggQfNzvnVOBvkjLLldNp9zKNbNclImx7VlDsN5p0FilQrhnZFSy7krWLuhu8+MIwt+hpmw52QmD3zGKUdtLSa1c2dQbcpoTrojK/uMqIcwO2IBNh0aIMovBTg5DcbKcrynN4vm46gl1CVSvZbw3VEGhRt7z6yIK5Yb5AJrsEaWtRHQPWEQ/VWCqXZOlOTfUeR55e+FqBKneopAizzVsWtOUp0wqJ+vaFVIYu+7UYpz/1qOzcUmUiVCJoK7A0iInWMt5t9zqwm6+Fu2Bv5lBul1Bfd+VCxW0PFJgczuowfRfSRrY6Vp4dlZUXTWpKUW7bfnv40C6n1w9/JBoB8cXg8JLWP60rQcEBvmaSKQ9O2b4F/ig1Znd/z/QiKbMLPPxt6DZh2CV/JPhsBvdsTdf69/2rnnFMGPhUQXXQL/UVfwgmz5BuX745qDcH9eagXr+DEttfaSeVI9U1QqL+8kOHgcnPHXNuuV7tOF/NcZSC9K/AOTdsxeSNAU7+UTBZUDZtzs9PccNPrU4TJuQ2j0/vjty6cWBhsHUST8KZZIlrm1ZErO+HfFOrQOGRghLDwEBZIinD28WBW4ZsqJO3MamGcEACq1YatzWvR7G3Ga9CCyU0A19781N81tiAR8Z9YH9CTBrFdN30ZKN9IW0nbHfqrxWIMvLJtK3GnpvqmHhv1L2qoiJ5JgV9EkQpDmG/kKIshU2XghLKhV/M6BeNZzHGyvNas3mdnOn8NTamMUBbMpOHOi8D2tdtUWYWcxfmti0IbgnGus9nb53VeZmUcUda8luQlC0iHHJJ1QhS/KtFsPqbn/C4kT8zjDf+KC/D4dToRTOsnfXJ2wDn7uGFB6LWM+p8OJnKF/MryoZ5ovLzno6yOPLJH+SzVcaPUUieMO/58FuGlIW14082A+Do4nRiEhbi2UxcoWD0lDaBfe03NPqdTmHzpqBrkooMsRywlmRVIvtUqXlrjjCinoBwFaqw7aZ9ezVjruNIRPMiQZ8Gr4SHMFu/SWD+B1DmSQo="
 )
 
 // The decoded ABI for megapools
@@ -227,17 +229,17 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 
 	callData, err := mp.Contract.ABI.Pack("getValidatorInfoAndPubkey", validatorId)
 	if err != nil {
-		return ValidatorInfoWithPubkey{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
+		return ValidatorInfoWithPubkey{}, fmt.Errorf("error creating calldata for getValidatorInfoAndPubkey: %w", err)
 	}
 
 	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, nil)
 	if err != nil {
-		return ValidatorInfoWithPubkey{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
+		return ValidatorInfoWithPubkey{}, fmt.Errorf("error calling getValidatorInfoAndPubkey: %w", err)
 	}
 
 	iface, err := mp.Contract.ABI.Unpack("getValidatorInfoAndPubkey", response)
 	if err != nil {
-		return ValidatorInfoWithPubkey{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
+		return ValidatorInfoWithPubkey{}, fmt.Errorf("error unpacking getValidatorInfoAndPubkey response: %w", err)
 	}
 
 	src := iface[0].(struct {
@@ -255,7 +257,6 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 		Locked             bool   `json:"locked"`
 		ValidatorIndex     uint64 `json:"validatorIndex"`
 		ExitBalance        uint64 `json:"exitBalance"`
-		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
 		LockedSlot         uint64 `json:"lockedSlot"`
 	})
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
@@ -267,7 +268,6 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 	validator.ValidatorInfo.Staked = src.Staked
 	validator.ValidatorInfo.DepositValue = src.DepositValue
 	validator.ValidatorInfo.ExitBalance = src.ExitBalance
-	validator.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
 	validator.ValidatorInfo.Exiting = src.Exiting
 	validator.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
 	validator.ValidatorInfo.Exited = src.Exited

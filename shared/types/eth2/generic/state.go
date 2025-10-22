@@ -3,6 +3,9 @@ package generic
 // BeaconStateValidatorsIndex is the field offset of the Validators field in the BeaconState struct
 const BeaconStateValidatorsIndex uint64 = 11
 
+// SlotIndex is the field offset of the Slot field in the BeaconState struct
+const BeaconStateSlotIndex uint64 = 2
+
 // If this ever isn't a power of two, we need to round up to the next power of two
 const beaconStateValidatorsMaxLength uint64 = 1 << 40
 

@@ -18,6 +18,7 @@ const (
 	SnapshotID                         string = "rocketpool-dao.eth"
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
+	performanceFilenameFormat          string = "rp-performance-%s-%d%s"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
 	ChecksumTableFilename              string = "checksums.sha384"
@@ -431,7 +432,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0xf4D539F1babDAa6E47b1112Bc9Fa1C83cF0FfE59",
+			config.Network_Devnet:  "0x0ae814B1c2D1269D7e8c6904aef9153348Cb001A",
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
@@ -443,7 +444,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0xf2C10508eC528a01628a621abADBff902CB9c1e5",
+			config.Network_Devnet:  "0xcF333A7463F38ec2e3879D0dF3BDB8235Bf9E1c3",
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
@@ -530,7 +531,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
 			},
-			config.Network_Devnet:  {},
+			config.Network_Devnet: {
+				common.HexToAddress("0x664dafBbf286959BCB910bf42970E9aA26b336E8"),
+			},
 			config.Network_Testnet: {},
 		},
 
@@ -803,6 +806,10 @@ func (cfg *SmartnodeConfig) GetMinipoolPerformanceFilename(interval uint64) stri
 	return cfg.formatRewardsFilename(minipoolPerformanceFilenameFormat, interval, RewardsExtensionJSON)
 }
 
+func (cfg *SmartnodeConfig) GetPerformanceFilename(interval uint64) string {
+	return cfg.formatRewardsFilename(performanceFilenameFormat, interval, RewardsExtensionJSON)
+}
+
 func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool, extension RewardsExtension) string {
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
@@ -814,6 +821,13 @@ func (cfg *SmartnodeConfig) GetMinipoolPerformancePath(interval uint64, daemon b
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
 		cfg.GetMinipoolPerformanceFilename(interval),
+	)
+}
+
+func (cfg *SmartnodeConfig) GetPerformancePath(interval uint64) string {
+	return filepath.Join(
+		cfg.GetRewardsTreeDirectory(true),
+		cfg.GetPerformanceFilename(interval),
 	)
 }
 

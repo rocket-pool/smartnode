@@ -6,6 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -628,28 +630,37 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing VacantMinipoolsEnabled: %w", err)
 			}
-
 		// MinimumPerMinipoolStake
-		case protocol.MinimumPerMinipoolStakeSettingPath:
+		case protocol131.MinimumPerMinipoolStakeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposeMinimumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasInfo, err = protocol131.EstimateProposeMinimumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing MinimumPerMinipoolStake: %w", err)
 			}
-
 		// MaximumPerMinipoolStake
-		case protocol.MaximumPerMinipoolStakeSettingPath:
+		case protocol131.MaximumPerMinipoolStakeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposeMaximumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasInfo, err = protocol131.EstimateProposeMaximumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing MaximumPerMinipoolStake: %w", err)
 			}
+		// MinimumLegacyRplStake
+		case protocol.MinimumLegacyRplStakePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeMinimumLecacyRPLStakeGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MinimumLegacyRplStake: %w", err)
+			}
+
 		// ReducedBond
 		case protocol.ReducedBondSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
@@ -1456,27 +1467,35 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing VacantMinipoolsEnabled: %w", err)
 			}
-
 		// MinimumPerMinipoolStake
-		case protocol.MinimumPerMinipoolStakeSettingPath:
+		case protocol131.MinimumPerMinipoolStakeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			proposalID, hash, err = protocol.ProposeMinimumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
+			proposalID, hash, err = protocol131.ProposeMinimumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing MinimumPerMinipoolStake: %w", err)
 			}
-
 		// MaximumPerMinipoolStake
-		case protocol.MaximumPerMinipoolStakeSettingPath:
+		case protocol131.MaximumPerMinipoolStakeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			proposalID, hash, err = protocol.ProposeMaximumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
+			proposalID, hash, err = protocol131.ProposeMaximumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing MaximumPerMinipoolStake: %w", err)
+			}
+		// MinimumLegacyRplStake
+		case protocol.MinimumLegacyRplStakePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMinimumLecacyRPLStake(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MinimumLegacyRplStake: %w", err)
 			}
 		// ReducedBond
 		case protocol.ReducedBondSettingPath:

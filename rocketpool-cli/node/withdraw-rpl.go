@@ -223,19 +223,23 @@ func nodeWithdrawRpl(c *cli.Context) error {
 				fmt.Println("You have no legacy RPL eligible to be unstaked.")
 				return nil
 			}
-
-			// Get maximum withdrawable amount
-			var maxAmount big.Int
-			var amountWei *big.Int
-
 			fmt.Println("Unstaking legacy RPL follows the same 2-step process as unstaking megapool staked RPL.")
 			fmt.Printf("Unstaked legacy RPL can be withdrawn after an unstaking period of %s%s%s.\n", colorYellow, status.UnstakingPeriodDuration, colorReset)
 			fmt.Println()
 
-			maxAmount.Sub(status.RplStakeLegacy, status.MaximumRplStake)
-			maxAmount.Sub(&maxAmount, status.NodeRPLLocked)
-			if maxAmount.Sign() == 1 {
+			// Get the maximum withdrawable amount based on constraints
+			// defined by decreaseNodeLegacyRPLStake in RocketNodeStaking.sol
+			var maxAmount big.Int
+			var amountWei *big.Int
+			withdrawableFromLegacy := new(big.Int).Sub(status.RplStakeLegacy, status.RplStakeThreshold)
+			withdrawableFromTotal := new(big.Int).Sub(status.RplStake, status.NodeRPLLocked)
+			if withdrawableFromLegacy.Cmp(withdrawableFromTotal) < 0 {
+				maxAmount.Set(withdrawableFromLegacy)
+			} else {
+				maxAmount.Set(withdrawableFromTotal)
+			}
 
+			if maxAmount.Sign() == 1 {
 				// Print warning messages if applicable
 				notifyUnstakingRPLStatus()
 
@@ -255,8 +259,8 @@ func nodeWithdrawRpl(c *cli.Context) error {
 			} else {
 				fmt.Printf("Cannot unstake legacy RPL - you have %.6f legacy RPL, but are not allowed to unstake below %.6f RPL (%d%% collateral).\n",
 					math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6),
-					math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6),
-					uint32(status.MaximumStakeFraction*100),
+					math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6),
+					uint32(status.RplStakeThresholdFraction*100),
 				)
 				return nil
 			}
@@ -320,8 +324,8 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 		// Set amount to maximum withdrawable amount
 		var maxAmount big.Int
-		if status.RplStake.Cmp(status.MaximumRplStake) > 0 {
-			maxAmount.Sub(status.RplStake, status.MaximumRplStake)
+		if status.RplStake.Cmp(status.RplStakeThreshold) > 0 {
+			maxAmount.Sub(status.RplStake, status.RplStakeThreshold)
 		}
 		amountWei = &maxAmount
 
@@ -344,7 +348,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 		// Get maximum withdrawable amount
 		var maxAmount big.Int
-		maxAmount.Sub(status.RplStake, status.MaximumRplStake)
+		maxAmount.Sub(status.RplStake, status.RplStakeThreshold)
 		maxAmount.Sub(&maxAmount, status.NodeRPLLocked)
 		if maxAmount.Sign() == 1 {
 			// Prompt for maximum amount
@@ -364,8 +368,8 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		} else {
 			fmt.Printf("Cannot withdraw staked RPL - you have %.6f RPL staked, but are not allowed to withdraw below %.6f RPL (%d%% collateral).\n",
 				math.RoundDown(eth.WeiToEth(status.RplStake), 6),
-				math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6),
-				uint32(status.MaximumStakeFraction*100),
+				math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6),
+				uint32(status.RplStakeThresholdFraction*100),
 			)
 			return nil
 		}

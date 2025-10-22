@@ -18,11 +18,24 @@ const (
 	networkEffectiveStakeBatchSize int = 250
 )
 
+type MegapoolRevenueSplitSettings struct {
+	NodeOperatorCommissionShare *big.Int `json:"node_operator_commission_share"`
+	NodeOperatorCommissionAdder *big.Int `json:"node_operator_commission_adder"`
+	VoterCommissionShare        *big.Int `json:"voter_commission_share"`
+	PdaoCommissionShare         *big.Int `json:"pdao_commission_share"`
+}
+type MegapoolRevenueSplitTimeWeightedAverages struct {
+	NodeShare  *big.Int `json:"node_share"`
+	VoterShare *big.Int `json:"voter_share"`
+	PdaoShare  *big.Int `json:"pdao_share"`
+}
+
 type NetworkDetails struct {
 	// Redstone
 	RplPrice                          *big.Int               `json:"rpl_price"`
 	MinCollateralFraction             *big.Int               `json:"min_collateral_fraction"`
 	MaxCollateralFraction             *big.Int               `json:"max_collateral_fraction"`
+	MinimumLegacyRplStakeFraction     *big.Int               `json:"minimum_legacy_rpl_stake_fraction"`
 	IntervalDuration                  time.Duration          `json:"interval_duration"`
 	IntervalStart                     time.Time              `json:"interval_start"`
 	NodeOperatorRewardsPercent        *big.Int               `json:"node_operator_rewards_percent"`
@@ -48,6 +61,7 @@ type NetworkDetails struct {
 	TotalRETHSupply                   *big.Int               `json:"total_reth_supply"`
 	TotalRPLStake                     *big.Int               `json:"total_rpl_stake"`
 	SmoothingPoolBalance              *big.Int               `json:"smoothing_pool_balance"`
+	PendingVoterShare                 *big.Int               `json:"pending_voter_share"`
 	NodeFee                           float64                `json:"node_fee"`
 	BalancesBlock                     uint64                 `json:"balances_block"`
 	LatestReportableBalancesBlock     uint64                 `json:"latest_reportable_balances_block"`
@@ -64,10 +78,15 @@ type NetworkDetails struct {
 	// Houston
 	PricesSubmissionFrequency   uint64 `json:"prices_submission_frequency"`
 	BalancesSubmissionFrequency uint64 `json:"balances_submission_frequency"`
+
+	// Saturn
+	MegapoolRevenueSplitSettings             MegapoolRevenueSplitSettings
+	MegapoolRevenueSplitTimeWeightedAverages MegapoolRevenueSplitTimeWeightedAverages
+	SmoothingPoolPendingVoterShare           *big.Int `json:"smoothing_pool_earmarked_voter_share_eth"`
 }
 
 // Create a snapshot of all of the network's details
-func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (*NetworkDetails, error) {
+func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, isSaturnDeployed bool) (*NetworkDetails, error) {
 	opts := &bind.CallOpts{
 		BlockNumber: contracts.ElBlockNumber,
 	}
@@ -96,8 +115,6 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 
 	// Multicall getters
 	contracts.Multicaller.AddCall(contracts.RocketNetworkPrices, &details.RplPrice, "getRPLPrice")
-	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MinCollateralFraction, "getMinimumPerMinipoolStake")
-	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MaxCollateralFraction, "getMaximumPerMinipoolStake")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &rewardIndex, "getRewardIndex")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &intervalStart, "getClaimIntervalTimeStart")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &intervalDuration, "getClaimIntervalTime")
@@ -105,6 +122,7 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.TrustedNodeOperatorRewardsPercent, "getClaimingContractPerc", "rocketClaimTrustedNode")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.ProtocolDaoRewardsPercent, "getClaimingContractPerc", "rocketClaimDAO")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.PendingRPLRewards, "getPendingRPLRewards")
+	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.PendingVoterShare, "getPendingVoterShare")
 	contracts.Multicaller.AddCall(contracts.RocketDAONodeTrustedSettingsMinipool, &scrubPeriodSeconds, "getScrubPeriod")
 	contracts.Multicaller.AddCall(contracts.RocketDepositPool, &details.DepositPoolBalance, "getBalance")
 	contracts.Multicaller.AddCall(contracts.RocketDepositPool, &details.DepositPoolExcess, "getExcessBalance")
@@ -136,6 +154,24 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts) (
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &pricesSubmissionFrequency, "getSubmitPricesFrequency")
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &balancesSubmissionFrequency, "getSubmitBalancesFrequency")
 
+	// Exists in Houston but to be removed in Saturn
+	if !isSaturnDeployed {
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MinCollateralFraction, "getMinimumPerMinipoolStake")
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MaxCollateralFraction, "getMaximumPerMinipoolStake")
+	}
+
+	// Saturn
+	if isSaturnDeployed {
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.NodeOperatorCommissionShare, "getNodeShare")
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder, "getNodeShareSecurityCouncilAdder")
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.VoterCommissionShare, "getVoterShare")
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.PdaoCommissionShare, "getProtocolDAOShare")
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MinimumLegacyRplStakeFraction, "getMinimumLegacyRPLStake")
+		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.NodeShare, "getCurrentNodeShare")
+		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.VoterShare, "getCurrentVoterShare")
+		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare, "getCurrentProtocolDAOShare")
+		contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.SmoothingPoolPendingVoterShare, "getPendingVoterShare")
+	}
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
 		return nil, fmt.Errorf("error executing multicall: %w", err)

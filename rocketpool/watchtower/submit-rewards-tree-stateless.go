@@ -377,14 +377,14 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	// Create the arrays of rewards per network
 	collateralRplRewards := []*big.Int{}
 	oDaoRplRewards := []*big.Int{}
-	smoothingPoolEthRewards := []*big.Int{}
+	nodeOperatorSmoothingPoolEthRewardsAndVoterShare := []*big.Int{}
 
 	// Create the total rewards for each network
 	for network := uint64(0); rewardsFile.HasRewardsForNetwork(network); network++ {
 
 		collateralRplRewards = append(collateralRplRewards, rewardsFile.GetNetworkCollateralRpl(network))
 		oDaoRplRewards = append(oDaoRplRewards, rewardsFile.GetNetworkOracleDaoRpl(network))
-		smoothingPoolEthRewards = append(smoothingPoolEthRewards, rewardsFile.GetNetworkSmoothingPoolEth(network))
+		nodeOperatorSmoothingPoolEthRewardsAndVoterShare = append(nodeOperatorSmoothingPoolEthRewardsAndVoterShare, rewardsFile.GetNetworkSmoothingPoolEth(network))
 	}
 
 	// Get transactor
@@ -395,17 +395,18 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 
 	// Create the submission
 	submission := rewards.RewardSubmission{
-		RewardIndex:     index,
-		ExecutionBlock:  big.NewInt(0).SetUint64(executionBlock),
-		ConsensusBlock:  big.NewInt(0).SetUint64(consensusBlock),
-		MerkleRoot:      treeRoot,
-		MerkleTreeCID:   cid,
-		IntervalsPassed: intervalsPassed,
-		TreasuryRPL:     rewardsFile.GetTotalProtocolDaoRpl(),
-		NodeRPL:         collateralRplRewards,
-		TrustedNodeRPL:  oDaoRplRewards,
-		NodeETH:         smoothingPoolEthRewards,
-		UserETH:         rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
+		RewardIndex:      index,
+		ExecutionBlock:   big.NewInt(0).SetUint64(executionBlock),
+		ConsensusBlock:   big.NewInt(0).SetUint64(consensusBlock),
+		MerkleRoot:       treeRoot,
+		IntervalsPassed:  intervalsPassed,
+		TreasuryETH:      rewardsFile.GetTotalProtocolDaoEth(),
+		TreasuryRPL:      rewardsFile.GetTotalProtocolDaoRpl(),
+		NodeRPL:          collateralRplRewards,
+		TrustedNodeRPL:   oDaoRplRewards,
+		NodeETH:          nodeOperatorSmoothingPoolEthRewardsAndVoterShare,
+		UserETH:          rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
+		SmoothingPoolETH: rewardsFile.GetTotalSmoothingPoolBalance(),
 	}
 
 	// Get the gas limit

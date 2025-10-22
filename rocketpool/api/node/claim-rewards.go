@@ -11,11 +11,13 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
+	rewards131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/rewards"
+
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -135,11 +137,6 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 			response.RplStake, err = node131.GetNodeRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
-		wg.Go(func() error {
-			var err error
-			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
 	}
 
 	wg.Go(func() error {
@@ -155,12 +152,6 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 
 	if activeMinipools > 0 {
 		var wg2 errgroup.Group
-		var minStakeFraction *big.Int
-		wg2.Go(func() error {
-			var err error
-			minStakeFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
-			return err
-		})
 		wg2.Go(func() error {
 			var err error
 			response.EthBorrowed, response.EthBorrowLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(saturnDeployed, rp, nodeAccount.Address, nil)
@@ -171,13 +162,6 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		if err := wg2.Wait(); err != nil {
 			return nil, err
 		}
-
-		// Calculate the *real* minimum, including the pending bond reductions
-		trueMinimumStake := big.NewInt(0).Add(response.EthBorrowed, response.PendingBorrowAmount)
-		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
-		trueMinimumStake.Div(trueMinimumStake, response.RplPrice)
-
-		response.MinimumRplStake = trueMinimumStake
 
 		response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
 		response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
@@ -217,7 +201,7 @@ func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRew
 	}
 
 	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -227,13 +211,12 @@ func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRew
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimGas(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, opts)
+	gasInfo, err := rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
 	if err != nil {
 		return nil, err
 	}
 	response.GasInfo = gasInfo
 	return &response, nil
-
 }
 
 func claimRewards(c *cli.Context, indicesString string) (*api.NodeClaimRewardsResponse, error) {
@@ -255,17 +238,17 @@ func claimRewards(c *cli.Context, indicesString string) (*api.NodeClaimRewardsRe
 		return nil, err
 	}
 
+	// Check if Saturn is already deployed
+	isSaturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Response
 	response := api.NodeClaimRewardsResponse{}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
 		return nil, err
 	}
@@ -282,12 +265,29 @@ func claimRewards(c *cli.Context, indicesString string) (*api.NodeClaimRewardsRe
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Claim rewards
-	hash, err := rewards.Claim(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, opts)
-	if err != nil {
-		return nil, err
+	if !isSaturnDeployed {
+		// Get the rewards
+		indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervalsHouston(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		hash, err := rewards131.Claim(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, opts)
+		if err != nil {
+			return nil, err
+		}
+		response.TxHash = hash
+	} else {
+		// Get the rewards
+		claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		hash, err := rewards.Claim(rp, nodeAccount.Address, claims, opts)
+		if err != nil {
+			return nil, err
+		}
+		response.TxHash = hash
 	}
-	response.TxHash = hash
 
 	// Return response
 	return &response, nil
@@ -313,6 +313,12 @@ func canClaimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *
 		return nil, err
 	}
 
+	// Check if Saturn is already deployed
+	isSaturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Response
 	response := api.CanNodeClaimAndStakeRewardsResponse{}
 
@@ -322,22 +328,35 @@ func canClaimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *
 		return nil, err
 	}
 
-	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
-	if err != nil {
-		return nil, err
-	}
-
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimAndStakeGas(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
-	if err != nil {
-		return nil, err
+
+	// Get the rewards
+	if !isSaturnDeployed {
+		indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervalsHouston(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		gasInfo, err := rewards131.EstimateClaimAndStakeGas(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
+		if err != nil {
+			return nil, err
+		}
+		response.GasInfo = gasInfo
+	} else {
+		claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		gasInfo, err := rewards.EstimateClaimAndStakeGas(rp, nodeAccount.Address, claims, stakeAmount, opts)
+		if err != nil {
+			return nil, err
+		}
+		response.GasInfo = gasInfo
 	}
-	response.GasInfo = gasInfo
+
 	return &response, nil
 
 }
@@ -361,6 +380,12 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 		return nil, err
 	}
 
+	// Check if Saturn is already deployed
+	isSaturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
 	// Response
 	response := api.NodeClaimAndStakeRewardsResponse{}
 
@@ -376,32 +401,42 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 		return nil, err
 	}
 
-	// Get the rewards
-	indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
-	if err != nil {
-		return nil, err
-	}
-
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Claim rewards
-	hash, err := rewards.ClaimAndStake(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
-	if err != nil {
-		return nil, err
+	// Get the rewards
+	if !isSaturnDeployed {
+		indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervalsHouston(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		hash, err := rewards131.ClaimAndStake(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, stakeAmount, opts)
+		if err != nil {
+			return nil, err
+		}
+		response.TxHash = hash
+	} else {
+		claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		hash, err := rewards.ClaimAndStake(rp, nodeAccount.Address, claims, stakeAmount, opts)
+		if err != nil {
+			return nil, err
+		}
+		response.TxHash = hash
 	}
-	response.TxHash = hash
 
 	// Return response
 	return &response, nil
 
 }
 
-// Get the rewards for the provided interval indices
-func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) ([]*big.Int, []*big.Int, []*big.Int, [][]common.Hash, error) {
+// Get the rewards for the provided interval indices returning the parameters needed for Houston (Separate function so it's easier to remove after the upgrade)
+func getRewardsForIntervalsHouston(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) ([]*big.Int, []*big.Int, []*big.Int, [][]common.Hash, error) {
 
 	// Get the indices
 	seenIndices := map[uint64]bool{}
@@ -458,5 +493,71 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 
 	// Return
 	return indices, amountRPL, amountETH, merkleProofs, nil
+
+}
+
+// Get the rewards for the provided interval indices
+func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) (types.Claims, error) {
+
+	// Get the indices
+	seenIndices := map[uint64]bool{}
+	elements := strings.Split(indicesString, ",")
+	indices := []*big.Int{}
+	for _, element := range elements {
+		index, err := strconv.ParseUint(element, 0, 64)
+		if err != nil {
+			return nil, fmt.Errorf("cannot convert index %s to a number: %w", element, err)
+		}
+		// Ignore duplicates
+		_, exists := seenIndices[index]
+		if !exists {
+			indices = append(indices, big.NewInt(0).SetUint64(index))
+			seenIndices[index] = true
+		}
+	}
+
+	// Read the tree files to get the details
+	claims := types.Claims{}
+
+	// Populate the interval info for each one
+	for _, index := range indices {
+
+		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, index.Uint64(), nil)
+		if err != nil {
+			return nil, err
+		}
+
+		// Validate
+		if !intervalInfo.TreeFileExists {
+			return nil, fmt.Errorf("rewards tree file '%s' doesn't exist", intervalInfo.TreeFilePath)
+		}
+		if !intervalInfo.MerkleRootValid {
+			return nil, fmt.Errorf("merkle root for rewards tree file '%s' doesn't match the canonical merkle root for interval %d", intervalInfo.TreeFilePath, index.Uint64())
+		}
+
+		// Get the rewards from it
+		if intervalInfo.NodeExists {
+			rplForInterval := big.NewInt(0)
+			rplForInterval.Add(rplForInterval, &intervalInfo.CollateralRplAmount.Int)
+			rplForInterval.Add(rplForInterval, &intervalInfo.ODaoRplAmount.Int)
+
+			smoothingEthForInterval := big.NewInt(0)
+			smoothingEthForInterval.Add(smoothingEthForInterval, &intervalInfo.SmoothingPoolEthAmount.Int)
+
+			voterShareEthForInterval := big.NewInt(0)
+			voterShareEthForInterval.Add(voterShareEthForInterval, &intervalInfo.VoterShareEth.Int)
+
+			claims = append(claims, types.Claim{
+				Index:               index,
+				AmountRPL:           rplForInterval,
+				AmountSmoothingETH:  smoothingEthForInterval,
+				AmountVoterShareETH: voterShareEthForInterval,
+				Proof:               intervalInfo.MerkleProof,
+			})
+		}
+	}
+
+	// Return
+	return claims, nil
 
 }

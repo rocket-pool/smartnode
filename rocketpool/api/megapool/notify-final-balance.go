@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -21,6 +22,10 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
 	if err != nil {
 		return nil, err
 	}
@@ -45,8 +50,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	if err != nil {
 		return nil, err
 	}
-
-	validatorInfo, err := mp.GetValidatorInfo(validatorId, nil)
+	validatorInfo, err := mp.GetValidatorInfoAndPubkey(validatorId, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -58,13 +62,16 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 		return &response, nil
 	}
 
-	// If the slot was not provided, use the withdrawable slot
+	// If the slot was not provided, query the beacon client for the validator's withdrawable epoch
 	if slot == 0 {
-		slot = validatorInfo.WithdrawableEpoch * 32
-
+		validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+		if err != nil {
+			return nil, fmt.Errorf("error getting validator status from beacon chain: %w", err)
+		}
+		slot = validatorStatus.WithdrawableEpoch * 32
 	}
 
-	proof, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
+	withdrawalProof, slotUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
@@ -75,21 +82,31 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	}
 
 	withdrawal := megapool.Withdrawal{
-		Index:                 proof.WithdrawalIndex,
+		Index:                 withdrawalProof.WithdrawalIndex,
 		ValidatorIndex:        validatorInfo.ValidatorIndex,
-		WithdrawalCredentials: proof.WithdrawalAddress,
-		AmountInGwei:          proof.Amount.Uint64(),
+		WithdrawalCredentials: withdrawalProof.WithdrawalAddress,
+		AmountInGwei:          withdrawalProof.Amount.Uint64(),
 	}
 
 	finalBalanceProof := megapool.WithdrawalProof{
-		Slot:           proof.Slot,
-		WithdrawalSlot: proof.WithdrawalSlot,
-		WithdrawalNum:  uint16(proof.IndexInWithdrawalsArray),
+		WithdrawalSlot: withdrawalProof.WithdrawalSlot,
+		WithdrawalNum:  uint16(withdrawalProof.IndexInWithdrawalsArray),
 		Withdrawal:     withdrawal,
-		Witnesses:      proof.Witnesses,
+		Witnesses:      withdrawalProof.Witnesses,
 	}
+
+	// Get the eth2Config and validatorProof
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, slotUsed, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	if err != nil {
+		return nil, err
+	}
+
 	// Notify the validator exit
-	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, megapoolAddress, validatorId, finalBalanceProof, opts)
+	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, megapoolAddress, validatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +135,10 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	if err != nil {
 		return nil, err
 	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Validate minipool owner
 	nodeAccount, err := w.GetNodeAccount()
@@ -141,7 +162,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	}
 
 	// Get the validator pubkey
-	validatorInfo, err := mp.GetValidatorInfo(validatorId, nil)
+	validatorInfo, err := mp.GetValidatorInfoAndPubkey(validatorId, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -152,30 +173,42 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 		return nil, err
 	}
 
-	// If the slot was not provided, use the withdrawable slot
+	// If the slot was not provided, query the beacon client for the validator's withdrawable epoch
 	if slot == 0 {
-		slot = validatorInfo.WithdrawableEpoch * 32
-
+		validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+		if err != nil {
+			return nil, fmt.Errorf("error getting validator status from beacon chain: %w", err)
+		}
+		slot = validatorStatus.WithdrawableEpoch * 32
 	}
 
-	proof, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
+	withdrawalProof, proofSlot, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
 
 	withdrawal := megapool.Withdrawal{
-		Index:                 proof.WithdrawalIndex,
+		Index:                 withdrawalProof.WithdrawalIndex,
 		ValidatorIndex:        validatorInfo.ValidatorIndex,
-		WithdrawalCredentials: proof.WithdrawalAddress,
-		AmountInGwei:          proof.Amount.Uint64(),
+		WithdrawalCredentials: withdrawalProof.WithdrawalAddress,
+		AmountInGwei:          withdrawalProof.Amount.Uint64(),
 	}
 
 	finalBalanceProof := megapool.WithdrawalProof{
-		Slot:           proof.Slot,
-		WithdrawalSlot: proof.WithdrawalSlot,
-		WithdrawalNum:  uint16(proof.IndexInWithdrawalsArray),
+		WithdrawalSlot: withdrawalProof.WithdrawalSlot,
+		WithdrawalNum:  uint16(withdrawalProof.IndexInWithdrawalsArray),
 		Withdrawal:     withdrawal,
-		Witnesses:      proof.Witnesses,
+		Witnesses:      withdrawalProof.Witnesses,
+	}
+
+	// Get the eth2Config and validatorProof
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	if err != nil {
+		return nil, err
 	}
 
 	// Override the provided pending TX if requested
@@ -185,7 +218,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	}
 
 	// Notify the validator exit
-	tx, err := megapool.NotifyFinalBalance(rp, megapoolAddress, validatorId, finalBalanceProof, opts)
+	tx, err := megapool.NotifyFinalBalance(rp, megapoolAddress, validatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}

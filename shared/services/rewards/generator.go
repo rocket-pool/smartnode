@@ -50,10 +50,13 @@ const (
 	MainnetV8Interval  uint64 = 18
 	MainnetV9Interval  uint64 = 29
 	MainnetV10Interval uint64 = 30
+	MainnetV11Interval uint64 = 9000 // TODO: schedule v11
 	// Devnet intervals
+	DevnetV11Interval uint64 = 19
 
 	// Testnet intervals
 	TestnetV10Interval uint64 = 0
+	TestnetV11Interval uint64 = 9000 // TODO: schedule v11
 )
 
 func GetMainnetRulesetVersion(interval uint64) uint64 {
@@ -128,6 +131,23 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 		intervalsPassed:  intervalsPassed,
 	}
 
+	// Get the current network
+	network := t.cfg.Smartnode.Network.Value.(cfgtypes.Network)
+
+	// Determine if the interval is eligible for consensus bonuses
+	var isEligibleInterval bool
+	switch network {
+	case cfgtypes.Network_Mainnet:
+		isEligibleInterval = t.index-4 < MainnetV11Interval
+	case cfgtypes.Network_Testnet:
+		isEligibleInterval = t.index-4 < TestnetV11Interval
+	default:
+		isEligibleInterval = true
+	}
+
+	// v11
+	v11_generator := newTreeGeneratorImpl_v11(t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state, isEligibleInterval)
+
 	// v10
 	v10_generator := newTreeGeneratorImpl_v9_v10(10, t.logger, t.logPrefix, t.index, t.snapshotEnd, t.elSnapshotHeader, t.intervalsPassed, state)
 
@@ -140,9 +160,17 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 	// Create the interval wrappers
 	rewardsIntervalInfos := []rewardsIntervalInfo{
 		{
+			rewardsRulesetVersion: 11,
+			mainnetStartInterval:  MainnetV11Interval,
+			testnetStartInterval:  TestnetV11Interval,
+			devnetStartInterval:   DevnetV11Interval,
+			generator:             v11_generator,
+		},
+		{
 			rewardsRulesetVersion: 10,
 			mainnetStartInterval:  MainnetV10Interval,
 			testnetStartInterval:  TestnetV10Interval,
+			devnetStartInterval:   0,
 			generator:             v10_generator,
 		},
 		{
@@ -170,9 +198,6 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 
 		t.rewardsIntervalInfos[info.rewardsRulesetVersion] = info
 	}
-
-	// Get the current network
-	network := t.cfg.Smartnode.Network.Value.(cfgtypes.Network)
 
 	// Determine which actual rulesets to use based on the current interval number, checking in descending order.
 	foundGenerator := false
@@ -215,8 +240,9 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 }
 
 type GenerateTreeResult struct {
+	RulesetVersion          uint64
 	RewardsFile             IRewardsFile
-	MinipoolPerformanceFile IMinipoolPerformanceFile
+	MinipoolPerformanceFile IPerformanceFile
 	InvalidNetworkNodes     map[common.Address]uint64
 }
 
