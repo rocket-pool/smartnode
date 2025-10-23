@@ -20,6 +20,9 @@ type RewardsFile_v3 struct {
 	MinipoolPerformanceFile MinipoolPerformanceFile_v2             `json:"-"`
 }
 
+// Type assertion to implement IRewardsFile
+var _ IRewardsFile = (*RewardsFile_v3)(nil)
+
 // Serialize a rewards file into bytes
 func (f *RewardsFile_v3) Serialize() ([]byte, error) {
 	return json.Marshal(f)
@@ -83,6 +86,11 @@ func (f *RewardsFile_v3) GetTotalProtocolDaoRpl() *big.Int {
 	return &f.RewardsFileHeader.TotalRewards.ProtocolDaoRpl.Int
 }
 
+// Get the total Eth sent to the pDAO
+func (f *RewardsFile_v3) GetTotalProtocolDaoEth() *big.Int {
+	return big.NewInt(0)
+}
+
 // Get the total RPL sent to the pDAO
 func (f *RewardsFile_v3) GetTotalOracleDaoRpl() *big.Int {
 	return &f.RewardsFileHeader.TotalRewards.TotalOracleDaoRpl.Int
@@ -91,6 +99,11 @@ func (f *RewardsFile_v3) GetTotalOracleDaoRpl() *big.Int {
 // Get the total Eth sent to pool stakers from the SP
 func (f *RewardsFile_v3) GetTotalPoolStakerSmoothingPoolEth() *big.Int {
 	return &f.RewardsFileHeader.TotalRewards.PoolStakerSmoothingPoolEth.Int
+}
+
+// Get the total SP balance
+func (f *RewardsFile_v3) GetTotalSmoothingPoolBalance() *big.Int {
+	return &f.RewardsFileHeader.TotalRewards.TotalSmoothingPoolEth.Int
 }
 
 // Get the total rpl sent to stakers
@@ -177,6 +190,14 @@ func (f *RewardsFile_v3) GetNodeSmoothingPoolEth(addr common.Address) *big.Int {
 		return big.NewInt(0)
 	}
 	return &nr.SmoothingPoolEth.Int
+}
+
+func (f *RewardsFile_v3) GetNodeVoterShareEth(addr common.Address) *big.Int {
+	return big.NewInt(0)
+}
+
+func (f *RewardsFile_v3) GetNodeEth(addr common.Address) *big.Int {
+	return f.GetNodeSmoothingPoolEth(addr)
 }
 
 func (f *RewardsFile_v3) GetMerkleProof(addr common.Address) ([]common.Hash, error) {

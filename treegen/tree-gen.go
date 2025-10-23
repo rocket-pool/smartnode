@@ -463,24 +463,32 @@ func (g *treeGenerator) writeFiles(result *rprewards.GenerateTreeResult, votingP
 		g.outputDir,
 		g.cfg.Smartnode.GetRewardsTreeFilename(index, config.RewardsExtensionJSON),
 	)
-	minipoolPerformancePath := filepath.Join(
-		g.outputDir,
-		g.cfg.Smartnode.GetMinipoolPerformanceFilename(index),
-	)
+	var performancePath string
+	if g.ruleset < 11 {
+		performancePath = filepath.Join(
+			g.outputDir,
+			g.cfg.Smartnode.GetMinipoolPerformanceFilename(index),
+		)
+	} else {
+		performancePath = filepath.Join(
+			g.outputDir,
+			g.cfg.Smartnode.GetPerformanceFilename(index),
+		)
+	}
 
 	// Serialize the minipool performance file
-	minipoolPerformanceBytes, err := g.serializeMinipoolPerformance(result)
+	performanceBytes, err := g.serializeMinipoolPerformance(result)
 	if err != nil {
 		return fmt.Errorf("error serializing minipool performance file into JSON: %w", err)
 	}
 
 	// Write it to disk
-	err = os.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
+	err = os.WriteFile(performancePath, performanceBytes, 0644)
 	if err != nil {
-		return fmt.Errorf("error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
+		return fmt.Errorf("error saving minipool performance file to %s: %w", performancePath, err)
 	}
 
-	g.log.Printlnf("Saved minipool performance file to %s", minipoolPerformancePath)
+	g.log.Printlnf("Saved minipool performance file to %s", performancePath)
 	rewardsFile.SetMinipoolPerformanceFileCID("---")
 
 	// Serialize the rewards tree to JSON

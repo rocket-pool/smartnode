@@ -161,6 +161,8 @@ type MinipoolCloseDetails struct {
 type GetMinipoolCloseDetailsForNodeResponse struct {
 	Status                      string                 `json:"status"`
 	Error                       string                 `json:"error"`
+	IsSaturnDeployed            bool                   `json:"isSaturnDeployed"`
+	ExpressTicketsProvisioned   bool                   `json:"expressTicketsProvisioned"`
 	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
 	Details                     []MinipoolCloseDetails `json:"details"`
 }

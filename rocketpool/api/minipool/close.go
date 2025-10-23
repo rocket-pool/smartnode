@@ -17,6 +17,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -46,6 +47,20 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if Saturn is already deployed
+	response.IsSaturnDeployed, err = state.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if express tickets have been provisioned for the node
+	if response.IsSaturnDeployed {
+		response.ExpressTicketsProvisioned, err = node.GetExpressTicketsProvisioned(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error checking if the node's express tickets are provisioned: %w", err)
+		}
 	}
 
 	// Check the fee distributor
