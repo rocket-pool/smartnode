@@ -5,6 +5,7 @@ import (
 
 	"github.com/urfave/cli"
 
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -1893,7 +1894,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "minimum-per-minipool-stake",
 										Aliases:   []string{"minpms"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MinimumPerMinipoolStakeSettingPath, unboundedPercentUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol131.MinimumPerMinipoolStakeSettingPath, unboundedPercentUsage),
 										UsageText: "rocketpool pdao propose setting node minimum-per-minipool-stake value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -1925,7 +1926,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "maximum-per-minipool-stake",
 										Aliases:   []string{"maxpms"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MaximumPerMinipoolStakeSettingPath, unboundedPercentUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol131.MaximumPerMinipoolStakeSettingPath, unboundedPercentUsage),
 										UsageText: "rocketpool pdao propose setting node maximum-per-minipool-stake value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -1950,6 +1951,38 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 											// Run
 											return proposeSettingNodeMaximumPerMinipoolStake(c, value)
+
+										},
+									},
+
+									{
+										Name:      "minimum-legacy-staked-rpl",
+										Aliases:   []string{"mlsr"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MinimumLegacyRplStakePath, unboundedPercentUsage),
+										UsageText: "rocketpool pdao propose setting node minimum-legacy-staked-rpl value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeMinimumLegacyRplStake(c, value)
 
 										},
 									},

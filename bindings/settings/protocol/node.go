@@ -21,8 +21,7 @@ const (
 	SmoothingPoolRegistrationEnabledSettingPath string = "node.smoothing.pool.registration.enabled"
 	NodeDepositEnabledSettingPath               string = "node.deposit.enabled"
 	VacantMinipoolsEnabledSettingPath           string = "node.vacant.minipools.enabled"
-	MinimumPerMinipoolStakeSettingPath          string = "node.per.minipool.stake.minimum"
-	MaximumPerMinipoolStakeSettingPath          string = "node.per.minipool.stake.maximum"
+	MinimumLegacyRplStakePath                   string = "node.minimum.legacy.staked.rpl"
 	ReducedBondSettingPath                      string = "reduced.bond"
 	NodeUnstakingPeriodSettingPath              string = "node.unstaking.period"
 )
@@ -103,66 +102,34 @@ func EstimateProposeVacantMinipoolsEnabledGas(rp *rocketpool.RocketPool, value b
 	return protocol.EstimateProposeSetBoolGas(rp, fmt.Sprintf("set %s", VacantMinipoolsEnabledSettingPath), NodeSettingsContractName, VacantMinipoolsEnabledSettingPath, value, blockNumber, treeNodes, opts)
 }
 
-// The minimum RPL stake per minipool as a fraction of assigned user ETH
-func GetMinimumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
+// The amount of legacy staked RPL required by a node after unstaking as percentage of their borrowed ETH
+func GetMinimumLegacyRPLStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
 	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
-	if err := nodeSettingsContract.Call(opts, value, "getMinimumPerMinipoolStake"); err != nil {
-		return 0, fmt.Errorf("error getting minimum RPL stake per minipool: %w", err)
+	if err := nodeSettingsContract.Call(opts, value, "getMinimumLegacyRPLStake"); err != nil {
+		return 0, fmt.Errorf("error getting minimum legacy RPL stake per node: %w", err)
 	}
 	return eth.WeiToEth(*value), nil
 }
-func ProposeMinimumPerMinipoolStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumPerMinipoolStakeSettingPath), NodeSettingsContractName, MinimumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
+func ProposeMinimumLecacyRPLStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinimumLegacyRplStakePath), NodeSettingsContractName, MinimumLegacyRplStakePath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeMinimumPerMinipoolStakeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinimumPerMinipoolStakeSettingPath), NodeSettingsContractName, MinimumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
+func EstimateProposeMinimumLecacyRPLStakeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinimumLegacyRplStakePath), NodeSettingsContractName, MinimumLegacyRplStakePath, value, blockNumber, treeNodes, opts)
 }
 
-// The minimum RPL stake per minipool as a fraction of assigned user ETH
-func GetMinimumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+// The amount of legacy staked RPL required by a node after unstaking as percentage of their borrowed ETH
+func GetMinimumLegacyRPLStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
 	if err != nil {
 		return nil, err
 	}
 	value := new(*big.Int)
-	if err := nodeSettingsContract.Call(opts, value, "getMinimumPerMinipoolStake"); err != nil {
-		return nil, fmt.Errorf("error getting minimum RPL stake per minipool: %w", err)
-	}
-	return *value, nil
-}
-
-// The maximum RPL stake per minipool as a fraction of assigned user ETH
-func GetMaximumPerMinipoolStake(rp *rocketpool.RocketPool, opts *bind.CallOpts) (float64, error) {
-	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
-	if err != nil {
-		return 0, err
-	}
-	value := new(*big.Int)
-	if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
-		return 0, fmt.Errorf("error getting maximum RPL stake per minipool: %w", err)
-	}
-	return eth.WeiToEth(*value), nil
-}
-func ProposeMaximumPerMinipoolStake(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MaximumPerMinipoolStakeSettingPath), NodeSettingsContractName, MaximumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
-}
-func EstimateProposeMaximumPerMinipoolStakeGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumPerMinipoolStakeSettingPath), NodeSettingsContractName, MaximumPerMinipoolStakeSettingPath, value, blockNumber, treeNodes, opts)
-}
-
-// The maximum RPL stake per minipool as a fraction of assigned user ETH
-func GetMaximumPerMinipoolStakeRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
-	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
-	if err != nil {
-		return nil, err
-	}
-	value := new(*big.Int)
-	if err := nodeSettingsContract.Call(opts, value, "getMaximumPerMinipoolStake"); err != nil {
-		return nil, fmt.Errorf("error getting maximum RPL stake per minipool: %w", err)
+	if err := nodeSettingsContract.Call(opts, value, "getMinimumLegacyRPLStake"); err != nil {
+		return nil, fmt.Errorf("error getting raw minimum legacy RPL stake per node: %w", err)
 	}
 	return *value, nil
 }

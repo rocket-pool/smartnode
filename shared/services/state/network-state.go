@@ -218,21 +218,21 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 	if err != nil {
 		return nil, fmt.Errorf("error getting network details: %w", err)
 	}
-	m.logLine("1/6 - Retrieved network details (%s so far)", time.Since(start))
+	m.logLine("1/7 - Retrieved network details (%s so far)", time.Since(start))
 
 	// Node details
 	state.NodeDetails, err = rpstate.GetAllNativeNodeDetails(m.rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all node details: %w", err)
 	}
-	m.logLine("2/6 - Retrieved node details (%s so far)", time.Since(start))
+	m.logLine("2/7 - Retrieved node details (%s so far)", time.Since(start))
 
 	// Minipool details
 	state.MinipoolDetails, err = rpstate.GetAllNativeMinipoolDetails(m.rp, contracts)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all minipool details: %w", err)
 	}
-	m.logLine("3/6 - Retrieved minipool details (%s so far)", time.Since(start))
+	m.logLine("3/7 - Retrieved minipool details (%s so far)", time.Since(start))
 
 	// Create the node lookup
 	for i, details := range state.NodeDetails {
@@ -314,6 +314,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 			}
 		}
 	}
+	m.logLine("4/7 - Retrieved megapool validator details (%s so far)", time.Since(start))
 
 	// Calculate avg node fees and distributor shares
 	for _, details := range state.NodeDetails {
@@ -325,7 +326,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 	if err != nil {
 		return nil, fmt.Errorf("error getting Oracle DAO details: %w", err)
 	}
-	m.logLine("4/6 - Retrieved Oracle DAO details (%s so far)", time.Since(start))
+	m.logLine("5/7 - Retrieved Oracle DAO details (%s so far)", time.Since(start))
 
 	// Get the validator stats from Beacon
 	statusMap, err := m.bc.GetValidatorStatuses(pubkeys, &beacon.ValidatorStatusOptions{
@@ -335,7 +336,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 		return nil, err
 	}
 	state.MinipoolValidatorDetails = statusMap
-	m.logLine("5/6 - Retrieved validator details (total time: %s)", time.Since(start))
+	m.logLine("6/7 - Retrieved validator details (total time: %s)", time.Since(start))
 
 	// Get the complete node and user shares
 	mpds := make([]*rpstate.NativeMinipoolDetails, len(state.MinipoolDetails))
@@ -354,14 +355,14 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 		return nil, err
 	}
 	state.MinipoolValidatorDetails = statusMap
-	m.logLine("6/6 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
+	m.logLine("7/7 - Calculated complete node and user balance shares (total time: %s)", time.Since(start))
 
 	return state, nil
 }
 
 // Creates a snapshot of the Rocket Pool network, but only for a single node
 func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeAddress common.Address) (*NetworkState, error) {
-	steps := 5
+	steps := 7
 
 	// Get the execution block for the given slot
 	beaconBlock, exists, err := m.bc.GetBeaconBlock(fmt.Sprintf("%d", slotNumber))
@@ -495,6 +496,68 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 		return nil, fmt.Errorf("error getting Protocol DAO proposal details: %w", err)
 	}
 	m.logLine("%d/%d - Retrieved Protocol DAO proposals (total time: %s)", currentStep, steps, time.Since(start))
+	currentStep++
+
+	if isSaturnDeployed {
+		state.MegapoolValidatorGlobalIndex, err = rpstate.GetAllMegapoolValidators(m.rp, contracts)
+		if err != nil {
+			return nil, fmt.Errorf("error getting all megapool validator details: %w", err)
+		}
+		megapoolValidatorPubkeys := make([]types.ValidatorPubkey, 0, len(state.MegapoolValidatorGlobalIndex))
+		// Iterate over the megapool validators to add their pubkey to the list of pubkeys
+		megapoolAddressMap := make(map[common.Address][]types.ValidatorPubkey)
+		megapoolValidatorInfo := make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex)
+		for _, validator := range state.MegapoolValidatorGlobalIndex {
+			// Add the megapool address to a set
+			if len(validator.Pubkey) > 0 { // TODO CHECK  validators without a pubkey
+				megapoolAddressMap[validator.MegapoolAddress] = append(megapoolAddressMap[validator.MegapoolAddress], types.ValidatorPubkey(validator.Pubkey))
+				megapoolValidatorPubkeys = append(megapoolValidatorPubkeys, types.ValidatorPubkey(validator.Pubkey))
+				megapoolValidatorInfo[types.ValidatorPubkey(validator.Pubkey)] = &validator
+			}
+		}
+		state.MegapoolToPubkeysMap = megapoolAddressMap
+		statusMap, err := m.bc.GetValidatorStatuses(megapoolValidatorPubkeys, &beacon.ValidatorStatusOptions{
+			Slot: &slotNumber,
+		})
+		if err != nil {
+			return nil, err
+		}
+		state.MegapoolValidatorDetails = statusMap
+		state.MegapoolValidatorInfo = megapoolValidatorInfo
+
+		// initialize state.MegapoolDetails
+		state.MegapoolDetails = make(map[common.Address]rpstate.NativeMegapoolDetails)
+		// Sync
+		var wg errgroup.Group
+		// Iterate the maps and query megapool details
+		for megapoolAddress := range megapoolAddressMap {
+
+			megapoolAddress := megapoolAddress
+			wg.Go(func() error {
+
+				// Load the megapool
+				mp, err := megapool.NewMegaPoolV1(m.rp, megapoolAddress, opts)
+				if err != nil {
+					return err
+				}
+				nodeAddress, err := mp.GetNodeAddress(opts)
+				if err != nil {
+					return err
+				}
+				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress)
+				if err != nil {
+					return err
+				}
+
+				state.MegapoolDetails[megapoolAddress] = megapoolDetails
+				return nil
+			})
+			if err := wg.Wait(); err != nil {
+				return nil, fmt.Errorf("error getting all megapool details: %w", err)
+			}
+		}
+	}
+	m.logLine("%d/%d - Retrieved megapool validator details (total time: %s)", currentStep, steps, time.Since(start))
 	currentStep++
 
 	return state, nil

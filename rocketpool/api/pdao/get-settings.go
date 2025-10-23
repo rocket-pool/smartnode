@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -116,6 +117,12 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 			if err == nil {
 				response.Node.NodeUnstakingPeriod = time.Duration(nodeUnstakingPeriod.Int64()) * time.Second
 			}
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Node.MinimumLegacyRplStake, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
 			return err
 		})
 
@@ -412,17 +419,20 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
-	wg.Go(func() error {
-		var err error
-		response.Node.MinimumPerMinipoolStake, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
-		return err
-	})
+	// In Saturn, these two bindings are deprecated in favor of 'GetMinimumLegacyRPLStake'
+	if !response.SaturnDeployed {
+		wg.Go(func() error {
+			var err error
+			response.Node.MinimumPerMinipoolStake, err = protocol131.GetMinimumPerMinipoolStakeRaw(rp, nil)
+			return err
+		})
 
-	wg.Go(func() error {
-		var err error
-		response.Node.MaximumPerMinipoolStake, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
-		return err
-	})
+		wg.Go(func() error {
+			var err error
+			response.Node.MaximumPerMinipoolStake, err = protocol131.GetMaximumPerMinipoolStakeRaw(rp, nil)
+			return err
+		})
+	}
 
 	// === Proposals ===
 

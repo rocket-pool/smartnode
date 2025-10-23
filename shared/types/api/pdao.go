@@ -145,6 +145,7 @@ type GetPDAOSettingsResponse struct {
 		AreVacantMinipoolsEnabled          bool          `json:"areVacantMinipoolsEnabled"`
 		MinimumPerMinipoolStake            *big.Int      `json:"minimumPerMinipoolStake"`
 		MaximumPerMinipoolStake            *big.Int      `json:"maximumPerMinipoolStake"`
+		MinimumLegacyRplStake              *big.Int      `json:"minimumLegacyRplStake"`
 		ReducedBond                        float64       `json:"reducedBond"`
 		NodeUnstakingPeriod                time.Duration `json:"nodeUnstakingPeriod"`
 	} `json:"node"`

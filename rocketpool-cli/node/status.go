@@ -334,6 +334,10 @@ func getStatus(c *cli.Context) error {
 			if status.RplStakeLegacy != nil && status.RplStakeLegacy.Cmp(big.NewInt(0)) != 0 {
 				fmt.Printf("The node has %6f legacy staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6))
 				fmt.Printf("The node has a total stake (legacy minipool RPL plus megapool RPL) of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStake), 6))
+				if status.RplStakeLegacy.Cmp(status.RplStakeThreshold) > 1 {
+					fmt.Printf(
+						"You can withdraw down to %.6f Legacy RPL (%.0f%% of borrowed eth)\n", math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6), (status.RplStakeThresholdFraction)*100)
+				}
 			}
 			var unstakingPeriodEnd time.Time
 			if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
@@ -356,10 +360,10 @@ func getStatus(c *cli.Context) error {
 		} else {
 			// Withdrawal limit pre-saturn 1
 			rplTotalStake := math.RoundDown(eth.WeiToEth(status.RplStake), 6)
-			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6)
+			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6)
 			if rplTotalStake > rplWithdrawalLimit {
 				fmt.Printf(
-					"You can withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6), (status.MaximumStakeFraction)*100)
+					"You can withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6), (status.RplStakeThresholdFraction)*100)
 			}
 		}
 

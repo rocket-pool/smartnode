@@ -129,6 +129,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	// Do some postprocessing on the node data
 	details.DistributorBalance = distributorBalance
 
+	// TODO effectiveRPLStake and MinimumRPLStake are deprecated in Saturn
 	// Fix the effective stake
 	if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
 		details.EffectiveRPLStake.SetUint64(0)
@@ -211,6 +212,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 		details := &nodeDetails[i]
 		details.DistributorBalance = balances[i]
 
+		// TODO effectiveRPLStake and MinimumRPLStake are deprecated in Saturn
 		// Fix the effective stake
 		if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
 			details.EffectiveRPLStake.SetUint64(0)
