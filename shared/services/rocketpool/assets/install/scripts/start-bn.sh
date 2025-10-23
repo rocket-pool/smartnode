@@ -61,7 +61,6 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CMD_LH_NETWORK="--network $LH_NETWORK"
     else
         CMD_LH_NETWORK="--testnet-dir /genesis  \
-        --enr-address 177.116.225.43 \
         --enr-tcp-port $BN_P2P_PORT \
         --enr-udp-port $BN_P2P_PORT \
         --enr-address $EXTERNAL_IP \
