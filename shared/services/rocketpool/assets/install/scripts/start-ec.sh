@@ -103,7 +103,7 @@ if [ "$CLIENT" = "geth" ]; then
             $EC_ADDITIONAL_FLAGS"
 
         if [ "$NETWORK" = "devnet" ]; then
-            CMD="$CMD --bootnodes enode://304eb19edb8c3b0218a99a70cd84d3cfe69325ebcad06f762b6785be8f24d2f868d651378f89d5ab9811e541c8c894fb51ae9c7a2956ab7ba223fa09df4f950c@57.128.20.31:32000"
+            CMD="$CMD --bootnodes enode://f31757b2a14d41c62abf48d529d9cb1fcbda2fd24a72b60e929a8e3977d4cffeb4f3c58a7b07f24a2bc0844c4f59c6a698cb6a362b1ed1c0658aecc195f6abb8@57.128.20.31:32000"
         fi
         if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --miner.gaslimit $EC_SUGGESTED_BLOCK_GAS_LIMIT"

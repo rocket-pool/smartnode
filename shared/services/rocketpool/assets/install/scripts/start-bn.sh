@@ -64,9 +64,8 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         --enr-tcp-port $BN_P2P_PORT \
         --enr-udp-port $BN_P2P_PORT \
         --enr-address $EXTERNAL_IP \
-        --boot-nodes enr:-OK4QB2UDdpaFvXkrUDgwoflxUQ8QMvHCz-hbG0GEgE-0YAZdtgGoRGL1huS8BgY8GfwoSxm_9VaT0JnsNzjir6Vcm0Hh2F0dG5ldHOIAMAAAAAAAACGY2xpZW501opMaWdodGhvdXNlijguMC4wLXJjLjCEZXRoMpDuRGkyYAAAOP__________gmlkgnY0gmlwhDmAFB-EcXVpY4KA64lzZWNwMjU2azGhAizViqbMPljxz96-3A8dh-vFPxoQN_--yEObry6WqSEMiHN5bmNuZXRzD4N0Y3CCgOiDdWRwgoDo"
+        --boot-nodes enr:-OK4QGOftmqPJBC1IsGnDSvD7WTG8FX1CtgGFlgCwOpvGMYBXTk_lRt3NPvkTHDSZWdfxoiTmHqFcR9uIrdwJkOJwvUHh2F0dG5ldHOIAAAAwAAAAACGY2xpZW501opMaWdodGhvdXNlijguMC4wLXJjLjCEZXRoMpAKYaOiYAAAOP__________gmlkgnY0gmlwhDmAFB-EcXVpY4KA64lzZWNwMjU2azGhAxeA3dgZjTdK_OChIfsM9__edTeciA3CZnhhEVZ8O965iHN5bmNuZXRzD4N0Y3CCgOiDdWRwgoDo"
         CHECKPOINT_SYNC_URL="http://57.128.20.31:33001"
-        BN_MAX_PEERS="1"
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/lighthouse beacon \
