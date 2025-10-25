@@ -114,7 +114,7 @@ func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.Net
 			validatorFromState := state.MegapoolValidatorDetails[types.ValidatorPubkey(validator.Pubkey)]
 
 			if validatorFromState.WithdrawableEpoch-notifyThresholdInEpochs <= currentEpoch {
-				t.log.Printlnf("Validator %d has an withdrawable epoch %d which is past the notify threshold... Challenging", validator.ValidatorInfo.ValidatorIndex, validatorFromState.WithdrawableEpoch)
+				t.log.Printlnf("Validator %d has a withdrawable epoch %d which is past the notify threshold... Challenging", validator.ValidatorInfo.ValidatorIndex, validatorFromState.WithdrawableEpoch)
 				batched++
 				challengeMegapoolAddressToIds[validator.MegapoolAddress] = append(challengeMegapoolAddressToIds[validator.MegapoolAddress], validator.ValidatorId)
 			}

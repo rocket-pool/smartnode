@@ -206,7 +206,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 			return nil, err
 		}
 
-		// calculte the withdrawal credentials (in case megapool is not deployed)
+		// calculate the withdrawal credentials (in case megapool is not deployed)
 		withdrawalCredentials = services.CalculateMegapoolWithdrawalCredentials(megapoolAddress)
 
 	}

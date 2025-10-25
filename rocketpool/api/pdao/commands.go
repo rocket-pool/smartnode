@@ -857,7 +857,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 			{
 				Name:      "defeat-proposal",
-				Usage:     "Defeat a proposal if it still has an challenge after voting has started",
+				Usage:     "Defeat a proposal if it still has a challenge after voting has started",
 				UsageText: "rocketpool api pdao defeat-proposal proposal-id challenged-index",
 				Action: func(c *cli.Context) error {
 

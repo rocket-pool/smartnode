@@ -270,7 +270,7 @@ func (c *Client) IsFirstRun() (bool, error) {
 	return rp.IsFirstRun(expandedPath), nil
 }
 
-// Load the Prometheus template, do an template variable substitution, and save it
+// Load the Prometheus template, do a template variable substitution, and save it
 func (c *Client) UpdatePrometheusConfiguration(config *config.RocketPoolConfig) error {
 	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusConfigTemplate))
 	if err != nil {
