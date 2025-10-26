@@ -12,11 +12,11 @@ import (
 
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	rewards131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/rewards"
+
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -126,11 +126,6 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 			response.RplStake, err = node131.GetNodeRPLStake(rp, nodeAccount.Address, nil)
 			return err
 		})
-		wg.Go(func() error {
-			var err error
-			response.MinimumRplStake, err = node131.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
 	}
 
 	wg.Go(func() error {
@@ -146,12 +141,6 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 
 	if activeMinipools > 0 {
 		var wg2 errgroup.Group
-		var minStakeFraction *big.Int
-		wg2.Go(func() error {
-			var err error
-			minStakeFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
-			return err
-		})
 		wg2.Go(func() error {
 			var err error
 			response.EthBorrowed, response.EthBorrowLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(saturnDeployed, rp, nodeAccount.Address, nil)
@@ -162,13 +151,6 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		if err := wg2.Wait(); err != nil {
 			return nil, err
 		}
-
-		// Calculate the *real* minimum, including the pending bond reductions
-		trueMinimumStake := big.NewInt(0).Add(response.EthBorrowed, response.PendingBorrowAmount)
-		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
-		trueMinimumStake.Div(trueMinimumStake, response.RplPrice)
-
-		response.MinimumRplStake = trueMinimumStake
 
 		response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
 		response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))

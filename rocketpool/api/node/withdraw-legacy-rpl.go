@@ -44,7 +44,7 @@ func canNodeUnstakeLegacyRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeUn
 	nodeRplLocked := big.NewInt(0)
 	var isRPLWithdrawalAddressSet bool
 	var rplWithdrawalAddress common.Address
-	maximumRplStake := big.NewInt(0)
+	rplStakeThreshold := big.NewInt(0)
 
 	// Get RPL stake
 	wg.Go(func() error {
@@ -74,10 +74,10 @@ func canNodeUnstakeLegacyRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeUn
 		return err
 	})
 
-	// Get the minimum requirement for minipool bond
+	// Get the minimum amount of legacy staked RPL a node must have after unstaking
 	wg.Go(func() error {
 		var err error
-		maximumRplStake, err = node.GetNodeMaximumRPLStakeForMinipools(rp, nodeAccount.Address, nil)
+		rplStakeThreshold, err = node.GetNodeMinimumLegacyRPLStake(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -105,7 +105,7 @@ func canNodeUnstakeLegacyRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeUn
 	remainingLegacyRplStake.Sub(&remainingLegacyRplStake, nodeRplLocked)
 	response.InsufficientBalance = (amountWei.Cmp(legacyRplStake) > 0)
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
-	response.BelowMaxRPLStake = (remainingLegacyRplStake.Cmp(maximumRplStake) < 0)
+	response.BelowMaxRPLStake = (remainingLegacyRplStake.Cmp(rplStakeThreshold) < 0)
 
 	// Update & return response
 	response.CanUnstake = !(response.InsufficientBalance || response.HasDifferentRPLWithdrawalAddress)

@@ -35,6 +35,7 @@ type NetworkDetails struct {
 	RplPrice                          *big.Int               `json:"rpl_price"`
 	MinCollateralFraction             *big.Int               `json:"min_collateral_fraction"`
 	MaxCollateralFraction             *big.Int               `json:"max_collateral_fraction"`
+	MinimumLegacyRplStakeFraction     *big.Int               `json:"minimum_legacy_rpl_stake_fraction"`
 	IntervalDuration                  time.Duration          `json:"interval_duration"`
 	IntervalStart                     time.Time              `json:"interval_start"`
 	NodeOperatorRewardsPercent        *big.Int               `json:"node_operator_rewards_percent"`
@@ -114,8 +115,6 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 
 	// Multicall getters
 	contracts.Multicaller.AddCall(contracts.RocketNetworkPrices, &details.RplPrice, "getRPLPrice")
-	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MinCollateralFraction, "getMinimumPerMinipoolStake")
-	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MaxCollateralFraction, "getMaximumPerMinipoolStake")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &rewardIndex, "getRewardIndex")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &intervalStart, "getClaimIntervalTimeStart")
 	contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &intervalDuration, "getClaimIntervalTime")
@@ -155,13 +154,19 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &pricesSubmissionFrequency, "getSubmitPricesFrequency")
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &balancesSubmissionFrequency, "getSubmitBalancesFrequency")
 
+	// Exists in Houston but to be removed in Saturn
+	if !isSaturnDeployed {
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MinCollateralFraction, "getMinimumPerMinipoolStake")
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MaxCollateralFraction, "getMaximumPerMinipoolStake")
+	}
+
 	// Saturn
 	if isSaturnDeployed {
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.NodeOperatorCommissionShare, "getNodeShare")
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder, "getNodeShareSecurityCouncilAdder")
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.VoterCommissionShare, "getVoterShare")
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.PdaoCommissionShare, "getProtocolDAOShare")
-
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MinimumLegacyRplStakeFraction, "getMinimumLegacyRPLStake")
 		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.NodeShare, "getCurrentNodeShare")
 		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.VoterShare, "getCurrentVoterShare")
 		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare, "getCurrentProtocolDAOShare")

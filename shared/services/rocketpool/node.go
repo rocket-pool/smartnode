@@ -31,7 +31,7 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	utils.ZeroIfNil(&response.RplStake)
 	utils.ZeroIfNil(&response.RplStakeMegapool)
 	utils.ZeroIfNil(&response.RplStakeLegacy)
-	utils.ZeroIfNil(&response.MaximumRplStake)
+	utils.ZeroIfNil(&response.RplStakeThreshold)
 	utils.ZeroIfNil(&response.AccountBalances.ETH)
 	utils.ZeroIfNil(&response.AccountBalances.RPL)
 	utils.ZeroIfNil(&response.AccountBalances.RETH)
