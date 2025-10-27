@@ -80,6 +80,7 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 		Locked             bool   `json:"locked"`
 		ValidatorIndex     uint64 `json:"validatorIndex"`
 		ExitBalance        uint64 `json:"exitBalance"`
+		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
 		LockedSlot         uint64 `json:"lockedSlot"`
 	})
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
@@ -88,18 +89,21 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
 	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
 	validator.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
-	validator.ValidatorInfo.Staked = src.Staked
 	validator.ValidatorInfo.DepositValue = src.DepositValue
-	validator.ValidatorInfo.ExitBalance = src.ExitBalance
-	validator.ValidatorInfo.Exiting = src.Exiting
-	validator.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
+
+	validator.ValidatorInfo.Staked = src.Staked
 	validator.ValidatorInfo.Exited = src.Exited
 	validator.ValidatorInfo.InQueue = src.InQueue
 	validator.ValidatorInfo.InPrestake = src.InPrestake
 	validator.ValidatorInfo.ExpressUsed = src.ExpressUsed
 	validator.ValidatorInfo.Dissolved = src.Dissolved
+	validator.ValidatorInfo.Exiting = src.Exiting
 	validator.ValidatorInfo.Locked = src.Locked
+
+	validator.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
+	validator.ValidatorInfo.ExitBalance = src.ExitBalance
 	validator.ValidatorInfo.LockedSlot = src.LockedSlot
+	validator.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
 	validator.MegapoolAddress = iface[2].(common.Address)
 	validator.ValidatorId = iface[3].(uint32)
 
