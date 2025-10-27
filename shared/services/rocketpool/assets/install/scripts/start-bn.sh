@@ -61,10 +61,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CMD_LH_NETWORK="--network $LH_NETWORK"
     else
         CMD_LH_NETWORK="--testnet-dir /genesis  \
-        --enr-tcp-port $BN_P2P_PORT \
-        --enr-udp-port $BN_P2P_PORT \
-        --enr-address $EXTERNAL_IP \
-        --boot-nodes enr:-OK4QGOftmqPJBC1IsGnDSvD7WTG8FX1CtgGFlgCwOpvGMYBXTk_lRt3NPvkTHDSZWdfxoiTmHqFcR9uIrdwJkOJwvUHh2F0dG5ldHOIAAAAwAAAAACGY2xpZW501opMaWdodGhvdXNlijguMC4wLXJjLjCEZXRoMpAKYaOiYAAAOP__________gmlkgnY0gmlwhDmAFB-EcXVpY4KA64lzZWNwMjU2azGhAxeA3dgZjTdK_OChIfsM9__edTeciA3CZnhhEVZ8O965iHN5bmNuZXRzD4N0Y3CCgOiDdWRwgoDo"
+        --boot-nodes enr:-OK4QN1SL8O9ld1HcbHuA1Fe6y0kCfv_H5wWjWO0KVYm-w51BktMG1N5YT1dAOPm2oP851szAiPsuS1OzMJSgg4Q0SgHh2F0dG5ldHOIAAAAAAAAAAyGY2xpZW501opMaWdodGhvdXNlijguMC4wLXJjLjCEZXRoMpAKYaOiYAAAOP__________gmlkgnY0gmlwhDmAFB-EcXVpY4KA64lzZWNwMjU2azGhA8MOg2rlrwR4PeqUQIPJu8tXOiMviebP1PX3QTo-Rs0liHN5bmNuZXRzD4N0Y3CCgOiDdWRwgoDo"
         CHECKPOINT_SYNC_URL="http://57.128.20.31:33001"
     fi
 
@@ -126,6 +123,7 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         --enr.ip $EXTERNAL_IP \
         --enr.udp $BN_P2P_PORT \
         --bootnodes enr:-OK4QDwaZ_OyUmkcc6yo_FK101V8ijG6oDUlXf1GMyPXIfIIXxiEHFSYAX1984RJ0uRpqnRFtky2huM5g9KrsQDGjKoHh2F0dG5ldHOIAAAYAAAAAACGY2xpZW501opMaWdodGhvdXNlijguMC4wLXJjLjCEZXRoMpDk6yg0YAAAOP__________gmlkgnY0gmlwhDmAFB-EcXVpY4KA64lzZWNwMjU2azGhAkoE2cCx5k2fBwUo4Ni7iJ5Q6zARbu2DCOf-Es72CiaIiHN5bmNuZXRzD4N0Y3CCgOiDdWRwgoDo"
+        CHECKPOINT_SYNC_URL="http://57.128.20.31:33001"
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/node --max-http-header-size=65536 /usr/app/packages/cli/bin/lodestar beacon \
