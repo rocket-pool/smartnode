@@ -2,6 +2,7 @@ package megapool
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -62,16 +63,20 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 		return &response, nil
 	}
 
-	// If the slot was not provided, query the beacon client for the validator's withdrawable epoch
+	validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting validator status from beacon chain: %w", err)
+	}
+	validatorIndex, err := strconv.ParseUint(validatorStatus.Index, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing the validator index")
+	}
+	// If the slot was not provided, use the validator's withdrawable epoch supplied by the beacon client
 	if slot == 0 {
-		validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
-		if err != nil {
-			return nil, fmt.Errorf("error getting validator status from beacon chain: %w", err)
-		}
 		slot = validatorStatus.WithdrawableEpoch * 32
 	}
 
-	withdrawalProof, slotUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
+	withdrawalProof, slotUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
@@ -83,7 +88,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 
 	withdrawal := megapool.Withdrawal{
 		Index:                 withdrawalProof.WithdrawalIndex,
-		ValidatorIndex:        validatorInfo.ValidatorIndex,
+		ValidatorIndex:        validatorIndex,
 		WithdrawalCredentials: withdrawalProof.WithdrawalAddress,
 		AmountInGwei:          withdrawalProof.Amount.Uint64(),
 	}
@@ -173,23 +178,27 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 		return nil, err
 	}
 
-	// If the slot was not provided, query the beacon client for the validator's withdrawable epoch
+	validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting validator status from beacon chain: %w", err)
+	}
+	validatorIndex, err := strconv.ParseUint(validatorStatus.Index, 10, 64)
+	if err != nil {
+		return nil, fmt.Errorf("Error parsing the validator index")
+	}
+	// If the slot was not provided, use the validator's withdrawable epoch supplied by the beacon client
 	if slot == 0 {
-		validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
-		if err != nil {
-			return nil, fmt.Errorf("error getting validator status from beacon chain: %w", err)
-		}
 		slot = validatorStatus.WithdrawableEpoch * 32
 	}
 
-	withdrawalProof, proofSlot, err := services.GetWithdrawalProofForSlot(c, slot, validatorInfo.ValidatorIndex)
+	withdrawalProof, proofSlot, err := services.GetWithdrawalProofForSlot(c, slot, validatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
 
 	withdrawal := megapool.Withdrawal{
 		Index:                 withdrawalProof.WithdrawalIndex,
-		ValidatorIndex:        validatorInfo.ValidatorIndex,
+		ValidatorIndex:        validatorIndex,
 		WithdrawalCredentials: withdrawalProof.WithdrawalAddress,
 		AmountInGwei:          withdrawalProof.Amount.Uint64(),
 	}
