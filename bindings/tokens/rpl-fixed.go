@@ -68,7 +68,7 @@ func EstimateApproveFixedSupplyRPLGas(rp *rocketpool.RocketPool, spender common.
 	return estimateApproveGas(rocketTokenFixedSupplyRPL, "fixed-supply RPL", spender, amount, opts)
 }
 
-// Approve an fixed-supply RPL spender
+// Approve a fixed-supply RPL spender
 func ApproveFixedSupplyRPL(rp *rocketpool.RocketPool, spender common.Address, amount *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketTokenFixedSupplyRPL, err := getRocketTokenRPLFixedSupply(rp, nil)
 	if err != nil {
