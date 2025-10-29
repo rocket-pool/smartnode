@@ -543,7 +543,6 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 				Dissolved:          validatorDetails.Dissolved,
 				Exiting:            validatorDetails.Exiting,
 				Locked:             validatorDetails.Locked,
-				ValidatorIndex:     validatorDetails.ValidatorIndex,
 				ExitBalance:        validatorDetails.ExitBalance,
 			}
 
@@ -552,6 +551,11 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 			if validator.Staked {
 				if currentEpoch > validator.BeaconStatus.ActivationEpoch {
 					validator.Activated = true
+					validatorIndex, err := strconv.ParseUint(validator.BeaconStatus.Index, 10, 64)
+					if err != nil {
+						return fmt.Errorf("Error parsing the validator index")
+					}
+					validator.ValidatorIndex = validatorIndex
 					validator.WithdrawableEpoch = validator.BeaconStatus.WithdrawableEpoch
 				}
 			}
@@ -806,7 +810,7 @@ func GetChildBlockTimestampForSlot(c *cli.Context, slot uint64) (uint64, error) 
 	}
 
 	// Find the timestamp of the child block starting at slot + 1, crawl up to two epochs
-	for candidateSlot := slot + 1; candidateSlot <= slot+64; candidateSlot++ {
+	for candidateSlot := slot; candidateSlot <= slot+64; candidateSlot++ {
 		_, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
 		if err != nil {
 			return 0, fmt.Errorf("Error getting the beacon block for slot %d: %w", slot, err)

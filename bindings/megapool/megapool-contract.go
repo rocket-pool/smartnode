@@ -81,10 +81,8 @@ type ValidatorInfo struct {
 	Dissolved          bool   `abi:"dissolved"`
 	Exiting            bool   `abi:"exiting"`
 	Locked             bool   `abi:"locked"`
-	ValidatorIndex     uint64 `abi:"validatorIndex"`
 	ExitBalance        uint64 `abi:"exitBalance"`
-	WithdrawableEpoch  uint64 `abi:"withdrawableEpoch"`
-	LockedSlot         uint64 `abi:"lockedSlot"`
+	LockedTime         uint64 `abi:"lockedTime"`
 }
 
 type ValidatorInfoFromGlobalIndex struct {
@@ -248,18 +246,18 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 		LastRequestedValue uint32 `json:"lastRequestedValue"`
 		LastRequestedBond  uint32 `json:"lastRequestedBond"`
 		DepositValue       uint32 `json:"depositValue"`
-		Staked             bool   `json:"staked"`
-		Exited             bool   `json:"exited"`
-		InQueue            bool   `json:"inQueue"`
-		InPrestake         bool   `json:"inPrestake"`
-		ExpressUsed        bool   `json:"expressUsed"`
-		Dissolved          bool   `json:"dissolved"`
-		Exiting            bool   `json:"exiting"`
-		Locked             bool   `json:"locked"`
-		ValidatorIndex     uint64 `json:"validatorIndex"`
-		ExitBalance        uint64 `json:"exitBalance"`
-		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
-		LockedSlot         uint64 `json:"lockedSlot"`
+
+		Staked      bool `json:"staked"`
+		Exited      bool `json:"exited"`
+		InQueue     bool `json:"inQueue"`
+		InPrestake  bool `json:"inPrestake"`
+		ExpressUsed bool `json:"expressUsed"`
+		Dissolved   bool `json:"dissolved"`
+		Exiting     bool `json:"exiting"`
+		Locked      bool `json:"locked"`
+
+		ExitBalance uint64 `json:"exitBalance"`
+		LockedTime  uint64 `json:"lockedTime"`
 	})
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
 	// copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
@@ -267,19 +265,19 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
 	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
 	validator.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
-	validator.ValidatorInfo.Staked = src.Staked
 	validator.ValidatorInfo.DepositValue = src.DepositValue
-	validator.ValidatorInfo.ExitBalance = src.ExitBalance
-	validator.ValidatorInfo.Exiting = src.Exiting
-	validator.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
+
+	validator.ValidatorInfo.Staked = src.Staked
 	validator.ValidatorInfo.Exited = src.Exited
 	validator.ValidatorInfo.InQueue = src.InQueue
 	validator.ValidatorInfo.InPrestake = src.InPrestake
 	validator.ValidatorInfo.ExpressUsed = src.ExpressUsed
 	validator.ValidatorInfo.Dissolved = src.Dissolved
+	validator.ValidatorInfo.Exiting = src.Exiting
 	validator.ValidatorInfo.Locked = src.Locked
-	validator.ValidatorInfo.LockedSlot = src.LockedSlot
-	validator.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
+
+	validator.ValidatorInfo.ExitBalance = src.ExitBalance
+	validator.ValidatorInfo.LockedTime = src.LockedTime
 	return *validator, nil
 }
 

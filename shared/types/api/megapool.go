@@ -69,7 +69,7 @@ type MegapoolValidatorDetails struct {
 	ValidatorIndex     uint64                 `json:"validatorIndex"`
 	ExitBalance        uint64                 `json:"exitBalance"`
 	WithdrawableEpoch  uint64                 `json:"withdrawableEpoch"`
-	LockedSlot         uint64                 `json:"lockedSlot"`
+	LockedTime         uint64                 `json:"lockedTime"`
 	Activated          bool                   `json:"activated"`
 	BeaconStatus       beacon.ValidatorStatus `json:"beaconStatus"`
 }
