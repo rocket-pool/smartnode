@@ -21,7 +21,7 @@ type Megapool interface {
 	GetValidatorInfo(validatorId uint32, opts *bind.CallOpts) (ValidatorInfo, error)
 	GetValidatorPubkey(validatorId uint32, opts *bind.CallOpts) (rptypes.ValidatorPubkey, error)
 	GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.CallOpts) (ValidatorInfoWithPubkey, error)
-	GetLastDistributionBlock(opts *bind.CallOpts) (uint64, error)
+	GetLastDistributionTime(opts *bind.CallOpts) (uint64, error)
 	GetAssignedValue(opts *bind.CallOpts) (*big.Int, error)
 	GetDebt(opts *bind.CallOpts) (*big.Int, error)
 	GetRefundValue(opts *bind.CallOpts) (*big.Int, error)

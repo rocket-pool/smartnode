@@ -43,7 +43,7 @@ type MegapoolDetails struct {
 	BondRequirement          *big.Int                   `json:"bondRequirement"`
 	RevenueSplit             network.RevenueSplit       `json:"revenueSplit"`
 	Balances                 tokens.Balances            `json:"balances"`
-	LastDistributionBlock    uint64                     `json:"lastDistributionBlock"`
+	LastDistributionTime     uint64                     `json:"lastDistributionTime"`
 	PendingRewardSplit       megapool.RewardSplit       `json:"pendingRewardSplit"`
 	ReducedBond              *big.Int                   `json:"reducedBond"`
 	QueueDetails             QueueDetails               `json:"queueDetails"`
@@ -142,7 +142,7 @@ type CanDistributeMegapoolResponse struct {
 	Error                 string             `json:"error"`
 	MegapoolAddress       common.Address     `json:"megapoolAddress"`
 	MegapoolNotDeployed   bool               `json:"megapoolNotDeployed"`
-	LastDistributionBlock uint64             `json:"lastDistributionBlock"`
+	LastDistributionTime  uint64             `json:"lastDistributionTime"`
 	LockedValidatorCount  uint32             `json:"lockedValidatorCount"`
 	ExitingValidatorCount uint32             `json:"exitingValidatorCount"`
 	CanDistribute         bool               `json:"canDistribute"`

@@ -36,7 +36,7 @@ type NativeMegapoolDetails struct {
 	UserCapital              *big.Int       `json:"userCapital"`
 	BondRequirement          *big.Int       `json:"bondRequirement"`
 	EthBalance               *big.Int       `json:"ethBalance"`
-	LastDistributionBlock    uint64         `json:"lastDistributionBlock"`
+	LastDistributionTime     uint64         `json:"lastDistributionTime"`
 }
 
 // Get the normalized bond per 32 eth validator
@@ -127,7 +127,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 		return details, nil
 	}
 
-	details.LastDistributionBlock, err = mega.GetLastDistributionBlock(nil)
+	details.LastDistributionTime, err = mega.GetLastDistributionTime(nil)
 	if err != nil {
 		return NativeMegapoolDetails{}, err
 	}

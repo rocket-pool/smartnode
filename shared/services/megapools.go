@@ -306,15 +306,15 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return details, nil
 	}
 
-	details.LastDistributionBlock, err = mega.GetLastDistributionBlock(nil)
+	details.LastDistributionTime, err = mega.GetLastDistributionTime(nil)
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
 	// Don't calculate the revenue split if there are no staked validators
-	if details.LastDistributionBlock != 0 {
+	if details.LastDistributionTime != 0 {
 		wg.Go(func() error {
 			var err error
-			details.RevenueSplit, err = network.CalculateSplit(rp, details.LastDistributionBlock, nil)
+			details.RevenueSplit, err = network.CalculateSplit(rp, details.LastDistributionTime, nil)
 			return err
 		})
 	}

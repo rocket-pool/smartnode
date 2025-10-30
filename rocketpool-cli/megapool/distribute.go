@@ -42,7 +42,7 @@ func distribute(c *cli.Context) error {
 		if canResponse.MegapoolNotDeployed {
 			fmt.Println("The node does not have a megapool deployed")
 		}
-		if canResponse.LastDistributionBlock == 0 {
+		if canResponse.LastDistributionTime == 0 {
 			fmt.Printf("The node's megapool: %s does not have any staking validators\n", canResponse.MegapoolAddress)
 		}
 		if canResponse.ExitingValidatorCount > 0 {
