@@ -24,7 +24,7 @@ func setAllowListedControllers(c *cli.Context) error {
 	var addressListStr string
 	addressListStr = c.String("addressList")
 	if addressListStr == "" {
-		// Ask the the user how many addresses should be included in the list
+		// Ask the user how many addresses should be included in the list
 		numStr := prompt.Prompt(fmt.Sprintf("How many addresses do you want to propose as allowlisted controllers? Enter 0 to propose clearing the list"), "^\\d+$", "Invalid number.")
 		numAddressesUint, err := strconv.ParseUint(numStr, 0, 64)
 		if err != nil {

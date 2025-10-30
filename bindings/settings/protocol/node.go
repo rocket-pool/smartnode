@@ -199,7 +199,7 @@ func GetReducedBondRaw(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int
 	return *value, nil
 }
 
-// The the period of time a node must wait before withdrawing RPL
+// The period of time a node must wait before withdrawing RPL
 func GetNodeUnstakingPeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
 	nodeSettingsContract, err := getNodeSettingsContract(rp, opts)
 	if err != nil {
