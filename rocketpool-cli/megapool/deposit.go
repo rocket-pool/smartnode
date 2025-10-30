@@ -254,7 +254,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	fmt.Println("The new megapool validator has been created.")
 	fmt.Println("Once your validator progresses through the queue, ETH will be assigned and a 1 ETH prestake submitted.")
-	fmt.Printf("After the prestake, your node will automatically perform a stake transaction within around 48 hours, to complete the progress.")
+	fmt.Printf("After the prestake, your node will automatically perform a stake transaction, to complete the progress.")
 	fmt.Println("")
 	fmt.Println("To check the status of your validators use `rocketpool megapool validators`")
 	fmt.Println("To monitor the stake transaction use `rocketpool service logs node`")

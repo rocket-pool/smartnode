@@ -97,7 +97,6 @@ func GetRewardSnapshotEventInterval19() rewards.RewardsEvent {
 		ExecutionBlock:    big.NewInt(19231284),
 		ConsensusBlock:    big.NewInt(8429279),
 		MerkleRoot:        common.HexToHash("0x35d1be64d49aa71dc5b5ea13dd6f91d8613c81aef2593796d6dee599cd228aea"),
-		MerkleTreeCID:     "bafybeiazkzsqe7molppbhbxg2khdgocrip36eoezroa7anbe53za7mxjpq",
 		IntervalsPassed:   big.NewInt(1),
 		TreasuryRPL:       big.NewInt(0), // Set below
 		TrustedNodeRPL:    []*big.Int{},  // XXX Not set, but probably not needed

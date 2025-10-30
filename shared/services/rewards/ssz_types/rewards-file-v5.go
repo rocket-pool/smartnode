@@ -18,30 +18,11 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
-type Format = uint
+var Magicv2 [4]byte = [4]byte{0x52, 0x50, 0x52, 0x55}
 
-const (
-	FormatJSON = iota
-	FormatSSZ
-)
+type NodeRewards_v2 []*NodeReward_v2
 
-var Magic [4]byte = [4]byte{0x52, 0x50, 0x52, 0x54}
-
-type Address [20]byte
-type Hash [32]byte
-type NetworkRewards []*NetworkReward
-type NodeRewards []*NodeReward
-
-// Network corresponds to the top-level Network field, where 1 means mainnet
-type Network uint64
-
-// Layer corresponds to rewards-level Network fields, where 0 means layer 1...
-// Using an alias of uint64 helps serve as documentation rather than function
-type Layer = uint64
-
-type MerkleProof []Hash
-
-type SSZFile_v1 struct {
+type SSZFile_v2 struct {
 	// Fields specific to ssz encoding are first
 
 	// A magic header. Four bytes. Helps immediately verify what follows is a rewards tree.
@@ -77,7 +58,7 @@ type SSZFile_v1 struct {
 	// MerkleRoot is the root of the merkle tree of all the nodes in this tree.
 	MerkleRoot Hash `ssz-size:"32" json:"merkleRoot,omitempty"`
 	// TotalRewards is aggregate data on how many rewards this tree contains
-	TotalRewards *TotalRewards `json:"totalRewards"`
+	TotalRewards *TotalRewards_v2 `json:"totalRewards"`
 	// NetworkRewards is the destinations and aggregate amounts for each network
 	// this tree distributes to.
 	// Must be sorted by Chain ID ascending
@@ -87,19 +68,19 @@ type SSZFile_v1 struct {
 
 	// NodeRewards are the objects that make up the merkle tree.
 	// Must be sorted by Node Address ascending
-	NodeRewards NodeRewards `ssz-max:"9223372036854775807" json:"nodeRewards"`
+	NodeRewards NodeRewards_v2 `ssz-max:"9223372036854775807" json:"nodeRewards"`
 
 	merkleProofs map[Address]MerkleProof `ssz:"-" json:"-"`
 }
 
-func NewSSZFile_v1() *SSZFile_v1 {
-	return &SSZFile_v1{
-		Magic: Magic,
+func NewSSZFile_v2() *SSZFile_v2 {
+	return &SSZFile_v2{
+		Magic: Magicv2,
 	}
 }
 
 // Check if the NodeRewards field respects unique constraints
-func (f *SSZFile_v1) nodeRewardsUnique() bool {
+func (f *SSZFile_v2) nodeRewardsUnique() bool {
 	m := make(map[Address]any, len(f.NodeRewards))
 
 	for _, nr := range f.NodeRewards {
@@ -114,7 +95,7 @@ func (f *SSZFile_v1) nodeRewardsUnique() bool {
 }
 
 // Check if the NetworkRewards field respects unique constraints
-func (f *SSZFile_v1) networkRewardsUnique() bool {
+func (f *SSZFile_v2) networkRewardsUnique() bool {
 	m := make(map[uint64]any, len(f.NetworkRewards))
 
 	for _, nr := range f.NetworkRewards {
@@ -130,7 +111,7 @@ func (f *SSZFile_v1) networkRewardsUnique() bool {
 
 // Verify checks that the arrays in the file are appropriately sorted and that
 // the merkle proof, if present, matches.
-func (f *SSZFile_v1) Verify() error {
+func (f *SSZFile_v2) Verify() error {
 	if !sort.IsSorted(f.NodeRewards) {
 		return errors.New("ssz file node rewards out of order")
 	}
@@ -159,32 +140,32 @@ func (f *SSZFile_v1) Verify() error {
 }
 
 // Minipool Performance CID is deprecated, but we must implement this for the interface
-func (f *SSZFile_v1) SetMinipoolPerformanceFileCID(cid string) {
+func (f *SSZFile_v2) SetMinipoolPerformanceFileCID(cid string) {
 }
 
 // The "normal" serialize() call is expected to be JSON by ISerializable in files.go
-func (f *SSZFile_v1) Serialize() ([]byte, error) {
+func (f *SSZFile_v2) Serialize() ([]byte, error) {
 	return json.Marshal(f)
 }
 
 // Write as SSZ
-func (f *SSZFile_v1) SerializeSSZ() ([]byte, error) {
+func (f *SSZFile_v2) SerializeSSZ() ([]byte, error) {
 	return f.FinalizeSSZ()
 }
 
-func (f *SSZFile_v1) GenerateMerkleTree() error {
+func (f *SSZFile_v2) GenerateMerkleTree() error {
 	_, err := f.Proofs()
 	return err
 }
 
 // Marshal wrappers that adds the magic header if absent and sets or validators merkle root
-func (f *SSZFile_v1) FinalizeSSZ() ([]byte, error) {
+func (f *SSZFile_v2) FinalizeSSZ() ([]byte, error) {
 
 	return f.FinalizeSSZTo(make([]byte, 0, f.SizeSSZ()))
 }
 
-func (f *SSZFile_v1) FinalizeSSZTo(buf []byte) ([]byte, error) {
-	copy(f.Magic[:], Magic[:])
+func (f *SSZFile_v2) FinalizeSSZTo(buf []byte) ([]byte, error) {
+	copy(f.Magic[:], Magicv2[:])
 	if err := f.Verify(); err != nil {
 		return nil, err
 	}
@@ -193,12 +174,12 @@ func (f *SSZFile_v1) FinalizeSSZTo(buf []byte) ([]byte, error) {
 }
 
 // Parsing wrapper that adds verification to the merkle root and magic header
-func ParseSSZFile(buf []byte) (*SSZFile_v1, error) {
-	if !bytes.HasPrefix(buf, Magic[:]) {
+func ParseSSZFile_v2(buf []byte) (*SSZFile_v2, error) {
+	if !bytes.HasPrefix(buf, Magicv2[:]) {
 		return nil, errors.New("magic header not found in reward ssz file")
 	}
 
-	f := &SSZFile_v1{}
+	f := &SSZFile_v2{}
 	if err := f.UnmarshalSSZ(buf); err != nil {
 		return nil, err
 	}
@@ -211,7 +192,7 @@ func ParseSSZFile(buf []byte) (*SSZFile_v1, error) {
 }
 
 // This getter lazy-computes the proofs and caches them on the file
-func (f *SSZFile_v1) Proofs() (map[Address]MerkleProof, error) {
+func (f *SSZFile_v2) Proofs() (map[Address]MerkleProof, error) {
 	if f.merkleProofs != nil {
 		return f.merkleProofs, nil
 	}
@@ -230,17 +211,24 @@ func (f *SSZFile_v1) Proofs() (map[Address]MerkleProof, error) {
 		rpl.Add(rpl, nr.OracleDaoRpl.Int)
 		rplBytes := make([]byte, 32)
 		rplBytes = rpl.FillBytes(rplBytes)
-		eth, err := nr.SmoothingPoolEth.Bytes32()
-		if err != nil {
-			return nil, fmt.Errorf("error converting big.Int to uint256 byte slice: %w", err)
-		}
 
-		const dataSize = 20 + 32*3
+		smoothingEth := stdbig.NewInt(0)
+		smoothingEth.Add(smoothingEth, nr.SmoothingPoolEth.Int)
+		smoothingEthBytes := make([]byte, 32)
+		smoothingEthBytes = smoothingEth.FillBytes(smoothingEthBytes)
+
+		voterShareEth := stdbig.NewInt(0)
+		voterShareEth.Add(voterShareEth, nr.VoterShareEth.Int)
+		voterShareEthBytes := make([]byte, 32)
+		voterShareEthBytes = voterShareEth.FillBytes(voterShareEthBytes)
+
+		const dataSize = 20 + 32*4
 		nodeData := make([]byte, dataSize)
 		copy(nodeData[0:20], address[:])
 		copy(nodeData[20:20+32], network[:])
 		copy(nodeData[20+32:20+32*2], rplBytes[:])
-		copy(nodeData[20+32*2:20+32*3], eth[:])
+		copy(nodeData[20+32*2:20+32*3], smoothingEthBytes[:])
+		copy(nodeData[20+32*3:20+32*4], voterShareEthBytes[:])
 
 		treeData = append(treeData, nodeData)
 		nodeDataMap[nr.Address] = nodeData
@@ -291,9 +279,7 @@ func (f *SSZFile_v1) Proofs() (map[Address]MerkleProof, error) {
 	return out, nil
 }
 
-type TotalRewards struct {
-	// Total amount of ETH sent to the pDAO
-	TotalProtocolDaoEth big.Uint256 `ssz-size:"32" json:"totalProtocolDaoEth"`
+type TotalRewards_v2 struct {
 	// Total amount of RPL sent to the pDAO
 	ProtocolDaoRpl big.Uint256 `ssz-size:"32" json:"protocolDaoRpl"`
 	// Total amount of RPL sent to Node Operators
@@ -308,46 +294,16 @@ type TotalRewards struct {
 	NodeOperatorSmoothingPoolEth big.Uint256 `ssz-size:"32" json:"nodeOperatorSmoothingPoolEth"`
 	// Total Node Weight as defined by RPIP-30
 	TotalNodeWeight big.Uint256 `ssz-size:"32" json:"totalNodeWeight,omitempty"`
+	// Total Voter Share as defined by RPIP-46
+	TotalVoterShareEth big.Uint256 `ssz-size:"32" json:"totalVoterShareEth"`
+	// Smoothing Pool Voter Share is the portion of TotalVoterShareEth that comes from
+	// the Smoothing Pool contract (as opposed to megapool distribution)
+	SmoothingPoolVoterShareEth big.Uint256 `ssz-size:"32" json:"smoothingPoolVoterShareEth"`
+	// Total amount of Eth sent to the pDAO
+	TotalPdaoShareEth big.Uint256 `ssz-size:"32" json:"totalPdaoShareEth"`
 }
 
-type NetworkReward struct {
-	// Chain ID (key)
-	Network Layer `json:"-"`
-
-	// Amount of RPL sent to the network for Node Operators
-	CollateralRpl big.Uint256 `ssz-size:"32" json:"collateralRpl"`
-	// Amount of RPL sent to the network for oDAO members
-	OracleDaoRpl big.Uint256 `ssz-size:"32" json:"oracleDaoRpl"`
-	// Amount of Eth sent to the network for Node Operators
-	// In v11+ this includes the voter share
-	SmoothingPoolEth big.Uint256 `ssz-size:"32" json:"smoothingPoolEth"`
-}
-
-func NewNetworkReward(network Layer) *NetworkReward {
-	return &NetworkReward{
-		Network:          network,
-		CollateralRpl:    big.NewUint256(0),
-		OracleDaoRpl:     big.NewUint256(0),
-		SmoothingPoolEth: big.NewUint256(0),
-	}
-}
-
-// NetworkRewards should implement sort.Interface to make it easier to sort.
-func (n NetworkRewards) Len() int {
-	return len(n)
-}
-
-func (n NetworkRewards) Less(i, j int) bool {
-	return n[i].Network < n[j].Network
-}
-
-func (n NetworkRewards) Swap(i, j int) {
-	tmp := n[i]
-	n[i] = n[j]
-	n[j] = tmp
-}
-
-type NodeReward struct {
+type NodeReward_v2 struct {
 	// Address of the Node (key)
 	Address Address `ssz-size:"20" json:"-"`
 
@@ -359,26 +315,29 @@ type NodeReward struct {
 	OracleDaoRpl big.Uint256 `ssz-size:"32" json:"oracleDaoRpl"`
 	// Amount of Smoothing Pool ETH earned by the Node
 	SmoothingPoolEth big.Uint256 `ssz-size:"32" json:"smoothingPoolEth"`
+	// Amount of Voter Share ETH earned by the Node
+	VoterShareEth big.Uint256 `ssz-size:"32" json:"voterShareEth"`
 	// Merkle proof for the node claim, sorted with the Merkle root last
 	MerkleProof MerkleProof `ssz:"-" json:"merkleProof"`
 }
 
-func NewNodeReward(network Layer, address Address) *NodeReward {
-	return &NodeReward{
+func NewNodeReward_v2(network Layer, address Address) *NodeReward_v2 {
+	return &NodeReward_v2{
 		Address:          address,
 		Network:          network,
 		CollateralRpl:    big.NewUint256(0),
 		OracleDaoRpl:     big.NewUint256(0),
 		SmoothingPoolEth: big.NewUint256(0),
+		VoterShareEth:    big.NewUint256(0),
 	}
 }
 
 // NodeRewards should implement sort.Interface to make it easier to sort.
-func (n NodeRewards) Len() int {
+func (n NodeRewards_v2) Len() int {
 	return len(n)
 }
 
-func (n NodeRewards) Less(i, j int) bool {
+func (n NodeRewards_v2) Less(i, j int) bool {
 	ia := n[i].Address
 	ja := n[j].Address
 
@@ -389,14 +348,14 @@ func (n NodeRewards) Less(i, j int) bool {
 	return false
 }
 
-func (n NodeRewards) Swap(i, j int) {
+func (n NodeRewards_v2) Swap(i, j int) {
 	tmp := n[i]
 	n[i] = n[j]
 	n[j] = tmp
 }
 
-func (n NodeRewards) Find(addr Address) *NodeReward {
-	idx := slices.IndexFunc(n, func(nr *NodeReward) bool {
+func (n NodeRewards_v2) Find(addr Address) *NodeReward_v2 {
+	idx := slices.IndexFunc(n, func(nr *NodeReward_v2) bool {
 		return bytes.Equal(nr.Address[:], addr[:])
 	})
 	if idx == -1 {
@@ -405,15 +364,9 @@ func (n NodeRewards) Find(addr Address) *NodeReward {
 	return n[idx]
 }
 
-func AddressFromBytes(b []byte) Address {
-	out := Address{}
-	copy(out[:], b)
-	return out
-}
-
 // Functions to implement IRewardsFile
-func (f *SSZFile_v1) Deserialize(data []byte) error {
-	if bytes.HasPrefix(data, Magic[:]) {
+func (f *SSZFile_v2) Deserialize(data []byte) error {
+	if bytes.HasPrefix(data, Magicv2[:]) {
 		if err := f.UnmarshalSSZ(data); err != nil {
 			return err
 		}
@@ -424,15 +377,15 @@ func (f *SSZFile_v1) Deserialize(data []byte) error {
 	return json.Unmarshal(data, f)
 }
 
-func (f *SSZFile_v1) GetIndex() uint64 {
+func (f *SSZFile_v2) GetIndex() uint64 {
 	return f.Index
 }
 
-func (f *SSZFile_v1) GetMerkleRoot() string {
+func (f *SSZFile_v2) GetMerkleRoot() string {
 	return f.MerkleRoot.String()
 }
 
-func (f *SSZFile_v1) GetNodeAddresses() []common.Address {
+func (f *SSZFile_v2) GetNodeAddresses() []common.Address {
 	out := make([]common.Address, 0, len(f.NodeRewards))
 
 	for _, nr := range f.NodeRewards {
@@ -441,35 +394,35 @@ func (f *SSZFile_v1) GetNodeAddresses() []common.Address {
 	return out
 }
 
-func (f *SSZFile_v1) GetConsensusStartBlock() uint64 {
+func (f *SSZFile_v2) GetConsensusStartBlock() uint64 {
 	return f.ConsensusStartBlock
 }
 
-func (f *SSZFile_v1) GetExecutionStartBlock() uint64 {
+func (f *SSZFile_v2) GetExecutionStartBlock() uint64 {
 	return f.ExecutionStartBlock
 }
 
-func (f *SSZFile_v1) GetConsensusEndBlock() uint64 {
+func (f *SSZFile_v2) GetConsensusEndBlock() uint64 {
 	return f.ConsensusEndBlock
 }
 
-func (f *SSZFile_v1) GetExecutionEndBlock() uint64 {
+func (f *SSZFile_v2) GetExecutionEndBlock() uint64 {
 	return f.ExecutionEndBlock
 }
 
-func (f *SSZFile_v1) GetStartTime() time.Time {
+func (f *SSZFile_v2) GetStartTime() time.Time {
 	return f.StartTime
 }
 
-func (f *SSZFile_v1) GetEndTime() time.Time {
+func (f *SSZFile_v2) GetEndTime() time.Time {
 	return f.EndTime
 }
 
-func (f *SSZFile_v1) GetIntervalsPassed() uint64 {
+func (f *SSZFile_v2) GetIntervalsPassed() uint64 {
 	return f.IntervalsPassed
 }
 
-func (f *SSZFile_v1) GetMerkleProof(address common.Address) ([]common.Hash, error) {
+func (f *SSZFile_v2) GetMerkleProof(address common.Address) ([]common.Hash, error) {
 	proofs, err := f.Proofs()
 	if err != nil {
 		return nil, fmt.Errorf("error while calculating proof for %s: %w", address.String(), err)
@@ -488,7 +441,7 @@ func (f *SSZFile_v1) GetMerkleProof(address common.Address) ([]common.Hash, erro
 	return out, nil
 }
 
-func (f *SSZFile_v1) getRewardsForNetwork(network uint64) *NetworkReward {
+func (f *SSZFile_v2) getRewardsForNetwork(network uint64) *NetworkReward {
 	for _, nr := range f.NetworkRewards {
 		if nr.Network == network {
 			return nr
@@ -497,11 +450,11 @@ func (f *SSZFile_v1) getRewardsForNetwork(network uint64) *NetworkReward {
 	return nil
 }
 
-func (f *SSZFile_v1) HasRewardsForNetwork(network uint64) bool {
+func (f *SSZFile_v2) HasRewardsForNetwork(network uint64) bool {
 	return f.getRewardsForNetwork(network) != nil
 }
 
-func (f *SSZFile_v1) GetNetworkCollateralRpl(network uint64) *stdbig.Int {
+func (f *SSZFile_v2) GetNetworkCollateralRpl(network uint64) *stdbig.Int {
 	nr := f.getRewardsForNetwork(network)
 	if nr == nil {
 		return stdbig.NewInt(0)
@@ -510,7 +463,7 @@ func (f *SSZFile_v1) GetNetworkCollateralRpl(network uint64) *stdbig.Int {
 	return nr.CollateralRpl.Int
 }
 
-func (f *SSZFile_v1) GetNetworkOracleDaoRpl(network uint64) *stdbig.Int {
+func (f *SSZFile_v2) GetNetworkOracleDaoRpl(network uint64) *stdbig.Int {
 	nr := f.getRewardsForNetwork(network)
 	if nr == nil {
 		return stdbig.NewInt(0)
@@ -519,7 +472,7 @@ func (f *SSZFile_v1) GetNetworkOracleDaoRpl(network uint64) *stdbig.Int {
 	return nr.OracleDaoRpl.Int
 }
 
-func (f *SSZFile_v1) GetNetworkSmoothingPoolEth(network uint64) *stdbig.Int {
+func (f *SSZFile_v2) GetNetworkSmoothingPoolEth(network uint64) *stdbig.Int {
 	nr := f.getRewardsForNetwork(network)
 	if nr == nil {
 		return stdbig.NewInt(0)
@@ -528,17 +481,17 @@ func (f *SSZFile_v1) GetNetworkSmoothingPoolEth(network uint64) *stdbig.Int {
 	return nr.SmoothingPoolEth.Int
 }
 
-func (f *SSZFile_v1) getNodeRewards(addr common.Address) *NodeReward {
+func (f *SSZFile_v2) getNodeRewards(addr common.Address) *NodeReward_v2 {
 	var nativeAddress Address
 	copy(nativeAddress[:], addr[:])
 	return f.NodeRewards.Find(nativeAddress)
 }
 
-func (f *SSZFile_v1) HasRewardsFor(addr common.Address) bool {
+func (f *SSZFile_v2) HasRewardsFor(addr common.Address) bool {
 	return f.getNodeRewards(addr) != nil
 }
 
-func (f *SSZFile_v1) GetNodeCollateralRpl(addr common.Address) *stdbig.Int {
+func (f *SSZFile_v2) GetNodeCollateralRpl(addr common.Address) *stdbig.Int {
 	nr := f.getNodeRewards(addr)
 	if nr == nil {
 		return stdbig.NewInt(0)
@@ -547,7 +500,7 @@ func (f *SSZFile_v1) GetNodeCollateralRpl(addr common.Address) *stdbig.Int {
 	return nr.CollateralRpl.Int
 }
 
-func (f *SSZFile_v1) GetNodeOracleDaoRpl(addr common.Address) *stdbig.Int {
+func (f *SSZFile_v2) GetNodeOracleDaoRpl(addr common.Address) *stdbig.Int {
 	nr := f.getNodeRewards(addr)
 	if nr == nil {
 		return stdbig.NewInt(0)
@@ -556,7 +509,7 @@ func (f *SSZFile_v1) GetNodeOracleDaoRpl(addr common.Address) *stdbig.Int {
 	return nr.OracleDaoRpl.Int
 }
 
-func (f *SSZFile_v1) GetNodeSmoothingPoolEth(addr common.Address) *stdbig.Int {
+func (f *SSZFile_v2) GetNodeSmoothingPoolEth(addr common.Address) *stdbig.Int {
 	nr := f.getNodeRewards(addr)
 	if nr == nil {
 		return stdbig.NewInt(0)
@@ -565,46 +518,55 @@ func (f *SSZFile_v1) GetNodeSmoothingPoolEth(addr common.Address) *stdbig.Int {
 	return nr.SmoothingPoolEth.Int
 }
 
-func (f *SSZFile_v1) GetNodeVoterShareEth(addr common.Address) *stdbig.Int {
-	return stdbig.NewInt(0)
+func (f *SSZFile_v2) GetNodeVoterShareEth(addr common.Address) *stdbig.Int {
+	nr := f.getNodeRewards(addr)
+	if nr == nil {
+		return stdbig.NewInt(0)
+	}
+
+	return nr.VoterShareEth.Int
 }
 
-func (f *SSZFile_v1) GetNodeEth(addr common.Address) *stdbig.Int {
-	return f.GetNodeSmoothingPoolEth(addr)
+func (f *SSZFile_v2) GetNodeEth(addr common.Address) *stdbig.Int {
+	out := stdbig.NewInt(0)
+	out.Add(out, f.GetNodeSmoothingPoolEth(addr))
+	out.Add(out, f.GetNodeVoterShareEth(addr))
+
+	return out
 }
 
-func (f *SSZFile_v1) GetRewardsFileVersion() uint64 {
+func (f *SSZFile_v2) GetRewardsFileVersion() uint64 {
 	return f.RewardsFileVersion
 }
 
-func (f *SSZFile_v1) GetTotalCollateralRpl() *stdbig.Int {
+func (f *SSZFile_v2) GetTotalCollateralRpl() *stdbig.Int {
 	return f.TotalRewards.TotalCollateralRpl.Int
 }
 
-func (f *SSZFile_v1) GetTotalNodeOperatorSmoothingPoolEth() *stdbig.Int {
+func (f *SSZFile_v2) GetTotalNodeOperatorSmoothingPoolEth() *stdbig.Int {
 	return f.TotalRewards.NodeOperatorSmoothingPoolEth.Int
 }
 
-func (f *SSZFile_v1) GetTotalNodeWeight() *stdbig.Int {
+func (f *SSZFile_v2) GetTotalNodeWeight() *stdbig.Int {
 	return f.TotalRewards.TotalNodeWeight.Int
 }
 
-func (f *SSZFile_v1) GetTotalOracleDaoRpl() *stdbig.Int {
+func (f *SSZFile_v2) GetTotalOracleDaoRpl() *stdbig.Int {
 	return f.TotalRewards.TotalOracleDaoRpl.Int
 }
 
-func (f *SSZFile_v1) GetTotalPoolStakerSmoothingPoolEth() *stdbig.Int {
+func (f *SSZFile_v2) GetTotalPoolStakerSmoothingPoolEth() *stdbig.Int {
 	return f.TotalRewards.PoolStakerSmoothingPoolEth.Int
 }
 
-func (f *SSZFile_v1) GetTotalSmoothingPoolBalance() *stdbig.Int {
+func (f *SSZFile_v2) GetTotalSmoothingPoolBalance() *stdbig.Int {
 	return f.TotalRewards.TotalSmoothingPoolEth.Int
 }
 
-func (f *SSZFile_v1) GetTotalProtocolDaoRpl() *stdbig.Int {
+func (f *SSZFile_v2) GetTotalProtocolDaoRpl() *stdbig.Int {
 	return f.TotalRewards.ProtocolDaoRpl.Int
 }
 
-func (f *SSZFile_v1) GetTotalProtocolDaoEth() *stdbig.Int {
-	return f.TotalRewards.TotalProtocolDaoEth.Int
+func (f *SSZFile_v2) GetTotalProtocolDaoEth() *stdbig.Int {
+	return f.TotalRewards.TotalPdaoShareEth.Int
 }

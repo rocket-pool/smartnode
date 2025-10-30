@@ -30,8 +30,8 @@ func (t *v8Test) saveArtifacts(prefix string, result *GenerateTreeResult) {
 		fullPath: filepath.Join(tmpDir, fmt.Sprintf("%s-rewards.json", prefix)),
 		f:        result.RewardsFile,
 	}
-	performanceLocalFile := LocalFile[IMinipoolPerformanceFile]{
-		fullPath: filepath.Join(tmpDir, fmt.Sprintf("%s-minipool-performance.json", prefix)),
+	performanceLocalFile := LocalFile[IPerformanceFile]{
+		fullPath: filepath.Join(tmpDir, fmt.Sprintf("%s-performance.json", prefix)),
 		f:        result.MinipoolPerformanceFile,
 	}
 	_, err = rewardsLocalFile.Write()
@@ -58,12 +58,12 @@ func (t *v8Test) failIf(err error) {
 	}
 }
 
-func (t *v8Test) SetMinipoolPerformance(canonicalMinipoolPerformance IMinipoolPerformanceFile, networkState *state.NetworkState) {
+func (t *v8Test) SetMinipoolPerformance(canonicalMinipoolPerformance IPerformanceFile, networkState *state.NetworkState) {
 	addresses := canonicalMinipoolPerformance.GetMinipoolAddresses()
 	for _, address := range addresses {
 
 		// Get the minipool's performance
-		perf, ok := canonicalMinipoolPerformance.GetSmoothingPoolPerformance(address)
+		perf, ok := canonicalMinipoolPerformance.GetMinipoolPerformance(address)
 		if !ok {
 			t.Fatalf("Minipool %s not found in canonical minipool performance, despite being listed as present", address.Hex())
 		}
