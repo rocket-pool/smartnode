@@ -123,7 +123,6 @@ func (rp *RocketPool) GetAddresses(opts *bind.CallOpts, contractNames ...string)
 
 	// Load addresses
 	for ci, contractName := range contractNames {
-		ci, contractName := ci, contractName
 		wg.Go(func() error {
 			address, err := rp.GetAddress(contractName, opts)
 			if err == nil {
@@ -189,7 +188,6 @@ func (rp *RocketPool) GetABIs(opts *bind.CallOpts, contractNames ...string) ([]*
 
 	// Load ABIs
 	for ci, contractName := range contractNames {
-		ci, contractName := ci, contractName
 		wg.Go(func() error {
 			abi, err := rp.GetABI(contractName, opts)
 			if err == nil {
@@ -271,7 +269,6 @@ func (rp *RocketPool) GetContracts(opts *bind.CallOpts, contractNames ...string)
 
 	// Load contracts
 	for ci, contractName := range contractNames {
-		ci, contractName := ci, contractName
 		wg.Go(func() error {
 			contract, err := rp.GetContract(contractName, opts)
 			if err == nil {
