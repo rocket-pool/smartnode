@@ -55,7 +55,7 @@ func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Co
 	var blockToRequest string
 	if slot == 0 {
 		// Get the head block, requesting the previous one until we have an execution payload
-		blockToRequest = "head"
+		blockToRequest = "finalized"
 	} else {
 		blockToRequest = fmt.Sprintf("%d", slot)
 	}
@@ -810,7 +810,7 @@ func GetChildBlockTimestampForSlot(c *cli.Context, slot uint64) (uint64, error) 
 	}
 
 	// Find the timestamp of the child block starting at slot + 1, crawl up to two epochs
-	for candidateSlot := slot; candidateSlot <= slot+64; candidateSlot++ {
+	for candidateSlot := slot + 1; candidateSlot <= slot+64; candidateSlot++ {
 		_, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
 		if err != nil {
 			return 0, fmt.Errorf("Error getting the beacon block for slot %d: %w", slot, err)
