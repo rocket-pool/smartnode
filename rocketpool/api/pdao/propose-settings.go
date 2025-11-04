@@ -919,6 +919,26 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing DissolvePenalty: %w", err)
 			}
+		// UserDistributeDelay
+		case protocol.MegapoolUserDistributeDelayPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeUserDistributeDelay(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing UserDistributeDelay: %w", err)
+			}
+		// UserDistributeDelayWithShortfall
+		case protocol.MegapoolUserDistributeDelayShortfallPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeUserDistributeDelayWithShortfall(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing UserDistributeDelayWithShortfall: %w", err)
+			}
 		}
 
 	}
@@ -1756,6 +1776,26 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposeDissolvePenalty(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing DissolvePenalty: %w", err)
+			}
+		// UserDistributeDelay
+		case protocol.MegapoolUserDistributeDelayPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeUserDistributeDelay(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing UserDistributeDelay: %w", err)
+			}
+		// UserDistributeDelayWithShortfall
+		case protocol.MegapoolUserDistributeDelayShortfallPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeUserDistributeDelayWithShortfall(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing UserDistributeDelayWithShortfall: %w", err)
 			}
 		}
 

@@ -176,11 +176,13 @@ type GetPDAOSettingsResponse struct {
 	} `json:"security"`
 
 	Megapool struct {
-		TimeBeforeDissolve time.Duration `json:"timeBeforeDissolve"`
-		MaximumEthPenalty  *big.Int      `json:"maximumEthPenalty"`
-		NotifyThreshold    time.Duration `json:"notifyThreshold"`
-		LateNotifyFine     *big.Int      `json:"lateNotifyFine"`
-		DissolvePenalty    *big.Int      `json:"dissolvePenalty"`
+		TimeBeforeDissolve               time.Duration `json:"timeBeforeDissolve"`
+		MaximumEthPenalty                *big.Int      `json:"maximumEthPenalty"`
+		NotifyThreshold                  uint64        `json:"notifyThreshold"`
+		LateNotifyFine                   *big.Int      `json:"lateNotifyFine"`
+		DissolvePenalty                  *big.Int      `json:"dissolvePenalty"`
+		UserDistributeDelay              uint64        `json:"UserDistributeDelay"`
+		UserDistributeDelayWithShortfall uint64        `json:"UserDistributeDelayWithShortfall"`
 	} `json:"megapool"`
 }
 

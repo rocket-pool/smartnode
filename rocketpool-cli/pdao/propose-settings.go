@@ -338,8 +338,8 @@ func proposeSettingMaximumMegapoolEthPenalty(c *cli.Context, value *big.Int) err
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolMaximumMegapoolEthPenaltyPath, trueValue)
 }
 
-func proposeSettingMegapoolNotifyThreshold(c *cli.Context, value time.Duration) error {
-	trueValue := fmt.Sprint(uint64(value.Seconds()))
+func proposeSettingMegapoolNotifyThreshold(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolNotifyThresholdPath, trueValue)
 }
 
@@ -348,9 +348,19 @@ func proposeSettingMegapoolLateNotifyFine(c *cli.Context, value *big.Int) error 
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolLateNotifyFinePath, trueValue)
 }
 
-func proposeSettingMegapoolDissolvePenalty(c *cli.Context, value time.Duration) error {
-	trueValue := fmt.Sprint(uint64(value.Seconds()))
+func proposeSettingMegapoolDissolvePenalty(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolDissolvePenaltyPath, trueValue)
+}
+
+func proposeSettingMegapoolUserDistributeDelay(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeDelayPath, trueValue)
+}
+
+func proposeSettingMegapoolUserDistributeDelayWithShortfall(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeDelayShortfallPath, trueValue)
 }
 
 func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
