@@ -158,6 +158,12 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 			return err
 		})
 
+		wg.Go(func() error {
+			var err error
+			response.Megapool.DissolvePenalty, err = protocol.GetMegapoolDissolvePenalty(rp, nil)
+			return err
+		})
+
 	}
 
 	// === Auction ===

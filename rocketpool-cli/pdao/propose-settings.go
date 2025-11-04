@@ -348,6 +348,11 @@ func proposeSettingMegapoolLateNotifyFine(c *cli.Context, value *big.Int) error 
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolLateNotifyFinePath, trueValue)
 }
 
+func proposeSettingMegapoolDissolvePenalty(c *cli.Context, value time.Duration) error {
+	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolDissolvePenaltyPath, trueValue)
+}
+
 func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue)
@@ -469,6 +474,7 @@ func isSaturnOnlySetting(setting string) bool {
 		protocol.MegapoolMaximumMegapoolEthPenaltyPath:              {},
 		protocol.MegapoolNotifyThresholdPath:                        {},
 		protocol.MegapoolLateNotifyFinePath:                         {},
+		protocol.MegapoolDissolvePenaltyPath:                        {},
 	}
 
 	_, exists := saturnOnlySettings[setting]

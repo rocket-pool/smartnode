@@ -146,6 +146,7 @@ func getSettings(c *cli.Context) error {
 		fmt.Printf("\tMax ETH penalty:               %.6f ETH\n", eth.WeiToEth(response.Megapool.MaximumEthPenalty))
 		fmt.Printf("\tNotify Threshold:              %s\n", response.Megapool.NotifyThreshold)
 		fmt.Printf("\tLate Notify Fine:              %.6f ETH\n", eth.WeiToEth(response.Megapool.LateNotifyFine))
+		fmt.Printf("\tDissolve Penalty:              %.6f Eth\n", eth.WeiToEth(response.Megapool.DissolvePenalty))
 	}
 
 	return nil

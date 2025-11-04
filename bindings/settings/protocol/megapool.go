@@ -20,6 +20,7 @@ const (
 	MegapoolMaximumMegapoolEthPenaltyPath  string = "maximum.megapool.eth.penalty"
 	MegapoolNotifyThresholdPath            string = "notify.threshold"
 	MegapoolLateNotifyFinePath             string = "late.notify.fine"
+	MegapoolDissolvePenaltyPath            string = "megapool.dissolve.penalty"
 )
 
 // How long after an assignment a watcher must wait to dissolve a megapool validator
@@ -100,6 +101,26 @@ func ProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, blockNumbe
 }
 func EstimateProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolLateNotifyFinePath), MegapoolSettingsContractName, MegapoolLateNotifyFinePath, value, blockNumber, treeNodes, opts)
+}
+
+// The penalty applied to a NO for having a validator dissolved
+func GetMegapoolDissolvePenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := megapoolSettingsContract.Call(opts, value, "getDissolvePenalty"); err != nil {
+		return nil, fmt.Errorf("error getting megapool dissolve penalty value: %w", err)
+	}
+	return *value, nil
+}
+
+func ProposeDissolvePenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolDissolvePenaltyPath), MegapoolSettingsContractName, MegapoolDissolvePenaltyPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeDissolvePenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolDissolvePenaltyPath), MegapoolSettingsContractName, MegapoolDissolvePenaltyPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts

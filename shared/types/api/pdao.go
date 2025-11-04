@@ -180,6 +180,7 @@ type GetPDAOSettingsResponse struct {
 		MaximumEthPenalty  *big.Int      `json:"maximumEthPenalty"`
 		NotifyThreshold    time.Duration `json:"notifyThreshold"`
 		LateNotifyFine     *big.Int      `json:"lateNotifyFine"`
+		DissolvePenalty    *big.Int      `json:"dissolvePenalty"`
 	} `json:"megapool"`
 }
 
