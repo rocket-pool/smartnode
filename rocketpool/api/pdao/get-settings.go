@@ -158,15 +158,6 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 			return err
 		})
 
-		wg.Go(func() error {
-			var err error
-			userDistributeWindowLength, err := protocol.GetUserDistributeWindowLength(rp, nil)
-			if err == nil {
-				response.Megapool.UserDistributeWindowLength = time.Duration(userDistributeWindowLength) * time.Second
-			}
-			return err
-		})
-
 	}
 
 	// === Auction ===

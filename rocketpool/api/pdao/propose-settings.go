@@ -909,16 +909,6 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing LateNofifyFine: %w", err)
 			}
-		// UserDistributeWindowLength
-		case protocol.MegapoolUserDistributeWindowLengthPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			response.GasInfo, err = protocol.EstimateProposeUserDistributeWindowLength(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error estimating gas for proposing UserDistributeWindowLength: %w", err)
-			}
 		}
 
 	}
@@ -1746,16 +1736,6 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			proposalID, hash, err = protocol.ProposeLateNotifyFine(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing LateNotifyFine: %w", err)
-			}
-		// UserDistributeWindowLength
-		case protocol.MegapoolUserDistributeWindowLengthPath:
-			newValue, err := cliutils.ValidateBigInt(valueName, value)
-			if err != nil {
-				return nil, err
-			}
-			proposalID, hash, err = protocol.ProposeUserDistributeWindowLength(rp, newValue, blockNumber, pollard, opts)
-			if err != nil {
-				return nil, fmt.Errorf("error proposing UserDistributeWindowLength: %w", err)
 			}
 		}
 

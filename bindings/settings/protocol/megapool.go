@@ -20,7 +20,6 @@ const (
 	MegapoolMaximumMegapoolEthPenaltyPath  string = "maximum.megapool.eth.penalty"
 	MegapoolNotifyThresholdPath            string = "notify.threshold"
 	MegapoolLateNotifyFinePath             string = "late.notify.fine"
-	MegapoolUserDistributeWindowLengthPath string = "user.distribute.window.length"
 )
 
 // How long after an assignment a watcher must wait to dissolve a megapool validator
@@ -101,26 +100,6 @@ func ProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, blockNumbe
 }
 func EstimateProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolLateNotifyFinePath), MegapoolSettingsContractName, MegapoolLateNotifyFinePath, value, blockNumber, treeNodes, opts)
-}
-
-// The amount of time a user must wait before distributing another node's megapool
-func GetUserDistributeWindowLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
-	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
-	if err != nil {
-		return 0, err
-	}
-	value := new(*big.Int)
-	if err := megapoolSettingsContract.Call(opts, value, "getUserDistributeWindowLength"); err != nil {
-		return 0, fmt.Errorf("error getting megapool user distribute window length value: %w", err)
-	}
-	return (*value).Uint64(), nil
-}
-
-func ProposeUserDistributeWindowLength(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolUserDistributeWindowLengthPath), MegapoolSettingsContractName, MegapoolUserDistributeWindowLengthPath, value, blockNumber, treeNodes, opts)
-}
-func EstimateProposeUserDistributeWindowLength(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolUserDistributeWindowLengthPath), MegapoolSettingsContractName, MegapoolUserDistributeWindowLengthPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts
