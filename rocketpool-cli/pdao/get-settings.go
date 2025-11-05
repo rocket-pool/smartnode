@@ -142,11 +142,13 @@ func getSettings(c *cli.Context) error {
 	if response.SaturnDeployed {
 		// Megapool
 		fmt.Println("== Megapool Settings ==")
-		fmt.Printf("\tTime Before Dissolve:          %s\n", response.Megapool.TimeBeforeDissolve)
-		fmt.Printf("\tMax ETH penalty:               %.6f ETH\n", eth.WeiToEth(response.Megapool.MaximumEthPenalty))
-		fmt.Printf("\tNotify Threshold:              %s\n", response.Megapool.NotifyThreshold)
-		fmt.Printf("\tLate Notify Fine:              %.6f ETH\n", eth.WeiToEth(response.Megapool.LateNotifyFine))
-		fmt.Printf("\tUser Distribute Window Length: %s\n", response.Megapool.UserDistributeWindowLength)
+		fmt.Printf("\tTime Before Dissolve:                   %s\n", response.Megapool.TimeBeforeDissolve)
+		fmt.Printf("\tDissolve Penalty:                       %.6f ETH\n", eth.WeiToEth(response.Megapool.DissolvePenalty))
+		fmt.Printf("\tMax ETH penalty:                        %.6f ETH\n", eth.WeiToEth(response.Megapool.MaximumEthPenalty))
+		fmt.Printf("\tNotify Threshold:                       %d Epochs\n", response.Megapool.NotifyThreshold)
+		fmt.Printf("\tLate Notify Fine:                       %.6f ETH\n", eth.WeiToEth(response.Megapool.LateNotifyFine))
+		fmt.Printf("\tUser Distribute Delay:                  %d Epochs\n", response.Megapool.UserDistributeDelay)
+		fmt.Printf("\tUser Distribute Delay with Shortfall:   %d Epochs\n", response.Megapool.UserDistributeDelayWithShortfall)
 	}
 
 	return nil

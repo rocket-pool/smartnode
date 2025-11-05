@@ -15,12 +15,14 @@ import (
 
 // Config
 const (
-	MegapoolSettingsContractName           string = "rocketDAOProtocolSettingsMegapool"
-	MegapoolTimeBeforeDissolveSettingsPath string = "megapool.time.before.dissolve"
-	MegapoolMaximumMegapoolEthPenaltyPath  string = "maximum.megapool.eth.penalty"
-	MegapoolNotifyThresholdPath            string = "notify.threshold"
-	MegapoolLateNotifyFinePath             string = "late.notify.fine"
-	MegapoolUserDistributeWindowLengthPath string = "user.distribute.window.length"
+	MegapoolSettingsContractName             string = "rocketDAOProtocolSettingsMegapool"
+	MegapoolTimeBeforeDissolveSettingsPath   string = "megapool.time.before.dissolve"
+	MegapoolMaximumMegapoolEthPenaltyPath    string = "maximum.megapool.eth.penalty"
+	MegapoolNotifyThresholdPath              string = "notify.threshold"
+	MegapoolLateNotifyFinePath               string = "late.notify.fine"
+	MegapoolDissolvePenaltyPath              string = "megapool.dissolve.penalty"
+	MegapoolUserDistributeDelayPath          string = "user.distribute.delay"
+	MegapoolUserDistributeDelayShortfallPath string = "user.distribute.delay.shortfall"
 )
 
 // How long after an assignment a watcher must wait to dissolve a megapool validator
@@ -103,24 +105,64 @@ func EstimateProposeLateNotifyFine(rp *rocketpool.RocketPool, value *big.Int, bl
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolLateNotifyFinePath), MegapoolSettingsContractName, MegapoolLateNotifyFinePath, value, blockNumber, treeNodes, opts)
 }
 
-// The amount of time a user must wait before distributing another node's megapool
-func GetUserDistributeWindowLength(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+// The penalty applied to a NO for having a validator dissolved
+func GetMegapoolDissolvePenalty(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := megapoolSettingsContract.Call(opts, value, "getDissolvePenalty"); err != nil {
+		return nil, fmt.Errorf("error getting megapool dissolve penalty value: %w", err)
+	}
+	return *value, nil
+}
+
+func ProposeDissolvePenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolDissolvePenaltyPath), MegapoolSettingsContractName, MegapoolDissolvePenaltyPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeDissolvePenalty(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolDissolvePenaltyPath), MegapoolSettingsContractName, MegapoolDissolvePenaltyPath, value, blockNumber, treeNodes, opts)
+}
+
+// The number of epochs a user must wait before distributing another node's megapool
+func GetUserDistributeDelay(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
 	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
 	if err != nil {
 		return 0, err
 	}
 	value := new(*big.Int)
-	if err := megapoolSettingsContract.Call(opts, value, "getUserDistributeWindowLength"); err != nil {
-		return 0, fmt.Errorf("error getting megapool user distribute window length value: %w", err)
+	if err := megapoolSettingsContract.Call(opts, value, "getUserDistributeDelay"); err != nil {
+		return 0, fmt.Errorf("error getting megapool user distribute delay value: %w", err)
 	}
 	return (*value).Uint64(), nil
 }
 
-func ProposeUserDistributeWindowLength(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
-	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolUserDistributeWindowLengthPath), MegapoolSettingsContractName, MegapoolUserDistributeWindowLengthPath, value, blockNumber, treeNodes, opts)
+func ProposeUserDistributeDelay(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolUserDistributeDelayPath), MegapoolSettingsContractName, MegapoolUserDistributeDelayPath, value, blockNumber, treeNodes, opts)
 }
-func EstimateProposeUserDistributeWindowLength(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolUserDistributeWindowLengthPath), MegapoolSettingsContractName, MegapoolUserDistributeWindowLengthPath, value, blockNumber, treeNodes, opts)
+func EstimateProposeUserDistributeDelay(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolUserDistributeDelayPath), MegapoolSettingsContractName, MegapoolUserDistributeDelayPath, value, blockNumber, treeNodes, opts)
+}
+
+// The number of epochs a user must wait before distributing another node's megapool if the distribute results in a shortfall of user funds
+func GetUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := megapoolSettingsContract.Call(opts, value, "getUserDistributeDelayWithShortfall"); err != nil {
+		return 0, fmt.Errorf("error getting megapool user distribute delay with shortfall value: %w", err)
+	}
+	return (*value).Uint64(), nil
+}
+
+func ProposeUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolUserDistributeDelayShortfallPath), MegapoolSettingsContractName, MegapoolUserDistributeDelayShortfallPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolUserDistributeDelayShortfallPath), MegapoolSettingsContractName, MegapoolUserDistributeDelayShortfallPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts
