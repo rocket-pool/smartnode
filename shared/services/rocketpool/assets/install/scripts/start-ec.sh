@@ -102,8 +102,9 @@ if [ "$CLIENT" = "geth" ]; then
             --pprof \
             $EC_ADDITIONAL_FLAGS"
 
-        if [ "$NETWORK" = "devnet" ]; then
-            CMD="$CMD --bootnodes enode://89c3ac93350ad94f4b702632375bef0e2197efc3f4bcf04b6324391c146bb3fdcfb31b9b1a5f82771e6504eb60bd291105ac88df2db3aa37cbf444dbd44f4d76@57.128.20.31:32000"
+        if [ "$NETWORK" = "devnet" ]; then\
+            CMD="$CMD --config /genesis/config.toml"
+            CMD="$CMD --bootnodes enode://bebcc5c7381459460213ef4004c37c205eec64c1b218b1ee1738923b10d81858164b8d993596365028e860c3abe78679faddf68ae2581a9a86b860ea30f8d191@57.128.20.31:32000"
         fi
         if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --miner.gaslimit $EC_SUGGESTED_BLOCK_GAS_LIMIT"

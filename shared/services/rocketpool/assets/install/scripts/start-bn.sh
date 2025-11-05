@@ -61,7 +61,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CMD_LH_NETWORK="--network $LH_NETWORK"
     else
         CMD_LH_NETWORK="--testnet-dir /genesis  \
-        --boot-nodes enr:-OK4QB2UDdpaFvXkrUDgwoflxUQ8QMvHCz-hbG0GEgE-0YAZdtgGoRGL1huS8BgY8GfwoSxm_9VaT0JnsNzjir6Vcm0Hh2F0dG5ldHOIAMAAAAAAAACGY2xpZW501opMaWdodGhvdXNlijguMC4wLXJjLjCEZXRoMpDuRGkyYAAAOP__________gmlkgnY0gmlwhDmAFB-EcXVpY4KA64lzZWNwMjU2azGhAizViqbMPljxz96-3A8dh-vFPxoQN_--yEObry6WqSEMiHN5bmNuZXRzD4N0Y3CCgOiDdWRwgoDo"
+        --boot-nodes enr:-N24QGw8A__VP9AwM2PSzCSN7JYqxLr1RE4PpG2thpYovQ5sDvVrS0uzjz3a-_DioLiKZ-u_TSLrPqdeJ_hyrBcNq_sHh2F0dG5ldHOIAAAAADAAAACGY2xpZW500YpMaWdodGhvdXNlhTguMC4whGV0aDKQ7kRpMmAAADj__________4JpZIJ2NIJpcIQ5gBQfhHF1aWOCgOuJc2VjcDI1NmsxoQK7jqqifvPGkHDMsPxgv4gKrQToniENAXMfXYPiX8UV-4hzeW5jbmV0cw-DdGNwgoDog3VkcIKA6A"
         CHECKPOINT_SYNC_URL="http://57.128.20.31:33001"
     fi
 

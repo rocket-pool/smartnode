@@ -20,6 +20,7 @@ services:
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
       - {{.RocketPoolDirectory}}/genesis.json:/etc/custom/genesis.json:ro"
       - {{.Smartnode.DataPath}}/secrets:/secrets
+      - {{.RocketPoolDirectory}}/config.toml:/genesis/config.toml:ro
     networks:
       - net
     environment:
