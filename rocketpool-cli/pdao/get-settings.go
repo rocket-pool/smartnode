@@ -149,6 +149,7 @@ func getSettings(c *cli.Context) error {
 		fmt.Printf("\tLate Notify Fine:                       %.6f ETH\n", eth.WeiToEth(response.Megapool.LateNotifyFine))
 		fmt.Printf("\tUser Distribute Delay:                  %d Epochs\n", response.Megapool.UserDistributeDelay)
 		fmt.Printf("\tUser Distribute Delay with Shortfall:   %d Epochs\n", response.Megapool.UserDistributeDelayWithShortfall)
+		fmt.Printf("\tPenalty Threshold:                      %.2f%%\n", eth.WeiToEth(response.Megapool.PenaltyThreshold)*100)
 	}
 
 	return nil

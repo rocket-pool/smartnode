@@ -181,8 +181,9 @@ type GetPDAOSettingsResponse struct {
 		NotifyThreshold                  uint64        `json:"notifyThreshold"`
 		LateNotifyFine                   *big.Int      `json:"lateNotifyFine"`
 		DissolvePenalty                  *big.Int      `json:"dissolvePenalty"`
-		UserDistributeDelay              uint64        `json:"UserDistributeDelay"`
-		UserDistributeDelayWithShortfall uint64        `json:"UserDistributeDelayWithShortfall"`
+		UserDistributeDelay              uint64        `json:"userDistributeDelay"`
+		UserDistributeDelayWithShortfall uint64        `json:"userDistributeDelayWithShortfall"`
+		PenaltyThreshold                 *big.Int      `json:"penaltyThreshold"`
 	} `json:"megapool"`
 }
 

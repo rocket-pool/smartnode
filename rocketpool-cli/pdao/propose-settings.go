@@ -363,6 +363,11 @@ func proposeSettingMegapoolUserDistributeDelayWithShortfall(c *cli.Context, valu
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeDelayShortfallPath, trueValue)
 }
 
+func proposeSettingPenaltyThreshold(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolPenaltyThreshold, trueValue)
+}
+
 func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
 	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionSharePath, trueValue)

@@ -939,6 +939,16 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing UserDistributeDelayWithShortfall: %w", err)
 			}
+		// PenaltyThreshold
+		case protocol.MegapoolPenaltyThreshold:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposePenaltyThreshold(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing PenaltyThreshold: %w", err)
+			}
 		}
 
 	}
@@ -1797,6 +1807,17 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing UserDistributeDelayWithShortfall: %w", err)
 			}
+		// PenaltyThreshold
+		case protocol.MegapoolPenaltyThreshold:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposePenaltyThreshold(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing PenaltyThreshold: %w", err)
+			}
+
 		}
 
 	}

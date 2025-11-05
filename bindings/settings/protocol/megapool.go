@@ -23,6 +23,7 @@ const (
 	MegapoolDissolvePenaltyPath              string = "megapool.dissolve.penalty"
 	MegapoolUserDistributeDelayPath          string = "user.distribute.delay"
 	MegapoolUserDistributeDelayShortfallPath string = "user.distribute.delay.shortfall"
+	MegapoolPenaltyThreshold                 string = "megapool.penalty.threshold"
 )
 
 // How long after an assignment a watcher must wait to dissolve a megapool validator
@@ -163,6 +164,26 @@ func ProposeUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, value *b
 }
 func EstimateProposeUserDistributeDelayWithShortfall(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolUserDistributeDelayShortfallPath), MegapoolSettingsContractName, MegapoolUserDistributeDelayShortfallPath, value, blockNumber, treeNodes, opts)
+}
+
+// The percentage of trusted members that must vote in favour of a penalty
+func GetPenaltyThreshold(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*big.Int, error) {
+	megapoolSettingsContract, err := getMegapoolSettingsContract(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	value := new(*big.Int)
+	if err := megapoolSettingsContract.Call(opts, value, "getPenaltyThreshold"); err != nil {
+		return nil, fmt.Errorf("error getting megapool penalty threshold value: %w", err)
+	}
+	return *value, nil
+}
+
+func ProposePenaltyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MegapoolPenaltyThreshold), MegapoolSettingsContractName, MegapoolPenaltyThreshold, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposePenaltyThreshold(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MegapoolPenaltyThreshold), MegapoolSettingsContractName, MegapoolPenaltyThreshold, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts
