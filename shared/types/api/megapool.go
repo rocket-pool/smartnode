@@ -14,10 +14,11 @@ import (
 )
 
 type MegapoolStatusResponse struct {
-	Status         string          `json:"status"`
-	Error          string          `json:"error"`
-	Megapool       MegapoolDetails `json:"megapoolDetails"`
-	LatestDelegate common.Address  `json:"latestDelegate"`
+	Status         string            `json:"status"`
+	Error          string            `json:"error"`
+	Megapool       MegapoolDetails   `json:"megapoolDetails"`
+	LatestDelegate common.Address    `json:"latestDelegate"`
+	BeaconHead     beacon.BeaconHead `json:"beaconHead"`
 }
 
 type MegapoolDetails struct {

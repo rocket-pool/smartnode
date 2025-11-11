@@ -51,7 +51,11 @@ func exitValidator(c *cli.Context) error {
 
 		for _, validator := range status.Megapool.Validators {
 			if validator.Activated && !validator.Exiting && !validator.Exited {
-				activeValidators = append(activeValidators, validator)
+				// Check if validator is old enough to exit
+				earliestExitEpoch := validator.BeaconStatus.ActivationEpoch + 256
+				if status.BeaconHead.Epoch >= earliestExitEpoch {
+					activeValidators = append(activeValidators, validator)
+				}
 			}
 		}
 		if len(activeValidators) > 0 {
