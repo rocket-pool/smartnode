@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -53,7 +54,12 @@ func distribute(c *cli.Context) error {
 					if !val.Exiting {
 						fmt.Printf("Validator ID %d needs an exit proof (run 'rp megapool notify-validator-exit')", val.ValidatorId)
 						fmt.Println()
-					} else {
+					}
+					if val.BeaconStatus.Status == beacon.ValidatorState_ExitedUnslashed {
+						fmt.Printf("Validator ID %d has exited but is still pending full beacon withdrawal", val.ValidatorId)
+						fmt.Println()
+					}
+					if val.BeaconStatus.Status == beacon.ValidatorState_WithdrawalDone {
 						fmt.Printf("Validator ID %d needs a final balance proof (run 'rp megapool notify-final-balance')", val.ValidatorId)
 						fmt.Println()
 					}
