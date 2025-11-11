@@ -49,7 +49,7 @@ const defaultNodeMetricsPort uint16 = 9102
 const defaultExporterMetricsPort uint16 = 9103
 const defaultWatchtowerMetricsPort uint16 = 9104
 const defaultEcMetricsPort uint16 = 9105
-const coreDevsSuggestedGasLimit = 45000000
+const coreDevsSuggestedGasLimit = 60000000
 
 // The master configuration struct
 type RocketPoolConfig struct {
