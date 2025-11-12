@@ -432,25 +432,25 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0xaD29838702331Db8C3d29832323C7f44078EBdbA",
+			config.Network_Devnet:  "0xC58304B95eC856c693C033696C0f9bB852567b37",
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
 		rocketSignerRegistryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
-			config.Network_Devnet:  "0x78BC77F24A4fB209E102b9CdC86fCe14B88B14a0",
+			config.Network_Devnet:  "0x0AD58745d8DcdE93b7CefD0f3941a7F65250d041",
 			config.Network_Testnet: "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E",
 		},
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0x4d77863A7F5a064f0CF0A766dc49bc10A74D7B14",
+			config.Network_Devnet:  "0x8341610b7Dd0e1944D1abE18e1470D1dd769a02E",
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  "0xa5c9661bF06b677f93DBABd7283c400193B7fd4E",
+			config.Network_Devnet:  "0x7B5569BfAA9396Fc8A488b5330D63D47fc38495C",
 			config.Network_Testnet: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
@@ -593,19 +593,19 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Devnet:  "0xbd7EBDf5cF4C179d74c2Af488f0af259450bB33F",
+			config.Network_Devnet:  "0x17bFf0526Fd33691Ffd0ACE6EEDf83DC38068372",
 			config.Network_Testnet: "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
 		},
 
 		multicallAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:  "0x4af3ce5348FAb8e6bACd1a7a1B4304946E4Bac11",
+			config.Network_Devnet:  "0x5dcADF800B4c34AFf485398826c478afd6C17a53",
 			config.Network_Testnet: "0x4866504f62497ee6C98d8ba928321a9C6e89f536",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
-			config.Network_Devnet:  "0xB1545727e545e80C7942A72C2E2b7811472AA6cd",
+			config.Network_Devnet:  "0xB0ee8fF6380bEbCf84BBD1a1C19CF54f317C04A8",
 			config.Network_Testnet: "0xEE9F0AD34043e3a87e42A4dE091559ee19D7912B",
 		},
 
