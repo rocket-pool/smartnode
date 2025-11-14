@@ -25,7 +25,7 @@ type WalletStatusResponse struct {
 	// When masquerading, AccountAddress represents the masqueraded address.
 	// When using a normal wallet, AccountAddress represents the address derived from the wallet stored on disk
 	AccountAddress common.Address `json:"accountAddress"`
-	// NodeAddress always represents the address drived from the wallet stored on disk
+	// NodeAddress always represents the address derived from the wallet stored on disk
 	NodeAddress    common.Address `json:"nodeAddress"`
 	IsMasquerading bool           `json:"isMasquerading"`
 }

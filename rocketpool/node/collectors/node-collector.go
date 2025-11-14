@@ -29,7 +29,7 @@ type NodeCollector struct {
 	// The effective amount of RPL staked on the node (honoring the 150% collateral cap)
 	effectiveStakedRpl *prometheus.Desc
 
-	// The amount of staked RPL that will be eligible for rewards (including Beacon Chain data and accounding for pending bond reductions)
+	// The amount of staked RPL that will be eligible for rewards (including Beacon Chain data and according for pending bond reductions)
 	rewardableStakedRpl *prometheus.Desc
 
 	// The cumulative RPL rewards earned by the node
@@ -144,7 +144,7 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManage
 			nil, nil,
 		),
 		rewardableStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rewardable_staked_rpl"),
-			"The amount of staked RPL that will be eligible for rewards (including Beacon Chain data and accounding for pending bond reductions)",
+			"The amount of staked RPL that will be eligible for rewards (including Beacon Chain data and according for pending bond reductions)",
 			nil, nil,
 		),
 		cumulativeRplRewards: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "cumulative_rpl_rewards"),
