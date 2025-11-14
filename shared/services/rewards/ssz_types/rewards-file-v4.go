@@ -62,7 +62,7 @@ type SSZFile_v1 struct {
 	Index uint64 `json:"index"`
 	// StartTime is the time of the first slot of the interval
 	StartTime time.Time `json:"startTime"`
-	// EndTime is the time fo the last slot of the interval
+	// EndTime is the time of the last slot of the interval
 	EndTime time.Time `json:"endTime"`
 	// ConsensusStartBlock is the first non-empty slot of the interval
 	ConsensusStartBlock uint64 `json:"consensusStartBlock,omitempty"`

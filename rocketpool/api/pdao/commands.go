@@ -684,7 +684,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					addresses, err := cliutils.ValidateAddresses("addresess", c.Args().Get(0))
+					addresses, err := cliutils.ValidateAddresses("addresses", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
