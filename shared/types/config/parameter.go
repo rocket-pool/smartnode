@@ -9,27 +9,27 @@ import (
 
 // A parameter that can be configured by the user
 type Parameter struct {
-	ID                    string                  `yaml:"id,omitempty"`
-	Name                  string                  `yaml:"name,omitempty"`
-	Description           string                  `yaml:"description,omitempty"`
-	Type                  ParameterType           `yaml:"type,omitempty"`
-	Default               map[Network]interface{} `yaml:"default,omitempty"`
-	MaxLength             int                     `yaml:"maxLength,omitempty"`
-	Regex                 string                  `yaml:"regex,omitempty"`
-	Advanced              bool                    `yaml:"advanced,omitempty"`
-	AffectsContainers     []ContainerID           `yaml:"affectsContainers,omitempty"`
-	CanBeBlank            bool                    `yaml:"canBeBlank,omitempty"`
-	OverwriteOnUpgrade    bool                    `yaml:"overwriteOnUpgrade,omitempty"`
-	Options               []ParameterOption       `yaml:"options,omitempty"`
-	Value                 interface{}             `yaml:"-"`
-	DescriptionsByNetwork map[Network]string      `yaml:"-"`
+	ID                    string             `yaml:"id,omitempty"`
+	Name                  string             `yaml:"name,omitempty"`
+	Description           string             `yaml:"description,omitempty"`
+	Type                  ParameterType      `yaml:"type,omitempty"`
+	Default               map[Network]any    `yaml:"default,omitempty"`
+	MaxLength             int                `yaml:"maxLength,omitempty"`
+	Regex                 string             `yaml:"regex,omitempty"`
+	Advanced              bool               `yaml:"advanced,omitempty"`
+	AffectsContainers     []ContainerID      `yaml:"affectsContainers,omitempty"`
+	CanBeBlank            bool               `yaml:"canBeBlank,omitempty"`
+	OverwriteOnUpgrade    bool               `yaml:"overwriteOnUpgrade,omitempty"`
+	Options               []ParameterOption  `yaml:"options,omitempty"`
+	Value                 any                `yaml:"-"`
+	DescriptionsByNetwork map[Network]string `yaml:"-"`
 }
 
 // A single option in a choice parameter
 type ParameterOption struct {
-	Name        string      `yaml:"name,omitempty"`
-	Description string      `yaml:"description,omitempty"`
-	Value       interface{} `yaml:"value,omitempty"`
+	Name        string `yaml:"name,omitempty"`
+	Description string `yaml:"description,omitempty"`
+	Value       any    `yaml:"value,omitempty"`
 }
 
 // Apply a network change to a parameter
@@ -141,7 +141,7 @@ func (param *Parameter) SetToDefault(network Network) error {
 }
 
 // Get the default value for the provided network
-func (param *Parameter) GetDefault(network Network) (interface{}, error) {
+func (param *Parameter) GetDefault(network Network) (any, error) {
 	defaultSetting, exists := param.Default[network]
 	if !exists {
 		defaultSetting, exists = param.Default[Network_All]
