@@ -128,7 +128,7 @@ func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapoo
 		return err
 	}
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, eth2Config, validator.MegapoolAddress, types.ValidatorPubkey(validator.Pubkey))
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, eth2Config, validator.MegapoolAddress, types.ValidatorPubkey(validator.Pubkey), nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator proof: %w", err)
 	}

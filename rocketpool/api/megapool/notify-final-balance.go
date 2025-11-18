@@ -105,7 +105,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	if err != nil {
 		return nil, err
 	}
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, slotUsed, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, slotUsed, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	if err != nil {
 		return nil, err
 	}
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		return nil, err
 	}

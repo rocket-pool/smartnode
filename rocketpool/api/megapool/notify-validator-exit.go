@@ -66,7 +66,7 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 		return nil, err
 	}
 
-	proof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	proof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func notifyValidatorExit(c *cli.Context, validatorId uint32) (*api.NotifyValidat
 		return nil, err
 	}
 
-	validatorProof, slotTimetamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimetamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		return nil, err
 	}

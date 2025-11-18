@@ -34,7 +34,7 @@ import (
 
 const MAX_WITHDRAWAL_SLOT_DISTANCE = 144000 // 20 days.
 
-func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (megapool.ValidatorProof, uint64, megapool.SlotProof, error) {
+func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey, beaconState eth2.BeaconState) (megapool.ValidatorProof, uint64, megapool.SlotProof, error) {
 
 	bc, err := GetBeaconClient(c)
 	if err != nil {
@@ -51,43 +51,44 @@ func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Co
 	if err != nil {
 		return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, err
 	}
+	if beaconState == nil {
+		var blockToRequest string
+		if slot == 0 {
+			// Get the head block, requesting the previous one until we have an execution payload
+			blockToRequest = "finalized"
+		} else {
+			blockToRequest = fmt.Sprintf("%d", slot)
+		}
+		var block beacon.BeaconBlock
+		const maxAttempts = 10
+		for attempts := 0; attempts < maxAttempts; attempts++ {
+			block, _, err = bc.GetBeaconBlock(blockToRequest)
+			if err != nil {
+				return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, err
+			}
 
-	var blockToRequest string
-	if slot == 0 {
-		// Get the head block, requesting the previous one until we have an execution payload
-		blockToRequest = "finalized"
-	} else {
-		blockToRequest = fmt.Sprintf("%d", slot)
-	}
-	var block beacon.BeaconBlock
-	const maxAttempts = 10
-	for attempts := 0; attempts < maxAttempts; attempts++ {
-		block, _, err = bc.GetBeaconBlock(blockToRequest)
+			if block.HasExecutionPayload {
+				break
+			}
+			if attempts == maxAttempts-1 {
+				return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
+			}
+			blockToRequest = fmt.Sprintf("%d", block.Slot-1)
+		}
+
+		// Get the beacon state for that slot
+		beaconStateResponse, err := bc.GetBeaconStateSSZ(block.Slot)
 		if err != nil {
 			return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, err
 		}
 
-		if block.HasExecutionPayload {
-			break
+		beaconState, err = eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
+		if err != nil {
+			return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, err
 		}
-		if attempts == maxAttempts-1 {
-			return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
-		}
-		blockToRequest = fmt.Sprintf("%d", block.Slot-1)
 	}
 
-	// Get the beacon state for that slot
-	beaconStateResponse, err := bc.GetBeaconStateSSZ(block.Slot)
-	if err != nil {
-		return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, err
-	}
-
-	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
-	if err != nil {
-		return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, err
-	}
-
-	slotProofBytes, err := beaconState.SlotProof(block.Slot)
+	slotProofBytes, err := beaconState.SlotProof(beaconState.GetSlot())
 	if err != nil {
 		return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, err
 	}
@@ -124,11 +125,11 @@ func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Co
 	}
 
 	slotProof := megapool.SlotProof{
-		Slot:      block.Slot,
+		Slot:      beaconState.GetSlot(),
 		Witnesses: ConvertToFixedSize(slotProofBytes),
 	}
 
-	slotTimestamp, err := GetChildBlockTimestampForSlot(c, block.Slot)
+	slotTimestamp, err := GetChildBlockTimestampForSlot(c, beaconState.GetSlot())
 	if err != nil {
 		return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, fmt.Errorf("Error getting the slotTimestamp: %w", err)
 	}

@@ -147,6 +147,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	notifyFinalBalance, err := newNotifyFinalBalance(c, log.NewColorLogger(NotifyValidatorExitColor))
+	if err != nil {
+		return err
+	}
 	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
 	if err != nil {
 		return err
@@ -282,6 +286,12 @@ func run(c *cli.Context) error {
 
 			// Run the megapool notify validator exit check
 			if err := notifyValidatorExit.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the megapool notify final balance check
+			if err := notifyFinalBalance.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)

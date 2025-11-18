@@ -23,7 +23,7 @@ import (
 
 const FarFutureEpoch uint64 = 0xffffffffffffffff
 
-// Stake megapool validator task
+// Notify validator exit task
 type notifyValidatorExit struct {
 	c              *cli.Context
 	log            log.ColorLogger
@@ -38,7 +38,7 @@ type notifyValidatorExit struct {
 	gasLimit       uint64
 }
 
-// Create stake megapool validator task
+// Create notify validator exit task
 func newNotifyValidatorExit(c *cli.Context, logger log.ColorLogger) (*notifyValidatorExit, error) {
 
 	// Get services
@@ -177,7 +177,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 
 	t.log.Printlnf("[STARTED] Crafting an exit proof. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, nil)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
