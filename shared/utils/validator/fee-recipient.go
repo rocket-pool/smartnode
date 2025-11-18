@@ -9,7 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -53,7 +52,7 @@ func RestartValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.C
 		}
 
 		// Get all containers
-		containers, err := d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+		containers, err := d.ContainerList(context.Background(), container.ListOptions{All: true})
 		if err != nil {
 			return fmt.Errorf("Could not get docker containers: %w", err)
 		}
@@ -135,7 +134,7 @@ func StopValidator(cfg *config.RocketPoolConfig, bc beacon.Client, log *log.Colo
 		}
 
 		// Get all containers
-		containers, err := d.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+		containers, err := d.ContainerList(context.Background(), container.ListOptions{All: true})
 		if err != nil {
 			return fmt.Errorf("Could not get docker containers: %w", err)
 		}
