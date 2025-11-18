@@ -64,7 +64,7 @@ func notifyValidatorExit(c *cli.Context) error {
 			validatorId = uint64(activeValidators[selected].ValidatorId)
 
 		} else {
-			fmt.Println("No validators can be exited at the moment")
+			fmt.Println("Can't notify the exit of any validators")
 			return nil
 		}
 	}

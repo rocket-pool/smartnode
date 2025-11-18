@@ -684,7 +684,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
 						return err
 					}
-					addresses, err := cliutils.ValidateAddresses("addresess", c.Args().Get(0))
+					addresses, err := cliutils.ValidateAddresses("addresses", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -857,7 +857,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 			{
 				Name:      "defeat-proposal",
-				Usage:     "Defeat a proposal if it still has an challenge after voting has started",
+				Usage:     "Defeat a proposal if it still has a challenge after voting has started",
 				UsageText: "rocketpool api pdao defeat-proposal proposal-id challenged-index",
 				Action: func(c *cli.Context) error {
 
