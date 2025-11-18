@@ -28,7 +28,7 @@ import (
 
 // Config
 const (
-	dockerAPIVersion string = "1.40"
+	dockerAPIVersion string = "1.44"
 )
 
 // Service instances & initializers
