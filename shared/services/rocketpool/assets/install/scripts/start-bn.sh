@@ -60,9 +60,8 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
     if [ "$NETWORK" != "devnet" ]; then
         CMD_LH_NETWORK="--network $LH_NETWORK"
     else
-        CMD_LH_NETWORK="--testnet-dir /genesis  \
-        --boot-nodes enr:-Iq4QJk4WqRkjsX5c2CXtOra6HnxN-BMXnWhmhEQO9Bn9iABTJGdjUOurM7Btj1ouKaFkvTRoju5vz2GPmVON2dffQKGAX53x8JigmlkgnY0gmlwhLKAlv6Jc2VjcDI1NmsxoQK6S-Cii_KmfFdUJL2TANL3ksaKUnNXvTCv1tLwXs0QgIN1ZHCCIyk"
-        CHECKPOINT_SYNC_URL="http://57.128.20.31:33001"
+        ENR=$(cat /devnet/bootstrap_nodes.txt)
+        CMD_LH_NETWORK="--testnet-dir /devnet"
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/lighthouse beacon \
@@ -117,13 +116,12 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
     if [ "$NETWORK" != "devnet" ]; then
         CMD_NETWORK="--network $LODESTAR_NETWORK"
     else
-        CMD_NETWORK="--paramsFile /genesis/config.yaml \
-        --genesisStateFile /genesis/genesis.ssz \
+        CMD_NETWORK="--paramsFile /devnet/config.yaml \
+        --genesisStateFile /devnet/genesis.ssz \
         --eth1.depositContractDeployBlock 0 \
         --enr.ip $EXTERNAL_IP \
         --enr.udp $BN_P2P_PORT \
-        --bootnodes enr:-OK4QDwaZ_OyUmkcc6yo_FK101V8ijG6oDUlXf1GMyPXIfIIXxiEHFSYAX1984RJ0uRpqnRFtky2huM5g9KrsQDGjKoHh2F0dG5ldHOIAAAYAAAAAACGY2xpZW501opMaWdodGhvdXNlijguMC4wLXJjLjCEZXRoMpDk6yg0YAAAOP__________gmlkgnY0gmlwhDmAFB-EcXVpY4KA64lzZWNwMjU2azGhAkoE2cCx5k2fBwUo4Ni7iJ5Q6zARbu2DCOf-Es72CiaIiHN5bmNuZXRzD4N0Y3CCgOiDdWRwgoDo"
-        CHECKPOINT_SYNC_URL="http://57.128.20.31:33001"
+        --bootnodes $ENR"
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/node --max-http-header-size=65536 /usr/app/packages/cli/bin/lodestar beacon \

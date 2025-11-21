@@ -410,14 +410,10 @@ progress 7 "Copying package files to Rocket Pool user data directory..."
 { cp -r "$PACKAGE_FILES_PATH/scripts" "$RP_PATH" || fail "Could not copy scripts folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/templates" "$RP_PATH" || fail "Could not copy templates folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/alerting" "$RP_PATH" || fail "Could not copy alerting folder to the Rocket Pool user data directory."; } >&2
+{ cp -r "$PACKAGE_FILES_PATH/devnet" "$RP_PATH" || fail "Could not copy devnet folder to the Rocket Pool user data directory."; } >&2
 { cp	\
 	"$PACKAGE_FILES_PATH/grafana-prometheus-datasource.yml" \
 	"$PACKAGE_FILES_PATH/prometheus.tmpl" \
-    "$PACKAGE_FILES_PATH/genesis.json" \
-    "$PACKAGE_FILES_PATH/genesis.ssz" \
-    "$PACKAGE_FILES_PATH/config.yaml" \
-    "$PACKAGE_FILES_PATH/deposit_contract_block.txt" \
-    "$PACKAGE_FILES_PATH/config.toml" \
 	"$PACKAGE_FILES_PATH/grafana-dashboards.yml" "$RP_PATH" || fail "Could not copy base files to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/dashboards" "$RP_PATH" || fail "Could not copy grafana dashboards folder to the Rocket Pool user data directory."; } >&2
 { find "$RP_PATH/scripts" -name "*.sh" -exec chmod +x {} \; 2>/dev/null || fail "Could not set executable permissions on package files."; } >&2

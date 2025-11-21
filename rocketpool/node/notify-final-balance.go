@@ -190,7 +190,6 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 			// Log
 			t.log.Printlnf("The validator ID %d needs a final balance proof", validatorInfo[i].ValidatorId)
 
-			// Call Stake
 			t.createFinalBalanceProof(t.rp, mp, validatorInfo[i], state, types.ValidatorPubkey(validatorInfo[i].PubKey), beaconState, opts)
 		}
 	}
@@ -215,7 +214,6 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 		return err
 	}
 
-	// Convert validatorIndexStr to uint64
 	validatorIndex, err := strconv.ParseUint(validatorIndexStr, 10, 64)
 	if err != nil {
 		return err

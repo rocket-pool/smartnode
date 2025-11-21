@@ -1187,7 +1187,7 @@ func (r *treeGeneratorImpl_v11) processEpoch(duringInterval bool, epoch uint64) 
 		defer committeeData.Release()
 	}
 	if err != nil {
-		return fmt.Errorf("error getting committee and attestaion records for epoch %d: %w", epoch, err)
+		return fmt.Errorf("error getting committee and attestation records for epoch %d: %w", epoch, err)
 	}
 
 	if duringInterval {

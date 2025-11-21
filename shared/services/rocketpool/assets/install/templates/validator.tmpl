@@ -16,9 +16,7 @@ services:
       - {{.Smartnode.DataPath}}/validators:/validators
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
       - {{.RocketPoolDirectory}}/addons:/addons
-      - {{.RocketPoolDirectory}}/genesis.ssz:/genesis/genesis.ssz:ro
-      - {{.RocketPoolDirectory}}/config.yaml:/genesis/config.yaml:ro
-      - {{.RocketPoolDirectory}}/deposit_contract_block.txt:/genesis/deposit_contract_block.txt:ro
+      - {{.RocketPoolDirectory}}/devnet:/devnet:ro
     networks:
       - net
     environment:

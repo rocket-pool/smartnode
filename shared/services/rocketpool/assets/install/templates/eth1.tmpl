@@ -18,7 +18,7 @@ services:
     volumes:
       - eth1clientdata:/ethclient
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
-      - {{.RocketPoolDirectory}}/genesis.json:/etc/custom/genesis.json:ro"
+      - {{.RocketPoolDirectory}}/devnet:/devnet:ro"
       - {{.Smartnode.DataPath}}/secrets:/secrets
       - {{.RocketPoolDirectory}}/config.toml:/genesis/config.toml:ro
     networks:
