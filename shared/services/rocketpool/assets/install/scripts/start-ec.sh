@@ -39,7 +39,7 @@ elif [ "$NETWORK" = "devnet" ]; then
     . "/devnet/nodevars_env.txt"
     GETH_NETWORK="--networkid 39438153"
     RP_NETHERMIND_NETWORK="private"
-    BESU_NETWORK="--network=hoodi"
+    BESU_NETWORK="--network=ephemery --bootnodes=$BOOTNODE_ENODE_LIST"
     RETH_NETWORK="--chain /devnet/genesis.json --bootnodes $BOOTNODE_ENODE_LIST"
 elif [ "$NETWORK" = "testnet" ]; then
     GETH_NETWORK="--hoodi"
@@ -298,7 +298,7 @@ if [ "$CLIENT" = "besu" ]; then
         CMD="$PERF_PREFIX /opt/besu/bin/besu \
             $BESU_NETWORK \
             --data-path=/ethclient/besu \
-            --fast-sync-min-peers=3 \
+            --fast-sync-min-peers=2 \
             --rpc-http-enabled \
             --rpc-http-host=0.0.0.0 \
             --rpc-http-port=${EC_HTTP_PORT:-8545} \

@@ -28,9 +28,9 @@ if [ "$NETWORK" = "mainnet" ]; then
 elif [ "$NETWORK" = "devnet" ]; then
     . "/devnet/nodevars_env.txt"
     LODESTAR_NETWORK="ephemery"
-    NIMBUS_NETWORK="hoodi"
+    NIMBUS_NETWORK="/devnet"
     PRYSM_NETWORK="--hoodi"
-    TEKU_NETWORK="hoodi"
+    TEKU_NETWORK="ephemery"
 elif [ "$NETWORK" = "testnet" ]; then
     LH_NETWORK="hoodi"
     LODESTAR_NETWORK="hoodi"
@@ -60,7 +60,6 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
     if [ "$NETWORK" != "devnet" ]; then
         CMD_LH_NETWORK="--network $LH_NETWORK"
     else
-        ENR=$(cat /devnet/bootstrap_nodes.txt)
         CMD_LH_NETWORK="--testnet-dir /devnet"
     fi
 
@@ -188,6 +187,13 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
             $PERF_PREFIX /home/user/nimbus-eth2/build/nimbus_beacon_node trustedNodeSync --network=$NIMBUS_NETWORK --data-dir=/ethclient/nimbus --trusted-node-url=$CHECKPOINT_SYNC_URL --backfill=false
             echo "Checkpoint sync complete!"
         fi
+    fi
+
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="--network $NIMBUS_NETWORK"
+    else
+        CMD_NETWORK="--network=/devnet/ \
+        --direct-peer=$BOOTNODE_ENR_LIST"
     fi
 
     CMD="$PERF_PREFIX /home/user/nimbus-eth2/build/nimbus_beacon_node \
