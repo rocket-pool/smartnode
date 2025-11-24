@@ -26,8 +26,8 @@ if [ "$NETWORK" = "mainnet" ]; then
     TEKU_NETWORK="mainnet"
     PRYSM_GENESIS_STATE=""
 elif [ "$NETWORK" = "devnet" ]; then
-    LH_NETWORK="hoodi"
-    LODESTAR_NETWORK="hoodi"
+    . "/devnet/nodevars_env.txt"
+    LODESTAR_NETWORK="ephemery"
     NIMBUS_NETWORK="hoodi"
     PRYSM_NETWORK="--hoodi"
     TEKU_NETWORK="hoodi"
@@ -119,9 +119,12 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         CMD_NETWORK="--paramsFile /devnet/config.yaml \
         --genesisStateFile /devnet/genesis.ssz \
         --eth1.depositContractDeployBlock 0 \
+        --network.connectToDiscv5Bootnodes=true \
+        --discv5=true \
+        --eth1=true \
         --enr.ip $EXTERNAL_IP \
         --enr.udp $BN_P2P_PORT \
-        --bootnodes $ENR"
+        --bootnodes $BOOTNODE_ENR_LIST"
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/node --max-http-header-size=65536 /usr/app/packages/cli/bin/lodestar beacon \

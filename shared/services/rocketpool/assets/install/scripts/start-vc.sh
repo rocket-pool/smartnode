@@ -11,7 +11,7 @@ if [ "$NETWORK" = "mainnet" ]; then
     TEKU_NETWORK="mainnet"
 elif [ "$NETWORK" = "devnet" ]; then
     LH_NETWORK="hoodi"
-    LODESTAR_NETWORK="hoodi"
+    LODESTAR_NETWORK="ephemery"
     PRYSM_NETWORK="--hoodi"
     TEKU_NETWORK="hoodi"
 elif [ "$NETWORK" = "testnet" ]; then
@@ -96,8 +96,14 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         CC_URL_STRING="$CC_API_ENDPOINT,$FALLBACK_CC_API_ENDPOINT"
     fi
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="--network $LODESTAR_NETWORK"
+    else
+        CMD_NETWORK="--paramsFile /devnet/config.yaml"
+    fi
+
     CMD="/usr/app/node_modules/.bin/lodestar validator \
-        --network $LODESTAR_NETWORK \
+        $CMD_NETWORK \
         --dataDir /validators/lodestar \
         --beacon-nodes $CC_URL_STRING \
         $FALLBACK_CC_STRING \
