@@ -599,7 +599,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		multicallAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:  "0x8B23B7EA1d976632417929144Be012aE8b89ce91	",
+			config.Network_Devnet:  "0xF400396052f34A59023Fd47337570ABF3FE52463",
 			config.Network_Testnet: "0x4866504f62497ee6C98d8ba928321a9C6e89f536",
 		},
 
