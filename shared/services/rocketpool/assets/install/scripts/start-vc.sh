@@ -57,7 +57,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CMD="$CMD --enable-doppelganger-protection"
     fi
 
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --builder-proposals --prefer-builder-proposals"
     fi
 
@@ -108,7 +108,7 @@ if [ ! -z "$VC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
         CMD="$CMD --doppelgangerProtection"
     fi
 
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --builder"
     fi
 
@@ -148,7 +148,7 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         --block-monitor-type=event \
         $VC_ADDITIONAL_FLAGS"
 
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --payload-builder"
     fi
 
@@ -188,7 +188,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         CMD="$CMD --suggested-gas-limit=$VC_SUGGESTED_BLOCK_GAS_LIMIT"
     fi
     
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --enable-builder"
     fi
 
@@ -242,7 +242,7 @@ if [ "$CC_CLIENT" = "teku" ]; then
         CMD="$CMD --doppelganger-detection-enabled"
     fi
 
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --validators-builder-registration-default-enabled=true"
         if [ ! -z "$BN_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --validators-builder-registration-default-gas-limit=$BN_SUGGESTED_BLOCK_GAS_LIMIT"
