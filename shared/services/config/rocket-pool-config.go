@@ -35,6 +35,7 @@ const (
 	ExporterContainerName     string = "exporter"
 	GrafanaContainerName      string = "grafana"
 	MevBoostContainerName     string = "mev-boost"
+	CommitBoostContainerName  string = "commit-boost"
 	NodeContainerName         string = "node"
 	PrometheusContainerName   string = "prometheus"
 	AlertmanagerContainerName string = "alertmanager"
@@ -126,6 +127,10 @@ type RocketPoolConfig struct {
 	// MEV-Boost
 	EnableMevBoost config.Parameter `yaml:"enableMevBoost,omitempty"`
 	MevBoost       *MevBoostConfig  `yaml:"mevBoost,omitempty"`
+
+	// Commit-Boost
+	EnableCommitBoost config.Parameter   `yaml:"enableCommitBoost,omitempty"`
+	CommitBoost       *CommitBoostConfig `yaml:"commitBoostConfig,omitempty"`
 
 	// Addons
 	GraffitiWallWriter addontypes.SmartnodeAddon `yaml:"addon-gww,omitempty"`
@@ -447,6 +452,16 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: true,
 		},
+		EnableCommitBoost: config.Parameter{
+			ID:                 "enableCommitBoost",
+			Name:               "Enable Commit-Boost",
+			Description:        "Enable Commit-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract Commit opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n[orange]NOTE: This toggle is temporary during the early Merge days while relays are still being created. It will be removed in the future.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: true},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_CommitBoost},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: true,
+		},
 	}
 
 	// Set the defaults for choices
@@ -480,7 +495,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 	cfg.BitflyNodeMetrics = NewBitflyNodeMetricsConfig(cfg)
 	cfg.Native = NewNativeConfig(cfg)
 	cfg.MevBoost = NewMevBoostConfig(cfg)
-
+	cfg.CommitBoost = NewCommitBoostConfig(cfg)
 	// Addons
 	cfg.GraffitiWallWriter = addons.NewGraffitiWallWriter()
 	cfg.RescueNode = addons.NewRescueNode()
@@ -553,6 +568,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 		&cfg.ExporterMetricsPort,
 		&cfg.WatchtowerMetricsPort,
 		&cfg.EnableMevBoost,
+		&cfg.EnableCommitBoost,
 	}
 }
 
@@ -586,6 +602,7 @@ func (cfg *RocketPoolConfig) GetSubconfigs() map[string]config.Config {
 		"bitflyNodeMetrics":  cfg.BitflyNodeMetrics,
 		"native":             cfg.Native,
 		"mevBoost":           cfg.MevBoost,
+		"commitBoostConfig":  cfg.CommitBoost,
 		"addons-gww":         cfg.GraffitiWallWriter.GetConfig(),
 		"addons-rescue-node": cfg.RescueNode.GetConfig(),
 	}
@@ -1150,17 +1167,22 @@ func (cfg *RocketPoolConfig) FeeRecipientFile() string {
 	return GlobalFeeRecipientFilename
 }
 
-// Used by text/template to format validator.yml
-func (cfg *RocketPoolConfig) MevBoostUrl() string {
-	if !cfg.EnableMevBoost.Value.(bool) {
-		return ""
-	}
+// Used by text/template to format mev-boost.yml
+func (cfg *RocketPoolConfig) PbsUrl() string {
+	if cfg.EnableMevBoost.Value.(bool) {
 
-	if cfg.MevBoost.Mode.Value == config.Mode_Local {
-		return fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
+		if cfg.MevBoost.Mode.Value == config.Mode_Local {
+			return fmt.Sprintf("http://%s:%d", MevBoostContainerName, cfg.MevBoost.Port.Value)
+		}
+		return cfg.MevBoost.ExternalUrl.Value.(string)
 	}
-
-	return cfg.MevBoost.ExternalUrl.Value.(string)
+	if cfg.EnableCommitBoost.Value.(bool) {
+		if cfg.CommitBoost.Mode.Value == config.Mode_Local {
+			return fmt.Sprintf("http://%s:%d", CommitBoostContainerName, cfg.CommitBoost.Port.Value)
+		}
+		return cfg.CommitBoost.ExternalUrl.Value.(string)
+	}
+	return ""
 }
 
 // Gets the tag of the ec container
@@ -1422,6 +1444,16 @@ func (cfg *RocketPoolConfig) GetMevBoostOpenPorts() string {
 		return ""
 	}
 	port := cfg.MevBoost.Port.Value.(uint16)
+	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
+}
+
+// Used by text/template to format commit-boost.yml
+func (cfg *RocketPoolConfig) GetCommitBoostOpenPorts() string {
+	portMode := cfg.CommitBoost.OpenRpcPort.Value.(config.RPCMode)
+	if !portMode.Open() {
+		return ""
+	}
+	port := cfg.CommitBoost.Port.Value.(uint16)
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 }
 

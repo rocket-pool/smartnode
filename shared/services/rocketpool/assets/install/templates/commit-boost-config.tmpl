@@ -1,0 +1,22 @@
+{{- $networkName := .RocketPool.Network -}}
+chain = "{{.RocketPool.CommitBoostConfig.GetChainName $networkName}}"
+
+[pbs]
+docker_image = "{{.RocketPool.CommitBoostConfig.ContainerTag}}"
+host = "0.0.0.0"
+port = 18550
+relay_check = true
+wait_all_registrations = true
+
+{{- range $relay := .RocketPool.CommitBoostConfig.GetEnabledPbsRelays $networkName}}
+
+[[relays]]
+id = "{{$relay.ID}}"
+url = "{{index $relay.Urls $networkName}}"
+{{- end -}}
+{{- $customRelays := Split .RocketPool.CommitBoostConfig.ExternalUrl.Value "," -}}
+{{- range $customRelay := $customRelays}}
+
+[[relays]] 
+url = "{{$customRelay}}"
+{{- end -}}

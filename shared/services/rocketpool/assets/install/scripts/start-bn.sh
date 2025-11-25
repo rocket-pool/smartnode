@@ -85,8 +85,8 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CMD="$CMD --execution-timeout-multiplier 2"
     fi
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --builder $MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --builder $PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then
@@ -142,8 +142,8 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         CMD="$CMD --terminal-total-difficulty-override $TTD_OVERRIDE"
     fi
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --builder --builder.urls $MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --builder --builder.urls $PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then
@@ -214,8 +214,8 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         CMD="$CMD --suggested-gas-limit=$BN_SUGGESTED_BLOCK_GAS_LIMIT"
     fi
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --payload-builder --payload-builder-url=$MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --payload-builder --payload-builder-url=$PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then
@@ -271,8 +271,8 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         --blob-storage-layout=by-epoch \
         $BN_ADDITIONAL_FLAGS"
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --http-mev-relay $MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --http-mev-relay $PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then
@@ -327,8 +327,8 @@ if [ "$CC_CLIENT" = "teku" ]; then
         CMD="$CMD --data-storage-mode=archive"
     fi
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --builder-endpoint=$MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --builder-endpoint=$PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then
