@@ -103,7 +103,7 @@ func newNotifyFinalBalance(c *cli.Context, logger log.ColorLogger) (*notifyFinal
 
 }
 
-// Prestake megapool validator
+// Notify Final Balance
 func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 	if !state.IsSaturnDeployed {
 		return nil
@@ -144,7 +144,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 		return err
 	}
 
-	// Iterate over megapool validators checking whether they're ready to stake
+	// Iterate over megapool validators checking whether they're ready to submit a final balance proof
 	validatorCount, err := mp.GetValidatorCount(nil)
 	if err != nil {
 		return err
@@ -251,6 +251,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	// Get the gas limit
 	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, mp.GetAddress(), validatorInfo.ValidatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
 	if err != nil {
+		t.log.Printlnf("Could not estimate the gas required to notify final balance on megapool validator %d: %w", validatorInfo.ValidatorId, err)
 		return err
 	}
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
@@ -272,7 +273,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
-	// Call stake
+	// Call Notify Final Balance
 	tx, err := megapool.NotifyFinalBalance(rp, mp.GetAddress(), validatorInfo.ValidatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
 	if err != nil {
 		return err

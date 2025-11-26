@@ -142,7 +142,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 		return err
 	}
 
-	// Iterate over megapool validators checking whether they're ready to stake
+	// Iterate over megapool validators checking whether they're ready to notify exit
 	validatorCount, err := mp.GetValidatorCount(nil)
 	if err != nil {
 		return err
@@ -157,7 +157,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 			// Log
 			t.log.Printlnf("The validator ID %d needs an exit proof", validatorInfo[i].ValidatorId)
 
-			// Call Stake
+			// Call Notify Exit
 			t.createExitProof(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
 		}
 	}
@@ -188,6 +188,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 	// Get the gas limit
 	gasInfo, err := megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
+		t.log.Printlnf("Could not estimate the gas required to notify exit on megapool validator %d: %w", validatorId, err)
 		return err
 	}
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
@@ -209,7 +210,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, mp mega
 	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
 	opts.GasLimit = gas.Uint64()
 
-	// Call stake
+	// Call Notify Exit
 	tx, err := megapool.NotifyExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return err

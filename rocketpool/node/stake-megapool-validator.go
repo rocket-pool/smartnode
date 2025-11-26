@@ -186,6 +186,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp me
 	// Get the gas limit
 	gasInfo, err := megapool.EstimateStakeGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
+		t.log.Printlnf("Could not estimate the gas required to stake megapool validator %d: %w", validatorId, err)
 		return err
 	}
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
