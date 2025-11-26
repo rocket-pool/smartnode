@@ -414,7 +414,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
-			config.Network_Devnet:  "https://blockscout.rocketpool.net/tx",
+			config.Network_Devnet:  "https://explorer.ephemery.dev/tx",
 			config.Network_Testnet: "https://hoodi.etherscan.io/tx",
 		},
 
