@@ -185,9 +185,15 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         CC_URL_STRING="$CC_RPC_ENDPOINT,$FALLBACK_CC_RPC_ENDPOINT"
     fi
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="$PRYSM_NETWORK"
+    else
+        CMD_NETWORK="--config-file=/devnet/config.yaml"
+    fi
+
     CMD="/app/cmd/validator/validator \
         --accept-terms-of-use \
-        $PRYSM_NETWORK \
+        $CMD_NETWORK \
         --datadir /validators/prysm-non-hd/direct \
         --wallet-dir /validators/prysm-non-hd \
         --wallet-password-file /validators/prysm-non-hd/direct/accounts/secret \

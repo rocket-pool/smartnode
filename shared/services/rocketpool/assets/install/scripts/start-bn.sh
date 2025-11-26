@@ -241,9 +241,19 @@ fi
 # Prysm startup
 if [ "$CC_CLIENT" = "prysm" ]; then
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="$PRYSM_NETWORK"
+    else
+        CMD_NETWORK="--config-file=/devnet/config.yaml \
+        --chain-config-file=/devnet/config.yaml \
+        --p2p-static-id=true \
+        --contract-deployment-block=0 \
+        --bootstrap-node=/devnet/bootstrap_nodes.yaml"
+    fi
+
     CMD="$PERF_PREFIX /app/cmd/beacon-chain/beacon-chain \
         --accept-terms-of-use \
-        $PRYSM_NETWORK \
+        $CMD_NETWORK \
         $PRYSM_GENESIS_STATE \
         --datadir /ethclient/prysm \
         --p2p-tcp-port $BN_P2P_PORT \
@@ -278,7 +288,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
     if [ "$NETWORK" = "testnet" ]; then
         CMD="$CMD --genesis-state /ethclient/hoodi-genesis.ssz"
     elif [ "$NETWORK" = "devnet" ]; then
-        CMD="$CMD --genesis-state /ethclient/hoodi-genesis.ssz"
+        CMD="$CMD --genesis-state /devnet/genesis.ssz"
     fi
 
     if [ ! -z "$CHECKPOINT_SYNC_URL" ]; then
