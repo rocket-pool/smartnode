@@ -42,7 +42,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
     if [ "$NETWORK" != "devnet" ]; then
         CMD_LH_NETWORK="--network $LH_NETWORK"
     else
-        CMD_LH_NETWORK="--testnet-dir /genesis"
+        CMD_LH_NETWORK="--testnet-dir /devnet"
     fi
 
     CMD="/usr/local/bin/lighthouse validator \
