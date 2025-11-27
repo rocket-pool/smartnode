@@ -3,9 +3,8 @@
     "ChainSpecPath": "/devnet/chainspec.json",
     "MemoryHint": "2048000000",
     "EnableUnsecuredDevWallet": true,
-    "IsMining": true,
+    "IsMining": false,
     "DiscoveryEnabled": true,
-    "P2PEnabled": true,
     "ProcessingEnabled": true,
     "PeerManagerEnabled": true,
     "StaticNodes": [
@@ -15,9 +14,7 @@
   },
   "Network": {
     "DiscoveryPort": 30303,
-    "P2PPort": 30303,
-    "ActivePeersMax": 100,
-    "NetworkId": 39438153
+    "P2PPort": 30303
   },
   "JsonRpc": {
     "Enabled": true,
@@ -28,7 +25,6 @@
   },
   "Sync": {
     "FastSync": true,
-    "PivotBlockNumber": 0,
     "SnapSync": false,
     "NetworkingEnabled": true
   }

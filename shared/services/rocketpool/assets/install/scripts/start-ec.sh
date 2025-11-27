@@ -183,13 +183,14 @@ if [ "$CLIENT" = "nethermind" ]; then
     fi
 
     if [ "$NETWORK" = "devnet" ]; then
-        EPHEMERY_CONFIG="--config /devnet/nethermind-config.json"
+        NETWORK_CONFIG="--config /devnet/nethermind-config.json"
     else
-        EPHEMERY_CONFIG="--config $RP_NETHERMIND_NETWORK"
+        NETWORK_CONFIG="--config $RP_NETHERMIND_NETWORK \
+        "
     fi
 
     CMD="$PERF_PREFIX $NETHERMIND_BINARY \
-        $EPHEMERY_CONFIG \
+        $NETWORK_CONFIG \
         --data-dir /ethclient/nethermind \
         --JsonRpc.Enabled true \
         --JsonRpc.Host 0.0.0.0 \
