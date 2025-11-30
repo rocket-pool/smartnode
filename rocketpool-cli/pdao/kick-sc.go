@@ -159,13 +159,13 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Create the kick string
-		var kickString string
+		var kickString strings.Builder
 		for i, address := range addresses {
-			kickString += fmt.Sprintf("\t- %s (%s)\n", ids[i], address.Hex())
+			kickString.WriteString(fmt.Sprintf("\t- %s (%s)\n", ids[i], address.Hex()))
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to propose kicking these members from the security council?\n%s", kickString))) {
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to propose kicking these members from the security council?\n%s", kickString.String()))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
