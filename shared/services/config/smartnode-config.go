@@ -593,7 +593,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Devnet:  "0xE42712d4127a6872137C16a78459E7e6ee884b12",
+			config.Network_Devnet:  "0x347F8cFF6755eb9b21C157A152a2C7e5c8a4558F",
 			config.Network_Testnet: "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
 		},
 
