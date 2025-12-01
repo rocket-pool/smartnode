@@ -1008,7 +1008,7 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 
 }
 
-// Maps out the attestaion duties for the given epoch
+// Maps out the attestation duties for the given epoch
 func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committees) error {
 
 	// Crawl the committees

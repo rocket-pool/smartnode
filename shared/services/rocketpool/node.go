@@ -28,7 +28,7 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	if response.Error != "" {
 		return api.NodeStatusResponse{}, fmt.Errorf("Could not get node status: %s", response.Error)
 	}
-	utils.ZeroIfNil(&response.RplStake)
+	utils.ZeroIfNil(&response.TotalRplStake)
 	utils.ZeroIfNil(&response.RplStakeMegapool)
 	utils.ZeroIfNil(&response.RplStakeLegacy)
 	utils.ZeroIfNil(&response.RplStakeThreshold)
