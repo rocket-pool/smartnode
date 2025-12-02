@@ -1743,7 +1743,7 @@
         {
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nbeacon_peer_count{job=\"eth2\"} # Teku",
+          "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nsum(beacon_peer_count{job=\"eth2\"}) # Teku",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -1830,7 +1830,7 @@
         {
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nbeacon_peer_count{job=\"eth2\"} # Teku",
+          "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nsum(beacon_peer_count{job=\"eth2\"}) # Teku",
           "interval": "",
           "legendFormat": "BN",
           "range": true,
