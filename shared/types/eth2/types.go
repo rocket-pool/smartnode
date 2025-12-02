@@ -6,16 +6,18 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/deneb"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/electra"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 // State type assertions
-var _ BeaconState = &deneb.BeaconState{}
 var _ BeaconState = &electra.BeaconState{}
+var _ BeaconState = &fulu.BeaconState{}
 
 // Block type assertions
 var _ SignedBeaconBlock = &deneb.SignedBeaconBlock{}
 var _ SignedBeaconBlock = &electra.SignedBeaconBlock{}
+var _ SignedBeaconBlock = &fulu.SignedBeaconBlock{}
 
 type BeaconState interface {
 	GetSlot() uint64
@@ -37,15 +39,15 @@ func NewBeaconState(data []byte, fork string) (BeaconState, error) {
 	fork = strings.ToLower(fork)
 
 	switch fork {
-	case "deneb":
-		out := &deneb.BeaconState{}
+	case "electra":
+		out := &electra.BeaconState{}
 		err := out.UnmarshalSSZ(data)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
-	case "electra":
-		out := &electra.BeaconState{}
+	case "fulu":
+		out := &fulu.BeaconState{}
 		err := out.UnmarshalSSZ(data)
 		if err != nil {
 			return nil, err
@@ -69,6 +71,13 @@ func NewSignedBeaconBlock(data []byte, fork string) (SignedBeaconBlock, error) {
 		return out, nil
 	case "electra":
 		out := &electra.SignedBeaconBlock{}
+		err := out.UnmarshalSSZ(data)
+		if err != nil {
+			return nil, err
+		}
+		return out, nil
+	case "fulu":
+		out := &fulu.SignedBeaconBlock{}
 		err := out.UnmarshalSSZ(data)
 		if err != nil {
 			return nil, err

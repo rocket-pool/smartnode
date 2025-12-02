@@ -55,7 +55,7 @@ func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Co
 		var blockToRequest string
 		if slot == 0 {
 			// Get the head block, requesting the previous one until we have an execution payload
-			blockToRequest = "finalized"
+			blockToRequest = "justified"
 		} else {
 			blockToRequest = fmt.Sprintf("%d", slot)
 		}
