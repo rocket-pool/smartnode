@@ -37,19 +37,9 @@ type reduceBonds struct {
 	rp             *rocketpool.RocketPool
 	d              *client.Client
 	gasThreshold   float64
-	disabled       bool
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
-}
-
-// Details required to check for bond reduction eligibility
-type minipoolBondReductionDetails struct {
-	Address             common.Address
-	DepositBalance      *big.Int
-	ReduceBondTime      time.Time
-	ReduceBondCancelled bool
-	Status              types.MinipoolStatus
 }
 
 // Create reduce bonds task
@@ -73,13 +63,7 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 		return nil, err
 	}
 
-	// Check if auto-bond-reduction is disabled
 	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-	disabled := false
-	if gasThreshold == 0 {
-		logger.Println("Automatic tx gas threshold is 0, disabling auto-reduce.")
-		disabled = true
-	}
 
 	// Get the user-requested max fee
 	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
@@ -109,7 +93,6 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 		rp:             rp,
 		d:              d,
 		gasThreshold:   gasThreshold,
-		disabled:       disabled,
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
@@ -119,9 +102,12 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 
 // Reduce bonds
 func (t *reduceBonds) run(state *state.NetworkState) error {
+	if state.IsSaturnDeployed {
+		return nil
+	}
 
-	// Check if auto-reduce is disabled
-	if t.disabled {
+	// Check if auto-txs were disabled
+	if t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64) == 0 {
 		return nil
 	}
 
