@@ -3,7 +3,6 @@ package watchtower
 import (
 	"bytes"
 	"fmt"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/megapool"

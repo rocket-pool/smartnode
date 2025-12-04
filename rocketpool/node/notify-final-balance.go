@@ -154,32 +154,8 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 		return err
 	}
 
-	// Get the head block, requesting the previous one until we have an execution payload
-	blockToRequest := "finalized"
-	var block beacon.BeaconBlock
-	const maxAttempts = 10
-	for attempts := 0; attempts < maxAttempts; attempts++ {
-		block, _, err = t.bc.GetBeaconBlock(blockToRequest)
-		if err != nil {
-			return err
-		}
-
-		if block.HasExecutionPayload {
-			break
-		}
-		if attempts == maxAttempts-1 {
-			return fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
-		}
-		blockToRequest = fmt.Sprintf("%d", block.Slot-1)
-	}
-
-	// Get the beacon state for that slot
-	beaconStateResponse, err := t.bc.GetBeaconStateSSZ(block.Slot)
-	if err != nil {
-		return err
-	}
-
-	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
+	// Get the beacon state
+	beaconState, err := services.GetBeaconState(t.bc)
 	if err != nil {
 		return err
 	}
