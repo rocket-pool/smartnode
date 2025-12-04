@@ -126,7 +126,7 @@ func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *
 				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
 			}
 			// Effective balance should be less than 32 ETH
-			if big.NewInt(int64(validatorFromState.EffectiveBalance)).Cmp(eth.EthToWei(32)) >= 0 {
+			if validatorFromState.EffectiveBalance >= 32000000000 {
 				t.log.Printlnf("Validator %s has an effective balance of %d while the expected is less than 32 ETH. Dissolving...", validatorFromState.Index, validatorFromState.EffectiveBalance)
 				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
 			}
