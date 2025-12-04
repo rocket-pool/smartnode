@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -107,37 +106,37 @@ func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *
 			}
 			if validatorFromState.Index != "" && !bytes.Equal(validatorFromState.WithdrawalCredentials.Bytes(), expectedWithdrawalAddress.Bytes()) {
 				t.log.Printlnf("Validator %s has an invalid credential %s while the expected is %s. Dissolving...", validatorFromState.Index, validatorFromState.WithdrawalCredentials, expectedWithdrawalAddress.Bytes())
-				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
+				t.dissolveMegapoolValidator(validator)
 			}
 			// Withdrawable epoch should be FAR_FUTURE_EPOCH
 			if validatorFromState.WithdrawableEpoch != FarFutureEpoch {
 				t.log.Printlnf("Validator %s has a withdrawable epoch of %d while the expected is %d. Dissolving...", validatorFromState.Index, validatorFromState.WithdrawableEpoch, FarFutureEpoch)
-				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
+				t.dissolveMegapoolValidator(validator)
 			}
 			// Exit epoch should be FAR_FUTURE_EPOCH
 			if validatorFromState.ExitEpoch != FarFutureEpoch {
 				t.log.Printlnf("Validator %s has an exit epoch of %d while the expected is %d. Dissolving...", validatorFromState.Index, validatorFromState.ExitEpoch, FarFutureEpoch)
-				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
+				t.dissolveMegapoolValidator(validator)
 			}
 			// Slashed should be false
 			if validatorFromState.Slashed {
 				t.log.Printlnf("Validator %s is slashed while the expected is false. Dissolving...", validatorFromState.Index)
-				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
+				t.dissolveMegapoolValidator(validator)
 			}
 			// Effective balance should be less than 32 ETH
 			if validatorFromState.EffectiveBalance >= 32000000000 {
 				t.log.Printlnf("Validator %s has an effective balance of %d while the expected is less than 32 ETH. Dissolving...", validatorFromState.Index, validatorFromState.EffectiveBalance)
-				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
+				t.dissolveMegapoolValidator(validator)
 			}
 			// Activation eligibility epoch should be FAR_FUTURE_EPOCH
 			if validatorFromState.ActivationEligibilityEpoch != FarFutureEpoch {
 				t.log.Printlnf("Validator %s has an activation eligibility epoch of %d while the expected is %d. Dissolving...", validatorFromState.Index, validatorFromState.ActivationEligibilityEpoch, FarFutureEpoch)
-				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
+				t.dissolveMegapoolValidator(validator)
 			}
 			// Activation epoch should be FAR_FUTURE_EPOCH
 			if validatorFromState.ActivationEpoch != FarFutureEpoch {
 				t.log.Printlnf("Validator %s has an activation epoch of %d while the expected is %d. Dissolving...", validatorFromState.Index, validatorFromState.ActivationEpoch, FarFutureEpoch)
-				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
+				t.dissolveMegapoolValidator(validator)
 			}
 		}
 
@@ -145,7 +144,7 @@ func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *
 	return nil
 }
 
-func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapool.ValidatorInfoFromGlobalIndex, expectedWithdrawalCredentials common.Hash) error {
+func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapool.ValidatorInfoFromGlobalIndex) error {
 	// Log
 	t.log.Printlnf("Dissolving megapool validator ID: %d from megapool %s...", validator.ValidatorId, validator.MegapoolAddress)
 
