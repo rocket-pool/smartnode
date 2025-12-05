@@ -96,8 +96,13 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 	var correctFeeRecipient common.Address
 	if feeRecipientInfo.IsInSmoothingPool || feeRecipientInfo.IsInOptOutCooldown {
 		correctFeeRecipient = feeRecipientInfo.SmoothingPoolAddress
-	} else {
+	} else if feeRecipientInfo.HasMinipools {
+		// If NO has minipools, use the fee distributor address as the global fee recipient.
+		// When they also have megapool validators we're going to need to override the fee recipient on a per key basis.
 		correctFeeRecipient = feeRecipientInfo.FeeDistributorAddress
+	} else {
+		// If NO doesn't have minipools and is not in the smoothing pool, use the megapool address as the global fee recipient.
+		correctFeeRecipient = feeRecipientInfo.MegapoolAddress
 	}
 
 	// Check if the VC is using the correct fee recipient
