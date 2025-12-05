@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -44,6 +45,7 @@ type NativeNodeDetails struct {
 	UnstakingRPL                     *big.Int       `json:"unstaking_rpl"`
 	LockedRPL                        *big.Int       `json:"locked_rpl"`
 	MinipoolCount                    *big.Int       `json:"minipool_count"`
+	MegapoolValidatorCount           uint32         `json:"megapool_validator_count"`
 	BalanceETH                       *big.Int       `json:"balance_eth"`
 	BalanceRETH                      *big.Int       `json:"balance_reth"`
 	BalanceRPL                       *big.Int       `json:"balance_rpl"`
@@ -118,6 +120,19 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	details.BalanceETH, err = rp.Client.BalanceAt(context.Background(), nodeAddress, opts.BlockNumber)
 	if err != nil {
 		return NativeNodeDetails{}, err
+	}
+
+	if details.MegapoolDeployed {
+		// Load the megapool contract
+		mp, err := megapool.NewMegaPoolV1(rp, details.MegapoolAddress, opts)
+		if err != nil {
+			return NativeNodeDetails{}, err
+		}
+
+		details.MegapoolValidatorCount, err = mp.GetActiveValidatorCount(nil)
+		if err != nil {
+			return NativeNodeDetails{}, err
+		}
 	}
 
 	// Get the distributor balance
@@ -388,5 +403,6 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 		mc.AddCall(contracts.RocketNodeStaking, &details.LockedRPL, "getNodeLockedRPL", address)
 		mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolAddress, "getExpectedAddress", address)
 		mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getMegapoolDeployed", address)
+
 	}
 }
