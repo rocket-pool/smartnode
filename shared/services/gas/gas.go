@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas/etherscan"
 	rpsvc "github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const colorReset string = "\033[0m"
@@ -161,7 +160,7 @@ func GetHeadlessMaxFeeWei(cfg *config.RocketPoolConfig) (*big.Int, error) {
 
 func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {
 
-	rapidGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.RapidWei)+priorityFee, 0)
+	rapidGwei := eth.WeiToGwei(gasSuggestion.RapidWei) + priorityFee
 	rapidEth := eth.WeiToEth(gasSuggestion.RapidWei)
 
 	var rapidLowLimit float64
@@ -174,7 +173,7 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 		rapidHighLimit = rapidLowLimit
 	}
 
-	fastGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.FastWei)+priorityFee, 0)
+	fastGwei := eth.WeiToGwei(gasSuggestion.FastWei) + priorityFee
 	fastEth := eth.WeiToEth(gasSuggestion.FastWei)
 
 	var fastLowLimit float64
@@ -187,7 +186,7 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 		fastHighLimit = fastLowLimit
 	}
 
-	standardGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.StandardWei)+priorityFee, 0)
+	standardGwei := eth.WeiToGwei(gasSuggestion.StandardWei) + priorityFee
 	standardEth := eth.WeiToEth(gasSuggestion.StandardWei)
 
 	var standardLowLimit float64
@@ -200,7 +199,7 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 		standardHighLimit = standardLowLimit
 	}
 
-	slowGwei := math.RoundUp(eth.WeiToGwei(gasSuggestion.SlowWei)+priorityFee, 0)
+	slowGwei := eth.WeiToGwei(gasSuggestion.SlowWei) + priorityFee
 	slowEth := eth.WeiToEth(gasSuggestion.SlowWei)
 
 	var slowLowLimit float64
@@ -213,23 +212,23 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 		slowHighLimit = slowLowLimit
 	}
 
-	fmt.Printf("%s+============== Suggested Gas Prices ==============+\n", colorBlue)
-	fmt.Println("| Avg Wait Time |  Max Fee  |    Total Gas Cost    |")
-	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
-		gasSuggestion.RapidTime, fmt.Sprintf("%d gwei", int(rapidGwei)), rapidLowLimit, rapidHighLimit)
-	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
-		gasSuggestion.FastTime, fmt.Sprintf("%d gwei", int(fastGwei)), fastLowLimit, fastHighLimit)
-	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
-		gasSuggestion.StandardTime, fmt.Sprintf("%d gwei", int(standardGwei)), standardLowLimit, standardHighLimit)
-	fmt.Printf("| %-13s | %-9s | %.4f to %.4f ETH |\n",
-		gasSuggestion.SlowTime, fmt.Sprintf("%d gwei", int(slowGwei)), slowLowLimit, slowHighLimit)
-	fmt.Printf("+==================================================+\n\n%s", colorReset)
+	fmt.Printf("%s+================ Suggested Gas Prices ================+\n", colorBlue)
+	fmt.Println("| Avg Wait Time |   Max Fee    |     Total Gas Cost     |")
+	fmt.Printf("| %-13s | %-9s | %.5f to %.5f ETH |\n",
+		gasSuggestion.RapidTime, fmt.Sprintf("%.5f gwei", rapidGwei), rapidLowLimit, rapidHighLimit)
+	fmt.Printf("| %-13s | %-9s | %.5f to %.5f ETH |\n",
+		gasSuggestion.FastTime, fmt.Sprintf("%.5f gwei", fastGwei), fastLowLimit, fastHighLimit)
+	fmt.Printf("| %-13s | %-9s | %.5f to %.5f ETH |\n",
+		gasSuggestion.StandardTime, fmt.Sprintf("%.5f gwei", standardGwei), standardLowLimit, standardHighLimit)
+	fmt.Printf("| %-13s | %-9s | %.5f to %.5f ETH |\n",
+		gasSuggestion.SlowTime, fmt.Sprintf("%.5f gwei", slowGwei), slowLowLimit, slowHighLimit)
+	fmt.Printf("+======================================================+\n\n%s", colorReset)
 
-	fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
+	fmt.Printf("These prices include a maximum priority fee of %.3f gwei.\n", priorityFee)
 
 	for {
 		desiredPrice := prompt.Prompt(
-			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
+			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %.5f gwei:", fastGwei),
 			"^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
 			"Not a valid gas price, try again:")
 
@@ -255,7 +254,7 @@ func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInf
 
 func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {
 
-	fastGwei := math.RoundUp(gasSuggestion.FastGwei+priorityFee, 0)
+	fastGwei := gasSuggestion.FastGwei + priorityFee
 	fastEth := gasSuggestion.FastGwei / eth.WeiPerGwei
 
 	var fastLowLimit float64
@@ -268,7 +267,7 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 		fastHighLimit = fastLowLimit
 	}
 
-	standardGwei := math.RoundUp(gasSuggestion.StandardGwei+priorityFee, 0)
+	standardGwei := gasSuggestion.StandardGwei + priorityFee
 	standardEth := gasSuggestion.StandardGwei / eth.WeiPerGwei
 
 	var standardLowLimit float64
@@ -281,7 +280,7 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 		standardHighLimit = standardLowLimit
 	}
 
-	slowGwei := math.RoundUp(gasSuggestion.SlowGwei+priorityFee, 0)
+	slowGwei := gasSuggestion.SlowGwei + priorityFee
 	slowEth := gasSuggestion.SlowGwei / eth.WeiPerGwei
 
 	var slowLowLimit float64
@@ -294,21 +293,21 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 		slowHighLimit = slowLowLimit
 	}
 
-	fmt.Printf("%s+============ Suggested Gas Prices ============+\n", colorBlue)
-	fmt.Println("|   Speed   |  Max Fee  |    Total Gas Cost    |")
-	fmt.Printf("| Fast      | %-9s | %.4f to %.4f ETH |\n",
-		fmt.Sprintf("%d gwei", int(fastGwei)), fastLowLimit, fastHighLimit)
-	fmt.Printf("| Standard  | %-9s | %.4f to %.4f ETH |\n",
-		fmt.Sprintf("%d gwei", int(standardGwei)), standardLowLimit, standardHighLimit)
-	fmt.Printf("| Slow      | %-9s | %.4f to %.4f ETH |\n",
-		fmt.Sprintf("%d gwei", int(slowGwei)), slowLowLimit, slowHighLimit)
-	fmt.Printf("+==============================================+\n\n%s", colorReset)
+	fmt.Printf("%s+============== Suggested Gas Prices ===============+\n", colorBlue)
+	fmt.Println("|   Speed   |    Max Fee   |      Total Gas Cost     |")
+	fmt.Printf("| Fast      | %-9s | %.6f to %.6f ETH |\n",
+		fmt.Sprintf("%.5f gwei", fastGwei), fastLowLimit, fastHighLimit)
+	fmt.Printf("| Standard  | %-9s | %.6f to %.6f ETH |\n",
+		fmt.Sprintf("%.5f gwei", standardGwei), standardLowLimit, standardHighLimit)
+	fmt.Printf("| Slow      | %-9s | %.6f to %.6f ETH |\n",
+		fmt.Sprintf("%.5f gwei", slowGwei), slowLowLimit, slowHighLimit)
+	fmt.Printf("+====================================================+\n\n%s", colorReset)
 
-	fmt.Printf("These prices include a maximum priority fee of %.2f gwei.\n", priorityFee)
+	fmt.Printf("These prices include a maximum priority fee of %.3f gwei.\n", priorityFee)
 
 	for {
 		desiredPrice := prompt.Prompt(
-			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %d gwei:", int(fastGwei)),
+			fmt.Sprintf("Please enter your max fee (including the priority fee) or leave blank for the default of %.5f gwei:", fastGwei),
 			"^(?:[1-9]\\d*|0)?(?:\\.\\d+)?$",
 			"Not a valid gas price, try again:")
 
