@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -24,10 +22,6 @@ func distribute(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	rpService, err := services.GetRocketPool(c)
-	if err != nil {
-		return err
-	}
 	// Check if Saturn is already deployed
 	saturnResp, err := rp.IsSaturnDeployed()
 	if err != nil {
@@ -79,31 +73,21 @@ func distribute(c *cli.Context) error {
 		return nil
 	}
 
-	// Load the megapool contract
-	mp, err := megapool.NewMegaPoolV1(rpService, canResponse.MegapoolAddress, nil)
-	if err != nil {
-		return fmt.Errorf("error loading megapool contract: %w", err)
-	}
-
-	refundValue, err := mp.GetRefundValue(nil)
-	if err != nil {
-		return fmt.Errorf("error getting refund value: %w", err)
-	}
-
 	// Get pending rewards
-	rewardsSplit, err := rp.CalculatePendingRewards()
+	pendingRewards, err := rp.CalculatePendingRewards()
 	if err != nil {
 		return fmt.Errorf("error calculating pending rewards: %w", err)
 	}
 
-	totalRewards := rewardsSplit.RewardSplit.NodeRewards.Add(rewardsSplit.RewardSplit.NodeRewards, refundValue)
+	totalRewards := big.NewInt(0)
+	totalRewards.Add(pendingRewards.RewardSplit.NodeRewards, pendingRewards.RefundValue)
 
 	if totalRewards.Cmp(big.NewInt(0)) <= 0 {
 		fmt.Println("There are no pending rewards to distribute.")
 		return nil
 	}
 	// Print rewards
-	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.4f ETH and the refund value is %.4f ETH.", eth.WeiToEth(rewardsSplit.RewardSplit.NodeRewards), eth.WeiToEth(refundValue))
+	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.4f ETH and the refund value is %.4f ETH.", eth.WeiToEth(pendingRewards.RewardSplit.NodeRewards), eth.WeiToEth(pendingRewards.RefundValue))
 	fmt.Println()
 
 	// Assign max fees

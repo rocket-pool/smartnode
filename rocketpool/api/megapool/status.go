@@ -150,6 +150,12 @@ func calculatePendingRewards(c *cli.Context) (*api.MegapoolRewardSplitResponse, 
 	}
 	response.RewardSplit = pendingRewards
 
+	refundValue, err := mp.GetRefundValue(nil)
+	if err != nil {
+		return nil, fmt.Errorf("Error getting refund value: %w", err)
+	}
+	response.RefundValue = refundValue
+
 	//Return response
 	return &response, nil
 }

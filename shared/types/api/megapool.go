@@ -88,6 +88,7 @@ type MegapoolRewardSplitResponse struct {
 	Status      string               `json:"status"`
 	Error       string               `json:"error"`
 	RewardSplit megapool.RewardSplit `json:"rewardSplit"`
+	RefundValue *big.Int             `json:"refundValue"`
 }
 
 type QueueDetails struct {
