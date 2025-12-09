@@ -20,11 +20,10 @@ import (
 
 // Settings
 const (
-	nodeAddressFastBatchSize    int    = 1000
+	nodeAddressFastBatchSize    int    = 500
 	NodeAddressBatchSize               = 50
 	NodeDetailsBatchSize               = 20
 	SmoothingPoolCountBatchSize uint64 = 2000
-	NativeNodeDetailsBatchSize         = 10000
 )
 
 // Node details
@@ -862,28 +861,4 @@ func getRocketNodeManager(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rock
 	rocketNodeManagerLock.Lock()
 	defer rocketNodeManagerLock.Unlock()
 	return rp.GetContract("rocketNodeManager", opts)
-}
-
-var rocketNetworkPricesLock sync.Mutex
-
-func getRocketNetworkPrices(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketNetworkPricesLock.Lock()
-	defer rocketNetworkPricesLock.Unlock()
-	return rp.GetContract("rocketNetworkPrices", opts)
-}
-
-var rocketNetworkBalancesLock sync.Mutex
-
-func getRocketNetworkBalances(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketNetworkBalancesLock.Lock()
-	defer rocketNetworkBalancesLock.Unlock()
-	return rp.GetContract("rocketNetworkBalances", opts)
-}
-
-var rocketDAONodeTrustedActionsLock sync.Mutex
-
-func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketDAONodeTrustedActionsLock.Lock()
-	defer rocketDAONodeTrustedActionsLock.Unlock()
-	return rp.GetContract("rocketDAONodeTrustedActions", opts)
 }

@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	nodeVotingDetailsBatchSize uint64 = 250
+	nodeVotingDetailsBatchSize uint64 = 100
 )
 
 // Get the version of the Rocket Network Voting Contract
