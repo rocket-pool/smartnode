@@ -30,8 +30,9 @@ const (
 	PrimaryRewardsFileUrl              string = "https://%s.ipfs.dweb.link/%s"
 	SecondaryRewardsFileUrl            string = "https://ipfs.io/ipfs/%s/%s"
 	GithubRewardsFileUrl               string = "https://github.com/rocket-pool/rewards-trees/raw/main/%s/%s"
-	FeeRecipientFilename               string = "rp-fee-recipient.txt"
+	GlobalFeeRecipientFilename         string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
+	PerKeyFeeRecipientFilename         string = "rp-fee-recipient-per-key"
 )
 
 // Defaults
@@ -847,12 +848,20 @@ func (cfg *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
 	return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder)
 }
 
-func (cfg *SmartnodeConfig) GetFeeRecipientFilePath() string {
+func (cfg *SmartnodeConfig) GetGlobalFeeRecipientFilePath() string {
 	if !cfg.parent.IsNativeMode {
-		return filepath.Join(DaemonDataPath, "validators", FeeRecipientFilename)
+		return filepath.Join(DaemonDataPath, "validators", GlobalFeeRecipientFilename)
 	}
 
 	return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
+}
+
+func (cfg *SmartnodeConfig) GetPerKeyFeeRecipientFilePath() string {
+	if !cfg.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, "validators", PerKeyFeeRecipientFilename)
+	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), "validators", PerKeyFeeRecipientFilename)
 }
 
 func (cfg *SmartnodeConfig) GetV100RewardsPoolAddress() common.Address {

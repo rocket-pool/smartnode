@@ -121,7 +121,7 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 	}
 
 	// Regenerate the fee recipient files
-	err = rpsvc.UpdateFeeRecipientFile(correctFeeRecipient, m.cfg)
+	err = rpsvc.UpdateGlobalFeeRecipientFile(correctFeeRecipient, m.cfg)
 	alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, err == nil)
 	if err != nil {
 		m.log.Println("***ERROR***")
@@ -133,6 +133,14 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 			return fmt.Errorf("error stopping validator client: %w", err)
 		}
 		return nil
+	}
+
+	// Get the megapool pubkeys
+	pubkeys := state.MegapoolToPubkeysMap[feeRecipientInfo.MegapoolAddress]
+
+	if len(pubkeys) > 0 {
+		// Create the per key fee recipient files
+		rpsvc.UpdatePerKeyFeeRecipientFiles(pubkeys, feeRecipientInfo.MegapoolAddress, m.cfg)
 	}
 
 	// Restart the VC

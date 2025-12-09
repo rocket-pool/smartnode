@@ -10,6 +10,8 @@ const CheckpointSyncUrlID string = "checkpointSyncUrl"
 const P2pPortID string = "p2pPort"
 const P2pQuicPortID string = "p2pQuicPort"
 const ApiPortID string = "apiPort"
+const KeymanagerApiPortID string = "keymanagerApiPort"
+const OpenKeymanagerApiPortID string = "openKeymanagerApiPort"
 const OpenApiPortID string = "openApiPort"
 const DoppelgangerDetectionID string = "doppelgangerDetection"
 
@@ -19,6 +21,8 @@ const defaultCheckpointSyncProvider string = ""
 const defaultP2pPort uint16 = 9001
 const defaultP2pQuicPort uint16 = 8001
 const defaultBnApiPort uint16 = 5052
+const defaultKeymanagerApiPort uint16 = 5062
+const defaultOpenKeyManagerApiPort string = string(config.RPC_Closed)
 const defaultOpenBnApiPort string = string(config.RPC_Closed)
 const defaultDoppelgangerDetection bool = true
 
@@ -43,6 +47,12 @@ type ConsensusCommonConfig struct {
 
 	// Toggle for forwarding the HTTP API port outside of Docker
 	OpenApiPort config.Parameter `yaml:"openApiPort,omitempty"`
+
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
+
+	// Toggle for forwarding the Keymanager API port outside of Docker
+	OpenKeymanagerApiPort config.Parameter `yaml:"openKeymanagerApiPort,omitempty"`
 
 	// Toggle for enabling doppelganger detection
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
@@ -120,6 +130,28 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultOpenBnApiPort},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+			Options:            portModes,
+		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+		OpenKeymanagerApiPort: config.Parameter{
+			ID:                 OpenKeymanagerApiPortID,
+			Name:               "Expose Keymanager API Port",
+			Description:        "Select an option to expose your Keymanager API port to your localhost or external hosts on the network, so other machines can access it too.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultOpenKeyManagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options:            portModes,

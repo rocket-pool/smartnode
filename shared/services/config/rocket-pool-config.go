@@ -1147,7 +1147,7 @@ func (cfg *RocketPoolConfig) VcAdditionalFlags() (string, error) {
 
 // Used by text/template to format validator.yml
 func (cfg *RocketPoolConfig) FeeRecipientFile() string {
-	return FeeRecipientFilename
+	return GlobalFeeRecipientFilename
 }
 
 // Used by text/template to format validator.yml
@@ -1304,6 +1304,16 @@ func (cfg *RocketPoolConfig) GetBnOpenPorts() []string {
 		}
 	}
 	return bnOpenPorts
+}
+
+func (cfg *RocketPoolConfig) GetKeymanagerApiOpenPort() []string {
+	keymanagerApiPortMode := cfg.ConsensusCommon.OpenKeymanagerApiPort.Value.(config.RPCMode)
+	keyManagerOpenPorts := make([]string, 0)
+	if keymanagerApiPortMode.Open() {
+		keyManagerOpenPorts = append(keyManagerOpenPorts, keymanagerApiPortMode.DockerPortMapping(cfg.ConsensusCommon.KeymanagerApiPort.Value.(uint16)))
+
+	}
+	return keyManagerOpenPorts
 }
 
 // Used by text/template to format eth2.yml

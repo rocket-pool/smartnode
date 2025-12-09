@@ -49,6 +49,9 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         $CMD_LH_NETWORK \
         --datadir /validators/lighthouse \
         --init-slashing-protection \
+        --http \
+        --http-address 0.0.0.0 \
+        --http-port ${VC_API_PORT:-5062} \
         --logfile-max-number 0 \
         --beacon-nodes $CC_URL_STRING \
         --suggested-fee-recipient $(cat /validators/$FEE_RECIPIENT_FILE) \

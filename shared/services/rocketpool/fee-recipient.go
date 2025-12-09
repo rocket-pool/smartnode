@@ -6,7 +6,9 @@ import (
 	"os"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Config
@@ -28,7 +30,7 @@ func CheckFeeRecipientFile(feeRecipient common.Address, cfg *config.RocketPoolCo
 	}
 
 	// Compare the file contents with the expected string
-	expectedString := getFeeRecipientFileContents(feeRecipient, cfg)
+	expectedString := getGlobalFeeRecipientFileContents(feeRecipient, cfg)
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return false, false, fmt.Errorf("error reading fee recipient file: %w", err)
@@ -43,25 +45,49 @@ func CheckFeeRecipientFile(feeRecipient common.Address, cfg *config.RocketPoolCo
 	return true, true, nil
 }
 
-// Writes the given address to the fee recipient file. The VC should be restarted to pick up the new file.
-func UpdateFeeRecipientFile(feeRecipient common.Address, cfg *config.RocketPoolConfig) error {
+// Writes the given address to the globalfee recipient file. The VC should be restarted to pick up the new file.
+func UpdateGlobalFeeRecipientFile(feeRecipient common.Address, cfg *config.RocketPoolConfig) error {
 
 	// Create the distributor address string for the node
-	expectedString := getFeeRecipientFileContents(feeRecipient, cfg)
+	expectedString := getGlobalFeeRecipientFileContents(feeRecipient, cfg)
 	bytes := []byte(expectedString)
 
 	// Write the file
-	path := cfg.Smartnode.GetFeeRecipientFilePath()
-	err := os.WriteFile(path, bytes, FileMode)
+	globalPath := cfg.Smartnode.GetGlobalFeeRecipientFilePath()
+	err := os.WriteFile(globalPath, bytes, FileMode)
 	if err != nil {
-		return fmt.Errorf("error writing fee recipient file: %w", err)
+		return fmt.Errorf("error writing global fee recipient file: %w", err)
 	}
 	return nil
 
 }
 
+// Writes the given address to the per key fee recipient file. The VC should be restarted to pick up the new file.
+func UpdatePerKeyFeeRecipientFiles(pubkeys []types.ValidatorPubkey, megapoolAddress common.Address, cfg *config.RocketPoolConfig) error {
+	// Check which beacon client is being used
+	cc, mode := cfg.GetSelectedConsensusClient()
+	path := cfg.Smartnode.GetPerKeyFeeRecipientFilePath() + "-" + string(cc)
+
+	switch cc {
+	case cfgtypes.ConsensusClient_Lighthouse:
+		path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
+	case cfgtypes.ConsensusClient_Lodestar:
+		path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
+	case cfgtypes.ConsensusClient_Nimbus:
+		path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
+	case cfgtypes.ConsensusClient_Prysm:
+		path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
+	case cfgtypes.ConsensusClient_Teku:
+
+	}
+	// Create the per key fee recipient files
+	for _, pubkey := range pubkeys {
+
+	}
+}
+
 // Gets the expected contents of the fee recipient file
-func getFeeRecipientFileContents(feeRecipient common.Address, cfg *config.RocketPoolConfig) string {
+func getGlobalFeeRecipientFileContents(feeRecipient common.Address, cfg *config.RocketPoolConfig) string {
 	if !cfg.IsNativeMode {
 		// Docker mode
 		return feeRecipient.Hex()
@@ -69,4 +95,15 @@ func getFeeRecipientFileContents(feeRecipient common.Address, cfg *config.Rocket
 
 	// Native mode
 	return fmt.Sprintf("FEE_RECIPIENT=%s", feeRecipient.Hex())
+}
+
+func getLighthousePerKeyFeeRecipientFileContents(pubkeys []types.ValidatorPubkey, feeRecipient common.Address) string {
+	if len(pubkeys) == 0 {
+		return ""
+	}
+
+	// Iterate pubkeys to create a json file
+	
+
+	return string(jsonBytes)
 }
