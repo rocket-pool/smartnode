@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	challengeStateBatchSize uint64 = 500
+	challengeStateBatchSize uint64 = 200
 )
 
 // Structure of the RootSubmitted event
