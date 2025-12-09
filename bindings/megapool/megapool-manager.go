@@ -158,7 +158,7 @@ func EstimateNotifyNotExitGas(rp *rocketpool.RocketPool, megapoolAddress common.
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return megapoolManager.GetTransactionGasInfo(opts, "notifyNotExit", megapoolAddress, validatorId, slotTimestamp, validatorProof)
+	return megapoolManager.GetTransactionGasInfo(opts, "notifyNotExit", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
 }
 
 // Used to prove a validator is not exiting after a challenge-exit
@@ -167,7 +167,7 @@ func NotifyNotExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, va
 	if err != nil {
 		return nil, err
 	}
-	tx, err := megapoolManager.Transact(opts, "notifyNotExit", megapoolAddress, slotTimestamp, validatorId, validatorProof)
+	tx, err := megapoolManager.Transact(opts, "notifyNotExit", megapoolAddress, slotTimestamp, validatorId, validatorProof, slotProof)
 	if err != nil {
 		return nil, fmt.Errorf("error calling notify not exit: %w", err)
 	}
