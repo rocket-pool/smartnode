@@ -39,7 +39,7 @@ func VerifyWithdrawal(rp *rocketpool.RocketPool, validatorIndex *big.Int, withdr
 		return false, err
 	}
 	verifiedWithdrawal := new(bool)
-	if err := beaconStateVerifier.Call(opts, verifiedWithdrawal, "verifyWithdrawal", validatorIndex, withdrawalSlot, withdrawalNum, withdrawal, slot, proof, opts); err != nil {
+	if err := beaconStateVerifier.Call(opts, verifiedWithdrawal, "verifyWithdrawal", validatorIndex, withdrawalSlot, withdrawalNum, withdrawal, slot, proof); err != nil {
 		return false, fmt.Errorf("error verifying withdrawal of validator index %d at withdrawalSlot %d: %w", validatorIndex.Int64(), withdrawalSlot, err)
 	}
 	return *verifiedWithdrawal, nil
