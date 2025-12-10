@@ -301,7 +301,7 @@ func (mp *megapoolV1) GetSoonestWithdrawableEpoch(opts *bind.CallOpts) (uint32, 
 
 func (mp *megapoolV1) GetLastDistributionTime(opts *bind.CallOpts) (uint64, error) {
 	lastDistributionTime := new(*big.Int)
-	if err := mp.Contract.Call(opts, &lastDistributionTime, "getLastDistributionTime"); err != nil {
+	if err := mp.Contract.Call(opts, lastDistributionTime, "getLastDistributionTime"); err != nil {
 		return 0, fmt.Errorf("error getting megapool %s lastDistributionTime: %w", mp.Address.Hex(), err)
 	}
 	return (*lastDistributionTime).Uint64(), nil
