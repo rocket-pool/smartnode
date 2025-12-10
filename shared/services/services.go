@@ -164,9 +164,10 @@ func GetDocker(c *cli.Context) (*client.Client, error) {
 func GetBeaconState(bc beacon.Client) (eth2.BeaconState, error) {
 	blockToRequest := "finalized"
 	var block beacon.BeaconBlock
+	var err error
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
-		block, _, err := bc.GetBeaconBlock(blockToRequest)
+		block, _, err = bc.GetBeaconBlock(blockToRequest)
 		if err != nil {
 			return nil, err
 		}

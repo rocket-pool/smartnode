@@ -362,7 +362,7 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 		return err
 	}
 
-	feeRecipientPath := cfg.Smartnode.GetFeeRecipientFilePath()
+	feeRecipientPath := cfg.Smartnode.GetGlobalFeeRecipientFilePath()
 	_, err = os.Stat(feeRecipientPath)
 	if os.IsNotExist(err) {
 		// Make sure the validators dir is created

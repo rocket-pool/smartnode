@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Config
@@ -21,7 +20,7 @@ const (
 func CheckFeeRecipientFile(feeRecipient common.Address, cfg *config.RocketPoolConfig) (bool, bool, error) {
 
 	// Check if the file exists
-	path := cfg.Smartnode.GetFeeRecipientFilePath()
+	path := cfg.Smartnode.GetGlobalFeeRecipientFilePath()
 	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		return false, false, nil
@@ -65,25 +64,26 @@ func UpdateGlobalFeeRecipientFile(feeRecipient common.Address, cfg *config.Rocke
 // Writes the given address to the per key fee recipient file. The VC should be restarted to pick up the new file.
 func UpdatePerKeyFeeRecipientFiles(pubkeys []types.ValidatorPubkey, megapoolAddress common.Address, cfg *config.RocketPoolConfig) error {
 	// Check which beacon client is being used
-	cc, mode := cfg.GetSelectedConsensusClient()
-	path := cfg.Smartnode.GetPerKeyFeeRecipientFilePath() + "-" + string(cc)
+	// cc, mode := cfg.GetSelectedConsensusClient()
+	// path := cfg.Smartnode.GetPerKeyFeeRecipientFilePath() + "-" + string(cc)
 
-	switch cc {
-	case cfgtypes.ConsensusClient_Lighthouse:
-		path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
-	case cfgtypes.ConsensusClient_Lodestar:
-		path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
-	case cfgtypes.ConsensusClient_Nimbus:
-		path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
-	case cfgtypes.ConsensusClient_Prysm:
-		path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
-	case cfgtypes.ConsensusClient_Teku:
+	// switch cc {
+	// case cfgtypes.ConsensusClient_Lighthouse:
+	// 	path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
+	// case cfgtypes.ConsensusClient_Lodestar:
+	// 	path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
+	// case cfgtypes.ConsensusClient_Nimbus:
+	// 	path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
+	// case cfgtypes.ConsensusClient_Prysm:
+	// 	path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
+	// case cfgtypes.ConsensusClient_Teku:
 
-	}
-	// Create the per key fee recipient files
-	for _, pubkey := range pubkeys {
+	// }
+	// // Create the per key fee recipient files
+	// for _, pubkey := range pubkeys {
 
-	}
+	// }
+	return nil
 }
 
 // Gets the expected contents of the fee recipient file
@@ -103,7 +103,6 @@ func getLighthousePerKeyFeeRecipientFileContents(pubkeys []types.ValidatorPubkey
 	}
 
 	// Iterate pubkeys to create a json file
-	
 
-	return string(jsonBytes)
+	return ""
 }

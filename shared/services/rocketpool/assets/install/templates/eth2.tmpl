@@ -39,6 +39,11 @@ services:
       {{- range $entry := .GetBnOpenPorts}}
       - "{{$entry}}"
       {{- end}}
+      {{- if eq .ConsensusClient.String "nimbus"}}
+      {{- range $entry := .GetKeymanagerApiOpenPort}}
+      - "{{$entry}}"
+      {{- end}}
+      {{- end}}
     volumes:
       - {{.Smartnode.DataPath}}/validators:/validators
       - {{.Smartnode.DataPath}}/secrets:/secrets:ro

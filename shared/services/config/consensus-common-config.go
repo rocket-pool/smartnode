@@ -179,6 +179,8 @@ func (cfg *ConsensusCommonConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.ApiPort,
 		&cfg.OpenApiPort,
+		&cfg.KeymanagerApiPort,
+		&cfg.OpenKeymanagerApiPort,
 		&cfg.DoppelgangerDetection,
 	}
 }

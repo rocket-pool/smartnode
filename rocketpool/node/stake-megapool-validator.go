@@ -2,6 +2,7 @@ package node
 
 import (
 	"math/big"
+	"strconv"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -151,15 +152,18 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 		return err
 	}
 
+	beaconState, err := services.GetBeaconState(t.bc)
+	if err != nil {
+		return err
+	}
 	for i := uint32(0); i < uint32(validatorCount); i++ {
 		if validatorInfo[i].InPrestake && validatorInfo[i].BeaconStatus.Index != "" {
-			beaconState, err := services.GetBeaconState(t.bc)
+			// Convert str to int
+			indexInt, err := strconv.Atoi(validatorInfo[i].BeaconStatus.Index)
 			if err != nil {
 				return err
 			}
-
-			if len(beaconState.GetValidators()) >= int(validatorInfo[i].ValidatorIndex) {
-
+			if indexInt < len(beaconState.GetValidators()) {
 				// Log
 				t.log.Printlnf("The validator %d needs to be staked", validatorInfo[i].ValidatorId)
 
