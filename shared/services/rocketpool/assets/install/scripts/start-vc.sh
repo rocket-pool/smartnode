@@ -2,6 +2,7 @@
 # This script launches ETH2 validator clients for Rocket Pool's docker stack; only edit if you know what you're doing ;)
 
 GWW_GRAFFITI_FILE="/addons/gww/graffiti.txt"
+echo "0x1234567890abcdef1234567890abcdef" > "/validators/token-file.txt"
 
 # Set up the network-based flags
 if [ "$NETWORK" = "mainnet" ]; then
@@ -51,8 +52,8 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         --init-slashing-protection \
         --http \
         --http-address 0.0.0.0 \
-        --http-port ${KEYMANAGER_PORT:-5062} \
-        --unencrypted-http-transport \
+        --http-port ${VC_KEYMANAGER_API_PORT:-5062} \
+        --http-token-path  /validators/token-file.txt \
         --logfile-max-number 0 \
         --beacon-nodes $CC_URL_STRING \
         --suggested-fee-recipient $(cat /validators/$FEE_RECIPIENT_FILE) \
@@ -152,8 +153,6 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         FALLBACK_CC_ARG="--beacon-node=$FALLBACK_CC_API_ENDPOINT"
     fi
 
-    echo "0x1234567890abcdef1234567890abcdef" > "/validators/token-file.txt"
-
     CMD="/home/user/nimbus_validator_client \
         --non-interactive \
         --beacon-node=$CC_API_ENDPOINT $FALLBACK_CC_ARG \
@@ -163,7 +162,7 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         --keymanager \
         --keymanager-port=${VC_KEYMANAGER_API_PORT:-5062} \
         --keymanager-address=0.0.0.0 \
-        --keymanager-token-file="/validators/token-file.txt"
+        --keymanager-token-file=/validators/token-file.txt \
         --doppelganger-detection=$DOPPELGANGER_DETECTION \
         --suggested-fee-recipient=$(cat /validators/$FEE_RECIPIENT_FILE) \
         --block-monitor-type=event \
