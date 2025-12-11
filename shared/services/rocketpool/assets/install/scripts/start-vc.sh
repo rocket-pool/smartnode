@@ -2,7 +2,7 @@
 # This script launches ETH2 validator clients for Rocket Pool's docker stack; only edit if you know what you're doing ;)
 
 GWW_GRAFFITI_FILE="/addons/gww/graffiti.txt"
-echo "0x1234567890abcdef1234567890abcdef" > "/validators/token-file.txt"
+echo -n "0x1234567890abcdef1234567890abcdef" > "/validators/token-file.txt"
 
 # Set up the network-based flags
 if [ "$NETWORK" = "mainnet" ]; then
@@ -54,6 +54,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         --http-address 0.0.0.0 \
         --http-port ${VC_KEYMANAGER_API_PORT:-5062} \
         --http-token-path  /validators/token-file.txt \
+        --unencrypted-http-transport \
         --logfile-max-number 0 \
         --beacon-nodes $CC_URL_STRING \
         --suggested-fee-recipient $(cat /validators/$FEE_RECIPIENT_FILE) \
