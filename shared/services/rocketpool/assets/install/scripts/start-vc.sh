@@ -115,6 +115,10 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         --keystoresDir /validators/lodestar/validators \
         --secretsDir /validators/lodestar/secrets \
         --suggestedFeeRecipient $(cat /validators/$FEE_RECIPIENT_FILE) \
+        --keymanager true \
+        --keymanager.port ${VC_KEYMANAGER_API_PORT:-5062} \
+        --keymanager.address 0.0.0.0 \
+        --keymanager.tokenFile /validators/token-file.txt \
         $VC_ADDITIONAL_FLAGS"
 
 if [ ! -z "$VC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
