@@ -196,8 +196,6 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         --direct-peer=$BOOTNODE_ENR_LIST"
     fi
 
-    echo "0x1234567890abcdef1234567890abcdef" > "/validators/token-file.txt"
-
     CMD="$PERF_PREFIX /home/user/nimbus-eth2/build/nimbus_beacon_node \
         --non-interactive \
         --enr-auto-update \
@@ -206,10 +204,6 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         --tcp-port=$BN_P2P_PORT \
         --udp-port=$BN_P2P_PORT \
         --web3-url=$EC_ENGINE_ENDPOINT \
-        --keymanager \
-        --keymanager-port=${KEYMANAGER_PORT:-5062} \
-        --keymanager-address=0.0.0.0 \
-        --keymanager-token-file="/validators/token-file.txt"
         --rest \
         --rest-address=0.0.0.0 \
         --rest-port=${BN_API_PORT:-5052} \

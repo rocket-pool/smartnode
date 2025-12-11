@@ -152,12 +152,18 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         FALLBACK_CC_ARG="--beacon-node=$FALLBACK_CC_API_ENDPOINT"
     fi
 
+    echo "0x1234567890abcdef1234567890abcdef" > "/validators/token-file.txt"
+
     CMD="/home/user/nimbus_validator_client \
         --non-interactive \
         --beacon-node=$CC_API_ENDPOINT $FALLBACK_CC_ARG \
         --data-dir=/ethclient/nimbus_vc \
         --validators-dir=/validators/nimbus/validators \
         --secrets-dir=/validators/nimbus/secrets \
+        --keymanager \
+        --keymanager-port=${VC_KEYMANAGER_API_PORT:-5062} \
+        --keymanager-address=0.0.0.0 \
+        --keymanager-token-file="/validators/token-file.txt"
         --doppelganger-detection=$DOPPELGANGER_DETECTION \
         --suggested-fee-recipient=$(cat /validators/$FEE_RECIPIENT_FILE) \
         --block-monitor-type=event \

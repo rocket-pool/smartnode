@@ -19,12 +19,10 @@ services:
       - {{.RocketPoolDirectory}}/devnet:/devnet:ro
     networks:
       - net
-    {{- if ne .ConsensusClient.String "nimbus"}}
     ports:
       {{- range $entry := .GetKeymanagerApiOpenPort}}
       - "{{$entry}}"
       {{- end}}
-    {{- end}}
     environment:
       - NETWORK={{.Smartnode.Network}}
       - EC_CLIENT={{if .ExecutionClientLocal}}{{.ExecutionClient}}{{else}}X{{end}}
