@@ -135,12 +135,13 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 		return nil
 	}
 
-	// Get the megapool pubkeys
-	pubkeys := state.MegapoolToPubkeysMap[feeRecipientInfo.MegapoolAddress]
-
-	if len(pubkeys) > 0 {
+	// If minipools + megapool and not on the smoothing pool we need to split fee recipients
+	// The Fee distributor will be the global fee recipient and we override the fee recipient for megapool validator keys
+	if feeRecipientInfo.HasMegapoolValidators && feeRecipientInfo.HasMinipools && !feeRecipientInfo.IsInSmoothingPool {
+		// Get the megapool pubkeys
+		pubkeys := state.MegapoolToPubkeysMap[feeRecipientInfo.MegapoolAddress]
 		// Create the per key fee recipient files
-		rpsvc.UpdatePerKeyFeeRecipientFiles(pubkeys, feeRecipientInfo.MegapoolAddress, m.cfg)
+		rpsvc.UpdateFeeRecipientPerKey(pubkeys, feeRecipientInfo.MegapoolAddress, m.cfg)
 	}
 
 	// Restart the VC

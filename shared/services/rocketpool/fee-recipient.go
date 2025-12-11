@@ -1,9 +1,15 @@
 package rocketpool
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/fs"
+	"net/http"
 	"os"
+	"path/filepath"
+	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -61,29 +67,87 @@ func UpdateGlobalFeeRecipientFile(feeRecipient common.Address, cfg *config.Rocke
 
 }
 
-// Writes the given address to the per key fee recipient file. The VC should be restarted to pick up the new file.
-func UpdatePerKeyFeeRecipientFiles(pubkeys []types.ValidatorPubkey, megapoolAddress common.Address, cfg *config.RocketPoolConfig) error {
-	// Check which beacon client is being used
-	// cc, mode := cfg.GetSelectedConsensusClient()
-	// path := cfg.Smartnode.GetPerKeyFeeRecipientFilePath() + "-" + string(cc)
+// Iterates pubkeys making keymanager API calls updating the fee recipient
+func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress common.Address, cfg *config.RocketPoolConfig) error {
+	if len(pubkeys) == 0 {
+		return nil
+	}
 
-	// switch cc {
-	// case cfgtypes.ConsensusClient_Lighthouse:
-	// 	path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
-	// case cfgtypes.ConsensusClient_Lodestar:
-	// 	path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
-	// case cfgtypes.ConsensusClient_Nimbus:
-	// 	path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
-	// case cfgtypes.ConsensusClient_Prysm:
-	// 	path = cfg.Smartnode.GetGlobalFeeRecipientFilePath()
-	// case cfgtypes.ConsensusClient_Teku:
+	// Get the keymanager API URL
+	keymanagerPort := cfg.ConsensusCommon.KeymanagerApiPort.Value.(uint16)
+	keymanagerURL := fmt.Sprintf("http://localhost:%d", keymanagerPort)
 
-	// }
-	// // Create the per key fee recipient files
-	// for _, pubkey := range pubkeys {
+	// Read the token file for authentication
+	tokenPath, err := getKeymanagerTokenFilePath(cfg)
+	if err != nil {
+		return fmt.Errorf("error getting token file path: %w", err)
+	}
 
-	// }
+	tokenBytes, err := os.ReadFile(tokenPath)
+	if err != nil {
+		return fmt.Errorf("error reading token file: %w", err)
+	}
+	token := strings.TrimSpace(string(tokenBytes))
+
+	// Create HTTP client with timeout
+	client := &http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	// Iterate through pubkeys and update fee recipient for each
+	for _, pubkey := range pubkeys {
+		// Format pubkey as hex string
+		pubkeyHex := pubkey.Hex()
+
+		// Build the endpoint URL
+		endpoint := fmt.Sprintf("%s/eth/v1/validator/%s/feerecipient", keymanagerURL, pubkeyHex)
+
+		// Create request body
+		requestBody := map[string]string{
+			"ethaddress": megapoolAddress.Hex(),
+		}
+		jsonBody, err := json.Marshal(requestBody)
+		if err != nil {
+			return fmt.Errorf("error marshaling request body for pubkey %s: %w", pubkeyHex, err)
+		}
+
+		// Create POST request
+		req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonBody))
+		if err != nil {
+			return fmt.Errorf("error creating request for pubkey %s: %w", pubkeyHex, err)
+		}
+
+		// Set headers
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+		// Make the request
+		resp, err := client.Do(req)
+		if err != nil {
+			return fmt.Errorf("error making request for pubkey %s: %w", pubkeyHex, err)
+		}
+		defer resp.Body.Close()
+
+		// Check response status
+		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+			return fmt.Errorf("keymanager API returned error status %d for pubkey %s", resp.StatusCode, pubkeyHex)
+		}
+	}
+
 	return nil
+}
+
+// Gets the path to the keymanager token file
+func getKeymanagerTokenFilePath(cfg *config.RocketPoolConfig) (string, error) {
+	tokenFilename := "token-file.txt"
+	if !cfg.IsNativeMode {
+		// Docker mode - token file is in /validators/token-file.txt
+		return filepath.Join(config.DaemonDataPath, "validators", tokenFilename), nil
+	}
+
+	// Native mode - token file is in the data path
+	dataPath := cfg.Smartnode.DataPath.Value.(string)
+	return filepath.Join(dataPath, "validators", tokenFilename), nil
 }
 
 // Gets the expected contents of the fee recipient file
@@ -95,14 +159,4 @@ func getGlobalFeeRecipientFileContents(feeRecipient common.Address, cfg *config.
 
 	// Native mode
 	return fmt.Sprintf("FEE_RECIPIENT=%s", feeRecipient.Hex())
-}
-
-func getLighthousePerKeyFeeRecipientFileContents(pubkeys []types.ValidatorPubkey, feeRecipient common.Address) string {
-	if len(pubkeys) == 0 {
-		return ""
-	}
-
-	// Iterate pubkeys to create a json file
-
-	return ""
 }
