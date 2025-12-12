@@ -291,7 +291,7 @@ if [ "$CC_CLIENT" = "teku" ]; then
         fi
     fi
 
-    if [ "$TEKU_USE_SLASHING_PROTECTION" = "true"]; then
+    if [ "$TEKU_USE_SLASHING_PROTECTION" = "true" ]; then
         CMD="$CMD --shut-down-when-validator-slashed-enabled=true"
     fi
 
