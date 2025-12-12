@@ -111,28 +111,30 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 		return fmt.Errorf("error validating fee recipient files: %w", err)
 	}
 
-	if !fileExists {
-		m.log.Println("Fee recipient files don't all exist, regenerating...")
-	} else if !correctAddress {
+	if !fileExists || !correctAddress {
 		m.log.Printlnf("WARNING: Fee recipient files did not contain the correct fee recipient of %s, regenerating...", correctFeeRecipient.Hex())
-	} else {
-		// Files are all correct, return.
-		return nil
-	}
-
-	// Regenerate the fee recipient files
-	err = rpsvc.UpdateGlobalFeeRecipientFile(correctFeeRecipient, m.cfg)
-	alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, err == nil)
-	if err != nil {
-		m.log.Println("***ERROR***")
-		m.log.Printlnf("Error updating fee recipient files: %s", err.Error())
-		m.log.Println("Shutting down the validator client for safety to prevent you from being penalized...")
-
-		err = validator.StopValidator(m.cfg, m.bc, &m.log, m.d)
+		// Regenerate the fee recipient files
+		err = rpsvc.UpdateGlobalFeeRecipientFile(correctFeeRecipient, m.cfg)
+		alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, err == nil)
 		if err != nil {
-			return fmt.Errorf("error stopping validator client: %w", err)
+			m.log.Println("***ERROR***")
+			m.log.Printlnf("Error updating fee recipient files: %s", err.Error())
+			m.log.Println("Shutting down the validator client for safety to prevent you from being penalized...")
+
+			err = validator.StopValidator(m.cfg, m.bc, &m.log, m.d)
+			if err != nil {
+				return fmt.Errorf("error stopping validator client: %w", err)
+			}
+			return nil
 		}
-		return nil
+
+		// Restart the VC
+		m.log.Println("Fee recipient files updated successfully! Restarting validator client...")
+		err = validator.RestartValidator(m.cfg, m.bc, &m.log, m.d)
+		if err != nil {
+			return fmt.Errorf("error restarting validator client: %w", err)
+		}
+
 	}
 
 	// If minipools + megapool and not on the smoothing pool we need to split fee recipients
@@ -140,19 +142,15 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 	if feeRecipientInfo.HasMegapoolValidators && feeRecipientInfo.HasMinipools && !feeRecipientInfo.IsInSmoothingPool {
 		// Get the megapool pubkeys
 		pubkeys := state.MegapoolToPubkeysMap[feeRecipientInfo.MegapoolAddress]
-		// Create the per key fee recipient files
-		rpsvc.UpdateFeeRecipientPerKey(pubkeys, feeRecipientInfo.MegapoolAddress, m.cfg)
-	}
-
-	// Restart the VC
-	m.log.Println("Fee recipient files updated successfully! Restarting validator client...")
-	err = validator.RestartValidator(m.cfg, m.bc, &m.log, m.d)
-	if err != nil {
-		return fmt.Errorf("error restarting validator client: %w", err)
+		// Override megapool validator fee recipients
+		err := rpsvc.UpdateFeeRecipientPerKey(pubkeys, feeRecipientInfo.MegapoolAddress, m.cfg)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Log & return
-	m.log.Println("Successfully restarted, you are now validating safely.")
-	return nil
+	m.log.Println("Successfully updated the fee recipient, you are now validating safely.")
 
+	return nil
 }

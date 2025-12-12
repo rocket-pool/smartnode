@@ -4,11 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -18,7 +17,8 @@ import (
 
 // Config
 const (
-	FileMode fs.FileMode = 0644
+	FileMode        fs.FileMode = 0644
+	KeymanagerToken             = "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 )
 
 // Checks if the fee recipient file exists and has the correct distributor address in it.
@@ -75,34 +75,18 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 
 	// Get the keymanager API URL
 	keymanagerPort := cfg.ConsensusCommon.KeymanagerApiPort.Value.(uint16)
-	keymanagerURL := fmt.Sprintf("http://localhost:%d", keymanagerPort)
+	keymanagerURL := fmt.Sprintf("http://127.0.0.1:%d", keymanagerPort)
 
-	// Read the token file for authentication
-	tokenPath, err := getKeymanagerTokenFilePath(cfg)
-	if err != nil {
-		return fmt.Errorf("error getting token file path: %w", err)
-	}
-
-	tokenBytes, err := os.ReadFile(tokenPath)
-	if err != nil {
-		return fmt.Errorf("error reading token file: %w", err)
-	}
-	token := strings.TrimSpace(string(tokenBytes))
-
-	// Create HTTP client with timeout
 	client := &http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 5 * time.Second,
 	}
 
-	// Iterate through pubkeys and update fee recipient for each
+	// Iterate through megapool pubkeys and update the fee recipient for each
 	for _, pubkey := range pubkeys {
-		// Format pubkey as hex string
 		pubkeyHex := pubkey.Hex()
 
-		// Build the endpoint URL
 		endpoint := fmt.Sprintf("%s/eth/v1/validator/%s/feerecipient", keymanagerURL, pubkeyHex)
 
-		// Create request body
 		requestBody := map[string]string{
 			"ethaddress": megapoolAddress.Hex(),
 		}
@@ -111,43 +95,27 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 			return fmt.Errorf("error marshaling request body for pubkey %s: %w", pubkeyHex, err)
 		}
 
-		// Create POST request
 		req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonBody))
 		if err != nil {
 			return fmt.Errorf("error creating request for pubkey %s: %w", pubkeyHex, err)
 		}
 
-		// Set headers
 		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", KeymanagerToken))
 
-		// Make the request
 		resp, err := client.Do(req)
 		if err != nil {
 			return fmt.Errorf("error making request for pubkey %s: %w", pubkeyHex, err)
 		}
 		defer resp.Body.Close()
 
-		// Check response status
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			return fmt.Errorf("keymanager API returned error status %d for pubkey %s", resp.StatusCode, pubkeyHex)
+			bodyBytes, _ := io.ReadAll(resp.Body)
+			return fmt.Errorf("keymanager API error for pubkey %s: %s", pubkeyHex, string(bodyBytes))
 		}
 	}
 
 	return nil
-}
-
-// Gets the path to the keymanager token file
-func getKeymanagerTokenFilePath(cfg *config.RocketPoolConfig) (string, error) {
-	tokenFilename := "token-file.txt"
-	if !cfg.IsNativeMode {
-		// Docker mode - token file is in /validators/token-file.txt
-		return filepath.Join(config.DaemonDataPath, "validators", tokenFilename), nil
-	}
-
-	// Native mode - token file is in the data path
-	dataPath := cfg.Smartnode.DataPath.Value.(string)
-	return filepath.Join(dataPath, "validators", tokenFilename), nil
 }
 
 // Gets the expected contents of the fee recipient file
