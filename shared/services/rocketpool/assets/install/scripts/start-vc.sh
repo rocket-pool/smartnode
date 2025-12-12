@@ -270,6 +270,13 @@ if [ "$CC_CLIENT" = "teku" ]; then
         --beacon-node-api-endpoints=$CC_URL_STRING \
         --validators-keystore-locking-enabled=false \
         --log-destination=CONSOLE \
+        --validator-api-enabled=true \
+        --validator-api-port=${VC_KEYMANAGER_API_PORT:-5062} \
+        --validator-api-interface=0.0.0.0 \
+        --validator-api-host-allowlist=* \
+        --validator-api-bearer-file=/validators/token-file.txt \
+        --Xvalidator-api-ssl-enabled=false \
+        --Xvalidator-api-unsafe-hosts-enabled=true \
         --validators-proposer-default-fee-recipient=$(cat /validators/$FEE_RECIPIENT_FILE) \
         $VC_ADDITIONAL_FLAGS"
 
