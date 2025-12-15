@@ -19,10 +19,12 @@ services:
       - {{.RocketPoolDirectory}}/devnet:/devnet:ro
     networks:
       - net
+    {{- if gt (len .GetKeymanagerApiOpenPort) 0 }}
     ports:
       {{- range $entry := .GetKeymanagerApiOpenPort}}
       - "{{$entry}}"
       {{- end}}
+    {{- end}}
     environment:
       - NETWORK={{.Smartnode.Network}}
       - EC_CLIENT={{if .ExecutionClientLocal}}{{.ExecutionClient}}{{else}}X{{end}}

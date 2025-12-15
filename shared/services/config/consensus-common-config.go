@@ -22,7 +22,7 @@ const defaultP2pPort uint16 = 9001
 const defaultP2pQuicPort uint16 = 8001
 const defaultBnApiPort uint16 = 5052
 const defaultKeymanagerApiPort uint16 = 5062
-const defaultOpenKeyManagerApiPort string = string(config.RPC_Closed)
+const defaultOpenKeyManagerApiPort string = string(config.RPC_OpenLocalhost)
 const defaultOpenBnApiPort string = string(config.RPC_Closed)
 const defaultDoppelgangerDetection bool = true
 
