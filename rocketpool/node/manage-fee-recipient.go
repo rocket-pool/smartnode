@@ -143,14 +143,14 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 		// Get the megapool pubkeys
 		pubkeys := state.MegapoolToPubkeysMap[feeRecipientInfo.MegapoolAddress]
 		// Override megapool validator fee recipients
-		err := rpsvc.UpdateFeeRecipientPerKey(pubkeys, feeRecipientInfo.MegapoolAddress, m.cfg)
+		err = rpsvc.UpdateFeeRecipientPerKey(pubkeys, feeRecipientInfo.MegapoolAddress, m.cfg)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Log & return
-	m.log.Println("Successfully updated the fee recipient, you are now validating safely.")
+	m.log.Println("Successfully checked for the correct fee recipient, you are now validating safely.")
 
 	return nil
 }

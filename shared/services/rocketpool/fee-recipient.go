@@ -8,11 +8,13 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"golang.org/x/sync/errgroup"
 )
 
 // Config
@@ -75,46 +77,88 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 
 	// Get the keymanager API URL
 	keymanagerPort := cfg.ConsensusCommon.KeymanagerApiPort.Value.(uint16)
-	keymanagerURL := fmt.Sprintf("http://127.0.0.1:%d", keymanagerPort)
+	keymanagerURL := fmt.Sprintf("http://rocketpool_validator:%d", keymanagerPort)
 
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
 
+	var wg errgroup.Group
 	// Iterate through megapool pubkeys and update the fee recipient for each
 	for _, pubkey := range pubkeys {
-		pubkeyHex := pubkey.Hex()
+		// start a goroutine for each pubkey
+		wg.Go(func() error {
 
-		endpoint := fmt.Sprintf("%s/eth/v1/validator/%s/feerecipient", keymanagerURL, pubkeyHex)
+			pubkeyHex := fmt.Sprintf("0x%s", pubkey.Hex())
 
-		requestBody := map[string]string{
-			"ethaddress": megapoolAddress.Hex(),
-		}
-		jsonBody, err := json.Marshal(requestBody)
-		if err != nil {
-			return fmt.Errorf("error marshaling request body for pubkey %s: %w", pubkeyHex, err)
-		}
+			endpoint := fmt.Sprintf("%s/eth/v1/validator/%s/feerecipient", keymanagerURL, pubkeyHex)
 
-		req, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonBody))
-		if err != nil {
-			return fmt.Errorf("error creating request for pubkey %s: %w", pubkeyHex, err)
-		}
+			getRequest, err := http.NewRequest("GET", endpoint, nil)
+			if err != nil {
+				return fmt.Errorf("error creating request for pubkey %s: %w", pubkeyHex, err)
+			}
 
-		req.Header.Set("Content-Type", "application/json")
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", KeymanagerToken))
+			getRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", KeymanagerToken))
 
-		resp, err := client.Do(req)
-		if err != nil {
-			return fmt.Errorf("error making request for pubkey %s: %w", pubkeyHex, err)
-		}
-		defer resp.Body.Close()
+			resp, err := client.Do(getRequest)
+			if err != nil {
+				return fmt.Errorf("error making GET request for pubkey %s: %w", pubkeyHex, err)
+			}
+			body, err := io.ReadAll(resp.Body)
+			resp.Body.Close()
+			if err != nil {
+				return fmt.Errorf("error reading GET response body for pubkey %s: %w", pubkeyHex, err)
 
-		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			bodyBytes, _ := io.ReadAll(resp.Body)
-			return fmt.Errorf("keymanager API error for pubkey %s: %s", pubkeyHex, string(bodyBytes))
-		}
+			}
+
+			type FeeRecipientResp struct {
+				Data struct {
+					Ethaddress string `json:"ethaddress"`
+				} `json:"data"`
+			}
+
+			var frResp FeeRecipientResp
+			err = json.Unmarshal(body, &frResp)
+			if err != nil {
+				return fmt.Errorf("error to unmarshall fee recipient body %w", err)
+			}
+
+			if !strings.EqualFold(frResp.Data.Ethaddress, megapoolAddress.Hex()) {
+				fmt.Printf("updating fee recipient for key: %s old recipient %s\n", pubkey.Hex(), frResp.Data.Ethaddress)
+				postBody := map[string]string{
+					"ethaddress": megapoolAddress.Hex(),
+				}
+				jsonBody, err := json.Marshal(postBody)
+				if err != nil {
+					return fmt.Errorf("error marshaling request body for pubkey %s: %w", pubkeyHex, err)
+				}
+
+				postRequest, err := http.NewRequest("POST", endpoint, bytes.NewBuffer(jsonBody))
+				if err != nil {
+					return fmt.Errorf("error creating request for pubkey %s: %w", pubkeyHex, err)
+				}
+
+				postRequest.Header.Set("Content-Type", "application/json")
+				postRequest.Header.Set("Authorization", fmt.Sprintf("Bearer %s", KeymanagerToken))
+
+				resp, err := client.Do(postRequest)
+				if err != nil {
+					return fmt.Errorf("error making request for pubkey %s: %w", pubkeyHex, err)
+				}
+				defer resp.Body.Close()
+
+				if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+					bodyBytes, _ := io.ReadAll(resp.Body)
+					return fmt.Errorf("keymanager API error for pubkey %s: %s", pubkeyHex, string(bodyBytes))
+				}
+			}
+			return nil
+		})
+
 	}
-
+	if err := wg.Wait(); err != nil {
+		return err
+	}
 	return nil
 }
 
