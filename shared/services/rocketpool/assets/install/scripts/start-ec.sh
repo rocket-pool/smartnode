@@ -36,11 +36,10 @@ if [ "$NETWORK" = "mainnet" ]; then
     BESU_NETWORK="--network=mainnet"
     RETH_NETWORK="--chain mainnet"
 elif [ "$NETWORK" = "devnet" ]; then
-    . "/devnet/nodevars_env.txt"
-    GETH_NETWORK="--networkid 39438153"
-    RP_NETHERMIND_NETWORK="private"
-    BESU_NETWORK="--network=ephemery --bootnodes=$BOOTNODE_ENODE_LIST"
-    RETH_NETWORK="--chain /devnet/genesis.json --bootnodes $BOOTNODE_ENODE_LIST"
+    GETH_NETWORK="--hoodi"
+    RP_NETHERMIND_NETWORK="hoodi"
+    BESU_NETWORK="--network=hoodi"
+    RETH_NETWORK="--chain hoodi"
 elif [ "$NETWORK" = "testnet" ]; then
     GETH_NETWORK="--hoodi"
     RP_NETHERMIND_NETWORK="hoodi"

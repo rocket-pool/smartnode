@@ -26,11 +26,11 @@ if [ "$NETWORK" = "mainnet" ]; then
     TEKU_NETWORK="mainnet"
     PRYSM_GENESIS_STATE=""
 elif [ "$NETWORK" = "devnet" ]; then
-    . "/devnet/nodevars_env.txt"
-    LODESTAR_NETWORK="ephemery"
-    NIMBUS_NETWORK="/devnet"
+    LH_NETWORK="hoodi"
+    LODESTAR_NETWORK="hoodi"
+    NIMBUS_NETWORK="hoodi"
     PRYSM_NETWORK="--hoodi"
-    TEKU_NETWORK="ephemery"
+    TEKU_NETWORK="hoodi"
 elif [ "$NETWORK" = "testnet" ]; then
     LH_NETWORK="hoodi"
     LODESTAR_NETWORK="hoodi"
@@ -64,7 +64,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/lighthouse beacon \
-        $CMD_LH_NETWORK \
+        --network $LH_NETWORK \
         --port $BN_P2P_PORT \
         --discovery-port $BN_P2P_PORT \
         --datadir /data \
@@ -127,7 +127,7 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/node --max-http-header-size=65536 /usr/app/packages/cli/bin/lodestar beacon \
-        $CMD_NETWORK \
+        --network $LODESTAR_NETWORK \
         --dataDir /ethclient/lodestar \
         --serveHistoricalState \
         --port $BN_P2P_PORT \
@@ -253,7 +253,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
 
     CMD="$PERF_PREFIX /app/cmd/beacon-chain/beacon-chain \
         --accept-terms-of-use \
-        $CMD_NETWORK \
+        $PRYSM_NETWORK \
         $PRYSM_GENESIS_STATE \
         --datadir /ethclient/prysm \
         --p2p-tcp-port $BN_P2P_PORT \

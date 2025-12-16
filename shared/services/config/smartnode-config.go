@@ -415,7 +415,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
-			config.Network_Devnet:  "https://explorer.ephemery.dev/tx",
+			config.Network_Devnet:  "https://hoodi.etherscan.io/tx",
 			config.Network_Testnet: "https://hoodi.etherscan.io/tx",
 		},
 
@@ -426,9 +426,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		chainID: map[config.Network]uint{
-			config.Network_Mainnet: 1,        // Mainnet
-			config.Network_Devnet:  39438153, // Ephemery
-			config.Network_Testnet: 560048,   // Hoodi
+			config.Network_Mainnet: 1,      // Mainnet
+			config.Network_Devnet:  560048, // Hoodi
+			config.Network_Testnet: 560048, // Hoodi
 		},
 
 		storageAddress: map[config.Network]string{
