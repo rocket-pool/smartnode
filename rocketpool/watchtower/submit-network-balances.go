@@ -158,7 +158,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	}
 	targetBlockNumber := targetBlockHeader.Number.Uint64()
 
-	if targetBlockNumber > state.ElBlockNumber {
+	if targetBlockNumber > state.ElBlockNumber || targetBlockNumber == lastSubmissionBlock {
 		// No submission needed: target block in the future
 		return nil
 	}
