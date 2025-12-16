@@ -159,7 +159,15 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 	targetBlockNumber := targetBlockHeader.Number.Uint64()
 
 	if targetBlockNumber > state.ElBlockNumber || targetBlockNumber == lastSubmissionBlock {
-		// No submission needed: target block in the future
+		if targetBlockNumber > state.ElBlockNumber {
+			// No submission needed: Target block in the future
+			t.log.Println("not enough time has passed for the next price/balances submission")
+			return nil
+		}
+		if targetBlockNumber == lastSubmissionBlock {
+			// No submission needed: Already submitted for this block
+			t.log.Println("balances have already been submitted for this block")
+		}
 		return nil
 	}
 
