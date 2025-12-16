@@ -684,7 +684,6 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 			continue
 		}
 
-		foundWithdrawal := false
 
 		// Check the block for a withdrawal for the given validator index.
 		for i, withdrawal := range beaconBlock.Withdrawals() {
