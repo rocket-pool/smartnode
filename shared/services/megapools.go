@@ -635,8 +635,8 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
 
-	// Get the head block, requesting the previous one until we have an execution payload
-	blockToRequest := "head"
+	// cant use head here as we need to grab the next slot timestamp
+	blockToRequest := "finalized"
 	var recentBlock beacon.BeaconBlock
 	const maxAttempts = 10
 	for attempts := 0; attempts < maxAttempts; attempts++ {
