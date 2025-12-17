@@ -758,8 +758,9 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		if err != nil {
 			return megapool.FinalBalanceProof{}, 0, nil, err
 		}
-		withdrawalProof = append(proof, stateProof...)
-		withdrawalProof = append(withdrawalProof, summaryProof...)
+		withdrawalProof = append(proof, summaryProof...)
+		withdrawalProof = append(withdrawalProof, stateProof...)
+
 	}
 
 	// Convert [][]byte to [][32]byte
