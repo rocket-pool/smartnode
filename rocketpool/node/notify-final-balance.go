@@ -161,8 +161,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 	}
 
 	for i := uint32(0); i < uint32(validatorCount); i++ {
-		stateValidators := beaconState.GetValidators()
-		if validatorInfo[i].Exiting && !validatorInfo[i].Exited && stateValidators[i].EffectiveBalance == 0 {
+		if validatorInfo[i].BeaconStatus.Status == "withdrawal_done" && validatorInfo[i].Exiting && !validatorInfo[i].Exited && validatorInfo[i].BeaconStatus.EffectiveBalance == 0 {
 			// Log
 			t.log.Printlnf("The validator ID %d needs a final balance proof", validatorInfo[i].ValidatorId)
 
