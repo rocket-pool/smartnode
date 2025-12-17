@@ -76,7 +76,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 		slot = validatorStatus.WithdrawableEpoch * 32
 	}
 
-	withdrawalProof, slotUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorIndex)
+	withdrawalProof, slotUsed, stateUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
@@ -105,7 +105,8 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 	if err != nil {
 		return nil, err
 	}
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, slotUsed, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, slotUsed, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), stateUsed)
 	if err != nil {
 		return nil, err
 	}
@@ -191,7 +192,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 		slot = validatorStatus.WithdrawableEpoch * 32
 	}
 
-	withdrawalProof, proofSlot, err := services.GetWithdrawalProofForSlot(c, slot, validatorIndex)
+	withdrawalProof, proofSlot, stateUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
@@ -215,7 +216,7 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	if err != nil {
 		return nil, err
 	}
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), stateUsed)
 	if err != nil {
 		return nil, err
 	}
