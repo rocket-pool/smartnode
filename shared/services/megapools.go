@@ -654,59 +654,17 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		blockToRequest = fmt.Sprintf("%d", recentBlock.Slot-1)
 	}
 
-	// Find the most recent withdrawal to slot.
-	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
-	notFounds := 0
-	var foundWithdrawal bool
-	var block eth2.SignedBeaconBlock
-	for candidateSlot := slot; candidateSlot <= slot+MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot++ {
-		// Get the block at the candidate slot.
-		blockResponse, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-		if !found {
-			notFounds++
-			if notFounds >= 64 {
-				return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("2 epochs of missing slots detected. It is likely that the Beacon Client was checkpoint synced after the most recent withdrawal to slot %d, and does not have the history required to generate a withdrawal proof", slot)
-			}
-			continue
-		} else {
-			notFounds = 0
-		}
-
-		beaconBlock, err := eth2.NewSignedBeaconBlock(blockResponse.Data, blockResponse.Fork)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-
-		if !beaconBlock.HasExecutionPayload() {
-			continue
-		}
-
-		// Check the block for a withdrawal for the given validator index.
-		for i, withdrawal := range beaconBlock.Withdrawals() {
-			if withdrawal.ValidatorIndex != validatorIndex {
-				continue
-			}
-			response.WithdrawalSlot = candidateSlot
-			response.Amount = big.NewInt(0).SetUint64(withdrawal.Amount)
-			foundWithdrawal = true
-			response.IndexInWithdrawalsArray = uint(i)
-			response.WithdrawalIndex = withdrawal.Index
-			response.WithdrawalAddress = withdrawal.Address
-			break
-		}
-
-		if foundWithdrawal {
-			block = beaconBlock
-			break
-		}
+	withdrawalSlot, block, indexInWithdrawalsArray, withdrawal, err := FindWithdrawalBlockAndArrayPosition(slot, validatorIndex, bc)
+	if err != nil {
+		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
 
-	if !foundWithdrawal {
-		return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
-	}
+	response.WithdrawalSlot = withdrawalSlot
+	response.Amount = ConvertWithdrawalAmount(withdrawal.Amount)
+	response.Amount = big.NewInt(0).SetUint64(withdrawal.Amount)
+	response.IndexInWithdrawalsArray = uint(indexInWithdrawalsArray)
+	response.WithdrawalIndex = withdrawal.Index
+	response.WithdrawalAddress = withdrawal.Address
 
 	// Start by proving from the withdrawal to the block_root
 	proof, err := block.ProveWithdrawal(uint64(response.IndexInWithdrawalsArray))
@@ -768,6 +726,56 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	response.Witnesses = proofWithFixedSize
 
 	return response, recentBlock.Slot, state, nil
+}
+
+func ConvertWithdrawalAmount(amount uint64) *big.Int {
+	amountBigInt := big.NewInt(int64(amount))
+
+	// amount is in Gwei, but we want wei
+	amountBigInt.Mul(amountBigInt, big.NewInt(1e9))
+	return amountBigInt
+}
+
+func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc beacon.Client) (uint64, eth2.SignedBeaconBlock, int, *generic.Withdrawal, error) {
+
+	// Find the most recent withdrawal to slot.
+	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
+	notFounds := 0
+	for candidateSlot := slot; candidateSlot <= slot+MAX_WITHDRAWAL_SLOT_DISTANCE; candidateSlot++ {
+		// Get the block at the candidate slot.
+		blockResponse, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
+		if err != nil {
+			return 0, nil, 0, nil, err
+		}
+		if !found {
+			notFounds++
+			if notFounds >= 64 {
+				return 0, nil, 0, nil, fmt.Errorf("2 epochs of missing slots detected. It is likely that the Beacon Client was checkpoint synced after the most recent withdrawal to slot %d, and does not have the history required to generate a withdrawal proof", slot)
+			}
+			continue
+		} else {
+			notFounds = 0
+		}
+
+		beaconBlock, err := eth2.NewSignedBeaconBlock(blockResponse.Data, blockResponse.Fork)
+		if err != nil {
+			return 0, nil, 0, nil, err
+		}
+
+		if !beaconBlock.HasExecutionPayload() {
+			continue
+		}
+
+		// Check the block for a withdrawal for the given validator index.
+		for i, withdrawal := range beaconBlock.Withdrawals() {
+			if withdrawal.ValidatorIndex != validatorIndex {
+				continue
+			}
+
+			return candidateSlot, beaconBlock, i, withdrawal, nil
+		}
+	}
+	return 0, nil, 0, nil, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
 }
 
 func GetChildBlockTimestampForSlot(c *cli.Context, slot uint64) (uint64, error) {
