@@ -161,8 +161,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 	}
 
 	for i := uint32(0); i < uint32(validatorCount); i++ {
-		stateValidators := beaconState.GetValidators()
-		if validatorInfo[i].Exiting && !validatorInfo[i].Exited && stateValidators[i].EffectiveBalance == 0 {
+		if validatorInfo[i].BeaconStatus.Status == "withdrawal_done" && validatorInfo[i].Exiting && !validatorInfo[i].Exited && validatorInfo[i].BeaconStatus.EffectiveBalance == 0 {
 			// Log
 			t.log.Printlnf("The validator ID %d needs a final balance proof", validatorInfo[i].ValidatorId)
 
@@ -197,12 +196,12 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 
 	slot := validatorInfo.WithdrawableEpoch * 32
 
-	withdrawalProof, proofSlot, err := services.GetWithdrawalProofForSlot(t.c, slot, validatorIndex)
+	withdrawalProof, proofSlot, stateUsed, err := services.GetWithdrawalProofForSlot(t.c, slot, validatorIndex)
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, proofSlot, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, beaconState)
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, proofSlot, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, stateUsed)
 	if err != nil {
 		t.log.Printlnf("There was an error during the proof creation process: %w", err)
 		return err

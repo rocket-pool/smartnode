@@ -40,8 +40,8 @@ type NodeStatusResponse struct {
 	TotalRplStake                            *big.Int        `json:"totalRplStake"`
 	RplStakeMegapool                         *big.Int        `json:"rplStakeMegapool"`
 	RplStakeLegacy                           *big.Int        `json:"rplStakeLegacy"`
-	RplStakeThreshold                        *big.Int        `json:"maximumRplStake"`
-	RplStakeThresholdFraction                float64         `json:"maximumStakeFraction"`
+	RplStakeThreshold                        *big.Int        `json:"rplStakeThreshold"`
+	RplStakeThresholdFraction                float64         `json:"rplStakeThresholdFraction"`
 	BorrowedCollateralRatio                  float64         `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio                    float64         `json:"bondedCollateralRatio"`
 	PendingMinimumRplStake                   *big.Int        `json:"pendingMinimumRplStake"`
