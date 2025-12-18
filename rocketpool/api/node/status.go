@@ -510,15 +510,16 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			return nil, err
 		}
 
-		// Calculate the *real* maximum, including the pending bond reductions
-		trueRplStakeThreshold := eth.EthToWei(32)
-		trueRplStakeThreshold.Mul(trueRplStakeThreshold, big.NewInt(int64(totalActiveValidators)))
-		trueRplStakeThreshold.Sub(trueRplStakeThreshold, response.EthBorrowed)
-		trueRplStakeThreshold.Sub(trueRplStakeThreshold, response.PendingBorrowAmount) // (32 * totalActiveValidators - ethBorrowed - pendingBorrow)
-		trueRplStakeThreshold.Mul(trueRplStakeThreshold, rplStakeThresholdFraction)
-		trueRplStakeThreshold.Div(trueRplStakeThreshold, rplPrice)
-
-		response.RplStakeThreshold = trueRplStakeThreshold
+		if !saturnDeployed {
+			// Calculate the *real* maximum, including the pending bond reductions
+			trueRplStakeThreshold := eth.EthToWei(32)
+			trueRplStakeThreshold.Mul(trueRplStakeThreshold, big.NewInt(int64(totalActiveValidators)))
+			trueRplStakeThreshold.Sub(trueRplStakeThreshold, response.EthBorrowed)
+			trueRplStakeThreshold.Sub(trueRplStakeThreshold, response.PendingBorrowAmount) // (32 * totalActiveValidators - ethBorrowed - pendingBorrow)
+			trueRplStakeThreshold.Mul(trueRplStakeThreshold, rplStakeThresholdFraction)
+			trueRplStakeThreshold.Div(trueRplStakeThreshold, rplPrice)
+			response.RplStakeThreshold = trueRplStakeThreshold
+		}
 
 		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / (float64(totalActiveValidators)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
 		response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
