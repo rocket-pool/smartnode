@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/security"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/update"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -103,6 +104,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 	queue.RegisterCommands(app, "queue", []string{"q"})
 	security.RegisterCommands(app, "security", []string{"c"})
 	service.RegisterCommands(app, "service", []string{"s"})
+	update.RegisterCommands(app, "update", []string{"u"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
 	app.Before = func(c *cli.Context) error {
