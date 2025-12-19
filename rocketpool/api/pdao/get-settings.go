@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -119,6 +120,12 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 			return err
 		})
 
+		wg.Go(func() error {
+			var err error
+			response.Node.MinimumLegacyRplStake, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
+			return err
+		})
+
 		// === Megapool ===
 
 		wg.Go(func() error {
@@ -138,10 +145,7 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 		wg.Go(func() error {
 			var err error
-			notifyThreshold, err := protocol.GetNotifyThreshold(rp, nil)
-			if err == nil {
-				response.Megapool.NotifyThreshold = time.Duration(notifyThreshold) * time.Second
-			}
+			response.Megapool.NotifyThreshold, err = protocol.GetNotifyThreshold(rp, nil)
 			return err
 		})
 
@@ -153,10 +157,25 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 		wg.Go(func() error {
 			var err error
-			userDistributeWindowLength, err := protocol.GetUserDistributeWindowLength(rp, nil)
-			if err == nil {
-				response.Megapool.UserDistributeWindowLength = time.Duration(userDistributeWindowLength) * time.Second
-			}
+			response.Megapool.DissolvePenalty, err = protocol.GetMegapoolDissolvePenalty(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.UserDistributeDelay, err = protocol.GetUserDistributeDelay(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.UserDistributeDelayWithShortfall, err = protocol.GetUserDistributeDelayWithShortfall(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.PenaltyThreshold, err = protocol.GetPenaltyThreshold(rp, nil)
 			return err
 		})
 
@@ -412,17 +431,20 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
-	wg.Go(func() error {
-		var err error
-		response.Node.MinimumPerMinipoolStake, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
-		return err
-	})
+	// In Saturn, these two bindings are deprecated in favor of 'GetMinimumLegacyRPLStake'
+	if !response.SaturnDeployed {
+		wg.Go(func() error {
+			var err error
+			response.Node.MinimumPerMinipoolStake, err = protocol131.GetMinimumPerMinipoolStakeRaw(rp, nil)
+			return err
+		})
 
-	wg.Go(func() error {
-		var err error
-		response.Node.MaximumPerMinipoolStake, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
-		return err
-	})
+		wg.Go(func() error {
+			var err error
+			response.Node.MaximumPerMinipoolStake, err = protocol131.GetMaximumPerMinipoolStakeRaw(rp, nil)
+			return err
+		})
+	}
 
 	// === Proposals ===
 

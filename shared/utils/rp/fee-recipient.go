@@ -16,6 +16,9 @@ import (
 type FeeRecipientInfo struct {
 	SmoothingPoolAddress  common.Address `json:"smoothingPoolAddress"`
 	FeeDistributorAddress common.Address `json:"feeDistributorAddress"`
+	MegapoolAddress       common.Address `json:"megapoolAddress"`
+	HasMinipools          bool           `json:"hasMinipools"`
+	HasMegapoolValidators bool           `json:"hasMegapoolValidators"`
 	IsInSmoothingPool     bool           `json:"isInSmoothingPool"`
 	IsInOptOutCooldown    bool           `json:"isInOptOutCooldown"`
 	OptOutEpoch           uint64         `json:"optOutEpoch"`
@@ -34,6 +37,9 @@ func GetFeeRecipientInfo(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddres
 	info.SmoothingPoolAddress = state.NetworkDetails.SmoothingPoolAddress
 	info.FeeDistributorAddress = mpd.FeeDistributorAddress
 	info.IsInSmoothingPool = mpd.SmoothingPoolRegistrationState
+	info.MegapoolAddress = mpd.MegapoolAddress
+	info.HasMinipools = mpd.MinipoolCount.Uint64() > 0
+	info.HasMegapoolValidators = mpd.MegapoolValidatorCount > 0
 
 	// Calculate the safe opt-out epoch if applicable
 	if !info.IsInSmoothingPool {

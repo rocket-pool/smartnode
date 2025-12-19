@@ -16,8 +16,15 @@ services:
       - {{.Smartnode.DataPath}}/validators:/validators
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
       - {{.RocketPoolDirectory}}/addons:/addons
+      - {{.RocketPoolDirectory}}/devnet:/devnet:ro
     networks:
       - net
+    {{- if gt (len .GetKeymanagerApiOpenPort) 0 }}
+    ports:
+      {{- range $entry := .GetKeymanagerApiOpenPort}}
+      - "{{$entry}}"
+      {{- end}}
+    {{- end}}
     environment:
       - NETWORK={{.Smartnode.Network}}
       - EC_CLIENT={{if .ExecutionClientLocal}}{{.ExecutionClient}}{{else}}X{{end}}
@@ -34,6 +41,8 @@ services:
       - VC_METRICS_PORT={{.VcMetricsPort}}
       - DOPPELGANGER_DETECTION={{.IsDoppelgangerEnabled}}
       - VC_ADDITIONAL_FLAGS={{.VcAdditionalFlags}}
+      - VC_KEYMANAGER_API_PORT={{.ConsensusCommon.KeymanagerApiPort}}
+      - VC_OPEN_KEYMANAGER_API_PORT={{.ConsensusCommon.OpenKeymanagerApiPort}}
       - FEE_RECIPIENT_FILE={{.FeeRecipientFile}}
       - ENABLE_BITFLY_NODE_METRICS={{.EnableBitflyNodeMetrics}}
       - BITFLY_NODE_METRICS_SECRET={{.BitflyNodeMetrics.Secret}}

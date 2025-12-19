@@ -76,6 +76,12 @@ func GetGeneralizedIndexForValidators() uint64 {
 	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateValidatorsIndex
 }
 
+func GetGeneralizedIndexForSlot() uint64 {
+	// There's 28 fields, so rounding up to the next power of two is 32, a left-aligned node
+	// BeaconStateValidatorsIndex is the 2nd field, so its generalized index is 32 + 2 = 34
+	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateSlotIndex
+}
+
 func (state *BeaconState) validatorStateProof(index uint64) ([][]byte, error) {
 
 	// Convert the state to a proof tree
@@ -104,6 +110,52 @@ func (state *BeaconState) validatorStateProof(index uint64) ([][]byte, error) {
 
 	return proof.Hashes, nil
 
+}
+
+func (state *BeaconState) slotStateProof() ([][]byte, error) {
+
+	// Convert the state to a proof tree
+	root, err := state.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	// Find the slot field generalized index
+	generalizedIndex := GetGeneralizedIndexForSlot()
+
+	// Grab the proof for that index
+	proof, err := root.Prove(int(generalizedIndex))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for slot: %w", err)
+	}
+
+	return proof.Hashes, nil
+
+}
+
+func (state *BeaconState) SlotProof(slot uint64) ([][]byte, error) {
+
+	if slot != state.Slot {
+		return nil, errors.New("slot requested does not match state slot")
+	}
+
+	proof, err := state.slotStateProof()
+	if err != nil {
+		return nil, fmt.Errorf("could not get slot state proof: %w", err)
+	}
+
+	// The EL proves against BeaconBlockHeader root, so we need to merge the state proof with that.
+	generalizedIndex := generic.BeaconBlockHeaderStateRootGeneralizedIndex
+	root, err := state.LatestBlockHeader.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get block header tree: %w", err)
+	}
+	blockHeaderProof, err := root.Prove(int(generalizedIndex))
+	if err != nil {
+		return nil, fmt.Errorf("could not get proof for block header: %w", err)
+	}
+
+	return append(proof, blockHeaderProof.Hashes...), nil
 }
 
 func (state *BeaconState) ValidatorProof(index uint64) ([][]byte, error) {

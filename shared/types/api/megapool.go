@@ -14,10 +14,11 @@ import (
 )
 
 type MegapoolStatusResponse struct {
-	Status         string          `json:"status"`
-	Error          string          `json:"error"`
-	Megapool       MegapoolDetails `json:"megapoolDetails"`
-	LatestDelegate common.Address  `json:"latestDelegate"`
+	Status         string            `json:"status"`
+	Error          string            `json:"error"`
+	Megapool       MegapoolDetails   `json:"megapoolDetails"`
+	LatestDelegate common.Address    `json:"latestDelegate"`
+	BeaconHead     beacon.BeaconHead `json:"beaconHead"`
 }
 
 type MegapoolDetails struct {
@@ -43,7 +44,7 @@ type MegapoolDetails struct {
 	BondRequirement          *big.Int                   `json:"bondRequirement"`
 	RevenueSplit             network.RevenueSplit       `json:"revenueSplit"`
 	Balances                 tokens.Balances            `json:"balances"`
-	LastDistributionBlock    uint64                     `json:"lastDistributionBlock"`
+	LastDistributionTime     uint64                     `json:"lastDistributionTime"`
 	PendingRewardSplit       megapool.RewardSplit       `json:"pendingRewardSplit"`
 	ReducedBond              *big.Int                   `json:"reducedBond"`
 	QueueDetails             QueueDetails               `json:"queueDetails"`
@@ -69,7 +70,7 @@ type MegapoolValidatorDetails struct {
 	ValidatorIndex     uint64                 `json:"validatorIndex"`
 	ExitBalance        uint64                 `json:"exitBalance"`
 	WithdrawableEpoch  uint64                 `json:"withdrawableEpoch"`
-	LockedSlot         uint64                 `json:"lockedSlot"`
+	LockedTime         uint64                 `json:"lockedTime"`
 	Activated          bool                   `json:"activated"`
 	BeaconStatus       beacon.ValidatorStatus `json:"beaconStatus"`
 }
@@ -87,6 +88,7 @@ type MegapoolRewardSplitResponse struct {
 	Status      string               `json:"status"`
 	Error       string               `json:"error"`
 	RewardSplit megapool.RewardSplit `json:"rewardSplit"`
+	RefundValue *big.Int             `json:"refundValue"`
 }
 
 type QueueDetails struct {
@@ -142,7 +144,7 @@ type CanDistributeMegapoolResponse struct {
 	Error                 string             `json:"error"`
 	MegapoolAddress       common.Address     `json:"megapoolAddress"`
 	MegapoolNotDeployed   bool               `json:"megapoolNotDeployed"`
-	LastDistributionBlock uint64             `json:"lastDistributionBlock"`
+	LastDistributionTime  uint64             `json:"lastDistributionTime"`
 	LockedValidatorCount  uint32             `json:"lockedValidatorCount"`
 	ExitingValidatorCount uint32             `json:"exitingValidatorCount"`
 	CanDistribute         bool               `json:"canDistribute"`

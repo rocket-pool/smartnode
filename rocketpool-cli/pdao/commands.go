@@ -5,6 +5,7 @@ import (
 
 	"github.com/urfave/cli"
 
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
@@ -17,6 +18,7 @@ const (
 	percentUsage          string = "specify a percentage between 0 and 1 (e.g., '0.51' for 51%)"
 	unboundedPercentUsage string = "specify a percentage that can go over 100% (e.g., '1.5' for 150%)"
 	uintUsage             string = "specify an integer (e.g., '50')"
+	epochCountUsage       string = "specify a number, in epochs (eg., '100')"
 	durationUsage         string = "specify a duration using hours, minutes, and seconds (e.g., '20m' or '72h0m0s')"
 	addressListUsage      string = "specify a list of one or more addresses separated by commas (e.g., '0x1a2b3c4d5e6f7890abcdef1234567890abcdef12,0xabcdefabcdefabcdefabcdefabcdefabcdefabcd')"
 )
@@ -1893,7 +1895,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "minimum-per-minipool-stake",
 										Aliases:   []string{"minpms"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MinimumPerMinipoolStakeSettingPath, unboundedPercentUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol131.MinimumPerMinipoolStakeSettingPath, unboundedPercentUsage),
 										UsageText: "rocketpool pdao propose setting node minimum-per-minipool-stake value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -1925,7 +1927,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "maximum-per-minipool-stake",
 										Aliases:   []string{"maxpms"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MaximumPerMinipoolStakeSettingPath, unboundedPercentUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol131.MaximumPerMinipoolStakeSettingPath, unboundedPercentUsage),
 										UsageText: "rocketpool pdao propose setting node maximum-per-minipool-stake value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
@@ -1950,6 +1952,38 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 											// Run
 											return proposeSettingNodeMaximumPerMinipoolStake(c, value)
+
+										},
+									},
+
+									{
+										Name:      "minimum-legacy-staked-rpl",
+										Aliases:   []string{"mlsr"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MinimumLegacyRplStakePath, unboundedPercentUsage),
+										UsageText: "rocketpool pdao propose setting node minimum-legacy-staked-rpl value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingNodeMinimumLegacyRplStake(c, value)
 
 										},
 									},
@@ -2577,8 +2611,8 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "notify-threshold",
 										Aliases:   []string{"nt"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolNotifyThresholdPath, durationUsage),
-										UsageText: "rocketpool pdao propose setting megapool time-before-dissolve value",
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolNotifyThresholdPath, epochCountUsage),
+										UsageText: "rocketpool pdao propose setting megapool notify-threshold",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
 												Name:  "yes, y",
@@ -2591,7 +2625,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
 											if err != nil {
 												return err
 											}
@@ -2635,10 +2669,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									},
 
 									{
-										Name:      "user-distribute-length",
-										Aliases:   []string{"udl"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolUserDistributeWindowLengthPath, durationUsage),
-										UsageText: "rocketpool pdao propose setting megapool user-distribute-length value",
+										Name:      "dissolve-penalty",
+										Aliases:   []string{"dp"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolDissolvePenaltyPath, floatEthUsage),
+										UsageText: "rocketpool pdao propose setting megapool dissolve-penalty value",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
 												Name:  "yes, y",
@@ -2651,13 +2685,99 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingMegapoolUserDistributeLength(c, value)
+											return proposeSettingMegapoolDissolvePenalty(c, value)
+
+										},
+									},
+
+									{
+										Name:      "user-distribute-delay",
+										Aliases:   []string{"udd"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolUserDistributeDelayPath, epochCountUsage),
+										UsageText: "rocketpool pdao propose setting megapool user-distribute-delay value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingMegapoolUserDistributeDelay(c, value)
+
+										},
+									},
+
+									{
+										Name:      "user-distribute-delay-with-shortfall",
+										Aliases:   []string{"uddws"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolUserDistributeDelayShortfallPath, epochCountUsage),
+										UsageText: "rocketpool pdao propose setting megapool user-distribute-delay-with-shortfall value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidatePositiveUint("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingMegapoolUserDistributeDelayWithShortfall(c, value)
+
+										},
+									},
+
+									{
+										Name:      "penalty-threshold",
+										Aliases:   []string{"pt"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.MegapoolPenaltyThreshold, percentUsage),
+										UsageText: "rocketpool pdao propose setting proposals penalty-threshold value",
+										Flags: []cli.Flag{
+											cli.BoolFlag{
+												Name:  "raw",
+												Usage: "Add this flag if your setting is an 18-decimal-fixed-point-integer (wei) value instead of a float",
+											},
+											cli.BoolFlag{
+												Name:  "yes, y",
+												Usage: "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(c *cli.Context) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingProposalsVetoQuorum(c, value)
 
 										},
 									},

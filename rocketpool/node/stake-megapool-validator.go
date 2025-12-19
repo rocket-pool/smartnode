@@ -2,6 +2,7 @@ package node
 
 import (
 	"math/big"
+	"strconv"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -17,6 +18,7 @@ import (
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -150,13 +152,24 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 		return err
 	}
 
+	beaconState, err := services.GetBeaconState(t.bc)
+	if err != nil {
+		return err
+	}
 	for i := uint32(0); i < uint32(validatorCount); i++ {
 		if validatorInfo[i].InPrestake && validatorInfo[i].BeaconStatus.Index != "" {
-			// Log
-			t.log.Printlnf("The validator %d needs to be staked", validatorInfo[i].ValidatorId)
+			// Convert str to int
+			indexInt, err := strconv.Atoi(validatorInfo[i].BeaconStatus.Index)
+			if err != nil {
+				return err
+			}
+			if indexInt < len(beaconState.GetValidators()) {
+				// Log
+				t.log.Printlnf("The validator %d needs to be staked", validatorInfo[i].ValidatorId)
 
-			// Call Stake
-			t.stakeValidator(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
+				// Call Stake
+				t.stakeValidator(t.rp, beaconState, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
+			}
 		}
 	}
 
@@ -165,7 +178,7 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 
 }
 
-func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
+func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -175,7 +188,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp me
 
 	t.log.Printlnf("[STARTED] Crafting a proof that the correct credentials were used on the first beacon chain deposit. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
-	proof, err := services.GetValidatorProof(t.c, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey)
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, beaconState)
 	if err != nil {
 		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
 		return err
@@ -184,8 +197,9 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp me
 	t.log.Printlnf("[FINISHED] The beacon state proof has been successfully created.")
 
 	// Get the gas limit
-	gasInfo, err := megapool.EstimateStakeGas(rp, mp.GetAddress(), validatorId, proof, opts)
+	gasInfo, err := megapool.EstimateStakeGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
+		t.log.Printlnf("Could not estimate the gas required to stake megapool validator %d: %w", validatorId, err)
 		return err
 	}
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
@@ -208,7 +222,7 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, mp me
 	opts.GasLimit = gas.Uint64()
 
 	// Call stake
-	tx, err := megapool.Stake(rp, mp.GetAddress(), validatorId, proof, opts)
+	tx, err := megapool.Stake(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return err
 	}

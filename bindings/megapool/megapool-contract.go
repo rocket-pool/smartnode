@@ -15,8 +15,12 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+type SlotProof struct {
+	Slot      uint64
+	Witnesses [][32]byte
+}
+
 type ValidatorProof struct {
-	Slot           uint64
 	ValidatorIndex *big.Int
 	Validator      ProvedValidator
 	Witnesses      [][32]byte
@@ -34,7 +38,6 @@ type ProvedValidator struct {
 }
 
 type FinalBalanceProof struct {
-	Slot           uint64
 	WithdrawalSlot uint64
 	ValidatorIndex uint64
 	Amount         *big.Int
@@ -78,10 +81,8 @@ type ValidatorInfo struct {
 	Dissolved          bool   `abi:"dissolved"`
 	Exiting            bool   `abi:"exiting"`
 	Locked             bool   `abi:"locked"`
-	ValidatorIndex     uint64 `abi:"validatorIndex"`
 	ExitBalance        uint64 `abi:"exitBalance"`
-	WithdrawableEpoch  uint64 `abi:"withdrawableEpoch"`
-	LockedSlot         uint64 `abi:"lockedSlot"`
+	LockedTime         uint64 `abi:"lockedTime"`
 }
 
 type ValidatorInfoFromGlobalIndex struct {
@@ -100,7 +101,7 @@ type megapoolV1 struct {
 }
 
 const (
-	megapoolV1EncodedAbi string = "eJztWkuT2jgQ/itbnKf2kN3NITfmkdRUTbKzMOweUilK2A2oRkheqQ1Dpfa/bwuMH9hgGduUEzgljKRWv/z1S1+/95hUcr1Qoel9mDJh4KbHZRAi/fz6nf7rwxv4qSUELZl4WQfQ+9AL6fe7P973bnqSLewfGBGSSL8xu+G/m+q0kNM/eUrf4g2fYcYCpcStkv4A/NAj4vF+WAIxYu/98QW8hwk+Sk8DMz+ziD+1DZ+BqOC6HwSC15ERdejA1pIJ7jNU+tE/s5x/727uG8Nn8iJEvYd/QwgvQ1RujBLLi5D1QbZm1t/eOUhKm84k6BvHy7AoCcrl7AIkfVLe60WYdIjsMgQdSVHTpl1MjwawYto3d4LRzvZlk8qHfoPyLRWtN0lQA86bpOdqAIrrqPkkPBAHMio/fuP4oP8klzLKgtdRRkwbVYgRedpikCF8DpFNuOC0bI0mA7ZmE5GSZBpKD7mSDtylY+34aLBNMbhJXj+G0jfl/Dkyl1D3mPBCQWRIBT7Fo8gGmZvKFW19OTlZ6CsOzluLQqAVKo+qt/6ftehYrz9MoFDpSw6rk9yhsrPG1rqa6YxmOuWr9eZMCJAzsHlek7iSusIGqnZI+xBo8IhSJxHR39a43eQtKkrjXKklA8Uxsh36M8A+bUjJcReBUwnepHVWqKfTvsssZ1E7h3jb84Jy3GgSLDJM2a5hV3iJassu2u7hLeCa2U23toboisaemME47+wcc5tiq4vW/GJrGN/XYEpSERZvynG0W2qQJTuF6YrxauXVrXE1ANrULQAdKiXB4D8c575mKxuvHgLlzcv5e//7IfZopSHuRgb0HQs4MtEVhXUEEBpLndIiPcqp2pPIU4uAPES6XSoI0Ld5woKOvORaD3FDu5TKwGabBpN0ox6VCJsqE6GUXBmOzkxMlBLJabPXmtyslp6CvWa82yku/4rS84rHnikOWD6rsxnYCDIy1Xn18zMkd9Vk2vdux/b7podO7cNa8gnZplse5MopWIZvmWDSg1OOrwpguTKRrfRDoTB/+luugUjZWOjhLwN7CHc96CHpgM3gia0JG37dx4scumEYUNnTQXDrS/85nLxCtud4Rbkryl1R7opyTijHt7+ySFdgmjVCqvAKdqiD6eWOIWQhNB6XqzmJMizF5Yi40+ATyHImSqq4zf3FyfZuqdU5woSw9/jc7sinOw4NPGyR5oVbl3T49rOGSOz9XOxqFSgMKbIxDDW4Esk4XhRM7hmygUp/jWkz7EYjsGqlZVvz8yhHm7EDZqXEVMin66ZnEu0LuZ2NPcpPK+AumJzrN409O4/Rydm47VRFxeIgqmf0+5ETsSQM/UB6Nk7yfVF4FheqPB/Vm2e7ufZfY2MRDXQk1+mvM4lv36RlSVUi3S4tbUFxS9DGLp+9dVbnyU4ORJTw70FQjoZwCEiqEaSoU4tg9Tc2u+tGwUwzv/HXajkJp1otmhHtrG/BHnBuHzp4wGu9Ly5mJ1e0YnEx2LBMVDk+0VUGRwHhQbFYLjhGgXTCvNfDbwcyHtYOnmwGrvGH04nB046fzYQTSuZPWRfYt35Do9bpFDYz/K5pKnZEN8Za0pVDzigz480CZcSVOLd1ITftZnt7lVohcKSieZmiT2PPASH0FjeJmf8BlNf8Ng=="
+	megapoolV1EncodedAbi string = "eJztWktv2zgQ/isLnY09pN0ccnPjtAiQZt0k7h6KwBiLY5sITbLk0I5Q9L8vJMuyZMmRFEuGUueYyBx+8+DHefDHLw+kksFCOetdTEFY7HlcakfWu/jxy+OS4TOy1CdCI0E8BBq9C89xSWf/nHs9T8Ii/AcslJPk9TzK/uB3r74s4gsskPSY/OArzkArJT4pye6QOR/Z9ve4REnRvm9fwQFO6Fr6BsH+ySr+0T4cogRBQV9rwQ/RkYyrAGsJgjMgZa7ZkfX8vtm5by2fyZNQdYA/HbrTUJVbq8TyJHS9kq259cNZBU0/nB1L0WdOp+HRZ05czk5A0xvlP52ES+8JTkPRkRQH+rSL6dEdrsAweymAL46gm1QM+w3qt1SEpkmBBmnepDxtFClfiQGoJsVW9euAWzJ84vZcLxlPvrzjeG9YbjcFrUUQJ9pez1OOYvGPPc8SEH51BBMuOAVRLEgNAUxESpOpkz5xJSugS1/h4xfv8BTAKCf+7CSz5fgqgttK90H4TgDhECXjchb7ILNTuaHDI7JdWRgrFc7EQRKSoO3/e5Cc8DDtF1Bo9CXH1avCoXawJt56d9MR3fSaU+vPQQiUMwzTxyZ5JbVFeP+1I5qhNugDYScZka1L525ii2vdJAVryUHJHdmO/BlS3yee0uMyJqcSvknbrNBOrzuXWWRxl+g7iJ0oKOeNJskiAypsRnYFS1yydtF3V8+aGwh/9LBOBzthsBuwlKSdXcMWVXBd9OUtrhJY63nKT8cNLrAKwOMY7zas3RgzaEtyJUh+lIO0+dQgpNBaXTLRt6hn2SVUB5UjraG6w6mT3bp3RhbNJWhOILoEaR1RHQPWERJtLNlMq3Qtp2pHI18ttJIoq20qwMaZVUjgD7lmTTJZKJUS3gNoaZugHSYlpqXaQhhqZTlVBjFRSmxX250ecfS1dBXuTEWqreLyW1zQ1Fw2NBjhrA9Th1fayNbHyvLDvOqmycxRqi3bbWDvWxX69fxjdrtPIED6O84//1hl+Xrb/CkIVz/mep2WjPPpr7twEW268PekDMzwBgLl6O/dg5qjFXJaYBdZpS/Z0E2eMHinl3d6eaeXN0UvfP1XlmIKbBIQpmofvTnulP7cMWoq5KSX9WpOowyk/zjNmYEViEuDDCVxECUlS7R/cXq5+dTqrGGiJHt5tvfCmRk7i1frI/7Aw5CscOiyjtj6e1gcajUk3POZBHIGqwrJBF7M4gMguFOKit2wGZ+k+h0daj6Xs814tYnQicArrfz5azhrbNBHSXvWp8ykiE+Dpuce7RtpPX+7ll9WyKvYJ9cyGvvhzMcUdI7quEgcyUGfuQSxvcLekKOsUFECaQkWulzRW0VHCcba01wTvV3Odd0aG+IY1BDk5hKHvBto7CLfpJUtaL1EY8PPR+85HfLoKMclSrABCpytZ7CFfFJPoMTVQQLrP+fZbDfSMwOs8fd2OQ2nRi2aUe2or9muaB6+qfCRH/RCuhhOruik4mKuYZ1GFm+A0NJIM9jzjqsKCYEQE/Cf9j9TyERYa6Pw1MHpxAhpgycapmLJzCYbArveb2iqO51i9Fyga5ZKArEasJZsVSF1lJlBZYExkoKeh+Ult+3mbDsFXyFxpG7zMkO/Dl4FhjBr3vR+P/4PdOc9cw=="
 )
 
 // The decoded ABI for megapools
@@ -227,17 +228,17 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 
 	callData, err := mp.Contract.ABI.Pack("getValidatorInfoAndPubkey", validatorId)
 	if err != nil {
-		return ValidatorInfoWithPubkey{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
+		return ValidatorInfoWithPubkey{}, fmt.Errorf("error creating calldata for getValidatorInfoAndPubkey: %w", err)
 	}
 
 	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, nil)
 	if err != nil {
-		return ValidatorInfoWithPubkey{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
+		return ValidatorInfoWithPubkey{}, fmt.Errorf("error calling getValidatorInfoAndPubkey: %w", err)
 	}
 
 	iface, err := mp.Contract.ABI.Unpack("getValidatorInfoAndPubkey", response)
 	if err != nil {
-		return ValidatorInfoWithPubkey{}, fmt.Errorf("error unpacking getValidatorInfo response: %w", err)
+		return ValidatorInfoWithPubkey{}, fmt.Errorf("error unpacking getValidatorInfoAndPubkey response: %w", err)
 	}
 
 	src := iface[0].(struct {
@@ -245,18 +246,18 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 		LastRequestedValue uint32 `json:"lastRequestedValue"`
 		LastRequestedBond  uint32 `json:"lastRequestedBond"`
 		DepositValue       uint32 `json:"depositValue"`
-		Staked             bool   `json:"staked"`
-		Exited             bool   `json:"exited"`
-		InQueue            bool   `json:"inQueue"`
-		InPrestake         bool   `json:"inPrestake"`
-		ExpressUsed        bool   `json:"expressUsed"`
-		Dissolved          bool   `json:"dissolved"`
-		Exiting            bool   `json:"exiting"`
-		Locked             bool   `json:"locked"`
-		ValidatorIndex     uint64 `json:"validatorIndex"`
-		ExitBalance        uint64 `json:"exitBalance"`
-		WithdrawableEpoch  uint64 `json:"withdrawableEpoch"`
-		LockedSlot         uint64 `json:"lockedSlot"`
+
+		Staked      bool `json:"staked"`
+		Exited      bool `json:"exited"`
+		InQueue     bool `json:"inQueue"`
+		InPrestake  bool `json:"inPrestake"`
+		ExpressUsed bool `json:"expressUsed"`
+		Dissolved   bool `json:"dissolved"`
+		Exiting     bool `json:"exiting"`
+		Locked      bool `json:"locked"`
+
+		ExitBalance uint64 `json:"exitBalance"`
+		LockedTime  uint64 `json:"lockedTime"`
 	})
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
 	// copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
@@ -264,20 +265,19 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
 	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
 	validator.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
-	validator.ValidatorInfo.Staked = src.Staked
 	validator.ValidatorInfo.DepositValue = src.DepositValue
-	validator.ValidatorInfo.ExitBalance = src.ExitBalance
-	validator.ValidatorInfo.WithdrawableEpoch = src.WithdrawableEpoch
-	validator.ValidatorInfo.Exiting = src.Exiting
-	validator.ValidatorInfo.ValidatorIndex = src.ValidatorIndex
+
+	validator.ValidatorInfo.Staked = src.Staked
 	validator.ValidatorInfo.Exited = src.Exited
 	validator.ValidatorInfo.InQueue = src.InQueue
 	validator.ValidatorInfo.InPrestake = src.InPrestake
 	validator.ValidatorInfo.ExpressUsed = src.ExpressUsed
 	validator.ValidatorInfo.Dissolved = src.Dissolved
+	validator.ValidatorInfo.Exiting = src.Exiting
 	validator.ValidatorInfo.Locked = src.Locked
-	validator.ValidatorInfo.LockedSlot = src.LockedSlot
 
+	validator.ValidatorInfo.ExitBalance = src.ExitBalance
+	validator.ValidatorInfo.LockedTime = src.LockedTime
 	return *validator, nil
 }
 
@@ -299,12 +299,12 @@ func (mp *megapoolV1) GetSoonestWithdrawableEpoch(opts *bind.CallOpts) (uint32, 
 	return soonestWithdrawableEpoch, nil
 }
 
-func (mp *megapoolV1) GetLastDistributionBlock(opts *bind.CallOpts) (uint64, error) {
-	lastDistributionBlock := new(*big.Int)
-	if err := mp.Contract.Call(opts, lastDistributionBlock, "getLastDistributionBlock"); err != nil {
-		return 0, fmt.Errorf("error getting megapool %s lastDistributionBlock: %w", mp.Address.Hex(), err)
+func (mp *megapoolV1) GetLastDistributionTime(opts *bind.CallOpts) (uint64, error) {
+	lastDistributionTime := new(*big.Int)
+	if err := mp.Contract.Call(opts, lastDistributionTime, "getLastDistributionTime"); err != nil {
+		return 0, fmt.Errorf("error getting megapool %s lastDistributionTime: %w", mp.Address.Hex(), err)
 	}
-	return (*lastDistributionBlock).Uint64(), nil
+	return (*lastDistributionTime).Uint64(), nil
 }
 
 func (mp *megapoolV1) GetAssignedValue(opts *bind.CallOpts) (*big.Int, error) {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -29,6 +28,8 @@ type dissolveInvalidCredentials struct {
 	rp  *rocketpool.RocketPool
 	bc  *services.BeaconClientManager
 }
+
+const FarFutureEpoch uint64 = 0xffffffffffffffff
 
 // Create dissolve timed out megapool validators task
 func newDissolveInvalidCredentials(c *cli.Context, logger log.ColorLogger) (*dissolveInvalidCredentials, error) {
@@ -80,7 +81,7 @@ func (t *dissolveInvalidCredentials) run(state *state.NetworkState) error {
 		return err
 	}
 	// Log
-	t.log.Println("Checking for invalid credential megapool validators to dissolve...")
+	t.log.Println("Checking for invalid info on megapool validators to dissolve...")
 
 	// Dissolve validators
 	err := t.dissolveInvalidCredentialValidators(state)
@@ -100,20 +101,50 @@ func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *
 			// Fetch the validator from the beacon state to compare credentials
 			validatorFromState, err := t.bc.GetValidatorStatus(types.ValidatorPubkey(validator.Pubkey), nil)
 			if err != nil {
-				t.log.Printlnf("Error fetching validator %d from beacon state: %s", validator.ValidatorInfo.ValidatorIndex, err)
+				t.log.Printlnf("Error fetching validator %s from beacon state: %s", validatorFromState.Index, err)
 				continue
 			}
 			if validatorFromState.Index != "" && !bytes.Equal(validatorFromState.WithdrawalCredentials.Bytes(), expectedWithdrawalAddress.Bytes()) {
-				t.log.Printlnf("Validator %d has an invalid credential %s while the expected is %s. Dissolving...", validator.ValidatorInfo.ValidatorIndex, validatorFromState.WithdrawalCredentials, expectedWithdrawalAddress.Bytes())
-				t.dissolveMegapoolValidator(validator, expectedWithdrawalAddress)
+				t.log.Printlnf("Validator %s has an invalid credential %s while the expected is %s. Dissolving...", validatorFromState.Index, validatorFromState.WithdrawalCredentials, expectedWithdrawalAddress.Bytes())
+				t.dissolveMegapoolValidator(validator)
 			}
-
+			// Withdrawable epoch should be FAR_FUTURE_EPOCH
+			if validatorFromState.WithdrawableEpoch != FarFutureEpoch {
+				t.log.Printlnf("Validator %s has a withdrawable epoch of %d while the expected is %d. Dissolving...", validatorFromState.Index, validatorFromState.WithdrawableEpoch, FarFutureEpoch)
+				t.dissolveMegapoolValidator(validator)
+			}
+			// Exit epoch should be FAR_FUTURE_EPOCH
+			if validatorFromState.ExitEpoch != FarFutureEpoch {
+				t.log.Printlnf("Validator %s has an exit epoch of %d while the expected is %d. Dissolving...", validatorFromState.Index, validatorFromState.ExitEpoch, FarFutureEpoch)
+				t.dissolveMegapoolValidator(validator)
+			}
+			// Slashed should be false
+			if validatorFromState.Slashed {
+				t.log.Printlnf("Validator %s is slashed while the expected is false. Dissolving...", validatorFromState.Index)
+				t.dissolveMegapoolValidator(validator)
+			}
+			// Effective balance should be less than 32 ETH
+			if validatorFromState.EffectiveBalance >= 32000000000 {
+				t.log.Printlnf("Validator %s has an effective balance of %d while the expected is less than 32 ETH. Dissolving...", validatorFromState.Index, validatorFromState.EffectiveBalance)
+				t.dissolveMegapoolValidator(validator)
+			}
+			// Activation eligibility epoch should be FAR_FUTURE_EPOCH
+			if validatorFromState.ActivationEligibilityEpoch != FarFutureEpoch {
+				t.log.Printlnf("Validator %s has an activation eligibility epoch of %d while the expected is %d. Dissolving...", validatorFromState.Index, validatorFromState.ActivationEligibilityEpoch, FarFutureEpoch)
+				t.dissolveMegapoolValidator(validator)
+			}
+			// Activation epoch should be FAR_FUTURE_EPOCH
+			if validatorFromState.ActivationEpoch != FarFutureEpoch {
+				t.log.Printlnf("Validator %s has an activation epoch of %d while the expected is %d. Dissolving...", validatorFromState.Index, validatorFromState.ActivationEpoch, FarFutureEpoch)
+				t.dissolveMegapoolValidator(validator)
+			}
 		}
+
 	}
 	return nil
 }
 
-func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapool.ValidatorInfoFromGlobalIndex, expectedWithdrawalCredentials common.Hash) error {
+func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapool.ValidatorInfoFromGlobalIndex) error {
 	// Log
 	t.log.Printlnf("Dissolving megapool validator ID: %d from megapool %s...", validator.ValidatorId, validator.MegapoolAddress)
 
@@ -128,15 +159,15 @@ func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapoo
 		return err
 	}
 
-	proof, err := services.GetValidatorProof(t.c, t.w, eth2Config, validator.MegapoolAddress, types.ValidatorPubkey(validator.Pubkey))
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, eth2Config, validator.MegapoolAddress, types.ValidatorPubkey(validator.Pubkey), nil)
 	if err != nil {
 		return fmt.Errorf("error getting validator proof: %w", err)
 	}
 
 	// Get the gas limit
-	gasInfo, err := megapool.EstimateDissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, proof, opts)
+	gasInfo, err := megapool.EstimateDissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
-		return fmt.Errorf("could not estimate the gas required to dissolve the minipool: %w", err)
+		return fmt.Errorf("could not estimate the gas required to dissolve the validator: %w", err)
 	}
 
 	// Print the gas info
@@ -151,7 +182,7 @@ func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapoo
 	opts.GasLimit = gasInfo.SafeGasLimit
 
 	// Dissolve
-	tx, err := megapool.DissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, proof, opts)
+	tx, err := megapool.DissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return err
 	}

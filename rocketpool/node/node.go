@@ -47,6 +47,7 @@ const (
 	StakeMegapoolValidatorColor    = color.FgHiBlue
 	NotifyValidatorExitColor       = color.FgHiYellow
 	DefendChallengeExitColor       = color.FgHiGreen
+	ProvisionExpressTickets        = color.FgMagenta
 )
 
 // Register node command
@@ -147,6 +148,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	notifyFinalBalance, err := newNotifyFinalBalance(c, log.NewColorLogger(NotifyValidatorExitColor))
+	if err != nil {
+		return err
+	}
 	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
 	if err != nil {
 		return err
@@ -160,6 +165,10 @@ func run(c *cli.Context) error {
 		return err
 	}
 	defendPdaoProps, err := newDefendPdaoProps(c, log.NewColorLogger(DefendPdaoPropsColor))
+	if err != nil {
+		return err
+	}
+	provisionExpressTickets, err := newProvisionExpressTickets(c, log.NewColorLogger(ProvisionExpressTickets))
 	if err != nil {
 		return err
 	}
@@ -286,6 +295,18 @@ func run(c *cli.Context) error {
 			}
 			time.Sleep(taskCooldown)
 
+			// Run the megapool notify final balance check
+			if err := notifyFinalBalance.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the megapool provision express ticket check
+			if err := provisionExpressTickets.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
 			// Run the balance distribution check
 			if err := distributeMinipools.run(state); err != nil {
 				errorLog.Println(err)
@@ -341,7 +362,7 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 		return err
 	}
 
-	feeRecipientPath := cfg.Smartnode.GetFeeRecipientFilePath()
+	feeRecipientPath := cfg.Smartnode.GetGlobalFeeRecipientFilePath()
 	_, err = os.Stat(feeRecipientPath)
 	if os.IsNotExist(err) {
 		// Make sure the validators dir is created

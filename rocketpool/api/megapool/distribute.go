@@ -64,9 +64,9 @@ func canDistributeMegapool(c *cli.Context) (*api.CanDistributeMegapoolResponse, 
 		return nil, err
 	}
 
-	response.LastDistributionBlock = details.LastDistributionBlock
+	response.LastDistributionTime = details.LastDistributionTime
 
-	if response.LastDistributionBlock == 0 {
+	if response.LastDistributionTime == 0 {
 		response.CanDistribute = false
 		return &response, nil
 	}

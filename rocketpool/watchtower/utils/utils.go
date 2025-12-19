@@ -107,12 +107,15 @@ func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2C
 	if err != nil {
 		return 0, time.Time{}, nil, err
 	}
-	requiredEpoch := slotNumber / eth2Config.SlotsPerEpoch
+
+	targetSlot := targetBlock.Slot
+
+	requiredEpoch := targetSlot / eth2Config.SlotsPerEpoch
 
 	finalizedEpoch := beaconHead.FinalizedEpoch
 	if requiredEpoch > finalizedEpoch {
 		return 0, time.Time{}, nil, fmt.Errorf("balances must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", targetBlockNumber, requiredEpoch, finalizedEpoch)
 	}
 
-	return slotNumber, nextSubmissionTime, targetBlockHeader, nil
+	return targetSlot, nextSubmissionTime, targetBlockHeader, nil
 }

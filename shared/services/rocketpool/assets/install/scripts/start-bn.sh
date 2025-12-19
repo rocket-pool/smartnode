@@ -26,11 +26,11 @@ if [ "$NETWORK" = "mainnet" ]; then
     TEKU_NETWORK="mainnet"
     PRYSM_GENESIS_STATE=""
 elif [ "$NETWORK" = "devnet" ]; then
-    LH_NETWORK="hoodi"
-    LODESTAR_NETWORK="hoodi"
-    NIMBUS_NETWORK="hoodi"
+    . "/devnet/nodevars_env.txt"
+    LODESTAR_NETWORK="ephemery"
+    NIMBUS_NETWORK="/devnet"
     PRYSM_NETWORK="--hoodi"
-    TEKU_NETWORK="hoodi"
+    TEKU_NETWORK="ephemery"
 elif [ "$NETWORK" = "testnet" ]; then
     LH_NETWORK="hoodi"
     LODESTAR_NETWORK="hoodi"
@@ -57,11 +57,17 @@ fi
 # Lighthouse startup
 if [ "$CC_CLIENT" = "lighthouse" ]; then
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_LH_NETWORK="--network $LH_NETWORK"
+    else
+        CMD_LH_NETWORK="--testnet-dir /devnet"
+    fi
+
     CMD="$PERF_PREFIX /usr/local/bin/lighthouse beacon \
-        --network $LH_NETWORK \
-        --datadir /ethclient/lighthouse \
+        $CMD_LH_NETWORK \
         --port $BN_P2P_PORT \
         --discovery-port $BN_P2P_PORT \
+        --datadir /data \
         --execution-endpoint $EC_ENGINE_ENDPOINT \
         --http \
         --http-address 0.0.0.0 \
@@ -106,8 +112,22 @@ fi
 # Lodestar startup
 if [ "$CC_CLIENT" = "lodestar" ]; then
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="--network $LODESTAR_NETWORK"
+    else
+        CMD_NETWORK="--paramsFile /devnet/config.yaml \
+        --genesisStateFile /devnet/genesis.ssz \
+        --eth1.depositContractDeployBlock 0 \
+        --network.connectToDiscv5Bootnodes=true \
+        --discv5=true \
+        --eth1=true \
+        --enr.ip $EXTERNAL_IP \
+        --enr.udp $BN_P2P_PORT \
+        --bootnodes $BOOTNODE_ENR_LIST"
+    fi
+
     CMD="$PERF_PREFIX /usr/local/bin/node --max-http-header-size=65536 /usr/app/packages/cli/bin/lodestar beacon \
-        --network $LODESTAR_NETWORK \
+        $CMD_NETWORK \
         --dataDir /ethclient/lodestar \
         --serveHistoricalState \
         --port $BN_P2P_PORT \
@@ -169,6 +189,13 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         fi
     fi
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="--network $NIMBUS_NETWORK"
+    else
+        CMD_NETWORK="--network=/devnet/ \
+        --direct-peer=$BOOTNODE_ENR_LIST"
+    fi
+
     CMD="$PERF_PREFIX /home/user/nimbus-eth2/build/nimbus_beacon_node \
         --non-interactive \
         --enr-auto-update \
@@ -214,9 +241,19 @@ fi
 # Prysm startup
 if [ "$CC_CLIENT" = "prysm" ]; then
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="$PRYSM_NETWORK"
+    else
+        CMD_NETWORK="--config-file=/devnet/config.yaml \
+        --chain-config-file=/devnet/config.yaml \
+        --p2p-static-id=true \
+        --contract-deployment-block=0 \
+        --bootstrap-node=/devnet/bootstrap_nodes.yaml"
+    fi
+
     CMD="$PERF_PREFIX /app/cmd/beacon-chain/beacon-chain \
         --accept-terms-of-use \
-        $PRYSM_NETWORK \
+        $CMD_NETWORK \
         $PRYSM_GENESIS_STATE \
         --datadir /ethclient/prysm \
         --p2p-tcp-port $BN_P2P_PORT \
@@ -251,7 +288,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
     if [ "$NETWORK" = "testnet" ]; then
         CMD="$CMD --genesis-state /ethclient/hoodi-genesis.ssz"
     elif [ "$NETWORK" = "devnet" ]; then
-        CMD="$CMD --genesis-state /ethclient/hoodi-genesis.ssz"
+        CMD="$CMD --genesis-state /devnet/genesis.ssz"
     fi
 
     if [ ! -z "$CHECKPOINT_SYNC_URL" ]; then

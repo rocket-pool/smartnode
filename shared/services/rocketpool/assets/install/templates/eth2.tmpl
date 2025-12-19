@@ -44,6 +44,7 @@ services:
       - {{.Smartnode.DataPath}}/secrets:/secrets:ro
       - eth2clientdata:/ethclient
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
+      - {{.RocketPoolDirectory}}/devnet:/devnet:ro
     networks:
       - net
     environment:

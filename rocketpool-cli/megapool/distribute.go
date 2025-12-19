@@ -5,6 +5,7 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -42,7 +43,7 @@ func distribute(c *cli.Context) error {
 		if canResponse.MegapoolNotDeployed {
 			fmt.Println("The node does not have a megapool deployed")
 		}
-		if canResponse.LastDistributionBlock == 0 {
+		if canResponse.LastDistributionTime == 0 {
 			fmt.Printf("The node's megapool: %s does not have any staking validators\n", canResponse.MegapoolAddress)
 		}
 		if canResponse.ExitingValidatorCount > 0 {
@@ -53,7 +54,12 @@ func distribute(c *cli.Context) error {
 					if !val.Exiting {
 						fmt.Printf("Validator ID %d needs an exit proof (run 'rp megapool notify-validator-exit')", val.ValidatorId)
 						fmt.Println()
-					} else {
+					}
+					if val.BeaconStatus.Status == beacon.ValidatorState_ExitedUnslashed {
+						fmt.Printf("Validator ID %d has exited but is still pending full beacon withdrawal", val.ValidatorId)
+						fmt.Println()
+					}
+					if val.BeaconStatus.Status == beacon.ValidatorState_WithdrawalDone {
 						fmt.Printf("Validator ID %d needs a final balance proof (run 'rp megapool notify-final-balance')", val.ValidatorId)
 						fmt.Println()
 					}
@@ -68,17 +74,20 @@ func distribute(c *cli.Context) error {
 	}
 
 	// Get pending rewards
-	rewardsSplit, err := rp.CalculatePendingRewards()
+	pendingRewards, err := rp.CalculatePendingRewards()
 	if err != nil {
 		return fmt.Errorf("error calculating pending rewards: %w", err)
 	}
 
-	if rewardsSplit.RewardSplit.NodeRewards.Cmp(big.NewInt(0)) <= 0 {
+	totalRewards := big.NewInt(0)
+	totalRewards.Add(pendingRewards.RewardSplit.NodeRewards, pendingRewards.RefundValue)
+
+	if totalRewards.Cmp(big.NewInt(0)) <= 0 {
 		fmt.Println("There are no pending rewards to distribute.")
 		return nil
 	}
 	// Print rewards
-	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.4f ETH.", eth.WeiToEth(rewardsSplit.RewardSplit.NodeRewards))
+	fmt.Printf("You're about to claim pending rewards from the megapool. The rewards will be distributed to the node's withdrawal address. The node share of rewards is %.4f ETH and the refund value is %.4f ETH.", eth.WeiToEth(pendingRewards.RewardSplit.NodeRewards), eth.WeiToEth(pendingRewards.RefundValue))
 	fmt.Println()
 
 	// Assign max fees

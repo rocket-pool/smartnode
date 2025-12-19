@@ -23,6 +23,7 @@ import (
 	nmkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 	prkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
 	tkkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/teku"
+	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -158,6 +159,39 @@ func GetDocker(c *cli.Context) (*client.Client, error) {
 		docker, err = client.NewClientWithOpts(client.WithVersion(dockerAPIVersion))
 	})
 	return docker, err
+}
+
+func GetBeaconState(bc beacon.Client) (eth2.BeaconState, error) {
+	blockToRequest := "finalized"
+	var block beacon.BeaconBlock
+	var err error
+	const maxAttempts = 10
+	for attempts := 0; attempts < maxAttempts; attempts++ {
+		block, _, err = bc.GetBeaconBlock(blockToRequest)
+		if err != nil {
+			return nil, err
+		}
+
+		if block.HasExecutionPayload {
+			break
+		}
+		if attempts == maxAttempts-1 {
+			return nil, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
+		}
+		blockToRequest = fmt.Sprintf("%d", block.Slot-1)
+	}
+
+	// Get the beacon state for that slot
+	beaconStateResponse, err := bc.GetBeaconStateSSZ(block.Slot)
+	if err != nil {
+		return nil, err
+	}
+
+	beaconState, err := eth2.NewBeaconState(beaconStateResponse.Data, beaconStateResponse.Fork)
+	if err != nil {
+		return nil, err
+	}
+	return beaconState, nil
 }
 
 //

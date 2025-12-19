@@ -89,7 +89,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 		return nil, err
 	}
 
-	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		if strings.Contains(err.Error(), "index not found") {
 			response.CanStake = false
@@ -104,7 +104,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := megapool.EstimateStakeGas(rp, megapoolAddress, uint32(validatorId), proof, opts)
+	gasInfo, err := megapool.EstimateStakeGas(rp, megapoolAddress, uint32(validatorId), slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +165,7 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 		return nil, err
 	}
 
-	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -183,7 +183,7 @@ func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
 	}
 
 	// Stake
-	tx, err := megapool.Stake(rp, megapoolAddress, uint32(validatorId), proof, opts)
+	tx, err := megapool.Stake(rp, megapoolAddress, uint32(validatorId), slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}

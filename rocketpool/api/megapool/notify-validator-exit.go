@@ -66,7 +66,7 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 		return nil, err
 	}
 
-	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	proof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +77,7 @@ func canNotifyValidatorExit(c *cli.Context, validatorId uint32) (*api.CanNotifyV
 	}
 
 	// Notify the validator exit
-	gasInfo, err := megapool.EstimateNotifyExitGas(rp, megapoolAddress, validatorId, proof, opts)
+	gasInfo, err := megapool.EstimateNotifyExitGas(rp, megapoolAddress, validatorId, slotTimestamp, proof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -143,7 +143,7 @@ func notifyValidatorExit(c *cli.Context, validatorId uint32) (*api.NotifyValidat
 		return nil, err
 	}
 
-	proof, err := services.GetValidatorProof(c, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey))
+	validatorProof, slotTimetamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -161,7 +161,7 @@ func notifyValidatorExit(c *cli.Context, validatorId uint32) (*api.NotifyValidat
 	}
 
 	// Notify the validator exit
-	tx, err := megapool.NotifyExit(rp, megapoolAddress, validatorId, proof, opts)
+	tx, err := megapool.NotifyExit(rp, megapoolAddress, validatorId, slotTimetamp, validatorProof, slotProof, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -18,6 +18,7 @@ const (
 	SnapshotID                         string = "rocketpool-dao.eth"
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
+	performanceFilenameFormat          string = "rp-performance-%s-%d%s"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
 	ChecksumTableFilename              string = "checksums.sha384"
@@ -29,8 +30,9 @@ const (
 	PrimaryRewardsFileUrl              string = "https://%s.ipfs.dweb.link/%s"
 	SecondaryRewardsFileUrl            string = "https://ipfs.io/ipfs/%s/%s"
 	GithubRewardsFileUrl               string = "https://github.com/rocket-pool/rewards-trees/raw/main/%s/%s"
-	FeeRecipientFilename               string = "rp-fee-recipient.txt"
+	GlobalFeeRecipientFilename         string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
+	PerKeyFeeRecipientFilename         string = "rp-fee-recipient-per-key"
 )
 
 // Defaults
@@ -413,43 +415,43 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
-			config.Network_Devnet:  "https://hoodi.etherscan.io/tx",
+			config.Network_Devnet:  "https://explorer.ephemery.dev/tx",
 			config.Network_Testnet: "https://hoodi.etherscan.io/tx",
 		},
 
 		stakeUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://stake.rocketpool.net",
-			config.Network_Devnet:  "TBD",
+			config.Network_Devnet:  "https://devnet.rocketpool.net",
 			config.Network_Testnet: "https://testnet.rocketpool.net",
 		},
 
 		chainID: map[config.Network]uint{
-			config.Network_Mainnet: 1,      // Mainnet
-			config.Network_Devnet:  560048, // Hoodi
-			config.Network_Testnet: 560048, // Hoodi
+			config.Network_Mainnet: 1,        // Mainnet
+			config.Network_Devnet:  39438153, // Ephemery
+			config.Network_Testnet: 560048,   // Hoodi
 		},
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0xf4D539F1babDAa6E47b1112Bc9Fa1C83cF0FfE59",
+			config.Network_Devnet:  "0xDAef0d5CDEdaE428DC6F07e065996D1B709cfeC5",
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
 		rocketSignerRegistryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
-			config.Network_Devnet:  "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E",
+			config.Network_Devnet:  "0x54775df9F3Bd25405ecF1072131428A6861784d7",
 			config.Network_Testnet: "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E",
 		},
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0xf2C10508eC528a01628a621abADBff902CB9c1e5",
+			config.Network_Devnet:  "0x594bA8cBbB5fc650BaB6227F06c62FEa1c8D7aaB",
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  "0xdFC45ac8Bcb5906499Bf040d49f04f12A08175b2",
+			config.Network_Devnet:  "0x82B2C5Bb0a2194F9ff25452A7573cc36c7C4d8Ca",
 			config.Network_Testnet: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
@@ -530,7 +532,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
 			},
-			config.Network_Devnet:  {},
+			config.Network_Devnet: {
+				common.HexToAddress("0x664dafBbf286959BCB910bf42970E9aA26b336E8"),
+			},
 			config.Network_Testnet: {},
 		},
 
@@ -590,20 +594,20 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Devnet:  "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
+			config.Network_Devnet:  "0x347F8cFF6755eb9b21C157A152a2C7e5c8a4558F",
 			config.Network_Testnet: "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
 		},
 
 		multicallAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:  "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7",
-			config.Network_Testnet: "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7",
+			config.Network_Devnet:  "0xF400396052f34A59023Fd47337570ABF3FE52463",
+			config.Network_Testnet: "0x4866504f62497ee6C98d8ba928321a9C6e89f536",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
-			config.Network_Devnet:  "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce",
-			config.Network_Testnet: "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce",
+			config.Network_Devnet:  "0xb60A898646427f14661aF64773A6a70753101E5b",
+			config.Network_Testnet: "0xEE9F0AD34043e3a87e42A4dE091559ee19D7912B",
 		},
 
 		flashbotsProtectUrl: map[config.Network]string{
@@ -803,6 +807,10 @@ func (cfg *SmartnodeConfig) GetMinipoolPerformanceFilename(interval uint64) stri
 	return cfg.formatRewardsFilename(minipoolPerformanceFilenameFormat, interval, RewardsExtensionJSON)
 }
 
+func (cfg *SmartnodeConfig) GetPerformanceFilename(interval uint64) string {
+	return cfg.formatRewardsFilename(performanceFilenameFormat, interval, RewardsExtensionJSON)
+}
+
 func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool, extension RewardsExtension) string {
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
@@ -814,6 +822,13 @@ func (cfg *SmartnodeConfig) GetMinipoolPerformancePath(interval uint64, daemon b
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
 		cfg.GetMinipoolPerformanceFilename(interval),
+	)
+}
+
+func (cfg *SmartnodeConfig) GetPerformancePath(interval uint64) string {
+	return filepath.Join(
+		cfg.GetRewardsTreeDirectory(true),
+		cfg.GetPerformanceFilename(interval),
 	)
 }
 
@@ -833,12 +848,20 @@ func (cfg *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
 	return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder)
 }
 
-func (cfg *SmartnodeConfig) GetFeeRecipientFilePath() string {
+func (cfg *SmartnodeConfig) GetGlobalFeeRecipientFilePath() string {
 	if !cfg.parent.IsNativeMode {
-		return filepath.Join(DaemonDataPath, "validators", FeeRecipientFilename)
+		return filepath.Join(DaemonDataPath, "validators", GlobalFeeRecipientFilename)
 	}
 
 	return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
+}
+
+func (cfg *SmartnodeConfig) GetPerKeyFeeRecipientFilePath() string {
+	if !cfg.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, "validators", PerKeyFeeRecipientFilename)
+	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), "validators", PerKeyFeeRecipientFilename)
 }
 
 func (cfg *SmartnodeConfig) GetV100RewardsPoolAddress() common.Address {
@@ -962,7 +985,7 @@ func getNetworkOptions() []config.ParameterOption {
 		},
 	}
 
-	if strings.Contains(shared.RocketPoolVersion(), "-dev") {
+	if strings.Contains(shared.RocketPoolVersion(), "dev") {
 		options = append(options, config.ParameterOption{
 			Name:        "Devnet",
 			Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.",

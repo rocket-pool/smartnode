@@ -145,6 +145,7 @@ type GetPDAOSettingsResponse struct {
 		AreVacantMinipoolsEnabled          bool          `json:"areVacantMinipoolsEnabled"`
 		MinimumPerMinipoolStake            *big.Int      `json:"minimumPerMinipoolStake"`
 		MaximumPerMinipoolStake            *big.Int      `json:"maximumPerMinipoolStake"`
+		MinimumLegacyRplStake              *big.Int      `json:"minimumLegacyRplStake"`
 		ReducedBond                        float64       `json:"reducedBond"`
 		NodeUnstakingPeriod                time.Duration `json:"nodeUnstakingPeriod"`
 	} `json:"node"`
@@ -175,11 +176,14 @@ type GetPDAOSettingsResponse struct {
 	} `json:"security"`
 
 	Megapool struct {
-		TimeBeforeDissolve         time.Duration `json:"timeBeforeDissolve"`
-		MaximumEthPenalty          *big.Int      `json:"maximumEthPenalty"`
-		NotifyThreshold            time.Duration `json:"notifyThreshold"`
-		LateNotifyFine             *big.Int      `json:"lateNotifyFine"`
-		UserDistributeWindowLength time.Duration `json:"userDistributeWindowLength"`
+		TimeBeforeDissolve               time.Duration `json:"timeBeforeDissolve"`
+		MaximumEthPenalty                *big.Int      `json:"maximumEthPenalty"`
+		NotifyThreshold                  uint64        `json:"notifyThreshold"`
+		LateNotifyFine                   *big.Int      `json:"lateNotifyFine"`
+		DissolvePenalty                  *big.Int      `json:"dissolvePenalty"`
+		UserDistributeDelay              uint64        `json:"userDistributeDelay"`
+		UserDistributeDelayWithShortfall uint64        `json:"userDistributeDelayWithShortfall"`
+		PenaltyThreshold                 *big.Int      `json:"penaltyThreshold"`
 	} `json:"megapool"`
 }
 

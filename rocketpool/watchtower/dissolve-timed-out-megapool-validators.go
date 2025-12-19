@@ -18,7 +18,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-// Dissolve timed out minipools task
+// Dissolve timed out megapool validators task
 type dissolveTimedOutMegapoolValidators struct {
 	c   *cli.Context
 	log log.ColorLogger
@@ -122,7 +122,7 @@ func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidator(validator
 	// Get the gas limit
 	gasInfo, err := mp.EstimateDissolveValidatorGas(validator.ValidatorId, opts)
 	if err != nil {
-		return fmt.Errorf("Could not estimate the gas required to dissolve the minipool: %w", err)
+		return fmt.Errorf("Could not estimate the gas required to dissolve the megapool validator: %w", err)
 	}
 
 	// Print the gas info

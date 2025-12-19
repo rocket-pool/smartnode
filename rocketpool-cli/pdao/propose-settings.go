@@ -11,9 +11,11 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli"
 
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
@@ -214,12 +216,17 @@ func proposeSettingNodeAreVacantMinipoolsEnabled(c *cli.Context, value bool) err
 
 func proposeSettingNodeMinimumPerMinipoolStake(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.MinimumPerMinipoolStakeSettingPath, trueValue)
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol131.MinimumPerMinipoolStakeSettingPath, trueValue)
 }
 
 func proposeSettingNodeMaximumPerMinipoolStake(c *cli.Context, value *big.Int) error {
 	trueValue := value.String()
-	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.MaximumPerMinipoolStakeSettingPath, trueValue)
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol131.MaximumPerMinipoolStakeSettingPath, trueValue)
+}
+
+func proposeSettingNodeMinimumLegacyRplStake(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.MinimumLegacyRplStakePath, trueValue)
 }
 
 func proposeSettingReducedBond(c *cli.Context, value *big.Int) error {
@@ -331,8 +338,8 @@ func proposeSettingMaximumMegapoolEthPenalty(c *cli.Context, value *big.Int) err
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolMaximumMegapoolEthPenaltyPath, trueValue)
 }
 
-func proposeSettingMegapoolNotifyThreshold(c *cli.Context, value time.Duration) error {
-	trueValue := fmt.Sprint(uint64(value.Seconds()))
+func proposeSettingMegapoolNotifyThreshold(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolNotifyThresholdPath, trueValue)
 }
 
@@ -341,9 +348,24 @@ func proposeSettingMegapoolLateNotifyFine(c *cli.Context, value *big.Int) error 
 	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolLateNotifyFinePath, trueValue)
 }
 
-func proposeSettingMegapoolUserDistributeLength(c *cli.Context, value time.Duration) error {
-	trueValue := fmt.Sprint(uint64(value.Seconds()))
-	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeWindowLengthPath, trueValue)
+func proposeSettingMegapoolDissolvePenalty(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolDissolvePenaltyPath, trueValue)
+}
+
+func proposeSettingMegapoolUserDistributeDelay(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeDelayPath, trueValue)
+}
+
+func proposeSettingMegapoolUserDistributeDelayWithShortfall(c *cli.Context, value uint64) error {
+	trueValue := fmt.Sprint(value)
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolUserDistributeDelayShortfallPath, trueValue)
+}
+
+func proposeSettingPenaltyThreshold(c *cli.Context, value *big.Int) error {
+	trueValue := value.String()
+	return proposeSetting(c, protocol.MegapoolSettingsContractName, protocol.MegapoolPenaltyThreshold, trueValue)
 }
 
 func proposeSettingNodeCommissionShare(c *cli.Context, value *big.Int) error {
@@ -392,6 +414,10 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 	}
 	if !saturnResp.IsSaturnDeployed && isSaturnOnlySetting(setting) {
 		fmt.Println("This command is only available after the Saturn upgrade.")
+		return nil
+	}
+	if saturnResp.IsSaturnDeployed && isHoustonOnlySetting(setting) {
+		fmt.Println("This command no longer available in Saturn.")
 		return nil
 	}
 
@@ -456,15 +482,29 @@ func isSaturnOnlySetting(setting string) bool {
 		protocol.NetworkPDAOSharePath:                               {},
 		protocol.NetworkMaxNodeShareSecurityCouncilAdderPath:        {},
 		protocol.NetworkMaxRethBalanceDeltaPath:                     {},
+		protocol.MinimumLegacyRplStakePath:                          {},
 		protocol.ReducedBondSettingPath:                             {},
 		protocol.NodeUnstakingPeriodSettingPath:                     {},
 		protocol.MegapoolTimeBeforeDissolveSettingsPath:             {},
 		protocol.MegapoolMaximumMegapoolEthPenaltyPath:              {},
 		protocol.MegapoolNotifyThresholdPath:                        {},
 		protocol.MegapoolLateNotifyFinePath:                         {},
-		protocol.MegapoolUserDistributeWindowLengthPath:             {},
+		protocol.MegapoolDissolvePenaltyPath:                        {},
 	}
 
 	_, exists := saturnOnlySettings[setting]
+	return exists
+}
+
+// Returns true if the given setting is only available on Houston 1.3.1 (before the Saturn upgrade).
+func isHoustonOnlySetting(setting string) bool {
+
+	// Map of Houston only settings
+	houstonOnlySettings := map[string]struct{}{
+		protocol131.MinimumPerMinipoolStakeSettingPath: {},
+		protocol131.MaximumPerMinipoolStakeSettingPath: {},
+	}
+
+	_, exists := houstonOnlySettings[setting]
 	return exists
 }

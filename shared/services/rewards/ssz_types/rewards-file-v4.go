@@ -292,6 +292,8 @@ func (f *SSZFile_v1) Proofs() (map[Address]MerkleProof, error) {
 }
 
 type TotalRewards struct {
+	// Total amount of ETH sent to the pDAO
+	TotalProtocolDaoEth big.Uint256 `ssz-size:"32" json:"totalProtocolDaoEth"`
 	// Total amount of RPL sent to the pDAO
 	ProtocolDaoRpl big.Uint256 `ssz-size:"32" json:"protocolDaoRpl"`
 	// Total amount of RPL sent to Node Operators
@@ -317,6 +319,7 @@ type NetworkReward struct {
 	// Amount of RPL sent to the network for oDAO members
 	OracleDaoRpl big.Uint256 `ssz-size:"32" json:"oracleDaoRpl"`
 	// Amount of Eth sent to the network for Node Operators
+	// In v11+ this includes the voter share
 	SmoothingPoolEth big.Uint256 `ssz-size:"32" json:"smoothingPoolEth"`
 }
 
@@ -562,6 +565,14 @@ func (f *SSZFile_v1) GetNodeSmoothingPoolEth(addr common.Address) *stdbig.Int {
 	return nr.SmoothingPoolEth.Int
 }
 
+func (f *SSZFile_v1) GetNodeVoterShareEth(addr common.Address) *stdbig.Int {
+	return stdbig.NewInt(0)
+}
+
+func (f *SSZFile_v1) GetNodeEth(addr common.Address) *stdbig.Int {
+	return f.GetNodeSmoothingPoolEth(addr)
+}
+
 func (f *SSZFile_v1) GetRewardsFileVersion() uint64 {
 	return f.RewardsFileVersion
 }
@@ -586,6 +597,14 @@ func (f *SSZFile_v1) GetTotalPoolStakerSmoothingPoolEth() *stdbig.Int {
 	return f.TotalRewards.PoolStakerSmoothingPoolEth.Int
 }
 
+func (f *SSZFile_v1) GetTotalSmoothingPoolBalance() *stdbig.Int {
+	return f.TotalRewards.TotalSmoothingPoolEth.Int
+}
+
 func (f *SSZFile_v1) GetTotalProtocolDaoRpl() *stdbig.Int {
 	return f.TotalRewards.ProtocolDaoRpl.Int
+}
+
+func (f *SSZFile_v1) GetTotalProtocolDaoEth() *stdbig.Int {
+	return f.TotalRewards.TotalProtocolDaoEth.Int
 }

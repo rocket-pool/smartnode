@@ -100,11 +100,14 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tSmoothing Pool Opt-In Enabled: %t\n", response.Node.IsSmoothingPoolRegistrationEnabled)
 	fmt.Printf("\tNode Deposits Enabled:         %t\n", response.Node.IsDepositingEnabled)
 	fmt.Printf("\tVacant Minipools Enabled:      %t\n", response.Node.AreVacantMinipoolsEnabled)
-	fmt.Printf("\tMin Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MinimumPerMinipoolStake)*100)
-	fmt.Printf("\tMax Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MaximumPerMinipoolStake)*100)
+	if !response.SaturnDeployed {
+		fmt.Printf("\tMin Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MinimumPerMinipoolStake)*100)
+		fmt.Printf("\tMax Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MaximumPerMinipoolStake)*100)
+	}
 	if response.SaturnDeployed {
 		fmt.Printf("\tReduced Bond:                  %.6f ETH\n", response.Node.ReducedBond)
 		fmt.Printf("\tNode Unstaking Period:         %s\n", response.Node.NodeUnstakingPeriod)
+		fmt.Printf("\tMin Legacy RPL Stake:          %s\n", response.Node.MinimumLegacyRplStake)
 	}
 	fmt.Println()
 
@@ -139,11 +142,14 @@ func getSettings(c *cli.Context) error {
 	if response.SaturnDeployed {
 		// Megapool
 		fmt.Println("== Megapool Settings ==")
-		fmt.Printf("\tTime Before Dissolve:          %s\n", response.Megapool.TimeBeforeDissolve)
-		fmt.Printf("\tMax ETH penalty:               %.6f ETH\n", eth.WeiToEth(response.Megapool.MaximumEthPenalty))
-		fmt.Printf("\tNotify Threshold:              %s\n", response.Megapool.NotifyThreshold)
-		fmt.Printf("\tLate Notify Fine:              %.6f ETH\n", eth.WeiToEth(response.Megapool.LateNotifyFine))
-		fmt.Printf("\tUser Distribute Window Length: %s\n", response.Megapool.UserDistributeWindowLength)
+		fmt.Printf("\tTime Before Dissolve:                   %s\n", response.Megapool.TimeBeforeDissolve)
+		fmt.Printf("\tDissolve Penalty:                       %.6f ETH\n", eth.WeiToEth(response.Megapool.DissolvePenalty))
+		fmt.Printf("\tMax ETH penalty:                        %.6f ETH\n", eth.WeiToEth(response.Megapool.MaximumEthPenalty))
+		fmt.Printf("\tNotify Threshold:                       %d Epochs\n", response.Megapool.NotifyThreshold)
+		fmt.Printf("\tLate Notify Fine:                       %.6f ETH\n", eth.WeiToEth(response.Megapool.LateNotifyFine))
+		fmt.Printf("\tUser Distribute Delay:                  %d Epochs\n", response.Megapool.UserDistributeDelay)
+		fmt.Printf("\tUser Distribute Delay with Shortfall:   %d Epochs\n", response.Megapool.UserDistributeDelayWithShortfall)
+		fmt.Printf("\tPenalty Threshold:                      %.2f%%\n", eth.WeiToEth(response.Megapool.PenaltyThreshold)*100)
 	}
 
 	return nil

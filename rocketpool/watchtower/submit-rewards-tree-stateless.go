@@ -16,6 +16,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	rewards131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
@@ -377,14 +378,14 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	// Create the arrays of rewards per network
 	collateralRplRewards := []*big.Int{}
 	oDaoRplRewards := []*big.Int{}
-	smoothingPoolEthRewards := []*big.Int{}
+	nodeOperatorSmoothingPoolEthRewardsAndVoterShare := []*big.Int{}
 
 	// Create the total rewards for each network
 	for network := uint64(0); rewardsFile.HasRewardsForNetwork(network); network++ {
 
 		collateralRplRewards = append(collateralRplRewards, rewardsFile.GetNetworkCollateralRpl(network))
 		oDaoRplRewards = append(oDaoRplRewards, rewardsFile.GetNetworkOracleDaoRpl(network))
-		smoothingPoolEthRewards = append(smoothingPoolEthRewards, rewardsFile.GetNetworkSmoothingPoolEth(network))
+		nodeOperatorSmoothingPoolEthRewardsAndVoterShare = append(nodeOperatorSmoothingPoolEthRewardsAndVoterShare, rewardsFile.GetNetworkSmoothingPoolEth(network))
 	}
 
 	// Get transactor
@@ -393,33 +394,74 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 		return err
 	}
 
-	// Create the submission
-	submission := rewards.RewardSubmission{
-		RewardIndex:     index,
-		ExecutionBlock:  big.NewInt(0).SetUint64(executionBlock),
-		ConsensusBlock:  big.NewInt(0).SetUint64(consensusBlock),
-		MerkleRoot:      treeRoot,
-		MerkleTreeCID:   cid,
-		IntervalsPassed: intervalsPassed,
-		TreasuryRPL:     rewardsFile.GetTotalProtocolDaoRpl(),
-		NodeRPL:         collateralRplRewards,
-		TrustedNodeRPL:  oDaoRplRewards,
-		NodeETH:         smoothingPoolEthRewards,
-		UserETH:         rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
+	// Check if Saturn is deployed
+	isSaturnDeployed, err := state.IsSaturnDeployed(t.rp, nil)
+	if err != nil {
+		return fmt.Errorf("error checking if Saturn is deployed: %w", err)
 	}
 
-	// Get the gas limit
-	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
-	if err != nil {
-		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
-			// Set a gas limit which will intentionally be too low and revert
-			gasInfo = rocketpool.GasInfo{
-				EstGasLimit:  utils.RewardsSubmissionForcedGas,
-				SafeGasLimit: utils.RewardsSubmissionForcedGas,
+	var gasInfo rocketpool.GasInfo
+	var submission131 rewards131.RewardSubmission
+	var submission rewards.RewardSubmission
+	if isSaturnDeployed {
+
+		// Create the submission
+		submission = rewards.RewardSubmission{
+			RewardIndex:      index,
+			ExecutionBlock:   big.NewInt(0).SetUint64(executionBlock),
+			ConsensusBlock:   big.NewInt(0).SetUint64(consensusBlock),
+			MerkleRoot:       treeRoot,
+			IntervalsPassed:  intervalsPassed,
+			TreasuryETH:      rewardsFile.GetTotalProtocolDaoEth(),
+			TreasuryRPL:      rewardsFile.GetTotalProtocolDaoRpl(),
+			NodeRPL:          collateralRplRewards,
+			TrustedNodeRPL:   oDaoRplRewards,
+			NodeETH:          nodeOperatorSmoothingPoolEthRewardsAndVoterShare,
+			UserETH:          rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
+			SmoothingPoolETH: rewardsFile.GetTotalSmoothingPoolBalance(),
+		}
+		// Get the gas limit
+		gasInfo, err = rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
+		if err != nil {
+			if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
+				// Set a gas limit which will intentionally be too low and revert
+				gasInfo = rocketpool.GasInfo{
+					EstGasLimit:  utils.RewardsSubmissionForcedGas,
+					SafeGasLimit: utils.RewardsSubmissionForcedGas,
+				}
+				t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
+			} else {
+				return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
 			}
-			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
-		} else {
-			return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
+		}
+	} else {
+		// Create the submission
+		submission131 = rewards131.RewardSubmission{
+			RewardIndex:     index,
+			ExecutionBlock:  big.NewInt(0).SetUint64(executionBlock),
+			ConsensusBlock:  big.NewInt(0).SetUint64(consensusBlock),
+			MerkleRoot:      treeRoot,
+			MerkleTreeCID:   cid,
+			IntervalsPassed: intervalsPassed,
+			TreasuryRPL:     rewardsFile.GetTotalProtocolDaoRpl(),
+			NodeRPL:         collateralRplRewards,
+			TrustedNodeRPL:  oDaoRplRewards,
+			NodeETH:         nodeOperatorSmoothingPoolEthRewardsAndVoterShare,
+			UserETH:         rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
+		}
+		// Get the gas limit
+		gasInfo, err = rewards131.EstimateSubmitRewardSnapshotGas(t.rp, submission131, opts)
+		if err != nil {
+			if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
+				// Set a gas limit which will intentionally be too low and revert
+				gasInfo = rocketpool.GasInfo{
+					EstGasLimit:  utils.RewardsSubmissionForcedGas,
+					SafeGasLimit: utils.RewardsSubmissionForcedGas,
+				}
+				t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
+			} else {
+				return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
+			}
 		}
 	}
 
@@ -433,10 +475,19 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
-	// Submit RPL price
-	hash, err := rewards.SubmitRewardSnapshot(t.rp, submission, opts)
-	if err != nil {
-		return err
+	var hash common.Hash
+	if isSaturnDeployed {
+		// Submit rewards snapshot
+		hash, err = rewards.SubmitRewardSnapshot(t.rp, submission, opts)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Submit rewards snapshot
+		hash, err = rewards131.SubmitRewardSnapshot(t.rp, submission131, opts)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Print TX info and wait for it to be included in a block

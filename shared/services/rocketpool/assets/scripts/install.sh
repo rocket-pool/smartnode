@@ -410,6 +410,7 @@ progress 7 "Copying package files to Rocket Pool user data directory..."
 { cp -r "$PACKAGE_FILES_PATH/scripts" "$RP_PATH" || fail "Could not copy scripts folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/templates" "$RP_PATH" || fail "Could not copy templates folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/alerting" "$RP_PATH" || fail "Could not copy alerting folder to the Rocket Pool user data directory."; } >&2
+{ cp -r "$PACKAGE_FILES_PATH/devnet" "$RP_PATH" || fail "Could not copy devnet folder to the Rocket Pool user data directory."; } >&2
 { cp	\
 	"$PACKAGE_FILES_PATH/grafana-prometheus-datasource.yml" \
 	"$PACKAGE_FILES_PATH/prometheus.tmpl" \
