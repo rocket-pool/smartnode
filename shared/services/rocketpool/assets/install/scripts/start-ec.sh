@@ -36,11 +36,10 @@ if [ "$NETWORK" = "mainnet" ]; then
     BESU_NETWORK="--network=mainnet"
     RETH_NETWORK="--chain mainnet"
 elif [ "$NETWORK" = "devnet" ]; then
-    . "/devnet/nodevars_env.txt"
-    GETH_NETWORK="--networkid 39438153"
-    RP_NETHERMIND_NETWORK="private"
-    BESU_NETWORK="--network=ephemery --bootnodes=$BOOTNODE_ENODE_LIST"
-    RETH_NETWORK="--chain /devnet/genesis.json --bootnodes $BOOTNODE_ENODE_LIST"
+    GETH_NETWORK="--hoodi"
+    RP_NETHERMIND_NETWORK="hoodi"
+    BESU_NETWORK="--network=hoodi"
+    RETH_NETWORK="--chain hoodi"
 elif [ "$NETWORK" = "testnet" ]; then
     GETH_NETWORK="--hoodi"
     RP_NETHERMIND_NETWORK="hoodi"
@@ -80,10 +79,6 @@ if [ "$CLIENT" = "geth" ]; then
 
     # Run Geth normally
     else
-
-        if [ "$NETWORK" = "devnet" ]; then
-            geth init --datadir /ethclient/geth /devnet/genesis.json 
-        fi
 
         CMD="$PERF_PREFIX /usr/local/bin/geth $GETH_NETWORK \
             --datadir /ethclient/geth \
@@ -182,15 +177,8 @@ if [ "$CLIENT" = "nethermind" ]; then
         exit 1
     fi
 
-    if [ "$NETWORK" = "devnet" ]; then
-        NETWORK_CONFIG="--config /devnet/nethermind-config.json"
-    else
-        NETWORK_CONFIG="--config $RP_NETHERMIND_NETWORK \
-        "
-    fi
-
     CMD="$PERF_PREFIX $NETHERMIND_BINARY \
-        $NETWORK_CONFIG \
+        --config $RP_NETHERMIND_NETWORK \
         --data-dir /ethclient/nethermind \
         --JsonRpc.Enabled true \
         --JsonRpc.Host 0.0.0.0 \
@@ -367,10 +355,6 @@ if [ "$CLIENT" = "reth" ]; then
     # Create the JWT secret
     if [ ! -f "/secrets/jwtsecret" ]; then
         echo -n "$(head -c 32 /dev/urandom | od -A n -t x1 | tr -d '[:space:]')" > /secrets/jwtsecret
-    fi
-
-    if [ "$NETWORK" = "devnet" ]; then
-            reth init --datadir /ethclient/geth --chain /devnet/genesis.json
     fi
 
     CMD="$PERF_PREFIX /usr/local/bin/reth node $RETH_NETWORK \

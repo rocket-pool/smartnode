@@ -415,7 +415,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
-			config.Network_Devnet:  "https://explorer.ephemery.dev/tx",
+			config.Network_Devnet:  "https://hoodi.etherscan.io/tx",
 			config.Network_Testnet: "https://hoodi.etherscan.io/tx",
 		},
 
@@ -426,32 +426,32 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		chainID: map[config.Network]uint{
-			config.Network_Mainnet: 1,        // Mainnet
-			config.Network_Devnet:  39438153, // Ephemery
-			config.Network_Testnet: 560048,   // Hoodi
+			config.Network_Mainnet: 1,      // Mainnet
+			config.Network_Devnet:  560048, // Hoodi
+			config.Network_Testnet: 560048, // Hoodi
 		},
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "0xDAef0d5CDEdaE428DC6F07e065996D1B709cfeC5",
+			config.Network_Devnet:  "0x990BC2c12d2a39e5FD92111B98A728bf39742478",
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
 		rocketSignerRegistryAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xc1062617d10Ae99E09D941b60746182A87eAB38F",
-			config.Network_Devnet:  "0x54775df9F3Bd25405ecF1072131428A6861784d7",
+			config.Network_Devnet:  "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E",
 			config.Network_Testnet: "0xE3FbfaD4A11777E6271921E7EC1A5a1345684F4E",
 		},
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "0x594bA8cBbB5fc650BaB6227F06c62FEa1c8D7aaB",
+			config.Network_Devnet:  "0xce59520Cbaec3B399a5245e72C0F21df791202FE",
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  "0x82B2C5Bb0a2194F9ff25452A7573cc36c7C4d8Ca",
+			config.Network_Devnet:  "0x3aC886F531BEb95f08F73fDb21528BE3c63AA82F",
 			config.Network_Testnet: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
@@ -532,9 +532,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
 			},
-			config.Network_Devnet: {
-				common.HexToAddress("0x664dafBbf286959BCB910bf42970E9aA26b336E8"),
-			},
+			config.Network_Devnet:  {},
 			config.Network_Testnet: {},
 		},
 
@@ -594,25 +592,25 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTwapPoolAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xe42318ea3b998e8355a3da364eb9d48ec725eb45",
-			config.Network_Devnet:  "0x347F8cFF6755eb9b21C157A152a2C7e5c8a4558F",
+			config.Network_Devnet:  "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
 			config.Network_Testnet: "0x0ca239d8AC5E49E3203d60eaf86Baa6712E5b454",
 		},
 
 		multicallAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x5BA1e12693Dc8F9c48aAD8770482f4739bEeD696",
-			config.Network_Devnet:  "0xF400396052f34A59023Fd47337570ABF3FE52463",
-			config.Network_Testnet: "0x4866504f62497ee6C98d8ba928321a9C6e89f536",
+			config.Network_Devnet:  "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7",
+			config.Network_Testnet: "0xc5fA61aA6Ec012d1A2Ea38f31ADAf4D06c8725E7",
 		},
 
 		balancebatcherAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xb1f8e55c7f64d203c1400b9d8555d050f94adf39",
-			config.Network_Devnet:  "0xb60A898646427f14661aF64773A6a70753101E5b",
-			config.Network_Testnet: "0xEE9F0AD34043e3a87e42A4dE091559ee19D7912B",
+			config.Network_Devnet:  "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce",
+			config.Network_Testnet: "0xB80b500CF68a956b6f149F1C48E8F07EEF4486Ce",
 		},
 
 		flashbotsProtectUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://rpc.flashbots.net/",
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  "https://rpc-hoodi.flashbots.net/",
 			config.Network_Testnet: "https://rpc-hoodi.flashbots.net/",
 		},
 	}

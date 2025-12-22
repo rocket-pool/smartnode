@@ -11,9 +11,10 @@ if [ "$NETWORK" = "mainnet" ]; then
     PRYSM_NETWORK="--mainnet"
     TEKU_NETWORK="mainnet"
 elif [ "$NETWORK" = "devnet" ]; then
-    LODESTAR_NETWORK="ephemery"
+    LH_NETWORK="hoodi"
+    LODESTAR_NETWORK="hoodi"
     PRYSM_NETWORK="--hoodi"
-    TEKU_NETWORK="ephemery"
+    TEKU_NETWORK="hoodi"
 elif [ "$NETWORK" = "testnet" ]; then
     LH_NETWORK="hoodi"
     LODESTAR_NETWORK="hoodi"
@@ -47,7 +48,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
     fi
 
     CMD="/usr/local/bin/lighthouse validator \
-        $CMD_LH_NETWORK \
+        --network $LH_NETWORK \
         --datadir /validators/lighthouse \
         --init-slashing-protection \
         --http \
@@ -108,7 +109,7 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
     fi
 
     CMD="/usr/app/node_modules/.bin/lodestar validator \
-        $CMD_NETWORK \
+        --network $LODESTAR_NETWORK \
         --dataDir /validators/lodestar \
         --beacon-nodes $CC_URL_STRING \
         $FALLBACK_CC_STRING \
@@ -207,7 +208,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
 
     CMD="/app/cmd/validator/validator \
         --accept-terms-of-use \
-        $CMD_NETWORK \
+        $PRYSM_NETWORK \
         --datadir /validators/prysm-non-hd/direct \
         --wallet-dir /validators/prysm-non-hd \
         --rpc \
