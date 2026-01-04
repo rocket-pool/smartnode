@@ -36,7 +36,7 @@ func CalculateSplit(rp *rocketpool.RocketPool, sinceBlock uint64, opts *bind.Cal
 		return RevenueSplit{}, err
 	}
 	revenueSplit := new(RevenueSplit)
-	if err := rocketNetworkRevenues.Call(opts, revenueSplit, "calculateSplit", big.NewInt(int64(sinceBlock))); err != nil {
+	if err := rocketNetworkRevenues.Call(opts, revenueSplit, "calculateSplit", sinceBlock); err != nil {
 		return RevenueSplit{}, fmt.Errorf("error calculating the revenue split %w", err)
 	}
 	return *revenueSplit, nil
