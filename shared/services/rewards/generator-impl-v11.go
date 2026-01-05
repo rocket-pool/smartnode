@@ -489,17 +489,13 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 	r.log.Printlnf("%s Smoothing Pool Balance:\t%s\t(%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
 	r.log.Printlnf("%s  Earmarked Voter Share:\t%s\t(%.3f)", r.logPrefix, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare.String(), eth.WeiToEth(r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare))
 
-	// Ignore the ETH calculation if there are no rewards
-	if r.smoothingPoolBalance.Cmp(common.Big0) == 0 {
-		return nil
-	}
-
 	if r.rewardsFile.Index == 0 {
 		// This is the first interval, Smoothing Pool rewards are ignored on the first interval since it doesn't have a discrete start time
 		return nil
 	}
 
 	// Get the start time of this interval based on the event from the previous one
+	// This must be done even if there are no smoothing pool rewards, to set the start blocks and timestamps
 	//previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts) // This is immutable so querying at the head is fine and mitigates issues around calls for pruned EL state
 	previousIntervalEvent, err := r.rp.GetRewardSnapshotEvent(r.previousRewardsPoolAddresses, r.rewardsFile.Index-1, r.opts)
 	if err != nil {
@@ -508,6 +504,11 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 	startElBlockHeader, err := r.getBlocksAndTimesForInterval(previousIntervalEvent)
 	if err != nil {
 		return err
+	}
+
+	// Ignore the ETH calculation if there are no rewards
+	if r.smoothingPoolBalance.Cmp(common.Big0) == 0 {
+		return nil
 	}
 
 	r.elStartTime = time.Unix(int64(startElBlockHeader.Time), 0)
