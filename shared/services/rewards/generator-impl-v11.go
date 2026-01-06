@@ -162,7 +162,7 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 				if nodeInfo.Megapool == nil {
 					continue
 				}
-				r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
+				r.epsilon.Add(r.epsilon, big.NewInt(int64(len(nodeInfo.Megapool.Validators))))
 			}
 		}
 	}

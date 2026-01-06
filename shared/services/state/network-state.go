@@ -725,7 +725,9 @@ func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *
 
 	if node.MegapoolDeployed {
 		megapool := s.MegapoolDetails[node.MegapoolAddress]
-		eligibleBorrowedEth.Add(eligibleBorrowedEth, megapool.UserCapital)
+		if megapool.UserCapital != nil {
+			eligibleBorrowedEth.Add(eligibleBorrowedEth, megapool.UserCapital)
+		}
 	}
 
 	return eligibleBorrowedEth
