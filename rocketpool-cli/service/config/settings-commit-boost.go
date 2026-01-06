@@ -14,7 +14,6 @@ type CommitBoostConfigPage struct {
 	masterConfig          *config.RocketPoolConfig
 	enableBox             *parameterizedFormItem
 	modeBox               *parameterizedFormItem
-	selectionModeBox      *parameterizedFormItem
 	localItems            []*parameterizedFormItem
 	externalItems         []*parameterizedFormItem
 	regulatedAllMevBox    *parameterizedFormItem
@@ -90,7 +89,7 @@ func (configPage *CommitBoostConfigPage) createContent() {
 	configPage.btcsOfacBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BtcsOfacRelay)
 
 	// Map the parameters to the form items in the layout
-	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox, configPage.selectionModeBox)
+	configPage.layout.mapParameterizedFormItems(configPage.enableBox, configPage.modeBox)
 	configPage.layout.mapParameterizedFormItems(configPage.flashbotsBox, configPage.bloxrouteMaxProfitBox, configPage.bloxrouteRegulatedBox, configPage.ultrasoundBox, configPage.ultrasoundFilteredBox, configPage.aestusBox, configPage.titanGlobalBox, configPage.titanRegionalBox, configPage.btcsOfacBox)
 	configPage.layout.mapParameterizedFormItems(configPage.localItems...)
 	configPage.layout.mapParameterizedFormItems(configPage.externalItems...)
@@ -122,12 +121,23 @@ func (configPage *CommitBoostConfigPage) handleModeChanged() {
 	if configPage.masterConfig.EnableCommitBoost.Value == true {
 		configPage.layout.form.AddFormItem(configPage.modeBox.item)
 
-		selectedMode := configPage.masterConfig.CommitBoost.Mode.Value.(cfgtypes.Mode)
+		var selectedMode cfgtypes.Mode
+		if configPage.masterConfig.CommitBoost.Mode.Value != nil {
+			selectedMode = configPage.masterConfig.CommitBoost.Mode.Value.(cfgtypes.Mode)
+		} else {
+			selectedMode = cfgtypes.Mode_Local
+		}
 		switch selectedMode {
 		case cfgtypes.Mode_Local:
 			configPage.handleSelectionModeChanged()
 		case cfgtypes.Mode_External:
-			if configPage.masterConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+			var execMode cfgtypes.Mode
+			if configPage.masterConfig.ExecutionClientMode.Value != nil {
+				execMode = configPage.masterConfig.ExecutionClientMode.Value.(cfgtypes.Mode)
+			} else {
+				execMode = cfgtypes.Mode_Local
+			}
+			if execMode == cfgtypes.Mode_Local {
 				// Only show these to Docker users, not Hybrid users
 				configPage.layout.addFormItems(configPage.externalItems)
 			}
@@ -142,8 +152,6 @@ func (configPage *CommitBoostConfigPage) handleSelectionModeChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.form.AddFormItem(configPage.enableBox.item)
 	configPage.layout.form.AddFormItem(configPage.modeBox.item)
-
-	configPage.layout.form.AddFormItem(configPage.selectionModeBox.item)
 
 	configPage.layout.addFormItems(configPage.localItems)
 }
