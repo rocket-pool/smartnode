@@ -165,6 +165,8 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 				r.epsilon.Add(r.epsilon, big.NewInt(int64(len(nodeInfo.Megapool.Validators))))
 			}
 		}
+		// Cumulative error can exceed the validator count
+		r.epsilon.Mul(r.epsilon, big.NewInt(2))
 	}
 
 	// Calculate the RPL rewards
