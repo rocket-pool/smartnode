@@ -200,21 +200,37 @@ func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRew
 		return nil, err
 	}
 
-	// Get the rewards
-	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
-	if err != nil {
-		return nil, err
-	}
-
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
+
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
+	var gasInfo rocketpool.GasInfo
+	if !saturnDeployed {
+		indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervalsHouston(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		gasInfo, err = rewards131.EstimateClaimGas(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, opts)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		gasInfo, err = rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	response.GasInfo = gasInfo
 	return &response, nil
 }
