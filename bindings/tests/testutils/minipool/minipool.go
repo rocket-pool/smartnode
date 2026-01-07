@@ -27,7 +27,7 @@ type minipoolCreated struct {
 }
 
 // Create a minipool
-func CreateMinipool(t *testing.T, rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accounts.Account, depositAmount *big.Int, pubkey int) (*minipool.Minipool, error) {
+func CreateMinipool(t *testing.T, rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accounts.Account, depositAmount *big.Int, pubkey int) (minipool.Minipool, error) {
 
 	// Mint & stake RPL required for mininpool
 	rplRequired, err := GetMinipoolRPLRequired(rp)
@@ -45,7 +45,7 @@ func CreateMinipool(t *testing.T, rp *rocketpool.RocketPool, ownerAccount, nodeA
 	}
 
 	// Get minipool manager contract
-	rocketMinipoolManager, err := rp.GetContract("rocketMinipoolManager")
+	rocketMinipoolManager, err := rp.GetContract("rocketMinipoolManager", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -63,19 +63,19 @@ func CreateMinipool(t *testing.T, rp *rocketpool.RocketPool, ownerAccount, nodeA
 	}
 
 	// Return minipool instance
-	return minipool.NewMinipool(rp, minipoolAddress)
+	return minipool.NewMinipool(rp, minipoolAddress, nil)
 
 }
 
 // Stake a minipool
-func StakeMinipool(rp *rocketpool.RocketPool, mp *minipool.Minipool, nodeAccount *accounts.Account) error {
+func StakeMinipool(rp *rocketpool.RocketPool, mp minipool.Minipool, nodeAccount *accounts.Account) error {
 
 	// Get validator & deposit data
 	validatorPubkey, err := validator.GetValidatorPubkey(1)
 	if err != nil {
 		return err
 	}
-	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.Address, nil)
+	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.GetAddress(), nil)
 	if err != nil {
 		return err
 	}

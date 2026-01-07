@@ -11,10 +11,11 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 
 	"github.com/rocket-pool/smartnode/bindings/tests"
+	"github.com/rocket-pool/smartnode/bindings/tests/testutils"
 )
 
 var (
-	client *ethclient.Client
+	client *testutils.EthClientWrapper
 	rp     *rocketpool.RocketPool
 )
 
@@ -22,10 +23,11 @@ func TestMain(m *testing.M) {
 	var err error
 
 	// Initialize eth client
-	client, err = ethclient.Dial(tests.Eth1ProviderAddress)
+	rawClient, err := ethclient.Dial(tests.Eth1ProviderAddress)
 	if err != nil {
 		log.Fatal(err)
 	}
+	client = testutils.NewEthClientWrapper(rawClient)
 
 	// Initialize contract manager
 	rp, err = rocketpool.NewRocketPool(client, common.HexToAddress(tests.RocketStorageAddress))

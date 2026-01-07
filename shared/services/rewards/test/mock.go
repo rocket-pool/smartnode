@@ -869,15 +869,14 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 				if err != nil {
 					panic(err)
 				}
-				vifgi := megapool.ValidatorInfoFromGlobalIndex{
-					Pubkey: pubkey.Bytes(),
-					ValidatorInfo: megapool.ValidatorInfo{
-						ValidatorIndex: intIdx,
-						Staked:         true,
-					},
-					MegapoolAddress: node.MegapoolAddress(),
-					ValidatorId:     uint32(intIdx),
-				}
+			vifgi := megapool.ValidatorInfoFromGlobalIndex{
+				Pubkey: pubkey.Bytes(),
+				ValidatorInfo: megapool.ValidatorInfo{
+					Staked: true,
+				},
+				MegapoolAddress: node.MegapoolAddress(),
+				ValidatorId:     uint32(intIdx),
+			}
 				out.MegapoolValidatorGlobalIndex = append(out.MegapoolValidatorGlobalIndex, vifgi)
 				out.MegapoolToPubkeysMap[node.MegapoolAddress()] = append(out.MegapoolToPubkeysMap[node.MegapoolAddress()], pubkey)
 				out.MegapoolValidatorInfo[pubkey] = &vifgi
