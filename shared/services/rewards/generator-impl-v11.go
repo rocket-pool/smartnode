@@ -264,6 +264,8 @@ func (r *treeGeneratorImpl_v11) approximateStakerShareOfSmoothingPool(rp Rewards
 			}
 		}
 	}
+	// Cumulative error can exceed the validator count
+	r.epsilon.Mul(r.epsilon, big.NewInt(2))
 
 	// Calculate the ETH rewards
 	err := r.calculateEthRewards(false)
