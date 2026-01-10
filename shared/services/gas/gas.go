@@ -112,7 +112,7 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 				}
 			}
 		}
-		fmt.Printf("%sUsing a max fee of %.2f gwei and a priority fee of %.2f gwei.\n%s", colorBlue, maxFeeGwei, maxPriorityFeeGwei, colorReset)
+		fmt.Printf("%sUsing a max fee of %.3f gwei and a priority fee of %.3f gwei.\n%s", colorBlue, maxFeeGwei, maxPriorityFeeGwei, colorReset)
 	}
 
 	// Use the requested gas limit if provided
