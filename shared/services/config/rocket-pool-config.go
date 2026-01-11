@@ -1306,16 +1306,6 @@ func (cfg *RocketPoolConfig) GetBnOpenPorts() []string {
 	return bnOpenPorts
 }
 
-func (cfg *RocketPoolConfig) GetKeymanagerApiOpenPort() []string {
-	keymanagerApiPortMode := cfg.ConsensusCommon.OpenKeymanagerApiPort.Value.(config.RPCMode)
-	keyManagerOpenPorts := make([]string, 0)
-	if keymanagerApiPortMode.Open() {
-		keyManagerOpenPorts = append(keyManagerOpenPorts, keymanagerApiPortMode.DockerPortMapping(cfg.ConsensusCommon.KeymanagerApiPort.Value.(uint16)))
-
-	}
-	return keyManagerOpenPorts
-}
-
 // Used by text/template to format eth2.yml
 func (cfg *RocketPoolConfig) GetEcHttpEndpoint() string {
 	if cfg.ExecutionClientLocal() {
