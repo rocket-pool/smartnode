@@ -67,7 +67,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         --network $LH_NETWORK \
         --port $BN_P2P_PORT \
         --discovery-port $BN_P2P_PORT \
-        --datadir /data \
+        --datadir /ethclient/lighthouse \
         --execution-endpoint $EC_ENGINE_ENDPOINT \
         --http \
         --http-address 0.0.0.0 \
