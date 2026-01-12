@@ -119,7 +119,7 @@ func (m *MockBeaconClient) SetState(state *state.NetworkState) {
 		m.validatorPubkeys[validatorIndex(v.Index)] = v.Pubkey
 	}
 	for _, v := range state.MegapoolValidatorGlobalIndex {
-		vIndex := strconv.FormatUint(v.ValidatorInfo.ValidatorIndex, 10)
+		vIndex := strconv.FormatUint(uint64(v.ValidatorId), 10)
 		if _, ok := m.validatorPubkeys[validatorIndex(vIndex)]; ok {
 			m.t.Fatalf("Validator %s already set", vIndex)
 		}
