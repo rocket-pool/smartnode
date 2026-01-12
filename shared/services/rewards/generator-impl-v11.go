@@ -579,12 +579,8 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 						details := r.networkState.MegapoolDetails[megapool.Address]
 						bond := details.GetMegapoolBondNormalized()
 						nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
-						nodeFeeAdder := r.networkState.NetworkDetails.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder
 						voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
 						pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
-
-						effectiveNodeFee := big.NewInt(0).Add(nodeFee, nodeFeeAdder)
-						effectiveVoterFee := big.NewInt(0).Sub(voterFee, nodeFeeAdder)
 
 						// The megapool score is given by:
 						// (bond + effectiveNodeFee*(32-bond)) / 32
@@ -594,10 +590,10 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 						// integer math inaccuracy, and when we divide by 32 it is removed.
 						//
 						// (b*1 + 32f - f*b) / 32
-						megapoolScore := big.NewInt(0).Mul(oneEth, bond)                                    // b*1
-						megapoolScore.Add(megapoolScore, big.NewInt(0).Mul(thirtyTwoEth, effectiveNodeFee)) // b*1 + 32f
-						megapoolScore.Sub(megapoolScore, big.NewInt(0).Mul(effectiveNodeFee, bond))         // b*1 + 32f - f*b
-						megapoolScore.Div(megapoolScore, thirtyTwoEth)                                      // (b*1 + 32f - f*b) / 32
+						megapoolScore := big.NewInt(0).Mul(oneEth, bond)                           // b*1
+						megapoolScore.Add(megapoolScore, big.NewInt(0).Mul(thirtyTwoEth, nodeFee)) // b*1 + 32f
+						megapoolScore.Sub(megapoolScore, big.NewInt(0).Mul(nodeFee, bond))         // b*1 + 32f - f*b
+						megapoolScore.Div(megapoolScore, thirtyTwoEth)                             // (b*1 + 32f - f*b) / 32
 
 						// Add it to the megapool's score and the total score
 						validator.AttestationScore.Add(&validator.AttestationScore.Int, megapoolScore)
@@ -606,8 +602,8 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 						// Calculate the voter share
 						// This is simply (effectiveVoterFee * (32 - bond)) / 32
 						// Simplify to (32f - f*b) / 32
-						voterScore := big.NewInt(0).Mul(thirtyTwoEth, effectiveVoterFee)
-						voterScore.Sub(voterScore, big.NewInt(0).Mul(effectiveVoterFee, bond))
+						voterScore := big.NewInt(0).Mul(thirtyTwoEth, voterFee)
+						voterScore.Sub(voterScore, big.NewInt(0).Mul(voterFee, bond))
 						voterScore.Div(voterScore, thirtyTwoEth)
 						r.totalVoterScore.Add(r.totalVoterScore, voterScore)
 
@@ -1286,13 +1282,9 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 				details := r.networkState.MegapoolDetails[megapool.Info.Address]
 				bond := details.GetMegapoolBondNormalized()
 				nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
-				// The node fee adder is added to nodeFee and deducted from voter fee
-				nodeFeeAdder := r.networkState.NetworkDetails.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder
 				voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
 				pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
 
-				effectiveNodeFee := big.NewInt(0).Add(nodeFee, nodeFeeAdder)
-				effectiveVoterFee := big.NewInt(0).Sub(voterFee, nodeFeeAdder)
 				// The megapool score is given by:
 				// (bond + effectiveNodeFee*(32-bond)) / 32
 				// However, when multiplying eth values, we need to normalize the wei to eth
@@ -1301,10 +1293,10 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 				// integer math inaccuracy, and when we divide by 32 it is removed.
 				//
 				// (b*1 + 32f - f*b) / 32
-				megapoolScore := big.NewInt(0).Mul(oneEth, bond)                                    // b*1
-				megapoolScore.Add(megapoolScore, big.NewInt(0).Mul(thirtyTwoEth, effectiveNodeFee)) // b*1 + 32f
-				megapoolScore.Sub(megapoolScore, big.NewInt(0).Mul(effectiveNodeFee, bond))         // b*1 + 32f - f*b
-				megapoolScore.Div(megapoolScore, thirtyTwoEth)                                      // (b*1 + 32f - f*b) / 32
+				megapoolScore := big.NewInt(0).Mul(oneEth, bond)                           // b*1
+				megapoolScore.Add(megapoolScore, big.NewInt(0).Mul(thirtyTwoEth, nodeFee)) // b*1 + 32f
+				megapoolScore.Sub(megapoolScore, big.NewInt(0).Mul(nodeFee, bond))         // b*1 + 32f - f*b
+				megapoolScore.Div(megapoolScore, thirtyTwoEth)                             // (b*1 + 32f - f*b) / 32
 
 				// Add it to the megapool's score and the total score
 				validator.AttestationScore.Add(&validator.AttestationScore.Int, megapoolScore)
@@ -1313,8 +1305,8 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 				// Calculate the voter share
 				// This is simply (effectiveVoterFee * (32 - bond)) / 32
 				// Simplify to (32f - f*b) / 32
-				voterScore := big.NewInt(0).Mul(thirtyTwoEth, effectiveVoterFee)
-				voterScore.Sub(voterScore, big.NewInt(0).Mul(effectiveVoterFee, bond))
+				voterScore := big.NewInt(0).Mul(thirtyTwoEth, voterFee)
+				voterScore.Sub(voterScore, big.NewInt(0).Mul(voterFee, bond))
 				voterScore.Div(voterScore, thirtyTwoEth)
 				r.totalVoterScore.Add(r.totalVoterScore, voterScore)
 
