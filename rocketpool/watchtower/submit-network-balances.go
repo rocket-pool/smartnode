@@ -220,7 +220,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		var maxRethDelta *big.Int
 		if state.IsSaturnDeployed {
 			t.log.Printlnf("Checking if total ETH needs to be limited due to max Reth ratio delta...")
-			// Fetch the max Reth delta (assumed to be scaled by 1e18, e.g., 0.05 * 1e18 for 5%)
+			// Fetch the max Reth delta
 			maxRethDelta, err = protocol.GetMaxRethDelta(t.rp, nil)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
@@ -260,9 +260,6 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		if hasSubmitted {
 			t.log.Printlnf("Have previously submitted out-of-date balances for block %d, trying again...", targetBlockNumber)
 		}
-
-		// Log
-		t.log.Println("Submitting balances...")
 
 		// Submit balances
 		if err := t.submitBalances(balances); err != nil {
