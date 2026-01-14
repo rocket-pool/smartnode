@@ -79,7 +79,7 @@ func TestMinipoolDetails(t *testing.T) {
 	}
 
 	// Mark minipool as withdrawable
-	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil {
+	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.GetAddress(), trustedNodeAccount.GetTransactor()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -96,7 +96,7 @@ func TestMinipoolDetails(t *testing.T) {
 		t.Error("Incorrect updated minipool count")
 	} else {
 		mpDetails := minipools[0]
-		if !bytes.Equal(mpDetails.Address.Bytes(), mp.Address.Bytes()) {
+		if !bytes.Equal(mpDetails.Address.Bytes(), mp.GetAddress().Bytes()) {
 			t.Errorf("Incorrect minipool address %s", mpDetails.Address.Hex())
 		}
 		if !mpDetails.Exists {
@@ -118,7 +118,7 @@ func TestMinipoolDetails(t *testing.T) {
 		t.Error(err)
 	} else if len(nodeMinipools) != 1 {
 		t.Error("Incorrect updated node minipool count")
-	} else if !bytes.Equal(nodeMinipools[0].Address.Bytes(), mp.Address.Bytes()) {
+	} else if !bytes.Equal(nodeMinipools[0].Address.Bytes(), mp.GetAddress().Bytes()) {
 		t.Errorf("Incorrect node minipool address %s", nodeMinipools[0].Address.Hex())
 	}
 	if nodeMinipoolPubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAccount.Address, nil); err != nil {
@@ -132,7 +132,7 @@ func TestMinipoolDetails(t *testing.T) {
 	// Get & check minipool address by pubkey
 	if minipoolAddress, err := minipool.GetMinipoolByPubkey(rp, validatorPubkey, nil); err != nil {
 		t.Error(err)
-	} else if !bytes.Equal(minipoolAddress.Bytes(), mp.Address.Bytes()) {
+	} else if !bytes.Equal(minipoolAddress.Bytes(), mp.GetAddress().Bytes()) {
 		t.Errorf("Incorrect minipool address %s for pubkey %s", minipoolAddress.Hex(), validatorPubkey.Hex())
 	}
 
