@@ -549,8 +549,7 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 		for _, nodeInfo := range r.nodeDetails {
 			// Check if the node is currently opted in for simplicity
 			if nodeInfo.IsEligible && nodeInfo.IsOptedIn && r.elEndTime.After(nodeInfo.OptInTime) {
-				eligibleBorrowedEth := nodeInfo.EligibleBorrowedEth
-				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeInfo.RplStake)
+				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(nodeInfo.MinipoolEligibleBorrowedEth, nodeInfo.LegacyStakedRpl)
 				for _, minipool := range nodeInfo.Minipools {
 					minipool.CompletedAttestations = map[uint64]bool{0: true}
 
@@ -785,8 +784,7 @@ func (r *treeGeneratorImpl_v11) calculateNodeBonuses() (*big.Int, error) {
 		}
 
 		// Get the nodeDetails from the network state
-		eligibleBorrowedEth := nsd.EligibleBorrowedEth
-		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nsd.RplStake)
+		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(nsd.MinipoolEligibleBorrowedEth, nsd.LegacyStakedRpl)
 		for _, mpd := range nsd.Minipools {
 			mpi := r.networkState.MinipoolDetailsByAddress[mpd.Address]
 			if !mpi.IsEligibleForBonuses(eligibleEnd) {
@@ -1246,13 +1244,12 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 					continue
 				}
 
-				eligibleBorrowedEth := nodeDetails.EligibleBorrowedEth
-				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
-
 				// Mark this duty as completed
 				positionInfo.MarkAttestationCompleted(attestation.SlotIndex)
 
 				if positionInfo.MinipoolInfo != nil {
+					_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(nodeDetails.MinipoolEligibleBorrowedEth, nodeDetails.LegacyStakedRpl)
+
 					validator := positionInfo.MinipoolInfo
 
 					// Get the pseudoscore for this attestation
@@ -1564,7 +1561,8 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 					SmoothingPoolEth:        big.NewInt(0),
 					BonusEth:                big.NewInt(0),
 					RewardsNetwork:          nativeNodeDetails.RewardNetwork.Uint64(),
-					RplStake:                nativeNodeDetails.RplStake,
+					LegacyStakedRpl:         nativeNodeDetails.LegacyStakedRPL,
+					MegapoolStakedRpl:       nativeNodeDetails.MegapoolStakedRPL,
 					MegapoolVoteEligibleRpl: big.NewInt(0),
 					VoterShareEth:           big.NewInt(0),
 				}
@@ -1685,7 +1683,7 @@ func (r *treeGeneratorImpl_v11) getSmoothingPoolNodeDetails() error {
 	// Populate the eligible borrowed ETH field for all nodes
 	for _, nodeDetails := range r.nodeDetails {
 		nnd := r.networkState.NodeDetailsByAddress[nodeDetails.Address]
-		nodeDetails.EligibleBorrowedEth = r.networkState.GetEligibleBorrowedEth(nnd)
+		nodeDetails.MinipoolEligibleBorrowedEth = r.networkState.GetMinipoolEligibleBorrowedEth(nnd)
 	}
 
 	return nil

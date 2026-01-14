@@ -356,11 +356,12 @@ type NodeSmoothingDetails struct {
 	OptOutTime time.Time
 
 	// v10 Fields
-	BonusEth            *big.Int
-	EligibleBorrowedEth *big.Int
-	RplStake            *big.Int
+	BonusEth                    *big.Int
+	MinipoolEligibleBorrowedEth *big.Int
+	LegacyStakedRpl             *big.Int
 
 	// v11 Fields
+	MegapoolStakedRpl       *big.Int
 	MegapoolVoteEligibleRpl *big.Int
 	VoterShareEth           *big.Int
 }

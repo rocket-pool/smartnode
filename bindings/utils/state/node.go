@@ -29,7 +29,6 @@ type NativeNodeDetails struct {
 	FeeDistributorInitialised        bool           `json:"fee_distributor_initialised"`
 	FeeDistributorAddress            common.Address `json:"fee_distributor_address"`
 	RewardNetwork                    *big.Int       `json:"reward_network"`
-	RplStake                         *big.Int       `json:"rpl_stake"`
 	EffectiveRPLStake                *big.Int       `json:"effective_rpl_stake"`
 	MinimumRPLStake                  *big.Int       `json:"minimum_rpl_stake"`
 	MaximumRPLStake                  *big.Int       `json:"maximum_rpl_stake"`
@@ -355,7 +354,7 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	mc.AddCall(contracts.RocketNodeDistributorFactory, &details.FeeDistributorAddress, "getProxyAddress", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.RewardNetwork, "getRewardNetwork", address)
 	if !contracts.isSaturnDeployed() {
-		mc.AddCall(contracts.RocketNodeStaking, &details.RplStake, "getNodeRPLStake", address)
+		mc.AddCall(contracts.RocketNodeStaking, &details.LegacyStakedRPL, "getNodeRPLStake", address)
 		mc.AddCall(contracts.RocketNodeStaking, &details.EffectiveRPLStake, "getNodeEffectiveRPLStake", address)
 		mc.AddCall(contracts.RocketNodeStaking, &details.MinimumRPLStake, "getNodeMinimumRPLStake", address)
 		mc.AddCall(contracts.RocketNodeStaking, &details.MaximumRPLStake, "getNodeMaximumRPLStake", address)
@@ -391,8 +390,6 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 		mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolEthBonded, "getNodeMegapoolETHBonded", address)
 		// the amount of a node operator's minipool bonded ETH
 		mc.AddCall(contracts.RocketNodeStaking, &details.MinipoolETHBonded, "getNodeMinipoolETHBonded", address)
-		// the total amount of RPL staked by a node operator (both legacy and megapool staked RPL)
-		mc.AddCall(contracts.RocketNodeStaking, &details.RplStake, "getNodeStakedRPL", address)
 		// the amount of megapool staked RPL for a node operator
 		mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolStakedRPL, "getNodeMegapoolStakedRPL", address)
 		// the amount of legacy staked RPL for a node operator
