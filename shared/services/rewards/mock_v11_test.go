@@ -35,7 +35,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -855,7 +855,7 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 	history.SetWithdrawals(t.bc)
@@ -962,7 +962,7 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -1092,7 +1092,7 @@ func TestMockOptedOutAndThenBondReducedV11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -1210,7 +1210,7 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 

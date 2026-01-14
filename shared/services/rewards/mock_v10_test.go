@@ -33,7 +33,7 @@ func TestMockIntervalDefaultsTreegenv10(tt *testing.T) {
 	history.Nodes = append(history.Nodes, node)
 	state := history.GetEndNetworkState()
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -409,7 +409,7 @@ func TestInsufficientEthForBonuseses(tt *testing.T) {
 	history.NetworkDetails.SmoothingPoolBalance = big.NewInt(1000)
 	state := history.GetEndNetworkState()
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 	history.SetWithdrawals(t.bc)
@@ -515,7 +515,7 @@ func TestMockNoRPLRewards(tt *testing.T) {
 
 	state := history.GetEndNetworkState()
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -644,7 +644,7 @@ func TestMockOptedOutAndThenBondReduced(tt *testing.T) {
 
 	state := history.GetEndNetworkState()
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -761,7 +761,7 @@ func TestMockWithdrawableEpoch(tt *testing.T) {
 
 	state := history.GetEndNetworkState()
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
