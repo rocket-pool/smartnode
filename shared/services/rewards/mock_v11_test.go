@@ -501,7 +501,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got ETH
-		expectedEthAmount, _ := big.NewInt(0).SetString("858194864048338368", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("813695871097683786", 10)
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
 		if ethAmount.Cmp(expectedEthAmount) != 0 {
 			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
@@ -529,7 +529,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got ETH
-		expectedEthAmount, _ := big.NewInt(0).SetString("3824794394091977170", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("3780295401141322588", 10)
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
 		if ethAmount.Cmp(expectedEthAmount) != 0 {
 			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
@@ -558,7 +558,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got ETH
-		expectedEthAmount, _ := big.NewInt(0).SetString("3873307989258140312", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("3828808996307485730", 10)
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
 		if ethAmount.Cmp(expectedEthAmount) != 0 {
 			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
@@ -602,14 +602,14 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got voter share ETH
-		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("944580815709969788", 10)
+		expectedVoterShareEthAmount, _ := big.NewInt(0).SetString("966830312185297079", 10)
 		// Multiply by i+1 since the number of validators scales with i+1
-		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		expectedVoterShareEthAmount.Mul(expectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
 		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
-		diff := new(big.Int).Sub(voterShareEthAmount, exepectedVoterShareEthAmount)
+		diff := new(big.Int).Sub(voterShareEthAmount, expectedVoterShareEthAmount)
 		diff.Abs(diff)
 		if diff.Cmp(big.NewInt(1)) > 0 { // allow off by one wei
-			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), expectedVoterShareEthAmount.String())
 		}
 	}
 
@@ -638,12 +638,12 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got voter share ETH
-		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("944580815709969788", 10)
+		expectedVoterShareEthAmount, _ := big.NewInt(0).SetString("966830312185297079", 10)
 		// Multiply by i+1 since the number of validators scales with i+1
-		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		expectedVoterShareEthAmount.Mul(expectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
 		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
-		if voterShareEthAmount.Cmp(exepectedVoterShareEthAmount) != 0 {
-			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+		if voterShareEthAmount.Cmp(expectedVoterShareEthAmount) != 0 {
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), expectedVoterShareEthAmount.String())
 		}
 	}
 
@@ -675,14 +675,14 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got voter share ETH
-		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("944580815709969788", 10)
+		expectedVoterShareEthAmount, _ := big.NewInt(0).SetString("966830312185297080", 10)
 		// Multiply by i+1 since the number of validators scales with i+1
-		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		expectedVoterShareEthAmount.Mul(expectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
 		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
-		diff := new(big.Int).Sub(voterShareEthAmount, exepectedVoterShareEthAmount)
+		diff := new(big.Int).Sub(voterShareEthAmount, expectedVoterShareEthAmount)
 		diff.Abs(diff)
 		if diff.Cmp(big.NewInt(1)) > 0 { // allow off by one wei
-			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), expectedVoterShareEthAmount.String())
 		}
 	}
 
@@ -699,7 +699,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got ETH
-		expectedEthAmount, _ := big.NewInt(0).SetString("286064954682779456", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("271231957032561262", 10)
 		// Multiply by i+1 since the number of validators scales with i+1
 		expectedEthAmount.Mul(expectedEthAmount, big.NewInt(int64(validatorCount)))
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
@@ -714,14 +714,14 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got voter share ETH
-		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("944580815709969788", 10)
+		expectedVoterShareEthAmount, _ := big.NewInt(0).SetString("966830312185297079", 10)
 		// Multiply by i+1 since the number of validators scales with i+1
-		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		expectedVoterShareEthAmount.Mul(expectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
 		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
-		diff := new(big.Int).Sub(voterShareEthAmount, exepectedVoterShareEthAmount)
+		diff := new(big.Int).Sub(voterShareEthAmount, expectedVoterShareEthAmount)
 		diff.Abs(diff)
 		if diff.Cmp(big.NewInt(1)) > 0 { // allow off by one wei
-			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), expectedVoterShareEthAmount.String())
 		}
 	}
 
@@ -738,7 +738,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got ETH
-		expectedEthAmount, _ := big.NewInt(0).SetString("3252664484726418258", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("3237831487076200064", 10)
 		// Multiply by i+1 since the number of validators scales with i+1
 		expectedEthAmount.Mul(expectedEthAmount, big.NewInt(int64(validatorCount)))
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
@@ -753,7 +753,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got voter share ETH
-		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("944580815709969788", 10)
+		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("966830312185297079", 10)
 		// Multiply by i+1 since the number of validators scales with i+1
 		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
 		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
@@ -779,7 +779,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 
 		// Make sure it got ETH
 		minipoolEthAmount, _ := big.NewInt(0).SetString("2698353474320241690", 10)
-		expectedEthAmount, _ := big.NewInt(0).SetString("444444780127559583", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("429611782477341389", 10)
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
 		// Multiply by i+1 since the number of validators scales with i+1
 		expectedEthAmount.Mul(expectedEthAmount, big.NewInt(int64(validatorCount)))
@@ -798,26 +798,26 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got voter share ETH
-		exepectedVoterShareEthAmount, _ := big.NewInt(0).SetString("944580815709969789", 10)
+		expectedVoterShareEthAmount, _ := big.NewInt(0).SetString("966830312185297080", 10)
 		// Multiply by i+1 since the number of validators scales with i+1
-		exepectedVoterShareEthAmount.Mul(exepectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
+		expectedVoterShareEthAmount.Mul(expectedVoterShareEthAmount, big.NewInt(int64(validatorCount)))
 		voterShareEthAmount := rewardsFile.GetNodeVoterShareEth(node.Address)
-		diff = new(big.Int).Sub(voterShareEthAmount, exepectedVoterShareEthAmount)
+		diff = new(big.Int).Sub(voterShareEthAmount, expectedVoterShareEthAmount)
 		diff.Abs(diff)
 		if diff.Cmp(big.NewInt(1)) > 0 { // allow off by one wei
-			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), exepectedVoterShareEthAmount.String())
+			t.Fatalf("Voter share ETH amount does not match expected value for node %s: %s != %s", node.Notes, voterShareEthAmount.String(), expectedVoterShareEthAmount.String())
 		}
 	}
 	// Validate merkle root
 	v11MerkleRoot := v11Artifacts.RewardsFile.GetMerkleRoot()
 
 	// Expected merkle root:
-	// 0x45c2300d804f26dd032623948da6696c27ba4c02d3a52c4b44b64c87d68a3ac7
+	// 0x069f9bc9acc83fe4f809dac3c16534861a0324839293cc003324ce0dc5460cfc
 	//
 	// If this does not match, it implies either you updated the set of default mock nodes,
 	// or you introduced a regression in treegen.
 	// DO NOT update this value unless you know what you are doing.
-	expectedMerkleRoot := "0x45c2300d804f26dd032623948da6696c27ba4c02d3a52c4b44b64c87d68a3ac7"
+	expectedMerkleRoot := "0x069f9bc9acc83fe4f809dac3c16534861a0324839293cc003324ce0dc5460cfc"
 	if !strings.EqualFold(v11MerkleRoot, expectedMerkleRoot) {
 		t.Fatalf("Merkle root does not match expected value %s != %s", v11MerkleRoot, expectedMerkleRoot)
 	} else {
