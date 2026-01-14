@@ -155,6 +155,9 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	}
 	if !canDeposit.CanDeposit {
 		fmt.Println("Cannot make node deposit:")
+		if canDeposit.NodeHasDebt {
+			fmt.Println("The node has debt. You must repay the debt before creating a new validator. Use the `rocketpool megapool repay-debt` command to repay the debt.")
+		}
 		if canDeposit.InsufficientBalanceWithoutCredit {
 			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
 			fmt.Printf("There is not enough ETH in the staking pool to use your credit balance (it needs at least 1 ETH but only has %.2f ETH) and you don't have enough ETH in your wallet (%.6f ETH) to cover the deposit amount yourself. If you want to continue creating a minipool, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", eth.WeiToEth(canDeposit.DepositBalance), nodeBalance)

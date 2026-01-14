@@ -440,6 +440,7 @@ type CanNodeDepositResponse struct {
 	InvalidAmount                    bool               `json:"invalidAmount"`
 	DepositDisabled                  bool               `json:"depositDisabled"`
 	InConsensus                      bool               `json:"inConsensus"`
+	NodeHasDebt                      bool               `json:"nodeHasDebt"`
 	MinipoolAddress                  common.Address     `json:"minipoolAddress"`
 	MegapoolAddress                  common.Address     `json:"megapoolAddress"`
 	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`

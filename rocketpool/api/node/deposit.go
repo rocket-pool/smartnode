@@ -124,6 +124,37 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 		return err
 	})
 
+	if saturnDeployed {
+		// Check whether the node has debt
+		wg1.Go(func() error {
+			// Load the megapool contract
+
+			megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return err
+			}
+
+			// Check whether the megapool is deployed
+			deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return err
+			}
+			if !deployed {
+				return nil
+			}
+
+			mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+			if err != nil {
+				return err
+			}
+			hasDebt, err := mp.GetDebt(nil)
+			if err == nil {
+				response.NodeHasDebt = hasDebt.Cmp(big.NewInt(0)) > 0
+			}
+			return err
+		})
+	}
+
 	// Get deposit pool balance
 	wg1.Go(func() error {
 		var err error
@@ -145,7 +176,7 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 	response.CanUseCredit = (depositPoolBalance.Cmp(eth.EthToWei(1)) >= 0) && totalBalance.Cmp(amountWei) >= 0
 
 	// Update response
-	response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled)
+	response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled || response.NodeHasDebt)
 	if !response.CanDeposit {
 		return &response, nil
 	}
