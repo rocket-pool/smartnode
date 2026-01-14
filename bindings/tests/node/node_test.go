@@ -32,7 +32,7 @@ func TestRegisterNode(t *testing.T) {
 	}
 
 	// Get & check initial node details
-	if details, err := node.GetNodes(rp, nil); err != nil {
+	if details, err := node.GetNodes(rp, false, nil); err != nil {
 		t.Error(err)
 	} else if len(details) != 0 {
 		t.Error("Incorrect initial node count")
@@ -45,7 +45,7 @@ func TestRegisterNode(t *testing.T) {
 	}
 
 	// Get & check updated node details
-	if details, err := node.GetNodes(rp, nil); err != nil {
+	if details, err := node.GetNodes(rp, false, nil); err != nil {
 		t.Error(err)
 	} else if len(details) != 1 {
 		t.Error("Incorrect updated node count")

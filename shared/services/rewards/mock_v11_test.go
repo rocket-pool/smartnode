@@ -7,13 +7,13 @@ package rewards
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/fatih/color"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/rewards/test"
@@ -55,7 +55,9 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		t.bc.SetMinipoolPerformance(validator.Index, make([]uint64, 0))
 	}
 	for _, validator := range state.MegapoolValidatorGlobalIndex {
-		t.bc.SetMinipoolPerformance(strconv.Itoa(int(validator.ValidatorInfo.ValidatorIndex)), make([]uint64, 0))
+		pubkey := rptypes.BytesToValidatorPubkey(validator.Pubkey)
+		details := state.MegapoolValidatorDetails[pubkey]
+		t.bc.SetMinipoolPerformance(details.Index, make([]uint64, 0))
 	}
 
 	// Set some custom balances for the validators that opt in and out of smoothing pool
