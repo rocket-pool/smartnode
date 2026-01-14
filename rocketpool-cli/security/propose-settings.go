@@ -80,7 +80,7 @@ func proposeSettingNodeAreVacantMinipoolsEnabled(c *cli.Context, value bool) err
 
 func proposeSettingNodeComissionShareSecurityCouncilAdder(c *cli.Context, value *big.Int) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NodeComissionShareSecurityCouncilAdder, trueValue)
+	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, trueValue)
 }
 
 // Master general proposal function

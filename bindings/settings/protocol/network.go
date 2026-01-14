@@ -27,7 +27,6 @@ const (
 	TargetNodeFeeSettingPath                           string = "network.node.fee.target"
 	MaximumNodeFeeSettingPath                          string = "network.node.fee.maximum"
 	NodeFeeDemandRangeSettingPath                      string = "network.node.fee.demand.range"
-	NodeComissionShareSecurityCouncilAdder             string = "network.node.commission.share.security.council.adder"
 	TargetRethCollateralRateSettingPath                string = "network.reth.collateral.target"
 	NetworkPenaltyThresholdSettingPath                 string = "network.penalty.threshold"
 	NetworkPenaltyPerRateSettingPath                   string = "network.penalty.per.rate"

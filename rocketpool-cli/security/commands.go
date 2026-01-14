@@ -385,7 +385,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									{
 										Name:      "node-commission-share-council-adder",
 										Aliases:   []string{"ncsca"},
-										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NodeComissionShareSecurityCouncilAdder, percentUsage),
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, percentUsage),
 										UsageText: "rocketpool security propose setting network node-commission-share-council-adder",
 										Flags: []cli.Flag{
 											cli.BoolFlag{
