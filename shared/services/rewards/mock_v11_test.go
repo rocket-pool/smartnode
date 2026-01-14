@@ -35,7 +35,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -558,7 +558,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 		}
 
 		// Make sure it got ETH
-		expectedEthAmount, _ := big.NewInt(0).SetString("3850327865232063030", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("3873307989258140312", 10)
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
 		if ethAmount.Cmp(expectedEthAmount) != 0 {
 			t.Fatalf("ETH amount does not match expected value for node %s: %s != %s", node.Notes, ethAmount.String(), expectedEthAmount.String())
@@ -779,7 +779,7 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 
 		// Make sure it got ETH
 		minipoolEthAmount, _ := big.NewInt(0).SetString("2698353474320241690", 10)
-		expectedEthAmount, _ := big.NewInt(0).SetString("435348481033903994", 10)
+		expectedEthAmount, _ := big.NewInt(0).SetString("444444780127559583", 10)
 		ethAmount := rewardsFile.GetNodeSmoothingPoolEth(node.Address)
 		// Multiply by i+1 since the number of validators scales with i+1
 		expectedEthAmount.Mul(expectedEthAmount, big.NewInt(int64(validatorCount)))
@@ -812,12 +812,12 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	v11MerkleRoot := v11Artifacts.RewardsFile.GetMerkleRoot()
 
 	// Expected merkle root:
-	// 0xfd9fd2a985c3afdfc4d204296566b89f894e90e386ef1e2ef3d13f02df795844
+	// 0x45c2300d804f26dd032623948da6696c27ba4c02d3a52c4b44b64c87d68a3ac7
 	//
 	// If this does not match, it implies either you updated the set of default mock nodes,
 	// or you introduced a regression in treegen.
 	// DO NOT update this value unless you know what you are doing.
-	expectedMerkleRoot := "0xfd9fd2a985c3afdfc4d204296566b89f894e90e386ef1e2ef3d13f02df795844"
+	expectedMerkleRoot := "0x45c2300d804f26dd032623948da6696c27ba4c02d3a52c4b44b64c87d68a3ac7"
 	if !strings.EqualFold(v11MerkleRoot, expectedMerkleRoot) {
 		t.Fatalf("Merkle root does not match expected value %s != %s", v11MerkleRoot, expectedMerkleRoot)
 	} else {
@@ -855,7 +855,7 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 	history.SetWithdrawals(t.bc)
@@ -962,7 +962,7 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -1092,7 +1092,7 @@ func TestMockOptedOutAndThenBondReducedV11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
@@ -1210,7 +1210,7 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
 
-	t := newV8Test(tt, state.NetworkDetails.RewardIndex)
+	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
 	t.bc.SetState(state)
 
