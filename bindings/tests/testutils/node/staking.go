@@ -15,7 +15,7 @@ import (
 func StakeRPL(rp *rocketpool.RocketPool, ownerAccount, nodeAccount *accounts.Account, amount *big.Int) error {
 
 	// Get RocketNodeStaking contract address
-	rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking")
+	rocketNodeStakingAddress, err := rp.GetAddress("rocketNodeStaking", nil)
 	if err != nil {
 		return err
 	}

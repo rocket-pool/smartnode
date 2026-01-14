@@ -18,6 +18,9 @@ const colorReset string = "\033[0m"
 const colorYellow string = "\033[33m"
 const colorBlue string = "\033[36m"
 
+// DefaultPriorityFeeGwei is the default priority fee in gwei used for automatic transactions
+const DefaultPriorityFeeGwei float64 = 0.01
+
 type Gas struct {
 	maxFeeGwei         float64
 	maxPriorityFeeGwei float64
