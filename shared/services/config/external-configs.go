@@ -31,6 +31,9 @@ type ExternalLighthouseConfig struct {
 	// Toggle for enabling doppelganger detection
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
 
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
+
 	// The Docker Hub tag for Lighthouse
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -54,6 +57,9 @@ type ExternalLodestarConfig struct {
 	// Toggle for enabling doppelganger detection
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
 
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
+
 	// The Docker Hub tag for Lighthouse
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -76,6 +82,9 @@ type ExternalNimbusConfig struct {
 
 	// Toggle for enabling doppelganger detection
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
+
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
 
 	// The Docker Hub tag for Lighthouse
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
@@ -103,6 +112,9 @@ type ExternalPrysmConfig struct {
 	// The URL of the JSON-RPC endpoint for the Validator client
 	JsonRpcUrl config.Parameter `yaml:"jsonRpcUrl,omitempty"`
 
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
+
 	// The Docker Hub tag for Prysm's VC
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -122,6 +134,9 @@ type ExternalTekuConfig struct {
 
 	// The suggested block gas limit
 	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
+
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
 
 	// The Docker Hub tag for Teku
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
@@ -244,6 +259,17 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
 	}
 }
 
@@ -320,6 +346,17 @@ func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 	}
@@ -399,6 +436,17 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 	}
@@ -490,6 +538,17 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
 	}
 }
 
@@ -568,6 +627,17 @@ func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
 			CanBeBlank:         true,
 			OverwriteOnUpgrade: false,
 		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
 	}
 }
 
@@ -586,6 +656,7 @@ func (cfg *ExternalLighthouseConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
@@ -598,6 +669,7 @@ func (cfg *ExternalNimbusConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
@@ -610,6 +682,7 @@ func (cfg *ExternalLodestarConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
@@ -623,6 +696,7 @@ func (cfg *ExternalPrysmConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
@@ -635,6 +709,7 @@ func (cfg *ExternalTekuConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
