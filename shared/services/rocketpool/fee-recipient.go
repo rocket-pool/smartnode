@@ -76,8 +76,16 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 	}
 
 	// Get the keymanager API URL
-	keymanagerPort := cfg.ConsensusCommon.KeymanagerApiPort.Value.(uint16)
-	keymanagerURL := fmt.Sprintf("http://rocketpool_validator:%d", keymanagerPort)
+	keymanagerPort := cfg.KeymanagerApiPort()
+	var keymanagerHost string
+	if cfg.IsNativeMode {
+		keymanagerHost = "127.0.0.1"
+	} else {
+		// Create the hostname string (example: rocketpool_validator)
+		projectName := cfg.Smartnode.ProjectName.Value.(string)
+		keymanagerHost = fmt.Sprintf("%s_validator", projectName)
+	}
+	keymanagerURL := fmt.Sprintf("http://%s:%d", keymanagerHost, keymanagerPort)
 
 	client := &http.Client{
 		Timeout: 5 * time.Second,
