@@ -104,7 +104,7 @@ func NewConfig() *GraffitiWallWriterConfig {
 		AdditionalFlags: config.Parameter{
 			ID:                 "additionalFlags",
 			Name:               "Additional Flags",
-			Description:        "Additional custom command line flags you want to pass to the addon, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass to the addon, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]any{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{ContainerID_GraffitiWallWriter},

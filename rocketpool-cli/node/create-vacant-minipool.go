@@ -72,7 +72,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	}
 
 	// Print a notification about the pubkey
-	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into an 8 ETH deposit, and convert the remaining 24 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at https://docs.rocketpool.net/guides/atlas/solo-staker-migration.html to learn about the process and its implications.\n\n1. First, we'll create the new minipool.\n2. Next, we'll ask whether you want to import the validator's private key into your Smartnode's Validator Client, or keep running your own externally-managed validator.\n3. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n%sNOTE: If you intend to use the credit balance to create additional validators, you will need to have enough RPL staked to support them.%s\n\n", pubkey.Hex(), colorYellow, colorReset)
+	fmt.Printf("You are about to convert the solo staker %s into a Rocket Pool minipool. This will convert your 32 ETH deposit into an 8 ETH deposit, and convert the remaining 24 ETH into a deposit from the Rocket Pool staking pool. The staking pool portion will be credited to your node's account, allowing you to create more validators without depositing additional ETH onto the Beacon Chain. Your excess balance (your existing Beacon rewards) will be preserved and not shared with the pool stakers.\n\nPlease thoroughly read our documentation at https://docs.rocketpool.net/guides/atlas/solo-staker-migration.html to learn about the process and its implications.\n\n1. First, we'll create the new minipool.\n2. Next, we'll ask whether you want to import the validator's private key into your Smart Node's Validator Client, or keep running your own externally-managed validator.\n3. Finally, we'll help you migrate your validator's withdrawal credentials to the minipool address.\n\n%sNOTE: If you intend to use the credit balance to create additional validators, you will need to have enough RPL staked to support them.%s\n\n", pubkey.Hex(), colorYellow, colorReset)
 
 	// Get deposit amount
 	var amount float64
@@ -241,7 +241,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	if c.IsSet("mnemonic") {
 		mnemonic = c.String("mnemonic")
 	} else if !c.Bool("yes") {
-		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, theSmart Node will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.")
+		fmt.Println("You have the option of importing your validator's private key into the Smart Node's Validator Client instead of running your own Validator Client separately. In doing so, the Smart Node will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.")
 		fmt.Println()
 		if prompt.Confirm("Would you like to import your key and automatically migrate your withdrawal credentials?") {
 			mnemonic = wallet.PromptMnemonic()
@@ -266,7 +266,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 
 }
 
-// Import a validator's private key into theSmart Node and set the validator's withdrawal creds
+// Import a validator's private key into the Smart Node and set the validator's withdrawal creds
 func handleImport(c *cli.Context, rp *rocketpool.Client, minipoolAddress common.Address, mnemonic string) {
 	// Check if the withdrawal creds can be changed
 	success := migration.ChangeWithdrawalCreds(rp, minipoolAddress, mnemonic)

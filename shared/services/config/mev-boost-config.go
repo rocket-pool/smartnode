@@ -104,7 +104,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		Mode: config.Parameter{
 			ID:                 "mode",
 			Name:               "MEV-Boost Mode",
-			Description:        "Choose whether to let theSmart Node manage your MEV-Boost instance (Locally Managed), or if you manage your own outside of theSmart Node stack (Externally Managed).",
+			Description:        "Choose whether to let the Smart Node manage your MEV-Boost instance (Locally Managed), or if you manage your own outside of the Smart Node stack (Externally Managed).",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: config.Mode_Local},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
@@ -112,7 +112,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
 				Name:        "Locally Managed",
-				Description: "Allow theSmart Node to manage the MEV-Boost client for you",
+				Description: "Allow the Smart Node to manage the MEV-Boost client for you",
 				Value:       config.Mode_Local,
 			}, {
 				Name:        "Externally Managed",
@@ -196,7 +196,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		AdditionalFlags: config.Parameter{
 			ID:                 "additionalFlags",
 			Name:               "Additional Flags",
-			Description:        "Additional custom command line flags you want to pass to MEV-Boost, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass to MEV-Boost, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_MevBoost},

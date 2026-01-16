@@ -85,7 +85,7 @@ type RocketPoolConfig struct {
 	WatchtowerMetricsPort   config.Parameter `yaml:"watchtowerMetricsPort,omitempty"`
 	EnableBitflyNodeMetrics config.Parameter `yaml:"enableBitflyNodeMetrics,omitempty"`
 
-	// TheSmart Node configuration
+	// The Smart Node configuration
 	Smartnode *SmartnodeConfig `yaml:"smartnode,omitempty"`
 
 	// Execution client configurations
@@ -187,7 +187,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	clientModes := []config.ParameterOption{{
 		Name:        "Locally Managed",
-		Description: "Allow theSmart Node to manage the Execution and Consensus clients for you (Docker Mode)",
+		Description: "Allow the Smart Node to manage the Execution and Consensus clients for you (Docker Mode)",
 		Value:       config.Mode_Local,
 	}, {
 		Name:        "Externally Managed",
@@ -243,7 +243,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		UseFallbackClients: config.Parameter{
 			ID:                 "useFallbackClients",
 			Name:               "Use Fallback Clients",
-			Description:        "Enable this if you would like to specify a fallback Execution and Consensus Client, which will temporarily be used by theSmart Node and your Validator Client if your primary Execution / Consensus client pair ever go offline (e.g. if you switch, prune, or resync your clients).",
+			Description:        "Enable this if you would like to specify a fallback Execution and Consensus Client, which will temporarily be used by the Smart Node and your Validator Client if your primary Execution / Consensus client pair ever go offline (e.g. if you switch, prune, or resync your clients).",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Node, config.ContainerID_Watchtower},
@@ -341,7 +341,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		EnableMetrics: config.Parameter{
 			ID:                 "enableMetrics",
 			Name:               "Enable Metrics",
-			Description:        "Enable the Smartnode's performance and status metrics system. This will provide you with the node operator's Grafana dashboard.",
+			Description:        "Enable the Smart Node's performance and status metrics system. This will provide you with the node operator's Grafana dashboard.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter, config.ContainerID_Alertmanager},

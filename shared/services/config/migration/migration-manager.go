@@ -97,7 +97,7 @@ func UpdateConfig(serializedConfig map[string]map[string]string) error {
 
 }
 
-// Get theSmart Node version that the given config was built with
+// Get the Smart Node version that the given config was built with
 func getVersionFromConfig(serializedConfig map[string]map[string]string) (*version.Version, error) {
 	rootConfig, exists := serializedConfig["root"]
 	if !exists {

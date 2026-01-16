@@ -29,7 +29,7 @@ func NewNativeFallbackConfigPage(home *settingsNativeHome) *NativeFallbackConfig
 		home.homePage,
 		"settings-native-fallback",
 		"Fallback Clients",
-		"Select this to manage a separate pair of externally-managed Execution and Consensus clients that theSmart Node will use if your main Execution or Consensus clients ever go offline.",
+		"Select this to manage a separate pair of externally-managed Execution and Consensus clients that the Smart Node will use if your main Execution or Consensus clients ever go offline.",
 		configPage.layout.grid,
 	)
 

@@ -5,7 +5,7 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// The page wrapper for theSmart Node config
+// The page wrapper for the Smart Node config
 type NativeSmartnodeConfigPage struct {
 	home   *settingsNativeHome
 	page   *page
@@ -24,7 +24,7 @@ func NewNativeSmartnodeConfigPage(home *settingsNativeHome) *NativeSmartnodeConf
 		home.homePage,
 		"settings-native-smartnode",
 		"Smartnode and TX Fees",
-		"Select this to configure the settings for theSmart Node itself, including the defaults and limits on transaction fees.",
+		"Select this to configure the settings for the Smart Node itself, including the defaults and limits on transaction fees.",
 		configPage.layout.grid,
 	)
 
@@ -32,7 +32,7 @@ func NewNativeSmartnodeConfigPage(home *settingsNativeHome) *NativeSmartnodeConf
 
 }
 
-// Creates the content for theSmart Node settings page
+// Creates the content for the Smart Node settings page
 func (configPage *NativeSmartnodeConfigPage) createContent() {
 
 	// Create the layout

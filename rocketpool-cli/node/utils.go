@@ -358,7 +358,7 @@ func promptForSoloKeyPassword(rp *rocketpool.Client, cfg *config.RocketPoolConfi
 	}
 
 	if len(pubkeyPasswords) == 0 {
-		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into theSmart Node stack, you will need to put its keystore file into custom-keys first", pubkey.String())
+		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smart Node stack, you will need to put its keystore file into custom-keys first", pubkey.String())
 	}
 
 	// Store it in the file
