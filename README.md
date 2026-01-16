@@ -11,16 +11,16 @@ You can earn a higher return than you would outside the network by capturing an 
 
 This repository contains the source code for:
 
-* The Rocket Pool Smartnode client (CLI), which is used to manage a smart node either locally or remotely (over SSH)
-* The Rocket Pool Smartnode service, which provides an API for client communication and performs background node tasks
+* The Rocket Pool Smart Node client (CLI), which is used to manage a smart node either locally or remotely (over SSH)
+* The Rocket Pool Smart Node service, which provides an API for client communication and performs background node tasks
 
-The Smartnode service is designed to be run as part of a Docker stack and generally does not need to be installed manually.
+The Smart Node service is designed to be run as part of a Docker stack and generally does not need to be installed manually.
 See the [Rocket Pool dockerhub](https://hub.docker.com/u/rocketpool) page for a complete list of Docker images.
 
 
 ## Installation
 
-See the [Smartnode Installer](https://github.com/rocket-pool/smartnode-install) repository for supported platforms and installation instructions.
+See the [Smart Node Installer](https://github.com/rocket-pool/smartnode-install) repository for supported platforms and installation instructions.
 
 ## Development
 
@@ -48,7 +48,7 @@ A [Makefile](./Makefile) is included for building, testing, and linting.
 
 ## CLI Commands
 
-The following commands are available via the Smartnode client:
+The following commands are available via the Smart Node client:
 
 
 ### COMMANDS:
@@ -66,7 +66,7 @@ The following commands are available via the Smartnode client:
   - `rocketpool minipool status, s` - Get a list of the node's minipools
   - `rocketpool minipool stake, t` - Stake a minipool after the scrub check, moving it from prelaunch to staking.
   - `rocketpool minipool set-withdrawal-creds, swc` - Convert the withdrawal credentials for a migrated solo validator from the old 0x00 value to the minipool address. Required to complete the migration process.
-  - `rocketpool minipool import-key, ik` - Import the externally-derived key for a minipool that was previously a solo validator, so the Smartnode's VC manages it instead of your externally-managed VC.
+  - `rocketpool minipool import-key, ik` - Import the externally-derived key for a minipool that was previously a solo validator, so the Smart Node's VC manages it instead of your externally-managed VC.
   - `rocketpool minipool promote, p` - Promote a vacant minipool after the scrub check, completing a solo validator migration.
   - `rocketpool minipool refund, r` - Refund ETH belonging to the node from minipools
   - `rocketpool minipool begin-bond-reduction, bbr` - Begins the ETH bond reduction process for a minipool, taking it from 16 ETH down to 8 ETH (begins conversion of a 16 ETH minipool to an LEB8)
@@ -144,7 +144,7 @@ The following commands are available via the Smartnode client:
   - `rocketpool service start, s` -  Start the Rocket Pool service
   - `rocketpool service pause, p` -  Pause the Rocket Pool service
   - `rocketpool service stop, o` - Pause the Rocket Pool service (alias of 'rocketpool service pause')
-  - `rocketpool service reset-docker, rd` - Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts Smartnode.
+  - `rocketpool service reset-docker, rd` - Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts Smart Node.
   - `rocketpool service prune-docker, pd` - Cleanup unused Docker resources, including stopped containers, unused images, networks and volumes. Does not restart smartnode, so the running containers and the images and networks they reference will not be pruned.
   - `rocketpool service logs, l` - View the Rocket Pool service logs
   - `rocketpool service stats, a` - View the Rocket Pool service stats
@@ -156,7 +156,7 @@ The following commands are available via the Smartnode client:
   - `rocketpool service get-config-yaml` - Generate YAML that shows the current configuration schema, including all of the parameters and their descriptions
   - `rocketpool service resync-eth1` - Deletes the main ETH1 client's chain data and resyncs it from scratch. Only use this as a last resort!
   - `rocketpool service resync-eth2` - Deletes the ETH2 client's chain data and resyncs it from scratch. Only use this as a last resort!
-  - `rocketpool service terminate, t` - Deletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Only use this if you are cleaning up the Smartnode and want to start over!
+  - `rocketpool service terminate, t` - Deletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Only use this if you are cleaning up the Smart Node and want to start over!
 - **wallet**, w - Manage the node wallet
   - `rocketpool wallet status, s` - Get the node wallet status
   - `rocketpool wallet init, i` - Initialize the node wallet

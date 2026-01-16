@@ -104,7 +104,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 		Mode: config.Parameter{
 			ID:                 "mode",
 			Name:               "MEV-Boost Mode",
-			Description:        "Choose whether to let the Smartnode manage your MEV-Boost instance (Locally Managed), or if you manage your own outside of the Smartnode stack (Externally Managed).",
+			Description:        "Choose whether to let theSmart Node manage your MEV-Boost instance (Locally Managed), or if you manage your own outside of theSmart Node stack (Externally Managed).",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: config.Mode_Local},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
@@ -112,7 +112,7 @@ func NewMevBoostConfig(cfg *RocketPoolConfig) *MevBoostConfig {
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
 				Name:        "Locally Managed",
-				Description: "Allow the Smartnode to manage the MEV-Boost client for you",
+				Description: "Allow theSmart Node to manage the MEV-Boost client for you",
 				Value:       config.Mode_Local,
 			}, {
 				Name:        "Externally Managed",

@@ -26,7 +26,7 @@ type NativeConfig struct {
 	ValidatorStopCommand config.Parameter `yaml:"validatorStopCommand,omitempty"`
 }
 
-// Generates a new Smartnode configuration
+// Generates a newSmart Node configuration
 func NewNativeConfig(cfg *RocketPoolConfig) *NativeConfig {
 
 	return &NativeConfig{

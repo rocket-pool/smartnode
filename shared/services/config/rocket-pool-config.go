@@ -85,7 +85,7 @@ type RocketPoolConfig struct {
 	WatchtowerMetricsPort   config.Parameter `yaml:"watchtowerMetricsPort,omitempty"`
 	EnableBitflyNodeMetrics config.Parameter `yaml:"enableBitflyNodeMetrics,omitempty"`
 
-	// The Smartnode configuration
+	// TheSmart Node configuration
 	Smartnode *SmartnodeConfig `yaml:"smartnode,omitempty"`
 
 	// Execution client configurations
@@ -187,7 +187,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	clientModes := []config.ParameterOption{{
 		Name:        "Locally Managed",
-		Description: "Allow the Smartnode to manage the Execution and Consensus clients for you (Docker Mode)",
+		Description: "Allow theSmart Node to manage the Execution and Consensus clients for you (Docker Mode)",
 		Value:       config.Mode_Local,
 	}, {
 		Name:        "Externally Managed",
@@ -243,7 +243,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		UseFallbackClients: config.Parameter{
 			ID:                 "useFallbackClients",
 			Name:               "Use Fallback Clients",
-			Description:        "Enable this if you would like to specify a fallback Execution and Consensus Client, which will temporarily be used by the Smartnode and your Validator Client if your primary Execution / Consensus client pair ever go offline (e.g. if you switch, prune, or resync your clients).",
+			Description:        "Enable this if you would like to specify a fallback Execution and Consensus Client, which will temporarily be used by theSmart Node and your Validator Client if your primary Execution / Consensus client pair ever go offline (e.g. if you switch, prune, or resync your clients).",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Node, config.ContainerID_Watchtower},
@@ -762,7 +762,7 @@ func (cfg *RocketPoolConfig) Serialize() map[string]map[string]string {
 	masterMap[rootConfigName] = rootParams
 	masterMap[rootConfigName]["rpDir"] = cfg.RocketPoolDirectory
 	masterMap[rootConfigName]["isNative"] = fmt.Sprint(cfg.IsNativeMode)
-	masterMap[rootConfigName]["version"] = fmt.Sprintf("v%s", shared.RocketPoolVersion()) // Update the version with the current Smartnode version
+	masterMap[rootConfigName]["version"] = fmt.Sprintf("v%s", shared.RocketPoolVersion()) // Update the version with the currentSmart Node version
 
 	// Serialize the subconfigs
 	for name, subconfig := range cfg.GetSubconfigs() {

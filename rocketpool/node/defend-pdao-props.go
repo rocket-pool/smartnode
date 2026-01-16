@@ -43,7 +43,7 @@ type defendPdaoProps struct {
 	propMgr          *proposals.ProposalManager
 	lastScannedBlock *big.Int
 
-	// Smartnode parameters
+	//Smart Node parameters
 	intervalSize *big.Int
 }
 

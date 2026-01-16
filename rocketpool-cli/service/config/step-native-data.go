@@ -9,7 +9,7 @@ func createNativeDataStep(wiz *wizard, currentStep int, totalSteps int) *textBox
 	vrcLabel := wiz.md.Config.Native.ValidatorRestartCommand.Name
 	vscLabel := wiz.md.Config.Native.ValidatorStopCommand.Name
 
-	helperText := "Please enter the path of your `data` directory.\nThis folder holds your wallet and password files, and your validator key folder.\n\nAlso enter the path of the restart and stop scripts which will restart or stop your validator container if the Smartnode detects a configuration change or issue."
+	helperText := "Please enter the path of your `data` directory.\nThis folder holds your wallet and password files, and your validator key folder.\n\nAlso enter the path of the restart and stop scripts which will restart or stop your validator container if theSmart Node detects a configuration change or issue."
 
 	show := func(modal *textBoxModalLayout) {
 		wiz.md.setPage(modal.page)

@@ -107,7 +107,7 @@
 
 ### Added
 
-- Smartnode notification functionality for bounty BA022308 (https://github.com/rocket-pool/smartnode/pull/449)
+-Smart Node notification functionality for bounty BA022308 (https://github.com/rocket-pool/smartnode/pull/449)
 
 ### Fixed
 

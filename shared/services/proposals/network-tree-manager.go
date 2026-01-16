@@ -182,7 +182,7 @@ func (m *NetworkTreeManager) IsDataValid(data *NetworkVotingTree, filename strin
 		return false, nil
 	}
 	if snapshotVersion.LT(*m.latestCompatibleVersion) {
-		m.logMessage("%s File [%s] was made with Smartnode v%s which is not compatible (lowest compatible = v%s) so it cannot be used.", m.logPrefix, filename, data.SmartnodeVersion, latestCompatibleVersionString)
+		m.logMessage("%s File [%s] was made withSmart Node v%s which is not compatible (lowest compatible = v%s) so it cannot be used.", m.logPrefix, filename, data.SmartnodeVersion, latestCompatibleVersionString)
 		return false, nil
 	}
 

@@ -278,7 +278,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 					cli.BoolFlag{
 						Name:  "all, a",
-						Usage: "Removes all Docker images, including those currently used by the Smartnode stack. This will force a full re-download of all images when the Smartnode is restarted.",
+						Usage: "Removes all Docker images, including those currently used by theSmart Node stack. This will force a full re-download of all images when theSmart Node is restarted.",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -300,7 +300,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "all, a",
-						Usage: "Removes all Docker images, including those currently used by the Smartnode stack. This will force a full re-download of all images when the Smartnode is restarted.",
+						Usage: "Removes all Docker images, including those currently used by theSmart Node stack. This will force a full re-download of all images when theSmart Node is restarted.",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -492,7 +492,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "terminate",
 				Aliases:   []string{"t"},
-				Usage:     fmt.Sprintf("%sDeletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Also removes your entire `.rocketpool` configuration folder, including your wallet, password, and validator keys. Only use this if you are cleaning up the Smartnode and want to start over!%s", colorRed, colorReset),
+				Usage:     fmt.Sprintf("%sDeletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Also removes your entire `.rocketpool` configuration folder, including your wallet, password, and validator keys. Only use this if you are cleaning up theSmart Node and want to start over!%s", colorRed, colorReset),
 				UsageText: "rocketpool service terminate [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{

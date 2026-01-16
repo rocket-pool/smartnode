@@ -241,7 +241,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 	if c.IsSet("mnemonic") {
 		mnemonic = c.String("mnemonic")
 	} else if !c.Bool("yes") {
-		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, the Smartnode will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.")
+		fmt.Println("You have the option of importing your validator's private key into the Smartnode's Validator Client instead of running your own Validator Client separately. In doing so, theSmart Node will also automatically migrate your validator's withdrawal credentials from your BLS private key to the minipool you just created.")
 		fmt.Println()
 		if prompt.Confirm("Would you like to import your key and automatically migrate your withdrawal credentials?") {
 			mnemonic = wallet.PromptMnemonic()
@@ -266,7 +266,7 @@ func createVacantMinipool(c *cli.Context, pubkey types.ValidatorPubkey) error {
 
 }
 
-// Import a validator's private key into the Smartnode and set the validator's withdrawal creds
+// Import a validator's private key into theSmart Node and set the validator's withdrawal creds
 func handleImport(c *cli.Context, rp *rocketpool.Client, minipoolAddress common.Address, mnemonic string) {
 	// Check if the withdrawal creds can be changed
 	success := migration.ChangeWithdrawalCreds(rp, minipoolAddress, mnemonic)

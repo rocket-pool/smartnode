@@ -31,7 +31,7 @@ func NewFallbackConfigPage(home *settingsHome) *FallbackConfigPage {
 		home.homePage,
 		"settings-fallback",
 		"Fallback Clients",
-		"Select this to manage a separate pair of externally-managed Execution and Consensus clients that the Smartnode and Validator Client will use if your main Execution or Consensus clients ever go offline.",
+		"Select this to manage a separate pair of externally-managed Execution and Consensus clients that theSmart Node and Validator Client will use if your main Execution or Consensus clients ever go offline.",
 		configPage.layout.grid,
 	)
 

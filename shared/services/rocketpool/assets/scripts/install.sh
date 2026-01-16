@@ -333,7 +333,7 @@ else
                 RED='\033[0;31m'
                 echo ""
                 echo -e "${RED}**ERROR**"
-                echo "The docker-compose-plugin package is not installed. Starting with v1.7.0, the Smartnode requires this package because the legacy docker-compose script is no longer supported."
+                echo "The docker-compose-plugin package is not installed. Starting with v1.7.0, theSmart Node requires this package because the legacy docker-compose script is no longer supported."
                 echo "Since automatic dependency installation for the $PLATFORM operating system is not supported, you will need to install it manually."
                 echo "Please install docker-compose-plugin manually, then try running `rocketpool service install -d` again to finish updating."
                 echo -e "${RESET}"

@@ -52,7 +52,7 @@ type verifyPdaoProps struct {
 	validPropCache      map[uint64]bool
 	rootSubmissionCache map[uint64]map[uint64]*protocol.RootSubmitted
 
-	// Smartnode parameters
+	//Smart Node parameters
 	intervalSize *big.Int
 }
 

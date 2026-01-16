@@ -10,7 +10,7 @@ import (
 
 func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
-	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smartnode and Native settings next or just save and exit."
+	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of theSmart Node and Native settings next or just save and exit."
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)
