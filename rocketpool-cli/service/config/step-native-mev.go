@@ -2,7 +2,7 @@ package config
 
 func createNativeMevStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
-	helperText := "NOTE: Rocket Pool expects our node operators to run MEV-Boost to prevent cheating and gain supplemental rewards from block proposals. In Native mode, you are responsible for setting up MEV-Boost yourself.\nMEV-Boost is currently opt-out, [orange]but will become required for all node operators in the future. [white]Please set MEV-Boost up when you are done configuring theSmart Node unless you explicitly intend to opt-out for now.\n\n[lime]Please read our guide to learn more about MEV:\nhttps://docs.rocketpool.net/guides/node/mev.html"
+	helperText := "NOTE: Rocket Pool expects our node operators to run MEV-Boost to prevent cheating and gain supplemental rewards from block proposals. In Native mode, you are responsible for setting up MEV-Boost yourself.\nMEV-Boost is currently opt-out, [orange]but will become required for all node operators in the future. [white]Please set MEV-Boost up when you are done configuring the Smart Node unless you explicitly intend to opt-out for now.\n\n[lime]Please read our guide to learn more about MEV:\nhttps://docs.rocketpool.net/guides/node/mev.html"
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)

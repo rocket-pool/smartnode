@@ -93,7 +93,7 @@ func main() {
 		&cli.BoolFlag{
 			Name:    "use-rolling-records",
 			Aliases: []string{"rr"},
-			Usage:   "Enable the rolling record capability of theSmart Node tree generator. Use this to store and load record caches instead of recalculating attestation performance each time you run treegen.",
+			Usage:   "Enable the rolling record capability of the Smart Node tree generator. Use this to store and load record caches instead of recalculating attestation performance each time you run treegen.",
 			Value:   false,
 		},
 		&cli.BoolFlag{

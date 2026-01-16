@@ -99,7 +99,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "import-key",
 				Aliases:   []string{"ik"},
-				Usage:     "Import the externally-derived key for a minipool that was previously a solo validator, so the Smartnode's VC manages it instead of your externally-managed VC.",
+				Usage:     "Import the externally-derived key for a minipool that was previously a solo validator, so the Smart Node's VC manages it instead of your externally-managed VC.",
 				UsageText: "rocketpool minipool import-key minipool-address [options]",
 				Flags: []cli.Flag{
 					cli.StringFlag{

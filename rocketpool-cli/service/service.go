@@ -881,7 +881,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 }
 
-// StopsSmart Node stack containers, prunes docker, and restarts theSmart Node stack.
+// Stops Smart Node stack containers, prunes docker, and restarts the Smart Node stack.
 func resetDocker(c *cli.Context) error {
 
 	fmt.Println("Once cleanup is complete, Rocket Pool will restart automatically.")

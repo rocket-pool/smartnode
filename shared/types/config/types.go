@@ -12,7 +12,7 @@ type MevSelectionMode string
 type NimbusPruningMode string
 type PBSubmissionRef int
 
-// Enum to describe which container(s) a parameter impacts, so theSmart Node knows which
+// Enum to describe which container(s) a parameter impacts, so the Smart Node knows which
 // ones to restart upon a settings change
 const (
 	ContainerID_Unknown      ContainerID = ""
