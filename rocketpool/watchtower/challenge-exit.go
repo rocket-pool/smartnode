@@ -95,13 +95,10 @@ func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.Net
 	currentEpoch := currentSlot / state.BeaconConfig.SlotsPerEpoch
 
 	batchSize := 20 // TODO: Fetch from contract
-	notifyThresholdInSeconds, err := protocol.GetNotifyThreshold(t.rp, nil)
+	notifyThresholdInEpochs, err := protocol.GetNotifyThreshold(t.rp, nil)
 	if err != nil {
 		return fmt.Errorf("error getting notify threshold: %w", err)
 	}
-
-	// Check which epoch would be near the notify threshold
-	notifyThresholdInEpochs := notifyThresholdInSeconds / (state.BeaconConfig.SlotsPerEpoch * state.BeaconConfig.SecondsPerSlot)
 
 	challengeMegapoolAddressToIds := make(map[common.Address][]uint32)
 	batched := 0
