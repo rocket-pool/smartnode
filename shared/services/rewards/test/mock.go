@@ -721,7 +721,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			RegistrationTime:  big.NewInt(node.RegistrationTime.Unix()),
 			TimezoneLocation:  "UTC",
 			RewardNetwork:     big.NewInt(0),
-			RplStake:          node.RplStake,
+			LegacyStakedRPL:   rplStake,
 			EffectiveRPLStake: rplStake,
 			MinimumRPLStake:   minRplStake,
 			MaximumRPLStake:   maxRplStake,
@@ -754,7 +754,6 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 			MegapoolETHBorrowed: big.NewInt(0),
 			MegapoolEthBonded:   big.NewInt(0),
 			MegapoolStakedRPL:   big.NewInt(0),
-			LegacyStakedRPL:     node.RplStake,
 		}
 
 		if node.MegapoolEthBorrowed != nil {
@@ -872,8 +871,7 @@ func (h *MockHistory) GetEndNetworkState() *state.NetworkState {
 				vifgi := megapool.ValidatorInfoFromGlobalIndex{
 					Pubkey: pubkey.Bytes(),
 					ValidatorInfo: megapool.ValidatorInfo{
-						ValidatorIndex: intIdx,
-						Staked:         true,
+						Staked: true,
 					},
 					MegapoolAddress: node.MegapoolAddress(),
 					ValidatorId:     uint32(intIdx),

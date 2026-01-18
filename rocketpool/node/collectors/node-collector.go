@@ -269,7 +269,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
-	stakedRpl := eth.WeiToEth(nd.RplStake)
+	stakedRpl := eth.WeiToEth(nd.LegacyStakedRPL) // TODO: update all metrics to account for saturn
 	effectiveStakedRpl := eth.WeiToEth(nd.EffectiveRPLStake)
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	inflationInterval := state.NetworkDetails.RPLInflationIntervalRate
@@ -280,7 +280,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	oldRplBalance := eth.WeiToEth(nd.BalanceOldRPL)
 	newRplBalance := eth.WeiToEth(nd.BalanceRPL)
 	rethBalance := eth.WeiToEth(nd.BalanceRETH)
-	eligibleBorrowedEth := state.GetEligibleBorrowedEth(nd)
+	eligibleBorrowedEth := state.GetMinipoolEligibleBorrowedEth(nd)
 	var activeMinipoolCount float64
 	rplPriceRaw := state.NetworkDetails.RplPrice
 	rplPrice := eth.WeiToEth(rplPriceRaw)
@@ -443,8 +443,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	nodeWeight := big.NewInt(0)
 	// The node must satisfy collateral requirements and have eligible ETH from which to earn rewards.
-	if nd.RplStake.Cmp(minCollateral) != -1 && eligibleBorrowedEth.Sign() > 0 {
-		nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.RplStake)
+	if nd.LegacyStakedRPL.Cmp(minCollateral) != -1 && eligibleBorrowedEth.Sign() > 0 {
+		nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.LegacyStakedRPL)
 	}
 
 	// Calculate the rewardable RPL
@@ -510,7 +510,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	rewardableMaximumStake.Div(rewardableMaximumStake, rplPriceRaw)
 
 	// Calculate the actual "rewardable" amount
-	rewardableRplStake := big.NewInt(0).Set(nd.RplStake)
+	rewardableRplStake := big.NewInt(0).Set(nd.LegacyStakedRPL)
 	if rewardableRplStake.Cmp(rewardableMinimumStake) < 0 {
 		rewardableRplStake.SetUint64(0)
 	} else if rewardableRplStake.Cmp(rewardableMaximumStake) > 0 {

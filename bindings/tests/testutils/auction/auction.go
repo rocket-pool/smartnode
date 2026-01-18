@@ -60,10 +60,10 @@ func CreateSlashedRPL(t *testing.T, rp *rocketpool.RocketPool, ownerAccount *acc
 	}
 
 	// Mark minipool as withdrawable with zero end balance
-	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil {
+	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.GetAddress(), trustedNodeAccount.GetTransactor()); err != nil {
 		return err
 	}
-	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount2.GetTransactor()); err != nil {
+	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.GetAddress(), trustedNodeAccount2.GetTransactor()); err != nil {
 		return err
 	}
 

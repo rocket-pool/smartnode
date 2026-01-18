@@ -195,7 +195,7 @@ func TestSwapFixedSupplyRPLForRPL(t *testing.T) {
 	}
 
 	// Approve fixed-supply RPL spend
-	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

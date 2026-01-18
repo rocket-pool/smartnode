@@ -18,6 +18,9 @@ const colorReset string = "\033[0m"
 const colorYellow string = "\033[33m"
 const colorBlue string = "\033[36m"
 
+// DefaultPriorityFeeGwei is the default priority fee in gwei used for automatic transactions
+const DefaultPriorityFeeGwei float64 = 0.01
+
 type Gas struct {
 	maxFeeGwei         float64
 	maxPriorityFeeGwei float64
@@ -45,7 +48,7 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 		return Gas{}, fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
 	}
 	if isNew {
-		return Gas{}, fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return Gas{}, fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	// Get the current settings from the CLI arguments
@@ -112,7 +115,7 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 				}
 			}
 		}
-		fmt.Printf("%sUsing a max fee of %.2f gwei and a priority fee of %.2f gwei.\n%s", colorBlue, maxFeeGwei, maxPriorityFeeGwei, colorReset)
+		fmt.Printf("%sUsing a max fee of %.3f gwei and a priority fee of %.3f gwei.\n%s", colorBlue, maxFeeGwei, maxPriorityFeeGwei, colorReset)
 	}
 
 	// Use the requested gas limit if provided

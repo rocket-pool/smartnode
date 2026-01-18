@@ -143,7 +143,7 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing SubmitRewardsEnabled: %w", err)
 			}
 
-		case protocol.NodeComissionShareSecurityCouncilAdder:
+		case protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
@@ -352,7 +352,7 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 				return nil, fmt.Errorf("error proposing SubmitRewardsEnabled: %w", err)
 			}
 
-		case protocol.NodeComissionShareSecurityCouncilAdder:
+		case protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err

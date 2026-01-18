@@ -92,7 +92,7 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		EnableAlerting: config.Parameter{
 			ID:                 "enableAlerting",
 			Name:               "Enable Alerting",
-			Description:        "Enable the Smartnode's alerting system. This will provide you alerts when important events occur with your node.",
+			Description:        "Enable the Smart Node's alerting system. This will provide you alerts when important events occur with your node.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Alertmanager},

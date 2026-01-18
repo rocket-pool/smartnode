@@ -64,7 +64,7 @@ func TestSubmitMinipoolWithdrawable(t *testing.T) {
 	}
 
 	// Submit minipool withdrawable status
-	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil {
+	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.GetAddress(), trustedNodeAccount.GetTransactor()); err != nil {
 		t.Fatal(err)
 	}
 
