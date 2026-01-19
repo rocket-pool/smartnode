@@ -975,25 +975,31 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 			// Subtract voter share- it shouldn't be used to pay bonuses, or we could have a deficit later.
 			remainingBalance.Sub(remainingBalance, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare)
 		}
-		if remainingBalance.Cmp(totalConsensusBonus) < 0 {
-			r.log.Printlnf("WARNING: Remaining balance is less than total consensus bonus... Balance = %s, total consensus bonus = %s", remainingBalance.String(), totalConsensusBonus.String())
-			// Scale bonuses down to fit the remaining balance
-			bonusScalar.Div(big.NewInt(0).Mul(remainingBalance, oneEth), totalConsensusBonus)
-			for _, nsd := range r.nodeDetails {
-				nsd.BonusEth.Mul(nsd.BonusEth, remainingBalance)
-				nsd.BonusEth.Div(nsd.BonusEth, totalConsensusBonus)
-				// Calculate the reduced bonus for each minipool
-				// Because of integer division, this will be less than the actual bonus by up to 1 wei
-				for _, mpd := range nsd.Minipools {
-					if mpd.MinipoolBonus == nil {
-						continue
+		// Only process bonuses if totalConsensusBonus is greater than zero
+		if totalConsensusBonus != nil && totalConsensusBonus.Sign() > 0 {
+			if remainingBalance.Cmp(totalConsensusBonus) < 0 {
+				r.log.Printlnf("WARNING: Remaining balance is less than total consensus bonus... Balance = %s, total consensus bonus = %s", remainingBalance.String(), totalConsensusBonus.String())
+				// Scale bonuses down to fit the remaining balance
+				bonusScalar.Div(big.NewInt(0).Mul(remainingBalance, oneEth), totalConsensusBonus)
+				for _, nsd := range r.nodeDetails {
+					nsd.BonusEth.Mul(nsd.BonusEth, remainingBalance)
+					nsd.BonusEth.Div(nsd.BonusEth, totalConsensusBonus)
+					// Calculate the reduced bonus for each minipool
+					// Because of integer division, this will be less than the actual bonus by up to 1 wei
+					for _, mpd := range nsd.Minipools {
+						if mpd.MinipoolBonus == nil {
+							continue
+						}
+						mpd.MinipoolBonus.Mul(mpd.MinipoolBonus, remainingBalance)
+						mpd.MinipoolBonus.Div(mpd.MinipoolBonus, totalConsensusBonus)
 					}
-					mpd.MinipoolBonus.Mul(mpd.MinipoolBonus, remainingBalance)
-					mpd.MinipoolBonus.Div(mpd.MinipoolBonus, totalConsensusBonus)
 				}
+			} else {
+				r.log.Printlnf("%s Smoothing Pool has %s (%.3f) Pool Staker ETH before bonuses which is enough for %s (%.3f) in bonuses.", r.logPrefix, remainingBalance.String(), eth.WeiToEth(remainingBalance), totalConsensusBonus.String(), eth.WeiToEth(totalConsensusBonus))
 			}
 		} else {
-			r.log.Printlnf("%s Smoothing Pool has %s (%.3f) Pool Staker ETH before bonuses which is enough for %s (%.3f) in bonuses.", r.logPrefix, remainingBalance.String(), eth.WeiToEth(remainingBalance), totalConsensusBonus.String(), eth.WeiToEth(totalConsensusBonus))
+			// No bonuses to distribute
+			r.log.Printlnf("%s Smoothing Pool has %s (%.3f) Pool Staker ETH before bonuses. No consensus bonuses to distribute.", r.logPrefix, remainingBalance.String(), eth.WeiToEth(remainingBalance))
 		}
 	}
 

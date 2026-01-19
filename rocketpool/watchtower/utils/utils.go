@@ -80,14 +80,12 @@ func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2C
 
 	// Find the highest valid submissionTimestamp that is <= headTime
 	maxSubmissionTimestamp := int64(0)
-	n := int64(0)
-	for {
+	for n := int64(0); ; n++ {
 		ts := lastSubmissionSlotTimestamp + n*submissionIntervalInSeconds
 		if ts > headEpochTimestamp.Unix() {
 			break
 		}
 		maxSubmissionTimestamp = ts
-		n++
 	}
 
 	// Now, use this maxSubmissionTimestamp for slot calculations
