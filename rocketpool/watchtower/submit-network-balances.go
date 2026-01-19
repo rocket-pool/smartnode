@@ -3,7 +3,6 @@ package watchtower
 import (
 	"fmt"
 	"math/big"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -507,7 +506,6 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	megapoolBeaconBalanceTotal := big.NewInt(0)
 	megapoolStakingBalance := big.NewInt(0)
 	blockEpoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
-	totalAmountWithdrawnFromDissolved := big.NewInt(0)
 
 	for _, megapoolValidatorKey := range megapoolValidators {
 		// Grab the validator details from the pubkey
@@ -522,24 +520,6 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 					megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
 					megapoolStakingBalance.Sub(megapoolStakingBalance, eth.EthToWei(saturnBondInEth))
 				}
-			} else {
-				// if dissolved, check if we need to find the withdrawal
-				if megapoolValidatorInfo.ValidatorInfo.Exiting && !megapoolValidatorInfo.ValidatorInfo.Exited {
-					// In this case we need to remove the withdrawan amount from the megapool balance
-					if megapoolValidatorDetails.Status == beacon.ValidatorState_WithdrawalDone {
-						firstWithdrawableSlot := megapoolValidatorDetails.WithdrawableEpoch * 32
-						validatorIndex, err := strconv.Atoi(megapoolValidatorDetails.Index)
-						if err != nil {
-							return megapoolBalanceDetail{}, fmt.Errorf("error converting validator index %s: %w", megapoolValidatorDetails.Index, err)
-						}
-						_, _, _, withdrawal, err := services.FindWithdrawalBlockAndArrayPosition(firstWithdrawableSlot, uint64(validatorIndex), t.bc)
-						if err != nil {
-							return megapoolBalanceDetail{}, fmt.Errorf("error finding withdrawal for validator index %s: %w", megapoolValidatorDetails.Index, err)
-						}
-						amountBigInt := services.ConvertWithdrawalAmount(withdrawal.Amount)
-						totalAmountWithdrawnFromDissolved = totalAmountWithdrawnFromDissolved.Add(totalAmountWithdrawnFromDissolved, amountBigInt)
-					}
-				}
 			}
 		}
 
@@ -551,8 +531,6 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	megapoolBalanceDetails.ContractBalance = megapoolDetails.EthBalance
 	capitalTotal := megapoolDetails.UserCapital
 	balanceTotal := megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, megapoolDetails.EthBalance)
-	// Remove the total amount withdrawn from dissolved validators
-	balanceTotal = balanceTotal.Sub(balanceTotal, totalAmountWithdrawnFromDissolved)
 	rewards := balanceTotal.Sub(balanceTotal, capitalTotal)
 	// Load the megapool
 	megapoolContract, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
