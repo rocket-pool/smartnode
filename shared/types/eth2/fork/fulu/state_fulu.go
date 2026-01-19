@@ -283,14 +283,29 @@ func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not get proof for block root: %w", err)
 	}
+	
+	return proof.Hashes, nil
+}
 
-	// Finally, prove from the block header to the state root.
-	blockHeaderProof, err := state.blockHeaderToStateProof(state.LatestBlockHeader)
+func (state *BeaconState) BlockHeaderProof() ([][]byte, error) {
+	// Construct block header with state root
+	stateRoot, err := state.HashTreeRoot()
+	if err != nil {
+		return nil, fmt.Errorf("could not get state root: %w", err)
+	}
+	latestBlockHeader := state.LatestBlockHeader
+	blockHeader := *latestBlockHeader
+	blockHeader.StateRoot = stateRoot[:]
+	blockHeaderTree, err := blockHeader.GetTree()
+	if err != nil {
+		return nil, fmt.Errorf("could not get block header tree: %w", err)
+	}
+	blockHeaderProofResult, err := blockHeaderTree.Prove(int(generic.BeaconBlockHeaderStateRootGeneralizedIndex))
 	if err != nil {
 		return nil, fmt.Errorf("could not get block header proof: %w", err)
 	}
+	return blockHeaderProofResult.Hashes, nil
 
-	return append(proof.Hashes, blockHeaderProof...), nil
 }
 
 func (state *BeaconState) GetValidators() []*generic.Validator {

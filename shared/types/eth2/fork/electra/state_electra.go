@@ -297,3 +297,8 @@ func (state *BeaconState) GetValidators() []*generic.Validator {
 func (state *BeaconState) GetSlot() uint64 {
 	return state.Slot
 }
+
+// Added for compatibility 
+func (state *BeaconState) BlockHeaderProof() ([][]byte, error) {
+	return nil, nil
+}

@@ -10,6 +10,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	ssz "github.com/ferranbt/fastssz"
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
 	prdeposit "github.com/prysmaticlabs/prysm/v5/contracts/deposit"
 	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
@@ -26,6 +27,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	"github.com/urfave/cli"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
@@ -667,7 +669,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	response.WithdrawalAddress = withdrawal.Address
 
 	// Start by proving from the withdrawal to the block_root
-	proof, err := block.ProveWithdrawal(uint64(response.IndexInWithdrawalsArray))
+	withdrawalProof, err := block.ProveWithdrawal(uint64(response.IndexInWithdrawalsArray))
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
@@ -678,32 +680,48 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
 
-	state, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Fork)
+	beaconState, err := eth2.NewBeaconState(stateResponse.Data, stateResponse.Fork)
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
 
-	var summaryProof [][]byte
+	fuluState, ok := beaconState.(*fulu.BeaconState)
+	if !ok {
+		return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("expected fulu.BeaconState, got %T", beaconState)
+	}
 
-	var stateProof [][]byte
-	var withdrawalProof [][]byte
+	// Generate proofs separately
+	// 1. Withdrawal proof (withdrawal -> block_root)
+	// 2. Block roots proof (block_root -> state)
+	// 3. Block header proof (state_root in block header)
+	// Final order: [withdrawal, block_roots, block_header]
+
+	var blockRootsProof [][]byte
+	var blockHeaderProof [][]byte
+	var summaryProof [][]byte
+	var historicalSummaryProof [][]byte
+	var finalProof [][]byte
+
 	if response.WithdrawalSlot+generic.SlotsPerHistoricalRoot > recentBlock.Slot {
-		stateProof, err = state.BlockRootProof(response.WithdrawalSlot)
+		// Recent slot: use block_roots
+		// Get the block_roots proof separately
+		blockRootsProof, err = beaconState.BlockRootProof(response.WithdrawalSlot)
 		if err != nil {
 			return megapool.FinalBalanceProof{}, 0, nil, err
 		}
-		withdrawalProof = append(proof, stateProof...)
+		blockHeaderProof, err = beaconState.BlockHeaderProof()
+		if err != nil {
+			return megapool.FinalBalanceProof{}, 0, nil, err
+		}
+
+		finalProof = append(finalProof, withdrawalProof...)
+		finalProof = append(finalProof, blockRootsProof...)
+		finalProof = append(finalProof, blockHeaderProof...)
 
 	} else {
-		stateProof, err = state.HistoricalSummaryProof(response.WithdrawalSlot)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-
-		// Additionally, we need to prove from the block_root in the historical summary
-		// up to the beginning of the above proof, which is the entry in the historical summaries vector.
+		// Historical slot: use historical_summaries
+		// Get historical summary block root proof
 		blockRootsStateSlot := generic.SlotsPerHistoricalRoot + ((response.WithdrawalSlot / generic.SlotsPerHistoricalRoot) * generic.SlotsPerHistoricalRoot)
-		// get the state that has the block roots tree
 		blockRootsStateResponse, err := bc.GetBeaconStateSSZ(blockRootsStateSlot)
 		if err != nil {
 			return megapool.FinalBalanceProof{}, 0, nil, err
@@ -716,16 +734,43 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		if err != nil {
 			return megapool.FinalBalanceProof{}, 0, nil, err
 		}
-		withdrawalProof = append(proof, summaryProof...)
-		withdrawalProof = append(withdrawalProof, stateProof...)
 
+		// Get historical summary proof
+		var tree *ssz.Node
+		tree, err = fuluState.GetTree()
+		if err != nil {
+			return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("could not get state tree: %w", err)
+		}
+
+		// Navigate to the historical_summaries (matching HistoricalSummaryProof logic)
+		beaconStateChunkCeil := uint64(64)
+		gid := uint64(1)
+		gid = gid*beaconStateChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
+		arrayIndex := (response.WithdrawalSlot / generic.SlotsPerHistoricalRoot)
+		gid = gid*2*generic.BeaconStateHistoricalSummariesMaxLength + arrayIndex
+
+		proof, err := tree.Prove(int(gid))
+		if err != nil {
+			return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("could not get proof for historical summary: %w", err)
+		}
+		historicalSummaryProof = proof.Hashes
+
+		blockHeaderProof, err = fuluState.BlockHeaderProof()
+		if err != nil {
+			return megapool.FinalBalanceProof{}, 0, nil, err
+		}
+		// Concatenate in order: [withdrawal, summary_block_root, historical_summary, block_header]
+		finalProof = append(finalProof, withdrawalProof...)
+		finalProof = append(finalProof, summaryProof...)
+		finalProof = append(finalProof, historicalSummaryProof...)
+		finalProof = append(finalProof, blockHeaderProof...)
 	}
 
 	// Convert [][]byte to [][32]byte
-	proofWithFixedSize := ConvertToFixedSize(withdrawalProof)
+	proofWithFixedSize := ConvertToFixedSize(finalProof)
 	response.Witnesses = proofWithFixedSize
 
-	return response, recentBlock.Slot, state, nil
+	return response, recentBlock.Slot, beaconState, nil
 }
 
 func ConvertWithdrawalAmount(amount uint64) *big.Int {
