@@ -441,7 +441,7 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 
 // Get whether validators have sync duties to perform at given epoch
 func (c *StandardHttpClient) GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error) {
-	// Return if there are not validators to check
+	// Return if there are no validators to check
 	if len(indices) == 0 {
 		return nil, nil
 	}
@@ -859,11 +859,14 @@ func (c *StandardHttpClient) getValidatorBalances(stateId string, indices []stri
 
 // Get validators
 func (c *StandardHttpClient) getValidators(stateId string, pubkeys []string) (ValidatorsResponse, error) {
-	var query string
-	if len(pubkeys) > 0 {
-		query = fmt.Sprintf("?id=%s", strings.Join(pubkeys, ","))
+
+	// Build the post body matching the Beacon API spec:
+	// { "ids": ["pubkey1", "pubkey2", ...], "statuses": [] }
+	postBody := map[string][]string{
+		"ids":      pubkeys,
+		"statuses": []string{},
 	}
-	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId) + query)
+	responseBody, status, err := c.postRequest(fmt.Sprintf(RequestValidatorsPath, stateId), postBody)
 	if err != nil {
 		return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
 	}
