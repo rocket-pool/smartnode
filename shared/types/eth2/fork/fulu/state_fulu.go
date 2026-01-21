@@ -283,7 +283,7 @@ func (state *BeaconState) BlockRootProof(slot uint64) ([][]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not get proof for block root: %w", err)
 	}
-	
+
 	return proof.Hashes, nil
 }
 
