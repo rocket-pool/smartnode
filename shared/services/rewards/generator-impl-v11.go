@@ -903,9 +903,7 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	if r.totalAttestationScore.Cmp(common.Big0) == 0 || r.successfulAttestations == 0 {
 		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", r.totalAttestationScore.String(), r.successfulAttestations)
 		poolStakerEth := big.NewInt(0).Set(r.smoothingPoolBalance)
-		// We're distributing the smoothing pool balance plus the pending voter share
-		poolStakerEth.Add(poolStakerEth, r.networkState.NetworkDetails.PendingVoterShareEth)
-		poolStakerEth.Sub(poolStakerEth, totalVoterEth)
+		poolStakerEth.Sub(poolStakerEth, voterEthFromSmoothingPool)
 		poolStakerEth.Sub(poolStakerEth, pdaoEth)
 		return &nodeRewards{
 			poolStakerEth: poolStakerEth,

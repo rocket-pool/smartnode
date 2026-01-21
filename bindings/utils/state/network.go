@@ -82,7 +82,7 @@ type NetworkDetails struct {
 	// Saturn
 	MegapoolRevenueSplitSettings             MegapoolRevenueSplitSettings
 	MegapoolRevenueSplitTimeWeightedAverages MegapoolRevenueSplitTimeWeightedAverages
-	PendingVoterShareEth           *big.Int `json:"pending_voter_share_eth"`
+	PendingVoterShareEth                     *big.Int `json:"pending_voter_share_eth"`
 }
 
 // Create a snapshot of all of the network's details
