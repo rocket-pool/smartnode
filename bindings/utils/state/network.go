@@ -82,7 +82,7 @@ type NetworkDetails struct {
 	// Saturn
 	MegapoolRevenueSplitSettings             MegapoolRevenueSplitSettings
 	MegapoolRevenueSplitTimeWeightedAverages MegapoolRevenueSplitTimeWeightedAverages
-	SmoothingPoolPendingVoterShare           *big.Int `json:"smoothing_pool_earmarked_voter_share_eth"`
+	PendingVoterShareEth           *big.Int `json:"pending_voter_share_eth"`
 }
 
 // Create a snapshot of all of the network's details
@@ -170,7 +170,7 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.NodeShare, "getCurrentNodeShare")
 		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.VoterShare, "getCurrentVoterShare")
 		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare, "getCurrentProtocolDAOShare")
-		contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.SmoothingPoolPendingVoterShare, "getPendingVoterShare")
+		contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.PendingVoterShareEth, "getPendingVoterShare")
 	}
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {

@@ -850,7 +850,7 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	// Ovewrite the SP balance to a value under the bonus commission
 	history.NetworkDetails.SmoothingPoolBalance = big.NewInt(1100)
 	// Set the SP voter share to 0
-	history.NetworkDetails.SmoothingPoolPendingVoterShare = big.NewInt(100)
+	history.NetworkDetails.PendingVoterShareEth = big.NewInt(100)
 	// Set the pdao share to 0
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
