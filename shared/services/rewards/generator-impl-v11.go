@@ -491,7 +491,7 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 	// Get the Smoothing Pool contract's balance
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
 	r.log.Printlnf("%s Smoothing Pool Balance:\t%s\t(%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
-	r.log.Printlnf("%s Voter Share from Megapools:\t%s\t(%.3f)", r.logPrefix, r.networkState.NetworkDetails.PendingVoterShareEth.String(), eth.WeiToEth(r.networkState.NetworkDetails.PendingVoterShareEth))
+	r.log.Printlnf("%s Voter Share from Megapools not in the smoothing pool:\t%s\t(%.3f)", r.logPrefix, r.networkState.NetworkDetails.PendingVoterShareEth.String(), eth.WeiToEth(r.networkState.NetworkDetails.PendingVoterShareEth))
 
 	if r.rewardsFile.Index == 0 {
 		// This is the first interval, Smoothing Pool rewards are ignored on the first interval since it doesn't have a discrete start time
@@ -892,7 +892,7 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 			continue
 		}
 
-		// The node's voter share is nodeRpl*voterEth/totalMegapoolVoteEligibleRpl
+		// The node's voter share is nodeRpl*totalVoterEth/totalMegapoolVoteEligibleRpl
 		nodeInfo.VoterShareEth.Set(nodeInfo.MegapoolVoteEligibleRpl)
 		nodeInfo.VoterShareEth.Mul(nodeInfo.VoterShareEth, totalVoterEth)
 		nodeInfo.VoterShareEth.Div(nodeInfo.VoterShareEth, totalMegapoolVoteEligibleRpl)
