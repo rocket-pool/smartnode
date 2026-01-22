@@ -160,7 +160,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 	// Log
 	t.log.Println("Checking for network balance checkpoint...")
-	slotNumber, nextSubmissionTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
+	slotNumber, targetSlotTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
 	if err != nil {
 		return err
 	}
@@ -199,7 +199,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		t.log.Printlnf("Calculating network balances for block %d...", targetBlockNumber)
 
 		// Get network balances at block
-		balances, err := t.getNetworkBalances(targetBlockHeader, big.NewInt(int64(targetBlockNumber)), slotNumber, time.Unix(int64(targetBlockHeader.Time), 0))
+		balances, err := t.getNetworkBalances(targetBlockHeader, big.NewInt(int64(targetBlockNumber)), slotNumber, targetSlotTime)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
 			return
@@ -234,7 +234,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		}
 
 		// Check if we have reported these specific values before
-		balances.SlotTimestamp = uint64(nextSubmissionTime.Unix())
+		balances.SlotTimestamp = uint64(targetSlotTime.Unix())
 		hasSubmittedSpecific, err := t.hasSubmittedSpecificBlockBalances(nodeAccount.Address, targetBlockNumber, balances)
 		if err != nil {
 			t.handleError(fmt.Errorf("%s %w", logPrefix, err))

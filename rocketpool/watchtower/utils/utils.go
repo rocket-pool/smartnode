@@ -14,10 +14,10 @@ import (
 )
 
 const (
-	MinWatchtowerMaxFee        float64 = 50
-	MinWatchtowerPriorityFee   float64 = 3
-	BalanceSubmissionForcedGas uint64  = 64000
-	RewardsSubmissionForcedGas uint64  = 64000
+	MinWatchtowerMaxFee        float64 = 20
+	MinWatchtowerPriorityFee   float64 = 0.01
+	BalanceSubmissionForcedGas uint64  = 300000
+	RewardsSubmissionForcedGas uint64  = 300000
 )
 
 // Get the max fee for watchtower transactions
@@ -72,17 +72,17 @@ func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2C
 	if err != nil {
 		return 0, time.Time{}, nil, err
 	}
-	headEpoch := beaconHead.Epoch
+	finalizedEpoch := beaconHead.FinalizedEpoch
 
 	// Calculate the timestamp at the start of the head epoch
-	headEpochStartSlot := headEpoch * eth2Config.SlotsPerEpoch
-	headEpochTimestamp := genesisTime.Add(time.Duration(headEpochStartSlot*eth2Config.SecondsPerSlot) * time.Second)
+	finalizedEpochStartSlot := finalizedEpoch * eth2Config.SlotsPerEpoch
+	finalizedEpochTimestamp := genesisTime.Add(time.Duration(finalizedEpochStartSlot*eth2Config.SecondsPerSlot) * time.Second)
 
 	// Find the highest valid submissionTimestamp that is <= headTime
 	maxSubmissionTimestamp := int64(0)
 	for n := int64(0); ; n++ {
 		ts := lastSubmissionSlotTimestamp + n*submissionIntervalInSeconds
-		if ts > headEpochTimestamp.Unix() {
+		if ts > finalizedEpochTimestamp.Unix() {
 			break
 		}
 		maxSubmissionTimestamp = ts
@@ -100,6 +100,9 @@ func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2C
 	}
 
 	targetBlockNumber := targetBlock.ExecutionBlockNumber
+	if targetBlockNumber <= lastSubmissionBlock {
+		return 0, time.Time{}, nil, fmt.Errorf("target block number is the same as the last submission block")
+	}
 
 	targetBlockHeader, err := ec.HeaderByNumber(context.Background(), big.NewInt(int64(targetBlockNumber)))
 	if err != nil {
@@ -108,12 +111,7 @@ func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2C
 
 	targetSlot := targetBlock.Slot
 
-	requiredEpoch := targetSlot / eth2Config.SlotsPerEpoch
+	targetSlotTime := eth2Config.GetSlotTime(targetSlot)
 
-	finalizedEpoch := beaconHead.FinalizedEpoch
-	if requiredEpoch > finalizedEpoch {
-		return 0, time.Time{}, nil, fmt.Errorf("balances must be reported for EL block %d, waiting until Epoch %d is finalized (currently %d)", targetBlockNumber, requiredEpoch, finalizedEpoch)
-	}
-
-	return targetSlot, nextSubmissionTime, targetBlockHeader, nil
+	return targetSlot, targetSlotTime, targetBlockHeader, nil
 }
