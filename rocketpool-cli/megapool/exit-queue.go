@@ -43,7 +43,7 @@ func exitQueue(c *cli.Context) error {
 		}
 	} else {
 		// Get Megapool status
-		status, err := rp.MegapoolStatus()
+		status, err := rp.MegapoolStatus(false)
 		if err != nil {
 			return err
 		}

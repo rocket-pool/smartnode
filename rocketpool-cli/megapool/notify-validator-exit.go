@@ -40,7 +40,7 @@ func notifyValidatorExit(c *cli.Context) error {
 		validatorId = c.Uint64("validator-id")
 	} else {
 		// Get Megapool status
-		status, err := rp.MegapoolStatus()
+		status, err := rp.MegapoolStatus(true)
 		if err != nil {
 			return err
 		}

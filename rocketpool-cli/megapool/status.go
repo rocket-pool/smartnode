@@ -51,7 +51,7 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Get Megapool status
-	status, err := rp.MegapoolStatus()
+	status, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func getValidatorStatus(c *cli.Context) error {
 	}
 
 	// Get Megapool status
-	status, err := rp.MegapoolStatus()
+	status, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return err
 	}

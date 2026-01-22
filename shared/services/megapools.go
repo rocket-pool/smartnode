@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	ssz "github.com/ferranbt/fastssz"
@@ -235,7 +236,7 @@ func CalculateMegapoolWithdrawalCredentials(megapoolAddress common.Address) comm
 }
 
 // Get all node megapool details
-func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAccount common.Address) (api.MegapoolDetails, error) {
+func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAccount common.Address, opts *bind.CallOpts) (api.MegapoolDetails, error) {
 
 	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount, nil)
 	if err != nil {
@@ -247,7 +248,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	details := api.MegapoolDetails{Address: megapoolAddress}
 
 	// Return if megapool isn't deployed
-	details.Deployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
+	details.Deployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount, opts)
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
@@ -261,17 +262,17 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return api.MegapoolDetails{}, err
 	}
 
-	details.EffectiveDelegateAddress, err = mega.GetEffectiveDelegate(nil)
+	details.EffectiveDelegateAddress, err = mega.GetEffectiveDelegate(opts)
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
-	details.DelegateAddress, err = mega.GetDelegate(nil)
+	details.DelegateAddress, err = mega.GetDelegate(opts)
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
 
 	// Return if delegate is expired
-	details.DelegateExpired, err = mega.GetDelegateExpired(rp, nil)
+	details.DelegateExpired, err = mega.GetDelegateExpired(rp, opts)
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
@@ -279,7 +280,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return details, nil
 	}
 
-	details.LastDistributionTime, err = mega.GetLastDistributionTime(nil)
+	details.LastDistributionTime, err = mega.GetLastDistributionTime(opts)
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
@@ -287,83 +288,83 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	if details.LastDistributionTime != 0 {
 		wg.Go(func() error {
 			var err error
-			details.RevenueSplit, err = network.CalculateSplit(rp, details.LastDistributionTime, nil)
+			details.RevenueSplit, err = network.CalculateSplit(rp, details.LastDistributionTime, opts)
 			return err
 		})
 	}
 	wg.Go(func() error {
 		var err error
-		details.NodeShare, err = network.GetCurrentNodeShare(rp, nil)
+		details.NodeShare, err = network.GetCurrentNodeShare(rp, opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.NodeDebt, err = mega.GetDebt(nil)
+		details.NodeDebt, err = mega.GetDebt(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.RefundValue, err = mega.GetRefundValue(nil)
+		details.RefundValue, err = mega.GetRefundValue(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.ValidatorCount, err = mega.GetValidatorCount(nil)
+		details.ValidatorCount, err = mega.GetValidatorCount(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.ActiveValidatorCount, err = mega.GetActiveValidatorCount(nil)
+		details.ActiveValidatorCount, err = mega.GetActiveValidatorCount(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.ExitingValidatorCount, err = mega.GetExitingValidatorCount(nil)
+		details.ExitingValidatorCount, err = mega.GetExitingValidatorCount(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.LockedValidatorCount, err = mega.GetLockedValidatorCount(nil)
+		details.LockedValidatorCount, err = mega.GetLockedValidatorCount(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.PendingRewards, err = mega.GetPendingRewards(nil)
+		details.PendingRewards, err = mega.GetPendingRewards(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.UseLatestDelegate, err = mega.GetUseLatestDelegate(nil)
+		details.UseLatestDelegate, err = mega.GetUseLatestDelegate(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.DelegateExpiry, err = megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, nil)
+		details.DelegateExpiry, err = megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.NodeExpressTicketCount, err = node.GetExpressTicketCount(rp, nodeAccount, nil)
+		details.NodeExpressTicketCount, err = node.GetExpressTicketCount(rp, nodeAccount, opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.AssignedValue, err = mega.GetAssignedValue(nil)
+		details.AssignedValue, err = mega.GetAssignedValue(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.NodeBond, err = mega.GetNodeBond(nil)
+		details.NodeBond, err = mega.GetNodeBond(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.UserCapital, err = mega.GetUserCapital(nil)
+		details.UserCapital, err = mega.GetUserCapital(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.Balances, err = tokens.GetBalances(rp, megapoolAddress, nil)
+		details.Balances, err = tokens.GetBalances(rp, megapoolAddress, opts)
 		if err != nil {
 			return fmt.Errorf("error getting megapool %s balances: %w", megapoolAddress.Hex(), err)
 		}
@@ -371,12 +372,12 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	})
 	wg.Go(func() error {
 		var err error
-		details.PendingRewardSplit, err = mega.CalculatePendingRewards(nil)
+		details.PendingRewardSplit, err = mega.CalculatePendingRewards(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.ReducedBond, err = protocol.GetReducedBondRaw(rp, nil)
+		details.ReducedBond, err = protocol.GetReducedBondRaw(rp, opts)
 		return err
 	})
 
@@ -385,12 +386,12 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 		return details, err
 	}
 
-	details.BondRequirement, err = node.GetBondRequirement(rp, big.NewInt(int64(details.ActiveValidatorCount)), nil)
+	details.BondRequirement, err = node.GetBondRequirement(rp, big.NewInt(int64(details.ActiveValidatorCount)), opts)
 	if err != nil {
 		return details, err
 	}
 
-	details.Validators, err = GetMegapoolValidatorDetails(rp, bc, mega, megapoolAddress, uint32(details.ValidatorCount))
+	details.Validators, err = GetMegapoolValidatorDetails(rp, bc, mega, megapoolAddress, uint32(details.ValidatorCount), opts)
 	if err != nil {
 		return details, err
 	}
@@ -476,7 +477,7 @@ func CalculateRewards(rp *rocketpool.RocketPool, amount *big.Int, nodeAccount co
 
 }
 
-func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, megapoolAddress common.Address, validatorCount uint32) ([]api.MegapoolValidatorDetails, error) {
+func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp megapool.Megapool, megapoolAddress common.Address, validatorCount uint32, opts *bind.CallOpts) ([]api.MegapoolValidatorDetails, error) {
 
 	details := []api.MegapoolValidatorDetails{}
 
@@ -493,11 +494,14 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 	if err == nil {
 		currentEpoch = head.Epoch
 	}
+	if opts != nil {
+		currentEpoch = head.FinalizedEpoch
+	}
 
 	for i := uint32(0); i < validatorCount; i++ {
 		i := i
 		wg.Go(func() error {
-			validatorDetails, err := mp.GetValidatorInfoAndPubkey(i, nil)
+			validatorDetails, err := mp.GetValidatorInfoAndPubkey(i, opts)
 			if err != nil {
 				return fmt.Errorf("Error retrieving validator %d details: %v\n", i, err)
 			}

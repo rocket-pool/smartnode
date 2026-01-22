@@ -10,8 +10,8 @@ import (
 )
 
 // Get megapool status
-func (c *Client) MegapoolStatus() (api.MegapoolStatusResponse, error) {
-	responseBytes, err := c.callAPI("megapool status")
+func (c *Client) MegapoolStatus(finalizedState bool) (api.MegapoolStatusResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool status %t", finalizedState))
 	if err != nil {
 		return api.MegapoolStatusResponse{}, fmt.Errorf("Could not get megapool status: %w", err)
 	}

@@ -88,16 +88,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get the node's megapool status",
-				UsageText: "rocketpool api megapool status",
+				UsageText: "rocketpool api megapool status finalized-state",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get finalized state
+					finalizedState, err := cliutils.ValidateBool("finalized-state", c.Args().Get(0))
+					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(getStatus(c))
+					api.PrintResponse(getStatus(c, finalizedState))
 					return nil
 
 				},

@@ -30,7 +30,7 @@ func delegateUpgradeMegapool(c *cli.Context) error {
 	}
 
 	// Get megapool status
-	status, err := rp.MegapoolStatus()
+	status, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 	}
 
 	// Get megapool status
-	status, err := rp.MegapoolStatus()
+	status, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return err
 	}

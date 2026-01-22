@@ -33,7 +33,7 @@ func repayDebt(c *cli.Context) error {
 		return nil
 	}
 
-	megapoolDetails, err := rp.MegapoolStatus()
+	megapoolDetails, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return err
 	}
