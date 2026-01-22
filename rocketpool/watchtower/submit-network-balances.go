@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -543,7 +544,10 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 		RethRewards:  big.NewInt(0),
 	}
 	if rewards.Cmp(big.NewInt(0)) > 0 {
-		rewardsSplit, err = megapoolContract.CalculateRewards(rewards, nil)
+		opts := &bind.CallOpts{
+			BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
+		}
+		rewardsSplit, err = megapoolContract.CalculateRewards(rewards, opts)
 
 		if err != nil {
 			return megapoolBalanceDetail{}, fmt.Errorf("error calculating rewards split: %w", err)
