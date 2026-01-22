@@ -301,7 +301,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 				if err != nil {
 					return err
 				}
-				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress)
+					megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress, opts)
 				if err != nil {
 					return err
 				}
@@ -543,7 +543,7 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 				if err != nil {
 					return err
 				}
-				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress)
+				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress, opts)
 				if err != nil {
 					return err
 				}
