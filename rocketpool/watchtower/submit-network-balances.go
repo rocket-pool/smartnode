@@ -538,10 +538,9 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	megapoolBalanceDetails.StakingBalance = megapoolStakingBalance
 	megapoolBalanceDetails.UserCapital = megapoolDetails.UserCapital
 	megapoolBalanceDetails.ContractBalance = megapoolDetails.EthBalance
-	capitalTotal := megapoolDetails.UserCapital
-	balanceTotal := megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, megapoolDetails.EthBalance)
-	rewards := balanceTotal.Sub(balanceTotal, capitalTotal)
-	rewards = rewards.Sub(rewards, megapoolDetails.RefundValue)
+	// Rewards := total beacon balance + pending rewards on the megapool contract (already subtract the refund)
+	rewards := big.NewInt(0).Add(megapoolBeaconBalanceTotal, megapoolDetails.PendingRewards)
+	rewards = rewards.Sub(rewards, megapoolDetails.NodeBond)
 	// Load the megapool
 	megapoolContract, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
 	if err != nil {

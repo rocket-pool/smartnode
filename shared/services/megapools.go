@@ -304,6 +304,11 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	})
 	wg.Go(func() error {
 		var err error
+		details.PendingRewards, err = mega.GetPendingRewards(opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
 		details.RefundValue, err = mega.GetRefundValue(opts)
 		return err
 	})
