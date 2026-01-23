@@ -232,6 +232,10 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		if balances.OriginalTotalBalanceWei.Cmp(balances.ClampedTotalBalanceWei) != 0 {
 			t.log.Printlnf("Total ETH submission needs to be limited due to max Reth ratio delta: %.6f -> %.6f", eth.WeiToEth(balances.OriginalTotalBalanceWei), eth.WeiToEth(balances.ClampedTotalBalanceWei))
 		}
+		// The staked balance cannot be greater than the total ETH balance
+		if balances.ClampedTotalBalanceWei.Cmp(balances.TotalStaking) < 0 {
+			balances.TotalStaking = balances.ClampedTotalBalanceWei
+		}
 
 		// Check if we have reported these specific values before
 		balances.SlotTimestamp = uint64(targetSlotTime.Unix())
@@ -521,6 +525,10 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 					megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
 					megapoolStakingBalance.Sub(megapoolStakingBalance, eth.EthToWei(saturnBondInEth))
 				}
+				// If the validator was staked but the second deposit not processed yet, add the deposit value to the beacon balance
+				if eth.GweiToWei(float64(megapoolValidatorDetails.Balance)).Cmp(eth.EthToWei(1)) == 0 && megapoolValidatorInfo.ValidatorInfo.Staked {
+					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.DepositValue)))
+				}
 			}
 		}
 
@@ -533,6 +541,7 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	capitalTotal := megapoolDetails.UserCapital
 	balanceTotal := megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, megapoolDetails.EthBalance)
 	rewards := balanceTotal.Sub(balanceTotal, capitalTotal)
+	rewards = rewards.Sub(rewards, megapoolDetails.RefundValue)
 	// Load the megapool
 	megapoolContract, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
 	if err != nil {
