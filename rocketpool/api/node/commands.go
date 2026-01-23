@@ -1,6 +1,8 @@
 package node
 
 import (
+	"fmt"
+
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -936,13 +938,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 			{
 				Name:      "can-deposit",
-				Usage:     "Check whether the node can make a deposit",
-				UsageText: "rocketpool api node can-deposit amount min-fee salt use-express-ticket",
+				Usage:     "Check whether the node can make a deposit. Optionally specify count to check multiple deposits.",
+				UsageText: "rocketpool api node can-deposit amount min-fee salt use-express-ticket [count]",
 				Action: func(c *cli.Context) error {
 
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 4); err != nil {
-						return err
+					// Validate args - count is optional
+					argCount := c.NArg()
+					if argCount < 4 || argCount > 5 {
+						return fmt.Errorf("Invalid argument count. Expected 4 or 5 arguments, got %d", argCount)
 					}
 					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
 					if err != nil {
@@ -964,8 +967,24 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
+					// Check if count is provided
+					var count uint64 = 1
+					if argCount == 5 {
+						count, err = cliutils.ValidateUint("count", c.Args().Get(4))
+						if err != nil {
+							return err
+						}
+						if count == 0 {
+							return fmt.Errorf("Count must be greater than 0")
+						}
+					}
+
 					// Run
-					api.PrintResponse(canNodeDeposit(c, amountWei, minNodeFee, salt, useExpressTicket))
+					if count == 1 {
+						api.PrintResponse(canNodeDeposit(c, amountWei, minNodeFee, salt, useExpressTicket))
+					} else {
+						api.PrintResponse(canNodeDeposits(c, count, amountWei, minNodeFee, salt, useExpressTicket))
+					}
 					return nil
 
 				},
@@ -973,13 +992,14 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			{
 				Name:      "deposit",
 				Aliases:   []string{"d"},
-				Usage:     "Make a deposit and create a minipool, or just make and sign the transaction (when submit = false)",
-				UsageText: "rocketpool api node deposit amount min-node-fee salt use-credit-balance use-express-ticket submit",
+				Usage:     "Make a deposit and create a minipool, or just make and sign the transaction (when submit = false). Optionally specify count to make multiple deposits.",
+				UsageText: "rocketpool api node deposit amount min-node-fee salt use-credit-balance use-express-ticket submit [count]",
 				Action: func(c *cli.Context) error {
 
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 6); err != nil {
-						return err
+					// Validate args - count is optional
+					argCount := c.NArg()
+					if argCount < 6 || argCount > 7 {
+						return fmt.Errorf("Invalid argument count. Expected 6 or 7 arguments, got %d", argCount)
 					}
 					amountWei, err := cliutils.ValidatePositiveWeiAmount("deposit amount", c.Args().Get(0))
 					if err != nil {
@@ -1012,16 +1032,32 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						return err
 					}
 
-					if err != nil {
-						return err
+					// Check if count is provided
+					var count uint64 = 1
+					if argCount == 7 {
+						count, err = cliutils.ValidateUint("count", c.Args().Get(6))
+						if err != nil {
+							return err
+						}
+						if count == 0 {
+							return fmt.Errorf("Count must be greater than 0")
+						}
 					}
 
 					// Run
-					response, err := nodeDeposit(c, amountWei, minNodeFee, salt, useCreditBalance, useExpressTicket, submit)
-					if submit {
-						api.PrintResponse(response, err)
-					} // else nodeDeposit already printed the encoded transaction
-					return nil
+					if count == 1 {
+						response, err := nodeDeposit(c, amountWei, minNodeFee, salt, useCreditBalance, useExpressTicket, submit)
+						if submit {
+							api.PrintResponse(response, err)
+						} // else nodeDeposit already printed the encoded transaction
+						return nil
+					} else {
+						response, err := nodeDeposits(c, count, amountWei, minNodeFee, salt, useCreditBalance, useExpressTicket, submit)
+						if submit {
+							api.PrintResponse(response, err)
+						} // else nodeDeposits already printed the encoded transaction
+						return nil
+					}
 
 				},
 			},

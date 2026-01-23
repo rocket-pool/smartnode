@@ -280,6 +280,224 @@ func canNodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt
 
 }
 
+func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useExpressTicket bool) (*api.CanNodeDepositResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := services.GetEthClient(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get eth2 config
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.CanNodeDepositResponse{
+		ValidatorPubkeys: make([]rptypes.ValidatorPubkey, count),
+	}
+
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if !saturnDeployed {
+		return nil, fmt.Errorf("Multiple deposits are only supported after Saturn deployment")
+	}
+
+	// Data
+	var wg1 errgroup.Group
+	var depositPoolBalance *big.Int
+	var expressTicketCount uint64
+
+	// Check credit balance
+	wg1.Go(func() error {
+		ethBalanceWei, err := node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.CreditBalance = ethBalanceWei
+		}
+		return err
+	})
+
+	// Check node balance
+	wg1.Go(func() error {
+		ethBalanceWei, err := ec.BalanceAt(context.Background(), nodeAccount.Address, nil)
+		if err == nil {
+			response.NodeBalance = ethBalanceWei
+		}
+		return err
+	})
+
+	// Check node deposits are enabled
+	wg1.Go(func() error {
+		depositEnabled, err := protocol.GetNodeDepositEnabled(rp, nil)
+		if err == nil {
+			response.DepositDisabled = !depositEnabled
+		}
+		return err
+	})
+
+	// Get deposit pool balance
+	wg1.Go(func() error {
+		var err error
+		depositPoolBalance, err = deposit.GetBalance(rp, nil)
+		return err
+	})
+
+	// Get the express ticket count
+	wg1.Go(func() error {
+		var err error
+		expressTicketCount, err = node.GetExpressTicketCount(rp, nodeAccount.Address, nil)
+		return err
+	})
+
+	// Wait for data
+	if err := wg1.Wait(); err != nil {
+		return nil, err
+	}
+
+	// Calculate total amount needed for all deposits
+	totalAmountWei := big.NewInt(0).Mul(amountWei, big.NewInt(int64(count)))
+
+	// Check for insufficient balance
+	totalBalance := big.NewInt(0).Add(response.NodeBalance, response.CreditBalance)
+	response.InsufficientBalance = (totalAmountWei.Cmp(totalBalance) > 0)
+
+	// Check if the credit balance can be used
+	response.DepositBalance = depositPoolBalance
+	response.CanUseCredit = (depositPoolBalance.Cmp(eth.EthToWei(1)) >= 0) && totalBalance.Cmp(totalAmountWei) >= 0
+
+	// Update response
+	response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled)
+	if !response.CanDeposit {
+		return &response, nil
+	}
+
+	if response.CanDeposit && !response.CanUseCredit && response.NodeBalance.Cmp(totalAmountWei) < 0 {
+		// Can't use credit and there's not enough ETH in the node wallet to deposit so error out
+		response.InsufficientBalanceWithoutCredit = true
+		response.CanDeposit = false
+	}
+
+	// Break before the gas estimator if depositing won't work
+	if !response.CanDeposit {
+		return &response, nil
+	}
+
+	// Get gas estimate
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get how much credit to use
+	if response.CanUseCredit {
+		remainingAmount := big.NewInt(0).Sub(amountWei, response.CreditBalance)
+		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
+			// Send the remaining amount if the credit isn't enough to cover the whole deposit
+			opts.Value = remainingAmount
+		}
+	} else {
+		opts.Value = amountWei
+	}
+
+	// Get the megapool address
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the withdrawal credentials
+	withdrawalCredentials := services.CalculateMegapoolWithdrawalCredentials(megapoolAddress)
+
+	// Create deposit data for all deposits (for gas estimation)
+	// We need to create unique validator keys for each deposit to get accurate gas estimates
+	depositAmount := uint64(1e9) // 1 ETH in gwei
+	depositsSlice := node.Deposits{}
+
+	keyCount, err := w.GetValidatorKeyCount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the next validator key for gas estimation
+	validatorKeys, err := w.GetValidatorKeys(keyCount, uint(count))
+	if err != nil {
+		return nil, err
+	}
+
+	canUseExpressTicket := expressTicketCount > 0 && useExpressTicket
+	for i := uint64(0); i < count; i++ {
+
+		// If we can use an express ticket count the number of tickets used
+		if canUseExpressTicket && expressTicketCount > 0 {
+			expressTicketCount--
+		} else {
+			canUseExpressTicket = false
+		}
+		// Get validator deposit data and associated parameters
+		depositData, depositDataRoot, err := validator.GetDepositData(validatorKeys[i].PrivateKey, withdrawalCredentials, eth2Config, depositAmount)
+		if err != nil {
+			return nil, err
+		}
+		pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
+		signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+
+		// Add to deposits array
+		depositsSlice = append(depositsSlice, node.NodeDeposit{
+			BondAmount:         amountWei,
+			UseExpressTicket:   canUseExpressTicket,
+			ValidatorPubkey:    pubKey[:],
+			ValidatorSignature: signature[:],
+			DepositDataRoot:    depositDataRoot,
+		})
+
+		// Store the pubkey in the response
+		response.ValidatorPubkeys[i] = pubKey
+	}
+
+	opts.Value = amountWei
+
+	// Run the deposit multi gas estimator
+	// Ensure count is valid
+	if count == 0 {
+		return nil, fmt.Errorf("count must be greater than 0")
+	}
+
+	gasInfo, err := node.EstimateDepositMultiGas(rp, depositsSlice, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error estimating gas for depositMulti: %w", err)
+	}
+	response.GasInfo = gasInfo
+
+	return &response, nil
+
+}
+
 func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, useExpressTicket bool, submit bool) (*api.NodeDepositResponse, error) {
 
 	// Get services
@@ -505,6 +723,198 @@ func nodeDeposit(c *cli.Context, amountWei *big.Int, minNodeFee float64, salt *b
 	response.TxHash = tx.Hash()
 	response.MinipoolAddress = minipoolAddress
 	response.ValidatorPubkey = pubKey
+
+	// Return response
+	return &response, nil
+
+}
+
+func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, useExpressTicket bool, submit bool) (*api.NodeDepositsResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	bc, err := services.GetBeaconClient(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get eth2 config
+	eth2Config, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.NodeDepositsResponse{}
+
+	if !saturnDeployed {
+		return nil, fmt.Errorf("Multiple deposits are only supported after Saturn deployment")
+	}
+
+	// Make sure ETH2 is on the correct chain
+	depositContractInfo, err := getDepositContractInfo(c)
+	if err != nil {
+		return nil, err
+	}
+	if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
+		return nil, fmt.Errorf("Beacon network mismatch! Expected %s on chain %d, but beacon is using %s on chain %d.",
+			depositContractInfo.RPDepositContract.Hex(),
+			depositContractInfo.RPNetwork,
+			depositContractInfo.BeaconDepositContract.Hex(),
+			depositContractInfo.BeaconNetwork)
+	}
+
+	// Get the scrub period
+	scrubPeriodUnix, err := trustednode.GetScrubPeriod(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	scrubPeriod := time.Duration(scrubPeriodUnix) * time.Second
+	response.ScrubPeriod = scrubPeriod
+
+	// Get the megapool address
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the withdrawal credentials
+	withdrawalCredentials := services.CalculateMegapoolWithdrawalCredentials(megapoolAddress)
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Calculate total amount needed
+	totalAmountWei := big.NewInt(0).Mul(amountWei, big.NewInt(int64(count)))
+
+	// For multi-deposit, credit balance is not supported, so send the full amount
+	opts.Value = totalAmountWei
+
+	// Create validator keys and deposit data for all deposits
+	// Since gas estimation already created the keys, we reuse them instead of creating new ones
+	depositAmount := uint64(1e9) // 1 ETH in gwei
+	depositsSlice := make([]node.NodeDeposit, count)
+	response.ValidatorPubkeys = make([]rptypes.ValidatorPubkey, count)
+
+	for i := uint64(0); i < count; i++ {
+		validatorKey, err := w.CreateValidatorKey()
+		if err != nil {
+			return nil, err
+		}
+		// Get validator deposit data and associated parameters
+		depositData, depositDataRoot, err := validator.GetDepositData(validatorKey, withdrawalCredentials, eth2Config, depositAmount)
+		if err != nil {
+			return nil, err
+		}
+		pubKey := rptypes.BytesToValidatorPubkey(depositData.PublicKey)
+		signature := rptypes.BytesToValidatorSignature(depositData.Signature)
+
+		// Make sure a validator with this pubkey doesn't already exist
+		status, err := bc.GetValidatorStatus(pubKey, nil)
+		if err != nil {
+			return nil, fmt.Errorf("Error checking for existing validator status for deposit %d/%d: %w\nYour funds have not been deposited for your own safety.", i+1, count, err)
+		}
+		if status.Exists {
+			return nil, fmt.Errorf("**** ALERT ****\n"+
+				"The following validator pubkey is already in use on the Beacon chain:\n\t%s\n"+
+				"Rocket Pool will not allow you to deposit this validator for your own safety so you do not get slashed.\n"+
+				"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS.\n"+
+				"***************\n", pubKey.Hex())
+		}
+
+		// Do a final sanity check
+		err = validateDepositInfo(eth2Config, depositAmount, pubKey, withdrawalCredentials, signature)
+		if err != nil {
+			return nil, fmt.Errorf("Your deposit %d/%d failed the validation safety check: %w\n"+
+				"For your safety, this deposit will not be submitted and your ETH will not be staked.\n"+
+				"PLEASE REPORT THIS TO THE ROCKET POOL DEVELOPERS and include the following information:\n"+
+				"\tDomain Type: 0x%s\n"+
+				"\tGenesis Fork Version: 0x%s\n"+
+				"\tGenesis Validator Root: 0x%s\n"+
+				"\tDeposit Amount: %d gwei\n"+
+				"\tValidator Pubkey: %s\n"+
+				"\tWithdrawal Credentials: %s\n"+
+				"\tSignature: %s\n",
+				i+1, count, err,
+				hex.EncodeToString(eth2types.DomainDeposit[:]),
+				hex.EncodeToString(eth2Config.GenesisForkVersion),
+				hex.EncodeToString(eth2types.ZeroGenesisValidatorsRoot),
+				depositAmount,
+				pubKey.Hex(),
+				withdrawalCredentials.Hex(),
+				signature.Hex(),
+			)
+		}
+
+		// Set deposits array element
+		depositsSlice[i] = node.NodeDeposit{
+			BondAmount:         amountWei,
+			UseExpressTicket:   useExpressTicket,
+			ValidatorPubkey:    pubKey[:],
+			ValidatorSignature: signature[:],
+			DepositDataRoot:    depositDataRoot,
+		}
+
+		response.ValidatorPubkeys[i] = pubKey
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	}
+
+	// Do not send transaction unless requested
+	opts.NoSend = !submit
+
+	// Make multiple deposits in a single transaction
+	// Convert to Deposits type for proper ABI encoding
+	deposits := node.Deposits(depositsSlice)
+	tx, err := node.DepositMulti(rp, deposits, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// Save wallet
+	if err := w.Save(); err != nil {
+		return nil, err
+	}
+
+	// Print transaction if requested
+	if !submit {
+		b, err := tx.MarshalBinary()
+		if err != nil {
+			return nil, err
+		}
+		fmt.Printf("%x\n", b)
+	}
+
+	response.TxHash = tx.Hash()
 
 	// Return response
 	return &response, nil

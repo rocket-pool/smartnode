@@ -428,21 +428,22 @@ type CanNodeWithdrawRplv1_3_1Response struct {
 }
 
 type CanNodeDepositResponse struct {
-	Status                           string             `json:"status"`
-	Error                            string             `json:"error"`
-	CanDeposit                       bool               `json:"canDeposit"`
-	CreditBalance                    *big.Int           `json:"creditBalance"`
-	DepositBalance                   *big.Int           `json:"depositBalance"`
-	CanUseCredit                     bool               `json:"canUseCredit"`
-	NodeBalance                      *big.Int           `json:"nodeBalance"`
-	InsufficientBalance              bool               `json:"insufficientBalance"`
-	InsufficientBalanceWithoutCredit bool               `json:"insufficientBalanceWithoutCredit"`
-	InvalidAmount                    bool               `json:"invalidAmount"`
-	DepositDisabled                  bool               `json:"depositDisabled"`
-	InConsensus                      bool               `json:"inConsensus"`
-	MinipoolAddress                  common.Address     `json:"minipoolAddress"`
-	MegapoolAddress                  common.Address     `json:"megapoolAddress"`
-	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
+	Status                           string                    `json:"status"`
+	Error                            string                    `json:"error"`
+	CanDeposit                       bool                      `json:"canDeposit"`
+	CreditBalance                    *big.Int                  `json:"creditBalance"`
+	DepositBalance                   *big.Int                  `json:"depositBalance"`
+	CanUseCredit                     bool                      `json:"canUseCredit"`
+	NodeBalance                      *big.Int                  `json:"nodeBalance"`
+	InsufficientBalance              bool                      `json:"insufficientBalance"`
+	InsufficientBalanceWithoutCredit bool                      `json:"insufficientBalanceWithoutCredit"`
+	InvalidAmount                    bool                      `json:"invalidAmount"`
+	DepositDisabled                  bool                      `json:"depositDisabled"`
+	InConsensus                      bool                      `json:"inConsensus"`
+	MinipoolAddress                  common.Address            `json:"minipoolAddress"`
+	MegapoolAddress                  common.Address            `json:"megapoolAddress"`
+	ValidatorPubkeys                 []rptypes.ValidatorPubkey `json:"validatorPubkeys"`
+	GasInfo                          rocketpool.GasInfo        `json:"gasInfo"`
 }
 type NodeDepositResponse struct {
 	Status          string                  `json:"status"`
@@ -451,6 +452,33 @@ type NodeDepositResponse struct {
 	MinipoolAddress common.Address          `json:"minipoolAddress"`
 	ValidatorPubkey rptypes.ValidatorPubkey `json:"validatorPubkey"`
 	ScrubPeriod     time.Duration           `json:"scrubPeriod"`
+}
+
+type CanNodeDepositsResponse struct {
+	Status                           string                    `json:"status"`
+	Error                            string                    `json:"error"`
+	CanDeposit                       bool                      `json:"canDeposit"`
+	CreditBalance                    *big.Int                  `json:"creditBalance"`
+	DepositBalance                   *big.Int                  `json:"depositBalance"`
+	CanUseCredit                     bool                      `json:"canUseCredit"`
+	NodeBalance                      *big.Int                  `json:"nodeBalance"`
+	InsufficientBalance              bool                      `json:"insufficientBalance"`
+	InsufficientBalanceWithoutCredit bool                      `json:"insufficientBalanceWithoutCredit"`
+	InvalidAmount                    bool                      `json:"invalidAmount"`
+	DepositDisabled                  bool                      `json:"depositDisabled"`
+	InConsensus                      bool                      `json:"inConsensus"`
+	MinipoolAddress                  common.Address            `json:"minipoolAddress"`
+	MegapoolAddress                  common.Address            `json:"megapoolAddress"`
+	ValidatorPubkeys                 []rptypes.ValidatorPubkey `json:"validatorPubkeys"`
+	GasInfo                          rocketpool.GasInfo        `json:"gasInfo"`
+}
+
+type NodeDepositsResponse struct {
+	Status           string                    `json:"status"`
+	Error            string                    `json:"error"`
+	TxHash           common.Hash               `json:"txHash"`
+	ValidatorPubkeys []rptypes.ValidatorPubkey `json:"validatorPubkeys"`
+	ScrubPeriod      time.Duration             `json:"scrubPeriod"`
 }
 
 type CanCreateVacantMinipoolResponse struct {
