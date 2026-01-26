@@ -552,8 +552,12 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 					if err != nil {
 						fmt.Printf("An error occurred while searching for the withdrawn balance: %s\n", err)
 					}
+					// Track the withdrawn balance so we can discount it from the pending rewards on the contract
 					totalWithdrawnBalance.Add(totalWithdrawnBalance, eth.GweiToWei(float64(withdrawal.Amount)))
+					// Add the withdrawn balance to the beacon balance so its user share is not ignored
+					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(withdrawal.Amount)))
 				} else {
+					// Not withdrawn yet, treat it as a staking validator
 					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
 					megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
 					megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
@@ -579,8 +583,7 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	megapoolBalanceDetails.ContractBalance = megapoolDetails.EthBalance
 
 	// Rewards := total beacon balance increase + pending rewards on the megapool contract (already subtract the refund and assigned value) - total withdrawn balance
-	pendingRewards := big.NewInt(0).Add(megapoolBeaconBalanceTotal, megapoolDetails.PendingRewards)
-	pendingRewards = pendingRewards.Sub(pendingRewards, totalWithdrawnBalance)
+	pendingRewards := big.NewInt(0).Sub(megapoolDetails.PendingRewards, totalWithdrawnBalance)
 
 	beaconBalanceIncrease := big.NewInt(0).Sub(megapoolBeaconBalanceTotal, megapoolDetails.UserCapital)
 	beaconBalanceIncrease = beaconBalanceIncrease.Sub(beaconBalanceIncrease, megapoolDetails.NodeBond)
