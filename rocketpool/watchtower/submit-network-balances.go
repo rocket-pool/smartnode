@@ -3,6 +3,7 @@ package watchtower
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -34,8 +35,7 @@ import (
 )
 
 const (
-	networkBalanceSubmissionKey string  = "network.balances.submitted.node"
-	saturnBondInEth             float64 = 4
+	networkBalanceSubmissionKey string = "network.balances.submitted.node"
 )
 
 // Submit network balances task
@@ -512,35 +512,80 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	megapoolStakingBalance := big.NewInt(0)
 	blockEpoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
 
+	totalWithdrawnBalance := big.NewInt(0)
 	for _, megapoolValidatorKey := range megapoolValidators {
 		// Grab the validator details from the pubkey
 		megapoolValidatorDetails := state.MegapoolValidatorDetails[megapoolValidatorKey]
 		megapoolValidatorInfo := state.MegapoolValidatorInfo[megapoolValidatorKey]
 
 		if megapoolValidatorDetails.Exists {
-			// If the validator was dissolved ignore the beacon balance
-			if !megapoolValidatorInfo.ValidatorInfo.Dissolved {
+			// If the validator was dissolved, exited, or in queue, ignore the beacon balance
+			if megapoolValidatorInfo.ValidatorInfo.Dissolved || megapoolValidatorInfo.ValidatorInfo.Exited || megapoolValidatorInfo.ValidatorInfo.InQueue {
+				continue
+			}
+
+			// Pre-stake
+			if megapoolValidatorInfo.ValidatorInfo.InPrestake {
+				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
+				continue
+			}
+
+			// If the validator was staked but the second deposit not processed yet, add the deposit value to the beacon balance
+			if eth.GweiToWei(float64(megapoolValidatorDetails.Balance)).Cmp(eth.EthToWei(1)) == 0 && megapoolValidatorInfo.ValidatorInfo.Staked {
+				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.DepositValue)))
+				megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+				continue
+			}
+
+			// If the validator is exiting, beacon balance = max(beacon balance, withdrawn balance)
+			// If the beacon balance is zero we need to find the withdrawn balance from the beacon chain
+			if megapoolValidatorInfo.ValidatorInfo.Exiting {
+				if megapoolValidatorDetails.Balance == 0 {
+					// Find the withdrawn balance from the beacon chain
+					searchWithdrawSlot := megapoolValidatorDetails.WithdrawableEpoch * 32
+					// Convert the validator index to a uint64
+					validatorIndex, err := strconv.ParseUint(megapoolValidatorDetails.Index, 10, 64)
+					if err != nil {
+						fmt.Printf("An error occurred while converting the validator index to a uint64: %s\n", err)
+					}
+					_, _, _, withdrawal, err := services.FindWithdrawalBlockAndArrayPosition(searchWithdrawSlot, validatorIndex, t.bc)
+					if err != nil {
+						fmt.Printf("An error occurred while searching for the withdrawn balance: %s\n", err)
+					}
+					totalWithdrawnBalance.Add(totalWithdrawnBalance, eth.GweiToWei(float64(withdrawal.Amount)))
+				} else {
+					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+					megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+					megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
+				}
+				continue
+			}
+
+			// Staked
+			if megapoolValidatorInfo.ValidatorInfo.Staked {
 				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
 				if megapoolValidatorDetails.ActivationEpoch < blockEpoch && megapoolValidatorDetails.ExitEpoch > blockEpoch {
 					megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
-					megapoolStakingBalance.Sub(megapoolStakingBalance, eth.EthToWei(saturnBondInEth))
+					megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
 				}
-				// If the validator was staked but the second deposit not processed yet, add the deposit value to the beacon balance
-				if eth.GweiToWei(float64(megapoolValidatorDetails.Balance)).Cmp(eth.EthToWei(1)) == 0 && megapoolValidatorInfo.ValidatorInfo.Staked {
-					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.DepositValue)))
-				}
+				continue
 			}
 		}
-
 	}
 
 	megapoolBalanceDetails.BeaconBalanceTotal = megapoolBeaconBalanceTotal
 	megapoolBalanceDetails.StakingBalance = megapoolStakingBalance
 	megapoolBalanceDetails.UserCapital = megapoolDetails.UserCapital
 	megapoolBalanceDetails.ContractBalance = megapoolDetails.EthBalance
-	// Rewards := total beacon balance + pending rewards on the megapool contract (already subtract the refund)
-	rewards := big.NewInt(0).Add(megapoolBeaconBalanceTotal, megapoolDetails.PendingRewards)
-	rewards = rewards.Sub(rewards, megapoolDetails.NodeBond)
+
+	// Rewards := total beacon balance increase + pending rewards on the megapool contract (already subtract the refund and assigned value) - total withdrawn balance
+	pendingRewards := big.NewInt(0).Add(megapoolBeaconBalanceTotal, megapoolDetails.PendingRewards)
+	pendingRewards = pendingRewards.Sub(pendingRewards, totalWithdrawnBalance)
+
+	beaconBalanceIncrease := big.NewInt(0).Sub(megapoolBeaconBalanceTotal, megapoolDetails.UserCapital)
+	beaconBalanceIncrease = beaconBalanceIncrease.Sub(beaconBalanceIncrease, megapoolDetails.NodeBond)
+	rewards := big.NewInt(0).Add(beaconBalanceIncrease, pendingRewards)
+
 	// Load the megapool
 	megapoolContract, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
 	if err != nil {
