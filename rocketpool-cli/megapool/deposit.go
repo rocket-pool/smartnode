@@ -104,8 +104,8 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	count := c.Uint64("count")
 
 	// If the count was not provided, prompt the user for the number of deposits
-	for count == 0 {
-		countStr := prompt.Prompt("How many validators would you like to create?", "^\\d+$", "Invalid number.")
+	for count == 0 || count > 35 {
+		countStr := prompt.Prompt("How many validators would you like to create? (max: 35)", "^\\d+$", "Invalid number.")
 		count, err = strconv.ParseUint(countStr, 10, 64)
 		if err != nil {
 			fmt.Println("Invalid number. Please try again.")
