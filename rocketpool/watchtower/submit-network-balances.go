@@ -592,9 +592,10 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 		return megapoolBalanceDetail{}, fmt.Errorf("error loading megapool contract: %w", err)
 	}
 	rewardsSplit := megapool.RewardSplit{
-		NodeRewards:  big.NewInt(0),
-		VoterRewards: big.NewInt(0),
-		RethRewards:  big.NewInt(0),
+		NodeRewards:        big.NewInt(0),
+		VoterRewards:       big.NewInt(0),
+		RethRewards:        big.NewInt(0),
+		ProtocolDAORewards: big.NewInt(0),
 	}
 	if rewards.Cmp(big.NewInt(0)) > 0 {
 		opts := &bind.CallOpts{
@@ -605,8 +606,12 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 		if err != nil {
 			return megapoolBalanceDetail{}, fmt.Errorf("error calculating rewards split: %w", err)
 		}
+		megapoolBalanceDetails.RethRewards = rewardsSplit.RethRewards
+	} else if rewards.Cmp(big.NewInt(0)) != 0 && big.NewInt(0).Add(rewards, megapoolDetails.NodeBond).Cmp(big.NewInt(0)) < 0 {
+		// If rewards are negative, and surpass the node bond, the amount surpassing the node bond should be assigned to the rETH share
+		megapoolBalanceDetails.RethRewards = big.NewInt(0).Add(rewards, megapoolDetails.NodeBond)
 	}
-	megapoolBalanceDetails.RethRewards = rewardsSplit.RethRewards
+
 	return megapoolBalanceDetails, nil
 }
 
