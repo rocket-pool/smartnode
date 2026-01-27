@@ -546,7 +546,7 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 					if err != nil {
 						fmt.Printf("An error occurred while converting the validator index to a uint64: %s\n", err)
 					}
-					_, _, _, withdrawal, err := services.FindWithdrawalBlockAndArrayPosition(searchWithdrawSlot, validatorIndex, t.bc)
+					_, _, _, withdrawal, _, err := services.FindWithdrawalBlockAndArrayPosition(searchWithdrawSlot, validatorIndex, t.bc)
 					if err != nil {
 						fmt.Printf("An error occurred while searching for the withdrawn balance: %s\n", err)
 					}

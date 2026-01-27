@@ -81,6 +81,7 @@ func notifyFinalBalance(c *cli.Context) error {
 
 	if c.IsSet("slot") {
 		fmt.Println("Using withdrawal slot: ", c.Uint64("slot"))
+		slot = c.Uint64("slot")
 	} else {
 		fmt.Println("The Smart Node needs to find the slot containing the validator withdrawal. This may take a while. You can speed up the final balance proof generation by submitting the withdrawal slot for your validator.")
 		fmt.Println()

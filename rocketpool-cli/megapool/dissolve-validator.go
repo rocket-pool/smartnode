@@ -38,7 +38,7 @@ func dissolveValidator(c *cli.Context) error {
 		// Get Megapool status
 		status, err := rp.MegapoolStatus(false)
 		if err != nil {
-			return err	
+			return err
 		}
 
 		validatorsInPrestake := []api.MegapoolValidatorDetails{}
