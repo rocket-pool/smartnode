@@ -529,6 +529,7 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 
 			// If the validator was staked but the second deposit not processed yet, add the deposit value to the beacon balance
 			if eth.GweiToWei(float64(megapoolValidatorDetails.Balance)).Cmp(eth.EthToWei(1)) == 0 && megapoolValidatorInfo.ValidatorInfo.Staked {
+				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
 				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.DepositValue)))
 				megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
 				continue
