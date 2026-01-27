@@ -1,3 +1,4 @@
+
 package megapool
 
 import (
@@ -9,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/urfave/cli"
 )
 
@@ -56,12 +58,13 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 		return nil, err
 	}
 
-	// Check validator status
-	if !validatorInfo.Exiting {
-		response.InvalidStatus = true
-		response.CanExit = false
-		return &response, nil
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
 	}
+
+	// Get the network
+	network := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 
 	validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
@@ -78,7 +81,13 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 
 	withdrawalProof, slotUsed, stateUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorIndex)
 	if err != nil {
-		fmt.Printf("An error occurred: %s\n", err)
+		fmt.Printf("An error occurred while getting the withdrawal proof: %s\n", err)
+		// try to fetch the withdrawal proof from the Rocket Pool API
+		withdrawalProof, slotUsed, err = services.GetWithdrawalProofForSlotFromAPI(c, slot, validatorIndex, network)
+		if err != nil {
+			fmt.Printf("An error occurred while getting the withdrawal proof from the Rocket Pool API: %s\n", err)
+			return nil, err
+		}
 	}
 
 	opts, err := w.GetNodeAccountTransactor()
