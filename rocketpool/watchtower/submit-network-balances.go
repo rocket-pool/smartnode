@@ -598,6 +598,7 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 		RethRewards:        big.NewInt(0),
 		ProtocolDAORewards: big.NewInt(0),
 	}
+	megapoolBalanceDetails.RethRewards = big.NewInt(0)
 	if rewards.Cmp(big.NewInt(0)) > 0 {
 		opts := &bind.CallOpts{
 			BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
