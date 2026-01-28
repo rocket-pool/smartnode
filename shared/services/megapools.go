@@ -1,9 +1,12 @@
 package services
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"math"
 	"math/big"
+	"net/http"
 	"strconv"
 	"sync"
 	"time"
@@ -27,6 +30,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
@@ -36,6 +40,23 @@ import (
 )
 
 const MAX_WITHDRAWAL_SLOT_DISTANCE = 144000 // 20 days.
+
+// API URL for the withdrawal proofs (base URL + network + withdrawal slot + validator index)
+const apiURL = "https://api.rocketpool.net/%s/withdrawals/proofs/%d/%d/%d"
+
+type Withdrawal struct {
+	Index                 uint64         `json:"index"`
+	ValidatorIndex        uint64         `json:"validatorIndex"`
+	WithdrawalCredentials common.Address `json:"withdrawalCredentials"`
+	AmountInGwei          uint64         `json:"amountInGwei"`
+}
+type WithdrawalProofResponse struct {
+	Slot           uint64        `json:"slot"`
+	WithdrawalSlot uint64        `json:"withdrawalSlot"`
+	WithdrawalNum  uint16        `json:"withdrawalNum"`
+	Withdrawal     Withdrawal    `json:"withdrawal"`
+	Witnesses      []common.Hash `json:"witnesses"`
+}
 
 func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey, beaconState eth2.BeaconState) (megapool.ValidatorProof, uint64, megapool.SlotProof, error) {
 
@@ -633,6 +654,48 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 
 }
 
+func GetWithdrawalProofForSlotFromAPI(c *cli.Context, finalizedSlot uint64, withdrawalSlot uint64, validatorIndex uint64, network cfgtypes.Network) (megapool.FinalBalanceProof, uint64, error) {
+
+	/*  API calls follow this format:
+	    https://api.rocketpool.net/<network>/withdrawals/proofs/<finalized_slot>/<withdrawal_slot>/<validator_index>
+
+	    An example API response:
+
+	    {"slot":2277023,"withdrawalSlot":2244697,"withdrawalNum":5,"withdrawal":{"index":33227778,"validatorIndex":1265923,"withdrawalCredentials":"0xf24c70772544b8ae60af28ddd34f13cc9c428ee7","amountInGwei":31995839800},"witnesses":["0x3410c5feb39b3f702d9b56634136cfb904a1f86c8f367e16fe2d4f969c898b0f","0xe2ba28dfa59acd70227d134be96c2e77e9ea1ccf7d27f94b7e3aff50eb344a53","0xf217264812ed46e949aaa1d8006b05409bbdb1438daa70cef95938140e412062","0x7fb96870d35763e6ab832250c9f8b1091f2383cde611d161b8564437f7910fc4","0x1000000000000000000000000000000000000000000000000000000000000000","0x0000100000000000000000000000000000000000000000000000000000000000","0x3f700c8ef3d83fe50eeb18e4f3df37ad98fe6f380f72c238c90d14c2cb18eefd","0x1085626fa4323b8bbe2acad06da450d8a9edc3cfcc0efe5b2830718a06d66a10","0x9c9bd327030be8c943838fd7083cb0d93d5f9c8408f78f3cd339e0f28e41c370","0xca7e70f57e9b781e937fa905ad6f090076d01db09959e31aa5b181a0d1c8569a","0x8ea7caad7a8238c943f26be0b020fb17ff83b12de0eb5977d763d2a11a21fc2c","0xaa3e128e91825440f40be45202d472ac6b70275a7999d5aa09e7b03a7f10e1d7","0x6dd3b9955d892d92338b19976fd07084bfe88a76c3063482b7f30ee60feb2a58","0xd7a3d1a54f5271259f8a74bad234ebbd73c9ce97727177da2d2a244a114c7852","0x0000000000000000000000000000000000000000000000000000000000000000","0xf5a5fd42d16a20302798ef6ed309979b43003d2320d9f0e8ea9831a92759fb4b","0xdd165f288f4232e65aa7873f0bd8c12cefbea56dc663a30c06d3190922b1fd24","0x4dd9e68fabfffa19a6765e8aa9a1130a4c89aa587b8fe3a94026ca1b8523f679","0x1854ce5a71bcceb3c268c12bbeefbe5668bcb3f4a7e81a4856a9f43c10049859","0xbca9d545006824d4eb061f4e0b4908edffc6a50c25fbed6133e64141b86bc8b3","0xf13045a0e245b3959fa463a60028529f1a558ddf8d971c867d6a15218dd8279a","0xcc50292a5848698d71cae30bf5e6f897c8bef60dfc3e02ad6f1942e2044d8c69","0xec92853cdf50b7de0437d100cdf905e1114edd570f787eacf99fbd597c4300c1","0x982a2bee4c6798f97538986ed8bdf4327aa3ed5559421e693ca1c5513cc6d20b","0x06feb5a3ce20048e0b918726ed5cf15c4a098d4271035b1b58e975fde1cc8381","0xcd846f1c9978a061d010eb7eec8b3bd11a85b791a27e045eaf92f0ec3d7453f7","0xc33805f67b05f7f76a3db10096d2399f19cbf68be4d83e03c44fe8bc4c7f8620","0x8f9d27bbc7ec8fc85f61ac7f3bdbdcf9e7489bc3d55014dc7cdabc79d489cfe4","0xa97d47c50569d287b611735eeeb108004c0a4b64fc35b5c9d28adaa78c42b434","0x25a68400f09df83d1f6db6e9eea1db5b834bb26eb411dddf30f970994a278c8a","0xc80d5f6f2940ee052aac33fe0078ff5b52a64112c08617c8f71313a5e5f6b3de","0x114ef5c4f4bbc789f42d3367156029782916ab844a9ba92b5eac4bc7c0a1e6ae","0x5816ed9efb563c976395c126fd210ab89b7ba9f3b6336f830d4d052833fecbde","0xf9c4052c9567a598edae2a270cf8933b4b24323e49c01e1a3071ec3c56396de8","0xc78009fdf07fc56a11f122370658a353aaa542ed63e44c4bc15ff4cd105ab33c","0xa6c0f739071376d5fae6e5713a77f43bfb900e7e926a272a1fce2c046eb1af15","0x9efde052aa15429fae05bad4d0b1d7c64da64d03d7a1854a588c2cb8430c0d30","0xd88ddfeed400a8755596b21942c1497e114c302e6118290f91e6772976041fa1","0x87eb0ddba57e35f6d286673802a4af5975e22506c7cf4c64bb6be5ee11527f2c","0x92700a3530f06301b0ea071690a88c7723d5ebde9a5505c994351821be155309","0x506d86582d252405b840018792cad2bf1259f1ef5aa5f887e13cb2f0094f51e1","0xffff0ad7e659772f9534c195c815efc4014ef1e1daed4404c06385d11192e92b","0x6cf04127db05441cd833107a52be852868890e4317e6a02ab47683aa75964220","0xb7d05f875f140027ef5118a2247bbb84ce8f2f0f1123623085daf7960c329f5f","0xdf6af5f5bbdb6be9ef8aa618e4bf8073960867171e29676f8b284dea6a08a85e","0xb58d900f5e182e3c50ef74969ea16c7726c549757cc23523c369587da7293784","0xd49a7502ffcfb0340b1d7885688500ca308161a7f96b62df9d083b71fcc8f2bb","0x8fe6b1689256c0d385f42f5bbe2027a22c1996e110ba97c171d3e5948de92beb","0x8d0d63c39ebade8509e0ae3c9c3876fb5fa112be18f905ecacfecb92057603ab","0x95eec8b2e541cad4e91de38385f2e046619f54496c2382cb6cacd5b98c26f5a4","0xf893e908917775b62bff23294dbbe3a1cd8e6cc1c35b4801887b646a6f81f17f","0xcddba7b592e3133393c16194fac7431abf2f5485ed711db282183c819e08ebaa","0x8a8d7fe3af8caa085a7639a832001457dfb9128a8061142ad0335629ff23ff9c","0xfeb3c337d7a51a6fbf00b9e34c52e1c9195c969bd4e7a0bfd51d5c5bed9c1167","0xe71f0aa83cc32edfbefa9f4d3e0174ca85182eec9f3a09f6a6c0df6377a510d7","0x1501000000000000000000000000000000000000000000000000000000000000","0xbb4a0d0000000000000000000000000000000000000000000000000000000000","0x675afa2a5607e4b52f90aa67641f4d2a87d1d37e894912832fcb7879dd43b2bd","0xe0a37ef350f23459204e32961caab1b635c7349b8c21d0b170e64c760af8ccb7","0x95bee184cc5eab4b78d31c50ee452486edfedf473864c7fac86cef1de9b56d21","0x639a4850fe20dbbb573079ef58139feb5f6e7fd4d6e5319c4bd54448402a4c4a","0x91a46d0e5f2f963abc96b45ebb1867df4044298fa87235091e392b6c02aa9584","0x6c9497c4b3fb8b1a7e499db515726638d9468baad37c8b712f57636afb20b40d","0x44ce5bfa4c2c3c9e3f04c74c3cdb56404fb6b7a83bbf386f11e7305dc9aade0d","0x664471f37724d6eff852d4a3bc3b39aa1d3b37334e6184805a5364530433f860"]}/
+	*/
+
+	url := fmt.Sprintf(apiURL, network, finalizedSlot, withdrawalSlot, validatorIndex)
+	response, err := http.Get(url)
+	if err != nil {
+		return megapool.FinalBalanceProof{}, 0, err
+	}
+	defer response.Body.Close()
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return megapool.FinalBalanceProof{}, 0, err
+	}
+	// unmarshal the response into the WithdrawalProofResponse type
+	var withdrawalProofResponse WithdrawalProofResponse
+	json.Unmarshal([]byte(body), &withdrawalProofResponse)
+
+	// Convert []common.Hash to [][32]byte
+	witnesses := make([][32]byte, len(withdrawalProofResponse.Witnesses))
+	for i, w := range withdrawalProofResponse.Witnesses {
+		witnesses[i] = [32]byte(w)
+	}
+
+	// Convert to fixed size
+	return megapool.FinalBalanceProof{
+		IndexInWithdrawalsArray: uint(withdrawalProofResponse.WithdrawalNum),
+		WithdrawalIndex:         withdrawalProofResponse.Withdrawal.Index,
+		WithdrawalAddress:       withdrawalProofResponse.Withdrawal.WithdrawalCredentials,
+		WithdrawalSlot:          withdrawalProofResponse.WithdrawalSlot,
+		ValidatorIndex:          validatorIndex,
+		Amount:                  big.NewInt(0).SetUint64(withdrawalProofResponse.Withdrawal.AmountInGwei),
+		Witnesses:               witnesses,
+	}, withdrawalProofResponse.Slot, nil
+}
+
 func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint64) (megapool.FinalBalanceProof, uint64, eth2.BeaconState, error) {
 	// Create a new response
 	response := megapool.FinalBalanceProof{}
@@ -646,26 +709,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
 
-	// cant use head here as we need to grab the next slot timestamp
-	blockToRequest := "finalized"
-	var recentBlock beacon.BeaconBlock
-	const maxAttempts = 10
-	for attempts := 0; attempts < maxAttempts; attempts++ {
-		recentBlock, _, err = bc.GetBeaconBlock(blockToRequest)
-		if err != nil {
-			return megapool.FinalBalanceProof{}, 0, nil, err
-		}
-
-		if recentBlock.HasExecutionPayload {
-			break
-		}
-		if attempts == maxAttempts-1 {
-			return megapool.FinalBalanceProof{}, 0, nil, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
-		}
-		blockToRequest = fmt.Sprintf("%d", recentBlock.Slot-1)
-	}
-
-	withdrawalSlot, block, indexInWithdrawalsArray, withdrawal, err := FindWithdrawalBlockAndArrayPosition(slot, validatorIndex, bc)
+	withdrawalSlot, block, indexInWithdrawalsArray, withdrawal, finalizedBlock, err := FindWithdrawalBlockAndArrayPosition(slot, validatorIndex, bc)
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
@@ -684,7 +728,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	}
 
 	// Get beacon state
-	stateResponse, err := bc.GetBeaconStateSSZ(recentBlock.Slot)
+	stateResponse, err := bc.GetBeaconStateSSZ(finalizedBlock.Slot)
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
@@ -711,7 +755,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	var historicalSummaryProof [][]byte
 	var finalProof [][]byte
 
-	if response.WithdrawalSlot+generic.SlotsPerHistoricalRoot > recentBlock.Slot {
+	if response.WithdrawalSlot+generic.SlotsPerHistoricalRoot > finalizedBlock.Slot {
 		// Recent slot: use block_roots
 		// Get the block_roots proof separately
 		blockRootsProof, err = beaconState.BlockRootProof(response.WithdrawalSlot)
@@ -779,7 +823,7 @@ func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	proofWithFixedSize := ConvertToFixedSize(finalProof)
 	response.Witnesses = proofWithFixedSize
 
-	return response, recentBlock.Slot, beaconState, nil
+	return response, finalizedBlock.Slot, beaconState, nil
 }
 
 func ConvertWithdrawalAmount(amount uint64) *big.Int {
@@ -790,7 +834,27 @@ func ConvertWithdrawalAmount(amount uint64) *big.Int {
 	return amountBigInt
 }
 
-func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc beacon.Client) (uint64, eth2.SignedBeaconBlock, int, *generic.Withdrawal, error) {
+func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc beacon.Client) (uint64, eth2.SignedBeaconBlock, int, *generic.Withdrawal, *beacon.BeaconBlock, error) {
+
+	// cant use head here as we need to grab the next slot timestamp
+	blockToRequest := "finalized"
+	var finalizedBlock beacon.BeaconBlock
+	var err error
+	const maxAttempts = 10
+	for attempts := 0; attempts < maxAttempts; attempts++ {
+		finalizedBlock, _, err = bc.GetBeaconBlock(blockToRequest)
+		if err != nil {
+			return 0, nil, 0, nil, nil, err
+		}
+
+		if finalizedBlock.HasExecutionPayload {
+			break
+		}
+		if attempts == maxAttempts-1 {
+			return 0, nil, 0, nil, nil, fmt.Errorf("failed to find a block with execution payload after %d attempts", maxAttempts)
+		}
+		blockToRequest = fmt.Sprintf("%d", finalizedBlock.Slot-1)
+	}
 
 	// Find the most recent withdrawal to slot.
 	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
@@ -799,12 +863,12 @@ func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc 
 		// Get the block at the candidate slot.
 		blockResponse, found, err := bc.GetBeaconBlockSSZ(candidateSlot)
 		if err != nil {
-			return 0, nil, 0, nil, err
+			return 0, nil, 0, nil, nil, err
 		}
 		if !found {
 			notFounds++
 			if notFounds >= 64 {
-				return 0, nil, 0, nil, fmt.Errorf("2 epochs of missing slots detected. It is likely that the Beacon Client was checkpoint synced after the most recent withdrawal to slot %d, and does not have the history required to generate a withdrawal proof", slot)
+				return 0, nil, 0, nil, nil, fmt.Errorf("2 epochs of missing slots detected. It is likely that the Beacon Client was checkpoint synced after the most recent withdrawal to slot %d, and does not have the history required to generate a withdrawal proof", slot)
 			}
 			continue
 		} else {
@@ -813,7 +877,7 @@ func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc 
 
 		beaconBlock, err := eth2.NewSignedBeaconBlock(blockResponse.Data, blockResponse.Fork)
 		if err != nil {
-			return 0, nil, 0, nil, err
+			return 0, nil, 0, nil, nil, err
 		}
 
 		if !beaconBlock.HasExecutionPayload() {
@@ -826,10 +890,10 @@ func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc 
 				continue
 			}
 
-			return candidateSlot, beaconBlock, i, withdrawal, nil
+			return candidateSlot, beaconBlock, i, withdrawal, &finalizedBlock, nil
 		}
 	}
-	return 0, nil, 0, nil, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
+	return 0, nil, 0, nil, nil, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
 }
 
 func GetChildBlockTimestampForSlot(c *cli.Context, slot uint64) (uint64, error) {
