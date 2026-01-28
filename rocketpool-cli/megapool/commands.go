@@ -1,8 +1,6 @@
 package megapool
 
 import (
-	"fmt"
-
 	"github.com/urfave/cli"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -39,9 +37,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						Name:  "yes, y",
 						Usage: "Automatically confirm deposit",
 					},
-					cli.BoolFlag{
-						Name:  "use-express-ticket, e",
-						Usage: "Use an express ticket to create a new validator",
+					cli.Int64Flag{
+						Name:  "express-tickets, e",
+						Usage: "Number of express tickets to use",
+						Value: -1,
 					},
 					cli.UintFlag{
 						Name:  "count, c",
@@ -54,11 +53,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
-					}
-
-					// Validate count
-					if c.Uint("count") == 0 {
-						return fmt.Errorf("Count must be greater than 0")
 					}
 
 					// Run

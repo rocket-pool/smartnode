@@ -3,6 +3,7 @@ package watchtower
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -34,8 +35,7 @@ import (
 )
 
 const (
-	networkBalanceSubmissionKey string  = "network.balances.submitted.node"
-	saturnBondInEth             float64 = 4
+	networkBalanceSubmissionKey string = "network.balances.submitted.node"
 )
 
 // Submit network balances task
@@ -220,7 +220,7 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		var maxRethDelta *big.Int
 		if state.IsSaturnDeployed {
 			t.log.Printlnf("Checking if total ETH needs to be limited due to max Reth ratio delta...")
-			// Fetch the max Reth delta (assumed to be scaled by 1e18, e.g., 0.05 * 1e18 for 5%)
+			// Fetch the max Reth delta
 			maxRethDelta, err = protocol.GetMaxRethDelta(t.rp, nil)
 			if err != nil {
 				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
@@ -231,6 +231,10 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 		if balances.OriginalTotalBalanceWei.Cmp(balances.ClampedTotalBalanceWei) != 0 {
 			t.log.Printlnf("Total ETH submission needs to be limited due to max Reth ratio delta: %.6f -> %.6f", eth.WeiToEth(balances.OriginalTotalBalanceWei), eth.WeiToEth(balances.ClampedTotalBalanceWei))
+		}
+		// The staked balance cannot be greater than the total ETH balance
+		if balances.ClampedTotalBalanceWei.Cmp(balances.TotalStaking) < 0 {
+			balances.TotalStaking = balances.ClampedTotalBalanceWei
 		}
 
 		// Check if we have reported these specific values before
@@ -256,9 +260,6 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		if hasSubmitted {
 			t.log.Printlnf("Have previously submitted out-of-date balances for block %d, trying again...", targetBlockNumber)
 		}
-
-		// Log
-		t.log.Println("Submitting balances...")
 
 		// Submit balances
 		if err := t.submitBalances(balances); err != nil {
@@ -508,41 +509,92 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	megapoolStakingBalance := big.NewInt(0)
 	blockEpoch := state.BeaconSlotNumber / state.BeaconConfig.SlotsPerEpoch
 
+	totalWithdrawnBalance := big.NewInt(0)
 	for _, megapoolValidatorKey := range megapoolValidators {
 		// Grab the validator details from the pubkey
 		megapoolValidatorDetails := state.MegapoolValidatorDetails[megapoolValidatorKey]
 		megapoolValidatorInfo := state.MegapoolValidatorInfo[megapoolValidatorKey]
 
 		if megapoolValidatorDetails.Exists {
-			// If the validator was dissolved ignore the beacon balance
-			if !megapoolValidatorInfo.ValidatorInfo.Dissolved {
-				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
-				if megapoolValidatorDetails.ActivationEpoch < blockEpoch && megapoolValidatorDetails.ExitEpoch > blockEpoch {
+			// If the validator was dissolved, exited, or in queue, ignore the beacon balance
+			if megapoolValidatorInfo.ValidatorInfo.Dissolved || megapoolValidatorInfo.ValidatorInfo.Exited || megapoolValidatorInfo.ValidatorInfo.InQueue {
+				continue
+			}
+
+			// Pre-stake
+			if megapoolValidatorInfo.ValidatorInfo.InPrestake {
+				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
+				continue
+			}
+
+			// If the validator is exiting, beacon balance = max(beacon balance, withdrawn balance)
+			// If the beacon balance is zero we need to find the withdrawn balance from the beacon chain
+			if megapoolValidatorInfo.ValidatorInfo.Exiting {
+				if megapoolValidatorDetails.Balance == 0 {
+					// Find the withdrawn balance from the beacon chain
+					searchWithdrawSlot := megapoolValidatorDetails.WithdrawableEpoch * 32
+					// Convert the validator index to a uint64
+					validatorIndex, err := strconv.ParseUint(megapoolValidatorDetails.Index, 10, 64)
+					if err != nil {
+						fmt.Printf("An error occurred while converting the validator index to a uint64: %s\n", err)
+					}
+					_, _, _, withdrawal, _, err := services.FindWithdrawalBlockAndArrayPosition(searchWithdrawSlot, validatorIndex, t.bc)
+					if err != nil {
+						fmt.Printf("An error occurred while searching for the withdrawn balance: %s\n", err)
+					}
+					// Track the withdrawn balance so we can discount it from the pending rewards on the contract
+					totalWithdrawnBalance.Add(totalWithdrawnBalance, eth.GweiToWei(float64(withdrawal.Amount)))
+					// Add the withdrawn balance to the beacon balance so its user share is not ignored
+					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(withdrawal.Amount)))
+				} else {
+					// Not withdrawn yet, treat it as a staking validator
+					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
 					megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
-					megapoolStakingBalance.Sub(megapoolStakingBalance, eth.EthToWei(saturnBondInEth))
+					megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
 				}
+				continue
+			}
+
+			// Staked
+			if megapoolValidatorInfo.ValidatorInfo.Staked {
+				if megapoolValidatorDetails.ActivationEpoch < blockEpoch {
+					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.DepositValue)))
+				} else {
+					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+					if megapoolValidatorDetails.ActivationEpoch < blockEpoch && megapoolValidatorDetails.ExitEpoch > blockEpoch {
+						megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+						megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
+					}
+				}
+				continue
 			}
 		}
-
 	}
 
 	megapoolBalanceDetails.BeaconBalanceTotal = megapoolBeaconBalanceTotal
 	megapoolBalanceDetails.StakingBalance = megapoolStakingBalance
 	megapoolBalanceDetails.UserCapital = megapoolDetails.UserCapital
 	megapoolBalanceDetails.ContractBalance = megapoolDetails.EthBalance
-	capitalTotal := megapoolDetails.UserCapital
-	balanceTotal := megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, megapoolDetails.EthBalance)
-	rewards := balanceTotal.Sub(balanceTotal, capitalTotal)
+
+	// Rewards := total beacon balance increase + pending rewards on the megapool contract (already subtract the refund and assigned value) - total withdrawn balance
+	pendingRewards := big.NewInt(0).Sub(megapoolDetails.PendingRewards, totalWithdrawnBalance)
+
+	beaconBalanceIncrease := big.NewInt(0).Sub(megapoolBeaconBalanceTotal, megapoolDetails.UserCapital)
+	beaconBalanceIncrease = beaconBalanceIncrease.Sub(beaconBalanceIncrease, megapoolDetails.NodeBond)
+	rewards := big.NewInt(0).Add(beaconBalanceIncrease, pendingRewards)
+
 	// Load the megapool
 	megapoolContract, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
 	if err != nil {
 		return megapoolBalanceDetail{}, fmt.Errorf("error loading megapool contract: %w", err)
 	}
 	rewardsSplit := megapool.RewardSplit{
-		NodeRewards:  big.NewInt(0),
-		VoterRewards: big.NewInt(0),
-		RethRewards:  big.NewInt(0),
+		NodeRewards:        big.NewInt(0),
+		VoterRewards:       big.NewInt(0),
+		RethRewards:        big.NewInt(0),
+		ProtocolDAORewards: big.NewInt(0),
 	}
+	megapoolBalanceDetails.RethRewards = big.NewInt(0)
 	if rewards.Cmp(big.NewInt(0)) > 0 {
 		opts := &bind.CallOpts{
 			BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
@@ -552,8 +604,12 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 		if err != nil {
 			return megapoolBalanceDetail{}, fmt.Errorf("error calculating rewards split: %w", err)
 		}
+		megapoolBalanceDetails.RethRewards = rewardsSplit.RethRewards
+	} else if rewards.Cmp(big.NewInt(0)) != 0 && big.NewInt(0).Add(rewards, megapoolDetails.NodeBond).Cmp(big.NewInt(0)) < 0 {
+		// If rewards are negative, and surpass the node bond, the amount surpassing the node bond should be assigned to the rETH share
+		megapoolBalanceDetails.RethRewards = big.NewInt(0).Add(rewards, megapoolDetails.NodeBond)
 	}
-	megapoolBalanceDetails.RethRewards = rewardsSplit.RethRewards
+
 	return megapoolBalanceDetails, nil
 }
 

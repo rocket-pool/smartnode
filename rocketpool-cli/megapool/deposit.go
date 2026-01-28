@@ -63,8 +63,6 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		return nil
 	}
 
-	useExpressTicket := false
-
 	var wg errgroup.Group
 	var expressTicketCount uint64
 	var queueDetails api.GetQueueDetailsResponse
@@ -109,7 +107,6 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 			fmt.Println("Invalid number. Please try again.")
 			continue
 		}
-		break
 	}
 
 	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: You are about to create %d new megapool validators, each with a %.0f ETH deposit (total: %.0f ETH).%s\nWould you like to continue?", colorYellow, count, amount, amount*float64(count), colorReset))) {
@@ -121,20 +118,19 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	fmt.Printf("There are %d validator(s) on the standard queue.\n", queueDetails.StandardLength)
 	fmt.Printf("The express queue rate is %d.\n\n", queueDetails.ExpressRate)
 
-	if c.Bool("use-express-ticket") {
-		if expressTicketCount > 0 {
-			useExpressTicket = true
-		} else {
-			fmt.Println("You do not have any express tickets available.")
-			return nil
+	expressTickets := c.Int64("express-tickets")
+	if expressTickets >= 0 {
+		if expressTicketCount < uint64(expressTickets) {
+			expressTickets = int64(expressTicketCount)
 		}
-	} else {
-		if expressTicketCount > 0 {
-			fmt.Printf("You have %d express tickets available.", expressTicketCount)
-			fmt.Println()
-			// Prompt for confirmation
-			if c.Bool("yes") || prompt.Confirm("Would you like to use your express tickets?") {
-				useExpressTicket = true
+	}
+	if expressTicketCount > 0 && expressTickets < 0 {
+		// Prompt for the number of express tickets to use
+		for expressTickets == -1 || uint64(expressTickets) > expressTicketCount {
+			expressTicketsStr := prompt.Prompt(fmt.Sprintf("How many express tickets would you like to use? (max: %d)", expressTicketCount), "^\\d+$", "Invalid number.")
+			expressTickets, err = strconv.ParseInt(expressTicketsStr, 10, 64)
+			if err != nil {
+				fmt.Println("Invalid number. Please try again.")
 			}
 		}
 	}
@@ -143,18 +139,15 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	minNodeFee := 0.0
 
 	// Check deposit can be made
-	var canDeposit api.CanNodeDepositResponse
-	if count > 1 {
-		canDeposit, err = rp.CanNodeDeposits(count, amountWei, minNodeFee, big.NewInt(0), useExpressTicket)
-	} else {
-		canDeposit, err = rp.CanNodeDeposit(amountWei, minNodeFee, big.NewInt(0), useExpressTicket)
-	}
+	canDeposit, err := rp.CanNodeDeposits(count, amountWei, minNodeFee, big.NewInt(0), uint64(expressTickets))
 	if err != nil {
 		return err
 	}
 	if !canDeposit.CanDeposit {
 		fmt.Printf("Cannot make %d node deposits:\n", count)
-
+		if canDeposit.NodeHasDebt {
+			fmt.Println("The node has debt. You must repay the debt before creating a new validator. Use the `rocketpool megapool repay-debt` command to repay the debt.")
+		}
 		if canDeposit.InsufficientBalanceWithoutCredit {
 			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
 			fmt.Printf("There is not enough ETH in the staking pool to use your credit balance (it needs at least 1 ETH but only has %.2f ETH) and you don't have enough ETH in your wallet (%.6f ETH) to cover the deposit amount yourself. If you want to continue creating a minipool, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", eth.WeiToEth(canDeposit.DepositBalance), nodeBalance)
@@ -244,63 +237,35 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	}
 
 	// Make deposit(s)
-	if count == 1 {
-		// Single deposit
-		response, err := rp.NodeDeposit(amountWei, minNodeFee, big.NewInt(0), useCreditBalance, useExpressTicket, true)
-		if err != nil {
-			return err
-		}
 
-		// Log and wait for the megapool validator deposit
-		fmt.Printf("Creating megapool validator...\n")
-		cliutils.PrintTransactionHash(rp, response.TxHash)
-		_, err = rp.WaitForTransaction(response.TxHash)
-		if err != nil {
-			return err
-		}
-
-		// Log & return
-		fmt.Printf("The node deposit of %.6f ETH was made successfully!\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
-		fmt.Printf("The validator pubkey is: %s\n\n", response.ValidatorPubkey.Hex())
-
-		fmt.Println("The new megapool validator has been created.")
-		fmt.Println("Once your validator progresses through the queue, ETH will be assigned and a 1 ETH prestake submitted.")
-		fmt.Printf("After the prestake, your node will automatically perform a stake transaction, to complete the progress.")
-		fmt.Println("")
-		fmt.Println("To check the status of your validators use `rocketpool megapool validators`")
-		fmt.Println("To monitor the stake transaction use `rocketpool service logs node`")
-	} else {
-		// Multiple deposits
-		responses, err := rp.NodeDeposits(count, amountWei, minNodeFee, big.NewInt(0), useCreditBalance, useExpressTicket, true)
-		if err != nil {
-			return err
-		}
-
-		// Log and wait for the megapool validator deposits
-		fmt.Printf("Creating %d megapool validators in a single transaction...\n", count)
-		cliutils.PrintTransactionHash(rp, responses.TxHash)
-		_, err = rp.WaitForTransaction(responses.TxHash)
-		if err != nil {
-			return err
-		}
-
-		// Log & return
-		fmt.Printf("The node deposits of %.6f ETH each (%.6f ETH total) were made successfully!\n",
-			math.RoundDown(eth.WeiToEth(amountWei), 6),
-			math.RoundDown(eth.WeiToEth(amountWei), 6)*float64(count))
-		fmt.Printf("Validator pubkeys:\n")
-		for i, pubkey := range responses.ValidatorPubkeys {
-			fmt.Printf("  %d. %s\n", i+1, pubkey.Hex())
-		}
-		fmt.Println()
-
-		fmt.Printf("The %d new megapool validators have been created.\n", count)
-		fmt.Println("Once your validators progress through the queue, ETH will be assigned and a 1 ETH prestake submitted for each.")
-		fmt.Printf("After the prestake, your node will automatically perform a stake transaction for each validator, to complete the progress.")
-		fmt.Println("")
-		fmt.Println("To check the status of your validators use `rocketpool megapool validators`")
-		fmt.Println("To monitor the stake transactions use `rocketpool service logs node`")
+	response, err := rp.NodeDeposits(count, amountWei, minNodeFee, big.NewInt(0), useCreditBalance, uint64(expressTickets), true)
+	if err != nil {
+		return err
 	}
+	// Log and wait for the megapool validator deposits
+	fmt.Printf("Creating %d megapool validators ...\n", count)
+	cliutils.PrintTransactionHash(rp, response.TxHash)
+	_, err = rp.WaitForTransaction(response.TxHash)
+	if err != nil {
+		return err
+	}
+
+	// Log & return
+	fmt.Printf("The node deposit of %.6f ETH each (%.6f ETH total) was made successfully!\n",
+		math.RoundDown(eth.WeiToEth(amountWei), 6),
+		math.RoundDown(eth.WeiToEth(amountWei), 6)*float64(count))
+	fmt.Printf("Validator pubkeys:\n")
+	for i, pubkey := range response.ValidatorPubkeys {
+		fmt.Printf("  %d. %s\n", i+1, pubkey.Hex())
+	}
+	fmt.Println()
+
+	fmt.Printf("The %d new megapool validators have been created.\n", count)
+	fmt.Println("Once your validators progress through the queue, ETH will be assigned and a 1 ETH prestake submitted for each.")
+	fmt.Printf("After the prestake, your node will automatically perform a stake transaction for each validator, to complete the progress.")
+	fmt.Println("")
+	fmt.Println("To check the status of your validators use `rocketpool megapool validators`")
+	fmt.Println("To monitor the stake transactions use `rocketpool service logs node`")
 
 	return nil
 

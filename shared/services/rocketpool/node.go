@@ -697,57 +697,25 @@ func (c *Client) NodeWithdrawCredit(amountWei *big.Int) (api.NodeWithdrawCreditR
 	return response, nil
 }
 
-// Check whether the node can make a deposit
-func (c *Client) CanNodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useExpressTicket bool) (api.CanNodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s %t", amountWei.String(), minFee, salt.String(), useExpressTicket))
-	if err != nil {
-		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %w", err)
-	}
-	var response api.CanNodeDepositResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not decode can node deposit response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposit status: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Check whether the node can make multiple deposits
-func (c *Client) CanNodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, useExpressTicket bool) (api.CanNodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s %t %d", amountWei.String(), minFee, salt.String(), useExpressTicket, count))
+func (c *Client) CanNodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, expressTickets uint64) (api.CanNodeDepositsResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s %d %d", amountWei.String(), minFee, salt.String(), expressTickets, count))
 	if err != nil {
-		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposits status: %w", err)
+		return api.CanNodeDepositsResponse{}, fmt.Errorf("Could not get can node deposits status: %w", err)
 	}
-	var response api.CanNodeDepositResponse
+	var response api.CanNodeDepositsResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not decode can node deposits response: %w", err)
+		return api.CanNodeDepositsResponse{}, fmt.Errorf("Could not decode can node deposits response: %w", err)
 	}
 	if response.Error != "" {
-		return api.CanNodeDepositResponse{}, fmt.Errorf("Could not get can node deposits status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Make a node deposit
-func (c *Client) NodeDeposit(amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, useExpressTicket bool, submit bool) (api.NodeDepositResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %t %t", amountWei.String(), minFee, salt.String(), useCreditBalance, useExpressTicket, submit))
-	if err != nil {
-		return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %w", err)
-	}
-	var response api.NodeDepositResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.NodeDepositResponse{}, fmt.Errorf("Could not decode node deposit response: %w", err)
-	}
-	if response.Error != "" {
-		return api.NodeDepositResponse{}, fmt.Errorf("Could not make node deposit: %s", response.Error)
+		return api.CanNodeDepositsResponse{}, fmt.Errorf("Could not get can node deposits status: %s", response.Error)
 	}
 	return response, nil
 }
 
 // Make multiple node deposits
-func (c *Client) NodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, useExpressTicket bool, submit bool) (api.NodeDepositsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %t %t %d", amountWei.String(), minFee, salt.String(), useCreditBalance, useExpressTicket, submit, count))
+func (c *Client) NodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, expressTickets uint64, submit bool) (api.NodeDepositsResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %d %t %d", amountWei.String(), minFee, salt.String(), useCreditBalance, expressTickets, submit, count))
 	if err != nil {
 		return api.NodeDepositsResponse{}, fmt.Errorf("Could not make node deposits: %w", err)
 	}
