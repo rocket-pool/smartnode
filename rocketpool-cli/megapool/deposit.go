@@ -19,13 +19,11 @@ import (
 
 // Config
 const (
-	colorReset            string = "\033[0m"
-	colorRed              string = "\033[31m"
-	colorGreen            string = "\033[32m"
-	colorYellow           string = "\033[33m"
-	smoothingPoolLink     string = "https://docs.rocketpool.net/guides/redstone/whats-new.html#smoothing-pool"
-	signallingAddressLink string = "https://docs.rocketpool.net/guides/houston/participate#setting-your-snapshot-signalling-address"
-	maxAlertItems         int    = 3
+	colorReset  string = "\033[0m"
+	colorRed    string = "\033[31m"
+	colorGreen  string = "\033[32m"
+	colorYellow string = "\033[33m"
+	maxCount    uint64 = 35
 )
 
 func nodeMegapoolDeposit(c *cli.Context) error {
@@ -104,8 +102,8 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	count := c.Uint64("count")
 
 	// If the count was not provided, prompt the user for the number of deposits
-	for count == 0 || count > 35 {
-		countStr := prompt.Prompt("How many validators would you like to create? (max: 35)", "^\\d+$", "Invalid number.")
+	for count == 0 || count > maxCount {
+		countStr := prompt.Prompt(fmt.Sprintf("How many validators would you like to create? (max: %d)", maxCount), "^\\d+$", "Invalid number.")
 		count, err = strconv.ParseUint(countStr, 10, 64)
 		if err != nil {
 			fmt.Println("Invalid number. Please try again.")
