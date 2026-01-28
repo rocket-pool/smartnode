@@ -240,7 +240,7 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 		return true, data, nil
 	}
 
-	// Get contracts
+	// Grab the latest rocketRewardsPool contract. This is only used to retrieve the blockNumber for the event index
 	rocketRewardsPool, err := getRocketRewardsPool(rp, opts)
 	if err != nil {
 		return false, RewardsEvent{}, err
@@ -272,11 +272,12 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	}
 
 	// Construct a filter query for relevant logs
-	rewardsSnapshotEvent := rocketRewardsPool.ABI.Events["RewardSnapshot"]
+	// Houston v1.3.1 RewardSnapshot topic hash can be found here: https://hoodi.etherscan.io/tx/0x9565e493caa7773fea5efe3bbc9074f32180d495fe8275b9f7d872b921f5daf1#eventlog
+	houstonRewardSnapshotTopicHash := common.HexToHash("0x61caab0be2a0f10d869a5f437dab4535eb8e9c868b8c1fc68f3e5c10d0cd8f66")
 	indexBytes := [32]byte{}
 	indexBig.FillBytes(indexBytes[:])
 	addressFilter := rocketRewardsPoolAddresses
-	topicFilter := [][]common.Hash{{rewardsSnapshotEvent.ID}, {indexBytes}}
+	topicFilter := [][]common.Hash{{houstonRewardSnapshotTopicHash}, {indexBytes}}
 
 	// Get the event logs
 	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(1), block, block, nil)
@@ -285,6 +286,12 @@ func GetRewardsEvent(rp *rocketpool.RocketPool, index uint64, rocketRewardsPoolA
 	}
 	if len(logs) == 0 {
 		return false, RewardsEvent{}, nil
+	}
+
+	// Use the hardcoded Houston RewardSnapshot Event ABI
+	rewardsSnapshotEvent, err := getHoustonRewardSnapshotEvent()
+	if err != nil {
+		return false, RewardsEvent{}, fmt.Errorf("error getting Houston reward snapshot event ABI: %w", err)
 	}
 
 	// Get the log info values
@@ -853,4 +860,35 @@ func getRocketRewardsPool(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rock
 	rocketRewardsPoolLock.Lock()
 	defer rocketRewardsPoolLock.Unlock()
 	return rp.GetContract("rocketRewardsPool", opts)
+}
+
+// Get the hardcoded Houston RewardSnapshot event ABI
+func getHoustonRewardSnapshotEvent() (abi.Event, error) {
+	// event RewardSnapshot(uint256 indexed rewardIndex, (uint256,uint256,uint256,bytes32,string,uint256,uint256,uint256[],uint256[],uint256[],uint256) submission, uint256 intervalStartTime, uint256 intervalEndTime, uint256 time)
+
+	uint256Ty, _ := abi.NewType("uint256", "uint256", nil)
+
+	submissionTy, _ := abi.NewType("tuple", "struct RewardSubmission", []abi.ArgumentMarshaling{
+		{Name: "rewardIndex", Type: "uint256"},
+		{Name: "executionBlock", Type: "uint256"},
+		{Name: "consensusBlock", Type: "uint256"},
+		{Name: "merkleRoot", Type: "bytes32"},
+		{Name: "merkleTreeCID", Type: "string"},
+		{Name: "intervalsPassed", Type: "uint256"},
+		{Name: "treasuryRPL", Type: "uint256"},
+		{Name: "trustedNodeRPL", Type: "uint256[]"},
+		{Name: "nodeRPL", Type: "uint256[]"},
+		{Name: "nodeETH", Type: "uint256[]"},
+		{Name: "userETH", Type: "uint256"},
+	})
+
+	event := abi.NewEvent("RewardSnapshot", "RewardSnapshot", false, abi.Arguments{
+		{Name: "rewardIndex", Type: uint256Ty, Indexed: true},
+		{Name: "submission", Type: submissionTy, Indexed: false},
+		{Name: "intervalStartTime", Type: uint256Ty, Indexed: false},
+		{Name: "intervalEndTime", Type: uint256Ty, Indexed: false},
+		{Name: "time", Type: uint256Ty, Indexed: false},
+	})
+
+	return event, nil
 }
