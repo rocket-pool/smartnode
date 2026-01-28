@@ -27,6 +27,7 @@ const (
 	rewardsFileVersionOne
 	rewardsFileVersionTwo
 	rewardsFileVersionThree
+	rewardsFileVersionFour
 	rewardsFileVersionMax = iota - 1
 
 	minRewardsFileVersionSSZ = rewardsFileVersionThree
@@ -428,6 +429,9 @@ func (versionHeader *VersionHeader) deserializeRewardsFile(bytes []byte) (IRewar
 	case rewardsFileVersionThree:
 		file := &RewardsFile_v3{}
 		return file, file.Deserialize(bytes)
+	case rewardsFileVersionFour:
+		file := &RewardsFile_v3{}
+		return file, file.Deserialize(bytes)
 	}
 
 	panic("unreachable section of code reached, please report this error to the maintainers")
@@ -446,6 +450,9 @@ func (versionHeader *VersionHeader) deserializeMinipoolPerformanceFile(bytes []b
 		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	case rewardsFileVersionThree:
+		file := &MinipoolPerformanceFile_v2{}
+		return file, file.Deserialize(bytes)
+	case rewardsFileVersionFour:
 		file := &MinipoolPerformanceFile_v2{}
 		return file, file.Deserialize(bytes)
 	}
