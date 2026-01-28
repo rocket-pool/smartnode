@@ -19,7 +19,6 @@ import (
 // Config
 const (
 	defaultMaxNodeFeeSlippage = 0.01 // 1% below current network fee
-	depositWarningMessage     = "NOTE: By creating a new minipool, your node will automatically initialize voting power to itself. If you would like to delegate your on-chain voting power, you should run the command `rocketpool pdao initialize-voting` before creating a new minipool."
 )
 
 func nodeDeposit(c *cli.Context) error {
@@ -56,6 +55,9 @@ func nodeDeposit(c *cli.Context) error {
 		return nil
 	}
 
+	fmt.Println("The minipool queue is closed in anticipation of Saturn 1 (launching Feb 18, 2026), when users will be able to create Megapools. See details here: https://saturn.rocketpool.net/")
+	return nil
+	
 	fmt.Println("Your eth2 client is on the correct network.")
 	fmt.Println()
 
