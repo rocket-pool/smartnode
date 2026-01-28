@@ -527,14 +527,6 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 				continue
 			}
 
-			// If the validator was staked but the second deposit not processed yet, add the deposit value to the beacon balance
-			if eth.GweiToWei(float64(megapoolValidatorDetails.Balance)).Cmp(eth.EthToWei(1)) == 0 && megapoolValidatorInfo.ValidatorInfo.Staked {
-				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
-				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.EthToWei(31))
-				megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
-				continue
-			}
-
 			// If the validator is exiting, beacon balance = max(beacon balance, withdrawn balance)
 			// If the beacon balance is zero we need to find the withdrawn balance from the beacon chain
 			if megapoolValidatorInfo.ValidatorInfo.Exiting {
@@ -565,10 +557,14 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 
 			// Staked
 			if megapoolValidatorInfo.ValidatorInfo.Staked {
-				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
-				if megapoolValidatorDetails.ActivationEpoch < blockEpoch && megapoolValidatorDetails.ExitEpoch > blockEpoch {
-					megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
-					megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
+				if megapoolValidatorDetails.ActivationEpoch < blockEpoch {
+					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.DepositValue)))
+				} else {
+					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+					if megapoolValidatorDetails.ActivationEpoch < blockEpoch && megapoolValidatorDetails.ExitEpoch > blockEpoch {
+						megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+						megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
+					}
 				}
 				continue
 			}
