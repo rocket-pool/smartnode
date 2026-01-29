@@ -515,60 +515,59 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 		megapoolValidatorDetails := state.MegapoolValidatorDetails[megapoolValidatorKey]
 		megapoolValidatorInfo := state.MegapoolValidatorInfo[megapoolValidatorKey]
 
-		if megapoolValidatorDetails.Exists {
-			// If the validator was dissolved, exited, or in queue, ignore the beacon balance
-			if megapoolValidatorInfo.ValidatorInfo.Dissolved || megapoolValidatorInfo.ValidatorInfo.Exited || megapoolValidatorInfo.ValidatorInfo.InQueue {
-				continue
-			}
+		// If the validator was dissolved, exited, or in queue, ignore the beacon balance
+		if megapoolValidatorInfo.ValidatorInfo.Dissolved || megapoolValidatorInfo.ValidatorInfo.Exited || megapoolValidatorInfo.ValidatorInfo.InQueue {
+			continue
+		}
 
-			// Pre-stake
-			if megapoolValidatorInfo.ValidatorInfo.InPrestake {
-				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
-				continue
-			}
+		// Pre-stake
+		if megapoolValidatorInfo.ValidatorInfo.InPrestake {
+			megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
+			continue
+		}
 
-			// If the validator is exiting, beacon balance = max(beacon balance, withdrawn balance)
-			// If the beacon balance is zero we need to find the withdrawn balance from the beacon chain
-			if megapoolValidatorInfo.ValidatorInfo.Exiting {
-				if megapoolValidatorDetails.Balance == 0 {
-					// Find the withdrawn balance from the beacon chain
-					searchWithdrawSlot := megapoolValidatorDetails.WithdrawableEpoch * 32
-					// Convert the validator index to a uint64
-					validatorIndex, err := strconv.ParseUint(megapoolValidatorDetails.Index, 10, 64)
-					if err != nil {
-						fmt.Printf("An error occurred while converting the validator index to a uint64: %s\n", err)
-					}
-					_, _, _, withdrawal, _, err := services.FindWithdrawalBlockAndArrayPosition(searchWithdrawSlot, validatorIndex, t.bc)
-					if err != nil {
-						fmt.Printf("An error occurred while searching for the withdrawn balance: %s\n", err)
-					}
-					// Track the withdrawn balance so we can discount it from the pending rewards on the contract
-					totalWithdrawnBalance.Add(totalWithdrawnBalance, eth.GweiToWei(float64(withdrawal.Amount)))
-					// Add the withdrawn balance to the beacon balance so its user share is not ignored
-					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(withdrawal.Amount)))
-				} else {
-					// Not withdrawn yet, treat it as a staking validator
-					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+		// If the validator is exiting, beacon balance = max(beacon balance, withdrawn balance)
+		// If the beacon balance is zero we need to find the withdrawn balance from the beacon chain
+		if megapoolValidatorInfo.ValidatorInfo.Exiting {
+			if megapoolValidatorDetails.Balance == 0 {
+				// Find the withdrawn balance from the beacon chain
+				searchWithdrawSlot := megapoolValidatorDetails.WithdrawableEpoch * 32
+				// Convert the validator index to a uint64
+				validatorIndex, err := strconv.ParseUint(megapoolValidatorDetails.Index, 10, 64)
+				if err != nil {
+					fmt.Printf("An error occurred while converting the validator index to a uint64: %s\n", err)
+				}
+				_, _, _, withdrawal, _, err := services.FindWithdrawalBlockAndArrayPosition(searchWithdrawSlot, validatorIndex, t.bc)
+				if err != nil {
+					fmt.Printf("An error occurred while searching for the withdrawn balance: %s\n", err)
+				}
+				// Track the withdrawn balance so we can discount it from the pending rewards on the contract
+				totalWithdrawnBalance.Add(totalWithdrawnBalance, eth.GweiToWei(float64(withdrawal.Amount)))
+				// Add the withdrawn balance to the beacon balance so its user share is not ignored
+				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(withdrawal.Amount)))
+			} else {
+				// Not withdrawn yet, treat it as a staking validator
+				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+				megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+				megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
+			}
+			continue
+		}
+
+		// Staked
+		if megapoolValidatorInfo.ValidatorInfo.Staked {
+			if megapoolValidatorDetails.ActivationEpoch == FarFutureEpoch || megapoolValidatorDetails.ActivationEpoch < blockEpoch {
+				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.DepositValue)))
+			} else {
+				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
+				if megapoolValidatorDetails.ActivationEpoch < blockEpoch && megapoolValidatorDetails.ExitEpoch > blockEpoch {
 					megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
 					megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
 				}
-				continue
 			}
-
-			// Staked
-			if megapoolValidatorInfo.ValidatorInfo.Staked {
-				if megapoolValidatorDetails.ActivationEpoch < blockEpoch {
-					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.DepositValue)))
-				} else {
-					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
-					if megapoolValidatorDetails.ActivationEpoch < blockEpoch && megapoolValidatorDetails.ExitEpoch > blockEpoch {
-						megapoolStakingBalance.Add(megapoolStakingBalance, eth.GweiToWei(float64(megapoolValidatorDetails.Balance)))
-						megapoolStakingBalance.Sub(megapoolStakingBalance, state.NetworkDetails.ReducedBond)
-					}
-				}
-				continue
-			}
+			continue
 		}
+
 	}
 
 	megapoolBalanceDetails.BeaconBalanceTotal = megapoolBeaconBalanceTotal

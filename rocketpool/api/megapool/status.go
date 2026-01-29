@@ -44,11 +44,7 @@ func getStatus(c *cli.Context, finalizedState bool) (*api.MegapoolStatusResponse
 		return nil, err
 	}
 	var opts *bind.CallOpts
-	// Get beacon head info
 
-	if err != nil {
-		return nil, fmt.Errorf("Error getting the beacon head info: %w", err)
-	}
 
 	if finalizedState {
 		// We just need a non-nil opts for the next calls to use the finalized state
