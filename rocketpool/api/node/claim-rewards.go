@@ -564,11 +564,11 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 			voterShareEthForInterval.Add(voterShareEthForInterval, &intervalInfo.VoterShareEth.Int)
 
 			claims = append(claims, types.Claim{
-				Index:               index,
-				AmountRPL:           rplForInterval,
-				AmountSmoothingETH:  smoothingEthForInterval,
-				AmountVoterShareETH: voterShareEthForInterval,
-				Proof:               intervalInfo.MerkleProof,
+				RewardIndex:            index,
+				AmountRPL:              rplForInterval,
+				AmountSmoothingPoolETH: smoothingEthForInterval,
+				AmountVoterETH:         voterShareEthForInterval,
+				MerkleProof:            intervalInfo.MerkleProof,
 			})
 		}
 	}
