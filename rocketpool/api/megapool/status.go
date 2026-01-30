@@ -255,5 +255,4 @@ func getValidatorMapAndBalances(c *cli.Context) (*api.MegapoolValidatorMapAndRew
 
 	// Return response
 	return &response, nil
-
 }
