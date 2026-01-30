@@ -489,6 +489,15 @@ func (mp *megapoolV1) GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash
 	return *withdrawalCredentials, nil
 }
 
+// Get the bond amount required for the megapool's next validator
+func (mp *megapoolV1) GetNewValidatorBondRequirement(opts *bind.CallOpts) (*big.Int, error) {
+	bondRequirement := new(*big.Int)
+	if err := mp.Contract.Call(opts, bondRequirement, "getNewValidatorBondRequirement"); err != nil {
+		return nil, fmt.Errorf("error getting megapool %s new validator bond requirement: %w", mp.Address.Hex(), err)
+	}
+	return *bondRequirement, nil
+}
+
 // Estimate the gas required to Request RPL previously staked on this megapool to be unstaked
 func (mp *megapoolV1) EstimateRequestUnstakeRPL(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return mp.Contract.GetTransactionGasInfo(opts, "requestUnstakeRPL")
