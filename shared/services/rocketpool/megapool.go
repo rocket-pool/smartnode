@@ -506,3 +506,19 @@ func (c *Client) DistributeMegapool() (api.DistributeMegapoolResponse, error) {
 	}
 	return response, nil
 }
+
+// Get the bond amount required for the megapool's next validator
+func (c *Client) GetNewValidatorBondRequirement() (api.GetNewValidatorBondRequirementResponse, error) {
+	responseBytes, err := c.callAPI("megapool get-new-validator-bond-requirement")
+	if err != nil {
+		return api.GetNewValidatorBondRequirementResponse{}, fmt.Errorf("Could not get new validator bond requirement: %w", err)
+	}
+	var response api.GetNewValidatorBondRequirementResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetNewValidatorBondRequirementResponse{}, fmt.Errorf("Could not decode new validator bond requirement response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetNewValidatorBondRequirementResponse{}, fmt.Errorf("Could not get new validator bond requirement: %s", response.Error)
+	}
+	return response, nil
+}

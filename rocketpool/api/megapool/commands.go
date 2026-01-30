@@ -740,6 +740,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:      "get-new-validator-bond-requirement",
+				Usage:     "Get the bond amount required for the megapool's next validator",
+				UsageText: "rocketpool api megapool get-new-validator-bond-requirement",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(getNewValidatorBondRequirement(c))
+					return nil
+
+				},
+			},
 		},
 	})
 }
