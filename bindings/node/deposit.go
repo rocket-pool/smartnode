@@ -14,6 +14,16 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 )
 
+type NodeDeposit struct {
+	BondAmount         *big.Int    `json:"bondAmount"`
+	UseExpressTicket   bool        `json:"useExpressTicket"`
+	ValidatorPubkey    []byte      `json:"validatorPubkey"`
+	ValidatorSignature []byte      `json:"validatorSignature"`
+	DepositDataRoot    common.Hash `json:"depositDataRoot"`
+}
+
+type Deposits []NodeDeposit
+
 // Estimate the gas of Deposit
 func EstimateDepositGas(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
@@ -32,6 +42,28 @@ func Deposit(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpressTicket bo
 	tx, err := rocketNodeDeposit.Transact(opts, "deposit", bondAmount, useExpressTicket, validatorPubkey[:], validatorSignature[:], depositDataRoot)
 	if err != nil {
 		return nil, fmt.Errorf("error making node deposit: %w", err)
+	}
+	return tx, nil
+}
+
+// Estimate the gas of DepositMulti
+func EstimateDepositMultiGas(rp *rocketpool.RocketPool, deposits Deposits, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "depositMulti", deposits)
+}
+
+// Make multiple node deposits
+func DepositMulti(rp *rocketpool.RocketPool, deposits Deposits, opts *bind.TransactOpts) (*types.Transaction, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := rocketNodeDeposit.Transact(opts, "depositMulti", deposits)
+	if err != nil {
+		return nil, fmt.Errorf("error making multiple node deposits: %w", err)
 	}
 	return tx, nil
 }
