@@ -48,6 +48,7 @@ type Megapool interface {
 	EstimateReduceBondGas(amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	ReduceBond(amount *big.Int, opts *bind.TransactOpts) (common.Hash, error)
 	GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash, error)
+	GetNewValidatorBondRequirement(opts *bind.CallOpts) (*big.Int, error)
 	EstimateRequestUnstakeRPL(opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	RequestUnstakeRPL(opts *bind.TransactOpts) (common.Hash, error)
 	EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
