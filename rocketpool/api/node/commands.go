@@ -1025,9 +1025,8 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					response, err := nodeDeposits(c, count, amountWei, minNodeFee, salt, useCreditBalance, int64(expressTickets), submit)
-					if submit {
-						api.PrintResponse(response, err)
-					} // else nodeDeposits already printed the encoded transaction
+
+					api.PrintResponse(response, err)
 					return nil
 
 				},
@@ -1813,6 +1812,26 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(provisionExpressTickets(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "get-bond-requirement",
+				Usage:     "Get the bond requirement for a validator",
+				UsageText: "rocketpool api node get-bond-requirement num-validators",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+					numValidators, err := cliutils.ValidateUint("num-validators", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(getBondRequirement(c, numValidators))
 					return nil
 
 				},

@@ -1366,3 +1366,16 @@ func (c *Client) ClaimUnclaimedRewards(nodeAddress common.Address) (api.ClaimUnc
 	}
 	return response, nil
 }
+
+// Get the bond requirement for a number of validators
+func (c *Client) GetBondRequirement(numValidators uint64) (api.GetBondRequirementResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node get-bond-requirement %d", numValidators))
+	if err != nil {
+		return api.GetBondRequirementResponse{}, fmt.Errorf("Could not get get-bond-requirement response: %w", err)
+	}
+	var response api.GetBondRequirementResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetBondRequirementResponse{}, fmt.Errorf("Could not decode get-bond-requirement response: %w", err)
+	}
+	return response, nil
+}

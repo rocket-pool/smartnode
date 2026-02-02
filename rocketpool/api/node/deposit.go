@@ -364,7 +364,7 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 	var wg1 errgroup.Group
 	var creditBalanceWei *big.Int
 	var expressTicketCount uint64
-
+	var status api.MegapoolDetails
 	// Check credit balance
 	wg1.Go(func() error {
 		creditBalanceWei, err = node.GetNodeUsableCreditAndBalance(rp, nodeAccount.Address, nil)
@@ -372,6 +372,15 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 			response.CreditBalance = creditBalanceWei
 		}
 		return err
+	})
+
+	wg1.Go(func() error {
+		status, err = services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil)
+		if err != nil {
+			return err
+		}
+		expressTicketCount = status.NodeExpressTicketCount
+		return nil
 	})
 
 	// Check node balance
@@ -392,12 +401,6 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 		return err
 	})
 
-	// Get the express ticket count
-	wg1.Go(func() error {
-		var err error
-		expressTicketCount, err = node.GetExpressTicketCount(rp, nodeAccount.Address, nil)
-		return err
-	})
 	if saturnDeployed {
 		// Check whether the node has debt
 		wg1.Go(func() error {
@@ -433,15 +436,12 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 		return nil, err
 	}
 
-	// Calculate total amount needed for all deposits
-	totalAmountWei := big.NewInt(0).Mul(amountWei, big.NewInt(int64(count)))
-
 	// Check for insufficient balance
 	totalBalance := big.NewInt(0).Add(response.NodeBalance, response.CreditBalance)
-	response.InsufficientBalance = (totalAmountWei.Cmp(totalBalance) > 0)
+	response.InsufficientBalance = (amountWei.Cmp(totalBalance) > 0)
 
 	// Check if the credit balance can be used
-	response.CanUseCredit = creditBalanceWei.Cmp(totalAmountWei) >= 0
+	response.CanUseCredit = creditBalanceWei.Cmp(amountWei) >= 0
 
 	// Update response
 	response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled || response.NodeHasDebt)
@@ -449,7 +449,7 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 		return &response, nil
 	}
 
-	if response.CanDeposit && !response.CanUseCredit && response.NodeBalance.Cmp(totalAmountWei) < 0 {
+	if response.CanDeposit && !response.CanUseCredit && response.NodeBalance.Cmp(amountWei) < 0 {
 		// Can't use credit and there's not enough ETH in the node wallet to deposit so error out
 		response.InsufficientBalanceWithoutCredit = true
 		response.CanDeposit = false
@@ -474,7 +474,7 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 			opts.Value = remainingAmount
 		}
 	} else {
-		opts.Value = totalAmountWei
+		opts.Value = amountWei
 	}
 
 	// Get the megapool address
@@ -502,8 +502,21 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 		return nil, err
 	}
 	expressTicketsRequested = min(expressTicketsRequested, int64(expressTicketCount))
+	lastBondAdded := big.NewInt(0)
+	bondedEth := status.NodeBond
+	if bondedEth == nil {
+		bondedEth = big.NewInt(0)
+	}
 	for i := uint64(0); i < count; i++ {
-
+		bondedEth = bondedEth.Add(bondedEth, lastBondAdded)
+		// Get the bond requirement for each validator
+		bondRequirement, err := node.GetBondRequirement(rp, big.NewInt(int64(uint64(status.ActiveValidatorCount)+i+1)), nil)
+		if err != nil {
+			return nil, err
+		}
+		lastBondAdded = bondRequirement
+		// Find the bond requirement for the next validator
+		nextBondRequirement := bondRequirement.Sub(bondRequirement, bondedEth)
 		// Get validator deposit data and associated parameters
 		depositData, depositDataRoot, err := validator.GetDepositData(validatorKeys[i].PrivateKey, withdrawalCredentials, eth2Config, depositAmount)
 		if err != nil {
@@ -514,7 +527,7 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 
 		// Add to deposits array
 		deposits = append(deposits, node.NodeDeposit{
-			BondAmount:         amountWei,
+			BondAmount:         nextBondRequirement,
 			UseExpressTicket:   expressTicketsRequested > 0,
 			ValidatorPubkey:    pubKey[:],
 			ValidatorSignature: signature[:],
@@ -843,10 +856,11 @@ func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee f
 		return nil, err
 	}
 
-	expressTicketCount, err := node.GetExpressTicketCount(rp, nodeAccount.Address, nil)
+	status, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
+	expressTicketCount := status.NodeExpressTicketCount
 
 	// Get the withdrawal credentials
 	withdrawalCredentials := services.CalculateMegapoolWithdrawalCredentials(megapoolAddress)
@@ -863,18 +877,15 @@ func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee f
 		return nil, err
 	}
 
-	// Calculate total amount needed
-	totalAmountWei := big.NewInt(0).Mul(amountWei, big.NewInt(int64(count)))
-
 	// Set the value to the total amount needed// Get how much credit to use
 	if useCreditBalance {
-		remainingAmount := big.NewInt(0).Sub(totalAmountWei, creditBalanceWei)
+		remainingAmount := big.NewInt(0).Sub(amountWei, creditBalanceWei)
 		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
 			// Send the remaining amount if the credit isn't enough to cover the whole deposit
 			opts.Value = remainingAmount
 		}
 	} else {
-		opts.Value = totalAmountWei
+		opts.Value = amountWei
 	}
 
 	// Create validator keys and deposit data for all deposits
@@ -883,7 +894,22 @@ func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee f
 	response.ValidatorPubkeys = make([]rptypes.ValidatorPubkey, count)
 
 	expressTicketsRequested = min(expressTicketsRequested, int64(expressTicketCount))
+	lastBondAdded := big.NewInt(0)
+	bondedEth := status.NodeBond
+	if bondedEth == nil {
+		bondedEth = big.NewInt(0)
+	}
 	for i := uint64(0); i < count; i++ {
+		bondedEth = bondedEth.Add(bondedEth, lastBondAdded)
+		// Get the bond requirement for each validator
+		bondRequirement, err := node.GetBondRequirement(rp, big.NewInt(int64(uint64(status.ActiveValidatorCount)+i+1)), nil)
+		if err != nil {
+			return nil, err
+		}
+		lastBondAdded = bondRequirement
+		// Find the bond requirement for the next validator
+		nextBondRequirement := bondRequirement.Sub(bondRequirement, bondedEth)
+
 		validatorKey, err := w.CreateValidatorKey()
 		if err != nil {
 			return nil, err
@@ -934,7 +960,7 @@ func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee f
 		}
 
 		deposits[i] = node.NodeDeposit{
-			BondAmount:         amountWei,
+			BondAmount:         nextBondRequirement,
 			UseExpressTicket:   expressTicketsRequested > 0,
 			ValidatorPubkey:    pubKey[:],
 			ValidatorSignature: signature[:],
@@ -960,11 +986,6 @@ func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee f
 		return nil, err
 	}
 
-	// Save wallet
-	if err := w.Save(); err != nil {
-		return nil, err
-	}
-
 	// Print transaction if requested
 	if !submit {
 		b, err := tx.MarshalBinary()
@@ -972,6 +993,11 @@ func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee f
 			return nil, err
 		}
 		fmt.Printf("%x\n", b)
+	} else {
+		// Save wallet
+		if err := w.Save(); err != nil {
+			return nil, err
+		}
 	}
 
 	response.TxHash = tx.Hash()

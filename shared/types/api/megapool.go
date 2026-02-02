@@ -170,3 +170,9 @@ type GetNewValidatorBondRequirementResponse struct {
 	Error                       string   `json:"error"`
 	NewValidatorBondRequirement *big.Int `json:"newValidatorBondRequirement"`
 }
+
+type GetNodeMegapoolEthBondedResponse struct {
+	Status    string   `json:"status"`
+	Error     string   `json:"error"`
+	EthBonded *big.Int `json:"ethBonded"`
+}

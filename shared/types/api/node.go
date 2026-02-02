@@ -783,6 +783,12 @@ type GetExpressTicketCountResponse struct {
 	Count  uint64 `json:"count"`
 }
 
+type GetBondRequirementResponse struct {
+	Status          string   `json:"status"`
+	Error           string   `json:"error"`
+	BondRequirement *big.Int `json:"bondRequirement"`
+}
+
 type GetExpressTicketsProvisionedResponse struct {
 	Status      string `json:"status"`
 	Error       string `json:"error"`
