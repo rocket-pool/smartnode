@@ -138,11 +138,11 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	totalBondRequirementEth := eth.WeiToEth(totalBondRequirement)
 	// Show the node bond and the total bond requirement
-	fmt.Printf("The node is currently bonded with %.2f ETH.\n", eth.WeiToEth(bondedEth))
+	fmt.Printf("The node is currently bonded with %.2f ETH.\n", status.Megapool.NodeBond)
 	fmt.Printf("The total bond requirement is %.2f ETH.\n", totalBondRequirementEth)
 	fmt.Println()
 
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: You are about to create %d new megapool validators, requiring a total of: %.0f ETH).%s\nWould you like to continue?", colorYellow, count, totalBondRequirementEth, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: You are about to create %d new megapool validators, requiring a total of: %.2f ETH).%s\nWould you like to continue?", colorYellow, count, totalBondRequirementEth, colorReset))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
