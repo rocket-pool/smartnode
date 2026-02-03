@@ -374,7 +374,9 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	nd := state.NodeDetailsByAddress[collector.nodeAddress]
 	minipools := state.MinipoolDetailsByNode[collector.nodeAddress]
 
-	megapoolDetails := state.MegapoolDetails[collector.nodeAddress]
+	// MegapoolDetails and MegapoolToPubkeysMap are keyed by megapool contract address, not node address
+	megapoolAddress := nd.MegapoolAddress
+	megapoolDetails := state.MegapoolDetails[megapoolAddress]
 
 	// Sync
 	var wg errgroup.Group
@@ -408,7 +410,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	megapoolUserCapital := eth.WeiToEth(megapoolDetails.UserCapital)
 	megapoolAssignedValue := eth.WeiToEth(megapoolDetails.AssignedValue)
 	megapoolDelegateExpiry := float64(megapoolDetails.DelegateExpiry)
-	megapoolPubkeys := state.MegapoolToPubkeysMap[collector.nodeAddress]
+	megapoolPubkeys := state.MegapoolToPubkeysMap[megapoolAddress]
 	megapoolBeaconBalanceTotal := big.NewInt(0)
 	megapoolStandardQueueSize := float64(0)
 	megapoolExpressQueueSize := float64(0)
