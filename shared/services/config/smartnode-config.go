@@ -38,8 +38,8 @@ const (
 // Defaults
 const (
 	defaultProjectName       string = "rocketpool"
-	WatchtowerMaxFeeDefault  uint64 = 50
-	WatchtowerPrioFeeDefault uint64 = 3
+	WatchtowerMaxFeeDefault  uint64 = 30
+	WatchtowerPrioFeeDefault uint64 = 1
 )
 
 type RewardsExtension string
