@@ -273,6 +273,15 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	if err != nil {
 		return api.MegapoolDetails{}, err
 	}
+	details.NodeShare, err = network.GetCurrentNodeShare(rp, opts)
+	if err != nil {
+		return api.MegapoolDetails{}, err
+	}
+	details.NodeExpressTicketCount, err = node.GetExpressTicketCount(rp, nodeAccount, opts)
+	if err != nil {
+		return api.MegapoolDetails{}, err
+	}
+
 	if !details.Deployed {
 		return details, nil
 	}
@@ -313,11 +322,6 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 			return err
 		})
 	}
-	wg.Go(func() error {
-		var err error
-		details.NodeShare, err = network.GetCurrentNodeShare(rp, opts)
-		return err
-	})
 	wg.Go(func() error {
 		var err error
 		details.NodeDebt, err = mega.GetDebt(opts)
@@ -366,11 +370,6 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	wg.Go(func() error {
 		var err error
 		details.DelegateExpiry, err = megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, opts)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		details.NodeExpressTicketCount, err = node.GetExpressTicketCount(rp, nodeAccount, opts)
 		return err
 	})
 	wg.Go(func() error {

@@ -158,6 +158,9 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 			expressTickets = int64(expressTicketCount)
 		}
 	}
+	if expressTicketCount == 0 {
+		expressTickets = int64(0)
+	}
 	if expressTicketCount > 0 && expressTickets < 0 {
 		// Prompt for the number of express tickets to use
 		for expressTickets == -1 || uint64(expressTickets) > expressTicketCount {
