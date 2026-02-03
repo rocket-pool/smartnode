@@ -646,7 +646,7 @@ func NewDefaultMockHistoryNoNodes() *MockHistory {
 				VoterShare: big.NewInt(6e16),
 				PdaoShare:  big.NewInt(5e16),
 			},
-			SmoothingPoolPendingVoterShare: big.NewInt(0).Mul(big.NewInt(10), oneEth),
+			PendingVoterShareEth: big.NewInt(0).Mul(big.NewInt(10), oneEth),
 
 			// The rest of the fields seem unimportant and are left empty
 		},

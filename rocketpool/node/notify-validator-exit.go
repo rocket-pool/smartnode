@@ -144,11 +144,11 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 	}
 
 	// Iterate over megapool validators checking whether they're ready to notify exit
-	validatorCount, err := mp.GetValidatorCount(nil)
+	validatorCount, err := mp.GetValidatorCount(opts)
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount))
+	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount), opts)
 	if err != nil {
 		return err
 	}

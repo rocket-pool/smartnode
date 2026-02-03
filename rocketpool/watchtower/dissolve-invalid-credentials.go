@@ -104,7 +104,10 @@ func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *
 				t.log.Printlnf("Error fetching validator %s from beacon state: %s", validatorFromState.Index, err)
 				continue
 			}
-			if validatorFromState.Index != "" && !bytes.Equal(validatorFromState.WithdrawalCredentials.Bytes(), expectedWithdrawalAddress.Bytes()) {
+			if !validatorFromState.Exists {
+				continue
+			}
+			if !bytes.Equal(validatorFromState.WithdrawalCredentials.Bytes(), expectedWithdrawalAddress.Bytes()) {
 				t.log.Printlnf("Validator %s has an invalid credential %s while the expected is %s. Dissolving...", validatorFromState.Index, validatorFromState.WithdrawalCredentials, expectedWithdrawalAddress.Bytes())
 				t.dissolveMegapoolValidator(validator)
 			}

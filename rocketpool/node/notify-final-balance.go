@@ -149,7 +149,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount))
+	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount), opts)
 	if err != nil {
 		return err
 	}
@@ -200,6 +200,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
+	t.log.Printlnf("The Beacon WithdrawalSlot for validator ID %d is: %d", validatorInfo.ValidatorId, withdrawalProof.WithdrawalSlot)
 
 	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, proofSlot, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, stateUsed)
 	if err != nil {

@@ -167,7 +167,7 @@ func NotifyNotExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, va
 	if err != nil {
 		return nil, err
 	}
-	tx, err := megapoolManager.Transact(opts, "notifyNotExit", megapoolAddress, slotTimestamp, validatorId, validatorProof, slotProof)
+	tx, err := megapoolManager.Transact(opts, "notifyNotExit", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
 	if err != nil {
 		return nil, fmt.Errorf("error calling notify not exit: %w", err)
 	}

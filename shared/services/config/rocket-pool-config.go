@@ -1075,6 +1075,28 @@ func (cfg *RocketPoolConfig) SuggestedBlockGasLimit() string {
 
 }
 
+func (cfg *RocketPoolConfig) KeymanagerApiPort() uint16 {
+	if cfg.ConsensusClientLocal() {
+		return cfg.ConsensusCommon.KeymanagerApiPort.Value.(uint16)
+	}
+
+	cc, _ := cfg.GetSelectedConsensusClient()
+	switch cc {
+	case config.ConsensusClient_Lighthouse:
+		return cfg.ExternalLighthouse.KeymanagerApiPort.Value.(uint16)
+	case config.ConsensusClient_Lodestar:
+		return cfg.ExternalLodestar.KeymanagerApiPort.Value.(uint16)
+	case config.ConsensusClient_Nimbus:
+		return cfg.ExternalNimbus.KeymanagerApiPort.Value.(uint16)
+	case config.ConsensusClient_Prysm:
+		return cfg.ExternalPrysm.KeymanagerApiPort.Value.(uint16)
+	case config.ConsensusClient_Teku:
+		return cfg.ExternalTeku.KeymanagerApiPort.Value.(uint16)
+	default:
+		return 5062
+	}
+}
+
 // Used by text/template to format validator.yml
 func (cfg *RocketPoolConfig) RocketPoolVersion() string {
 	return shared.RocketPoolVersion()

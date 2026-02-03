@@ -44,7 +44,7 @@ func (client *defaultRewardsExecutionClient) HeaderByNumber(ctx context.Context,
 
 func (client *defaultRewardsExecutionClient) GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error) {
 	found, rewardsEvent, err := rewards.GetRewardsEvent(client.RocketPool, index, rocketRewardsPoolAddresses, opts)
-	if err == nil {
+	if err == nil && found {
 		return found, rewardsEvent, nil
 	}
 	// Try the old v1.3.1 format if the new one fails

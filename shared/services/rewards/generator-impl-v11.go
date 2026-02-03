@@ -162,9 +162,11 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 				if nodeInfo.Megapool == nil {
 					continue
 				}
-				r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
+				r.epsilon.Add(r.epsilon, big.NewInt(int64(len(nodeInfo.Megapool.Validators))))
 			}
 		}
+		// Cumulative error can exceed the validator count
+		r.epsilon.Mul(r.epsilon, big.NewInt(2))
 	}
 
 	// Calculate the RPL rewards
@@ -262,6 +264,8 @@ func (r *treeGeneratorImpl_v11) approximateStakerShareOfSmoothingPool(rp Rewards
 			}
 		}
 	}
+	// Cumulative error can exceed the validator count
+	r.epsilon.Mul(r.epsilon, big.NewInt(2))
 
 	// Calculate the ETH rewards
 	err := r.calculateEthRewards(false)
@@ -487,12 +491,7 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 	// Get the Smoothing Pool contract's balance
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
 	r.log.Printlnf("%s Smoothing Pool Balance:\t%s\t(%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
-	r.log.Printlnf("%s  Earmarked Voter Share:\t%s\t(%.3f)", r.logPrefix, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare.String(), eth.WeiToEth(r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare))
-
-	// Ignore the ETH calculation if there are no rewards
-	if r.smoothingPoolBalance.Cmp(common.Big0) == 0 {
-		return nil
-	}
+	r.log.Printlnf("%s Voter Share from Megapools not in the smoothing pool:\t%s\t(%.3f)", r.logPrefix, r.networkState.NetworkDetails.PendingVoterShareEth.String(), eth.WeiToEth(r.networkState.NetworkDetails.PendingVoterShareEth))
 
 	if r.rewardsFile.Index == 0 {
 		// This is the first interval, Smoothing Pool rewards are ignored on the first interval since it doesn't have a discrete start time
@@ -500,6 +499,7 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 	}
 
 	// Get the start time of this interval based on the event from the previous one
+	// This must be done even if there are no smoothing pool rewards, to set the start blocks and timestamps
 	//previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts) // This is immutable so querying at the head is fine and mitigates issues around calls for pruned EL state
 	previousIntervalEvent, err := r.rp.GetRewardSnapshotEvent(r.previousRewardsPoolAddresses, r.rewardsFile.Index-1, r.opts)
 	if err != nil {
@@ -508,6 +508,11 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 	startElBlockHeader, err := r.getBlocksAndTimesForInterval(previousIntervalEvent)
 	if err != nil {
 		return err
+	}
+
+	// Ignore the ETH calculation if there are no rewards
+	if r.smoothingPoolBalance.Cmp(common.Big0) == 0 {
+		return nil
 	}
 
 	r.elStartTime = time.Unix(int64(startElBlockHeader.Time), 0)
@@ -845,7 +850,8 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	var err error
 	bonusScalar := big.NewInt(0).Set(oneEth)
 
-	voterEth := big.NewInt(0)
+	voterEthFromSmoothingPool := big.NewInt(0)
+	totalVoterEth := big.NewInt(0)
 	pdaoEth := big.NewInt(0)
 
 	// If pdao score is greater than 0, calculate the pdao share
@@ -857,15 +863,15 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 
 	// If voter score is greater than 0, calculate the voter share
 	if r.totalVoterScore.Cmp(common.Big0) > 0 {
-		voterEth.Mul(r.smoothingPoolBalance, r.totalVoterScore)
-		voterEth.Div(voterEth, big.NewInt(int64(r.successfulAttestations)))
-		voterEth.Div(voterEth, oneEth)
+		voterEthFromSmoothingPool.Mul(r.smoothingPoolBalance, r.totalVoterScore)
+		voterEthFromSmoothingPool.Div(voterEthFromSmoothingPool, big.NewInt(int64(r.successfulAttestations)))
+		voterEthFromSmoothingPool.Div(voterEthFromSmoothingPool, oneEth)
 
 		// Set the voter share eth in the rewards file
-		r.rewardsFile.TotalRewards.SmoothingPoolVoterShareEth.Set(voterEth)
+		r.rewardsFile.TotalRewards.SmoothingPoolVoterShareEth.Set(voterEthFromSmoothingPool)
 
-		// Add in the earmarked voter share
-		voterEth.Add(voterEth, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare)
+		// Add in the pending voter share (ETH distributed from Megapools)
+		totalVoterEth.Add(voterEthFromSmoothingPool, r.networkState.NetworkDetails.PendingVoterShareEth)
 	}
 
 	totalMegapoolVoteEligibleRpl := big.NewInt(0)
@@ -886,18 +892,18 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 			continue
 		}
 
-		// The node's voter share is nodeRpl*voterEth/totalMegapoolVoteEligibleRpl
+		// The node's voter share is nodeRpl*totalVoterEth/totalMegapoolVoteEligibleRpl
 		nodeInfo.VoterShareEth.Set(nodeInfo.MegapoolVoteEligibleRpl)
-		nodeInfo.VoterShareEth.Mul(nodeInfo.VoterShareEth, voterEth)
+		nodeInfo.VoterShareEth.Mul(nodeInfo.VoterShareEth, totalVoterEth)
 		nodeInfo.VoterShareEth.Div(nodeInfo.VoterShareEth, totalMegapoolVoteEligibleRpl)
 		trueVoterEth.Add(trueVoterEth, nodeInfo.VoterShareEth)
 	}
 
-	// If there weren't any successful attestations, everything goes to the pool stakers
+	// If there weren't any successful attestations, everything goes to the pool stakers (rETH holders)
 	if r.totalAttestationScore.Cmp(common.Big0) == 0 || r.successfulAttestations == 0 {
 		r.log.Printlnf("WARNING: Total attestation score = %s, successful attestations = %d... sending the whole smoothing pool balance to the pool stakers.", r.totalAttestationScore.String(), r.successfulAttestations)
 		poolStakerEth := big.NewInt(0).Set(r.smoothingPoolBalance)
-		poolStakerEth.Sub(poolStakerEth, trueVoterEth)
+		poolStakerEth.Sub(poolStakerEth, voterEthFromSmoothingPool)
 		poolStakerEth.Sub(poolStakerEth, pdaoEth)
 		return &nodeRewards{
 			poolStakerEth: poolStakerEth,
@@ -960,35 +966,39 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 	}
 
 	if r.rewardsFile.RulesetVersion >= 10 {
-		remainingBalance := big.NewInt(0).Sub(r.smoothingPoolBalance, totalEthForMinipools)
+		// We're distributing the smoothing pool balance plus the pending voter share
+		remainingBalance := big.NewInt(0).Add(r.smoothingPoolBalance, r.networkState.NetworkDetails.PendingVoterShareEth)
+		remainingBalance.Sub(remainingBalance, totalEthForMinipools)
 		remainingBalance.Sub(remainingBalance, totalEthForMegapools)
 		remainingBalance.Sub(remainingBalance, pdaoEth)
 		if trueVoterEth.Sign() > 0 {
 			remainingBalance.Sub(remainingBalance, trueVoterEth)
-		} else {
-			// Nobody earned voter share.
-			// Subtract voter share- it shouldn't be used to pay bonuses, or we could have a deficit later.
-			remainingBalance.Sub(remainingBalance, r.networkState.NetworkDetails.SmoothingPoolPendingVoterShare)
 		}
-		if remainingBalance.Cmp(totalConsensusBonus) < 0 {
-			r.log.Printlnf("WARNING: Remaining balance is less than total consensus bonus... Balance = %s, total consensus bonus = %s", remainingBalance.String(), totalConsensusBonus.String())
-			// Scale bonuses down to fit the remaining balance
-			bonusScalar.Div(big.NewInt(0).Mul(remainingBalance, oneEth), totalConsensusBonus)
-			for _, nsd := range r.nodeDetails {
-				nsd.BonusEth.Mul(nsd.BonusEth, remainingBalance)
-				nsd.BonusEth.Div(nsd.BonusEth, totalConsensusBonus)
-				// Calculate the reduced bonus for each minipool
-				// Because of integer division, this will be less than the actual bonus by up to 1 wei
-				for _, mpd := range nsd.Minipools {
-					if mpd.MinipoolBonus == nil {
-						continue
+		// Only process bonuses if totalConsensusBonus is greater than zero
+		if totalConsensusBonus != nil && totalConsensusBonus.Sign() > 0 {
+			if remainingBalance.Cmp(totalConsensusBonus) < 0 {
+				r.log.Printlnf("WARNING: Remaining balance is less than total consensus bonus... Balance = %s, total consensus bonus = %s", remainingBalance.String(), totalConsensusBonus.String())
+				// Scale bonuses down to fit the remaining balance
+				bonusScalar.Div(big.NewInt(0).Mul(remainingBalance, oneEth), totalConsensusBonus)
+				for _, nsd := range r.nodeDetails {
+					nsd.BonusEth.Mul(nsd.BonusEth, remainingBalance)
+					nsd.BonusEth.Div(nsd.BonusEth, totalConsensusBonus)
+					// Calculate the reduced bonus for each minipool
+					// Because of integer division, this will be less than the actual bonus by up to 1 wei
+					for _, mpd := range nsd.Minipools {
+						if mpd.MinipoolBonus == nil {
+							continue
+						}
+						mpd.MinipoolBonus.Mul(mpd.MinipoolBonus, remainingBalance)
+						mpd.MinipoolBonus.Div(mpd.MinipoolBonus, totalConsensusBonus)
 					}
-					mpd.MinipoolBonus.Mul(mpd.MinipoolBonus, remainingBalance)
-					mpd.MinipoolBonus.Div(mpd.MinipoolBonus, totalConsensusBonus)
 				}
+			} else {
+				r.log.Printlnf("%s Smoothing Pool has %s (%.3f) Pool Staker ETH before bonuses which is enough for %s (%.3f) in bonuses.", r.logPrefix, remainingBalance.String(), eth.WeiToEth(remainingBalance), totalConsensusBonus.String(), eth.WeiToEth(totalConsensusBonus))
 			}
 		} else {
-			r.log.Printlnf("%s Smoothing Pool has %s (%.3f) Pool Staker ETH before bonuses which is enough for %s (%.3f) in bonuses.", r.logPrefix, remainingBalance.String(), eth.WeiToEth(remainingBalance), totalConsensusBonus.String(), eth.WeiToEth(totalConsensusBonus))
+			// No bonuses to distribute
+			r.log.Printlnf("%s Smoothing Pool has %s (%.3f) Pool Staker ETH before bonuses. No consensus bonuses to distribute.", r.logPrefix, remainingBalance.String(), eth.WeiToEth(remainingBalance))
 		}
 	}
 
@@ -1013,8 +1023,9 @@ func (r *treeGeneratorImpl_v11) calculateNodeRewards() (*nodeRewards, error) {
 
 	trueNodeOperatorAmount.Add(trueNodeOperatorAmount, totalEthForBonuses)
 
-	// This is how much actually goes to the pool stakers - it should ideally be equal to poolStakerShare but this accounts for any cumulative floating point errors
-	truePoolStakerAmount := big.NewInt(0).Sub(r.smoothingPoolBalance, trueNodeOperatorAmount)
+	// This is how much actually goes to the pool stakers (rETH holders) - it should ideally be equal to poolStakerShare but this accounts for any cumulative floating point errors
+	truePoolStakerAmount := big.NewInt(0).Add(r.smoothingPoolBalance, r.networkState.NetworkDetails.PendingVoterShareEth)
+	truePoolStakerAmount.Sub(truePoolStakerAmount, trueNodeOperatorAmount)
 	truePoolStakerAmount.Sub(truePoolStakerAmount, pdaoEth)
 	truePoolStakerAmount.Sub(truePoolStakerAmount, trueVoterEth)
 

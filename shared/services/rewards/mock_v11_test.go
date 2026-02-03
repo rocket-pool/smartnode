@@ -850,7 +850,7 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	// Ovewrite the SP balance to a value under the bonus commission
 	history.NetworkDetails.SmoothingPoolBalance = big.NewInt(1100)
 	// Set the SP voter share to 0
-	history.NetworkDetails.SmoothingPoolPendingVoterShare = big.NewInt(100)
+	history.NetworkDetails.PendingVoterShareEth = big.NewInt(100)
 	// Set the pdao share to 0
 	state := history.GetEndNetworkState()
 	state.IsSaturnDeployed = true
@@ -909,12 +909,12 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	// Check the rewards file
 	rewardsFile := v11Artifacts.RewardsFile
 	ethOne := rewardsFile.GetNodeSmoothingPoolEth(nodeOne.Address)
-	if ethOne.Uint64() != 579 {
-		t.Fatalf("Node one ETH amount does not match expected value: %s != %d", ethOne.String(), 169+416)
+	if ethOne.Uint64() != 707 {
+		t.Fatalf("Node one ETH amount does not match expected value: %s != %d", ethOne.String(), 707)
 	}
 	ethTwo := rewardsFile.GetNodeSmoothingPoolEth(nodeTwo.Address)
-	if ethTwo.Uint64() != 420 {
-		t.Fatalf("Node two ETH amount does not match expected value: %s != %d", ethTwo.String(), 177+237)
+	if ethTwo.Uint64() != 492 {
+		t.Fatalf("Node two ETH amount does not match expected value: %s != %d", ethTwo.String(), 492)
 	}
 
 	// Check the minipool performance file
@@ -923,15 +923,15 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	if !ok {
 		t.Fatalf("Node one minipool performance not found")
 	}
-	if perfOne.GetBonusEthEarned().Uint64() != 393 {
-		t.Fatalf("Node one bonus does not match expected value: %s != %d", perfOne.GetBonusEthEarned().String(), 416)
+	if perfOne.GetBonusEthEarned().Uint64() != 521 {
+		t.Fatalf("Node one bonus does not match expected value: %s != %d", perfOne.GetBonusEthEarned().String(), 521)
 	}
 	perfTwo, ok := minipoolPerformanceFile.GetMinipoolPerformance(nodeTwo.Minipools[0].Address)
 	if !ok {
 		t.Fatalf("Node two minipool performance not found")
 	}
-	if perfTwo.GetBonusEthEarned().Uint64() != 225 {
-		t.Fatalf("Node two bonus does not match expected value: %s != %d", perfTwo.GetBonusEthEarned().String(), 237)
+	if perfTwo.GetBonusEthEarned().Uint64() != 297 {
+		t.Fatalf("Node two bonus does not match expected value: %s != %d", perfTwo.GetBonusEthEarned().String(), 297)
 	}
 }
 

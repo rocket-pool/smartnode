@@ -8,11 +8,11 @@ import (
 
 // Claim struct
 type Claim struct {
-	Index               *big.Int
-	AmountRPL           *big.Int
-	AmountSmoothingETH  *big.Int
-	AmountVoterShareETH *big.Int
-	Proof               []common.Hash
+	RewardIndex            *big.Int
+	AmountRPL              *big.Int
+	AmountSmoothingPoolETH *big.Int
+	AmountVoterETH         *big.Int
+	MerkleProof            []common.Hash
 }
 
 type Claims []Claim

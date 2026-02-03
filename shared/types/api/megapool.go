@@ -165,3 +165,14 @@ type ValidatorWithdrawableEpochProof struct {
 	WithdrawableEpoch uint64
 	Witnesses         [][32]byte
 }
+type GetNewValidatorBondRequirementResponse struct {
+	Status                      string   `json:"status"`
+	Error                       string   `json:"error"`
+	NewValidatorBondRequirement *big.Int `json:"newValidatorBondRequirement"`
+}
+
+type GetNodeMegapoolEthBondedResponse struct {
+	Status    string   `json:"status"`
+	Error     string   `json:"error"`
+	EthBonded *big.Int `json:"ethBonded"`
+}

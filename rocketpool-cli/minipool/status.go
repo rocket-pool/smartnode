@@ -161,6 +161,7 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	} else {
 		fmt.Printf("%sInfractions:           %d%s\n", colorRed, minipool.Penalties, colorReset)
 	}
+	fmt.Printf("Status:                %s\n", minipool.Status.Status.String())
 	fmt.Printf("Status updated:        %s\n", minipool.Status.StatusTime.Format(TimeFormat))
 	fmt.Printf("Node fee:              %f%%\n", minipool.Node.Fee*100)
 	fmt.Printf("Node deposit:          %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
