@@ -88,7 +88,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 				"Use this flag when nobody can see your screen to allow sensitive data to be printed without prompting",
 		},
 	}
-	enableSaturn := strings.Contains(shared.RocketPoolVersion(), "dev")
+	enableSaturn := strings.Contains(shared.RocketPoolVersion(), "rc")
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
