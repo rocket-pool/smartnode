@@ -58,6 +58,13 @@ func getStatus(c *cli.Context, finalizedState bool) (*api.MegapoolStatusResponse
 	}
 	response.Megapool = details
 
+	// Get beacon head
+	beaconHead, err := bc.GetBeaconHead()
+	if err != nil {
+		return nil, fmt.Errorf("Error getting beacon head: %w", err)
+	}
+	response.BeaconHead = beaconHead
+
 	// Get latest delegate address
 	delegate, err := rp.GetContract("rocketMegapoolDelegate", opts)
 	if err != nil {
