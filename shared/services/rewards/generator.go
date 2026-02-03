@@ -56,7 +56,7 @@ const (
 
 	// Testnet intervals
 	TestnetV10Interval uint64 = 0
-	TestnetV11Interval uint64 = 9000 // TODO: schedule v11
+	TestnetV11Interval uint64 = 140
 )
 
 func GetMainnetRulesetVersion(interval uint64) uint64 {

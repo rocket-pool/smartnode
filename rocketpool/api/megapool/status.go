@@ -45,7 +45,6 @@ func getStatus(c *cli.Context, finalizedState bool) (*api.MegapoolStatusResponse
 	}
 	var opts *bind.CallOpts
 
-
 	if finalizedState {
 		// We just need a non-nil opts for the next calls to use the finalized state
 		opts = &bind.CallOpts{
@@ -251,5 +250,4 @@ func getValidatorMapAndBalances(c *cli.Context) (*api.MegapoolValidatorMapAndRew
 
 	// Return response
 	return &response, nil
-
 }
