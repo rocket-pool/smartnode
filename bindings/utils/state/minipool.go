@@ -16,10 +16,10 @@ import (
 )
 
 const (
-	minipoolBatchSize              int = 100
-	minipoolCompleteShareBatchSize int = 500
-	minipoolAddressBatchSize       int = 1000
-	minipoolVersionBatchSize       int = 500
+	minipoolBatchSize              int = 70
+	minipoolCompleteShareBatchSize int = 400
+	minipoolAddressBatchSize       int = 700
+	minipoolVersionBatchSize       int = 400
 )
 
 // Complete details for a minipool

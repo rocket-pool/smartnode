@@ -33,5 +33,6 @@ func nodeDeposit(c *cli.Context) error {
 	}
 
 	fmt.Println("The minipool queue is closed in anticipation of Saturn 1 (launching Feb 18, 2026), when users will be able to create Megapools. See details here: https://saturn.rocketpool.net/")
+
 	return nil
 }
