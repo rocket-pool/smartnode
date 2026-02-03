@@ -606,12 +606,15 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	}
 
 	// Calculate the node weight
-	minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, state.NetworkDetails.MinCollateralFraction)
-	minCollateral.Div(minCollateral, state.NetworkDetails.RplPrice)
-
 	nodeWeight := big.NewInt(0)
-	// The node must satisfy collateral requirements and have eligible ETH from which to earn rewards.
-	if nd.LegacyStakedRPL.Cmp(minCollateral) != -1 && eligibleBorrowedEth.Sign() > 0 {
+	if !state.IsSaturnDeployed {
+		minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, state.NetworkDetails.MinCollateralFraction)
+		minCollateral.Div(minCollateral, state.NetworkDetails.RplPrice)
+		// The node must satisfy collateral requirements and have eligible ETH from which to earn rewards.
+		if nd.LegacyStakedRPL.Cmp(minCollateral) != -1 && eligibleBorrowedEth.Sign() > 0 {
+			nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.LegacyStakedRPL)
+		}
+	} else if eligibleBorrowedEth.Sign() > 0 {
 		nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.LegacyStakedRPL)
 	}
 
@@ -669,22 +672,27 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		rewardableBondedEth.Add(rewardableBondedEth, bonded)
 	}
 
-	// Calculate the "rewardable" minimum based on the Beacon Chain, including pending bond reductions
-	rewardableMinimumStake := big.NewInt(0).Mul(rewardableBorrowedEth, state.NetworkDetails.MinCollateralFraction)
-	rewardableMinimumStake.Div(rewardableMinimumStake, rplPriceRaw)
+	var rewardableStakeFloat float64
+	if !state.IsSaturnDeployed {
+		// Calculate the "rewardable" minimum based on the Beacon Chain, including pending bond reductions
+		rewardableMinimumStake := big.NewInt(0).Mul(rewardableBorrowedEth, state.NetworkDetails.MinCollateralFraction)
+		rewardableMinimumStake.Div(rewardableMinimumStake, rplPriceRaw)
 
-	// Calculate the "rewardable" maximum based on the Beacon Chain, including the pending bond reductions
-	rewardableMaximumStake := big.NewInt(0).Mul(rewardableBondedEth, state.NetworkDetails.MaxCollateralFraction)
-	rewardableMaximumStake.Div(rewardableMaximumStake, rplPriceRaw)
+		// Calculate the "rewardable" maximum based on the Beacon Chain, including the pending bond reductions
+		rewardableMaximumStake := big.NewInt(0).Mul(rewardableBondedEth, state.NetworkDetails.MaxCollateralFraction)
+		rewardableMaximumStake.Div(rewardableMaximumStake, rplPriceRaw)
 
-	// Calculate the actual "rewardable" amount
-	rewardableRplStake := big.NewInt(0).Set(nd.LegacyStakedRPL)
-	if rewardableRplStake.Cmp(rewardableMinimumStake) < 0 {
-		rewardableRplStake.SetUint64(0)
-	} else if rewardableRplStake.Cmp(rewardableMaximumStake) > 0 {
-		rewardableRplStake.Set(rewardableMaximumStake)
+		// Calculate the actual "rewardable" amount
+		rewardableRplStake := big.NewInt(0).Set(nd.LegacyStakedRPL)
+		if rewardableRplStake.Cmp(rewardableMinimumStake) < 0 {
+			rewardableRplStake.SetUint64(0)
+		} else if rewardableRplStake.Cmp(rewardableMaximumStake) > 0 {
+			rewardableRplStake.Set(rewardableMaximumStake)
+		}
+		rewardableStakeFloat = eth.WeiToEth(rewardableRplStake)
+	} else {
+		rewardableStakeFloat = eth.WeiToEth(nd.LegacyStakedRPL)
 	}
-	rewardableStakeFloat := eth.WeiToEth(rewardableRplStake)
 
 	// Calculate the estimated rewards
 	rewardsIntervalDays := rewardsInterval.Seconds() / (60 * 60 * 24)
