@@ -107,7 +107,7 @@ type SnapshotEnd struct {
 
 type treeGeneratorImpl interface {
 	generateTree(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*GenerateTreeResult, error)
-	approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error)
+	approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*big.Int, error)
 	getRulesetVersion() uint64
 	// Returns the primary artifact cid for consensus, all cids of all files in a map, and any potential errors
 	saveFiles(smartnode *config.SmartnodeConfig, treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error)
@@ -239,7 +239,7 @@ func (t *TreeGenerator) GenerateTree() (*GenerateTreeResult, error) {
 }
 
 func (t *TreeGenerator) ApproximateStakerShareOfSmoothingPool() (*big.Int, error) {
-	return t.approximatorImpl.approximateStakerShareOfSmoothingPool(t.rp, fmt.Sprint(t.cfg.Smartnode.Network.Value), t.bc)
+	return t.approximatorImpl.approximateStakerShareOfSmoothingPool(t.rp, fmt.Sprint(t.cfg.Smartnode.Network.Value), t.cfg.Smartnode.GetPreviousRewardsPoolAddresses(), t.bc)
 }
 
 func (t *TreeGenerator) GetGeneratorRulesetVersion() uint64 {
@@ -270,7 +270,7 @@ func (t *TreeGenerator) ApproximateStakerShareOfSmoothingPoolWithRuleset(ruleset
 		return nil, fmt.Errorf("ruleset v%d does not exist", ruleset)
 	}
 
-	return info.generator.approximateStakerShareOfSmoothingPool(t.rp, fmt.Sprint(t.cfg.Smartnode.Network.Value), t.bc)
+	return info.generator.approximateStakerShareOfSmoothingPool(t.rp, fmt.Sprint(t.cfg.Smartnode.Network.Value), t.cfg.Smartnode.GetPreviousRewardsPoolAddresses(), t.bc)
 }
 
 func (t *TreeGenerator) SaveFiles(treeResult *GenerateTreeResult, nodeTrusted bool) (cid.Cid, map[string]cid.Cid, error) {
