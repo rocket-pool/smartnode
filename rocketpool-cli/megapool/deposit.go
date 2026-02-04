@@ -197,7 +197,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
 			creditBalance := eth.WeiToEth(canDeposit.CreditBalance)
 
-			fmt.Printf("The node's balance of %.6f ETH and credit balance of %.6f ETH are not enough to create %d megapool validators with a total %.1f ETH bond.", nodeBalance, creditBalance, count, totalBondRequirementEth)
+			fmt.Printf("The node's balance of %.6f ETH and credit balance of %.6f ETH are not enough to create %d megapool validator(s) with a total %.1f ETH bond.", nodeBalance, creditBalance, count, totalBondRequirementEth)
 
 		}
 		if canDeposit.InvalidAmount {
@@ -223,7 +223,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node.\n\n", totalBondRequirementEth)
 			}
 		} else {
-			fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new megapool validator; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue creating this megapool validator now, you will have to pay for the full bond amount.\n\n", colorYellow, eth.WeiToEth(canDeposit.DepositBalance), colorReset)
+			fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new megapool validator; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue the deposit now, you will have to pay for the full bond amount.\n\n", colorYellow, eth.WeiToEth(canDeposit.DepositBalance), colorReset)
 		}
 		// Prompt for confirmation
 		if !(c.Bool("yes") || prompt.Confirm("Would you like to continue?")) {
@@ -264,7 +264,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	// Prompt for confirmation
 
 	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
-		"You are about to deposit %.6f ETH to create %d new megapool validators.\n"+
+		"You are about to deposit %.6f ETH to create %d new megapool validator(s).\n"+
 			"%sARE YOU SURE YOU WANT TO DO THIS? %s\n",
 		math.RoundDown(eth.WeiToEth(totalBondRequirement), 6),
 		count,
@@ -281,7 +281,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		return err
 	}
 	// Log and wait for the megapool validator deposits
-	fmt.Printf("Creating %d megapool validators ...\n", count)
+	fmt.Printf("Creating %d megapool validator(s) ...\n", count)
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	_, err = rp.WaitForTransaction(response.TxHash)
 	if err != nil {
