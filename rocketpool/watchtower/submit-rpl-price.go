@@ -966,7 +966,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 	if index == indexToSubmit {
 
 		// Get the current network recommended max fee
-		suggestedMaxFee, err := rpgas.GetHeadlessMaxFeeWei(t.cfg)
+		suggestedMaxFee, err := rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
 		if err != nil {
 			return fmt.Errorf("error getting recommended base fee from the network for Arbitrum price submission: %w", err)
 		}

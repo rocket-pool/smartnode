@@ -384,6 +384,11 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	})
 	wg.Go(func() error {
 		var err error
+		details.NodeQueuedBond, err = mega.GetNodeQueuedBond(opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
 		details.UserCapital, err = mega.GetUserCapital(opts)
 		return err
 	})

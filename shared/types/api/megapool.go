@@ -39,6 +39,7 @@ type MegapoolDetails struct {
 	UseLatestDelegate        bool                       `json:"useLatestDelegate"`
 	AssignedValue            *big.Int                   `json:"assignedValue"`
 	NodeBond                 *big.Int                   `json:"nodeBond"`
+	NodeQueuedBond           *big.Int                   `json:"nodeQueuedBond"`
 	UserCapital              *big.Int                   `json:"userCapital"`
 	NodeShare                *big.Int                   `json:"nodeShare"`
 	BondRequirement          *big.Int                   `json:"bondRequirement"`
