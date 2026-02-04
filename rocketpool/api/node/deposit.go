@@ -367,7 +367,7 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 	var status api.MegapoolDetails
 	// Check credit balance
 	wg1.Go(func() error {
-		creditBalanceWei, err = node.GetNodeUsableCreditAndBalance(rp, nodeAccount.Address, nil)
+		creditBalanceWei, err = node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
 		if err == nil {
 			response.CreditBalance = creditBalanceWei
 		}

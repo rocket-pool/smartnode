@@ -211,7 +211,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	useCreditBalance := false
 	totalAmountWei := totalBondRequirement
-	fmt.Printf("You currently have %.2f ETH in your credit balance plus ETH staked on your behalf.\n", eth.WeiToEth(canDeposit.CreditBalance))
+	fmt.Printf("Your credit balance is %.2f ETH. (Credit in addition to ETH staked on your behalf).\n", eth.WeiToEth(canDeposit.CreditBalance))
 	if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
 		if canDeposit.CanUseCredit {
 			useCreditBalance = true
