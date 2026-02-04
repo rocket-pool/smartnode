@@ -115,7 +115,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	if bondedEth == nil {
 		bondedEth = big.NewInt(0)
 	}
-	megapoolBondedEth := bondedEth
+	megapoolBondedEth := big.NewInt(0).Set(bondedEth)
 	lastBondAdded := big.NewInt(0)
 	// Iterate through the deposits and get the bond requirement for each
 	for i := uint64(1); i <= count; i++ {
