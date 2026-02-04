@@ -26,7 +26,10 @@ import (
 // Represents the collector for the user's node
 type NodeCollector struct {
 	// The total amount of RPL staked on the node
-	totalLegacyStakedRpl *prometheus.Desc
+	nodeLegacyStakedRpl *prometheus.Desc
+
+	// The total amount of RPL staked on megapool on the node
+	megapoolStakedRpl *prometheus.Desc
 
 	// The effective amount of RPL staked on the node (honoring the 150% collateral cap)
 	effectiveStakedRpl *prometheus.Desc
@@ -177,7 +180,7 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManage
 
 	subsystem := "node"
 	return &NodeCollector{
-		totalLegacyStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_staked_rpl"),
+		nodeLegacyStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_staked_rpl"),
 			"The total amount of legacy RPL staked on the node",
 			nil, nil,
 		),
@@ -313,6 +316,10 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManage
 			"The Megapool express queue size",
 			nil, nil,
 		),
+		megapoolStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_staked_rpl"),
+			"The total amount of RPL staked on megapool on the node",
+			nil, nil,
+		),
 		rp:               rp,
 		bc:               bc,
 		ec:               ec,
@@ -327,7 +334,8 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManage
 
 // Write metric descriptions to the Prometheus channel
 func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
-	channel <- collector.totalLegacyStakedRpl
+	channel <- collector.nodeLegacyStakedRpl
+	channel <- collector.megapoolStakedRpl
 	channel <- collector.effectiveStakedRpl
 	channel <- collector.rewardableStakedRpl
 	channel <- collector.cumulativeRplRewards
@@ -380,7 +388,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Sync
 	var wg errgroup.Group
-	stakedRpl := eth.WeiToEth(nd.LegacyStakedRPL) // TODO: update all metrics to account for saturn
+	nodeLegacyStakedRpl := eth.WeiToEth(nd.LegacyStakedRPL) // TODO: update all metrics to account for saturn
+	nodeMegapoolStakedRpl := eth.WeiToEth(nd.MegapoolStakedRPL)
 	effectiveStakedRpl := eth.WeiToEth(nd.EffectiveRPLStake)
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	inflationInterval := state.NetworkDetails.RPLInflationIntervalRate
@@ -730,8 +739,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Calculate the RPL APR
 	rplApr := float64(0)
-	if stakedRpl > 0 {
-		rplApr = estimatedRewards / stakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
+	if nodeLegacyStakedRpl > 0 {
+		rplApr = estimatedRewards / nodeLegacyStakedRpl / rewardsInterval.Hours() * (24 * 365) * 100
 	}
 
 	// Calculate the total deposits and corresponding beacon chain balance share
@@ -767,7 +776,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	if pendingBondedEthFloat == 0 {
 		bondedCollateralRatio = 0
 	} else {
-		bondedCollateralRatio = rplPrice * stakedRpl / pendingBondedEthFloat
+		bondedCollateralRatio = rplPrice * nodeLegacyStakedRpl / pendingBondedEthFloat
 	}
 
 	pendingBorrowedEthFloat := eth.WeiToEth(pendingBorrowedEth)
@@ -775,12 +784,14 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	if pendingBorrowedEthFloat == 0 {
 		borrowedCollateralRatio = 0
 	} else {
-		borrowedCollateralRatio = rplPrice * stakedRpl / pendingBorrowedEthFloat
+		borrowedCollateralRatio = rplPrice * nodeLegacyStakedRpl / pendingBorrowedEthFloat
 	}
 
 	// Update all the metrics
 	channel <- prometheus.MustNewConstMetric(
-		collector.totalLegacyStakedRpl, prometheus.GaugeValue, stakedRpl)
+		collector.nodeLegacyStakedRpl, prometheus.GaugeValue, nodeLegacyStakedRpl)
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolStakedRpl, prometheus.GaugeValue, nodeMegapoolStakedRpl)
 	channel <- prometheus.MustNewConstMetric(
 		collector.effectiveStakedRpl, prometheus.GaugeValue, effectiveStakedRpl)
 	channel <- prometheus.MustNewConstMetric(
