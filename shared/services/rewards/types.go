@@ -430,7 +430,7 @@ func (versionHeader *VersionHeader) deserializeRewardsFile(bytes []byte) (IRewar
 		file := &RewardsFile_v3{}
 		return file, file.Deserialize(bytes)
 	case rewardsFileVersionFour:
-		file := &RewardsFile_v3{}
+		file := &ssz_types.SSZFile_v2{}
 		return file, file.Deserialize(bytes)
 	}
 
