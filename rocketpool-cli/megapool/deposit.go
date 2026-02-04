@@ -225,12 +225,12 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		} else {
 			fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new megapool validator; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue creating this megapool validator now, you will have to pay for the full bond amount.\n\n", colorYellow, eth.WeiToEth(canDeposit.DepositBalance), colorReset)
 		}
-	}
+		// Prompt for confirmation
+		if !(c.Bool("yes") || prompt.Confirm("Would you like to continue?")) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
 
-	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Would you like to continue?")) {
-		fmt.Println("Cancelled.")
-		return nil
 	}
 
 	// Check to see if eth2 is synced
