@@ -115,6 +115,11 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	if bondedEth == nil {
 		bondedEth = big.NewInt(0)
 	}
+	queuedBondEth := status.Megapool.NodeQueuedBond
+	if queuedBondEth == nil {
+		queuedBondEth = big.NewInt(0)
+	}
+	bondedEth = bondedEth.Add(bondedEth, queuedBondEth)
 	megapoolBondedEth := big.NewInt(0).Set(bondedEth)
 	lastBondAdded := big.NewInt(0)
 	// Iterate through the deposits and get the bond requirement for each

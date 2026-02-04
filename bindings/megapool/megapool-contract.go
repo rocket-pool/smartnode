@@ -337,7 +337,15 @@ func (mp *megapoolV1) GetRefundValue(opts *bind.CallOpts) (*big.Int, error) {
 func (mp *megapoolV1) GetNodeBond(opts *bind.CallOpts) (*big.Int, error) {
 	nodeBond := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeBond, "getNodeBond"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s debt: %w", mp.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting the node bond %s: %w", mp.Address.Hex(), err)
+	}
+	return *nodeBond, nil
+}
+
+func (mp *megapoolV1) GetNodeQueuedBond(opts *bind.CallOpts) (*big.Int, error) {
+	nodeBond := new(*big.Int)
+	if err := mp.Contract.Call(opts, nodeBond, "getNodeQueuedBond"); err != nil {
+		return nil, fmt.Errorf("error getting the node queued bond %s: %w", mp.Address.Hex(), err)
 	}
 	return *nodeBond, nil
 }
