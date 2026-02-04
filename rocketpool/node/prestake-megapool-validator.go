@@ -108,11 +108,6 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	// Log
 	t.log.Println("Checking for megapool validators to pre-stake...")
 
-	// Get the latest state
-	opts := &bind.CallOpts{
-		BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
-	}
-
 	// Get node account
 	nodeAccount, err := t.w.GetNodeAccount()
 	if err != nil {
@@ -120,7 +115,7 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 
 	// Check if the megapool is deployed
-	deployed, err := megapool.GetMegapoolDeployed(t.rp, nodeAccount.Address, opts)
+	deployed, err := megapool.GetMegapoolDeployed(t.rp, nodeAccount.Address, nil)
 	if err != nil {
 		return err
 	}
@@ -129,19 +124,19 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 
 	// Get the megapool address
-	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(t.rp, nodeAccount.Address, opts)
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(t.rp, nodeAccount.Address, nil)
 	if err != nil {
 		return err
 	}
 
 	// Check the next megapool address to be assigned (at the top of the queue)
-	nextAssignment, err := deposit.GetQueueTop(t.rp, opts)
+	nextAssignment, err := deposit.GetQueueTop(t.rp, nil)
 	if err != nil {
 		return err
 	}
 
 	// Check if the next megapool address is the same as the deployed megapool address
-	if nextAssignment.Receiver != megapoolAddress {
+	if nextAssignment.Receiver.Cmp(megapoolAddress) != 0 {
 		return nil
 	}
 
@@ -160,19 +155,11 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	if remainingTime < 0 {
 		t.log.Printlnf("%d hours have passed since the last assignment. Trying to assign", t.autoAssignmentDelay)
 
-		// Check if there is enough ETH to be assigned
-		balance, err := deposit.GetBalance(t.rp, opts)
-		if err != nil {
-			return err
+		// Check if the assignment is possible
+		if nextAssignment.AssignmentPossible {
+			// Call assign
+			t.assignDeposit(nil)
 		}
-
-		balanceRequired := eth.EthToWei(20)
-		if balance.Cmp(balanceRequired) < 0 {
-			t.log.Printlnf("%f ETH available on the deposit pool, which is not enough to perform the assignment", eth.WeiToEth(balance))
-			return nil
-		}
-		// Call assign
-		t.assignDeposit(opts)
 	} else {
 		t.log.Printlnf("Time left until the automatic stake %s", remainingTime)
 	}
