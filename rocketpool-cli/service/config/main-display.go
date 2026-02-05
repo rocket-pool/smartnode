@@ -53,7 +53,7 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 	grid.SetBackgroundColor(NonInteractiveBackgroundColor)
 
 	grid.SetBorder(true).
-		SetTitle(fmt.Sprintf(" Rocket PoolSmart Node %s Configuration ", shared.RocketPoolVersion())).
+		SetTitle(fmt.Sprintf(" Rocket Pool Smart Node %s Configuration ", shared.RocketPoolVersion())).
 		SetBorderColor(tcell.ColorOrange).
 		SetTitleColor(tcell.ColorOrange).
 		SetBackgroundColor(NonInteractiveBackgroundColor)
