@@ -38,6 +38,7 @@ type NativeMegapoolDetails struct {
 	EthBalance               *big.Int       `json:"ethBalance"`
 	LastDistributionTime     uint64         `json:"lastDistributionTime"`
 	PendingRewards           *big.Int       `json:"pendingRewards"`
+	NodeQueuedBond           *big.Int       `json:"nodeQueuedBond"`
 }
 
 // Get the normalized bond per 32 eth validator
@@ -190,6 +191,11 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 	wg.Go(func() error {
 		var err error
 		details.EthBalance, err = rp.Client.BalanceAt(context.Background(), details.Address, opts.BlockNumber)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.NodeQueuedBond, err = mega.GetNodeQueuedBond(opts)
 		return err
 	})
 

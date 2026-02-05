@@ -139,6 +139,12 @@ type NodeCollector struct {
 	// Megapool assigned value
 	megapoolAssignedValue *prometheus.Desc
 
+	// Megapool queue bond
+	megapoolQueueBond *prometheus.Desc
+
+	// Megapool rewards split
+	megapoolRewardsSplit *prometheus.Desc
+
 	// Megapool active validator count
 	megapoolActiveValidatorCount *prometheus.Desc
 
@@ -280,6 +286,10 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManage
 			"The Megapool node express ticket count",
 			nil, nil,
 		),
+		megapoolQueueBond: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_queue_bond"),
+			"The Megapool queue bond",
+			nil, nil,
+		),
 		megapoolRefundValue: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_refund_value"),
 			"The Megapool refund value",
 			nil, nil,
@@ -369,6 +379,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.megapoolDelegateExpiry
 	channel <- collector.megapoolStandardQueueSize
 	channel <- collector.megapoolExpressQueueSize
+	channel <- collector.megapoolQueueBond
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -391,6 +402,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	nodeLegacyStakedRpl := eth.WeiToEth(nd.LegacyStakedRPL) // TODO: update all metrics to account for saturn
 	nodeMegapoolStakedRpl := eth.WeiToEth(nd.MegapoolStakedRPL)
 	effectiveStakedRpl := eth.WeiToEth(nd.EffectiveRPLStake)
+	megapoolQueueBond := eth.WeiToEth(megapoolDetails.NodeQueuedBond)
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	inflationInterval := state.NetworkDetails.RPLInflationIntervalRate
 	totalRplSupply := state.NetworkDetails.RPLTotalSupply
@@ -862,6 +874,8 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.megapoolStandardQueueSize, prometheus.GaugeValue, megapoolStandardQueueSize)
 	channel <- prometheus.MustNewConstMetric(
 		collector.megapoolExpressQueueSize, prometheus.GaugeValue, megapoolExpressQueueSize)
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolQueueBond, prometheus.GaugeValue, megapoolQueueBond)
 }
 
 // Log error messages
