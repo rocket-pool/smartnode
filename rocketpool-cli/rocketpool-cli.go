@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/auction"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/claims"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/network"
@@ -92,6 +93,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
+	claims.RegisterCommands(app, "rewards", []string{"r"})
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
 	if enableSaturn {
 		megapool.RegisterCommands(app, "megapool", []string{"g"})
