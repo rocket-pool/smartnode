@@ -14,7 +14,7 @@ const (
 	colorGreen  string = "\033[32m"
 	colorYellow string = "\033[33m"
 
-	signallingAddressLink string = "https://docs.rocketpool.net/guides/houston/participate#setting-your-snapshot-signalling-address"
+	signallingAddressLink string = "https://docs.rocketpool.net/pdao/participate#setting-your-snapshot-signalling-address"
 )
 
 func generateRewardsTree(c *cli.Context) error {
