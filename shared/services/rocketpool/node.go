@@ -1241,38 +1241,6 @@ func (c *Client) SendMessage(address common.Address, message []byte) (api.NodeSe
 	return response, nil
 }
 
-// Check if the node can deploy a megapool
-func (c *Client) CanDeployMegapool() (api.CanDeployMegapoolResponse, error) {
-	responseBytes, err := c.callAPI("megapool can-deploy-megapool")
-	if err != nil {
-		return api.CanDeployMegapoolResponse{}, fmt.Errorf("Could not get can-deploy-megapool response: %w", err)
-	}
-	var response api.CanDeployMegapoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanDeployMegapoolResponse{}, fmt.Errorf("Could not decode can-deploy-megapool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanDeployMegapoolResponse{}, fmt.Errorf("Could not get can-deploy-megapool response: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Deploy a megapool
-func (c *Client) DeployMegapool() (api.DeployMegapoolResponse, error) {
-	responseBytes, err := c.callAPI("megapool deploy-megapool")
-	if err != nil {
-		return api.DeployMegapoolResponse{}, fmt.Errorf("Could not get deploy-megapool response: %w", err)
-	}
-	var response api.DeployMegapoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.DeployMegapoolResponse{}, fmt.Errorf("Could not decode deploy-megapool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.DeployMegapoolResponse{}, fmt.Errorf("Could not get deploy-megapool response: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Get the number of express tickets available for the node
 func (c *Client) GetExpressTicketCount() (api.GetExpressTicketCountResponse, error) {
 	responseBytes, err := c.callAPI("node get-express-ticket-count")

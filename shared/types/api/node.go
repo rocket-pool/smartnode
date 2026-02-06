@@ -762,20 +762,6 @@ type NodeAlertsResponse struct {
 	// TODO: change to GettableAlerts
 	Message string `json:"message"`
 }
-type CanDeployMegapoolResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	CanDeploy       bool               `json:"canDeploy"`
-	AlreadyDeployed bool               `json:"alreadyDeployed"`
-	ExpectedAddress common.Address     `json:"expectedAddress"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
-}
-
-type DeployMegapoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
 
 type GetExpressTicketCountResponse struct {
 	Status string `json:"status"`

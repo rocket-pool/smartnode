@@ -706,28 +706,6 @@ func ConfirmRPLWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.A
 	return tx.Hash(), nil
 }
 
-func EstimateDeployMegapool(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketNodeManager.GetTransactionGasInfo(opts, "deployMegapool")
-}
-
-// Deploys a Megapool contract
-func DeployMegapool(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, error) {
-	rocketNodeManager, err := getRocketNodeManager(rp, nil)
-	if err != nil {
-		return common.Hash{}, nil
-	}
-
-	tx, err := rocketNodeManager.Transact(opts, "deployMegapool")
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error calling deployMegapool: %w", err)
-	}
-	return tx.Hash(), nil
-}
-
 // Get express ticket count for a node
 func GetExpressTicketCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
 	rocketMegapoolFactory, err := getRocketNodeManager(rp, opts)

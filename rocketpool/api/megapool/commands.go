@@ -15,41 +15,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Usage:   "Manage the node's megapool",
 		Subcommands: []cli.Command{
 			{
-				Name:      "can-deploy-megapool",
-				Usage:     "Check if the node can deploy a megapool",
-				UsageText: "rocketpool api node can-deploy-megapool",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canDeployMegapool(c))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "deploy-megapool",
-				Usage:     "Deploy the node's megapool",
-				UsageText: "rocketpool api node deploy-megapool",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(deployMegapool(c))
-					return nil
-
-				},
-			},
-			{
 				Name:      "can-distribute-megapool",
 				Usage:     "Check if can distribute megapool rewards",
 				UsageText: "rocketpool api node can-distribute-megapool",
