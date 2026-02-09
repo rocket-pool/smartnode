@@ -23,8 +23,8 @@ const (
 	colorRed              string = "\033[31m"
 	colorGreen            string = "\033[32m"
 	colorYellow           string = "\033[33m"
-	smoothingPoolLink     string = "https://docs.rocketpool.net/guides/redstone/whats-new.html#smoothing-pool"
-	signallingAddressLink string = "https://docs.rocketpool.net/guides/houston/participate#setting-your-snapshot-signalling-address"
+	smoothingPoolLink     string = "https://docs.rocketpool.net/upgrades/redstone/whats-new#smoothing-pool"
+	signallingAddressLink string = "https://docs.rocketpool.net/pdao/participate#setting-your-snapshot-signalling-address"
 	maxAlertItems         int    = 3
 )
 
