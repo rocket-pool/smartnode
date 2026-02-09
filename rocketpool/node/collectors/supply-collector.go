@@ -105,6 +105,8 @@ func (collector *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.activeMinipools
 	channel <- collector.megapoolValidatorCount
 	channel <- collector.megapoolActiveCount
+	channel <- collector.megapoolContractCount
+	channel <- collector.megapoolCount
 }
 
 // Collect the latest metric values and pass them to Prometheus

@@ -130,6 +130,12 @@ type NodeCollector struct {
 	// Megapool refund value
 	megapoolRefundValue *prometheus.Desc
 
+	// Megapool beacon balance
+	megapoolBeaconBalance *prometheus.Desc
+
+	// Megapool node share of beacon balance
+	megapoolNodeShareofBeaconBalance *prometheus.Desc
+
 	// Megapool node bond
 	megapoolNodeBond *prometheus.Desc
 
@@ -142,8 +148,8 @@ type NodeCollector struct {
 	// Megapool queue bond
 	megapoolQueueBond *prometheus.Desc
 
-	// Megapool rewards split
-	megapoolRewardsSplit *prometheus.Desc
+	// Megapool pending rewards
+	megapoolPendingRewards *prometheus.Desc
 
 	// Megapool active validator count
 	megapoolActiveValidatorCount *prometheus.Desc
@@ -270,8 +276,16 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManage
 			"The low ETH balance threshold",
 			nil, nil,
 		),
+		megapoolBeaconBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_beacon_balance"),
+			"The Megapool beacon balance",
+			nil, nil,
+		),
 		megapoolEthBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_eth_balance"),
 			"The Megapool ETH balance",
+			nil, nil,
+		),
+		megapoolNodeShareofBeaconBalance: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_node_share_of_beacon_balance"),
+			"The Megapool node share of beacon balance",
 			nil, nil,
 		),
 		nodeDebt: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "node_debt"),
@@ -289,6 +303,10 @@ func NewNodeCollector(rp *rocketpool.RocketPool, bc *services.BeaconClientManage
 		megapoolQueueBond: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_queue_bond"),
 			"The Megapool queue bond",
 			nil, nil,
+		),
+		megapoolPendingRewards: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_pending_rewards"),
+			"The Megapool pending rewards",
+			[]string{"type"}, nil,
 		),
 		megapoolRefundValue: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_refund_value"),
 			"The Megapool refund value",
@@ -371,6 +389,7 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.megapoolValidatorCount
 	channel <- collector.megapoolNodeExpressTicketCount
 	channel <- collector.megapoolRefundValue
+	channel <- collector.megapoolPendingRewards
 	channel <- collector.megapoolNodeBond
 	channel <- collector.megapoolUserCapital
 	channel <- collector.megapoolAssignedValue
@@ -380,6 +399,8 @@ func (collector *NodeCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.megapoolStandardQueueSize
 	channel <- collector.megapoolExpressQueueSize
 	channel <- collector.megapoolQueueBond
+	channel <- collector.megapoolBeaconBalance
+	channel <- collector.megapoolNodeShareofBeaconBalance
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -435,7 +456,12 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	megapoolBeaconBalanceTotal := big.NewInt(0)
 	megapoolStandardQueueSize := float64(0)
 	megapoolExpressQueueSize := float64(0)
-
+	megapoolPendingRewardsNode := float64(0)
+	megapoolPendingRewardsVoter := float64(0)
+	megapoolPendingRewardsPDAO := float64(0)
+	megapoolPendingRewardsReth := float64(0)
+	megapoolBeaconBalance := float64(0)
+	nodeShareofBeaconBalance := float64(0)
 	// Get the cumulative claimed and unclaimed RPL rewards
 	wg.Go(func() error {
 		//legacyClaimNodeAddress := collector.cfg.Smartnode.GetLegacyClaimNodeAddress()
@@ -590,11 +616,26 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 				return nil
 			}
 
-			// // Load the megapool contract
-			// mp, err := megapool.NewMegaPoolV1(collector.rp, collector.nodeAddress, nil)
-			// if err != nil {
-			// 	return fmt.Errorf("Error loading megapool contract: %w", err)
-			// }
+			// Calculate the expected megapool address
+			megapoolAddress, err := megapool.GetMegapoolExpectedAddress(collector.rp, collector.nodeAddress, nil)
+			if err != nil {
+				return fmt.Errorf("Error getting megapool expected address: %w", err)
+			}
+
+			// Load the megapool contract
+			mp, err := megapool.NewMegaPoolV1(collector.rp, megapoolAddress, nil)
+			if err != nil {
+				return fmt.Errorf("Error loading megapool contract: %w", err)
+			}
+
+			mpPendingRewards, err := mp.CalculatePendingRewards(nil)
+			if err != nil {
+				return fmt.Errorf("Error getting megapool pending rewards: %w", err)
+			}
+			megapoolPendingRewardsNode = eth.WeiToEth(mpPendingRewards.NodeRewards)
+			megapoolPendingRewardsVoter = eth.WeiToEth(mpPendingRewards.VoterRewards)
+			megapoolPendingRewardsPDAO = eth.WeiToEth(mpPendingRewards.ProtocolDAORewards)
+			megapoolPendingRewardsReth = eth.WeiToEth(mpPendingRewards.RethRewards)
 
 			// Iterate over the megapool pubkeys
 			for _, pubkey := range megapoolPubkeys {
@@ -606,6 +647,16 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(validator.Balance)))
 				}
 			}
+
+			megapoolBeaconBalance = eth.WeiToEth(megapoolBeaconBalanceTotal)
+			// rewards = beacon balance total - node bond - user capital
+			rewardsBeaconBalance := big.NewInt(0).Sub(megapoolBeaconBalanceTotal, megapoolDetails.NodeBond)
+			rewardsBeaconBalance = big.NewInt(0).Sub(rewardsBeaconBalance, megapoolDetails.UserCapital)
+			rewardsSplit, err := mp.CalculateRewards(rewardsBeaconBalance, nil)
+			if err != nil {
+				return fmt.Errorf("Error calculating megapool rewards: %w", err)
+			}
+			nodeShareofBeaconBalance = eth.WeiToEth(rewardsSplit.NodeRewards.Add(rewardsSplit.NodeRewards, megapoolDetails.NodeBond))
 
 			// Get the queue details
 			megapoolExpressQueueSizeInt, err := deposit.GetExpressQueueLength(collector.rp, nil)
@@ -867,6 +918,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	channel <- prometheus.MustNewConstMetric(
 		collector.megapoolActiveValidatorCount, prometheus.GaugeValue, megapoolActiveValidatorCount)
 	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolBeaconBalance, prometheus.GaugeValue, megapoolBeaconBalance)
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolNodeShareofBeaconBalance, prometheus.GaugeValue, nodeShareofBeaconBalance)
+	channel <- prometheus.MustNewConstMetric(
 		collector.megapoolLockedValidatorCount, prometheus.GaugeValue, megapoolLockedValidatorCount)
 	channel <- prometheus.MustNewConstMetric(
 		collector.megapoolDelegateExpiry, prometheus.GaugeValue, megapoolDelegateExpiry)
@@ -876,6 +931,15 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.megapoolExpressQueueSize, prometheus.GaugeValue, megapoolExpressQueueSize)
 	channel <- prometheus.MustNewConstMetric(
 		collector.megapoolQueueBond, prometheus.GaugeValue, megapoolQueueBond)
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolPendingRewards, prometheus.GaugeValue, megapoolPendingRewardsNode, "node")
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolPendingRewards, prometheus.GaugeValue, megapoolPendingRewardsVoter, "voter")
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolPendingRewards, prometheus.GaugeValue, megapoolPendingRewardsReth, "reth")
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolPendingRewards, prometheus.GaugeValue, megapoolPendingRewardsPDAO, "pdao")
+
 }
 
 // Log error messages

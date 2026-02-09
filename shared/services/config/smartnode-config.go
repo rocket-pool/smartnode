@@ -531,6 +531,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet: {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
+				common.HexToAddress("0xEE4d2A71cF479e0D3d0c3c2C923dbfEB57E73111"),
 			},
 			config.Network_Devnet: {
 				common.HexToAddress("0x556791EC1aa443df339E340E6f20d06a1cD21583"),
@@ -541,7 +542,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		previousRocketDAOProtocolVerifier: map[config.Network][]common.Address{
-			config.Network_Mainnet: {},
+			config.Network_Mainnet: {
+				common.HexToAddress("0xd1f7e573cdC64FC0B201ca37aB50bC7Dd880040A"),
+			},
 			config.Network_Devnet:  {},
 			config.Network_Testnet: {},
 		},

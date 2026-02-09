@@ -904,6 +904,11 @@ func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee f
 	if bondedEth == nil {
 		bondedEth = big.NewInt(0)
 	}
+	queuedBondEth := status.NodeQueuedBond
+	if queuedBondEth == nil {
+		queuedBondEth = big.NewInt(0)
+	}
+	bondedEth = bondedEth.Add(bondedEth, queuedBondEth)
 	for i := uint64(0); i < count; i++ {
 		bondedEth = bondedEth.Add(bondedEth, lastBondAdded)
 		// Get the bond requirement for each validator

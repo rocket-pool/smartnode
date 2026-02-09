@@ -631,20 +631,22 @@ type NodeDistributeResponse struct {
 }
 
 type NodeGetRewardsInfoResponse struct {
-	Status                  string                 `json:"status"`
-	Error                   string                 `json:"error"`
-	Registered              bool                   `json:"registered"`
-	ClaimedIntervals        []uint64               `json:"claimedIntervals"`
-	UnclaimedIntervals      []rewards.IntervalInfo `json:"unclaimedIntervals"`
-	InvalidIntervals        []rewards.IntervalInfo `json:"invalidIntervals"`
-	RplStake                *big.Int               `json:"rplStake"`
-	RplPrice                *big.Int               `json:"rplPrice"`
-	ActiveMinipools         int                    `json:"activeMinipools"`
-	EthBorrowed             *big.Int               `json:"ethBorrowed"`
-	EthBorrowLimit          *big.Int               `json:"ethBorrowLimit"`
-	PendingBorrowAmount     *big.Int               `json:"pendingBorrowAmount"`
-	BorrowedCollateralRatio float64                `json:"borrowedCollateralRatio"`
-	BondedCollateralRatio   float64                `json:"bondedCollateralRatio"`
+	Status                   string                 `json:"status"`
+	Error                    string                 `json:"error"`
+	Registered               bool                   `json:"registered"`
+	ClaimedIntervals         []uint64               `json:"claimedIntervals"`
+	UnclaimedIntervals       []rewards.IntervalInfo `json:"unclaimedIntervals"`
+	InvalidIntervals         []rewards.IntervalInfo `json:"invalidIntervals"`
+	RplStake                 *big.Int               `json:"rplStake"`
+	RplPrice                 *big.Int               `json:"rplPrice"`
+	ActiveMinipools          int                    `json:"activeMinipools"`
+	ActiveMegapoolValidators int                    `json:"activeMegapoolValidators"`
+	EthBorrowed              *big.Int               `json:"ethBorrowed"`
+	EthBorrowLimit           *big.Int               `json:"ethBorrowLimit"`
+	PendingBorrowAmount      *big.Int               `json:"pendingBorrowAmount"`
+	BorrowedCollateralRatio  float64                `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio    float64                `json:"bondedCollateralRatio"`
+	IsSaturnDeployed         bool                   `json:"isSaturnDeployed"`
 }
 
 type CanNodeClaimRewardsResponse struct {
@@ -761,20 +763,6 @@ type NodeAlertsResponse struct {
 	Error  string `json:"error"`
 	// TODO: change to GettableAlerts
 	Message string `json:"message"`
-}
-type CanDeployMegapoolResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	CanDeploy       bool               `json:"canDeploy"`
-	AlreadyDeployed bool               `json:"alreadyDeployed"`
-	ExpectedAddress common.Address     `json:"expectedAddress"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
-}
-
-type DeployMegapoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
 }
 
 type GetExpressTicketCountResponse struct {
