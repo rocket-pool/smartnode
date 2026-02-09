@@ -50,7 +50,7 @@ const (
 	// Mainnet intervals
 	MainnetV9Interval  uint64 = 29
 	MainnetV10Interval uint64 = 30
-	MainnetV11Interval uint64 = 9000 // TODO: schedule v11
+	MainnetV11Interval uint64 = 46
 	// Devnet intervals
 	DevnetV11Interval uint64 = 7
 
