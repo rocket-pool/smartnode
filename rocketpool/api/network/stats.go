@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
@@ -11,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
@@ -188,6 +190,67 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		}
 
 		response.SmoothingPoolBalance = eth.WeiToEth(smoothingPoolBalance)
+		return nil
+	})
+
+	wg.Go(func() error {
+
+		megapoolAddressSet := make(map[common.Address]bool)
+
+		// Fetch the global megapool validator index
+		contracts := rpstate.NetworkContracts{
+			ElBlockNumber: nil,
+		}
+		megapoolValidators, err := rpstate.GetAllMegapoolValidators(rp, &contracts)
+		if err != nil {
+			return fmt.Errorf("error getting all megapool validator details: %w", err)
+		}
+		megapoolStakedCount := 0
+		megapoolPrestakeCount := 0
+		megapoolInQueueCount := 0
+		megapoolExitedCount := 0
+		megapoolLockedCount := 0
+		megapoolExitingCount := 0
+		megapoolDissolvedCount := 0
+		megapoolValidatorCount := 0
+		megapoolContractCount := 0
+		for _, validator := range megapoolValidators {
+			// Count the number of unique megapool addresses
+			megapoolAddressSet[validator.MegapoolAddress] = true
+			if validator.ValidatorInfo.Staked {
+				megapoolStakedCount++
+			}
+			if validator.ValidatorInfo.InPrestake {
+				megapoolPrestakeCount++
+			}
+			if validator.ValidatorInfo.InQueue {
+				megapoolInQueueCount++
+			}
+			if validator.ValidatorInfo.Exited {
+				megapoolExitedCount++
+			}
+			if validator.ValidatorInfo.Locked {
+				megapoolLockedCount++
+			}
+			if validator.ValidatorInfo.Exiting {
+				megapoolExitingCount++
+			}
+			if validator.ValidatorInfo.Dissolved {
+				megapoolDissolvedCount++
+			}
+		}
+		megapoolContractCount = len(megapoolAddressSet)
+		megapoolValidatorCount = megapoolStakedCount + megapoolPrestakeCount + megapoolInQueueCount + megapoolExitedCount + megapoolLockedCount + megapoolExitingCount + megapoolDissolvedCount
+		response.MegapoolCount = uint64(megapoolContractCount)
+		response.ActiveMegapoolValidators = uint64(megapoolValidatorCount)
+		response.MegapoolValidatorCount = uint64(megapoolValidatorCount)
+		response.MegapoolValidatorStakingCount = uint64(megapoolStakedCount)
+		response.MegapoolValidatorInPrestakeCount = uint64(megapoolPrestakeCount)
+		response.MegapoolValidatorInQueueCount = uint64(megapoolInQueueCount)
+		response.MegapoolValidatorExitedCount = uint64(megapoolExitedCount)
+		response.MegapoolValidatorLockedCount = uint64(megapoolLockedCount)
+		response.MegapoolValidatorExitingCount = uint64(megapoolExitingCount)
+		response.MegapoolValidatorDissolvedCount = uint64(megapoolDissolvedCount)
 		return nil
 	})
 
