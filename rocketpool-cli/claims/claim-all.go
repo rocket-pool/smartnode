@@ -118,20 +118,20 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 						id:      id,
 						name:    "Megapool EL Rewards (distribute)",
 						gasInfo: gasInfo,
-					execute: func() error {
-						fmt.Printf("  Submitting transaction...\n")
-						response, err := rp.DistributeMegapool()
-						if err != nil {
-							return fmt.Errorf("transaction could not be submitted: %w", err)
-						}
-						fmt.Printf("  Distributing megapool rewards...\n")
-						cliutils.PrintTransactionHash(rp, response.TxHash)
-						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
-						}
-						fmt.Printf("  %sSuccessfully distributed megapool rewards.%s\n", colorGreen, colorReset)
-						return nil
-					},
+						execute: func() error {
+							fmt.Printf("  Submitting transaction...\n")
+							response, err := rp.DistributeMegapool()
+							if err != nil {
+								return fmt.Errorf("transaction could not be submitted: %w", err)
+							}
+							fmt.Printf("  Distributing megapool rewards...\n")
+							cliutils.PrintTransactionHash(rp, response.TxHash)
+							if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+								return fmt.Errorf("transaction was submitted but failed onchain: %w", err)
+							}
+							fmt.Printf("  %sSuccessfully distributed megapool rewards.%s\n", colorGreen, colorReset)
+							return nil
+						},
 					})
 				} else {
 					fmt.Printf("  No pending rewards to distribute.\n\n")
@@ -174,20 +174,20 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					id:      feeDistID,
 					name:    "Fee Distributor (distribute)",
 					gasInfo: gasInfo,
-				execute: func() error {
-					fmt.Printf("  Submitting transaction...\n")
-					response, err := rp.Distribute()
-					if err != nil {
-						return fmt.Errorf("transaction could not be submitted: %w", err)
-					}
-					fmt.Printf("  Distributing fee distributor balance...\n")
-					cliutils.PrintTransactionHash(rp, response.TxHash)
-					if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-						return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
-					}
-					fmt.Printf("  %sSuccessfully distributed fee distributor balance.%s\n", colorGreen, colorReset)
-					return nil
-				},
+					execute: func() error {
+						fmt.Printf("  Submitting transaction...\n")
+						response, err := rp.Distribute()
+						if err != nil {
+							return fmt.Errorf("transaction could not be submitted: %w", err)
+						}
+						fmt.Printf("  Distributing fee distributor balance...\n")
+						cliutils.PrintTransactionHash(rp, response.TxHash)
+						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
+						}
+						fmt.Printf("  %sSuccessfully distributed fee distributor balance.%s\n", colorGreen, colorReset)
+						return nil
+					},
 				})
 			}
 		}
@@ -295,7 +295,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	}
 
 	// ================================================================
-	// 4. Periodic Rewards (RPL + ETH from intervals)
+	// 4. Periodic Rewards (RPL + ETH)
 	// ================================================================
 	sectionID++
 	periodicID := sectionID
@@ -443,7 +443,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	}
 
 	// ================================================================
-	// 5. Megapool Refund (claim) — only if we did NOT distribute above
+	// 5. Megapool Refund - ETH refunded to the owner after a dissolution
 	// ================================================================
 	if isSaturn && !megapoolDistributed {
 		sectionID++
@@ -501,7 +501,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	}
 
 	// ================================================================
-	// 6. Unclaimed Rewards (Saturn only)
+	// 6. Unclaimed Rewards - available when the withdrawal address was unable to receive ETH
 	// ================================================================
 	if isSaturn {
 		sectionID++
@@ -646,7 +646,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 
 	if statusOnly {
 		if len(claims) > 0 {
-			fmt.Printf("Run 'rocketpool claims claim-all' to claim these rewards.\n")
+			fmt.Printf("Run 'rocketpool rewards claim-all' to claim these rewards.\n")
 		}
 		return nil
 	}
@@ -754,7 +754,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 		}
 	}
 
-	// Final summary with appropriate color
+	// Final summary
 	fmt.Println()
 	fmt.Printf("============================================================\n")
 	if failCount == 0 && skippedCount == 0 {
