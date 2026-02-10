@@ -46,8 +46,7 @@ type NetworkStatsResponse struct {
 	SmoothingPoolNodes               uint64         `json:"smoothingPoolNodes"`
 	SmoothingPoolAddress             common.Address `json:"SmoothingPoolAddress"`
 	SmoothingPoolBalance             float64        `json:"smoothingPoolBalance"`
-	MegapoolCount                    uint64         `json:"megapoolCount"`
-	ActiveMegapoolValidators         uint64         `json:"activeMegapoolValidators"`
+	MegapoolContractCount            uint64         `json:"megapoolContractCount"`
 	MegapoolValidatorCount           uint64         `json:"megapoolValidatorCount"`
 	MegapoolValidatorStakingCount    uint64         `json:"megapoolValidatorStakingCount"`
 	MegapoolValidatorInPrestakeCount uint64         `json:"megapoolValidatorInPrestakeCount"`

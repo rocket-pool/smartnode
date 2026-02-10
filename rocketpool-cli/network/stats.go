@@ -21,6 +21,8 @@ func getStats(c *cli.Context) error {
 	}
 	defer rp.Close()
 
+	fmt.Println("Getting network stats. This may take a few seconds...\n")
+
 	// Get network stats
 	response, err := rp.NetworkStats()
 	if err != nil {
@@ -51,8 +53,8 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("Finalized Minipools:         %d\n\n", response.FinalizedMinipoolCount)
 
 	fmt.Printf("%s=========== Megapools ============%s\n", colorGreen, colorReset)
-	fmt.Printf("Megapool contracts deployed: %d\n", response.MegapoolCount)
-	fmt.Printf("Active megapool validators:  %d\n", response.ActiveMegapoolValidators)
+	fmt.Printf("Megapool contracts deployed: %d\n", response.MegapoolContractCount)
+	fmt.Printf("Total megapool validators:  %d\n", response.MegapoolValidatorCount)
 	fmt.Printf("     Staking:                %d\n", response.MegapoolValidatorStakingCount)
 	fmt.Printf("     In Prestake:            %d\n", response.MegapoolValidatorInPrestakeCount)
 	fmt.Printf("     In Queue:               %d\n", response.MegapoolValidatorInQueueCount)

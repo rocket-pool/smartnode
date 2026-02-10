@@ -241,8 +241,7 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		}
 		megapoolContractCount = len(megapoolAddressSet)
 		megapoolValidatorCount = megapoolStakedCount + megapoolPrestakeCount + megapoolInQueueCount + megapoolExitedCount + megapoolLockedCount + megapoolExitingCount + megapoolDissolvedCount
-		response.MegapoolCount = uint64(megapoolContractCount)
-		response.ActiveMegapoolValidators = uint64(megapoolValidatorCount)
+		response.MegapoolContractCount = uint64(megapoolContractCount)
 		response.MegapoolValidatorCount = uint64(megapoolValidatorCount)
 		response.MegapoolValidatorStakingCount = uint64(megapoolStakedCount)
 		response.MegapoolValidatorInPrestakeCount = uint64(megapoolPrestakeCount)
