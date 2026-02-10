@@ -40,6 +40,11 @@ func nodeWithdrawCredit(c *cli.Context) error {
 		return err
 	}
 
+	if status.CreditBalance.Cmp(big.NewInt(0)) == 0 {
+		fmt.Println("You have no credit to withdraw.")
+		return nil
+	}
+
 	// Get withdrawal amount
 	var amountWei *big.Int
 	if c.String("amount") == "max" {
