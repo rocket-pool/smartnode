@@ -21,7 +21,8 @@ func getStats(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	fmt.Println("Getting network stats. This may take a few seconds...\n")
+	fmt.Println("Getting network stats. This may take a few seconds...")
+	fmt.Println()
 
 	// Get network stats
 	response, err := rp.NetworkStats()
