@@ -34,18 +34,18 @@ func nodeWithdrawCredit(c *cli.Context) error {
 		return nil
 	}
 
+	// Get node status
+	status, err := rp.NodeStatus()
+	if err != nil {
+		return err
+	}
+
 	// Get withdrawal amount
 	var amountWei *big.Int
 	if c.String("amount") == "max" {
 
-		// Get node status
-		status, err := rp.NodeStatus()
-		if err != nil {
-			return err
-		}
-
 		// Set amount to maximum withdrawable amount
-		amountWei = status.EthOnBehalfBalance
+		amountWei = status.CreditBalance
 
 	} else if c.String("amount") != "" {
 
@@ -58,16 +58,10 @@ func nodeWithdrawCredit(c *cli.Context) error {
 
 	} else {
 
-		// Get node status
-		status, err := rp.NodeStatus()
-		if err != nil {
-			return err
-		}
-
 		// Get maximum withdrawable amount
 		maxAmount := status.CreditBalance
 		// Prompt for maximum amount
-		if prompt.Confirm(fmt.Sprintf("You have %.6f ETH of credit that you can withdraw, receiving the equivalent amount in rETH. Would you like to withdraw the maximum amount of credit?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
+		if prompt.Confirm(fmt.Sprintf("You have %.6f ETH of credit that you can withdraw, receiving the equivalent amount in rETH on the node withdrawal address (%s).\n\n Would you like to withdraw the maximum amount of credit?", math.RoundDown(eth.WeiToEth(maxAmount), 6), status.PrimaryWithdrawalAddress)) {
 			amountWei = maxAmount
 		} else {
 
@@ -120,7 +114,7 @@ func nodeWithdrawCredit(c *cli.Context) error {
 	}
 
 	// Log & return
-	fmt.Printf("Successfully withdrew %.6f credit.\n", math.RoundDown(eth.WeiToEth(amountWei), 6))
+	fmt.Printf("Successfully withdrew %.6f credit. The equivalent amount of rETH has been transferred to the node withdrawal address (%s).\n", math.RoundDown(eth.WeiToEth(amountWei), 6), status.PrimaryWithdrawalAddress)
 	return nil
 
 }
