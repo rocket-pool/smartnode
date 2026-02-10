@@ -69,7 +69,6 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	// ================================================================
 	// 1. Megapool EL Rewards (distribute)
 	// ================================================================
-	megapoolDistributed := false
 	if isSaturn {
 		sectionID++
 		id := sectionID
@@ -111,7 +110,6 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					}
 					fmt.Printf("  Total:         %.6f ETH\n\n", math.RoundDown(eth.WeiToEth(megapoolTotal), 6))
 					totalEthWei.Add(totalEthWei, megapoolTotal)
-					megapoolDistributed = true
 
 					gasInfo := canDistribute.GasInfo
 					claims = append(claims, pendingClaim{
@@ -443,9 +441,9 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	}
 
 	// ================================================================
-	// 5. Megapool Refund - ETH refunded to the owner after a dissolution
+	// 5. Megapool Refund - ETH refunded to the owner after a dissolution or from distributed rewards
 	// ================================================================
-	if isSaturn && !megapoolDistributed {
+	if isSaturn {
 		sectionID++
 		megaRefundID := sectionID
 		fmt.Printf("%s--- [%d] Megapool Refund ---%s\n", colorGreen, megaRefundID, colorReset)
