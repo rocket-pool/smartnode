@@ -40,7 +40,7 @@ func NewMetricsConfigPage(home *settingsHome) *MetricsConfigPage {
 		home.homePage,
 		"settings-metrics",
 		"Monitoring / Metrics",
-		"Select this to configure the monitoring and statistics gathering parts of the Smartnode, such as Grafana and Prometheus.",
+		"Select this to configure the monitoring and statistics gathering parts of the Smart Node, such as Grafana and Prometheus.",
 		configPage.layout.grid,
 	)
 

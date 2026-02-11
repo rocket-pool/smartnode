@@ -31,11 +31,9 @@ var taskCooldown, _ = time.ParseDuration("10s")
 const (
 	MaxConcurrentEth1Requests = 200
 
-	StakePrelaunchMinipoolsColor   = color.FgBlue
 	DownloadRewardsTreesColor      = color.FgGreen
 	MetricsColor                   = color.FgHiYellow
 	ManageFeeRecipientColor        = color.FgHiCyan
-	PromoteMinipoolsColor          = color.FgMagenta
 	ReduceBondAmountColor          = color.FgHiBlue
 	DefendPdaoPropsColor           = color.FgYellow
 	VerifyPdaoPropsColor           = color.FgYellow
@@ -136,10 +134,6 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	stakePrelaunchMinipools, err := newStakePrelaunchMinipools(c, log.NewColorLogger(StakePrelaunchMinipoolsColor))
-	if err != nil {
-		return err
-	}
 	stakeMegapoolValidators, err := newStakeMegapoolValidator(c, log.NewColorLogger(StakeMegapoolValidatorColor))
 	if err != nil {
 		return err
@@ -149,10 +143,6 @@ func run(c *cli.Context) error {
 		return err
 	}
 	notifyFinalBalance, err := newNotifyFinalBalance(c, log.NewColorLogger(NotifyValidatorExitColor))
-	if err != nil {
-		return err
-	}
-	promoteMinipools, err := newPromoteMinipools(c, log.NewColorLogger(PromoteMinipoolsColor))
 	if err != nil {
 		return err
 	}
@@ -193,6 +183,7 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
+	isSaturnDeployedMasterFlag := false
 	go func() {
 		// we assume clients are synced on startup so that we don't send unnecessary alerts
 		wasExecutionClientSynced := true
@@ -238,6 +229,12 @@ func run(c *cli.Context) error {
 			}
 			stateLocker.UpdateState(state)
 
+			// Check for Houston
+			if !isSaturnDeployedMasterFlag && state.IsSaturnDeployed {
+				printSaturnMessage(&updateLog)
+				isSaturnDeployedMasterFlag = true
+			}
+
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.run(state); err != nil {
 				errorLog.Println(err)
@@ -277,12 +274,6 @@ func run(c *cli.Context) error {
 				time.Sleep(taskCooldown)
 			}
 
-			// Run the minipool stake check
-			if err := stakePrelaunchMinipools.run(state); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-
 			// Run the megapool stake check
 			if err := stakeMegapoolValidators.run(state); err != nil {
 				errorLog.Println(err)
@@ -318,11 +309,6 @@ func run(c *cli.Context) error {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
-
-			// Run the minipool promotion check
-			if err := promoteMinipools.run(state); err != nil {
-				errorLog.Println(err)
-			}
 
 			time.Sleep(tasksInterval)
 		}
@@ -448,4 +434,27 @@ func GetPriorityFee(priorityFee *big.Int, maxFee *big.Int) *big.Int {
 	} else {
 		return quarterMaxFee
 	}
+}
+
+// Print a message if Saturn has been deployed yet
+func printSaturnMessage(log *log.ColorLogger) {
+	log.Println(`
+*       .
+*      / \
+*     |.'.|
+*     |'.'|
+*   ,'|   |'.
+*  |,-'-|-'-.|
+*   __|_| |         _        _      _____           _
+*  | ___ \|        | |      | |    | ___ \         | |
+*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
+*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
+*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
+*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
+* +---------------------------------------------------+
+* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
+* +---------------------------------------------------+
+*
+* ============== Saturn-1 has launched! ===============
+`)
 }

@@ -6,52 +6,51 @@
 
 Rocket Pool is a next generation Ethereum Proof-of-Stake (PoS) infrastructure service designed to be highly decentralised, distributed, and compatible with Ethereum's new consensus protocol.
 
-Running a Rocket Pool smart node allows you to stake on Ethereum with only 16 ETH and 1.6 ETH worth of Rocket Pool's RPL token.
-You can earn a higher return than you would outside the network by capturing an additional 15% commission on staked ETH as well as RPL rewards.
+Running a Rocket Pool Smart Node allows you to stake on Ethereum with only 4 ETH.
+You can earn a higher return than you would outside the network by capturing up to an additional 14% commission on staked ETH as well as RPL rewards.
 
 This repository contains the source code for:
 
-* The Rocket Pool Smartnode client (CLI), which is used to manage a smart node either locally or remotely (over SSH)
-* The Rocket Pool Smartnode service, which provides an API for client communication and performs background node tasks
+- The Rocket Pool Smart Node client (CLI), which is used to manage a smart node either locally or remotely (over SSH)
+- The Rocket Pool Smart Node service, which provides an API for client communication and performs background node tasks
 
-The Smartnode service is designed to be run as part of a Docker stack and generally does not need to be installed manually.
+The Smart Node service is designed to be run as part of a Docker stack and generally does not need to be installed manually.
 See the [Rocket Pool dockerhub](https://hub.docker.com/u/rocketpool) page for a complete list of Docker images.
-
 
 ## Installation
 
-See the [Smartnode Installer](https://github.com/rocket-pool/smartnode-install) repository for supported platforms and installation instructions.
+See the [Smart Node Installer](https://github.com/rocket-pool/smartnode-install) repository for supported platforms and installation instructions.
 
 ## Development
 
 A [Makefile](./Makefile) is included for building, testing, and linting.
 
-* `make` or `make default` will build rocketpool-cli, rocketpool-daemon, treegen, and run the linter.
-  * build/rocketpool-cli and build/rocketpool-daemon will be symlinked to the version and architecture specific binaries in build/
-* `make all` will build rocketpool-cli, rocketpool-daemon, treegen, and run the linter.
-  * symlinks will be created for the first 3 binaries in build/
-* `make release` will build all architecture specific binaries as well as docker images and manifests
-  * It will tag docker images as latest as well as the version in `shared/version.txt`
-  * It will put cli and native mode binaries in build/\<version\>
-* `make build/rocketpool-cli` builds just the cli
-  * The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
-* `make build/rocketpool-daemon` builds just the daemon
-  * The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
-* `make build/treegen` builds just the treegen stand-alone binary.
-  * The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
-* `make docker` builds the rocketpool/smartnode containers for all supported architectures and saves them in build/\<version\>/docker
-* `make docker-push` builds, loads, pushes, creates a multi-arch manifest, and pushes the smartnode containers and manifest.
-* `make docker-latest` does the same as docker-push, but tags latest which is also pushed.
-* `make lint` runs the linter.
-* `make test` runs all unit tests.
-* `make clean` deletes any binaries. It does not clear your go caches. It does not clean up old docker images.
+- `make` or `make default` will build rocketpool-cli, rocketpool-daemon, treegen, and run the linter.
+  - build/rocketpool-cli and build/rocketpool-daemon will be symlinked to the version and architecture specific binaries in build/
+- `make all` will build rocketpool-cli, rocketpool-daemon, treegen, and run the linter.
+  - symlinks will be created for the first 3 binaries in build/
+- `make release` will build all architecture specific binaries as well as docker images and manifests
+  - It will tag docker images as latest as well as the version in `shared/version.txt`
+  - It will put cli and native mode binaries in build/\<version\>
+- `make build/rocketpool-cli` builds just the cli
+  - The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
+- `make build/rocketpool-daemon` builds just the daemon
+  - The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
+- `make build/treegen` builds just the treegen stand-alone binary.
+  - The build is done in docker, unless you run `make NO_DOCKER=true \<cmd\>`
+- `make docker` builds the rocketpool/smartnode containers for all supported architectures and saves them in build/\<version\>/docker
+- `make docker-push` builds, loads, pushes, creates a multi-arch manifest, and pushes the smartnode containers and manifest.
+- `make docker-latest` does the same as docker-push, but tags latest which is also pushed.
+- `make lint` runs the linter.
+- `make test` runs all unit tests.
+- `make clean` deletes any binaries. It does not clear your go caches. It does not clean up old docker images.
 
 ## CLI Commands
 
-The following commands are available via the Smartnode client:
-
+The following commands are available via the Smart Node client:
 
 ### COMMANDS:
+
 - **auction**, a - Manage Rocket Pool RPL auctions
   - `rocketpool auction status, s` - Get RPL auction status
   - `rocketpool auction lots, l` - Get RPL lots for auction
@@ -60,13 +59,13 @@ The following commands are available via the Smartnode client:
   - `rocketpool auction claim-lot, c` - Claim RPL from a lot
   - `rocketpool auction recover-lot, r` - Recover unclaimed RPL from a lot (returning it to the auction contract)
 - **faucet**, f - Access the legacy RPL faucet
-  - `rocketpool faucet status, s` - 
+  - `rocketpool faucet status, s` -
   - `rocketpool faucet withdraw-rpl, w` - Withdraw legacy RPL from the faucet
 - **minipool**, m - Manage the node's minipools
   - `rocketpool minipool status, s` - Get a list of the node's minipools
   - `rocketpool minipool stake, t` - Stake a minipool after the scrub check, moving it from prelaunch to staking.
   - `rocketpool minipool set-withdrawal-creds, swc` - Convert the withdrawal credentials for a migrated solo validator from the old 0x00 value to the minipool address. Required to complete the migration process.
-  - `rocketpool minipool import-key, ik` - Import the externally-derived key for a minipool that was previously a solo validator, so the Smartnode's VC manages it instead of your externally-managed VC.
+  - `rocketpool minipool import-key, ik` - Import the externally-derived key for a minipool that was previously a solo validator, so the Smart Node's VC manages it instead of your externally-managed VC.
   - `rocketpool minipool promote, p` - Promote a vacant minipool after the scrub check, completing a solo validator migration.
   - `rocketpool minipool refund, r` - Refund ETH belonging to the node from minipools
   - `rocketpool minipool begin-bond-reduction, bbr` - Begins the ETH bond reduction process for a minipool, taking it from 16 ETH down to 8 ETH (begins conversion of a 16 ETH minipool to an LEB8)
@@ -78,14 +77,30 @@ The following commands are available via the Smartnode client:
   - `rocketpool minipool delegate-rollback, b` - Roll a minipool's delegate contract back to its previous version
   - `rocketpool minipool set-use-latest-delegate, l` - Use this to enable or disable the "use-latest-delegate" flag on one or more minipools. If enabled, the minipool will ignore its current delegate contract and always use whatever the latest delegate is.
   - `rocketpool minipool find-vanity-address, v` - Search for a custom vanity minipool address
+- **megapool**, g - Manage the node's megapool
+  - `rocketpool megapool deposit, d` - Creates one or more megapool validators
+  - `rocketpool megapool status, s` - Get the megapool status
+  - `rocketpool megapool validators, v` - Get details about all megapool validators
+  - `rocketpool megapool repay-debt, r` - Repay any debt the node may have
+  - `rocketpool megapool claim, c` - Claim any megapool rewards that were distributed but not yet claimed
+  - `rocketpool megapool stake, k` - Stake a megapool validator
+  - `rocketpool megapool exit-queue, x` - Exit the megapool queue
+  - `rocketpool megapool exit-validator, t` - Request to exit a megapool validator
+  - `rocketpool megapool notify-validator-exit, n` - Notify that a validator exit is in progress
+  - `rocketpool megapool notify-final-balance, f` - Notify that a validator exit has completed and the final balance has been withdrawn
+  - `rocketpool megapool distribute, b` - Distribute any accrued execution layer rewards sent to this megapool
+  - `rocketpool megapool set-use-latest-delegate, l` - Enable or disable the "use-latest-delegate" flag on the node's megapool. If enabled, the megapool will ignore its current delegate contract and always use whatever the latest delegate is
+  - `rocketpool megapool delegate-upgrade, u` - Upgrade a megapool's delegate contract to the latest version
+  - `rocketpool megapool dissolve-validator, i` - Dissolve a megapool validator
+
 - **network**, e - Manage Rocket Pool network parameters
   - `rocketpool network stats, s` - Get stats about the Rocket Pool network and its tokens
   - `rocketpool network timezone-map, t` - Shows a table of the timezones that node operators belong to
   - `rocketpool network node-fee, f` - Get the current network node commission rate
   - `rocketpool network rpl-price, p` - Get the current network RPL price in ETH
   - `rocketpool network generate-rewards-tree, g` - Generate and save the rewards tree file for the provided interval.
-  Note that this is an asynchronous process, so it will return before the file is generated.
-  You will need to use `rocketpool service logs api` to follow its progress.
+    Note that this is an asynchronous process, so it will return before the file is generated.
+    You will need to use `rocketpool service logs api` to follow its progress.
   - `rocketpool network dao-proposals, d` - Get the currently active DAO proposals
 - **node**, n - Manage the node
   - `rocketpool node status, s` - Get the node's status
@@ -106,8 +121,8 @@ The following commands are available via the Smartnode client:
   - `rocketpool node claim-rewards, c` - Claim available RPL and ETH rewards for any checkpoint you haven't claimed yet
   - `rocketpool node withdraw-rpl, i` - Withdraw RPL staked against the node
   - `rocketpool node withdraw-eth, h` - Withdraw ETH staked on behalf of the node
-  - `rocketpool node deposit, d` - Make a deposit and create a minipool
-  - `rocketpool node create-vacant-minipool, cvm` - Create an empty minipool, which can be used to migrate an existing solo staking validator as part of the 0x00 to 0x01 withdrawal credentials upgrade
+  - `rocketpool node deposit, d` - Make a deposit and create a minipool (deprecated after Saturn 1)
+  - `rocketpool node create-vacant-minipool, cvm` - Create an empty minipool, which can be used to migrate an existing solo staking validator as part of the 0x00 to 0x01 withdrawal credentials upgrade (deprecated after Saturn 1)
   - `rocketpool node send, n` - Send ETH or tokens from the node account to an address. ENS names supported. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).
   - `rocketpool node initialize-fee-distributor, z` - Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge
   - `rocketpool node distribute-fees, b` - Distribute the priority fee and MEV rewards from your fee distributor to your withdrawal address and the rETH contract (based on your node's average commission)
@@ -141,10 +156,10 @@ The following commands are available via the Smartnode client:
   - `rocketpool service install, i` - Install the Rocket Pool service
   - `rocketpool service config, c` - Configure the Rocket Pool service
   - `rocketpool service status, u` - View the Rocket Pool service status
-  - `rocketpool service start, s` -  Start the Rocket Pool service
-  - `rocketpool service pause, p` -  Pause the Rocket Pool service
+  - `rocketpool service start, s` - Start the Rocket Pool service
+  - `rocketpool service pause, p` - Pause the Rocket Pool service
   - `rocketpool service stop, o` - Pause the Rocket Pool service (alias of 'rocketpool service pause')
-  - `rocketpool service reset-docker, rd` - Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts Smartnode.
+  - `rocketpool service reset-docker, rd` - Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts Smart Node.
   - `rocketpool service prune-docker, pd` - Cleanup unused Docker resources, including stopped containers, unused images, networks and volumes. Does not restart smartnode, so the running containers and the images and networks they reference will not be pruned.
   - `rocketpool service logs, l` - View the Rocket Pool service logs
   - `rocketpool service stats, a` - View the Rocket Pool service stats
@@ -156,7 +171,7 @@ The following commands are available via the Smartnode client:
   - `rocketpool service get-config-yaml` - Generate YAML that shows the current configuration schema, including all of the parameters and their descriptions
   - `rocketpool service resync-eth1` - Deletes the main ETH1 client's chain data and resyncs it from scratch. Only use this as a last resort!
   - `rocketpool service resync-eth2` - Deletes the ETH2 client's chain data and resyncs it from scratch. Only use this as a last resort!
-  - `rocketpool service terminate, t` - Deletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Only use this if you are cleaning up the Smartnode and want to start over!
+  - `rocketpool service terminate, t` - Deletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Only use this if you are cleaning up the Smart Node and want to start over!
 - **wallet**, w - Manage the node wallet
   - `rocketpool wallet status, s` - Get the node wallet status
   - `rocketpool wallet init, i` - Initialize the node wallet
@@ -165,22 +180,22 @@ The following commands are available via the Smartnode client:
   - `rocketpool wallet test-recovery, t` - Test recovering a node wallet without actually generating any of the node wallet or validator key files to ensure the process works as expected
   - `rocketpool wallet export, e` - Export the node wallet in JSON format
   - `rocketpool wallet purge` - Deletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!
-  - `rocketpool wallet set-ens-name` - Send a transaction from the node wallet to 
-  configure it's ENS name
+  - `rocketpool wallet set-ens-name` - Send a transaction from the node wallet to
+    configure it's ENS name
   - `rocketpool wallet masquerade` - Simulates a different wallet being loaded in the Smart Node
   - `rocketpool wallet end-masquerade` - Ends masquerading and goes back to using the original wallet address
 - **help**, h - Shows a list of commands or help for one command
 
-
 ### GLOBAL OPTIONS:
- - `rocketpool --allow-root, -r` - Allow rocketpool to be run as the root user
- - `rocketpool --config-path path, -c path` - Rocket Pool config asset path (default: "~/.rocketpool")
- - `rocketpool --daemon-path path, -d path` - Interact with a Rocket Pool service daemon at a path on the host OS, running outside of docker
- - `rocketpool --maxFee value, -f value` - The max fee (including the priority fee) you want a transaction to cost, in gwei (default: 0)
- - `rocketpool --maxPrioFee value, -i value` - The max priority fee you want a transaction to use, in gwei (default: 0)
- - `rocketpool --gasLimit value, -l value` - [DEPRECATED] Desired gas limit (default: 0)
- - `rocketpool --nonce value` - Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction
- - `rocketpool --debug` - Enable debug printing of API commands
- - `rocketpool --secure-session, -s` - Some commands may print sensitive information to your terminal. Use this flag when nobody can see your screen to allow sensitive data to be printed without prompting
- - `rocketpool --help, -h` - show help
- - `rocketpool --version, -v` - print the version
+
+- `rocketpool --allow-root, -r` - Allow rocketpool to be run as the root user
+- `rocketpool --config-path path, -c path` - Rocket Pool config asset path (default: "~/.rocketpool")
+- `rocketpool --daemon-path path, -d path` - Interact with a Rocket Pool service daemon at a path on the host OS, running outside of docker
+- `rocketpool --maxFee value, -f value` - The max fee (including the priority fee) you want a transaction to cost, in gwei (default: 0)
+- `rocketpool --maxPrioFee value, -i value` - The max priority fee you want a transaction to use, in gwei (default: 0)
+- `rocketpool --gasLimit value, -l value` - [DEPRECATED] Desired gas limit (default: 0)
+- `rocketpool --nonce value` - Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction
+- `rocketpool --debug` - Enable debug printing of API commands
+- `rocketpool --secure-session, -s` - Some commands may print sensitive information to your terminal. Use this flag when nobody can see your screen to allow sensitive data to be printed without prompting
+- `rocketpool --help, -h` - show help
+- `rocketpool --version, -v` - print the version

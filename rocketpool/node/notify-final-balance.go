@@ -80,8 +80,8 @@ func newNotifyFinalBalance(c *cli.Context, logger log.ColorLogger) (*notifyFinal
 	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
+		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
+		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
@@ -149,7 +149,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount))
+	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount), opts)
 	if err != nil {
 		return err
 	}
@@ -200,6 +200,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	if err != nil {
 		fmt.Printf("An error occurred: %s\n", err)
 	}
+	t.log.Printlnf("The Beacon WithdrawalSlot for validator ID %d is: %d", validatorInfo.ValidatorId, withdrawalProof.WithdrawalSlot)
 
 	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, proofSlot, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, stateUsed)
 	if err != nil {
@@ -233,7 +234,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei(t.cfg)
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
 		if err != nil {
 			return err
 		}

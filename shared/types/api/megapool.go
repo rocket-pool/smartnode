@@ -39,6 +39,7 @@ type MegapoolDetails struct {
 	UseLatestDelegate        bool                       `json:"useLatestDelegate"`
 	AssignedValue            *big.Int                   `json:"assignedValue"`
 	NodeBond                 *big.Int                   `json:"nodeBond"`
+	NodeQueuedBond           *big.Int                   `json:"nodeQueuedBond"`
 	UserCapital              *big.Int                   `json:"userCapital"`
 	NodeShare                *big.Int                   `json:"nodeShare"`
 	BondRequirement          *big.Int                   `json:"bondRequirement"`
@@ -164,4 +165,15 @@ type ValidatorWithdrawableEpochProof struct {
 	Pubkey            []byte
 	WithdrawableEpoch uint64
 	Witnesses         [][32]byte
+}
+type GetNewValidatorBondRequirementResponse struct {
+	Status                      string   `json:"status"`
+	Error                       string   `json:"error"`
+	NewValidatorBondRequirement *big.Int `json:"newValidatorBondRequirement"`
+}
+
+type GetNodeMegapoolEthBondedResponse struct {
+	Status    string   `json:"status"`
+	Error     string   `json:"error"`
+	EthBonded *big.Int `json:"ethBonded"`
 }

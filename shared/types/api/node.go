@@ -428,21 +428,23 @@ type CanNodeWithdrawRplv1_3_1Response struct {
 }
 
 type CanNodeDepositResponse struct {
-	Status                           string             `json:"status"`
-	Error                            string             `json:"error"`
-	CanDeposit                       bool               `json:"canDeposit"`
-	CreditBalance                    *big.Int           `json:"creditBalance"`
-	DepositBalance                   *big.Int           `json:"depositBalance"`
-	CanUseCredit                     bool               `json:"canUseCredit"`
-	NodeBalance                      *big.Int           `json:"nodeBalance"`
-	InsufficientBalance              bool               `json:"insufficientBalance"`
-	InsufficientBalanceWithoutCredit bool               `json:"insufficientBalanceWithoutCredit"`
-	InvalidAmount                    bool               `json:"invalidAmount"`
-	DepositDisabled                  bool               `json:"depositDisabled"`
-	InConsensus                      bool               `json:"inConsensus"`
-	MinipoolAddress                  common.Address     `json:"minipoolAddress"`
-	MegapoolAddress                  common.Address     `json:"megapoolAddress"`
-	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
+	Status                           string                    `json:"status"`
+	Error                            string                    `json:"error"`
+	CanDeposit                       bool                      `json:"canDeposit"`
+	CreditBalance                    *big.Int                  `json:"creditBalance"`
+	DepositBalance                   *big.Int                  `json:"depositBalance"`
+	CanUseCredit                     bool                      `json:"canUseCredit"`
+	NodeBalance                      *big.Int                  `json:"nodeBalance"`
+	InsufficientBalance              bool                      `json:"insufficientBalance"`
+	InsufficientBalanceWithoutCredit bool                      `json:"insufficientBalanceWithoutCredit"`
+	InvalidAmount                    bool                      `json:"invalidAmount"`
+	DepositDisabled                  bool                      `json:"depositDisabled"`
+	InConsensus                      bool                      `json:"inConsensus"`
+	NodeHasDebt                      bool                      `json:"nodeHasDebt"`
+	MinipoolAddress                  common.Address            `json:"minipoolAddress"`
+	MegapoolAddress                  common.Address            `json:"megapoolAddress"`
+	ValidatorPubkeys                 []rptypes.ValidatorPubkey `json:"validatorPubkeys"`
+	GasInfo                          rocketpool.GasInfo        `json:"gasInfo"`
 }
 type NodeDepositResponse struct {
 	Status          string                  `json:"status"`
@@ -451,6 +453,34 @@ type NodeDepositResponse struct {
 	MinipoolAddress common.Address          `json:"minipoolAddress"`
 	ValidatorPubkey rptypes.ValidatorPubkey `json:"validatorPubkey"`
 	ScrubPeriod     time.Duration           `json:"scrubPeriod"`
+}
+
+type CanNodeDepositsResponse struct {
+	Status                           string                    `json:"status"`
+	Error                            string                    `json:"error"`
+	CanDeposit                       bool                      `json:"canDeposit"`
+	CreditBalance                    *big.Int                  `json:"creditBalance"`
+	DepositBalance                   *big.Int                  `json:"depositBalance"`
+	CanUseCredit                     bool                      `json:"canUseCredit"`
+	NodeBalance                      *big.Int                  `json:"nodeBalance"`
+	InsufficientBalance              bool                      `json:"insufficientBalance"`
+	InsufficientBalanceWithoutCredit bool                      `json:"insufficientBalanceWithoutCredit"`
+	InvalidAmount                    bool                      `json:"invalidAmount"`
+	DepositDisabled                  bool                      `json:"depositDisabled"`
+	InConsensus                      bool                      `json:"inConsensus"`
+	NodeHasDebt                      bool                      `json:"nodeHasDebt"`
+	MinipoolAddress                  common.Address            `json:"minipoolAddress"`
+	MegapoolAddress                  common.Address            `json:"megapoolAddress"`
+	ValidatorPubkeys                 []rptypes.ValidatorPubkey `json:"validatorPubkeys"`
+	GasInfo                          rocketpool.GasInfo        `json:"gasInfo"`
+}
+
+type NodeDepositsResponse struct {
+	Status           string                    `json:"status"`
+	Error            string                    `json:"error"`
+	TxHash           common.Hash               `json:"txHash"`
+	ValidatorPubkeys []rptypes.ValidatorPubkey `json:"validatorPubkeys"`
+	ScrubPeriod      time.Duration             `json:"scrubPeriod"`
 }
 
 type CanCreateVacantMinipoolResponse struct {
@@ -601,20 +631,22 @@ type NodeDistributeResponse struct {
 }
 
 type NodeGetRewardsInfoResponse struct {
-	Status                  string                 `json:"status"`
-	Error                   string                 `json:"error"`
-	Registered              bool                   `json:"registered"`
-	ClaimedIntervals        []uint64               `json:"claimedIntervals"`
-	UnclaimedIntervals      []rewards.IntervalInfo `json:"unclaimedIntervals"`
-	InvalidIntervals        []rewards.IntervalInfo `json:"invalidIntervals"`
-	RplStake                *big.Int               `json:"rplStake"`
-	RplPrice                *big.Int               `json:"rplPrice"`
-	ActiveMinipools         int                    `json:"activeMinipools"`
-	EthBorrowed             *big.Int               `json:"ethBorrowed"`
-	EthBorrowLimit          *big.Int               `json:"ethBorrowLimit"`
-	PendingBorrowAmount     *big.Int               `json:"pendingBorrowAmount"`
-	BorrowedCollateralRatio float64                `json:"borrowedCollateralRatio"`
-	BondedCollateralRatio   float64                `json:"bondedCollateralRatio"`
+	Status                   string                 `json:"status"`
+	Error                    string                 `json:"error"`
+	Registered               bool                   `json:"registered"`
+	ClaimedIntervals         []uint64               `json:"claimedIntervals"`
+	UnclaimedIntervals       []rewards.IntervalInfo `json:"unclaimedIntervals"`
+	InvalidIntervals         []rewards.IntervalInfo `json:"invalidIntervals"`
+	RplStake                 *big.Int               `json:"rplStake"`
+	RplPrice                 *big.Int               `json:"rplPrice"`
+	ActiveMinipools          int                    `json:"activeMinipools"`
+	ActiveMegapoolValidators int                    `json:"activeMegapoolValidators"`
+	EthBorrowed              *big.Int               `json:"ethBorrowed"`
+	EthBorrowLimit           *big.Int               `json:"ethBorrowLimit"`
+	PendingBorrowAmount      *big.Int               `json:"pendingBorrowAmount"`
+	BorrowedCollateralRatio  float64                `json:"borrowedCollateralRatio"`
+	BondedCollateralRatio    float64                `json:"bondedCollateralRatio"`
+	IsSaturnDeployed         bool                   `json:"isSaturnDeployed"`
 }
 
 type CanNodeClaimRewardsResponse struct {
@@ -732,25 +764,17 @@ type NodeAlertsResponse struct {
 	// TODO: change to GettableAlerts
 	Message string `json:"message"`
 }
-type CanDeployMegapoolResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	CanDeploy       bool               `json:"canDeploy"`
-	AlreadyDeployed bool               `json:"alreadyDeployed"`
-	ExpectedAddress common.Address     `json:"expectedAddress"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
-}
-
-type DeployMegapoolResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
 
 type GetExpressTicketCountResponse struct {
 	Status string `json:"status"`
 	Error  string `json:"error"`
 	Count  uint64 `json:"count"`
+}
+
+type GetBondRequirementResponse struct {
+	Status          string   `json:"status"`
+	Error           string   `json:"error"`
+	BondRequirement *big.Int `json:"bondRequirement"`
 }
 
 type GetExpressTicketsProvisionedResponse struct {

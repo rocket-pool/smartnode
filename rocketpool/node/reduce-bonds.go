@@ -78,8 +78,8 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
+		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
+		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
@@ -255,7 +255,7 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei(t.cfg)
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
 		if err != nil {
 			return false, err
 		}
@@ -365,7 +365,7 @@ func (t *reduceBonds) reduceBond(mpd *rpstate.NativeMinipoolDetails, windowStart
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei(t.cfg)
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
 		if err != nil {
 			return false, err
 		}

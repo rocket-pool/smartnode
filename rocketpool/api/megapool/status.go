@@ -1,9 +1,11 @@
 package megapool
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -11,7 +13,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-func getStatus(c *cli.Context) (*api.MegapoolStatusResponse, error) {
+func getStatus(c *cli.Context, finalizedState bool) (*api.MegapoolStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -41,25 +43,34 @@ func getStatus(c *cli.Context) (*api.MegapoolStatusResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	var opts *bind.CallOpts
 
-	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address)
+	if finalizedState {
+		// We just need a non-nil opts for the next calls to use the finalized state
+		opts = &bind.CallOpts{
+			Context: context.Background(),
+		}
+	}
+
+	details, err := services.GetNodeMegapoolDetails(rp, bc, nodeAccount.Address, opts)
 	if err != nil {
 		return nil, err
 	}
 	response.Megapool = details
 
+	// Get beacon head
+	beaconHead, err := bc.GetBeaconHead()
+	if err != nil {
+		return nil, fmt.Errorf("Error getting beacon head: %w", err)
+	}
+	response.BeaconHead = beaconHead
+
 	// Get latest delegate address
-	delegate, err := rp.GetContract("rocketMegapoolDelegate", nil)
+	delegate, err := rp.GetContract("rocketMegapoolDelegate", opts)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting latest minipool delegate contract: %w", err)
 	}
 	response.LatestDelegate = *delegate.Address
-
-	// Get beacon head info
-	response.BeaconHead, err = bc.GetBeaconHead()
-	if err != nil {
-		return nil, fmt.Errorf("Error getting the beacon head info: %w", err)
-	}
 
 	// Return response
 	return &response, nil
@@ -171,7 +182,7 @@ func getValidatorMapAndBalances(c *cli.Context) (*api.MegapoolValidatorMapAndRew
 		return nil, err
 	}
 
-	status, err := getStatus(c)
+	status, err := getStatus(c, false)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting the megapool status")
 	}
@@ -246,5 +257,4 @@ func getValidatorMapAndBalances(c *cli.Context) (*api.MegapoolValidatorMapAndRew
 
 	// Return response
 	return &response, nil
-
 }

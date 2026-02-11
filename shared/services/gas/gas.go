@@ -1,6 +1,7 @@
 package gas
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"strconv"
@@ -17,6 +18,9 @@ import (
 const colorReset string = "\033[0m"
 const colorYellow string = "\033[33m"
 const colorBlue string = "\033[36m"
+
+// DefaultPriorityFeeGwei is the default priority fee in gwei used for automatic transactions
+const DefaultPriorityFeeGwei float64 = 0.01
 
 type Gas struct {
 	maxFeeGwei         float64
@@ -45,7 +49,7 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 		return Gas{}, fmt.Errorf("Error getting Rocket Pool configuration: %w", err)
 	}
 	if isNew {
-		return Gas{}, fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smartnode.")
+		return Gas{}, fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
 	// Get the current settings from the CLI arguments
@@ -112,7 +116,7 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 				}
 			}
 		}
-		fmt.Printf("%sUsing a max fee of %.2f gwei and a priority fee of %.2f gwei.\n%s", colorBlue, maxFeeGwei, maxPriorityFeeGwei, colorReset)
+		fmt.Printf("%sUsing a max fee of %.3f gwei and a priority fee of %.3f gwei.\n%s", colorBlue, maxFeeGwei, maxPriorityFeeGwei, colorReset)
 	}
 
 	// Use the requested gas limit if provided
@@ -143,6 +147,22 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 
 // Get the suggested max fee for service operations
 func GetHeadlessMaxFeeWei(cfg *config.RocketPoolConfig) (*big.Int, error) {
+	return GetHeadlessMaxFeeWeiWithLatestBlock(cfg, nil)
+}
+
+// Get the suggested max fee for service operations using the latest block
+func GetHeadlessMaxFeeWeiWithLatestBlock(cfg *config.RocketPoolConfig, rp *rocketpool.RocketPool) (*big.Int, error) {
+	if rp != nil {
+		// Getting the latest block to estimate the gas price
+		latestBlock, err := rp.Client.HeaderByNumber(context.Background(), nil)
+		if err != nil {
+			fmt.Printf("%sWarning: couldn't get gas estimates from the latest block%s\nUsing gas oracles%s\n", colorYellow, err.Error(), colorReset)
+		}
+		// Get the latest block gas + 20%
+		gasPrice := big.NewInt(0).Add(latestBlock.BaseFee, big.NewInt(0).Div(big.NewInt(0).Mul(latestBlock.BaseFee, big.NewInt(20)), big.NewInt(100)))
+		return gasPrice, nil
+	}
+
 	etherchainData, err := etherchain.GetGasPrices(cfg)
 	if err == nil {
 		return etherchainData.RapidWei, nil
@@ -152,10 +172,9 @@ func GetHeadlessMaxFeeWei(cfg *config.RocketPoolConfig) (*big.Int, error) {
 		etherscanData, err := etherscan.GetGasPrices()
 		if err == nil {
 			return eth.GweiToWei(etherscanData.FastGwei), nil
-		} else {
-			return nil, fmt.Errorf("Error getting gas price suggestions: %w", err)
 		}
 	}
+	return nil, fmt.Errorf("error getting gas estimates")
 }
 
 func handleEtherchainGasPrices(gasSuggestion etherchain.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {

@@ -11,7 +11,7 @@ import (
 
 func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
-	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smartnode and client settings next or just save and exit."
+	helperText := "All done! You're ready to run.\n\nIf you'd like, you can review and change all of the Smart Node and client settings next or just save and exit."
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)

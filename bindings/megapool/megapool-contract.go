@@ -230,8 +230,11 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 	if err != nil {
 		return ValidatorInfoWithPubkey{}, fmt.Errorf("error creating calldata for getValidatorInfoAndPubkey: %w", err)
 	}
-
-	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, nil)
+	var blockNumber *big.Int
+	if opts != nil && opts.BlockNumber != nil {
+		blockNumber = opts.BlockNumber
+	}
+	response, err := mp.Contract.Client.CallContract(context.Background(), ethereum.CallMsg{To: mp.Contract.Address, Data: callData}, blockNumber)
 	if err != nil {
 		return ValidatorInfoWithPubkey{}, fmt.Errorf("error calling getValidatorInfoAndPubkey: %w", err)
 	}
@@ -334,7 +337,15 @@ func (mp *megapoolV1) GetRefundValue(opts *bind.CallOpts) (*big.Int, error) {
 func (mp *megapoolV1) GetNodeBond(opts *bind.CallOpts) (*big.Int, error) {
 	nodeBond := new(*big.Int)
 	if err := mp.Contract.Call(opts, nodeBond, "getNodeBond"); err != nil {
-		return nil, fmt.Errorf("error getting megapool %s debt: %w", mp.Address.Hex(), err)
+		return nil, fmt.Errorf("error getting the node bond %s: %w", mp.Address.Hex(), err)
+	}
+	return *nodeBond, nil
+}
+
+func (mp *megapoolV1) GetNodeQueuedBond(opts *bind.CallOpts) (*big.Int, error) {
+	nodeBond := new(*big.Int)
+	if err := mp.Contract.Call(opts, nodeBond, "getNodeQueuedBond"); err != nil {
+		return nil, fmt.Errorf("error getting the node queued bond %s: %w", mp.Address.Hex(), err)
 	}
 	return *nodeBond, nil
 }
@@ -484,6 +495,15 @@ func (mp *megapoolV1) GetWithdrawalCredentials(opts *bind.CallOpts) (common.Hash
 		return common.Hash{}, fmt.Errorf("error getting megapool %s withdrawal credentials: %w", mp.Address.Hex(), err)
 	}
 	return *withdrawalCredentials, nil
+}
+
+// Get the bond amount required for the megapool's next validator
+func (mp *megapoolV1) GetNewValidatorBondRequirement(opts *bind.CallOpts) (*big.Int, error) {
+	bondRequirement := new(*big.Int)
+	if err := mp.Contract.Call(opts, bondRequirement, "getNewValidatorBondRequirement"); err != nil {
+		return nil, fmt.Errorf("error getting megapool %s new validator bond requirement: %w", mp.Address.Hex(), err)
+	}
+	return *bondRequirement, nil
 }
 
 // Estimate the gas required to Request RPL previously staked on this megapool to be unstaked

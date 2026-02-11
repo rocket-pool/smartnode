@@ -142,7 +142,7 @@
       "type": "stat"
     },
     {
-      "description": "The temperature of your CPU (you can set this to Tctl or Tdie, whichever you prefer to monitor).\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
+      "description": "The temperature of your CPU (you can set this to Tctl or Tdie, whichever you prefer to monitor).\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -208,7 +208,7 @@
       "type": "stat"
     },
     {
-      "description": "This will turn red when your system needs to be rebooted because of security updates.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
+      "description": "This will turn red when your system needs to be rebooted because of security updates.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -279,7 +279,7 @@
       "type": "stat"
     },
     {
-      "description": "Tracks any updates that are available for your OS or for Rocket Pool but haven't been applied yet. When one of these numbers is higher than 0, it means you should update your system or Rocket Pool accordingly.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
+      "description": "Tracks any updates that are available for your OS or for Rocket Pool but haven't been applied yet. When one of these numbers is higher than 0, it means you should update your system or Rocket Pool accordingly.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -443,7 +443,7 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 2,
         "x": 13,
         "y": 1
       },
@@ -488,6 +488,86 @@
         }
       ],
       "title": "Validator Activity",
+      "type": "stat"
+    },
+    {
+      "description": "This tells you when your next attestation duty will arrive. Use it to find an optimal time to take your clients down for maintenance so you're back up and running before it hits.\n\n- NOTE: **Lodestar** and **Teku** do not provide this information.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {
+                  "color": "text",
+                  "index": 0,
+                  "text": "Unavailable"
+                }
+              },
+              "type": "value"
+            },
+            {
+              "options": {
+                "match": "null",
+                "result": {
+                  "color": "text",
+                  "index": 1,
+                  "text": "Unavailable"
+                }
+              },
+              "type": "special"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 2,
+        "x": 15,
+        "y": 1
+      },
+      "id": 154,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "((min(vc_attestation_duty_slot{job=\"validator\"}) - scalar(beacon_head_slot{job=\"eth2\"})) * 12) OR # Lighthouse\nmax(next_action_wait{job=\"eth2\"} OR # Nimbus\n(min((validator_next_attestation_slot{job=\"validator\"} - scalar(beacon_slot{job=\"eth2\"})) > 0 - 1) * 12) OR # Prysm\non() vector(0))",
+          "interval": "",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Next Attestation",
       "type": "stat"
     },
     {
@@ -1003,7 +1083,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
+        "h": 6,
         "w": 5,
         "x": 17,
         "y": 7
@@ -1442,87 +1522,11 @@
       "type": "timeseries"
     },
     {
-      "description": "This tells you when your next attestation duty will arrive. Use it to find an optimal time to take your clients down for maintenance so you're back up and running before it hits.\n\n- NOTE: **Lodestar** and **Teku** do not provide this information.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [
-            {
-              "options": {
-                "0": {
-                  "color": "text",
-                  "index": 0,
-                  "text": "Unavailable"
-                }
-              },
-              "type": "value"
-            },
-            {
-              "options": {
-                "match": "null",
-                "result": {
-                  "color": "text",
-                  "index": 1,
-                  "text": "Unavailable"
-                }
-              },
-              "type": "special"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
       },
-      "gridPos": {
-        "h": 3,
-        "w": 2,
-        "x": 13,
-        "y": 9
-      },
-      "id": 154,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
-        },
-        "text": {},
-        "textMode": "auto"
-      },
-      "pluginVersion": "9.5.18",
-      "targets": [
-        {
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "((min(vc_attestation_duty_slot{job=\"validator\"}) - scalar(beacon_head_slot{job=\"eth2\"})) * 12) OR # Lighthouse\nmax(next_action_wait{job=\"eth2\"} OR # Nimbus\n(min((validator_next_attestation_slot{job=\"validator\"} - scalar(beacon_slot{job=\"eth2\"})) > 0 - 1) * 12) OR # Prysm\non() vector(0))",
-          "interval": "",
-          "legendFormat": "",
-          "range": true,
-          "refId": "A"
-        }
-      ],
-      "title": "Next Attestation",
-      "type": "stat"
-    },
-    {
-      "description": "How many minipools you currently have running on your node.",
+      "description": "How many validators you currently have running on your node.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1542,12 +1546,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
-        "w": 2,
-        "x": 15,
+        "h": 4,
+        "w": 4,
+        "x": 13,
         "y": 9
       },
-      "id": 233,
+      "id": 265,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -1565,14 +1569,34 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
           "exemplar": true,
           "expr": "rocketpool_node_active_minipool_count",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "Minipools",
+          "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rocketpool_node_megapool_active_validator_count",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Megapool",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Your Minipools",
+      "title": "Your Validators",
       "type": "stat"
     },
     {
@@ -1580,7 +1604,7 @@
         "h": 1,
         "w": 9,
         "x": 13,
-        "y": 12
+        "y": 13
       },
       "id": 234,
       "options": {
@@ -1642,7 +1666,7 @@
         "h": 5,
         "w": 2,
         "x": 13,
-        "y": 13
+        "y": 14
       },
       "id": 237,
       "links": [],
@@ -1720,7 +1744,7 @@
         "h": 5,
         "w": 2,
         "x": 15,
-        "y": 13
+        "y": 14
       },
       "id": 12,
       "links": [],
@@ -1810,7 +1834,7 @@
         "h": 5,
         "w": 5,
         "x": 17,
-        "y": 13
+        "y": 14
       },
       "id": 51,
       "options": {
@@ -1932,7 +1956,7 @@
       "type": "timeseries"
     },
     {
-      "description": "The disk space used by your primary (Operating System) hard drive. Change the `device` option in this query to be your machine's hard drive.\n\nSee the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
+      "description": "The disk space used by your primary (Operating System) hard drive. Change the `device` option in this query to be your machine's hard drive.\n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2008,7 +2032,7 @@
       "type": "gauge"
     },
     {
-      "description": "The temperature of your SSD.\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
+      "description": "The temperature of your SSD.\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2090,7 +2114,7 @@
         "h": 1,
         "w": 9,
         "x": 13,
-        "y": 18
+        "y": 19
       },
       "id": 258,
       "options": {
@@ -2107,29 +2131,7 @@
       "type": "text"
     },
     {
-      "gridPos": {
-        "h": 1,
-        "w": 9,
-        "x": 13,
-        "y": 19
-      },
-      "id": 212,
-      "options": {
-        "code": {
-          "language": "plaintext",
-          "showLineNumbers": false,
-          "showMiniMap": false
-        },
-        "content": "",
-        "mode": "markdown"
-      },
-      "pluginVersion": "9.5.18",
-      "title": "Beacon Chain Rewards (Updates Every 5 Minutes)",
-      "transparent": true,
-      "type": "text"
-    },
-    {
-      "description": "The average read/write latency of your SSD. The lower it is, the faster your machine can process and respond to Beacon Chain activities like attesting. Change the `device` setting in the queries to be the SSD you want to track (typically the one with your chain data on it).\n\nSee the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
+      "description": "The average read/write latency of your SSD. The lower it is, the faster your machine can process and respond to Beacon Chain activities like attesting. Change the `device` setting in the queries to be the SSD you want to track (typically the one with your chain data on it).\n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2244,7 +2246,7 @@
       "type": "timeseries"
     },
     {
-      "description": "A chart showing the network I/O used by your main network adapter over time. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
+      "description": "A chart showing the network I/O used by your main network adapter over time. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2339,7 +2341,7 @@
       "type": "timeseries"
     },
     {
-      "description": "The total network I/O that has gone through your main network adapter. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
+      "description": "The total network I/O that has gone through your main network adapter. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2407,6 +2409,28 @@
       "type": "stat"
     },
     {
+      "gridPos": {
+        "h": 1,
+        "w": 9,
+        "x": 13,
+        "y": 20
+      },
+      "id": 212,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "",
+        "mode": "markdown"
+      },
+      "pluginVersion": "9.5.18",
+      "title": "Beacon Chain Rewards (Updates Every 5 Minutes)",
+      "transparent": true,
+      "type": "text"
+    },
+    {
       "description": "The total ETH balance of all of your Rocket Pool validators on the Beacon Chain. This includes both ETH belonging to you and ETH belonging to the pool stakers you used to make your minipools.",
       "fieldConfig": {
         "defaults": {
@@ -2430,9 +2454,9 @@
       },
       "gridPos": {
         "h": 3,
-        "w": 4,
+        "w": 3,
         "x": 13,
-        "y": 20
+        "y": 21
       },
       "id": 72,
       "options": {
@@ -2488,8 +2512,8 @@
       "gridPos": {
         "h": 3,
         "w": 3,
-        "x": 17,
-        "y": 20
+        "x": 16,
+        "y": 21
       },
       "id": 210,
       "options": {
@@ -2566,9 +2590,9 @@
       },
       "gridPos": {
         "h": 9,
-        "w": 2,
-        "x": 20,
-        "y": 20
+        "w": 3,
+        "x": 19,
+        "y": 21
       },
       "id": 256,
       "options": {
@@ -2641,9 +2665,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 4,
+        "w": 3,
         "x": 13,
-        "y": 23
+        "y": 24
       },
       "id": 204,
       "options": {
@@ -2701,8 +2725,8 @@
       "gridPos": {
         "h": 6,
         "w": 3,
-        "x": 17,
-        "y": 23
+        "x": 16,
+        "y": 24
       },
       "id": 152,
       "links": [],
@@ -2761,6 +2785,10 @@
       "type": "text"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
       "description": "The total amount of ETH locked on the Rocket Pool network, including staked RPL (but not including Beacon Chain rewards).",
       "fieldConfig": {
         "defaults": {
@@ -2807,10 +2835,16 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_demand_deposit_pool_balance{job=\"rocketpool\"} + rocketpool_demand_total_minipool_capacity{job=\"rocketpool\"} + rocketpool_supply_active_minipools{job=\"rocketpool\"} * 32 + rocketpool_rpl_total_value_staked{job=\"rocketpool\"} * rocketpool_rpl_rpl_price{job=\"rocketpool\"}",
+          "expr": "rocketpool_demand_deposit_pool_balance{job=\"rocketpool\"} + (rocketpool_node_megapool_standard_queue_size{job=\"rocketpool\"} + rocketpool_node_megapool_express_queue_size{job=\"rocketpool\"}) * 28 + rocketpool_supply_active_minipools{job=\"rocketpool\"} * 32 + rocketpool_rpl_total_value_staked{job=\"rocketpool\"} * rocketpool_rpl_rpl_price{job=\"rocketpool\"}",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
@@ -2818,7 +2852,11 @@
       "type": "stat"
     },
     {
-      "description": "The total amount of RPL staked across all node operators in the Rocket Pool network.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "The total amount of RPL staked across all megapools  in the Rocket Pool network.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2864,18 +2902,28 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_rpl_total_value_staked{job=\"rocketpool\"}",
+          "expr": "rocketpool_rpl_total_network_megapool_staked_rpl{job=\"rocketpool\"}",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Total RPL Staked",
+      "title": "Network Megapool RPL",
       "type": "stat"
     },
     {
-      "description": "The total *effective* RPL stake across all node operators on the Rocket Pool network. This accounts for the 150% collateral cap per minipool. If this number is lower than the Total RPL Staked, then some node operators have gone above 150%.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "The total legacy RPL stake across all node operators on the Rocket Pool network.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2921,17 +2969,27 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_rpl_total_effective_staked{job=\"rocketpool\"}",
+          "expr": "rocketpool_rpl_total_network_legacy_staked_rpl{job=\"rocketpool\"}",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Total Effective RPL Staked",
+      "title": "Network Legacy RPL",
       "type": "stat"
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
       "description": "The current balance of the Smoothing Pool. This is what will get distributed to each node operator opted into the Smoothing Pool at the end of each rewards interval.",
       "fieldConfig": {
         "defaults": {
@@ -2978,9 +3036,13 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_smoothing_pool_eth_balance",
+          "expr": "rocketpool_demand_deposit_pool_balance",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -2995,9 +3057,9 @@
         "h": 1,
         "w": 9,
         "x": 13,
-        "y": 29
+        "y": 30
       },
-      "id": 186,
+      "id": 270,
       "options": {
         "code": {
           "language": "plaintext",
@@ -3008,38 +3070,43 @@
         "mode": "markdown"
       },
       "pluginVersion": "9.5.18",
-      "title": "RPL Rewards (Updates Every 5 Minutes)",
+      "title": "Megapool Details (Updates every 5 minutes)",
       "transparent": true,
       "type": "text"
     },
     {
-      "description": "The time of the next RPL rewards checkpoint. If you have an effective RPL stake greater than zero, you should receive rewards here (unless it's your first checkpoint, in which case you'll need to wait a bit longer).",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "This is how much ETH the NO has bonded on the megapool",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 2,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
+                "color": "blue",
                 "value": null
               }
             ]
           },
-          "unit": "dateTimeAsLocalNoDateIfToday"
+          "unit": "ETH"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 5,
+        "h": 3,
+        "w": 3,
         "x": 13,
-        "y": 30
+        "y": 31
       },
-      "id": 218,
+      "id": 272,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -3058,44 +3125,55 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_rpl_checkpoint_time{job=\"rocketpool\"}",
+          "expr": "rocketpool_node_megapool_node_bond{job=\"rocketpool\"}",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Next RPL Rewards Checkpoint",
+      "title": "Bonded ETH",
       "type": "stat"
     },
     {
-      "description": "This tracks how long you have until the next RPL rewards checkpoint.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "This is how much ETH is currently available on the megapool contract",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
+          "decimals": 2,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "text",
+                "color": "blue",
                 "value": null
               }
             ]
           },
-          "unit": "dateTimeFromNow"
+          "unit": "ETH"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 4,
-        "w": 4,
-        "x": 18,
-        "y": 30
+        "h": 3,
+        "w": 3,
+        "x": 16,
+        "y": 31
       },
-      "id": 216,
+      "id": 271,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
@@ -3114,14 +3192,86 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_rpl_checkpoint_time{job=\"rocketpool\"}",
+          "expr": "rocketpool_node_megapool_eth_balance{job=\"rocketpool\"}",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Next RPL Rewards Checkpoint",
+      "title": "Megapool Balance (EL)",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ETH"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 3,
+        "x": 19,
+        "y": 31
+      },
+      "id": 274,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "value_and_name"
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "rocketpool_node_megapool_pending_rewards",
+          "hide": false,
+          "legendFormat": "{{type}}",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "Rewards Split",
       "type": "stat"
     },
     {
@@ -3263,7 +3413,7 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
+        "h": 4,
         "w": 3,
         "x": 6,
         "y": 32
@@ -3296,7 +3446,11 @@
       "type": "gauge"
     },
     {
-      "description": "The number of minipools that are currently in the queue, waiting for ETH to be assigned to them from the staking pool.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "How many validators are currently waiting to have ETH assigned from the deposit pool",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3311,21 +3465,20 @@
                 "value": null
               }
             ]
-          },
-          "unit": "none"
+          }
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
+        "h": 4,
         "w": 3,
         "x": 9,
         "y": 32
       },
-      "id": 208,
+      "id": 266,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -3340,20 +3493,42 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_demand_queue_length{job=\"rocketpool\"}",
+          "expr": "rocketpool_node_megapool_standard_queue_size",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "Standard Queue",
           "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rocketpool_node_megapool_express_queue_size",
+          "hide": false,
+          "interval": "",
+          "legendFormat": "Express Queue",
+          "range": true,
+          "refId": "B"
         }
       ],
-      "title": "Minipools in Queue",
+      "title": "Validators In Queue",
       "type": "stat"
     },
     {
-      "description": "This shows various levels of RPL stake you have:\n\n- **Total**: the total amount of RPL you have staked.\n- **Effective**: the amount of your staked RPL that is being put to use, accounting for the 10% borrowed minimum and 150% bonded maximum limits.\n- **Rewardable**: the effective amount of RPL that is eligible for earning RPL rewards at the end of each rewards period. This is based on the status of your validators on the Beacon Chain; validators that haven't been activated yet or validators that have been exited are not eligible for rewards.\n\n**Note**: this takes any *pending bond reductions* you may have into account.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "This is how much ETH the Rocket Pool protocol has provided for the megapool validators",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3365,27 +3540,27 @@
             "mode": "absolute",
             "steps": [
               {
-                "color": "orange",
+                "color": "blue",
                 "value": null
               }
             ]
           },
-          "unit": "RPL"
+          "unit": "ETH"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 13,
+        "h": 3,
         "w": 3,
         "x": 13,
         "y": 34
       },
-      "id": 190,
+      "id": 273,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
-        "orientation": "horizontal",
+        "orientation": "auto",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -3399,36 +3574,28 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_node_total_staked_rpl{job=\"rocketpool\"}",
+          "expr": "rocketpool_node_megapool_user_capital",
           "interval": "",
-          "legendFormat": "Total",
+          "legendFormat": "",
           "range": true,
           "refId": "A"
-        },
-        {
-          "editorMode": "code",
-          "expr": "rocketpool_node_effective_staked_rpl{job=\"rocketpool\"}",
-          "hide": false,
-          "legendFormat": "Effective",
-          "range": true,
-          "refId": "B"
-        },
-        {
-          "editorMode": "code",
-          "expr": "rocketpool_node_rewardable_staked_rpl{job=\"rocketpool\"}",
-          "hide": false,
-          "legendFormat": "Rewardable",
-          "range": true,
-          "refId": "C"
         }
       ],
-      "title": "RPL Staked",
+      "title": "Borrowed ETH",
       "type": "stat"
     },
     {
-      "description": "Your total staked RPL collateral levels. This shows your collateral relative to the amount of ETH you have *borrowed* from the staking pool to complete your validators, and the amount of ETH you have *bonded* with your own funds.\n\nIf you fall below 10% of the *borrowed* ETH, you won't be able to claim your rewards at the next checkpoint until you get back to 10%.\n\nIf you go over 150% of the *bonded* ETH, you'll only be rewarded for the first 150% of your stake.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "This is how much ETH the node has in debt. ",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -3436,37 +3603,34 @@
           },
           "decimals": 2,
           "mappings": [],
-          "max": 1.5,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "red",
+                "color": "text",
                 "value": null
               },
               {
-                "color": "green",
-                "value": 0.1
-              },
-              {
                 "color": "red",
-                "value": 1.5
+                "value": 0.01
               }
             ]
           },
-          "unit": "percentunit"
+          "unit": "ETH"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 7,
-        "w": 6,
+        "h": 3,
+        "w": 3,
         "x": 16,
         "y": 34
       },
-      "id": 196,
+      "id": 275,
       "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -3475,32 +3639,27 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "text": {}
+        "text": {},
+        "textMode": "auto"
       },
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_node_borrowed_collateral_ratio{job=\"rocketpool\"}",
+          "expr": "rocketpool_node_node_debt",
           "interval": "",
-          "legendFormat": "Borrowed",
+          "legendFormat": "",
           "range": true,
           "refId": "A"
-        },
-        {
-          "editorMode": "code",
-          "expr": "rocketpool_node_bonded_collateral_ratio{job=\"rocketpool\"}",
-          "hide": false,
-          "legendFormat": "Bonded",
-          "range": true,
-          "refId": "B"
         }
       ],
-      "title": "RPL Collateral",
-      "type": "gauge"
+      "title": "Node Debt",
+      "type": "stat"
     },
     {
       "description": "The total number of nodes that have registered on the Rocket Pool network.",
@@ -3710,56 +3869,201 @@
       "type": "piechart"
     },
     {
-      "description": "The relative amount of ETH that was deposited into the staking pool by rETH stakers, which was then used by node operators to create new minipools with validators on the Beacon Chain. The closer this number is to 100%, the more efficiently the Rocket Pool network is operating and the faster rETH's price grows.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "A breakdown of the counts of each megapool validator on the Rocket Pool network by status:",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "thresholds"
+            "mode": "palette-classic"
           },
-          "mappings": [],
-          "max": 1,
-          "min": 0,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "#EAB839",
-                "value": 0.2
-              },
-              {
-                "color": "green",
-                "value": 0.5
-              }
-            ]
-          }
+          "custom": {
+            "hideFrom": {
+              "legend": false,
+              "tooltip": false,
+              "viz": false
+            }
+          },
+          "mappings": []
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "Value"
+              "options": "staking"
             },
             "properties": [
               {
-                "id": "unit",
-                "value": "percentunit"
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "initialized"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "finalized"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "purple",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "dissolved"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "red",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "prelaunch"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "yellow",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "withdrawable"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "dark-orange",
+                  "mode": "fixed"
+                }
               }
             ]
           }
         ]
       },
       "gridPos": {
-        "h": 5,
-        "w": 3,
+        "h": 6,
+        "w": 4,
         "x": 6,
-        "y": 37
+        "y": 36
       },
-      "id": 168,
+      "id": 268,
       "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "right",
+          "showLegend": true,
+          "values": [
+            "value"
+          ]
+        },
+        "pieType": "donut",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rocketpool_supply_megapool_count{job=\"rocketpool\"}",
+          "format": "time_series",
+          "instant": true,
+          "interval": "",
+          "legendFormat": "{{status}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Megapool Validators by Status",
+      "type": "piechart"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "The total number of Rocket Pool megapool (validators) that are active (not exited and withdrawn from the Beacon Chain).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 2,
+        "x": 10,
+        "y": 36
+      },
+      "id": 267,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -3768,40 +4072,46 @@
           "fields": "",
           "values": false
         },
-        "showThresholdLabels": false,
-        "showThresholdMarkers": true,
-        "text": {}
+        "text": {},
+        "textMode": "auto"
       },
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_performance_eth_utilization_rate{job=\"rocketpool\"}",
+          "expr": "rocketpool_supply_megapool_contract_count",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Staking Pool ETH Used",
-      "type": "gauge"
+      "title": "Megapool Contracts",
+      "type": "stat"
     },
     {
-      "description": "The total amount of ETH needed to be added to the staking pool in order to clear the minipool queue completely.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "This is the total balance in ETH your megapool validators currently have.",
       "fieldConfig": {
         "defaults": {
           "color": {
-            "fixedColor": "blue",
-            "mode": "fixed"
+            "mode": "thresholds"
           },
-          "decimals": 2,
+          "decimals": 4,
           "mappings": [],
-          "max": 0,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "blue",
+                "color": "green",
                 "value": null
               }
             ]
@@ -3811,12 +4121,12 @@
         "overrides": []
       },
       "gridPos": {
-        "h": 5,
+        "h": 4,
         "w": 3,
-        "x": 9,
+        "x": 13,
         "y": 37
       },
-      "id": 225,
+      "id": 276,
       "options": {
         "colorMode": "value",
         "graphMode": "area",
@@ -3829,21 +4139,93 @@
           "fields": "",
           "values": false
         },
+        "text": {},
         "textMode": "auto"
       },
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_demand_total_minipool_capacity",
+          "expr": "rocketpool_node_megapool_beacon_balance{job=\"rocketpool\"}",
           "interval": "",
           "legendFormat": "",
           "range": true,
           "refId": "A"
         }
       ],
-      "title": "ETH Capacity of Queue",
+      "title": "Beacon Balance",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "This is the total balance in ETH that belongs to you from the beacon balance",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 4,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "ETH"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 3,
+        "x": 16,
+        "y": 37
+      },
+      "id": 277,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rocketpool_node_megapool_node_share_of_beacon_balance",
+          "interval": "",
+          "legendFormat": "",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Your Share of the Beacon Balance",
       "type": "stat"
     },
     {
@@ -3902,38 +4284,40 @@
       "type": "stat"
     },
     {
-      "description": "The approximate amount of RPL you'll receive at the next checkpoint, based on your current rewardable stake and how much RPL is staked on the entire network.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "The total number of Rocket Pool megapool (validators) that are active (not exited and withdrawn from the Beacon Chain).",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
-          "decimals": 2,
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
               {
-                "color": "orange",
+                "color": "green",
                 "value": null
               }
             ]
-          },
-          "unit": "RPL"
+          }
         },
         "overrides": []
       },
       "gridPos": {
         "h": 3,
-        "w": 4,
-        "x": 16,
-        "y": 41
+        "w": 2,
+        "x": 10,
+        "y": 39
       },
-      "id": 198,
+      "id": 269,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
-        "justifyMode": "auto",
+        "justifyMode": "center",
         "orientation": "auto",
         "reduceOptions": {
           "calcs": [
@@ -3948,115 +4332,43 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_node_expected_rpl_rewards{job=\"rocketpool\"}",
+          "expr": "rocketpool_supply_megapool_active_count",
           "interval": "",
           "legendFormat": "",
+          "range": true,
           "refId": "A"
         }
       ],
-      "title": "Approx. Rewards from Next Checkpoint",
+      "title": "Active Megapool Validators",
       "type": "stat"
     },
     {
-      "description": "The amount of RPL you've claimed over the life of your node, and the amount you still have yet to claim.",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "fixedColor": "transparent",
-            "mode": "fixed"
-          },
-          "decimals": 2,
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "transparent",
-                "value": null
-              }
-            ]
-          },
-          "unit": "RPL"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "Unclaimed"
-            },
-            "properties": [
-              {
-                "id": "color",
-                "value": {
-                  "fixedColor": "blue",
-                  "mode": "thresholds"
-                }
-              },
-              {
-                "id": "thresholds",
-                "value": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "transparent",
-                      "value": null
-                    },
-                    {
-                      "color": "green",
-                      "value": 0.00001
-                    }
-                  ]
-                }
-              }
-            ]
-          }
-        ]
-      },
       "gridPos": {
-        "h": 6,
-        "w": 2,
-        "x": 20,
+        "h": 1,
+        "w": 9,
+        "x": 13,
         "y": 41
       },
-      "id": 192,
+      "id": 186,
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "horizontal",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "",
-          "values": false
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
         },
-        "text": {},
-        "textMode": "auto"
+        "content": "",
+        "mode": "markdown"
       },
       "pluginVersion": "9.5.18",
-      "targets": [
-        {
-          "editorMode": "code",
-          "exemplar": true,
-          "expr": "rocketpool_node_unclaimed_rewards{job=\"rocketpool\"}",
-          "interval": "",
-          "legendFormat": "Unclaimed",
-          "range": true,
-          "refId": "A"
-        },
-        {
-          "editorMode": "code",
-          "expr": "rocketpool_node_cumulative_rpl_rewards{job=\"rocketpool\"}",
-          "hide": false,
-          "legendFormat": "Claimed",
-          "range": true,
-          "refId": "B"
-        }
-      ],
-      "title": "RPL Rewards",
-      "type": "stat"
+      "title": "RPL Rewards (Updates Every 5 Minutes)",
+      "transparent": true,
+      "type": "text"
     },
     {
       "description": "",
@@ -4080,6 +4392,118 @@
       "title": "Governance (Updates Every 6 Hours)",
       "transparent": true,
       "type": "text"
+    },
+    {
+      "description": "The time of the next RPL rewards checkpoint. If you have an effective RPL stake greater than zero, you should receive rewards here (unless it's your first checkpoint, in which case you'll need to wait a bit longer).",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "dateTimeAsLocalNoDateIfToday"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 5,
+        "x": 13,
+        "y": 42
+      },
+      "id": 218,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "rocketpool_rpl_checkpoint_time{job=\"rocketpool\"}",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Next RPL Rewards Checkpoint",
+      "type": "stat"
+    },
+    {
+      "description": "This tracks how long you have until the next RPL rewards checkpoint.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "text",
+                "value": null
+              }
+            ]
+          },
+          "unit": "dateTimeFromNow"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 4,
+        "w": 4,
+        "x": 18,
+        "y": 42
+      },
+      "id": 216,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "rocketpool_rpl_checkpoint_time{job=\"rocketpool\"}",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Next RPL Rewards Checkpoint",
+      "type": "stat"
     },
     {
       "description": "The number of active proposals you or your delegate have voted on.",
@@ -4355,7 +4779,11 @@
       "type": "stat"
     },
     {
-      "description": "The approximate APR for your RPL stake, based on the rewards you will receive at the next checkpoint.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "PBFA97CFB590B2093"
+      },
+      "description": "This shows various levels of RPL stake you have:\n\n- **Total**: the total amount of RPL you have staked.\n- **Effective**: the amount of your staked RPL that is being put to use, accounting for the 10% borrowed minimum and 150% bonded maximum limits.\n- **Rewardable**: the effective amount of RPL that is eligible for earning RPL rewards at the end of each rewards period. This is based on the status of your validators on the Beacon Chain; validators that haven't been activated yet or validators that have been exited are not eligible for rewards.\n\n**Note**: this takes any *pending bond reductions* you may have into account.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -4372,22 +4800,22 @@
               }
             ]
           },
-          "unit": "percent"
+          "unit": "RPL"
         },
         "overrides": []
       },
       "gridPos": {
-        "h": 3,
-        "w": 4,
-        "x": 16,
-        "y": 44
+        "h": 13,
+        "w": 3,
+        "x": 13,
+        "y": 46
       },
-      "id": 194,
+      "id": 190,
       "options": {
         "colorMode": "value",
         "graphMode": "none",
         "justifyMode": "auto",
-        "orientation": "auto",
+        "orientation": "horizontal",
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
@@ -4401,15 +4829,120 @@
       "pluginVersion": "9.5.18",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_node_rpl_apr{job=\"rocketpool\"}",
+          "expr": "rocketpool_node_total_staked_rpl + rocketpool_node_megapool_staked_rpl",
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "Total",
+          "range": true,
           "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "rocketpool_node_total_staked_rpl",
+          "hide": false,
+          "legendFormat": "Legacy RPL",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "PBFA97CFB590B2093"
+          },
+          "editorMode": "code",
+          "expr": "rocketpool_node_megapool_staked_rpl",
+          "hide": false,
+          "legendFormat": "Megapool RPL",
+          "range": true,
+          "refId": "C"
         }
       ],
-      "title": "Your RPL APR for the Next Checkpoint",
+      "title": "RPL Staked",
       "type": "stat"
+    },
+    {
+      "description": "Your total staked RPL collateral levels. This shows your collateral relative to the amount of ETH you have *borrowed* from the staking pool to complete your validators, and the amount of ETH you have *bonded* with your own funds.\n\nIf you fall below 10% of the *borrowed* ETH, you won't be able to claim your rewards at the next checkpoint until you get back to 10%.\n\nIf you go over 150% of the *bonded* ETH, you'll only be rewarded for the first 150% of your stake.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "max": 1.5,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 0.1
+              },
+              {
+                "color": "red",
+                "value": 1.5
+              }
+            ]
+          },
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 7,
+        "w": 6,
+        "x": 16,
+        "y": 46
+      },
+      "id": 196,
+      "options": {
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "showThresholdLabels": false,
+        "showThresholdMarkers": true,
+        "text": {}
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rocketpool_node_borrowed_collateral_ratio{job=\"rocketpool\"}",
+          "interval": "",
+          "legendFormat": "Borrowed",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "editorMode": "code",
+          "expr": "rocketpool_node_bonded_collateral_ratio{job=\"rocketpool\"}",
+          "hide": false,
+          "legendFormat": "Bonded",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "RPL Collateral",
+      "type": "gauge"
     },
     {
       "datasource": {
@@ -4539,28 +5072,6 @@
       "type": "stat"
     },
     {
-      "description": "",
-      "gridPos": {
-        "h": 1,
-        "w": 9,
-        "x": 13,
-        "y": 47
-      },
-      "id": 261,
-      "options": {
-        "code": {
-          "language": "plaintext",
-          "showLineNumbers": false,
-          "showMiniMap": false
-        },
-        "content": "",
-        "mode": "markdown"
-      },
-      "pluginVersion": "9.5.18",
-      "transparent": true,
-      "type": "text"
-    },
-    {
       "description": "The balances of your node wallet (only tracks Rocket Pool tokens). Keep an eye on how much ETH you have; if it falls too low, your node won't be able to pay for gas during automatic RPL reward claims or other transactions.",
       "fieldConfig": {
         "defaults": {
@@ -4591,9 +5102,9 @@
       },
       "gridPos": {
         "h": 6,
-        "w": 9,
-        "x": 13,
-        "y": 48
+        "w": 12,
+        "x": 0,
+        "y": 51
       },
       "id": 200,
       "options": {
@@ -4641,6 +5152,242 @@
         }
       ],
       "type": "table"
+    },
+    {
+      "description": "The approximate amount of RPL you'll receive at the next checkpoint, based on your current rewardable stake and how much RPL is staked on the entire network.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "unit": "RPL"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 16,
+        "y": 53
+      },
+      "id": 198,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "rocketpool_node_expected_rpl_rewards{job=\"rocketpool\"}",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Approx. Rewards from Next Checkpoint",
+      "type": "stat"
+    },
+    {
+      "description": "The amount of RPL you've claimed over the life of your node, and the amount you still have yet to claim.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "fixedColor": "transparent",
+            "mode": "fixed"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "transparent",
+                "value": null
+              }
+            ]
+          },
+          "unit": "RPL"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Unclaimed"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "blue",
+                  "mode": "thresholds"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "transparent",
+                      "value": null
+                    },
+                    {
+                      "color": "green",
+                      "value": 0.00001
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 2,
+        "x": 20,
+        "y": 53
+      },
+      "id": 192,
+      "options": {
+        "colorMode": "background",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "horizontal",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "editorMode": "code",
+          "exemplar": true,
+          "expr": "rocketpool_node_unclaimed_rewards{job=\"rocketpool\"}",
+          "interval": "",
+          "legendFormat": "Unclaimed",
+          "range": true,
+          "refId": "A"
+        },
+        {
+          "editorMode": "code",
+          "expr": "rocketpool_node_cumulative_rpl_rewards{job=\"rocketpool\"}",
+          "hide": false,
+          "legendFormat": "Claimed",
+          "range": true,
+          "refId": "B"
+        }
+      ],
+      "title": "RPL Rewards",
+      "type": "stat"
+    },
+    {
+      "description": "The approximate APR for your RPL stake, based on the rewards you will receive at the next checkpoint.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "decimals": 2,
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "orange",
+                "value": null
+              }
+            ]
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 3,
+        "w": 4,
+        "x": 16,
+        "y": 56
+      },
+      "id": 194,
+      "options": {
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "9.5.18",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "rocketpool_node_rpl_apr{job=\"rocketpool\"}",
+          "interval": "",
+          "legendFormat": "",
+          "refId": "A"
+        }
+      ],
+      "title": "Your RPL APR for the Next Checkpoint",
+      "type": "stat"
+    },
+    {
+      "description": "",
+      "gridPos": {
+        "h": 1,
+        "w": 9,
+        "x": 13,
+        "y": 59
+      },
+      "id": 261,
+      "options": {
+        "code": {
+          "language": "plaintext",
+          "showLineNumbers": false,
+          "showMiniMap": false
+        },
+        "content": "",
+        "mode": "markdown"
+      },
+      "pluginVersion": "9.5.18",
+      "transparent": true,
+      "type": "text"
     }
   ],
   "refresh": "30s",
@@ -4652,7 +5399,7 @@
     "list": []
   },
   "time": {
-    "from": "now-1h",
+    "from": "now-30m",
     "to": "now"
   },
   "timepicker": {
@@ -4670,8 +5417,8 @@
     ]
   },
   "timezone": "",
-  "title": "Rocket Pool Dashboard v1.3.3 - Provisioned",
-  "uid": "e6741a77-5548-4807-b3f4-416c603d8d20",
-  "version": 21,
+  "title": "Rocket Pool Dashboard v1.4.0 - Provisioned",
+  "uid": "e6741a77-5548-4807-b3f4-416c603d8d21",
+  "version": 4,
   "weekStart": ""
 }

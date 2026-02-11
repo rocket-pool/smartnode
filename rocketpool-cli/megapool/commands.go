@@ -14,32 +14,24 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 		Usage:   "Manage the node's megapool",
 		Subcommands: []cli.Command{
 			{
-				Name:      "deploy",
-				Usage:     "Deploy a megapool contract for your node",
-				UsageText: "rocketpool node deploy",
-				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm deployment",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					return deployMegapool(c)
-				},
-			},
-			{
 				Name:      "deposit",
 				Aliases:   []string{"d"},
-				Usage:     "Make a deposit and create a new validator on the megapool",
-				UsageText: "rocketpool node deposit [options]",
+				Usage:     "Make a deposit and create a new validator on the megapool. Optionally specify count to make multiple deposits.",
+				UsageText: "rocketpool megapool deposit [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "yes, y",
 						Usage: "Automatically confirm deposit",
 					},
-					cli.BoolFlag{
-						Name:  "use-express-ticket, e",
-						Usage: "Use an express ticket to create a new validator",
+					cli.Int64Flag{
+						Name:  "express-tickets, e",
+						Usage: "Number of express tickets to use",
+						Value: -1,
+					},
+					cli.UintFlag{
+						Name:  "count, c",
+						Usage: "Number of deposits to make",
+						Value: 0,
 					},
 				},
 				Action: func(c *cli.Context) error {

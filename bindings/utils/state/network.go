@@ -60,6 +60,8 @@ type NetworkDetails struct {
 	RETHBalance                       *big.Int               `json:"reth_balance"`
 	TotalRETHSupply                   *big.Int               `json:"total_reth_supply"`
 	TotalRPLStake                     *big.Int               `json:"total_rpl_stake"`
+	TotalNetworkMegapoolStakedRpl     *big.Int               `json:"total_network_megapool_staked_rpl"`
+	TotalLegacyStakedRpl              *big.Int               `json:"total_legacy_staked_rpl"`
 	SmoothingPoolBalance              *big.Int               `json:"smoothing_pool_balance"`
 	PendingVoterShare                 *big.Int               `json:"pending_voter_share"`
 	NodeFee                           float64                `json:"node_fee"`
@@ -82,7 +84,8 @@ type NetworkDetails struct {
 	// Saturn
 	MegapoolRevenueSplitSettings             MegapoolRevenueSplitSettings
 	MegapoolRevenueSplitTimeWeightedAverages MegapoolRevenueSplitTimeWeightedAverages
-	SmoothingPoolPendingVoterShare           *big.Int `json:"smoothing_pool_earmarked_voter_share_eth"`
+	PendingVoterShareEth                     *big.Int `json:"pending_voter_share_eth"`
+	ReducedBond                              *big.Int `json:"reduced_bond"`
 }
 
 // Create a snapshot of all of the network's details
@@ -137,7 +140,6 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	contracts.Multicaller.AddCall(contracts.RocketTokenRETH, &rETHExchangeRate, "getExchangeRate")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkBalances, &details.TotalETHBalance, "getTotalETHBalance")
 	contracts.Multicaller.AddCall(contracts.RocketTokenRETH, &details.TotalRETHSupply, "totalSupply")
-	contracts.Multicaller.AddCall(contracts.RocketNodeStaking, &details.TotalRPLStake, "getTotalRPLStake")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkFees, &nodeFee, "getNodeFee")
 	contracts.Multicaller.AddCall(contracts.RocketNetworkBalances, &balancesBlock, "getBalancesBlock")
 	contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.SubmitBalancesEnabled, "getSubmitBalancesEnabled")
@@ -158,6 +160,7 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 	if !isSaturnDeployed {
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MinCollateralFraction, "getMinimumPerMinipoolStake")
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MaxCollateralFraction, "getMaximumPerMinipoolStake")
+		contracts.Multicaller.AddCall(contracts.RocketNodeStaking, &details.TotalRPLStake, "getTotalRPLStake")
 	}
 
 	// Saturn
@@ -166,11 +169,15 @@ func NewNetworkDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, i
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.NodeOperatorCommissionAdder, "getNodeShareSecurityCouncilAdder")
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.VoterCommissionShare, "getVoterShare")
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNetwork, &details.MegapoolRevenueSplitSettings.PdaoCommissionShare, "getProtocolDAOShare")
+		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.ReducedBond, "getReducedBond")
 		contracts.Multicaller.AddCall(contracts.RocketDAOProtocolSettingsNode, &details.MinimumLegacyRplStakeFraction, "getMinimumLegacyRPLStake")
 		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.NodeShare, "getCurrentNodeShare")
 		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.VoterShare, "getCurrentVoterShare")
 		contracts.Multicaller.AddCall(contracts.RocketNetworkRevenues, &details.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare, "getCurrentProtocolDAOShare")
-		contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.SmoothingPoolPendingVoterShare, "getPendingVoterShare")
+		contracts.Multicaller.AddCall(contracts.RocketRewardsPool, &details.PendingVoterShareEth, "getPendingVoterShare")
+		contracts.Multicaller.AddCall(contracts.RocketNodeStaking, &details.TotalNetworkMegapoolStakedRpl, "getTotalMegapoolStakedRPL")
+		contracts.Multicaller.AddCall(contracts.RocketNodeStaking, &details.TotalRPLStake, "getTotalStakedRPL")
+		contracts.Multicaller.AddCall(contracts.RocketNodeStaking, &details.TotalLegacyStakedRpl, "getTotalLegacyStakedRPL")
 	}
 	_, err := contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {

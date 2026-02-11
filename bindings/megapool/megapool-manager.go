@@ -53,7 +53,7 @@ func GetValidatorInfo(rp *rocketpool.RocketPool, index uint32, opts *bind.CallOp
 		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error creating calldata for getValidatorInfo: %w", err)
 	}
 
-	response, err := megapoolManager.Client.CallContract(context.Background(), ethereum.CallMsg{To: megapoolManager.Address, Data: callData}, nil)
+	response, err := megapoolManager.Client.CallContract(context.Background(), ethereum.CallMsg{To: megapoolManager.Address, Data: callData}, opts.BlockNumber)
 	if err != nil {
 		return ValidatorInfoFromGlobalIndex{}, fmt.Errorf("error calling getValidatorInfo: %w", err)
 	}
@@ -167,7 +167,7 @@ func NotifyNotExit(rp *rocketpool.RocketPool, megapoolAddress common.Address, va
 	if err != nil {
 		return nil, err
 	}
-	tx, err := megapoolManager.Transact(opts, "notifyNotExit", megapoolAddress, slotTimestamp, validatorId, validatorProof, slotProof)
+	tx, err := megapoolManager.Transact(opts, "notifyNotExit", megapoolAddress, validatorId, slotTimestamp, validatorProof, slotProof)
 	if err != nil {
 		return nil, fmt.Errorf("error calling notify not exit: %w", err)
 	}

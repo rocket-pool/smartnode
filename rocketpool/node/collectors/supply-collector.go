@@ -3,6 +3,7 @@ package collectors
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/node"
@@ -20,6 +21,18 @@ type SupplyCollector struct {
 
 	// The count of Rocket Pool minipools, broken down by status
 	minipoolCount *prometheus.Desc
+
+	// The count of Rocket Pool megapools
+	megapoolCount *prometheus.Desc
+
+	// The count of Rocket Pool megapool validators
+	megapoolValidatorCount *prometheus.Desc
+
+	// The count of Rocket Pool megapool contracts
+	megapoolContractCount *prometheus.Desc
+
+	// The count of active Rocket Pool megapools
+	megapoolActiveCount *prometheus.Desc
 
 	// The total number of Rocket Pool minipools
 	totalMinipools *prometheus.Desc
@@ -53,6 +66,22 @@ func NewSupplyCollector(rp *rocketpool.RocketPool, stateLocker *StateLocker) *Su
 			"The count of Rocket Pool minipools, broken down by status",
 			[]string{"status"}, nil,
 		),
+		megapoolActiveCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_active_count"),
+			"The count of active Rocket Pool megapool validators",
+			nil, nil,
+		),
+		megapoolContractCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_contract_count"),
+			"The count of Rocket Pool megapool contracts",
+			nil, nil,
+		),
+		megapoolCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_count"),
+			"The count of Rocket Pool megapool validators, broken down by status",
+			[]string{"status"}, nil,
+		),
+		megapoolValidatorCount: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "megapool_validator_count"),
+			"The count of Rocket Pool megapool validators",
+			nil, nil,
+		),
 		totalMinipools: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_minipools"),
 			"The total number of Rocket Pool minipools",
 			nil, nil,
@@ -74,6 +103,10 @@ func (collector *SupplyCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.minipoolCount
 	channel <- collector.totalMinipools
 	channel <- collector.activeMinipools
+	channel <- collector.megapoolValidatorCount
+	channel <- collector.megapoolActiveCount
+	channel <- collector.megapoolContractCount
+	channel <- collector.megapoolCount
 }
 
 // Collect the latest metric values and pass them to Prometheus
@@ -93,6 +126,16 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	stakingCount := float64(-1)
 	dissolvedCount := float64(-1)
 	finalizedCount := float64(-1)
+
+	megapoolValidatorCount := float64(0)
+	megapoolStakedCount := float64(0)
+	megapoolPrestakeCount := float64(0)
+	megapoolInQueueCount := float64(0)
+	megapoolExitedCount := float64(0)
+	megapoolDissolvedCount := float64(0)
+	megapoolExitingCount := float64(0)
+	megapoolLockedCount := float64(0)
+	megapoolContractCount := float64(0)
 
 	// Get total number of Rocket Pool nodes
 	wg.Go(func() error {
@@ -127,6 +170,39 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 		return nil
 	})
 
+	wg.Go(func() error {
+		megapoolAddressSet := make(map[common.Address]bool)
+		// Iterate the global index and count the number of validators by status
+		for _, validator := range state.MegapoolValidatorGlobalIndex {
+			// Count the number of unique megapool addresses
+			megapoolAddressSet[validator.MegapoolAddress] = true
+			if validator.ValidatorInfo.Staked {
+				megapoolStakedCount++
+			}
+			if validator.ValidatorInfo.InPrestake {
+				megapoolPrestakeCount++
+			}
+			if validator.ValidatorInfo.InQueue {
+				megapoolInQueueCount++
+			}
+			if validator.ValidatorInfo.Exited {
+				megapoolExitedCount++
+			}
+			if validator.ValidatorInfo.Locked {
+				megapoolLockedCount++
+			}
+			if validator.ValidatorInfo.Exiting {
+				megapoolExitingCount++
+			}
+			if validator.ValidatorInfo.Dissolved {
+				megapoolDissolvedCount++
+			}
+		}
+		megapoolContractCount = float64(len(megapoolAddressSet))
+		megapoolValidatorCount = megapoolStakedCount + megapoolPrestakeCount + megapoolInQueueCount + megapoolExitedCount + megapoolLockedCount + megapoolExitingCount + megapoolDissolvedCount
+		return nil
+	})
+
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		collector.logError(err)
@@ -151,10 +227,31 @@ func (collector *SupplyCollector) Collect(channel chan<- prometheus.Metric) {
 	// Set the total and active count
 	totalMinipoolCount := initializedCount + prelaunchCount + stakingCount + dissolvedCount + finalizedCount
 	activeMinipoolCount := totalMinipoolCount - finalizedCount
+	activeMegapoolCount := megapoolValidatorCount - megapoolExitedCount - megapoolDissolvedCount
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolContractCount, prometheus.GaugeValue, megapoolContractCount)
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalMinipools, prometheus.GaugeValue, totalMinipoolCount)
 	channel <- prometheus.MustNewConstMetric(
 		collector.activeMinipools, prometheus.GaugeValue, activeMinipoolCount)
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolValidatorCount, prometheus.GaugeValue, megapoolValidatorCount)
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolActiveCount, prometheus.GaugeValue, activeMegapoolCount)
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolCount, prometheus.GaugeValue, megapoolStakedCount, "staked")
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolCount, prometheus.GaugeValue, megapoolPrestakeCount, "prestake")
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolCount, prometheus.GaugeValue, megapoolInQueueCount, "in_queue")
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolCount, prometheus.GaugeValue, megapoolExitedCount, "exited")
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolCount, prometheus.GaugeValue, megapoolLockedCount, "locked")
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolCount, prometheus.GaugeValue, megapoolExitingCount, "exiting")
+	channel <- prometheus.MustNewConstMetric(
+		collector.megapoolCount, prometheus.GaugeValue, megapoolDissolvedCount, "dissolved")
 }
 
 // Log error messages

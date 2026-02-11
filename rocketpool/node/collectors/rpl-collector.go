@@ -21,6 +21,12 @@ type RplCollector struct {
 	// Obsolete, but still populated so the dashboard can show it.
 	totalEffectiveStaked *prometheus.Desc
 
+	// The total amount of legacy RPL staked on the network
+	totalNetworkLegacyStakedRpl *prometheus.Desc
+
+	// The total amount of RPL staked on megapool on the network
+	totalNetworkMegapoolStakedRpl *prometheus.Desc
+
 	// The date and time of the next RPL rewards checkpoint
 	checkpointTime *prometheus.Desc
 
@@ -41,6 +47,14 @@ type RplCollector struct {
 func NewRplCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, stateLocker *StateLocker) *RplCollector {
 	subsystem := "rpl"
 	return &RplCollector{
+		totalNetworkLegacyStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_network_legacy_staked_rpl"),
+			"The total amount of legacy RPL staked on the network",
+			nil, nil,
+		),
+		totalNetworkMegapoolStakedRpl: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "total_network_megapool_staked_rpl"),
+			"The total amount of RPL staked on megapool on the network",
+			nil, nil,
+		),
 		rplPrice: prometheus.NewDesc(prometheus.BuildFQName(namespace, subsystem, "rpl_price"),
 			"The RPL price (in terms of ETH)",
 			nil, nil,
@@ -66,6 +80,8 @@ func NewRplCollector(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, st
 
 // Write metric descriptions to the Prometheus channel
 func (collector *RplCollector) Describe(channel chan<- *prometheus.Desc) {
+	channel <- collector.totalNetworkLegacyStakedRpl
+	channel <- collector.totalNetworkMegapoolStakedRpl
 	channel <- collector.rplPrice
 	channel <- collector.totalValueStaked
 	channel <- collector.totalEffectiveStaked
@@ -82,6 +98,8 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 
 	rplPriceFloat := eth.WeiToEth(state.NetworkDetails.RplPrice)
 	totalValueStakedFloat := eth.WeiToEth(state.NetworkDetails.TotalRPLStake)
+	totalNetworkLegacyStakedRpl := eth.WeiToEth(state.NetworkDetails.TotalLegacyStakedRpl)
+	totalNetworkMegapoolStakedRpl := eth.WeiToEth(state.NetworkDetails.TotalNetworkMegapoolStakedRpl)
 	lastCheckpoint := state.NetworkDetails.IntervalStart
 	rewardsInterval := state.NetworkDetails.IntervalDuration
 	nextRewardsTime := float64(lastCheckpoint.Add(rewardsInterval).Unix()) * 1000
@@ -94,6 +112,10 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 	// should keep populating it for now.
 	channel <- prometheus.MustNewConstMetric(
 		collector.totalEffectiveStaked, prometheus.GaugeValue, totalValueStakedFloat)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalNetworkLegacyStakedRpl, prometheus.GaugeValue, totalNetworkLegacyStakedRpl)
+	channel <- prometheus.MustNewConstMetric(
+		collector.totalNetworkMegapoolStakedRpl, prometheus.GaugeValue, totalNetworkMegapoolStakedRpl)
 	channel <- prometheus.MustNewConstMetric(
 		collector.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
 }

@@ -8,8 +8,9 @@ import (
 
 // Conversion factors
 const (
-	WeiPerEth  float64 = 1e18
-	WeiPerGwei float64 = 1e9
+	WeiPerEth      float64 = 1e18
+	WeiPerGwei     float64 = 1e9
+	WeiPerMilliEth float64 = 1e15
 )
 
 // Convert wei to eth
@@ -53,6 +54,17 @@ func GweiToWei(gwei float64) *big.Int {
 	var wei big.Int
 	gweiFloat.SetString(strconv.FormatFloat(gwei, 'f', -1, 64))
 	weiFloat.Mul(&gweiFloat, big.NewFloat(WeiPerGwei))
+	weiFloat.Int(&wei)
+	return &wei
+}
+
+// Convert milliEth to wei
+func MilliEthToWei(milliEth float64) *big.Int {
+	var milliEthFloat big.Float
+	var weiFloat big.Float
+	var wei big.Int
+	milliEthFloat.SetString(strconv.FormatFloat(milliEth, 'f', -1, 64))
+	weiFloat.Mul(&milliEthFloat, big.NewFloat(WeiPerMilliEth))
 	weiFloat.Int(&wei)
 	return &wei
 }

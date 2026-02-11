@@ -276,11 +276,26 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 
 	// Print info about autostaking RPL
 	total := currentRplStake + availableRpl
-	if rewardsInfoResponse.ActiveMinipools > 0 {
+	if rewardsInfoResponse.ActiveMinipools > 0 || rewardsInfoResponse.ActiveMegapoolValidators > 0 {
 		currentBondedCollateral = rewardsInfoResponse.BondedCollateralRatio
 		currentBorrowedCollateral = rewardsInfoResponse.BorrowedCollateralRatio
-		totalBondedCollateral = rplPrice * total / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthBorrowed) - eth.WeiToEth(rewardsInfoResponse.PendingBorrowAmount))
-		totalBorrowedCollateral = rplPrice * total / (eth.WeiToEth(rewardsInfoResponse.EthBorrowed) + eth.WeiToEth(rewardsInfoResponse.PendingBorrowAmount))
+
+		// Use the original method if Saturn isn't deployed
+		if !rewardsInfoResponse.IsSaturnDeployed {
+			totalBondedCollateral = rplPrice * total / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthBorrowed) - eth.WeiToEth(rewardsInfoResponse.PendingBorrowAmount))
+			totalBorrowedCollateral = rplPrice * total / (eth.WeiToEth(rewardsInfoResponse.EthBorrowed) + eth.WeiToEth(rewardsInfoResponse.PendingBorrowAmount))
+		}
+
+		if rewardsInfoResponse.IsSaturnDeployed {
+			if currentRplStake > 0 {
+				totalBondedCollateral = currentBondedCollateral * total / currentRplStake
+				totalBorrowedCollateral = currentBorrowedCollateral * total / currentRplStake
+			} else {
+				totalBondedCollateral = 0
+				totalBorrowedCollateral = 0
+			}
+		}
+
 		fmt.Printf("You currently have %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", currentRplStake, currentBorrowedCollateral*100, currentBondedCollateral*100)
 	} else {
 		fmt.Println("You do not have any active minipools, so restaking RPL will not lead to any rewards.")

@@ -51,7 +51,7 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Get Megapool status
-	status, err := rp.MegapoolStatus()
+	status, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return err
 	}
@@ -179,7 +179,7 @@ func getValidatorStatus(c *cli.Context) error {
 	}
 
 	// Get Megapool status
-	status, err := rp.MegapoolStatus()
+	status, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return err
 	}
@@ -249,6 +249,8 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		fmt.Printf("Validator active:             no\n")
 	}
 
+	beaconBalance := math.RoundDown(eth.WeiToEth(big.NewInt(int64(validator.BeaconStatus.Balance*uint64(eth.WeiPerGwei)))), 6)
+
 	if status == "Staking" {
 		fmt.Printf("Megapool Validator ID:        %d\n", validator.ValidatorId)
 		fmt.Printf("Validator pubkey:             0x%s\n", string(validator.PubKey.String()))
@@ -259,6 +261,9 @@ func printValidatorDetails(validator api.MegapoolValidatorDetails, status string
 		}
 		fmt.Printf("Validator index:              %s\n", validator.BeaconStatus.Index)
 		fmt.Printf("Beacon status:                %s\n", validator.BeaconStatus.Status)
+		if beaconBalance >= 0 {
+			fmt.Printf("Beacon balance (CL):          %.6f ETH\n", beaconBalance)
+		}
 
 	}
 

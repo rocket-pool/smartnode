@@ -13,6 +13,7 @@ import (
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	rewards131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/rewards"
 
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
@@ -50,14 +51,15 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		return nil, err
 	}
 
+	// Response
+	response := api.NodeGetRewardsInfoResponse{}
+
 	// Check if Saturn is already deployed
 	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-
-	// Response
-	response := api.NodeGetRewardsInfoResponse{}
+	response.IsSaturnDeployed = saturnDeployed
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
@@ -123,11 +125,36 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 
 	// Sync
 	var wg errgroup.Group
+	var activeMegapoolValidators int
 
 	if saturnDeployed {
 		wg.Go(func() error {
 			var err error
 			response.RplStake, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			// Check if the megapool is deployed
+			megapoolDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return err
+			}
+			if megapoolDeployed {
+				// Get megapool address and active validator count
+				megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+				if err == nil {
+					mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+					if err == nil {
+						count, err := mp.GetActiveValidatorCount(nil)
+						if err == nil {
+							activeMegapoolValidators += int(count)
+							response.ActiveMegapoolValidators = activeMegapoolValidators
+						}
+					}
+				}
+			}
 			return err
 		})
 
@@ -150,7 +177,8 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 		return nil, err
 	}
 
-	if activeMinipools > 0 {
+	totalActiveValidators := activeMinipools + activeMegapoolValidators
+	if totalActiveValidators > 0 {
 		var wg2 errgroup.Group
 		wg2.Go(func() error {
 			var err error
@@ -163,10 +191,33 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 			return nil, err
 		}
 
-		response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
-		response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
+		// Use the original method if Saturn isn't deployed
+		if !saturnDeployed {
+			response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
+			response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
+		}
+
+		if saturnDeployed {
+			// bonded eth = total validators * 32 - borrowed
+			totalBorrowedEth := eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount)
+			totalBondedEth := float64(totalActiveValidators)*32.0 - totalBorrowedEth
+
+			// Calculate collateral ratios
+			if totalBondedEth <= 0 {
+				response.BondedCollateralRatio = 0
+			} else {
+				response.BondedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / totalBondedEth
+			}
+
+			if totalBorrowedEth <= 0 {
+				response.BorrowedCollateralRatio = 0
+			} else {
+				response.BorrowedCollateralRatio = eth.WeiToEth(response.RplPrice) * eth.WeiToEth(response.RplStake) / totalBorrowedEth
+			}
+		}
 	} else {
 		response.BorrowedCollateralRatio = -1
+		response.BondedCollateralRatio = -1
 	}
 
 	return &response, nil
@@ -200,21 +251,37 @@ func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRew
 		return nil, err
 	}
 
-	// Get the rewards
-	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
-	if err != nil {
-		return nil, err
-	}
-
 	// Get gas estimate
 	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
+
+	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
+	var gasInfo rocketpool.GasInfo
+	if !saturnDeployed {
+		indices, amountRPL, amountETH, merkleProofs, err := getRewardsForIntervalsHouston(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		gasInfo, err = rewards131.EstimateClaimGas(rp, nodeAccount.Address, indices, amountRPL, amountETH, merkleProofs, opts)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
+		if err != nil {
+			return nil, err
+		}
+		gasInfo, err = rewards.EstimateClaimGas(rp, nodeAccount.Address, claims, opts)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	response.GasInfo = gasInfo
 	return &response, nil
 }
@@ -548,11 +615,11 @@ func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolCon
 			voterShareEthForInterval.Add(voterShareEthForInterval, &intervalInfo.VoterShareEth.Int)
 
 			claims = append(claims, types.Claim{
-				Index:               index,
-				AmountRPL:           rplForInterval,
-				AmountSmoothingETH:  smoothingEthForInterval,
-				AmountVoterShareETH: voterShareEthForInterval,
-				Proof:               intervalInfo.MerkleProof,
+				RewardIndex:            index,
+				AmountRPL:              rplForInterval,
+				AmountSmoothingPoolETH: smoothingEthForInterval,
+				AmountVoterETH:         voterShareEthForInterval,
+				MerkleProof:            intervalInfo.MerkleProof,
 			})
 		}
 	}

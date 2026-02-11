@@ -79,8 +79,8 @@ func newNotifyValidatorExit(c *cli.Context, logger log.ColorLogger) (*notifyVali
 	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
+		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
+		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
@@ -144,11 +144,11 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 	}
 
 	// Iterate over megapool validators checking whether they're ready to notify exit
-	validatorCount, err := mp.GetValidatorCount(nil)
+	validatorCount, err := mp.GetValidatorCount(opts)
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount))
+	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount), opts)
 	if err != nil {
 		return err
 	}
@@ -204,7 +204,7 @@ func (t *notifyValidatorExit) createExitProof(rp *rocketpool.RocketPool, beaconS
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei(t.cfg)
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
 		if err != nil {
 			return err
 		}

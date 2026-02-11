@@ -26,6 +26,7 @@ type BeaconState interface {
 	HistoricalSummaryProof(slot uint64) ([][]byte, error)
 	HistoricalSummaryBlockRootProof(slot int) ([][]byte, error)
 	BlockRootProof(slot uint64) ([][]byte, error)
+	BlockHeaderProof() ([][]byte, error)
 	GetValidators() []*generic.Validator
 }
 

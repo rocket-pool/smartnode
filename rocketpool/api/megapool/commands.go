@@ -15,41 +15,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Usage:   "Manage the node's megapool",
 		Subcommands: []cli.Command{
 			{
-				Name:      "can-deploy-megapool",
-				Usage:     "Check if the node can deploy a megapool",
-				UsageText: "rocketpool api node can-deploy-megapool",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(canDeployMegapool(c))
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "deploy-megapool",
-				Usage:     "Deploy the node's megapool",
-				UsageText: "rocketpool api node deploy-megapool",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(deployMegapool(c))
-					return nil
-
-				},
-			},
-			{
 				Name:      "can-distribute-megapool",
 				Usage:     "Check if can distribute megapool rewards",
 				UsageText: "rocketpool api node can-distribute-megapool",
@@ -88,16 +53,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get the node's megapool status",
-				UsageText: "rocketpool api megapool status",
+				UsageText: "rocketpool api megapool status finalized-state",
 				Action: func(c *cli.Context) error {
 
 					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					// Get finalized state
+					finalizedState, err := cliutils.ValidateBool("finalized-state", c.Args().Get(0))
+					if err != nil {
 						return err
 					}
 
 					// Run
-					api.PrintResponse(getStatus(c))
+					api.PrintResponse(getStatus(c, finalizedState))
 					return nil
 
 				},
@@ -730,6 +701,22 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					}
 					// Run
 					api.PrintResponse(calculatePendingRewards(c))
+					return nil
+
+				},
+			},
+			{
+				Name:      "get-new-validator-bond-requirement",
+				Usage:     "Get the bond amount required for the megapool's next validator",
+				UsageText: "rocketpool api megapool get-new-validator-bond-requirement",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					api.PrintResponse(getNewValidatorBondRequirement(c))
 					return nil
 
 				},

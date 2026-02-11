@@ -54,7 +54,7 @@ func NewExporterConfig(cfg *RocketPoolConfig) *ExporterConfig {
 		AdditionalFlags: config.Parameter{
 			ID:                 "additionalFlags",
 			Name:               "Additional Exporter Flags",
-			Description:        "Additional custom command line flags you want to pass to the Node Exporter, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass to the Node Exporter, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Grafana},

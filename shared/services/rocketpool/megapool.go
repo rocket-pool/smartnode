@@ -10,8 +10,8 @@ import (
 )
 
 // Get megapool status
-func (c *Client) MegapoolStatus() (api.MegapoolStatusResponse, error) {
-	responseBytes, err := c.callAPI("megapool status")
+func (c *Client) MegapoolStatus(finalizedState bool) (api.MegapoolStatusResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("megapool status %t", finalizedState))
 	if err != nil {
 		return api.MegapoolStatusResponse{}, fmt.Errorf("Could not get megapool status: %w", err)
 	}
@@ -503,6 +503,22 @@ func (c *Client) DistributeMegapool() (api.DistributeMegapoolResponse, error) {
 	}
 	if response.Error != "" {
 		return api.DistributeMegapoolResponse{}, fmt.Errorf("Could not get distribute-megapool response: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Get the bond amount required for the megapool's next validator
+func (c *Client) GetNewValidatorBondRequirement() (api.GetNewValidatorBondRequirementResponse, error) {
+	responseBytes, err := c.callAPI("megapool get-new-validator-bond-requirement")
+	if err != nil {
+		return api.GetNewValidatorBondRequirementResponse{}, fmt.Errorf("Could not get new validator bond requirement: %w", err)
+	}
+	var response api.GetNewValidatorBondRequirementResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.GetNewValidatorBondRequirementResponse{}, fmt.Errorf("Could not decode new validator bond requirement response: %w", err)
+	}
+	if response.Error != "" {
+		return api.GetNewValidatorBondRequirementResponse{}, fmt.Errorf("Could not get new validator bond requirement: %s", response.Error)
 	}
 	return response, nil
 }

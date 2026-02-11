@@ -37,6 +37,8 @@ type NativeMegapoolDetails struct {
 	BondRequirement          *big.Int       `json:"bondRequirement"`
 	EthBalance               *big.Int       `json:"ethBalance"`
 	LastDistributionTime     uint64         `json:"lastDistributionTime"`
+	PendingRewards           *big.Int       `json:"pendingRewards"`
+	NodeQueuedBond           *big.Int       `json:"nodeQueuedBond"`
 }
 
 // Get the normalized bond per 32 eth validator
@@ -83,7 +85,7 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 	return validators, nil
 }
 
-func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Address) (NativeMegapoolDetails, error) {
+func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Address, opts *bind.CallOpts) (NativeMegapoolDetails, error) {
 
 	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount, nil)
 	if err != nil {
@@ -95,7 +97,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 	details := NativeMegapoolDetails{Address: megapoolAddress}
 
 	// Return if megapool isn't deployed
-	details.Deployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount, nil)
+	details.Deployed, err = megapool.GetMegapoolDeployed(rp, nodeAccount, opts)
 	if err != nil {
 		return NativeMegapoolDetails{}, err
 	}
@@ -109,17 +111,17 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 		return NativeMegapoolDetails{}, err
 	}
 
-	details.EffectiveDelegateAddress, err = mega.GetEffectiveDelegate(nil)
+	details.EffectiveDelegateAddress, err = mega.GetEffectiveDelegate(opts)
 	if err != nil {
 		return NativeMegapoolDetails{}, err
 	}
-	details.DelegateAddress, err = mega.GetDelegate(nil)
+	details.DelegateAddress, err = mega.GetDelegate(opts)
 	if err != nil {
 		return NativeMegapoolDetails{}, err
 	}
 
 	// Return if delegate is expired
-	details.DelegateExpired, err = mega.GetDelegateExpired(rp, nil)
+	details.DelegateExpired, err = mega.GetDelegateExpired(rp, opts)
 	if err != nil {
 		return NativeMegapoolDetails{}, err
 	}
@@ -127,63 +129,73 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 		return details, nil
 	}
 
-	details.LastDistributionTime, err = mega.GetLastDistributionTime(nil)
+	details.LastDistributionTime, err = mega.GetLastDistributionTime(opts)
 	if err != nil {
 		return NativeMegapoolDetails{}, err
 	}
 	wg.Go(func() error {
 		var err error
-		details.NodeDebt, err = mega.GetDebt(nil)
+		details.NodeDebt, err = mega.GetDebt(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.RefundValue, err = mega.GetRefundValue(nil)
+		details.PendingRewards, err = mega.GetPendingRewards(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.ValidatorCount, err = mega.GetValidatorCount(nil)
+		details.RefundValue, err = mega.GetRefundValue(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.ActiveValidatorCount, err = mega.GetActiveValidatorCount(nil)
+		details.ValidatorCount, err = mega.GetValidatorCount(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.LockedValidatorCount, err = mega.GetLockedValidatorCount(nil)
+		details.ActiveValidatorCount, err = mega.GetActiveValidatorCount(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.UseLatestDelegate, err = mega.GetUseLatestDelegate(nil)
+		details.LockedValidatorCount, err = mega.GetLockedValidatorCount(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.DelegateExpiry, err = megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, nil)
+		details.UseLatestDelegate, err = mega.GetUseLatestDelegate(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.AssignedValue, err = mega.GetAssignedValue(nil)
+		details.DelegateExpiry, err = megapool.GetMegapoolDelegateExpiry(rp, details.DelegateAddress, opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.NodeBond, err = mega.GetNodeBond(nil)
+		details.AssignedValue, err = mega.GetAssignedValue(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.UserCapital, err = mega.GetUserCapital(nil)
+		details.NodeBond, err = mega.GetNodeBond(opts)
 		return err
 	})
 	wg.Go(func() error {
 		var err error
-		details.EthBalance, err = rp.Client.BalanceAt(context.Background(), details.Address, nil)
+		details.UserCapital, err = mega.GetUserCapital(opts)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.EthBalance, err = rp.Client.BalanceAt(context.Background(), details.Address, opts.BlockNumber)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		details.NodeQueuedBond, err = mega.GetNodeQueuedBond(opts)
 		return err
 	})
 
@@ -192,7 +204,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, nodeAccount common.Addres
 		return details, err
 	}
 
-	details.BondRequirement, err = node.GetBondRequirement(rp, big.NewInt(int64(details.ActiveValidatorCount)), nil)
+	details.BondRequirement, err = node.GetBondRequirement(rp, big.NewInt(int64(details.ActiveValidatorCount)), opts)
 	if err != nil {
 		return details, err
 	}

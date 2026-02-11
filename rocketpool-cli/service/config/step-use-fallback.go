@@ -6,7 +6,7 @@ import (
 
 func createUseFallbackStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
-	helperText := "If you have an extra externally-managed Execution and Consensus client pair that you trust, you can use them as \"fallback\" clients.\nThe Smartnode and your Validator Client will connect to these if your primary Execution and Consensus clients go offline for any reason, so your node will continue functioning properly until your primary clients are back online.\n\nWould you like to use a fallback client pair?"
+	helperText := "If you have an extra externally-managed Execution and Consensus client pair that you trust, you can use them as \"fallback\" clients.\nThe Smart Node and your Validator Client will connect to these if your primary Execution and Consensus clients go offline for any reason, so your node will continue functioning properly until your primary clients are back online.\n\nWould you like to use a fallback client pair?"
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)

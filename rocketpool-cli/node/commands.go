@@ -617,7 +617,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 					cli.StringFlag{
 						Name:  "mnemonic, m",
-						Usage: "Use this flag if you want to recreate your validator's private key within the Smartnode's VC instead of running it via your own VC, and have the Smartnode reassign your validator's withdrawal credentials to the new minipool address automatically.",
+						Usage: "Use this flag if you want to recreate your validator's private key within the Smart Node's VC instead of running it via your own VC, and have the Smart Node reassign your validator's withdrawal credentials to the new minipool address automatically.",
 					},
 					cli.BoolFlag{
 						Name:  "no-restart",

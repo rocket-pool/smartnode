@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - run: sudo apt install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross g++-aarch64-linux-gnu
+      - run: sudo apt update && sudo apt install -y gcc-aarch64-linux-gnu libc6-dev-arm64-cross g++-aarch64-linux-gnu
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:

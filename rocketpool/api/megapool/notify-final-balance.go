@@ -8,11 +8,12 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli"
 )
 
-func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.CanNotifyFinalBalanceResponse, error) {
+func canNotifyFinalBalance(c *cli.Context, validatorId uint32, withdrawalSlot uint64) (*api.CanNotifyFinalBalanceResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -56,12 +57,13 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 		return nil, err
 	}
 
-	// Check validator status
-	if !validatorInfo.Exiting {
-		response.InvalidStatus = true
-		response.CanExit = false
-		return &response, nil
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
 	}
+
+	// Get the network
+	network := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 
 	validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
@@ -72,13 +74,25 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 		return nil, fmt.Errorf("Error parsing the validator index")
 	}
 	// If the slot was not provided, use the validator's withdrawable epoch supplied by the beacon client
-	if slot == 0 {
-		slot = validatorStatus.WithdrawableEpoch * 32
+	if withdrawalSlot == 0 {
+		withdrawalSlot = validatorStatus.WithdrawableEpoch * 32
 	}
 
-	withdrawalProof, slotUsed, stateUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorIndex)
+	beaconHead, err := bc.GetBeaconHead()
 	if err != nil {
-		fmt.Printf("An error occurred: %s\n", err)
+		return nil, err
+	}
+	finalizedSlot := beaconHead.FinalizedEpoch * 32
+
+	withdrawalProof, slotUsed, stateUsed, err := services.GetWithdrawalProofForSlot(c, withdrawalSlot, validatorIndex)
+	if err != nil {
+		fmt.Printf("An error occurred while getting the withdrawal proof: %s\n", err)
+		// try to fetch the withdrawal proof from the Rocket Pool API
+		withdrawalProof, slotUsed, err = services.GetWithdrawalProofForSlotFromAPI(c, finalizedSlot, withdrawalSlot, validatorIndex, network)
+		if err != nil {
+			fmt.Printf("An error occurred while getting the withdrawal proof from the Rocket Pool API: %s\n", err)
+			return nil, err
+		}
 	}
 
 	opts, err := w.GetNodeAccountTransactor()
@@ -124,7 +138,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*ap
 
 }
 
-func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.NotifyValidatorExitResponse, error) {
+func notifyFinalBalance(c *cli.Context, validatorId uint32, withdrawalSlot uint64) (*api.NotifyValidatorExitResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -145,6 +159,14 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 	if err != nil {
 		return nil, err
 	}
+
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get the network
+	network := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 
 	// Validate minipool owner
 	nodeAccount, err := w.GetNodeAccount()
@@ -188,13 +210,25 @@ func notifyFinalBalance(c *cli.Context, validatorId uint32, slot uint64) (*api.N
 		return nil, fmt.Errorf("Error parsing the validator index")
 	}
 	// If the slot was not provided, use the validator's withdrawable epoch supplied by the beacon client
-	if slot == 0 {
-		slot = validatorStatus.WithdrawableEpoch * 32
+	if withdrawalSlot == 0 {
+		withdrawalSlot = validatorStatus.WithdrawableEpoch * 32
 	}
 
-	withdrawalProof, proofSlot, stateUsed, err := services.GetWithdrawalProofForSlot(c, slot, validatorIndex)
+	beaconHead, err := bc.GetBeaconHead()
 	if err != nil {
-		fmt.Printf("An error occurred: %s\n", err)
+		return nil, err
+	}
+	finalizedSlot := beaconHead.FinalizedEpoch * 32
+
+	withdrawalProof, proofSlot, stateUsed, err := services.GetWithdrawalProofForSlot(c, withdrawalSlot, validatorIndex)
+	if err != nil {
+		fmt.Printf("An error occurred while getting the withdrawal proof: %s\n", err)
+		// try to fetch the withdrawal proof from the Rocket Pool API
+		withdrawalProof, proofSlot, err = services.GetWithdrawalProofForSlotFromAPI(c, finalizedSlot, withdrawalSlot, validatorIndex, network)
+		if err != nil {
+			fmt.Printf("An error occurred while getting the withdrawal proof from the Rocket Pool API: %s\n", err)
+			return nil, err
+		}
 	}
 
 	withdrawal := megapool.Withdrawal{

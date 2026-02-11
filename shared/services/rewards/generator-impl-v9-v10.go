@@ -192,10 +192,11 @@ func (r *treeGeneratorImpl_v9_v10) generateTree(rp RewardsExecutionClient, netwo
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v9_v10) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error) {
+func (r *treeGeneratorImpl_v9_v10) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
+	r.previousRewardsPoolAddresses = previousRewardsPoolAddresses
 	r.bc = bc
 	r.validNetworkCache = map[uint64]bool{
 		0: true,
@@ -507,8 +508,8 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 		for _, nodeInfo := range r.nodeDetails {
 			// Check if the node is currently opted in for simplicity
 			if nodeInfo.IsEligible && nodeInfo.IsOptedIn && r.elEndTime.After(nodeInfo.OptInTime) {
-				eligibleBorrowedEth := nodeInfo.EligibleBorrowedEth
-				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeInfo.RplStake)
+				eligibleBorrowedEth := nodeInfo.MinipoolEligibleBorrowedEth
+				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeInfo.LegacyStakedRpl)
 				for _, minipool := range nodeInfo.Minipools {
 					minipool.CompletedAttestations = map[uint64]bool{0: true}
 
@@ -627,8 +628,8 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 		}
 
 		// Get the nodeDetails from the network state
-		eligibleBorrowedEth := nsd.EligibleBorrowedEth
-		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nsd.RplStake)
+		eligibleBorrowedEth := nsd.MinipoolEligibleBorrowedEth
+		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nsd.LegacyStakedRpl)
 		for _, mpd := range nsd.Minipools {
 			mpi := r.networkState.MinipoolDetailsByAddress[mpd.Address]
 			if !mpi.IsEligibleForBonuses(eligibleEnd) {
@@ -978,8 +979,8 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 					continue
 				}
 
-				eligibleBorrowedEth := nodeDetails.EligibleBorrowedEth
-				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
+				eligibleBorrowedEth := nodeDetails.MinipoolEligibleBorrowedEth
+				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.LegacyStakedRpl)
 
 				// Mark this duty as completed
 				positionInfo.MarkAttestationCompleted(attestation.SlotIndex)
@@ -1162,7 +1163,7 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 					SmoothingPoolEth: big.NewInt(0),
 					BonusEth:         big.NewInt(0),
 					RewardsNetwork:   nativeNodeDetails.RewardNetwork.Uint64(),
-					RplStake:         nativeNodeDetails.RplStake,
+					LegacyStakedRpl:  big.NewInt(0).Set(nativeNodeDetails.LegacyStakedRPL),
 				}
 
 				nodeDetails.IsOptedIn = nativeNodeDetails.SmoothingPoolRegistrationState
@@ -1220,7 +1221,7 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 	// Populate the eligible borrowed ETH field for all nodes
 	for _, nodeDetails := range r.nodeDetails {
 		nnd := r.networkState.NodeDetailsByAddress[nodeDetails.Address]
-		nodeDetails.EligibleBorrowedEth = r.networkState.GetEligibleBorrowedEth(nnd)
+		nodeDetails.MinipoolEligibleBorrowedEth = r.networkState.GetMinipoolEligibleBorrowedEth(nnd)
 	}
 
 	return nil

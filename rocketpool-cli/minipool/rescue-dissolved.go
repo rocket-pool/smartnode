@@ -36,7 +36,7 @@ func rescueDissolved(c *cli.Context) error {
 	}
 
 	fmt.Println("This command will allow you to manually deposit the remaining ETH for any dissolved minipools, activating them so you can exit them and retrieve your minipool's funds.")
-	fmt.Println("Please read our guide at https://docs.rocketpool.net/guides/node/rescue-dissolved.html to fully read about the process before continuing.")
+	fmt.Println("Please read our guide at https://docs.rocketpool.net/node-staking/rescue-dissolved to fully read about the process before continuing.")
 	fmt.Println()
 
 	// Validate the amount

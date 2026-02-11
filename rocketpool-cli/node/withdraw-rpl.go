@@ -274,7 +274,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 					amountWei = eth.EthToWei(withdrawalAmount)
 				}
 			} else {
-				fmt.Printf("Cannot unstake legacy RPL - you have %.6f legacy RPL, but are not allowed to unstake below %.6f RPL (%d%% collateral).\n",
+				fmt.Printf("Cannot unstake legacy RPL - you have %.6f legacy RPL, but are not allowed to unstake below %.6f RPL (%d%% of borrowed ETH).\n",
 					math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6),
 					math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6),
 					uint32(status.RplStakeThresholdFraction*100),

@@ -301,7 +301,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 				if err != nil {
 					return err
 				}
-				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress)
+				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress, opts)
 				if err != nil {
 					return err
 				}
@@ -543,7 +543,7 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 				if err != nil {
 					return err
 				}
-				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress)
+				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress, opts)
 				if err != nil {
 					return err
 				}
@@ -629,8 +629,13 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 	wg.SetLimit(threadLimit)
 	for i, node := range s.NodeDetails {
 		wg.Go(func() error {
-			eligibleBorrowedEth := s.GetEligibleBorrowedEth(&node)
-			rplStake := s.GetRplStake(&node)
+			eligibleBorrowedEth := s.GetMinipoolEligibleBorrowedEth(&node)
+			rplStake := big.NewInt(0).Set(node.LegacyStakedRPL)
+			if s.IsSaturnDeployed {
+				// Megapool staked RPL counts towards RPL rewards
+				rplStake.Add(rplStake, node.MegapoolStakedRPL)
+				eligibleBorrowedEth.Add(eligibleBorrowedEth, s.GetMegapoolEligibleBorrowedEth(&node))
+			}
 
 			minCollateral := big.NewInt(0)
 			if !s.IsSaturnDeployed {
@@ -685,17 +690,7 @@ func (s *NetworkState) CalculateNodeWeights() (map[common.Address]*big.Int, *big
 	return weights, totalWeight, nil
 }
 
-func (s *NetworkState) GetRplStake(node *rpstate.NativeNodeDetails) *big.Int {
-	if !s.IsSaturnDeployed {
-		return node.RplStake
-	}
-
-	out := big.NewInt(0).Set(node.LegacyStakedRPL)
-	out.Add(out, node.MegapoolStakedRPL)
-	return out
-}
-
-func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
+func (s *NetworkState) GetMinipoolEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
 	eligibleBorrowedEth := big.NewInt(0)
 	intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
 
@@ -722,6 +717,11 @@ func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *
 		// It's eligible, so add up the borrowed and bonded amounts
 		eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance)
 	}
+	return eligibleBorrowedEth
+}
+
+func (s *NetworkState) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
+	eligibleBorrowedEth := big.NewInt(0)
 
 	if node.MegapoolDeployed {
 		megapool := s.MegapoolDetails[node.MegapoolAddress]
@@ -731,109 +731,4 @@ func (s *NetworkState) GetEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *
 	}
 
 	return eligibleBorrowedEth
-}
-
-// Calculate the true effective stakes of all nodes in the state, using the validator status
-// on Beacon as a reference for minipool eligibility instead of the EL-based minipool status
-func (s *NetworkState) CalculateTrueEffectiveStakes(scaleByParticipation bool, allowRplForUnstartedValidators bool) (map[common.Address]*big.Int, *big.Int, error) {
-	effectiveStakes := make(map[common.Address]*big.Int, len(s.NodeDetails))
-	totalEffectiveStake := big.NewInt(0)
-	intervalDurationBig := big.NewInt(int64(s.NetworkDetails.IntervalDuration.Seconds()))
-	genesisTime := time.Unix(int64(s.BeaconConfig.GenesisTime), 0)
-	slotOffset := time.Duration(s.BeaconSlotNumber*s.BeaconConfig.SecondsPerSlot) * time.Second
-	slotTime := genesisTime.Add(slotOffset)
-
-	nodeCount := uint64(len(s.NodeDetails))
-	effectiveStakeSlice := make([]*big.Int, nodeCount)
-
-	// Get the effective stake for each node
-	var wg errgroup.Group
-	wg.SetLimit(threadLimit)
-	for i, node := range s.NodeDetails {
-		wg.Go(func() error {
-			eligibleBorrowedEth := big.NewInt(0)
-			eligibleBondedEth := big.NewInt(0)
-			for _, mpd := range s.MinipoolDetailsByNode[node.NodeAddress] {
-				// It must exist and be staking
-				if mpd.Exists && mpd.Status == types.Staking {
-					// Doesn't exist on Beacon yet
-					validatorStatus, exists := s.MinipoolValidatorDetails[mpd.Pubkey]
-					if !exists {
-						//s.logLine("NOTE: minipool %s (pubkey %s) didn't exist, ignoring it in effective RPL calculation", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex())
-						continue
-					}
-
-					intervalEndEpoch := s.BeaconSlotNumber / s.BeaconConfig.SlotsPerEpoch
-					if !allowRplForUnstartedValidators {
-						// Starts too late
-						if validatorStatus.ActivationEpoch > intervalEndEpoch {
-							//s.logLine("NOTE: Minipool %s starts on epoch %d which is after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ActivationEpoch, intervalEndEpoch)
-							continue
-						}
-
-					}
-					// Already exited
-					if validatorStatus.ExitEpoch <= intervalEndEpoch {
-						//s.logLine("NOTE: Minipool %s exited on epoch %d which is not after interval epoch %d so it's not eligible for RPL rewards", mpd.MinipoolAddress.Hex(), validatorStatus.ExitEpoch, intervalEndEpoch)
-						continue
-					}
-					// It's eligible, so add up the borrowed and bonded amounts
-					eligibleBorrowedEth.Add(eligibleBorrowedEth, mpd.UserDepositBalance)
-					eligibleBondedEth.Add(eligibleBondedEth, mpd.NodeDepositBalance)
-				}
-			}
-
-			// minCollateral := borrowedEth * minCollateralFraction / ratio
-			// NOTE: minCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
-			minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, s.NetworkDetails.MinCollateralFraction)
-			minCollateral.Div(minCollateral, s.NetworkDetails.RplPrice)
-
-			// maxCollateral := bondedEth * maxCollateralFraction / ratio
-			// NOTE: maxCollateralFraction and ratio are both percentages, but multiplying and dividing by them cancels out the need for normalization by eth.EthToWei(1)
-			maxCollateral := big.NewInt(0).Mul(eligibleBondedEth, s.NetworkDetails.MaxCollateralFraction)
-			maxCollateral.Div(maxCollateral, s.NetworkDetails.RplPrice)
-
-			// Calculate the effective stake
-			nodeStake := big.NewInt(0).Set(node.RplStake)
-			if nodeStake.Cmp(minCollateral) == -1 {
-				// Under min collateral
-				nodeStake.SetUint64(0)
-			} else if nodeStake.Cmp(maxCollateral) == 1 {
-				// Over max collateral
-				nodeStake.Set(maxCollateral)
-			}
-
-			// Scale the effective stake by the participation in the current interval
-			if scaleByParticipation {
-				// Get the timestamp of the node's registration
-				regTimeBig := node.RegistrationTime
-				regTime := time.Unix(regTimeBig.Int64(), 0)
-
-				// Get the actual effective stake, scaled based on participation
-				eligibleDuration := slotTime.Sub(regTime)
-				if eligibleDuration < s.NetworkDetails.IntervalDuration {
-					eligibleSeconds := big.NewInt(int64(eligibleDuration / time.Second))
-					nodeStake.Mul(nodeStake, eligibleSeconds)
-					nodeStake.Div(nodeStake, intervalDurationBig)
-				}
-			}
-
-			effectiveStakeSlice[i] = nodeStake
-			return nil
-		})
-	}
-
-	if err := wg.Wait(); err != nil {
-		return nil, nil, err
-	}
-
-	// Tally everything up and make the node stake map
-	for i, nodeStake := range effectiveStakeSlice {
-		node := s.NodeDetails[i]
-		effectiveStakes[node.NodeAddress] = nodeStake
-		totalEffectiveStake.Add(totalEffectiveStake, nodeStake)
-	}
-
-	return effectiveStakes, totalEffectiveStake, nil
-
 }
