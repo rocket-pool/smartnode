@@ -27,7 +27,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 			{
 				Name:      "claim-all",
-				Aliases:   []string{"a"},
+				Aliases:   []string{"c"},
 				Usage:     "Display all available rewards and claim them",
 				UsageText: "rocketpool claims claim-all [options]",
 				Flags: []cli.Flag{

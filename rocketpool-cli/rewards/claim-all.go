@@ -62,6 +62,12 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	// Collect claims for the execution phase
 	var claims []pendingClaim
 
+	// Periodic rewards restake tracking (resolved after claim selection)
+	var periodicRestakeAmount *big.Int
+	var periodicClaimRpl *big.Int
+	var periodicIntervalIndices []uint64
+	periodicRestakeResolved := false
+
 	fmt.Printf("%s============================================================%s\n", colorGreen, colorReset)
 	fmt.Printf("%s              Available Rewards Summary                      %s\n", colorGreen, colorReset)
 	fmt.Printf("%s============================================================%s\n\n", colorGreen, colorReset)
@@ -368,42 +374,37 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			totalRplWei.Add(totalRplWei, prTotalRpl)
 			totalEthWei.Add(totalEthWei, prTotalEth)
 
-			// Determine restake amount for the claim
+			// Parse restake flag (interactive prompt deferred until after claim selection)
+			periodicClaimRpl = prTotalRpl
+			periodicIntervalIndices = intervalIndices
 			restakeAmountFlag := c.String("restake-amount")
-			var restakeAmount *big.Int
 			if restakeAmountFlag == "all" {
-				restakeAmount = prTotalRpl
+				periodicRestakeAmount = prTotalRpl
+				periodicRestakeResolved = true
 			} else if restakeAmountFlag != "" {
 				stakeAmt, parseErr := strconv.ParseFloat(restakeAmountFlag, 64)
 				if parseErr == nil && stakeAmt > 0 {
-					restakeAmount = eth.EthToWei(stakeAmt)
-					if restakeAmount.Cmp(prTotalRpl) > 0 {
-						restakeAmount = prTotalRpl
+					periodicRestakeAmount = eth.EthToWei(stakeAmt)
+					if periodicRestakeAmount.Cmp(prTotalRpl) > 0 {
+						periodicRestakeAmount = prTotalRpl
 					}
 				}
+				periodicRestakeResolved = true
+			} else if autoConfirm {
+				// Ignore restaking if -y is specified but restake-amount isn't
+				periodicRestakeAmount = nil
+				periodicRestakeResolved = true
 			}
 
-			// Get gas estimate
+			// Get preliminary gas estimate (restake prompt deferred, so use claim-only estimate)
 			var gasInfo rocketpoolapi.GasInfo
-			if restakeAmount == nil {
-				canClaim, canErr := rp.CanNodeClaimRewards(intervalIndices)
-				if canErr != nil {
-					fmt.Printf("  %sWarning: could not estimate gas for periodic rewards: %s%s\n", colorYellow, canErr, colorReset)
-				} else {
-					gasInfo = canClaim.GasInfo
-				}
+			canClaim, canErr := rp.CanNodeClaimRewards(intervalIndices)
+			if canErr != nil {
+				fmt.Printf("  %sWarning: could not estimate gas for periodic rewards: %s%s\n", colorYellow, canErr, colorReset)
 			} else {
-				canClaim, canErr := rp.CanNodeClaimAndStakeRewards(intervalIndices, restakeAmount)
-				if canErr != nil {
-					fmt.Printf("  %sWarning: could not estimate gas for periodic rewards: %s%s\n", colorYellow, canErr, colorReset)
-				} else {
-					gasInfo = canClaim.GasInfo
-				}
+				gasInfo = canClaim.GasInfo
 			}
 
-			// Capture for closure
-			indices := intervalIndices
-			restake := restakeAmount
 			claims = append(claims, pendingClaim{
 				id:      periodicID,
 				name:    "Periodic Rewards (RPL + ETH)",
@@ -411,14 +412,14 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 				execute: func() error {
 					fmt.Printf("  Submitting transaction...\n")
 					var txHash common.Hash
-					if restake == nil {
-						response, err := rp.NodeClaimRewards(indices)
+					if periodicRestakeAmount == nil {
+						response, err := rp.NodeClaimRewards(periodicIntervalIndices)
 						if err != nil {
 							return fmt.Errorf("transaction could not be submitted: %w", err)
 						}
 						txHash = response.TxHash
 					} else {
-						response, err := rp.NodeClaimAndStakeRewards(indices, restake)
+						response, err := rp.NodeClaimAndStakeRewards(periodicIntervalIndices, periodicRestakeAmount)
 						if err != nil {
 							return fmt.Errorf("transaction could not be submitted: %w", err)
 						}
@@ -429,8 +430,8 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					if _, err := rp.WaitForTransaction(txHash); err != nil {
 						return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 					}
-					if restake != nil {
-						fmt.Printf("  %sSuccessfully claimed rewards and restaked %.6f RPL.%s\n", colorGreen, eth.WeiToEth(restake), colorReset)
+					if periodicRestakeAmount != nil {
+						fmt.Printf("  %sSuccessfully claimed rewards and restaked %.6f RPL.%s\n", colorGreen, eth.WeiToEth(periodicRestakeAmount), colorReset)
 					} else {
 						fmt.Printf("  %sSuccessfully claimed periodic rewards.%s\n", colorGreen, colorReset)
 					}
@@ -703,6 +704,50 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 		fmt.Printf("  %d. %s\n", i+1, claim.name)
 	}
 	fmt.Println()
+
+	// If the periodic rewards claim is selected and restake hasn't been resolved yet, prompt now
+	if !periodicRestakeResolved && periodicClaimRpl != nil {
+		for i := range selectedClaims {
+			if selectedClaims[i].id == periodicID {
+				availableRpl := eth.WeiToEth(periodicClaimRpl)
+				amountOptions := []string{
+					"None (do not restake any RPL)",
+					fmt.Sprintf("All %.6f RPL", availableRpl),
+					"A custom amount",
+				}
+				selected, _ := prompt.Select("Please choose an amount of RPL to restake:", amountOptions)
+				switch selected {
+				case 0:
+					periodicRestakeAmount = nil
+				case 1:
+					periodicRestakeAmount = periodicClaimRpl
+				case 2:
+					for {
+						inputAmount := prompt.Prompt("Please enter an amount of RPL to restake:", "^\\d+(\\.\\d+)?$", "Invalid amount")
+						stakeAmount, err := strconv.ParseFloat(inputAmount, 64)
+						if err != nil {
+							fmt.Printf("Invalid amount '%s': %s\n", inputAmount, err.Error())
+						} else if stakeAmount < 0 {
+							fmt.Println("Amount must be greater than zero.")
+						} else if stakeAmount > availableRpl {
+							fmt.Println("Amount must be less than or equal to the RPL available to claim.")
+						} else {
+							periodicRestakeAmount = eth.EthToWei(stakeAmount)
+							break
+						}
+					}
+				}
+				// Re-estimate gas if restaking was chosen
+				if periodicRestakeAmount != nil {
+					canClaim, canErr := rp.CanNodeClaimAndStakeRewards(periodicIntervalIndices, periodicRestakeAmount)
+					if canErr == nil {
+						selectedClaims[i].gasInfo = canClaim.GasInfo
+					}
+				}
+				break
+			}
+		}
+	}
 
 	// Accumulate total gas for fee estimation
 	var totalGasEst, totalGasSafe uint64

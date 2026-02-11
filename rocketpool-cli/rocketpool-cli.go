@@ -9,7 +9,6 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/auction"
-	"github.com/rocket-pool/smartnode/rocketpool-cli/claims"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/network"
@@ -17,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/odao"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/pdao"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
+	claims "github.com/rocket-pool/smartnode/rocketpool-cli/rewards"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/security"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
