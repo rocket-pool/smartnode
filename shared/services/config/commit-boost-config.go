@@ -11,8 +11,8 @@ import (
 const (
 	CommitBoostConfigFile     string = "cb_config.toml"
 	CommitBoostConfigTemplate string = "commit-boost-config"
-	commitBoostProdTag        string = "ghcr.io/commit-boost/pbs:v0.9.2"
-	commitBoostTestTag        string = "ghcr.io/commit-boost/pbs:v0.9.2"
+	commitBoostProdTag        string = "ghcr.io/commit-boost/pbs:v0.9.3"
+	commitBoostTestTag        string = "ghcr.io/commit-boost/pbs:v0.9.3"
 )
 
 // Relay selection mode for Commit-Boost PBS
@@ -247,15 +247,16 @@ func (cfg *CommitBoostConfig) GetCommitBoostOpenPorts() string {
 	return fmt.Sprintf("\"%s\"", portMode.DockerPortMapping(port))
 }
 
-// Get the chain name for the Commit-Boost config file
+// Get the chain name for the Commit-Boost config file.
+// Commit-Boost expects actual Ethereum network names, not generic labels.
 func (cfg *CommitBoostConfig) GetChainName(network config.Network) (string, error) {
 	switch network {
 	case config.Network_Mainnet:
 		return "Mainnet", nil
 	case config.Network_Devnet:
-		return "Devnet", nil
+		return "Hoodi", nil
 	case config.Network_Testnet:
-		return "Testnet", nil
+		return "Hoodi", nil
 	default:
 		return "", fmt.Errorf("unsupported network %s for Commit-Boost PBS config", network)
 	}

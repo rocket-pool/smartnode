@@ -450,7 +450,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Default:            map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
 			CanBeBlank:         false,
-			OverwriteOnUpgrade: true,
+			OverwriteOnUpgrade: false,
 		},
 		EnableCommitBoost: config.Parameter{
 			ID:                 "enableCommitBoost",
@@ -460,7 +460,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Default:            map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_CommitBoost},
 			CanBeBlank:         false,
-			OverwriteOnUpgrade: true,
+			OverwriteOnUpgrade: false,
 		},
 	}
 
