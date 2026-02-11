@@ -30,10 +30,30 @@ const (
 
 // pendingClaim represents a single category of rewards that can be claimed.
 type pendingClaim struct {
-	id      int
-	name    string
-	gasInfo rocketpoolapi.GasInfo
-	execute func() error
+	id       int
+	name     string
+	ethValue *big.Int // node's ETH value (wei), nil if none
+	rplValue *big.Int // node's RPL value (wei), nil if none
+	gasInfo  rocketpoolapi.GasInfo
+	execute  func() error
+}
+
+// valueString returns a human-readable summary of the claim's ETH and/or RPL value.
+func (c pendingClaim) valueString() string {
+	hasEth := c.ethValue != nil && c.ethValue.Cmp(big.NewInt(0)) > 0
+	hasRpl := c.rplValue != nil && c.rplValue.Cmp(big.NewInt(0)) > 0
+	switch {
+	case hasRpl && hasEth:
+		return fmt.Sprintf("%.6f RPL + %.6f ETH",
+			math.RoundDown(eth.WeiToEth(c.rplValue), 6),
+			math.RoundDown(eth.WeiToEth(c.ethValue), 6))
+	case hasEth:
+		return fmt.Sprintf("%.6f ETH", math.RoundDown(eth.WeiToEth(c.ethValue), 6))
+	case hasRpl:
+		return fmt.Sprintf("%.6f RPL", math.RoundDown(eth.WeiToEth(c.rplValue), 6))
+	default:
+		return ""
+	}
 }
 
 func claimAll(c *cli.Context, statusOnly bool) error {
@@ -113,15 +133,17 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					fmt.Printf("  Node share:    %.6f ETH\n", math.RoundDown(eth.WeiToEth(pendingRewards.RewardSplit.NodeRewards), 6))
 					if pendingRewards.RefundValue.Cmp(big.NewInt(0)) > 0 {
 						fmt.Printf("  Refund value:  %.6f ETH\n", math.RoundDown(eth.WeiToEth(pendingRewards.RefundValue), 6))
+						fmt.Printf("  Total:         %.6f ETH\n\n", math.RoundDown(eth.WeiToEth(megapoolTotal), 6))
 					}
-					fmt.Printf("  Total:         %.6f ETH\n\n", math.RoundDown(eth.WeiToEth(megapoolTotal), 6))
+
 					totalEthWei.Add(totalEthWei, megapoolTotal)
 
 					gasInfo := canDistribute.GasInfo
 					claims = append(claims, pendingClaim{
-						id:      id,
-						name:    "Megapool EL Rewards (distribute)",
-						gasInfo: gasInfo,
+						id:       id,
+						name:     "Megapool EL Rewards (distribute)",
+						ethValue: megapoolTotal,
+						gasInfo:  gasInfo,
 						execute: func() error {
 							fmt.Printf("  Submitting transaction...\n")
 							response, err := rp.DistributeMegapool()
@@ -174,10 +196,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 				totalEthWei.Add(totalEthWei, nodeShareWei)
 
 				gasInfo := canDistResp.GasInfo
-				claims = append(claims, pendingClaim{
-					id:      feeDistID,
-					name:    "Fee Distributor (distribute)",
-					gasInfo: gasInfo,
+			claims = append(claims, pendingClaim{
+				id:       feeDistID,
+				name:     "Fee Distributor (distribute)",
+				ethValue: nodeShareWei,
+				gasInfo:  gasInfo,
 					execute: func() error {
 						fmt.Printf("  Submitting transaction...\n")
 						response, err := rp.Distribute()
@@ -267,9 +290,10 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			// Capture for closure
 			mps := eligibleMinipools
 			claims = append(claims, pendingClaim{
-				id:      minipoolID,
-				name:    fmt.Sprintf("Minipool Balance Distribution (%d minipool(s))", len(mps)),
-				gasInfo: mpGasInfo,
+				id:       minipoolID,
+				name:     fmt.Sprintf("Minipool Balance Distribution (%d minipool(s))", len(mps)),
+				ethValue: mpTotalEth,
+				gasInfo:  mpGasInfo,
 				execute: func() error {
 					failCount := 0
 					for _, mp := range mps {
@@ -406,9 +430,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			}
 
 			claims = append(claims, pendingClaim{
-				id:      periodicID,
-				name:    "Periodic Rewards (RPL + ETH)",
-				gasInfo: gasInfo,
+				id:       periodicID,
+				name:     "Periodic Rewards (RPL + ETH)",
+				ethValue: prTotalEth,
+				rplValue: prTotalRpl,
+				gasInfo:  gasInfo,
 				execute: func() error {
 					fmt.Printf("  Submitting transaction...\n")
 					var txHash common.Hash
@@ -442,65 +468,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	}
 
 	// ================================================================
-	// 5. Megapool Refund - ETH refunded to the owner after a dissolution or from distributed rewards
-	// ================================================================
-	if isSaturn {
-		sectionID++
-		megaRefundID := sectionID
-		fmt.Printf("%s--- [%d] Megapool Refund ---%s\n", colorGreen, megaRefundID, colorReset)
-
-		megapoolStatus, err := rp.MegapoolStatus(false)
-		if err != nil {
-			fmt.Printf("  %sCould not check megapool status: %s%s\n\n", colorYellow, err, colorReset)
-		} else if megapoolStatus.Megapool.RefundValue == nil || megapoolStatus.Megapool.RefundValue.Cmp(big.NewInt(0)) <= 0 {
-			fmt.Printf("  No megapool refund available.\n\n")
-		} else {
-			refundVal := megapoolStatus.Megapool.RefundValue
-			fmt.Printf("  Refund value: %.6f ETH\n", math.RoundDown(eth.WeiToEth(refundVal), 6))
-			if megapoolStatus.Megapool.NodeDebt != nil && megapoolStatus.Megapool.NodeDebt.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("  Node debt (deducted): %.6f ETH\n", math.RoundDown(eth.WeiToEth(megapoolStatus.Megapool.NodeDebt), 6))
-			}
-			fmt.Println()
-			totalEthWei.Add(totalEthWei, refundVal)
-
-			canClaim, canErr := rp.CanClaimMegapoolRefund()
-			var gasInfo rocketpoolapi.GasInfo
-			canClaimOk := false
-			if canErr != nil {
-				fmt.Printf("  %sWarning: could not estimate gas: %s%s\n", colorYellow, canErr, colorReset)
-			} else if !canClaim.CanClaim {
-				fmt.Printf("  %sCannot claim megapool refund at this time.%s\n", colorYellow, colorReset)
-			} else {
-				gasInfo = canClaim.GasInfo
-				canClaimOk = true
-			}
-
-			if canClaimOk {
-				claims = append(claims, pendingClaim{
-					id:      megaRefundID,
-					name:    "Megapool Refund (claim)",
-					gasInfo: gasInfo,
-					execute: func() error {
-						fmt.Printf("  Submitting transaction...\n")
-						response, err := rp.ClaimMegapoolRefund()
-						if err != nil {
-							return fmt.Errorf("transaction could not be submitted: %w", err)
-						}
-						fmt.Printf("  Claiming megapool refund...\n")
-						cliutils.PrintTransactionHash(rp, response.TxHash)
-						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
-						}
-						fmt.Printf("  %sSuccessfully claimed megapool refund.%s\n", colorGreen, colorReset)
-						return nil
-					},
-				})
-			}
-		}
-	}
-
-	// ================================================================
-	// 6. Unclaimed Rewards - available when the withdrawal address was unable to receive ETH
+	// 5. Unclaimed Rewards - available when the withdrawal address was unable to receive ETH
 	// ================================================================
 	if isSaturn {
 		sectionID++
@@ -531,10 +499,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			}
 
 			if canClaimOk {
-				claims = append(claims, pendingClaim{
-					id:      unclaimedID,
-					name:    "Unclaimed Rewards (claim)",
-					gasInfo: gasInfo,
+			claims = append(claims, pendingClaim{
+				id:       unclaimedID,
+				name:     "Unclaimed Rewards (claim)",
+				ethValue: nodeStatus.UnclaimedRewards,
+				gasInfo:  gasInfo,
 					execute: func() error {
 						fmt.Printf("  Submitting transaction...\n")
 						response, err := rp.ClaimUnclaimedRewards(nodeAddr)
@@ -555,7 +524,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	}
 
 	// ================================================================
-	// 7. PDAO Bond Claims (RPL)
+	// 6. PDAO Bond Claims (RPL)
 	// ================================================================
 	sectionID++
 	pdaoID := sectionID
@@ -602,9 +571,10 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			bondGasInfo.SafeGasLimit = totalGasSafe
 			bonds := bondsResponse.ClaimableBonds
 			claims = append(claims, pendingClaim{
-				id:      pdaoID,
-				name:    fmt.Sprintf("PDAO Bond Claims (%d proposal(s))", len(bonds)),
-				gasInfo: bondGasInfo,
+				id:       pdaoID,
+				name:     fmt.Sprintf("PDAO Bond Claims (%d proposal(s))", len(bonds)),
+				rplValue: pdaoRplTotal,
+				gasInfo:  bondGasInfo,
 				execute: func() error {
 					failCount := 0
 					for _, bond := range bonds {
@@ -658,7 +628,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	// List what can be claimed
 	fmt.Printf("The following %d claim(s) are available:\n", len(claims))
 	for i, claim := range claims {
-		fmt.Printf("  %d. %s\n", i+1, claim.name)
+		if v := claim.valueString(); v != "" {
+			fmt.Printf("  %d. %s: %s\n", i+1, claim.name, v)
+		} else {
+			fmt.Printf("  %d. %s\n", i+1, claim.name)
+		}
 	}
 	fmt.Println()
 
@@ -701,7 +675,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 
 	fmt.Printf("\n%d claim(s) selected:\n", len(selectedClaims))
 	for i, claim := range selectedClaims {
-		fmt.Printf("  %d. %s\n", i+1, claim.name)
+		if v := claim.valueString(); v != "" {
+			fmt.Printf("  %d. %s: %s\n", i+1, claim.name, v)
+		} else {
+			fmt.Printf("  %d. %s\n", i+1, claim.name)
+		}
 	}
 	fmt.Println()
 
