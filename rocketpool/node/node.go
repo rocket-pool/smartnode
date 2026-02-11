@@ -455,6 +455,6 @@ func printSaturnMessage(log *log.ColorLogger) {
 * |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
 * +---------------------------------------------------+
 *
-* ============== Saturn-1 has launched! ===============
+* ============== Saturn 1 has launched! ===============
 `)
 }

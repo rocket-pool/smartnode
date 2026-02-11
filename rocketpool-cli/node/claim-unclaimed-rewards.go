@@ -41,7 +41,7 @@ func claimUnclaimedRewards(c *cli.Context) error {
 	fmt.Printf("The node's withdrawal address is %s\n", status.PrimaryWithdrawalAddress)
 	if status.UnclaimedRewards != nil {
 		fmt.Printf("You have %.6f ETH in unclaimed rewards.\n", math.RoundDown(eth.WeiToEth(status.UnclaimedRewards), 6))
-		fmt.Printf("Your node %s%s%s's rewards were distributed, but the withdrawal address (at the time of distribution) was unable to accept ETH",
+		fmt.Printf("Your node %s%s%s's rewards were distributed, but the withdrawal address (at the time of distribution) was unable to accept ETH. ",
 			colorBlue, status.AccountAddress, colorReset)
 		fmt.Println("Before continuing, please use the command `rocketpool node set-primary-withdrawal-address` to configure an address that can accept ETH")
 	} else {

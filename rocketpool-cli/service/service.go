@@ -126,7 +126,7 @@ func printPatchNotes(c *cli.Context) {
 	fmt.Println()
 	fmt.Printf("Changes you should be aware of before starting:\n")
 	fmt.Println()
-	fmt.Println("This Smart Node version is compatible with the Saturn-1 upgrade, which is scheduled for Feb 18, 2026 00:00:00 UTC.")
+	fmt.Println("This Smart Node version is compatible with the Saturn 1 upgrade, which is scheduled for Feb 18, 2026 00:00:00 UTC.")
 	fmt.Println("For more information about the biggest Rocket Pool upgrade ever, please see the official documentation: https://docs.rocketpool.net/upgrades/saturn-1/whats-new")
 	fmt.Println()
 	fmt.Println("New megapool commands available:")
