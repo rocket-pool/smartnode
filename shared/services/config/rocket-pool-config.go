@@ -445,7 +445,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		EnableMevBoost: config.Parameter{
 			ID:                 "enableMevBoost",
 			Name:               "Enable MEV-Boost",
-			Description:        "Enable MEV-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract MEV opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n[orange]NOTE: This toggle is temporary during the early Merge days while relays are still being created. It will be removed in the future.",
+			Description:        "Enable MEV-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract MEV opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_MevBoost},
@@ -455,7 +455,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		EnableCommitBoost: config.Parameter{
 			ID:                 "enableCommitBoost",
 			Name:               "Enable Commit-Boost",
-			Description:        "Enable Commit-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract Commit opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n[orange]NOTE: This toggle is temporary during the early Merge days while relays are still being created. It will be removed in the future.",
+			Description:        "Enable Commit-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_CommitBoost},
@@ -1599,6 +1599,29 @@ func (cfg *RocketPoolConfig) Validate() []string {
 			}
 		default:
 			errors = append(errors, "You do not have a MEV-Boost mode configured. You must either select a mode in the `rocketpool service config` UI, or disable MEV-Boost.\nNote that MEV-Boost will be required in a future update, at which point you can no longer disable it.")
+		}
+	}
+
+	// Check if both MEV-Boost and Commit-Boost are enabled at the same time
+	if cfg.EnableMevBoost.Value == true && cfg.EnableCommitBoost.Value == true {
+		errors = append(errors, "You have both MEV-Boost and Commit-Boost enabled. Please disable one of them — only one PBS (Proposer-Builder Separation) client can be active at a time.")
+	}
+
+	// Validate Commit-Boost settings
+	if !cfg.IsNativeMode && cfg.EnableCommitBoost.Value == true {
+		switch cfg.CommitBoost.Mode.Value.(config.Mode) {
+		case config.Mode_Local:
+			relayInfo := cfg.CommitBoost.GetEnabledPbsRelayInfo()
+			customRelays := cfg.CommitBoost.GetCustomRelays()
+			if len(relayInfo) == 0 && len(customRelays) == 0 {
+				errors = append(errors, "You have Commit-Boost enabled in local mode but don't have any relays enabled and no custom relays set. Please enable at least one relay or add a custom relay URL.")
+			}
+		case config.Mode_External:
+			if cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local && cfg.CommitBoost.ExternalUrl.Value.(string) == "" {
+				errors = append(errors, "You have Commit-Boost enabled in external mode but don't have a URL set. Please enter the external Commit-Boost server URL to use it.")
+			}
+		default:
+			errors = append(errors, "You do not have a Commit-Boost mode configured. You must either select a mode in the `rocketpool service config` UI, or disable Commit-Boost.")
 		}
 	}
 

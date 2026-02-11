@@ -13,6 +13,7 @@ services:
     ports: [{{.GetCommitBoostOpenPorts}}]
     volumes:
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
+      - {{.RocketPoolDirectory}}/runtime/cb_config.toml:/cb_config.toml:ro
     networks:
       - net
     environment:
