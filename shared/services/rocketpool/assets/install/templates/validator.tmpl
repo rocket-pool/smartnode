@@ -44,7 +44,7 @@ services:
       - GRAFFITI={{.Graffiti}}
       - ADDON_GWW_ENABLED={{.GraffitiWallWriter.GetEnabledParameter}}
       - PBS_URL={{.PbsUrl}}
-      - ENABLE_PBS={{.EnableMevBoost}}
+      - ENABLE_PBS={{.IsPbsEnabled}}
       {{- if eq .ConsensusClient.String "teku"}}
       - TEKU_USE_SLASHING_PROTECTION={{.Teku.UseSlashingProtection}}
       {{- end}}

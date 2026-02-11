@@ -1189,6 +1189,11 @@ func (cfg *RocketPoolConfig) FeeRecipientFile() string {
 	return GlobalFeeRecipientFilename
 }
 
+// Used by text/template to check if any PBS client (MEV-Boost or Commit-Boost) is enabled
+func (cfg *RocketPoolConfig) IsPbsEnabled() bool {
+	return cfg.EnableMevBoost.Value.(bool) || cfg.EnableCommitBoost.Value.(bool)
+}
+
 // Used by text/template to format mev-boost.yml
 func (cfg *RocketPoolConfig) PbsUrl() string {
 	if cfg.EnableMevBoost.Value.(bool) {
