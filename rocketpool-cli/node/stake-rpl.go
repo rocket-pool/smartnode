@@ -46,6 +46,12 @@ func nodeStakeRpl(c *cli.Context) error {
 	fmt.Println(stakeRPLDisclaimer)
 	fmt.Println()
 
+	// Show current RPL balances
+	fmt.Printf("The node has a balance of %.6f RPL.\n\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6))
+	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
+		fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
+	}
+
 	// If a custom nonce is set, print the multi-transaction warning
 	if c.GlobalUint64("nonce") != 0 {
 		cliutils.PrintMultiTransactionNonceWarning()

@@ -319,7 +319,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		VerifyProposals: config.Parameter{
 			ID:                 "verifyProposals",
 			Name:               "Enable PDAO Proposal Checker",
-			Description:        "Check this box to opt into the responsibility for verifying Protocol DAO proposals once the Houston upgrade has been activated. Your node will regularly check for new proposals, verify their correctness, and submit challenges to any that do not match the on-chain data (e.g., if someone tampered with voting power and attempted to cheat).\n\nTo learn more about the PDAO proposal checking duty, including requirements and RPL bonding, please see the documentation at https://docs.rocketpool.net/guides/houston/pdao#challenge-process.",
+			Description:        "Check this box to opt into the responsibility for verifying Protocol DAO proposals once the Houston upgrade has been activated. Your node will regularly check for new proposals, verify their correctness, and submit challenges to any that do not match the on-chain data (e.g., if someone tampered with voting power and attempted to cheat).\n\nTo learn more about the PDAO proposal checking duty, including requirements and RPL bonding, please see the documentation at https://docs.rocketpool.net/pdao#challenge-process.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
@@ -531,6 +531,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet: {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
+				common.HexToAddress("0xEE4d2A71cF479e0D3d0c3c2C923dbfEB57E73111"),
 			},
 			config.Network_Devnet: {
 				common.HexToAddress("0x556791EC1aa443df339E340E6f20d06a1cD21583"),
@@ -541,7 +542,9 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		previousRocketDAOProtocolVerifier: map[config.Network][]common.Address{
-			config.Network_Mainnet: {},
+			config.Network_Mainnet: {
+				common.HexToAddress("0xd1f7e573cdC64FC0B201ca37aB50bC7Dd880040A"),
+			},
 			config.Network_Devnet:  {},
 			config.Network_Testnet: {},
 		},

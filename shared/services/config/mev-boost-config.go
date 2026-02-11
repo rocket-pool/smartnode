@@ -11,7 +11,7 @@ import (
 const (
 	mevBoostTagProd             string = "flashbots/mev-boost:1.11.0"
 	mevBoostTagTest             string = "flashbots/mev-boost:1.11.0"
-	mevDocsUrl                  string = "https://docs.rocketpool.net/guides/node/mev.html"
+	mevDocsUrl                  string = "https://docs.rocketpool.net/node-staking/mev"
 	RegulatedRelayDescription   string = "Select this to enable the relays that comply with government regulations (e.g. OFAC sanctions), "
 	UnregulatedRelayDescription string = "Select this to enable the relays that do not follow any sanctions lists (do not censor transactions), "
 	NoSandwichRelayDescription  string = "and do not allow front-running or sandwich attacks."
