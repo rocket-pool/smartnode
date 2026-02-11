@@ -471,62 +471,184 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 
 	// ================================================================
 	// 5. Unclaimed Rewards - available when the withdrawal address was unable to receive ETH
+	// 6. Deposit Credit Withdrawal - withdraw deposit credit as rETH
+	// 7. ETH on Behalf Withdrawal - withdraw ETH staked on behalf of the node
 	// ================================================================
 	if isSaturn {
-		sectionID++
-		unclaimedID := sectionID
-		fmt.Printf("%s--- [%d] Unclaimed Rewards ---%s\n", colorGreen, unclaimedID, colorReset)
-
 		nodeStatus, err := rp.NodeStatus()
 		if err != nil {
+			sectionID++
+			fmt.Printf("%s--- [%d] Unclaimed Rewards ---%s\n", colorGreen, sectionID, colorReset)
 			fmt.Printf("  %sCould not check node status: %s%s\n\n", colorYellow, err, colorReset)
-		} else if nodeStatus.UnclaimedRewards == nil || nodeStatus.UnclaimedRewards.Cmp(big.NewInt(0)) <= 0 {
-			fmt.Printf("  No unclaimed rewards.\n\n")
+			sectionID++
+			fmt.Printf("%s--- [%d] Deposit Credit Withdrawal ---%s\n", colorGreen, sectionID, colorReset)
+			fmt.Printf("  %sCould not check node status: %s%s\n\n", colorYellow, err, colorReset)
+			sectionID++
+			fmt.Printf("%s--- [%d] Staked ETH on Behalf Withdrawal ---%s\n", colorGreen, sectionID, colorReset)
+			fmt.Printf("  %sCould not check node status: %s%s\n\n", colorYellow, err, colorReset)
 		} else {
-			fmt.Printf("  Unclaimed rewards: %.6f ETH\n", math.RoundDown(eth.WeiToEth(nodeStatus.UnclaimedRewards), 6))
-			fmt.Printf("  (Rewards distributed previously but not yet sent to withdrawal address)\n\n")
-			totalEthWei.Add(totalEthWei, nodeStatus.UnclaimedRewards)
+			// --- Unclaimed Rewards ---
+			sectionID++
+			unclaimedID := sectionID
+			fmt.Printf("%s--- [%d] Unclaimed Rewards ---%s\n", colorGreen, unclaimedID, colorReset)
 
-			nodeAddr := nodeStatus.AccountAddress
-			canClaim, canErr := rp.CanClaimUnclaimedRewards(nodeAddr)
-			var gasInfo rocketpoolapi.GasInfo
-			canClaimOk := false
-			if canErr != nil {
-				fmt.Printf("  %sWarning: could not estimate gas: %s%s\n", colorYellow, canErr, colorReset)
-			} else if !canClaim.CanClaim {
-				fmt.Printf("  %sCannot claim unclaimed rewards at this time.%s\n", colorYellow, colorReset)
+			if nodeStatus.UnclaimedRewards == nil || nodeStatus.UnclaimedRewards.Cmp(big.NewInt(0)) <= 0 {
+				fmt.Printf("  No unclaimed rewards.\n\n")
 			} else {
-				gasInfo = canClaim.GasInfo
-				canClaimOk = true
+				fmt.Printf("  Unclaimed rewards: %.6f ETH\n", math.RoundDown(eth.WeiToEth(nodeStatus.UnclaimedRewards), 6))
+				fmt.Printf("  (Rewards distributed previously but not yet sent to withdrawal address)\n\n")
+				totalEthWei.Add(totalEthWei, nodeStatus.UnclaimedRewards)
+
+				nodeAddr := nodeStatus.AccountAddress
+				canClaim, canErr := rp.CanClaimUnclaimedRewards(nodeAddr)
+				var gasInfo rocketpoolapi.GasInfo
+				canClaimOk := false
+				if canErr != nil {
+					fmt.Printf("  %sWarning: could not estimate gas: %s%s\n", colorYellow, canErr, colorReset)
+				} else if !canClaim.CanClaim {
+					fmt.Printf("  %sCannot claim unclaimed rewards at this time.%s\n", colorYellow, colorReset)
+				} else {
+					gasInfo = canClaim.GasInfo
+					canClaimOk = true
+				}
+
+				if canClaimOk {
+					claims = append(claims, pendingClaim{
+						id:       unclaimedID,
+						name:     "Unclaimed Rewards (claim)",
+						ethValue: nodeStatus.UnclaimedRewards,
+						gasInfo:  gasInfo,
+						execute: func() error {
+							fmt.Printf("  Submitting transaction...\n")
+							response, err := rp.ClaimUnclaimedRewards(nodeAddr)
+							if err != nil {
+								return fmt.Errorf("transaction could not be submitted: %w", err)
+							}
+							fmt.Printf("  Claiming unclaimed rewards...\n")
+							cliutils.PrintTransactionHash(rp, response.TxHash)
+							if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+								return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
+							}
+							fmt.Printf("  %sSuccessfully claimed unclaimed rewards.%s\n", colorGreen, colorReset)
+							return nil
+						},
+					})
+				}
 			}
 
-			if canClaimOk {
-				claims = append(claims, pendingClaim{
-					id:       unclaimedID,
-					name:     "Unclaimed Rewards (claim)",
-					ethValue: nodeStatus.UnclaimedRewards,
-					gasInfo:  gasInfo,
-					execute: func() error {
-						fmt.Printf("  Submitting transaction...\n")
-						response, err := rp.ClaimUnclaimedRewards(nodeAddr)
-						if err != nil {
-							return fmt.Errorf("transaction could not be submitted: %w", err)
-						}
-						fmt.Printf("  Claiming unclaimed rewards...\n")
-						cliutils.PrintTransactionHash(rp, response.TxHash)
-						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
-						}
-						fmt.Printf("  %sSuccessfully claimed unclaimed rewards.%s\n", colorGreen, colorReset)
-						return nil
-					},
-				})
+			// --- Deposit Credit Withdrawal ---
+			sectionID++
+			creditID := sectionID
+			fmt.Printf("%s--- [%d] Deposit Credit Withdrawal ---%s\n", colorGreen, creditID, colorReset)
+
+			if nodeStatus.CreditBalance == nil || nodeStatus.CreditBalance.Cmp(big.NewInt(0)) <= 0 {
+				fmt.Printf("  No deposit credit available.\n\n")
+			} else {
+				creditBalance := nodeStatus.CreditBalance
+				fmt.Printf("  Credit balance: %.6f ETH (withdrawn as rETH to %s)\n\n",
+					math.RoundDown(eth.WeiToEth(creditBalance), 6), nodeStatus.PrimaryWithdrawalAddress)
+				totalEthWei.Add(totalEthWei, creditBalance)
+
+				canWithdraw, canErr := rp.CanNodeWithdrawCredit(creditBalance)
+				var gasInfo rocketpoolapi.GasInfo
+				canWithdrawOk := false
+				if canErr != nil {
+					fmt.Printf("  %sWarning: could not estimate gas: %s%s\n", colorYellow, canErr, colorReset)
+				} else if !canWithdraw.CanWithdraw {
+					if canWithdraw.InsufficientBalance {
+						fmt.Printf("  %sInsufficient credit balance.%s\n", colorYellow, colorReset)
+					} else {
+						fmt.Printf("  %sCannot withdraw credit at this time.%s\n", colorYellow, colorReset)
+					}
+				} else {
+					gasInfo = canWithdraw.GasInfo
+					canWithdrawOk = true
+				}
+
+				if canWithdrawOk {
+					withdrawAmount := creditBalance
+					claims = append(claims, pendingClaim{
+						id:       creditID,
+						name:     "Deposit Credit Withdrawal",
+						ethValue: withdrawAmount,
+						gasInfo:  gasInfo,
+						execute: func() error {
+							fmt.Printf("  Submitting transaction...\n")
+							response, err := rp.NodeWithdrawCredit(withdrawAmount)
+							if err != nil {
+								return fmt.Errorf("transaction could not be submitted: %w", err)
+							}
+							fmt.Printf("  Withdrawing deposit credit...\n")
+							cliutils.PrintTransactionHash(rp, response.TxHash)
+							if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+								return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
+							}
+							fmt.Printf("  %sSuccessfully withdrew %.6f credit as rETH.%s\n", colorGreen, math.RoundDown(eth.WeiToEth(withdrawAmount), 6), colorReset)
+							return nil
+						},
+					})
+				}
+			}
+
+			// --- Staked ETH on Behalf Withdrawal ---
+			sectionID++
+			ethOnBehalfID := sectionID
+			fmt.Printf("%s--- [%d] Staked ETH on Behalf Withdrawal ---%s\n", colorGreen, ethOnBehalfID, colorReset)
+
+			if nodeStatus.EthOnBehalfBalance == nil || nodeStatus.EthOnBehalfBalance.Cmp(big.NewInt(0)) <= 0 {
+				fmt.Printf("  No ETH staked on behalf of the node.\n\n")
+			} else {
+				ethOnBehalf := nodeStatus.EthOnBehalfBalance
+				fmt.Printf("  Staked ETH on behalf: %.6f ETH\n\n", math.RoundDown(eth.WeiToEth(ethOnBehalf), 6))
+				totalEthWei.Add(totalEthWei, ethOnBehalf)
+
+				canWithdraw, canErr := rp.CanNodeWithdrawEth(ethOnBehalf)
+				var gasInfo rocketpoolapi.GasInfo
+				canWithdrawOk := false
+				if canErr != nil {
+					fmt.Printf("  %sWarning: could not estimate gas: %s%s\n", colorYellow, canErr, colorReset)
+				} else if !canWithdraw.CanWithdraw {
+					if canWithdraw.InsufficientBalance {
+						fmt.Printf("  %sInsufficient staked ETH balance.%s\n", colorYellow, colorReset)
+					} else if canWithdraw.HasDifferentWithdrawalAddress {
+						fmt.Printf("  %sCannot withdraw: primary withdrawal address is set and differs from the node address.%s\n", colorYellow, colorReset)
+					} else {
+						fmt.Printf("  %sCannot withdraw staked ETH at this time.%s\n", colorYellow, colorReset)
+					}
+				} else {
+					gasInfo = canWithdraw.GasInfo
+					canWithdrawOk = true
+				}
+
+				if canWithdrawOk {
+					withdrawAmount := ethOnBehalf
+					claims = append(claims, pendingClaim{
+						id:       ethOnBehalfID,
+						name:     "Staked ETH on Behalf Withdrawal",
+						ethValue: withdrawAmount,
+						gasInfo:  gasInfo,
+						execute: func() error {
+							fmt.Printf("  Submitting transaction...\n")
+							response, err := rp.NodeWithdrawEth(withdrawAmount)
+							if err != nil {
+								return fmt.Errorf("transaction could not be submitted: %w", err)
+							}
+							fmt.Printf("  Withdrawing staked ETH...\n")
+							cliutils.PrintTransactionHash(rp, response.TxHash)
+							if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+								return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
+							}
+							fmt.Printf("  %sSuccessfully withdrew %.6f staked ETH.%s\n", colorGreen, math.RoundDown(eth.WeiToEth(withdrawAmount), 6), colorReset)
+							return nil
+						},
+					})
+				}
 			}
 		}
 	}
 
 	// ================================================================
-	// 6. PDAO Bond Claims (RPL)
+	// 8. PDAO Bond Claims (RPL)
 	// ================================================================
 	sectionID++
 	pdaoID := sectionID
@@ -617,18 +739,18 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 
 	if statusOnly {
 		if len(claims) > 0 {
-			fmt.Printf("Run 'rocketpool rewards claim-all' to claim these rewards.\n")
+			fmt.Printf("Run 'rocketpool claims claim-all' to claim these rewards.\n")
 		}
 		return nil
 	}
 
 	if len(claims) == 0 {
-		fmt.Println("No rewards available to claim at this time.")
+		fmt.Println("No rewards or credits available to claim at this time.")
 		return nil
 	}
 
 	// List what can be claimed
-	fmt.Printf("The following %d claim(s) are available:\n", len(claims))
+	fmt.Printf("The following %d claim(s)/credits are available:\n", len(claims))
 	for i, claim := range claims {
 		if v := claim.valueString(); v != "" {
 			fmt.Printf("  %d. %s: %s\n", i+1, claim.name, v)
@@ -671,7 +793,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	}
 
 	if len(selectedClaims) == 0 {
-		fmt.Println("No claims selected.")
+		fmt.Println("No claims/credits selected.")
 		return nil
 	}
 
@@ -746,6 +868,12 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 		return err
 	}
 
+	// If a custom nonce is set and there are multiple transactions, warn the user
+	customNonceSet := c.GlobalUint64("nonce") != 0
+	if customNonceSet && len(selectedClaims) > 1 {
+		cliutils.PrintMultiTransactionNonceWarning()
+	}
+
 	// Execute selected claims
 	fmt.Printf("\n%sExecuting %d claim(s)...%s\n", colorBlue, len(selectedClaims), colorReset)
 	successCount := 0
@@ -774,6 +902,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			}
 		} else {
 			successCount++
+		}
+
+		// If a custom nonce is set, increment it for the next transaction
+		if customNonceSet {
+			rp.IncrementCustomNonce()
 		}
 	}
 

@@ -93,7 +93,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
-	claims.RegisterCommands(app, "rewards", []string{"r"})
+	claims.RegisterCommands(app, "claims", []string{"l"})
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
 	if enableSaturn {
 		megapool.RegisterCommands(app, "megapool", []string{"g"})

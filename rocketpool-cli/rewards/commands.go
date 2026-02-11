@@ -11,12 +11,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	app.Commands = append(app.Commands, cli.Command{
 		Name:    name,
 		Aliases: aliases,
-		Usage:   "View and claim all available rewards across the node",
+		Usage:   "View and claim all available rewards and credits across the node",
 		Subcommands: []cli.Command{
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},
-				Usage:     "Display all available rewards across the node without claiming",
+				Usage:     "Display all available rewards and credits across the node without claiming",
 				UsageText: "rocketpool claims status",
 				Action: func(c *cli.Context) error {
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -28,7 +28,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "claim-all",
 				Aliases:   []string{"c"},
-				Usage:     "Display all available rewards and claim them",
+				Usage:     "Display all available rewards and credits and claim them",
 				UsageText: "rocketpool claims claim-all [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
