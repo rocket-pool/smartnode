@@ -134,6 +134,8 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					if pendingRewards.RefundValue.Cmp(big.NewInt(0)) > 0 {
 						fmt.Printf("  Refund value:  %.6f ETH\n", math.RoundDown(eth.WeiToEth(pendingRewards.RefundValue), 6))
 						fmt.Printf("  Total:         %.6f ETH\n\n", math.RoundDown(eth.WeiToEth(megapoolTotal), 6))
+					} else {
+						fmt.Println()
 					}
 
 					totalEthWei.Add(totalEthWei, megapoolTotal)
@@ -196,11 +198,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 				totalEthWei.Add(totalEthWei, nodeShareWei)
 
 				gasInfo := canDistResp.GasInfo
-			claims = append(claims, pendingClaim{
-				id:       feeDistID,
-				name:     "Fee Distributor (distribute)",
-				ethValue: nodeShareWei,
-				gasInfo:  gasInfo,
+				claims = append(claims, pendingClaim{
+					id:       feeDistID,
+					name:     "Fee Distributor (distribute)",
+					ethValue: nodeShareWei,
+					gasInfo:  gasInfo,
 					execute: func() error {
 						fmt.Printf("  Submitting transaction...\n")
 						response, err := rp.Distribute()
@@ -499,11 +501,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			}
 
 			if canClaimOk {
-			claims = append(claims, pendingClaim{
-				id:       unclaimedID,
-				name:     "Unclaimed Rewards (claim)",
-				ethValue: nodeStatus.UnclaimedRewards,
-				gasInfo:  gasInfo,
+				claims = append(claims, pendingClaim{
+					id:       unclaimedID,
+					name:     "Unclaimed Rewards (claim)",
+					ethValue: nodeStatus.UnclaimedRewards,
+					gasInfo:  gasInfo,
 					execute: func() error {
 						fmt.Printf("  Submitting transaction...\n")
 						response, err := rp.ClaimUnclaimedRewards(nodeAddr)
