@@ -153,9 +153,25 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("There are %d validator(s) on the express queue.\n", queueDetails.ExpressLength)
-	fmt.Printf("There are %d validator(s) on the standard queue.\n", queueDetails.StandardLength)
-	fmt.Printf("The express queue rate is %d.\n\n", queueDetails.ExpressRate)
+	expressLength := uint64(queueDetails.ExpressLength)
+	standardLength := uint64(queueDetails.StandardLength)
+
+	fmt.Printf("There are %d validator(s) on the express queue.\n", expressLength)
+	fmt.Printf("There are %d validator(s) on the standard queue.\n", standardLength)
+	fmt.Printf("The express queue rate is %d (%d express validators assigned per 1 standard).\n", queueDetails.ExpressRate, queueDetails.ExpressRate)
+
+	rate := queueDetails.ExpressRate
+	queueIndex := uint64(queueDetails.QueueIndex)
+
+	// Calculate the expected queue position for the next validator
+	if rate > 0 {
+		expressQueuePosition := simulateAssignmentsRequired(expressLength+1, standardLength, rate, queueIndex, true) + 1
+		standardQueuePosition := simulateAssignmentsRequired(expressLength, standardLength+1, rate, queueIndex, false) + 1
+
+		fmt.Printf("A new express validator would be at queue position %d.\n", expressQueuePosition)
+		fmt.Printf("A new standard validator would be at queue position %d.\n", standardQueuePosition)
+	}
+	fmt.Println()
 
 	expressTickets := c.Int64("express-tickets")
 	if expressTickets >= 0 {
@@ -306,4 +322,51 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	return nil
 
+}
+
+// simulateAssignmentsRequired calculates the number of queue assignments until the last
+// validator in the target queue is served. The assignment cycle has length (rate + 1):
+// `rate` express slots followed by 1 standard slot. When a queue is empty, its slots
+// are given to the other queue.
+//
+// Parameters:
+//   - expressCount/standardCount: total validators in each queue (including the new one)
+//   - rate: express queue rate (express slots per cycle)
+//   - queueIndex: current global queue index (determines position within the cycle)
+//   - targetExpress: if true, returns when the last express validator is served;
+//     if false, returns when the last standard validator is served
+func simulateAssignmentsRequired(expressCount, standardCount, rate, queueIndex uint64, targetExpress bool) uint64 {
+	c := rate + 1
+	expLeft := expressCount
+	stdLeft := standardCount
+
+	for step := uint64(0); ; step++ {
+		isExpressSlot := ((queueIndex + step) % c) != rate
+
+		if isExpressSlot {
+			if expLeft > 0 {
+				expLeft--
+				if targetExpress && expLeft == 0 {
+					return step
+				}
+			} else if stdLeft > 0 {
+				stdLeft--
+				if !targetExpress && stdLeft == 0 {
+					return step
+				}
+			}
+		} else {
+			if stdLeft > 0 {
+				stdLeft--
+				if !targetExpress && stdLeft == 0 {
+					return step
+				}
+			} else if expLeft > 0 {
+				expLeft--
+				if targetExpress && expLeft == 0 {
+					return step
+				}
+			}
+		}
+	}
 }

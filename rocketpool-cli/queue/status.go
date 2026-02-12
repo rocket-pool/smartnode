@@ -33,7 +33,6 @@ func getStatus(c *cli.Context) error {
 
 	// Print & return
 	fmt.Printf("The deposit pool has a balance of %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.DepositPoolBalance), 6))
-	fmt.Printf("There are %d available minipools with a total capacity of %.6f ETH.\n", status.MinipoolQueueLength, math.RoundDown(eth.WeiToEth(status.MinipoolQueueCapacity), 6))
 
 	if saturnDeployed.IsSaturnDeployed {
 		var queueDetails api.GetQueueDetailsResponse
@@ -47,6 +46,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("There are %d validator(s) on the express queue.\n", queueDetails.ExpressLength)
 		fmt.Printf("There are %d validator(s) on the standard queue.\n", queueDetails.StandardLength)
 		fmt.Printf("The express queue rate is %d.\n\n", queueDetails.ExpressRate)
+
 	}
 
 	return nil

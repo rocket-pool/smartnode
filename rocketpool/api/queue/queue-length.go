@@ -45,6 +45,11 @@ func getQueueDetails(c *cli.Context) (*api.GetQueueDetailsResponse, error) {
 	})
 
 	wg.Go(func() error {
+		response.QueueIndex, err = deposit.GetQueueIndex(rp, nil)
+		return err
+	})
+
+	wg.Go(func() error {
 		response.ExpressRate, err = protocol.GetExpressQueueRate(rp, nil)
 		return err
 	})
