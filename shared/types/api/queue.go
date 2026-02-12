@@ -37,6 +37,7 @@ type GetQueueDetailsResponse struct {
 	ExpressLength  uint32 `json:"expressLength"`
 	StandardLength uint32 `json:"standardLength"`
 	ExpressRate    uint64 `json:"expressRate"`
+	QueueIndex     uint32 `json:"queueIndex"`
 }
 
 type CanAssignDepositsResponse struct {
