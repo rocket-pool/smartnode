@@ -96,6 +96,52 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "can-assign-deposits",
+				Usage:     "Check whether deposits can be assigned",
+				UsageText: "rocketpool api queue can-assign-deposits max",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					max, err := cliutils.ValidatePositiveUint32("max", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canAssignDeposits(c, int64(max)))
+					return nil
+
+				},
+			},
+			{
+				Name:      "assign-deposits",
+				Aliases:   []string{"ad"},
+				Usage:     "Assign deposits to queued validators",
+				UsageText: "rocketpool api queue assign-deposits max",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					max, err := cliutils.ValidatePositiveUint32("max", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(assignDeposits(c, int64(max)))
+					return nil
+
+				},
+			},
 		},
 	})
 }

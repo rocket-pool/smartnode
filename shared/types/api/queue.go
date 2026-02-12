@@ -38,3 +38,17 @@ type GetQueueDetailsResponse struct {
 	StandardLength uint32 `json:"standardLength"`
 	ExpressRate    uint64 `json:"expressRate"`
 }
+
+type CanAssignDepositsResponse struct {
+	Status                 string             `json:"status"`
+	Error                  string             `json:"error"`
+	CanAssign              bool               `json:"canAssign"`
+	AssignDepositsDisabled bool               `json:"assignDepositsDisabled"`
+	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type AssignDepositsResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
