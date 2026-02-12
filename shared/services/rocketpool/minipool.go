@@ -280,41 +280,9 @@ func (c *Client) DelegateUpgradeMinipool(address common.Address) (api.DelegateUp
 	return response, nil
 }
 
-// Check whether a minipool can have its delegate rolled back
-func (c *Client) CanDelegateRollbackMinipool(address common.Address) (api.CanDelegateRollbackResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-delegate-rollback %s", address.Hex()))
-	if err != nil {
-		return api.CanDelegateRollbackResponse{}, fmt.Errorf("Could not get can delegate rollback minipool status: %w", err)
-	}
-	var response api.CanDelegateRollbackResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanDelegateRollbackResponse{}, fmt.Errorf("Could not decode can delegate rollback minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanDelegateRollbackResponse{}, fmt.Errorf("Could not get can delegate rollback minipool status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Rollback a minipool delegate
-func (c *Client) DelegateRollbackMinipool(address common.Address) (api.DelegateRollbackResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool delegate-rollback %s", address.Hex()))
-	if err != nil {
-		return api.DelegateRollbackResponse{}, fmt.Errorf("Could not rollback delegate for minipool: %w", err)
-	}
-	var response api.DelegateRollbackResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.DelegateRollbackResponse{}, fmt.Errorf("Could not decode rollback delegate minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.DelegateRollbackResponse{}, fmt.Errorf("Could not rollback delegate for minipool: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Check whether a minipool can have its auto-upgrade setting changed
-func (c *Client) CanSetUseLatestDelegateMinipool(address common.Address, setting bool) (api.CanSetUseLatestDelegateResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-set-use-latest-delegate %s %t", address.Hex(), setting))
+func (c *Client) CanSetUseLatestDelegateMinipool(address common.Address) (api.CanSetUseLatestDelegateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-set-use-latest-delegate %s", address.Hex()))
 	if err != nil {
 		return api.CanSetUseLatestDelegateResponse{}, fmt.Errorf("Could not get can set use latest delegate for minipool status: %w", err)
 	}
@@ -329,8 +297,8 @@ func (c *Client) CanSetUseLatestDelegateMinipool(address common.Address, setting
 }
 
 // Change a minipool's auto-upgrade setting
-func (c *Client) SetUseLatestDelegateMinipool(address common.Address, setting bool) (api.SetUseLatestDelegateResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool set-use-latest-delegate %s %t", address.Hex(), setting))
+func (c *Client) SetUseLatestDelegateMinipool(address common.Address) (api.SetUseLatestDelegateResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("minipool set-use-latest-delegate %s", address.Hex()))
 	if err != nil {
 		return api.SetUseLatestDelegateResponse{}, fmt.Errorf("Could not set use latest delegate for minipool: %w", err)
 	}
