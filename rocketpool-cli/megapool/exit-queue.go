@@ -59,7 +59,7 @@ func exitQueue(c *cli.Context) error {
 
 			options := make([]string, len(validatorsInQueue))
 			for vi, v := range validatorsInQueue {
-				options[vi] = fmt.Sprintf("Pubkey: 0x%s", v.PubKey.String())
+				options[vi] = fmt.Sprintf("Pubkey: 0x%s | Queue Position: %s", v.PubKey.String(), v.QueuePosition.String())
 			}
 			selected, _ := prompt.Select("Please select a validator to exit the queue:", options)
 
