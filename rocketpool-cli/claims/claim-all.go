@@ -471,7 +471,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 
 	// ================================================================
 	// 5. Unclaimed Rewards - available when the withdrawal address was unable to receive ETH
-	// 6. Deposit Credit Withdrawal - withdraw deposit credit as rETH
+	// 6. Credit Withdrawal - withdraw credit as rETH
 	// 7. ETH on Behalf Withdrawal - withdraw ETH staked on behalf of the node
 	// ================================================================
 	if isSaturn {
@@ -481,7 +481,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			fmt.Printf("%s--- [%d] Unclaimed Rewards ---%s\n", colorGreen, sectionID, colorReset)
 			fmt.Printf("  %sCould not check node status: %s%s\n\n", colorYellow, err, colorReset)
 			sectionID++
-			fmt.Printf("%s--- [%d] Deposit Credit Withdrawal ---%s\n", colorGreen, sectionID, colorReset)
+			fmt.Printf("%s--- [%d] Credit Balance Withdrawal ---%s\n", colorGreen, sectionID, colorReset)
 			fmt.Printf("  %sCould not check node status: %s%s\n\n", colorYellow, err, colorReset)
 			sectionID++
 			fmt.Printf("%s--- [%d] Staked ETH on Behalf Withdrawal ---%s\n", colorGreen, sectionID, colorReset)
@@ -536,16 +536,16 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 				}
 			}
 
-			// --- Deposit Credit Withdrawal ---
+			// ---  Credit Balance Withdrawal ---
 			sectionID++
 			creditID := sectionID
-			fmt.Printf("%s--- [%d] Deposit Credit Withdrawal ---%s\n", colorGreen, creditID, colorReset)
+			fmt.Printf("%s--- [%d] Credit Balance Withdrawal ---%s\n", colorGreen, creditID, colorReset)
 
 			if nodeStatus.CreditBalance == nil || nodeStatus.CreditBalance.Cmp(big.NewInt(0)) <= 0 {
-				fmt.Printf("  No deposit credit available.\n\n")
+				fmt.Printf("  No credit balance available.\n\n")
 			} else {
 				creditBalance := nodeStatus.CreditBalance
-				fmt.Printf("  Credit balance: %.6f ETH (withdrawn as rETH to %s)\n\n",
+				fmt.Printf("  Credit balance: %.6f ETH (the equivalent amount in rETH will be transferred to %s)\n\n",
 					math.RoundDown(eth.WeiToEth(creditBalance), 6), nodeStatus.PrimaryWithdrawalAddress)
 				totalEthWei.Add(totalEthWei, creditBalance)
 
@@ -569,7 +569,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					withdrawAmount := creditBalance
 					claims = append(claims, pendingClaim{
 						id:       creditID,
-						name:     "Deposit Credit Withdrawal",
+						name:     "Credit Balance Withdrawal",
 						ethValue: withdrawAmount,
 						gasInfo:  gasInfo,
 						execute: func() error {
@@ -578,7 +578,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 							if err != nil {
 								return fmt.Errorf("transaction could not be submitted: %w", err)
 							}
-							fmt.Printf("  Withdrawing deposit credit...\n")
+							fmt.Printf("  Withdrawing credit balance...\n")
 							cliutils.PrintTransactionHash(rp, response.TxHash)
 							if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 								return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
