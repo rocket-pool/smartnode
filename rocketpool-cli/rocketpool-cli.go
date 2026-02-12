@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"math/big"
 	"os"
-	"strings"
 
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/auction"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/claims"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/network"
@@ -88,14 +88,12 @@ A special thanks to the Rocket Pool community for all their contributions.
 				"Use this flag when nobody can see your screen to allow sensitive data to be printed without prompting",
 		},
 	}
-	enableSaturn := strings.Contains(shared.RocketPoolVersion(), "rc")
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
+	claims.RegisterCommands(app, "claims", []string{"l"})
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
-	if enableSaturn {
-		megapool.RegisterCommands(app, "megapool", []string{"g"})
-	}
+	megapool.RegisterCommands(app, "megapool", []string{"g"})
 	network.RegisterCommands(app, "network", []string{"e"})
 	node.RegisterCommands(app, "node", []string{"n"})
 	odao.RegisterCommands(app, "odao", []string{"o"})
