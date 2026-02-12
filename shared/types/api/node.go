@@ -432,6 +432,7 @@ type CanNodeDepositResponse struct {
 	Error                            string                    `json:"error"`
 	CanDeposit                       bool                      `json:"canDeposit"`
 	CreditBalance                    *big.Int                  `json:"creditBalance"`
+	UsableCreditBalance              *big.Int                  `json:"usableCreditBalance"`
 	DepositBalance                   *big.Int                  `json:"depositBalance"`
 	CanUseCredit                     bool                      `json:"canUseCredit"`
 	NodeBalance                      *big.Int                  `json:"nodeBalance"`
@@ -460,6 +461,7 @@ type CanNodeDepositsResponse struct {
 	Error                            string                    `json:"error"`
 	CanDeposit                       bool                      `json:"canDeposit"`
 	CreditBalance                    *big.Int                  `json:"creditBalance"`
+	UsableCreditBalance              *big.Int                  `json:"usableCreditBalance"`
 	DepositBalance                   *big.Int                  `json:"depositBalance"`
 	CanUseCredit                     bool                      `json:"canUseCredit"`
 	NodeBalance                      *big.Int                  `json:"nodeBalance"`

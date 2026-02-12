@@ -215,15 +215,21 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
 		if canDeposit.CanUseCredit {
 			useCreditBalance = true
-			// Get how much credit to use
-			remainingAmount := big.NewInt(0).Sub(totalAmountWei, canDeposit.CreditBalance)
+			// usableCredit may be less than totalAmountWei due to low deposit pool balance)
+			usableCredit := canDeposit.UsableCreditBalance
+			if usableCredit == nil {
+				usableCredit = canDeposit.CreditBalance
+			}
+			remainingAmount := big.NewInt(0).Sub(totalAmountWei, usableCredit)
 			if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("This deposit will use all %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node wallet.\n\n", eth.WeiToEth(usableCredit), eth.WeiToEth(remainingAmount))
 			} else {
-				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node.\n\n", totalBondRequirementEth)
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node wallet.\n\n", eth.WeiToEth(usableCredit))
 			}
 		} else {
-			fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new megapool validator; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue the deposit now, you will have to pay for the full bond amount.\n\n", colorYellow, eth.WeiToEth(canDeposit.DepositBalance), colorReset)
+			fmt.Printf("%sNOTE: Your credit balance cannot currently be used to create a new megapool validator.\n"+
+				"This may be because the deposit pool has insufficient ETH or the credit balance is not enough to cover any part of the deposit.%s\n"+
+				"If you want to continue the deposit now, you will have to pay the full bond amount from your wallet.\n\n", colorYellow, colorReset)
 		}
 		// Prompt for confirmation
 		if !(c.Bool("yes") || prompt.Confirm("Would you like to continue?")) {
