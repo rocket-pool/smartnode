@@ -392,19 +392,22 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		return nil
 	})
 
-	// Get megapool balance details
-	wg.Go(func() error {
-		megapoolBalanceDetails = make([]megapoolBalanceDetail, len(state.MegapoolDetails))
-		i := 0
-		for megapoolAddress, megapoolDetails := range state.MegapoolDetails {
-			megapoolBalanceDetails[i], err = t.getMegapoolBalanceDetails(megapoolAddress, state, megapoolDetails)
-			if err != nil {
-				return fmt.Errorf("error getting megapool balance details: %w", err)
+	// if Saturn is deployed
+	if state.IsSaturnDeployed {
+		// Get megapool balance details
+		wg.Go(func() error {
+			megapoolBalanceDetails = make([]megapoolBalanceDetail, len(state.MegapoolDetails))
+			i := 0
+			for megapoolAddress, megapoolDetails := range state.MegapoolDetails {
+				megapoolBalanceDetails[i], err = t.getMegapoolBalanceDetails(megapoolAddress, state, megapoolDetails)
+				if err != nil {
+					return fmt.Errorf("error getting megapool balance details: %w", err)
+				}
+				i += 1
 			}
-			i += 1
-		}
-		return nil
-	})
+			return nil
+		})
+	}
 
 	// Get distributor balance details
 	wg.Go(func() error {

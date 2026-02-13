@@ -312,8 +312,8 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 				return nil, fmt.Errorf("error getting all megapool details: %w", err)
 			}
 		}
+		m.logLine("4/7 - Retrieved megapool validator details (%s so far)", time.Since(start))
 	}
-	m.logLine("4/7 - Retrieved megapool validator details (%s so far)", time.Since(start))
 
 	// Calculate avg node fees and distributor shares
 	for _, details := range state.NodeDetails {
@@ -555,8 +555,9 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 				return nil, fmt.Errorf("error getting all megapool details: %w", err)
 			}
 		}
+		m.logLine("%d/%d - Retrieved megapool validator details (total time: %s)", currentStep, steps, time.Since(start))
 	}
-	m.logLine("%d/%d - Retrieved megapool validator details (total time: %s)", currentStep, steps, time.Since(start))
+
 	currentStep++
 
 	return state, nil
