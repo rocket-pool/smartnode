@@ -217,9 +217,6 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 			useCreditBalance = true
 			// usableCredit may be less than totalAmountWei due to low deposit pool balance)
 			usableCredit := canDeposit.UsableCreditBalance
-			if usableCredit == nil {
-				usableCredit = canDeposit.CreditBalance
-			}
 			remainingAmount := big.NewInt(0).Sub(totalAmountWei, usableCredit)
 			if remainingAmount.Cmp(big.NewInt(0)) > 0 {
 				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node wallet.\n\n", eth.WeiToEth(usableCredit), eth.WeiToEth(remainingAmount))
