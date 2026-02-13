@@ -191,7 +191,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		}
 		if canDeposit.InsufficientBalanceWithoutCredit {
 			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
-			fmt.Printf("There is not enough ETH in the staking pool to use your credit balance (it needs at least 1 ETH but only has %.2f ETH) and you don't have enough ETH in your wallet (%.6f ETH) to cover the deposit amount yourself. If you want to continue creating a minipool, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", eth.WeiToEth(canDeposit.DepositBalance), nodeBalance)
+			fmt.Printf("There is not enough ETH in the staking pool (%.2f ETH available) to use your credit balance and you don't have enough ETH in your wallet (%.6f ETH) to cover the remaining deposit amount. If you want to continue creating a megapool validator, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", eth.WeiToEth(canDeposit.DepositBalance), nodeBalance)
 		}
 		if canDeposit.InsufficientBalance {
 			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
