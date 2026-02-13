@@ -148,8 +148,9 @@ func printPatchNotes(c *cli.Context) {
 	fmt.Println()
 
 	fmt.Printf("%s=== IMPORTANT NOTICE ===%s\n", colorYellow, colorReset)
-	fmt.Println("Starting with this version, the Smart Node includes an automatic task that will")
-	fmt.Println("set all minipools to use the latest delegate contract.")
+	fmt.Println("Starting with v1.19.1, the Smart Node includes an automatic task that will")
+	fmt.Println("set all legacy minipools to use the latest delegate contract.")
+	fmt.Println("For Megapools, node operators continue to have 120 days to choose when to upgrade after a new delegate is released.")
 	fmt.Println()
 	fmt.Println("This is the result of a proposal approved by the pDAO,")
 	fmt.Println("which aims to improve the Rocket Pool protocol and delegate contract management.")
