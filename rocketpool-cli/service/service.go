@@ -146,6 +146,17 @@ func printPatchNotes(c *cli.Context) {
 	fmt.Println("delegate-upgrade (u) — Upgrade the megapool’s delegate contract to the latest version")
 	fmt.Println("dissolve-validator (i) - Dissolve a validator with invalid credentials or a prestaking validator that failed to stake in time")
 	fmt.Println()
+
+	fmt.Printf("%s=== IMPORTANT NOTICE ===%s\n", colorYellow, colorReset)
+	fmt.Println("Starting with this version, the Smart Node includes an automatic task that will")
+	fmt.Println("set all minipools to use the latest delegate contract.")
+	fmt.Println()
+	fmt.Println("This is the result of a proposal approved by the pDAO,")
+	fmt.Println("which aims to improve the Rocket Pool protocol and delegate contract management.")
+	fmt.Println("For more information, visit: https://rpips.rocketpool.net/RPIPs/RPIP-77")
+	fmt.Println()
+	fmt.Printf("%sIf you do not wish to opt into using the latest delegate contract on your minipools, you should rollback to v1.19.0.%s\n", colorRed, colorReset)
+	fmt.Println()
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
