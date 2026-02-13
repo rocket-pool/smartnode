@@ -77,6 +77,9 @@ The following commands are available via the Smart Node client:
   - `rocketpool minipool delegate-rollback, b` - Roll a minipool's delegate contract back to its previous version
   - `rocketpool minipool set-use-latest-delegate, l` - Use this to enable or disable the "use-latest-delegate" flag on one or more minipools. If enabled, the minipool will ignore its current delegate contract and always use whatever the latest delegate is.
   - `rocketpool minipool find-vanity-address, v` - Search for a custom vanity minipool address
+- **claims**, l - View and claim multiple rewards and node credits
+  - `rocketpool claims claim-all, c` - Claim multiple rewards and node credits
+  - `rocketpool claims status, s` - View multiple rewards and node credits
 - **megapool**, g - Manage the node's megapool
   - `rocketpool megapool deposit, d` - Creates one or more megapool validators
   - `rocketpool megapool status, s` - Get the megapool status
