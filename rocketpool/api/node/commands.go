@@ -1042,7 +1042,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					amountRaw, err := cliutils.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
+					amountRaw, err := cliutils.ValidateEthAmount("send amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}

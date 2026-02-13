@@ -661,7 +661,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "send",
 				Aliases:   []string{"n"},
-				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).",
+				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported. Use 'all' as the amount to send the entire balance. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).",
 				UsageText: "rocketpool node send [options] amount token to",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
@@ -675,17 +675,25 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					amount, err := cliutils.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
-					if err != nil {
-						return err
+
+					amountStr := c.Args().Get(0)
+					sendAll := strings.EqualFold(amountStr, "all")
+					var amount float64
+					if !sendAll {
+						var err error
+						amount, err = cliutils.ValidatePositiveEthAmount("send amount", amountStr)
+						if err != nil {
+							return err
+						}
 					}
+
 					token, err := cliutils.ValidateTokenType("token type", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					return nodeSend(c, amount, token, c.Args().Get(2))
+					return nodeSend(c, amount, sendAll, token, c.Args().Get(2))
 
 				},
 			},
