@@ -220,18 +220,6 @@ type DelegateUpgradeResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
-type CanDelegateRollbackResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	RollbackAddress common.Address     `json:"rollbackAddress"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
-}
-type DelegateRollbackResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
-
 type CanSetUseLatestDelegateResponse struct {
 	Status  string             `json:"status"`
 	Error   string             `json:"error"`

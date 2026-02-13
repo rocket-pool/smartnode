@@ -46,6 +46,7 @@ const (
 	NotifyValidatorExitColor       = color.FgHiYellow
 	DefendChallengeExitColor       = color.FgHiGreen
 	ProvisionExpressTickets        = color.FgMagenta
+	SetUseLatestDelegateColor      = color.FgBlue
 )
 
 // Register node command
@@ -131,6 +132,10 @@ func run(c *cli.Context) error {
 		return err
 	}
 	distributeMinipools, err := newDistributeMinipools(c, log.NewColorLogger(DistributeMinipoolsColor))
+	if err != nil {
+		return err
+	}
+	setUseLatestDelegate, err := newSetUseLatestDelegate(c, log.NewColorLogger(SetUseLatestDelegateColor))
 	if err != nil {
 		return err
 	}
@@ -306,6 +311,12 @@ func run(c *cli.Context) error {
 
 			// Run the reduce bond check
 			if err := reduceBonds.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the set use latest delegate check
+			if err := setUseLatestDelegate.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)
