@@ -207,7 +207,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		}
 		if canDeposit.InsufficientBalanceWithoutCredit {
 			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
-			fmt.Printf("There is not enough ETH in the staking pool to use your credit balance (it needs at least 1 ETH but only has %.2f ETH) and you don't have enough ETH in your wallet (%.6f ETH) to cover the deposit amount yourself. If you want to continue creating a minipool, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", eth.WeiToEth(canDeposit.DepositBalance), nodeBalance)
+			fmt.Printf("There is not enough ETH in the staking pool (%.2f ETH available) to use your credit balance and you don't have enough ETH in your wallet (%.6f ETH) to cover the remaining deposit amount. If you want to continue creating a megapool validator, you will either need to wait for the staking pool to have more ETH deposited or add more ETH to your node wallet.", eth.WeiToEth(canDeposit.DepositBalance), nodeBalance)
 		}
 		if canDeposit.InsufficientBalance {
 			nodeBalance := eth.WeiToEth(canDeposit.NodeBalance)
@@ -231,15 +231,18 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	if canDeposit.CreditBalance.Cmp(big.NewInt(0)) > 0 {
 		if canDeposit.CanUseCredit {
 			useCreditBalance = true
-			// Get how much credit to use
-			remainingAmount := big.NewInt(0).Sub(totalAmountWei, canDeposit.CreditBalance)
+			// usableCredit may be less than totalAmountWei due to low deposit pool balance)
+			usableCredit := canDeposit.UsableCreditBalance
+			remainingAmount := big.NewInt(0).Sub(totalAmountWei, usableCredit)
 			if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("This deposit will use all %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node.\n\n", eth.WeiToEth(canDeposit.CreditBalance), eth.WeiToEth(remainingAmount))
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and %.6f ETH from your node wallet.\n\n", eth.WeiToEth(usableCredit), eth.WeiToEth(remainingAmount))
 			} else {
-				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node.\n\n", totalBondRequirementEth)
+				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node wallet.\n\n", eth.WeiToEth(usableCredit))
 			}
 		} else {
-			fmt.Printf("%sNOTE: Your credit balance *cannot* currently be used to create a new megapool validator; there is not enough ETH in the staking pool to cover the initial deposit on your behalf (it needs at least 1 ETH but only has %.2f ETH).%s\nIf you want to continue the deposit now, you will have to pay for the full bond amount.\n\n", colorYellow, eth.WeiToEth(canDeposit.DepositBalance), colorReset)
+			fmt.Printf("%sNOTE: Your credit balance cannot currently be used to create a new megapool validator.\n"+
+				"This may be because the deposit pool has insufficient ETH or the credit balance is not enough to cover any part of the deposit.%s\n"+
+				"If you want to continue the deposit now, you will have to pay the full bond amount from your wallet.\n\n", colorYellow, colorReset)
 		}
 		// Prompt for confirmation
 		if !(c.Bool("yes") || prompt.Confirm("Would you like to continue?")) {

@@ -363,6 +363,8 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 	// Data
 	var wg1 errgroup.Group
 	var creditBalanceWei *big.Int
+	var usableCreditBalanceWei *big.Int
+	var depositPoolBalance *big.Int
 	var expressTicketCount uint64
 	var status api.MegapoolDetails
 	// Check credit balance
@@ -370,6 +372,26 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 		creditBalanceWei, err = node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
 		if err == nil {
 			response.CreditBalance = creditBalanceWei
+		}
+		return err
+	})
+
+	// Get usable credit balance (capped by deposit pool balance)
+	wg1.Go(func() error {
+		var err error
+		usableCreditBalanceWei, err = node.GetNodeUsableCreditAndBalance(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.UsableCreditBalance = usableCreditBalanceWei
+		}
+		return err
+	})
+
+	// Get deposit pool balance
+	wg1.Go(func() error {
+		var err error
+		depositPoolBalance, err = deposit.GetBalance(rp, nil)
+		if err == nil {
+			response.DepositBalance = depositPoolBalance
 		}
 		return err
 	})
@@ -437,25 +459,23 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 	}
 
 	// Check for insufficient balance
-	totalBalance := big.NewInt(0).Add(response.NodeBalance, response.CreditBalance)
+	// Total balance = node wallet + usable credit
+	// Usable credit includes node ETH balance stored in contract
+	totalBalance := big.NewInt(0).Add(response.NodeBalance, usableCreditBalanceWei)
 	response.InsufficientBalance = (amountWei.Cmp(totalBalance) > 0)
 
-	// Check if the credit balance can be used
-	response.CanUseCredit = creditBalanceWei.Cmp(amountWei) >= 0
+	// Check if credit can be used (either full or partial)
+	// We can use credit if usable credit + node wallet balance >= amount needed
+	response.CanUseCredit = usableCreditBalanceWei.Cmp(big.NewInt(0)) > 0 && totalBalance.Cmp(amountWei) >= 0
 
-	// Update response
-	response.CanDeposit = !(response.InsufficientBalance || response.InvalidAmount || response.DepositDisabled || response.NodeHasDebt)
-	if !response.CanDeposit {
-		return &response, nil
-	}
-
-	if response.CanDeposit && !response.CanUseCredit && response.NodeBalance.Cmp(amountWei) < 0 {
-		// Can't use credit and there's not enough ETH in the node wallet to deposit so error out
+	// Check if we can't use credit AND don't have enough in wallet
+	// This happens when usable credit is 0 (no credit or deposit pool empty) and wallet balance is insufficient
+	if !response.CanUseCredit && response.NodeBalance.Cmp(amountWei) < 0 {
 		response.InsufficientBalanceWithoutCredit = true
-		response.CanDeposit = false
 	}
 
-	// Break before the gas estimator if depositing won't work
+	// Update response && Break before the gas estimator if depositing won't work
+	response.CanDeposit = !(response.InsufficientBalance || response.InsufficientBalanceWithoutCredit || response.InvalidAmount || response.DepositDisabled || response.NodeHasDebt)
 	if !response.CanDeposit {
 		return &response, nil
 	}
@@ -468,9 +488,11 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 
 	// Get how much credit to use
 	if response.CanUseCredit {
-		remainingAmount := big.NewInt(0).Sub(amountWei, response.CreditBalance)
+		// Calculate how much ETH to send with the transaction
+		// Use usable credit (capped by deposit pool balance) to determine the shortfall
+		remainingAmount := big.NewInt(0).Sub(amountWei, usableCreditBalanceWei)
 		if remainingAmount.Cmp(big.NewInt(0)) > 0 {
-			// Send the remaining amount if the credit isn't enough to cover the whole deposit
+			// Send the remaining amount if the usable credit isn't enough to cover the whole deposit
 			opts.Value = remainingAmount
 		}
 	} else {
