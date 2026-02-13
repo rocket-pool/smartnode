@@ -52,7 +52,14 @@ func EstimateDepositMultiGas(rp *rocketpool.RocketPool, deposits Deposits, opts 
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "depositMulti", deposits)
+	gasInfo, err := rocketNodeDeposit.GetTransactionGasInfo(opts, "depositMulti", deposits)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	// Use the estimated gas limit instead of the safe gas limit so we can get closer to the 16M tx gas limit
+	gasInfo.SafeGasLimit = min(
+		uint64(float64(gasInfo.EstGasLimit)), rocketpool.MaxGasLimit)
+	return gasInfo, nil
 }
 
 // Make multiple node deposits
@@ -60,6 +67,14 @@ func DepositMulti(rp *rocketpool.RocketPool, deposits Deposits, opts *bind.Trans
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return nil, err
+	}
+	if opts.GasLimit == 0 {
+		gasInfo, err := rocketNodeDeposit.GetTransactionGasInfo(opts, "depositMulti", deposits)
+		if err != nil {
+			return nil, fmt.Errorf("error estimating gas for multiple node deposits: %w", err)
+		}
+		opts.GasLimit = min(
+			uint64(float64(gasInfo.EstGasLimit)), rocketpool.MaxGasLimit)
 	}
 	tx, err := rocketNodeDeposit.Transact(opts, "depositMulti", deposits)
 	if err != nil {

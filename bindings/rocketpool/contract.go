@@ -19,7 +19,7 @@ import (
 // Transaction settings
 const (
 	GasLimitMultiplier    float64 = 1.5
-	MaxGasLimit           uint64  = 30000000
+	MaxGasLimit           uint64  = 16777216 // Defined by EIP-7825
 	NethermindRevertRegex string  = "Reverted 0x(?P<message>[0-9a-fA-F]+).*"
 )
 
