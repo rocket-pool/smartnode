@@ -1183,6 +1183,20 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 		toDeploy = append(toDeploy, config.MevBoostContainerName)
 	}
 
+	// Check if we are running the Commit-Boost container locally
+	if cfg.EnableCommitBoost.Value == true && cfg.CommitBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+		toDeploy = append(toDeploy, config.CommitBoostContainerName)
+
+		// Render the Commit-Boost PBS config file (cb_config.toml)
+		cbConfigTmpl := template.Template{
+			Src: filepath.Join(templatesFolder, config.CommitBoostConfigTemplate+".tmpl"),
+			Dst: filepath.Join(runtimeFolder, config.CommitBoostConfigFile),
+		}
+		if err := cbConfigTmpl.Write(cfg); err != nil {
+			return []string{}, fmt.Errorf("could not render Commit-Boost config file: %w", err)
+		}
+	}
+
 	for _, containerName := range toDeploy {
 		containers, err := composePaths.File(containerName).Write(cfg)
 		if err != nil {

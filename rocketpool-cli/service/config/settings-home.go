@@ -19,6 +19,7 @@ type settingsHome struct {
 	fallbackPage     *FallbackConfigPage
 	ccPage           *ConsensusConfigPage
 	mevBoostPage     *MevBoostConfigPage
+	commitBoostPage  *CommitBoostConfigPage
 	metricsPage      *MetricsConfigPage
 	alertingPage     *AlertingConfigPage
 	addonsPage       *AddonsPage
@@ -45,6 +46,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 	home.ccPage = NewConsensusConfigPage(home)
 	home.fallbackPage = NewFallbackConfigPage(home)
 	home.mevBoostPage = NewMevBoostConfigPage(home)
+	home.commitBoostPage = NewCommitBoostConfigPage(home)
 	home.metricsPage = NewMetricsConfigPage(home)
 	home.alertingPage = NewAlertingConfigPage(home)
 	home.addonsPage = NewAddonsPage(home)
@@ -54,6 +56,7 @@ func newSettingsHome(md *mainDisplay) *settingsHome {
 		home.ccPage,
 		home.fallbackPage,
 		home.mevBoostPage,
+		home.commitBoostPage,
 		home.metricsPage,
 		home.alertingPage,
 		home.addonsPage,
