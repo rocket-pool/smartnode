@@ -585,11 +585,11 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 					if details.ActiveValidatorCount == 0 {
 						continue
 					}
+					nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
+					voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
+					pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
+					bond := details.GetMegapoolBondNormalized()
 					for _, validator := range megapool.Validators {
-						bond := details.GetMegapoolBondNormalized()
-						nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
-						voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
-						pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
 
 						// The megapool score is given by:
 						// (bond + effectiveNodeFee*(32-bond)) / 32
