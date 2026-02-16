@@ -44,6 +44,9 @@ type NativeMegapoolDetails struct {
 // Get the normalized bond per 32 eth validator
 // This is used in treegen to calculate attestation scores
 func (m *NativeMegapoolDetails) GetMegapoolBondNormalized() *big.Int {
+	if m.ActiveValidatorCount == 0 {
+		return big.NewInt(0)
+	}
 	return big.NewInt(0).Div(m.NodeBond, big.NewInt(int64(m.ActiveValidatorCount)))
 }
 
