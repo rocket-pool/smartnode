@@ -1021,7 +1021,7 @@ func pauseService(c *cli.Context) (bool, error) {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!")) {
 		fmt.Println("Cancelled.")
 		return false, nil
 	}
