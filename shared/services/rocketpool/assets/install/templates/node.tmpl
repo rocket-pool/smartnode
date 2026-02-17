@@ -10,6 +10,7 @@ services:
     image: {{.Smartnode.GetSmartnodeContainerTag}}
     container_name: {{.Smartnode.ProjectName}}_node
     restart: unless-stopped
+    tty: true
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - {{.RocketPoolDirectory}}:/.rocketpool
