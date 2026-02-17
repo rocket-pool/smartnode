@@ -8,7 +8,6 @@
 services:
   eth1:
     image: {{.GetECContainerTag}}
-    tty: true
     user: root
     container_name: {{.Smartnode.ProjectName}}_eth1
     restart: unless-stopped

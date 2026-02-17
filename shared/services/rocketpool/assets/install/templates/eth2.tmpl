@@ -23,7 +23,6 @@
 services:
   eth2:
     image: {{.GetBeaconContainerTag}}
-    tty: true
     user: root
     container_name: {{.Smartnode.ProjectName}}_eth2
     restart: unless-stopped
