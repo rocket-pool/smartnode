@@ -447,8 +447,9 @@ func GetPriorityFee(priorityFee *big.Int, maxFee *big.Int) *big.Int {
 
 // Print a message if Saturn has been deployed yet
 func printSaturnMessage(log *log.ColorLogger) {
-	fmt.Print(saturnArt)
 	log.Println(`
 * ============== Saturn 1 has launched! ===============
 `)
+
+	fmt.Print(saturnArt)
 }
