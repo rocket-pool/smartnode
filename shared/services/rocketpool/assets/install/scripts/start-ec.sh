@@ -387,7 +387,7 @@ if [ "$CLIENT" = "reth" ]; then
         CMD="$CMD --prune.receipts.before 0"
         CMD="$CMD --prune.senderrecovery.full"
         CMD="$CMD --prune.accounthistory.distance 10064"
-        CMD="$CMD --prune.storagehistory.distance 100064"
+        CMD="$CMD --prune.storagehistory.distance 10064"
     fi
 
     if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
@@ -397,7 +397,7 @@ if [ "$CLIENT" = "reth" ]; then
         CMD="$CMD --prune.storagehistory.distance 10064"
         CMD="$CMD --prune.bodies.pre-merge"
         CMD="$CMD --prune.receipts.pre-merge"
-        CMD="$CMD --prune.transactionlookup.distance=10064"
+        CMD="$CMD --prune.transaction-lookup.distance=10064"
     fi
 
     if [ ! -z "$EC_MAX_PEERS" ]; then
