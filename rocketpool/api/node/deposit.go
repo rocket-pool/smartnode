@@ -34,7 +34,7 @@ const (
 	ValidatorEth          float64 = 32.0
 )
 
-func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, expressTicketsRequested int64) (*api.CanNodeDepositResponse, error) {
+func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, expressTicketsRequested int64) (*api.CanNodeDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -64,7 +64,7 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 	}
 
 	// Response
-	response := api.CanNodeDepositResponse{
+	response := api.CanNodeDepositsResponse{
 		ValidatorPubkeys: make([]rptypes.ValidatorPubkey, count),
 	}
 
@@ -192,8 +192,8 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 	response.CanUseCredit = usableCreditBalanceWei.Cmp(big.NewInt(0)) > 0 && totalBalance.Cmp(amountWei) >= 0
 
 	// Check if we can't use credit AND don't have enough in wallet
-	// This happens when usable credit is 0 (no credit or deposit pool empty) and wallet balance is insufficient
-	if !response.CanUseCredit && response.NodeBalance.Cmp(amountWei) < 0 {
+	// This happens when usable credit is 0 (pool empty) and wallet balance is insufficient but user has credit
+	if creditBalanceWei.Cmp(big.NewInt(0)) > 0 && !response.CanUseCredit && response.NodeBalance.Cmp(amountWei) < 0 {
 		response.InsufficientBalanceWithoutCredit = true
 	}
 
