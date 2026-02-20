@@ -2,6 +2,7 @@ package node
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -39,13 +40,15 @@ func claimUnclaimedRewards(c *cli.Context) error {
 
 	// Show unclaimed rewards status
 	fmt.Printf("The node's withdrawal address is %s\n", status.PrimaryWithdrawalAddress)
-	if status.UnclaimedRewards != nil {
+	if status.UnclaimedRewards != nil && status.UnclaimedRewards.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("You have %.6f ETH in unclaimed rewards.\n", math.RoundDown(eth.WeiToEth(status.UnclaimedRewards), 6))
 		fmt.Printf("Your node %s%s%s's rewards were distributed, but the withdrawal address (at the time of distribution) was unable to accept ETH. ",
 			colorBlue, status.AccountAddress, colorReset)
 		fmt.Println("Before continuing, please use the command `rocketpool node set-primary-withdrawal-address` to configure an address that can accept ETH")
 	} else {
 		fmt.Println("You have no unclaimed rewards.")
+		fmt.Println("Unclaimed rewards occur when a withdrawal address cannot accept ETH during distribution.")
+		fmt.Println("If you have unclaimed rewards in the future, you can use this command to claim them.")
 		return nil
 	}
 
