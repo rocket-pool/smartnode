@@ -27,6 +27,7 @@ const (
 	ContainerID_Alertmanager ContainerID = "alertmanager"
 	ContainerID_Exporter     ContainerID = "exporter"
 	ContainerID_MevBoost     ContainerID = "mev-boost"
+	ContainerID_CommitBoost  ContainerID = "commit-boost"
 )
 
 // Enum to describe which network the system is on
