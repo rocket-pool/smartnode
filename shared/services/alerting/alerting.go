@@ -11,6 +11,7 @@ import (
 	apialert "github.com/rocket-pool/smartnode/shared/services/alerting/alertmanager/client/alert"
 	"github.com/rocket-pool/smartnode/shared/services/alerting/alertmanager/models"
 	"github.com/rocket-pool/smartnode/shared/services/config"
+	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 const (
@@ -35,6 +36,39 @@ func FetchAlerts(cfg *config.RocketPoolConfig) ([]*models.GettableAlert, error) 
 		return nil, fmt.Errorf("error fetching alerts from alertmanager: %w", err)
 	}
 	return resp.Payload, nil
+}
+
+func FetchNodeAlerts(cfg *config.RocketPoolConfig) ([]api.NodeAlert, error) {
+	alerts, err := FetchAlerts(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	response := make([]api.NodeAlert, len(alerts)+1)
+
+	for i, a := range alerts {
+		response[i] = api.NodeAlert{
+			State:       *a.Status.State,
+			Labels:      a.Labels,
+			Annotations: a.Annotations,
+		}
+	}
+
+	labels := map[string]string{
+		"alertname": "NodeAlert",
+		"severity":  "critical",
+	}
+	annotations := map[string]string{
+		"summary":     "Node Alert",
+		"description": "Node Alert",
+	}
+	response[len(alerts)] = api.NodeAlert{
+		State:       "active",
+		Labels:      labels,
+		Annotations: annotations,
+	}
+
+	return response, nil
 }
 
 // Sends an alert when the node automatically changed a node's fee recipient or attempted to (success or failure).
