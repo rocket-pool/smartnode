@@ -198,10 +198,17 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		megapoolAddressSet := make(map[common.Address]bool)
 
 		// Fetch the global megapool validator index
-		contracts := rpstate.NetworkContracts{
-			ElBlockNumber: nil,
+		cfg, err := services.GetConfig(c)
+		if err != nil {
+			return fmt.Errorf("error getting config: %w", err)
 		}
-		megapoolValidators, err := rpstate.GetAllMegapoolValidators(rp, &contracts)
+		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+		contracts, err := rpstate.NewNetworkContracts(rp, saturnDeployed, multicallerAddress, balanceBatcherAddress, nil)
+		if err != nil {
+			return fmt.Errorf("error creating network contracts: %w", err)
+		}
+		megapoolValidators, err := rpstate.GetAllMegapoolValidators(rp, contracts)
 		if err != nil {
 			return fmt.Errorf("error getting all megapool validator details: %w", err)
 		}
