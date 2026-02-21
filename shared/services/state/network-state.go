@@ -284,33 +284,13 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 		state.MegapoolValidatorDetails = statusMap
 		state.MegapoolValidatorInfo = megapoolValidatorInfo
 
-		// initialize state.MegapoolDetails
-		state.MegapoolDetails = make(map[common.Address]rpstate.NativeMegapoolDetails)
-		// Sync
-		var wg errgroup.Group
-		// Iterate the maps and query megapool details
-		for megapoolAddress := range megapoolAddressMap {
-			wg.Go(func() error {
-
-				// Load the megapool
-				mp, err := megapool.NewMegaPoolV1(m.rp, megapoolAddress, opts)
-				if err != nil {
-					return err
-				}
-				nodeAddress, err := mp.GetNodeAddress(opts)
-				if err != nil {
-					return err
-				}
-				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress, opts)
-				if err != nil {
-					return err
-				}
-				state.MegapoolDetails[megapoolAddress] = megapoolDetails
-				return nil
-			})
-			if err := wg.Wait(); err != nil {
-				return nil, fmt.Errorf("error getting all megapool details: %w", err)
-			}
+		megapoolAddresses := make([]common.Address, 0, len(megapoolAddressMap))
+		for addr := range megapoolAddressMap {
+			megapoolAddresses = append(megapoolAddresses, addr)
+		}
+		state.MegapoolDetails, err = rpstate.GetBulkMegapoolDetails(m.rp, contracts, megapoolAddresses)
+		if err != nil {
+			return nil, fmt.Errorf("error getting all megapool details: %w", err)
 		}
 		m.logLine("4/7 - Retrieved megapool validator details (%s so far)", time.Since(start))
 	}
@@ -524,36 +504,13 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 		state.MegapoolValidatorDetails = statusMap
 		state.MegapoolValidatorInfo = megapoolValidatorInfo
 
-		// initialize state.MegapoolDetails
-		state.MegapoolDetails = make(map[common.Address]rpstate.NativeMegapoolDetails)
-		// Sync
-		var wg errgroup.Group
-		// Iterate the maps and query megapool details
-		for megapoolAddress := range megapoolAddressMap {
-
-			megapoolAddress := megapoolAddress
-			wg.Go(func() error {
-
-				// Load the megapool
-				mp, err := megapool.NewMegaPoolV1(m.rp, megapoolAddress, opts)
-				if err != nil {
-					return err
-				}
-				nodeAddress, err := mp.GetNodeAddress(opts)
-				if err != nil {
-					return err
-				}
-				megapoolDetails, err := rpstate.GetNodeMegapoolDetails(m.rp, nodeAddress, opts)
-				if err != nil {
-					return err
-				}
-
-				state.MegapoolDetails[megapoolAddress] = megapoolDetails
-				return nil
-			})
-			if err := wg.Wait(); err != nil {
-				return nil, fmt.Errorf("error getting all megapool details: %w", err)
-			}
+		megapoolAddresses := make([]common.Address, 0, len(megapoolAddressMap))
+		for addr := range megapoolAddressMap {
+			megapoolAddresses = append(megapoolAddresses, addr)
+		}
+		state.MegapoolDetails, err = rpstate.GetBulkMegapoolDetails(m.rp, contracts, megapoolAddresses)
+		if err != nil {
+			return nil, fmt.Errorf("error getting all megapool details: %w", err)
 		}
 		m.logLine("%d/%d - Retrieved megapool validator details (total time: %s)", currentStep, steps, time.Since(start))
 	}
