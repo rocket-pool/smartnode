@@ -607,6 +607,20 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 	// Get the megapool details
 	wg.Go(func() error {
 		if state.IsSaturnDeployed {
+			// Get queue sizes - these are protocol-wide metrics, independent of whether
+			// this node has a megapool deployed
+			megapoolExpressQueueSizeInt, err := deposit.GetExpressQueueLength(collector.rp, nil)
+			if err != nil {
+				return fmt.Errorf("Error getting megapool express queue length: %w", err)
+			}
+			megapoolExpressQueueSize = float64(megapoolExpressQueueSizeInt)
+
+			megapoolStandardQueueSizeInt, err := deposit.GetStandardQueueLength(collector.rp, nil)
+			if err != nil {
+				return fmt.Errorf("Error getting megapool standard queue length: %w", err)
+			}
+			megapoolStandardQueueSize = float64(megapoolStandardQueueSizeInt)
+
 			// First check if the megapool is deployed
 			deployed, err := megapool.GetMegapoolDeployed(collector.rp, collector.nodeAddress, nil)
 			if err != nil {
@@ -657,19 +671,6 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 				return fmt.Errorf("Error calculating megapool rewards: %w", err)
 			}
 			nodeShareofBeaconBalance = eth.WeiToEth(rewardsSplit.NodeRewards.Add(rewardsSplit.NodeRewards, megapoolDetails.NodeBond))
-
-			// Get the queue details
-			megapoolExpressQueueSizeInt, err := deposit.GetExpressQueueLength(collector.rp, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting megapool express queue length: %w", err)
-			}
-			megapoolExpressQueueSize = float64(megapoolExpressQueueSizeInt)
-
-			megapoolStandardQueueSizeInt, err := deposit.GetStandardQueueLength(collector.rp, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting megapool standard queue length: %w", err)
-			}
-			megapoolStandardQueueSize = float64(megapoolStandardQueueSizeInt)
 		}
 		return nil
 	})
