@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"sync/atomic"
 
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -196,7 +197,7 @@ func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlo
 	return blockHeaderProof.Hashes, nil
 }
 
-func (state *BeaconState) HistoricalSummaryProof(slot uint64) ([][]byte, error) {
+func (state *BeaconState) HistoricalSummaryProof(slot uint64, network cfgtypes.Network) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if !isHistorical {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)

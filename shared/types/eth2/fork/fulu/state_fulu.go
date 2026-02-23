@@ -7,11 +7,14 @@ import (
 	"reflect"
 	"sync/atomic"
 
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const beaconStateChunkCeil uint64 = 64
+const capellaSlotMainnet uint64 = 6209536
+const capellaSlotHoodi uint64 = 0
 
 // Taken from https://github.com/OffchainLabs/prysm/blob/a0071826c5daf7dc3a6e76874fdaa76481a3c665/proto/prysm/v1alpha1/beacon_state.pb.go#L1955
 // Unexported fields stripped, as well as proto-related field tags. JSON and ssz-size tags are preserved, and nested types are replaced with local copies as well.
@@ -199,7 +202,7 @@ func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlo
 	return blockHeaderProof.Hashes, nil
 }
 
-func (state *BeaconState) HistoricalSummaryProof(slot uint64) ([][]byte, error) {
+func (state *BeaconState) HistoricalSummaryProof(slot uint64, network cfgtypes.Network) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if !isHistorical {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
@@ -212,8 +215,15 @@ func (state *BeaconState) HistoricalSummaryProof(slot uint64) ([][]byte, error) 
 	// Navigate to the historical_summaries
 	gid := uint64(1)
 	gid = gid*beaconStateChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
+
 	// Navigate into the historical summaries vector.
-	arrayIndex := (slot / generic.SlotsPerHistoricalRoot)
+	var capellaOffset uint64
+	if network == cfgtypes.Network_Mainnet {
+		capellaOffset = capellaSlotMainnet / uint64(generic.SlotsPerHistoricalRoot)
+	} else {
+		capellaOffset = capellaSlotHoodi / uint64(generic.SlotsPerHistoricalRoot)
+	}
+	arrayIndex := (slot / generic.SlotsPerHistoricalRoot) - capellaOffset
 	gid = gid*2*generic.BeaconStateHistoricalSummariesMaxLength + arrayIndex
 
 	proof, err := tree.Prove(int(gid))

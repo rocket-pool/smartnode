@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 const MAX_WITHDRAWAL_SLOT_DISTANCE = 432000 // 60 days.
@@ -74,6 +75,15 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	if err != nil {
 		return err
 	}
+	
+	// Get the network
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return err
+	}
+
+	// Get the network
+	network := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 
 	// Find the most recent withdrawal to slot.
 	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
@@ -156,7 +166,7 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 			return err
 		}
 	} else {
-		stateProof, err = state.HistoricalSummaryProof(response.WithdrawalSlot)
+		stateProof, err = state.HistoricalSummaryProof(response.WithdrawalSlot, network)
 		if err != nil {
 			return err
 		}
