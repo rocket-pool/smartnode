@@ -457,7 +457,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Name:               "Enable Commit-Boost",
 			Description:        "Enable Commit-Boost, which connects your validator to one or more relays of your choice. The relays act as intermediaries between you and professional block builders that find and extract opportunities. The builders will give you a healthy tip in return, which tends to be worth more than blocks you built on your own.\n\n",
 			Type:               config.ParameterType_Bool,
-			Default:            map[config.Network]interface{}{config.Network_All: true},
+			Default:            map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_CommitBoost},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
