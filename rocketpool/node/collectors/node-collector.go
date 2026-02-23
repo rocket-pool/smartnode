@@ -606,72 +606,71 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Get the megapool details
 	wg.Go(func() error {
-		if state.IsSaturnDeployed {
-			// Get queue sizes - these are protocol-wide metrics, independent of whether
-			// this node has a megapool deployed
-			megapoolExpressQueueSizeInt, err := deposit.GetExpressQueueLength(collector.rp, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting megapool express queue length: %w", err)
-			}
-			megapoolExpressQueueSize = float64(megapoolExpressQueueSizeInt)
-
-			megapoolStandardQueueSizeInt, err := deposit.GetStandardQueueLength(collector.rp, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting megapool standard queue length: %w", err)
-			}
-			megapoolStandardQueueSize = float64(megapoolStandardQueueSizeInt)
-
-			// First check if the megapool is deployed
-			deployed, err := megapool.GetMegapoolDeployed(collector.rp, collector.nodeAddress, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting megapool deployed status: %w", err)
-			}
-			if !deployed {
-				return nil
-			}
-
-			// Calculate the expected megapool address
-			megapoolAddress, err := megapool.GetMegapoolExpectedAddress(collector.rp, collector.nodeAddress, nil)
-			if err != nil {
-				return fmt.Errorf("Error getting megapool expected address: %w", err)
-			}
-
-			// Load the megapool contract
-			mp, err := megapool.NewMegaPoolV1(collector.rp, megapoolAddress, nil)
-			if err != nil {
-				return fmt.Errorf("Error loading megapool contract: %w", err)
-			}
-
-			mpPendingRewards, err := mp.CalculatePendingRewards(nil)
-			if err != nil {
-				return fmt.Errorf("Error getting megapool pending rewards: %w", err)
-			}
-			megapoolPendingRewardsNode = eth.WeiToEth(mpPendingRewards.NodeRewards)
-			megapoolPendingRewardsVoter = eth.WeiToEth(mpPendingRewards.VoterRewards)
-			megapoolPendingRewardsPDAO = eth.WeiToEth(mpPendingRewards.ProtocolDAORewards)
-			megapoolPendingRewardsReth = eth.WeiToEth(mpPendingRewards.RethRewards)
-
-			// Iterate over the megapool pubkeys
-			for _, pubkey := range megapoolPubkeys {
-				validator, exists := state.MegapoolValidatorDetails[pubkey]
-				if !exists {
-					continue
-				}
-				if validator.Balance > uint64(0) {
-					megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(validator.Balance)))
-				}
-			}
-
-			megapoolBeaconBalance = eth.WeiToEth(megapoolBeaconBalanceTotal)
-			// rewards = beacon balance total - node bond - user capital
-			rewardsBeaconBalance := big.NewInt(0).Sub(megapoolBeaconBalanceTotal, megapoolDetails.NodeBond)
-			rewardsBeaconBalance = big.NewInt(0).Sub(rewardsBeaconBalance, megapoolDetails.UserCapital)
-			rewardsSplit, err := mp.CalculateRewards(rewardsBeaconBalance, nil)
-			if err != nil {
-				return fmt.Errorf("Error calculating megapool rewards: %w", err)
-			}
-			nodeShareofBeaconBalance = eth.WeiToEth(rewardsSplit.NodeRewards.Add(rewardsSplit.NodeRewards, megapoolDetails.NodeBond))
+		// Get queue sizes - these are protocol-wide metrics, independent of whether
+		// this node has a megapool deployed
+		megapoolExpressQueueSizeInt, err := deposit.GetExpressQueueLength(collector.rp, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting megapool express queue length: %w", err)
 		}
+		megapoolExpressQueueSize = float64(megapoolExpressQueueSizeInt)
+
+		megapoolStandardQueueSizeInt, err := deposit.GetStandardQueueLength(collector.rp, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting megapool standard queue length: %w", err)
+		}
+		megapoolStandardQueueSize = float64(megapoolStandardQueueSizeInt)
+
+		// First check if the megapool is deployed
+		deployed, err := megapool.GetMegapoolDeployed(collector.rp, collector.nodeAddress, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting megapool deployed status: %w", err)
+		}
+		if !deployed {
+			return nil
+		}
+
+		// Calculate the expected megapool address
+		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(collector.rp, collector.nodeAddress, nil)
+		if err != nil {
+			return fmt.Errorf("Error getting megapool expected address: %w", err)
+		}
+
+		// Load the megapool contract
+		mp, err := megapool.NewMegaPoolV1(collector.rp, megapoolAddress, nil)
+		if err != nil {
+			return fmt.Errorf("Error loading megapool contract: %w", err)
+		}
+
+		mpPendingRewards, err := mp.CalculatePendingRewards(nil)
+		if err != nil {
+			return fmt.Errorf("Error getting megapool pending rewards: %w", err)
+		}
+		megapoolPendingRewardsNode = eth.WeiToEth(mpPendingRewards.NodeRewards)
+		megapoolPendingRewardsVoter = eth.WeiToEth(mpPendingRewards.VoterRewards)
+		megapoolPendingRewardsPDAO = eth.WeiToEth(mpPendingRewards.ProtocolDAORewards)
+		megapoolPendingRewardsReth = eth.WeiToEth(mpPendingRewards.RethRewards)
+
+		// Iterate over the megapool pubkeys
+		for _, pubkey := range megapoolPubkeys {
+			validator, exists := state.MegapoolValidatorDetails[pubkey]
+			if !exists {
+				continue
+			}
+			if validator.Balance > uint64(0) {
+				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(validator.Balance)))
+			}
+		}
+
+		megapoolBeaconBalance = eth.WeiToEth(megapoolBeaconBalanceTotal)
+		// rewards = beacon balance total - node bond - user capital
+		rewardsBeaconBalance := big.NewInt(0).Sub(megapoolBeaconBalanceTotal, megapoolDetails.NodeBond)
+		rewardsBeaconBalance = big.NewInt(0).Sub(rewardsBeaconBalance, megapoolDetails.UserCapital)
+		rewardsSplit, err := mp.CalculateRewards(rewardsBeaconBalance, nil)
+		if err != nil {
+			return fmt.Errorf("Error calculating megapool rewards: %w", err)
+		}
+		nodeShareofBeaconBalance = eth.WeiToEth(rewardsSplit.NodeRewards.Add(rewardsSplit.NodeRewards, megapoolDetails.NodeBond))
+
 		return nil
 	})
 	// Wait for data
@@ -682,14 +681,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 
 	// Calculate the node weight
 	nodeWeight := big.NewInt(0)
-	if !state.IsSaturnDeployed {
-		minCollateral := big.NewInt(0).Mul(eligibleBorrowedEth, state.NetworkDetails.MinCollateralFraction)
-		minCollateral.Div(minCollateral, state.NetworkDetails.RplPrice)
-		// The node must satisfy collateral requirements and have eligible ETH from which to earn rewards.
-		if nd.LegacyStakedRPL.Cmp(minCollateral) != -1 && eligibleBorrowedEth.Sign() > 0 {
-			nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.LegacyStakedRPL)
-		}
-	} else if eligibleBorrowedEth.Sign() > 0 {
+	if eligibleBorrowedEth.Sign() > 0 {
 		nodeWeight = state.GetNodeWeight(eligibleBorrowedEth, nd.LegacyStakedRPL)
 	}
 
@@ -747,27 +739,7 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		rewardableBondedEth.Add(rewardableBondedEth, bonded)
 	}
 
-	var rewardableStakeFloat float64
-	if !state.IsSaturnDeployed {
-		// Calculate the "rewardable" minimum based on the Beacon Chain, including pending bond reductions
-		rewardableMinimumStake := big.NewInt(0).Mul(rewardableBorrowedEth, state.NetworkDetails.MinCollateralFraction)
-		rewardableMinimumStake.Div(rewardableMinimumStake, rplPriceRaw)
-
-		// Calculate the "rewardable" maximum based on the Beacon Chain, including the pending bond reductions
-		rewardableMaximumStake := big.NewInt(0).Mul(rewardableBondedEth, state.NetworkDetails.MaxCollateralFraction)
-		rewardableMaximumStake.Div(rewardableMaximumStake, rplPriceRaw)
-
-		// Calculate the actual "rewardable" amount
-		rewardableRplStake := big.NewInt(0).Set(nd.LegacyStakedRPL)
-		if rewardableRplStake.Cmp(rewardableMinimumStake) < 0 {
-			rewardableRplStake.SetUint64(0)
-		} else if rewardableRplStake.Cmp(rewardableMaximumStake) > 0 {
-			rewardableRplStake.Set(rewardableMaximumStake)
-		}
-		rewardableStakeFloat = eth.WeiToEth(rewardableRplStake)
-	} else {
-		rewardableStakeFloat = eth.WeiToEth(nd.LegacyStakedRPL)
-	}
+	rewardableStakeFloat := eth.WeiToEth(nd.LegacyStakedRPL)
 
 	// Calculate the estimated rewards
 	rewardsIntervalDays := rewardsInterval.Seconds() / (60 * 60 * 24)

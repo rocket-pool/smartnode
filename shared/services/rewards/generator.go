@@ -159,7 +159,6 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 			testnetStartInterval:  TestnetV11Interval,
 			devnetStartInterval:   DevnetV11Interval,
 			generator:             v11_generator,
-			requiresSaturn:        true,
 		},
 		{
 			rewardsRulesetVersion: 10,
@@ -167,14 +166,12 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 			testnetStartInterval:  TestnetV10Interval,
 			devnetStartInterval:   0,
 			generator:             v10_generator,
-			requiresSaturn:        false,
 		},
 		{
 			rewardsRulesetVersion: 9,
 			mainnetStartInterval:  MainnetV9Interval,
 			testnetStartInterval:  0,
 			generator:             v9_generator,
-			requiresSaturn:        false,
 		},
 	}
 
@@ -208,11 +205,11 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 		if err != nil {
 			return nil, fmt.Errorf("error getting start interval for rewards period %d: %w", t.index, err)
 		}
-		if !foundGenerator && startInterval <= t.index && (!info.requiresSaturn || state.IsSaturnDeployed) {
+		if !foundGenerator && startInterval <= t.index {
 			t.generatorImpl = info.generator
 			foundGenerator = true
 		}
-		if !foundApproximator && startInterval <= t.index && (!info.requiresSaturn || state.IsSaturnDeployed) {
+		if !foundApproximator && startInterval <= t.index {
 			t.approximatorImpl = info.generator
 			foundApproximator = true
 		}

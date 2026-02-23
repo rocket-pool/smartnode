@@ -12,7 +12,6 @@ type rewardsIntervalInfo struct {
 	devnetStartInterval   uint64
 	testnetStartInterval  uint64
 	generator             treeGeneratorImpl
-	requiresSaturn        bool
 }
 
 func (r *rewardsIntervalInfo) GetStartInterval(network cfgtypes.Network) (uint64, error) {

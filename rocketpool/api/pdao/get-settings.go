@@ -9,7 +9,6 @@ import (
 
 	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -23,12 +22,6 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	// Response
 	response := api.GetPDAOSettingsResponse{}
-
-	// Check if Saturn is already deployed
-	response.SaturnDeployed, err = state.IsSaturnDeployed(rp, nil)
-	if err != nil {
-		return nil, err
-	}
 
 	// Data
 	var wg errgroup.Group

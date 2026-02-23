@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 	"github.com/urfave/cli"
@@ -24,12 +23,6 @@ func checkCollateral(c *cli.Context) (*api.CheckCollateralResponse, error) {
 		return nil, err
 	}
 
-	// Check if Saturn is already deployed
-	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	// Response
 	response := api.CheckCollateralResponse{}
 
@@ -40,7 +33,7 @@ func checkCollateral(c *cli.Context) (*api.CheckCollateralResponse, error) {
 	}
 
 	// Check collateral
-	response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(saturnDeployed, rp, nodeAccount.Address, nil)
+	response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}

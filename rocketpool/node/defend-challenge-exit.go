@@ -102,10 +102,6 @@ func newDefendChallengeExit(c *cli.Context, logger log.ColorLogger) (*defendChal
 
 // Prestake megapool validator
 func (t *defendChallengeExit) run(state *state.NetworkState) error {
-	if !state.IsSaturnDeployed {
-		return nil
-	}
-
 	// Log
 	t.log.Println("Checking for validators with an incorrect exit challenge ...")
 

@@ -33,7 +33,6 @@ func TestMockIntervalDefaultsTreegenv11(tt *testing.T) {
 	node.Minipools[0].NodeFee, _ = big.NewInt(0).SetString("50000000000000000", 10)
 	history.Nodes = append(history.Nodes, node)
 	state := history.GetEndNetworkState()
-	state.IsSaturnDeployed = true
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
@@ -853,7 +852,6 @@ func TestInsufficientEthForBonusesesV11(tt *testing.T) {
 	history.NetworkDetails.PendingVoterShareEth = big.NewInt(100)
 	// Set the pdao share to 0
 	state := history.GetEndNetworkState()
-	state.IsSaturnDeployed = true
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
@@ -960,7 +958,6 @@ func TestMockNoRPLRewardsV11(tt *testing.T) {
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
 	state := history.GetEndNetworkState()
-	state.IsSaturnDeployed = true
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
@@ -1090,7 +1087,6 @@ func TestMockOptedOutAndThenBondReducedV11(tt *testing.T) {
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
 	state := history.GetEndNetworkState()
-	state.IsSaturnDeployed = true
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 
@@ -1208,7 +1204,6 @@ func TestMockWithdrawableEpochV11(tt *testing.T) {
 	history.Nodes = append(history.Nodes, odaoNodes...)
 
 	state := history.GetEndNetworkState()
-	state.IsSaturnDeployed = true
 
 	t := newRewardsTest(tt, state.NetworkDetails.RewardIndex)
 

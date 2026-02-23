@@ -22,7 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
@@ -72,15 +71,6 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
-	}
-
-	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	if !saturnDeployed {
-		return nil, fmt.Errorf("Multiple deposits are only supported after Saturn deployment")
 	}
 
 	// Data
@@ -146,36 +136,34 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 		return err
 	})
 
-	if saturnDeployed {
-		// Check whether the node has debt
-		wg1.Go(func() error {
-			// Load the megapool contract
+	// Check whether the node has debt
+	wg1.Go(func() error {
+		// Load the megapool contract
 
-			megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
-			if err != nil {
-				return err
-			}
-
-			// Check whether the megapool is deployed
-			deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
-			if err != nil {
-				return err
-			}
-			if !deployed {
-				return nil
-			}
-
-			mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-			if err != nil {
-				return err
-			}
-			hasDebt, err := mp.GetDebt(nil)
-			if err == nil {
-				response.NodeHasDebt = hasDebt.Cmp(big.NewInt(0)) > 0
-			}
+		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+		if err != nil {
 			return err
-		})
-	}
+		}
+
+		// Check whether the megapool is deployed
+		deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+		if err != nil {
+			return err
+		}
+		if !deployed {
+			return nil
+		}
+
+		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+		if err != nil {
+			return err
+		}
+		hasDebt, err := mp.GetDebt(nil)
+		if err == nil {
+			response.NodeHasDebt = hasDebt.Cmp(big.NewInt(0)) > 0
+		}
+		return err
+	})
 	// Wait for data
 	if err := wg1.Wait(); err != nil {
 		return nil, err
@@ -335,17 +323,8 @@ func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee f
 		return nil, err
 	}
 
-	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	// Response
 	response := api.NodeDepositsResponse{}
-
-	if !saturnDeployed {
-		return nil, fmt.Errorf("Multiple deposits are only supported after Saturn deployment")
-	}
 
 	// Make sure ETH2 is on the correct chain
 	depositContractInfo, err := getDepositContractInfo(c)
