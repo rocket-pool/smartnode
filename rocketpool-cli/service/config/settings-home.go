@@ -237,6 +237,10 @@ func (home *settingsHome) refresh() {
 		home.mevBoostPage.layout.refresh()
 	}
 
+	if home.commitBoostPage != nil {
+		home.commitBoostPage.layout.refresh()
+	}
+
 	if home.metricsPage != nil {
 		home.metricsPage.layout.refresh()
 	}
