@@ -167,36 +167,50 @@ func nodeSendAll(c *cli.Context, rp *rocketpool.Client, token string, toAddress 
 
 		// Assign the gas settings
 		g.Assign(rp)
-	} else {
-		// For non-ETH tokens, confirm first, then assign gas settings
-		if strings.HasPrefix(token, "0x") {
-			fmt.Printf("Token address:   %s\n", token)
-			fmt.Printf("Token name:      %s\n", canSend.TokenName)
-			fmt.Printf("Token symbol:    %s\n", canSend.TokenSymbol)
-			fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, canSend.TokenSymbol)
-			fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
 
-			if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send all %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString))) {
-				fmt.Println("Cancelled.")
-				return nil
-			}
-		} else {
-			fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, token)
-			if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send all %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString))) {
-				fmt.Println("Cancelled.")
-				return nil
-			}
-		}
-
-		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, c.Bool("yes"))
+		// For ETH, use NodeSend with the pre-computed amount (balance minus gas reserve).
+		response, err := rp.NodeSend(amountRaw, token, toAddress)
 		if err != nil {
 			return err
 		}
+		fmt.Printf("Sending %.8f ETH to %s...\n", amountRaw, toAddressString)
+		cliutils.PrintTransactionHash(rp, response.TxHash)
+		if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+			return err
+		}
+		fmt.Printf("Successfully sent %.6f ETH to %s.\n", amountRaw, toAddressString)
+		return nil
 	}
 
-	// Send tokens
-	response, err := rp.NodeSend(amountRaw, token, toAddress)
+	// For non-ETH tokens, confirm first, then assign gas settings.
+	if strings.HasPrefix(token, "0x") {
+		fmt.Printf("Token address:   %s\n", token)
+		fmt.Printf("Token name:      %s\n", canSend.TokenName)
+		fmt.Printf("Token symbol:    %s\n", canSend.TokenSymbol)
+		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, canSend.TokenSymbol)
+		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
+
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send all %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	} else {
+		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, token)
+		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send all %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString))) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	}
+
+	// Assign max fees
+	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, c.Bool("yes"))
+	if err != nil {
+		return err
+	}
+
+	// Use the exact on-chain balance to avoid float64 rounding errors that
+	// would cause "transfer amount exceeds balance".
+	response, err := rp.NodeSendAll(token, toAddress)
 	if err != nil {
 		return err
 	}
