@@ -83,11 +83,6 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 
 // Start the bond reduction cancellation thread
 func (t *cancelBondReductions) run(state *state.NetworkState) error {
-
-	if state.IsSaturnDeployed {
-		return nil
-	}
-
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return err

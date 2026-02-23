@@ -38,16 +38,6 @@ func beginReduceBondAmount(c *cli.Context) error {
 		return nil
 	}
 
-	// Check if Saturn is deployed
-	saturnDeployed, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Saturn is deployed: %w", err)
-	}
-	if saturnDeployed.IsSaturnDeployed {
-		fmt.Println("Minipool bond reductions are currently disabled.")
-		return nil
-	}
-
 	// Check if bond reduction is enabled
 	bondReductionEnabledResponse, err := rp.GetBondReductionEnabled()
 	if err != nil {

@@ -17,16 +17,6 @@ func provisionExpressTickets(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check if Saturn is deployed
-	saturnDeployed, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-	if !saturnDeployed.IsSaturnDeployed {
-		fmt.Println("This command is only available after the Saturn upgrade.")
-		return nil
-	}
-
 	// Check if the node can provision express tickets
 	canProvision, err := rp.CanProvisionExpressTickets()
 	if err != nil {

@@ -23,16 +23,6 @@ func penaliseMegapool(c *cli.Context, megapoolAddress common.Address, block *big
 	}
 	defer rp.Close()
 
-	saturnDeployed, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-
-	if !saturnDeployed.IsSaturnDeployed {
-		fmt.Println("This command is only available after Saturn 1 is deployed.")
-		return nil
-	}
-
 	// Get amount to repay
 	amountStr := prompt.Prompt("Enter the amount to penalise the megapool (in ETH):", "^\\d+(\\.\\d+)?$", "Invalid amount")
 

@@ -67,10 +67,6 @@ func newChallengeValidatorsExiting(c *cli.Context, logger log.ColorLogger) (*cha
 
 // Flag validators exiting that didn't notify the exit
 func (t *challengeValidatorsExiting) run(state *state.NetworkState) error {
-	if !state.IsSaturnDeployed {
-		return nil
-	}
-
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return err

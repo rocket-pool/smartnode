@@ -5,14 +5,12 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
-	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
@@ -46,12 +44,6 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 		return nil, err
 	}
 
-	// Check if Saturn is already deployed
-	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-
 	// Response
 	response := api.CanProposePDAOSettingResponse{}
 
@@ -68,36 +60,19 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 	var isRplLockingAllowed bool
 	var wg errgroup.Group
 
-	if saturnDeployed {
-		// Get the node's RPL stake
-		wg.Go(func() error {
-			var err error
-			stakedRpl, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
-			return err
-		})
+	// Get the node's RPL stake
+	wg.Go(func() error {
+		var err error
+		stakedRpl, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
 
-		// Get the node's locked RPL
-		wg.Go(func() error {
-			var err error
-			lockedRpl, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
-			return err
-		})
-
-	} else {
-		// Get the node's RPL stake
-		wg.Go(func() error {
-			var err error
-			stakedRpl, err = node131.GetNodeRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
-
-		// Get the node's locked RPL
-		wg.Go(func() error {
-			var err error
-			lockedRpl, err = node131.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
-			return err
-		})
-	}
+	// Get the node's locked RPL
+	wg.Go(func() error {
+		var err error
+		lockedRpl, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
 
 	// Get the node's RPL stake
 	wg.Go(func() error {

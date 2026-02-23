@@ -156,14 +156,12 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 		r.epsilon = big.NewInt(int64(nodeCount))
 	} else {
 		r.epsilon = big.NewInt(int64(minipoolCount))
-		if r.networkState.IsSaturnDeployed {
-			// Add the number of megapool validators
-			for _, nodeInfo := range r.nodeDetails {
-				if nodeInfo.Megapool == nil {
-					continue
-				}
-				r.epsilon.Add(r.epsilon, big.NewInt(int64(len(nodeInfo.Megapool.Validators))))
+		// Add the number of megapool validators
+		for _, nodeInfo := range r.nodeDetails {
+			if nodeInfo.Megapool == nil {
+				continue
 			}
+			r.epsilon.Add(r.epsilon, big.NewInt(int64(len(nodeInfo.Megapool.Validators))))
 		}
 		// Cumulative error can exceed the validator count
 		r.epsilon.Mul(r.epsilon, big.NewInt(2))
@@ -255,14 +253,12 @@ func (r *treeGeneratorImpl_v11) approximateStakerShareOfSmoothingPool(rp Rewards
 		r.epsilon = big.NewInt(int64(nodeCount))
 	} else {
 		r.epsilon = big.NewInt(int64(minipoolCount))
-		if r.networkState.IsSaturnDeployed {
-			// Add the number of megapool validators
-			for _, nodeInfo := range r.nodeDetails {
-				if nodeInfo.Megapool == nil {
-					continue
-				}
-				r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
+		// Add the number of megapool validators
+		for _, nodeInfo := range r.nodeDetails {
+			if nodeInfo.Megapool == nil {
+				continue
 			}
+			r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
 		}
 	}
 	// Cumulative error can exceed the validator count

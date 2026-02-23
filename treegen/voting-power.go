@@ -43,7 +43,7 @@ func getNodeVotingPower(s *state.NetworkState, nodeIdx int) *big.Int {
 	ethProvided.Sub(ethProvided, node.EthBorrowed)
 
 	// Add megapool provided ETH
-	if s.IsSaturnDeployed && node.MegapoolDeployed {
+	if node.MegapoolDeployed {
 		megapoolProvidedEth := s.MegapoolDetails[node.MegapoolAddress].NodeBond
 		ethProvided.Add(ethProvided, megapoolProvidedEth)
 	}
@@ -51,9 +51,7 @@ func getNodeVotingPower(s *state.NetworkState, nodeIdx int) *big.Int {
 	// Get total RPL staked
 	nodeStake := big.NewInt(0)
 	nodeStake.Add(nodeStake, node.LegacyStakedRPL)
-	if s.IsSaturnDeployed {
-		nodeStake.Add(nodeStake, node.MegapoolStakedRPL)
-	}
+	nodeStake.Add(nodeStake, node.MegapoolStakedRPL)
 
 	rplPrice := s.NetworkDetails.RplPrice
 

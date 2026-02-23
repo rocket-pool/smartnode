@@ -20,28 +20,20 @@ func processQueue(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check if Saturn is already deployed
-	saturnResp, err := rp.IsSaturnDeployed()
+	var maxValidators uint64
+
+	queueLength, err := rp.GetQueueDetails()
 	if err != nil {
 		return err
 	}
-
-	var maxValidators uint64
-
-	if saturnResp.IsSaturnDeployed {
-		queueLength, err := rp.GetQueueDetails()
-		if err != nil {
-			return err
-		}
-		if queueLength.TotalLength == 0 {
-			fmt.Println("There are no validators waiting to be processed")
-			return nil
-		}
-		maxValidatorsStr := prompt.Prompt(fmt.Sprintf("There is a total of %d validators in the queue. How many do you want to process?", queueLength.TotalLength), "^\\d+$", "Invalid number.")
-		maxValidators, err = strconv.ParseUint(maxValidatorsStr, 0, 64)
-		if err != nil {
-			return fmt.Errorf("'%s' is not a valid number: %w.\n", maxValidatorsStr, err)
-		}
+	if queueLength.TotalLength == 0 {
+		fmt.Println("There are no validators waiting to be processed")
+		return nil
+	}
+	maxValidatorsStr := prompt.Prompt(fmt.Sprintf("There is a total of %d validators in the queue. How many do you want to process?", queueLength.TotalLength), "^\\d+$", "Invalid number.")
+	maxValidators, err = strconv.ParseUint(maxValidatorsStr, 0, 64)
+	if err != nil {
+		return fmt.Errorf("'%s' is not a valid number: %w.\n", maxValidatorsStr, err)
 	}
 
 	// Check deposit queue can be processed

@@ -89,7 +89,6 @@ type NodeStatusResponse struct {
 	MegapoolActiveValidatorCount uint16            `json:"megapoolActiveValidatorCount"`
 	MegapoolNodeDebt             *big.Int          `json:"megapoolNodeDebt"`
 	MegapoolRefundValue          *big.Int          `json:"megapoolRefundValue"`
-	IsSaturnDeployed             bool              `json:"isSaturnDeployed"`
 	ExpressTicketCount           uint64            `json:"expressTicketCount"`
 	ExpressTicketsProvisioned    bool              `json:"expressTicketsProvisioned"`
 	UnstakingRPL                 *big.Int          `json:"unstakingRPL"`
@@ -619,7 +618,6 @@ type NodeGetRewardsInfoResponse struct {
 	PendingBorrowAmount      *big.Int               `json:"pendingBorrowAmount"`
 	BorrowedCollateralRatio  float64                `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio    float64                `json:"bondedCollateralRatio"`
-	IsSaturnDeployed         bool                   `json:"isSaturnDeployed"`
 }
 
 type CanNodeClaimRewardsResponse struct {

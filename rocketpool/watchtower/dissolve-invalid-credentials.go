@@ -72,10 +72,6 @@ func newDissolveInvalidCredentials(c *cli.Context, logger log.ColorLogger) (*dis
 
 // Dissolve timed out megapool validators
 func (t *dissolveInvalidCredentials) run(state *state.NetworkState) error {
-	if !state.IsSaturnDeployed {
-		return nil
-	}
-
 	// Wait for eth client to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return err

@@ -16,7 +16,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
@@ -43,39 +42,31 @@ func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, bc beacon.Client
 		return nil, err
 	}
 
-	// Check if Saturn is already deployed
-	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
+	// Check if the node has a megapool
+	megapoolDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAddress, nil)
 	if err != nil {
 		return nil, err
 	}
 
-	if saturnDeployed {
-		// Check if the node has a megapool
-		megapoolDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAddress, nil)
+	if megapoolDeployed {
+		// Get the megapool address
+		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAddress, nil)
 		if err != nil {
 			return nil, err
 		}
 
-		if megapoolDeployed {
-			// Get the megapool address
-			megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAddress, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			// Load the megapool
-			mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-			if err != nil {
-				return nil, err
-			}
-
-			megapoolPubkeys, err := mp.GetMegapoolPubkeys(nil)
-			if err != nil {
-				return nil, err
-			}
-
-			pubkeys = append(pubkeys, megapoolPubkeys...)
+		// Load the megapool
+		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+		if err != nil {
+			return nil, err
 		}
+
+		megapoolPubkeys, err := mp.GetMegapoolPubkeys(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		pubkeys = append(pubkeys, megapoolPubkeys...)
 	}
 
 	// Remove zero pubkeys
