@@ -1,6 +1,7 @@
 package node
 
 import (
+	_ "embed"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -25,8 +26,13 @@ import (
 )
 
 // Config
-var tasksInterval, _ = time.ParseDuration("5m")
-var taskCooldown, _ = time.ParseDuration("10s")
+var (
+	tasksInterval, _ = time.ParseDuration("5m")
+	taskCooldown, _  = time.ParseDuration("10s")
+)
+
+//go:embed saturn-art.txt
+var saturnArt string
 
 const (
 	MaxConcurrentEth1Requests = 200
@@ -46,6 +52,7 @@ const (
 	NotifyValidatorExitColor       = color.FgHiYellow
 	DefendChallengeExitColor       = color.FgHiGreen
 	ProvisionExpressTickets        = color.FgMagenta
+	SetUseLatestDelegateColor      = color.FgBlue
 )
 
 // Register node command
@@ -62,7 +69,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 // Run daemon
 func run(c *cli.Context) error {
-
 	// Handle the initial fee recipient file deployment
 	err := deployDefaultFeeRecipientFile(c)
 	if err != nil {
@@ -134,6 +140,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	setUseLatestDelegate, err := newSetUseLatestDelegate(c, log.NewColorLogger(SetUseLatestDelegateColor))
+	if err != nil {
+		return err
+	}
 	stakeMegapoolValidators, err := newStakeMegapoolValidator(c, log.NewColorLogger(StakeMegapoolValidatorColor))
 	if err != nil {
 		return err
@@ -183,7 +193,6 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
-	isSaturnDeployedMasterFlag := false
 	go func() {
 		// we assume clients are synced on startup so that we don't send unnecessary alerts
 		wasExecutionClientSynced := true
@@ -228,12 +237,6 @@ func run(c *cli.Context) error {
 				continue
 			}
 			stateLocker.UpdateState(state)
-
-			// Check for Houston
-			if !isSaturnDeployedMasterFlag && state.IsSaturnDeployed {
-				printSaturnMessage(&updateLog)
-				isSaturnDeployedMasterFlag = true
-			}
 
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.run(state); err != nil {
@@ -310,6 +313,12 @@ func run(c *cli.Context) error {
 			}
 			time.Sleep(taskCooldown)
 
+			// Run the set use latest delegate check
+			if err := setUseLatestDelegate.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
 			time.Sleep(tasksInterval)
 		}
 		wg.Done()
@@ -327,22 +336,18 @@ func run(c *cli.Context) error {
 	// Wait for both threads to stop
 	wg.Wait()
 	return nil
-
 }
 
 // Configure HTTP transport settings
 func configureHTTP() {
-
 	// The daemon makes a large number of concurrent RPC requests to the Eth1 client
 	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests
 	// This prevents issues related to memory consumption and address allowance from repeatedly opening and closing connections
 	http.DefaultTransport.(*http.Transport).MaxIdleConnsPerHost = MaxConcurrentEth1Requests
-
 }
 
 // Copy the default fee recipient file into the proper location
 func deployDefaultFeeRecipientFile(c *cli.Context) error {
-
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return err
@@ -353,7 +358,7 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 	if os.IsNotExist(err) {
 		// Make sure the validators dir is created
 		validatorsFolder := filepath.Dir(feeRecipientPath)
-		err = os.MkdirAll(validatorsFolder, 0755)
+		err = os.MkdirAll(validatorsFolder, 0o755)
 		if err != nil {
 			return fmt.Errorf("could not create validators directory: %w", err)
 		}
@@ -367,7 +372,7 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 			// Docker and Hybrid just need the address itself
 			defaultFeeRecipientFileContents = cfg.Smartnode.GetRethAddress().Hex()
 		}
-		err := os.WriteFile(feeRecipientPath, []byte(defaultFeeRecipientFileContents), 0664)
+		err := os.WriteFile(feeRecipientPath, []byte(defaultFeeRecipientFileContents), 0o664)
 		if err != nil {
 			return fmt.Errorf("could not write default fee recipient file to %s: %w", feeRecipientPath, err)
 		}
@@ -376,12 +381,10 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 	}
 
 	return nil
-
 }
 
 // Remove the old fee recipient files that were created in v1.5.0
 func removeLegacyFeeRecipientFiles(c *cli.Context) error {
-
 	legacyFeeRecipientFile := "rp-fee-recipient.txt"
 
 	cfg, err := services.GetConfig(c)
@@ -405,7 +408,6 @@ func removeLegacyFeeRecipientFiles(c *cli.Context) error {
 	}
 
 	return nil
-
 }
 
 // Update the latest network state at each cycle
@@ -434,27 +436,4 @@ func GetPriorityFee(priorityFee *big.Int, maxFee *big.Int) *big.Int {
 	} else {
 		return quarterMaxFee
 	}
-}
-
-// Print a message if Saturn has been deployed yet
-func printSaturnMessage(log *log.ColorLogger) {
-	log.Println(`
-*       .
-*      / \
-*     |.'.|
-*     |'.'|
-*   ,'|   |'.
-*  |,-'-|-'-.|
-*   __|_| |         _        _      _____           _
-*  | ___ \|        | |      | |    | ___ \         | |
-*  | |_/ /|__   ___| | _____| |_   | |_/ /__   ___ | |
-*  |    // _ \ / __| |/ / _ \ __|  |  __/ _ \ / _ \| |
-*  | |\ \ (_) | (__|   <  __/ |_   | | | (_) | (_) | |
-*  \_| \_\___/ \___|_|\_\___|\__|  \_|  \___/ \___/|_|
-* +---------------------------------------------------+
-* |    DECENTRALISED STAKING PROTOCOL FOR ETHEREUM    |
-* +---------------------------------------------------+
-*
-* ============== Saturn-1 has launched! ===============
-`)
 }

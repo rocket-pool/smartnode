@@ -63,6 +63,38 @@ func (c *Client) ProcessQueue(max uint32) (api.ProcessQueueResponse, error) {
 	return response, nil
 }
 
+// Check whether deposits can be assigned
+func (c *Client) CanAssignDeposits(max uint32) (api.CanAssignDepositsResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("queue can-assign-deposits %d", max))
+	if err != nil {
+		return api.CanAssignDepositsResponse{}, fmt.Errorf("Could not get can assign deposits status: %w", err)
+	}
+	var response api.CanAssignDepositsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.CanAssignDepositsResponse{}, fmt.Errorf("Could not decode can assign deposits response: %w", err)
+	}
+	if response.Error != "" {
+		return api.CanAssignDepositsResponse{}, fmt.Errorf("Could not get can assign deposits status: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Assign deposits to queued validators
+func (c *Client) AssignDeposits(max uint32) (api.AssignDepositsResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("queue assign-deposits %d", max))
+	if err != nil {
+		return api.AssignDepositsResponse{}, fmt.Errorf("Could not assign deposits: %w", err)
+	}
+	var response api.AssignDepositsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.AssignDepositsResponse{}, fmt.Errorf("Could not decode assign deposits response: %w", err)
+	}
+	if response.Error != "" {
+		return api.AssignDepositsResponse{}, fmt.Errorf("Could not assign deposits: %s", response.Error)
+	}
+	return response, nil
+}
+
 func (c *Client) GetQueueDetails() (api.GetQueueDetailsResponse, error) {
 	responseBytes, err := c.callAPI("queue get-queue-details")
 	if err != nil {

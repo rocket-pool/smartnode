@@ -89,7 +89,6 @@ type NodeStatusResponse struct {
 	MegapoolActiveValidatorCount uint16            `json:"megapoolActiveValidatorCount"`
 	MegapoolNodeDebt             *big.Int          `json:"megapoolNodeDebt"`
 	MegapoolRefundValue          *big.Int          `json:"megapoolRefundValue"`
-	IsSaturnDeployed             bool              `json:"isSaturnDeployed"`
 	ExpressTicketCount           uint64            `json:"expressTicketCount"`
 	ExpressTicketsProvisioned    bool              `json:"expressTicketsProvisioned"`
 	UnstakingRPL                 *big.Int          `json:"unstakingRPL"`
@@ -427,39 +426,12 @@ type CanNodeWithdrawRplv1_3_1Response struct {
 	GasInfo                          rocketpool.GasInfo `json:"gasInfo"`
 }
 
-type CanNodeDepositResponse struct {
-	Status                           string                    `json:"status"`
-	Error                            string                    `json:"error"`
-	CanDeposit                       bool                      `json:"canDeposit"`
-	CreditBalance                    *big.Int                  `json:"creditBalance"`
-	DepositBalance                   *big.Int                  `json:"depositBalance"`
-	CanUseCredit                     bool                      `json:"canUseCredit"`
-	NodeBalance                      *big.Int                  `json:"nodeBalance"`
-	InsufficientBalance              bool                      `json:"insufficientBalance"`
-	InsufficientBalanceWithoutCredit bool                      `json:"insufficientBalanceWithoutCredit"`
-	InvalidAmount                    bool                      `json:"invalidAmount"`
-	DepositDisabled                  bool                      `json:"depositDisabled"`
-	InConsensus                      bool                      `json:"inConsensus"`
-	NodeHasDebt                      bool                      `json:"nodeHasDebt"`
-	MinipoolAddress                  common.Address            `json:"minipoolAddress"`
-	MegapoolAddress                  common.Address            `json:"megapoolAddress"`
-	ValidatorPubkeys                 []rptypes.ValidatorPubkey `json:"validatorPubkeys"`
-	GasInfo                          rocketpool.GasInfo        `json:"gasInfo"`
-}
-type NodeDepositResponse struct {
-	Status          string                  `json:"status"`
-	Error           string                  `json:"error"`
-	TxHash          common.Hash             `json:"txHash"`
-	MinipoolAddress common.Address          `json:"minipoolAddress"`
-	ValidatorPubkey rptypes.ValidatorPubkey `json:"validatorPubkey"`
-	ScrubPeriod     time.Duration           `json:"scrubPeriod"`
-}
-
 type CanNodeDepositsResponse struct {
 	Status                           string                    `json:"status"`
 	Error                            string                    `json:"error"`
 	CanDeposit                       bool                      `json:"canDeposit"`
 	CreditBalance                    *big.Int                  `json:"creditBalance"`
+	UsableCreditBalance              *big.Int                  `json:"usableCreditBalance"`
 	DepositBalance                   *big.Int                  `json:"depositBalance"`
 	CanUseCredit                     bool                      `json:"canUseCredit"`
 	NodeBalance                      *big.Int                  `json:"nodeBalance"`
@@ -646,7 +618,6 @@ type NodeGetRewardsInfoResponse struct {
 	PendingBorrowAmount      *big.Int               `json:"pendingBorrowAmount"`
 	BorrowedCollateralRatio  float64                `json:"borrowedCollateralRatio"`
 	BondedCollateralRatio    float64                `json:"bondedCollateralRatio"`
-	IsSaturnDeployed         bool                   `json:"isSaturnDeployed"`
 }
 
 type CanNodeClaimRewardsResponse struct {

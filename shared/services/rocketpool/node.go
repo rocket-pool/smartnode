@@ -761,6 +761,23 @@ func (c *Client) NodeSend(amountRaw float64, token string, toAddress common.Addr
 	return response, nil
 }
 
+// Send all tokens of the given type from the node to an address.
+// Uses the exact on-chain *big.Int balance to avoid float64 rounding errors.
+func (c *Client) NodeSendAll(token string, toAddress common.Address) (api.NodeSendResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("node send-all %s %s", token, toAddress.Hex()))
+	if err != nil {
+		return api.NodeSendResponse{}, fmt.Errorf("Could not send tokens from node: %w", err)
+	}
+	var response api.NodeSendResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeSendResponse{}, fmt.Errorf("Could not decode node send-all response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeSendResponse{}, fmt.Errorf("Could not send tokens from node: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can burn tokens
 func (c *Client) CanNodeBurn(amountWei *big.Int, token string) (api.CanNodeBurnResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("node can-burn %s %s", amountWei.String(), token))

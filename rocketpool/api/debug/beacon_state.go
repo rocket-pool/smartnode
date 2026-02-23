@@ -9,12 +9,15 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
 const MAX_WITHDRAWAL_SLOT_DISTANCE = 432000 // 60 days.
+const capellaSlotMainnet uint64 = 6209536
+const capellaSlotHoodi uint64 = 0
 
 func getBeaconStateForSlot(c *cli.Context, slot uint64, validatorIndex uint64) error {
 	// Create a new response
@@ -74,6 +77,15 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 	if err != nil {
 		return err
 	}
+
+	// Get the network
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return err
+	}
+
+	// Get the network
+	network := cfg.Smartnode.Network.Value.(cfgtypes.Network)
 
 	// Find the most recent withdrawal to slot.
 	// Keep track of 404s- if we get 24 missing slots in a row, assume we don't have full history.
@@ -156,7 +168,13 @@ func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint6
 			return err
 		}
 	} else {
-		stateProof, err = state.HistoricalSummaryProof(response.WithdrawalSlot)
+		var capellaOffset uint64
+		if network == cfgtypes.Network_Mainnet {
+			capellaOffset = capellaSlotMainnet / uint64(generic.SlotsPerHistoricalRoot)
+		} else {
+			capellaOffset = capellaSlotHoodi / uint64(generic.SlotsPerHistoricalRoot)
+		}
+		stateProof, err = state.HistoricalSummaryProof(response.WithdrawalSlot, capellaOffset)
 		if err != nil {
 			return err
 		}

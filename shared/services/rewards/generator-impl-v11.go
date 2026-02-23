@@ -156,14 +156,12 @@ func (r *treeGeneratorImpl_v11) generateTree(rp RewardsExecutionClient, networkN
 		r.epsilon = big.NewInt(int64(nodeCount))
 	} else {
 		r.epsilon = big.NewInt(int64(minipoolCount))
-		if r.networkState.IsSaturnDeployed {
-			// Add the number of megapool validators
-			for _, nodeInfo := range r.nodeDetails {
-				if nodeInfo.Megapool == nil {
-					continue
-				}
-				r.epsilon.Add(r.epsilon, big.NewInt(int64(len(nodeInfo.Megapool.Validators))))
+		// Add the number of megapool validators
+		for _, nodeInfo := range r.nodeDetails {
+			if nodeInfo.Megapool == nil {
+				continue
 			}
+			r.epsilon.Add(r.epsilon, big.NewInt(int64(len(nodeInfo.Megapool.Validators))))
 		}
 		// Cumulative error can exceed the validator count
 		r.epsilon.Mul(r.epsilon, big.NewInt(2))
@@ -255,14 +253,12 @@ func (r *treeGeneratorImpl_v11) approximateStakerShareOfSmoothingPool(rp Rewards
 		r.epsilon = big.NewInt(int64(nodeCount))
 	} else {
 		r.epsilon = big.NewInt(int64(minipoolCount))
-		if r.networkState.IsSaturnDeployed {
-			// Add the number of megapool validators
-			for _, nodeInfo := range r.nodeDetails {
-				if nodeInfo.Megapool == nil {
-					continue
-				}
-				r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
+		// Add the number of megapool validators
+		for _, nodeInfo := range r.nodeDetails {
+			if nodeInfo.Megapool == nil {
+				continue
 			}
+			r.epsilon.Add(r.epsilon, big.NewInt(int64(nodeInfo.Megapool.ActiveValidatorCount)))
 		}
 	}
 	// Cumulative error can exceed the validator count
@@ -580,12 +576,16 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 				// Repeat, for megapools
 				if nodeInfo.Megapool != nil {
 					megapool := nodeInfo.Megapool
+					details := r.networkState.MegapoolDetails[megapool.Address]
+					// Skip megapools with no active validators (all exited/dissolved)
+					if details.ActiveValidatorCount == 0 {
+						continue
+					}
+					nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
+					voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
+					pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
+					bond := details.GetMegapoolBondNormalized()
 					for _, validator := range megapool.Validators {
-						details := r.networkState.MegapoolDetails[megapool.Address]
-						bond := details.GetMegapoolBondNormalized()
-						nodeFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.NodeShare
-						voterFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.VoterShare
-						pdaoFee := r.networkState.NetworkDetails.MegapoolRevenueSplitTimeWeightedAverages.PdaoShare
 
 						// The megapool score is given by:
 						// (bond + effectiveNodeFee*(32-bond)) / 32

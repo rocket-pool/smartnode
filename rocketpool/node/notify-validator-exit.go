@@ -104,10 +104,6 @@ func newNotifyValidatorExit(c *cli.Context, logger log.ColorLogger) (*notifyVali
 
 // Prestake megapool validator
 func (t *notifyValidatorExit) run(state *state.NetworkState) error {
-	if !state.IsSaturnDeployed {
-		return nil
-	}
-
 	// Log
 	t.log.Println("Checking if there are megapool validators exiting...")
 

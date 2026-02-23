@@ -3042,7 +3042,7 @@
           },
           "editorMode": "code",
           "exemplar": true,
-          "expr": "rocketpool_demand_deposit_pool_balance",
+          "expr": "rocketpool_smoothing_pool_eth_balance",
           "interval": "",
           "legendFormat": "",
           "range": true,

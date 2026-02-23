@@ -407,16 +407,7 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 	}
 	defer rp.Close()
 
-	// Check if Saturn is already deployed
-	saturnResp, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-	if !saturnResp.IsSaturnDeployed && isSaturnOnlySetting(setting) {
-		fmt.Println("This command is only available after the Saturn upgrade.")
-		return nil
-	}
-	if saturnResp.IsSaturnDeployed && isHoustonOnlySetting(setting) {
+	if isHoustonOnlySetting(setting) {
 		fmt.Println("This command no longer available in Saturn.")
 		return nil
 	}
@@ -466,34 +457,6 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 	// Log & return
 	fmt.Printf("Successfully submitted a %s setting update proposal.\n", setting)
 	return nil
-}
-
-// Returns true if the given setting is only available after the Saturn upgrade.
-func isSaturnOnlySetting(setting string) bool {
-
-	// Map of saturn only settings
-	saturnOnlySettings := map[string]struct{}{
-		protocol.ExpressQueueRatePath:                               {},
-		protocol.ExpressQueueTicketsBaseProvisionPath:               {},
-		protocol.NetworkAllowListedControllersPath:                  {},
-		protocol.NetworkNodeCommissionSharePath:                     {},
-		protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath: {},
-		protocol.NetworkVoterSharePath:                              {},
-		protocol.NetworkPDAOSharePath:                               {},
-		protocol.NetworkMaxNodeShareSecurityCouncilAdderPath:        {},
-		protocol.NetworkMaxRethBalanceDeltaPath:                     {},
-		protocol.MinimumLegacyRplStakePath:                          {},
-		protocol.ReducedBondSettingPath:                             {},
-		protocol.NodeUnstakingPeriodSettingPath:                     {},
-		protocol.MegapoolTimeBeforeDissolveSettingsPath:             {},
-		protocol.MegapoolMaximumMegapoolEthPenaltyPath:              {},
-		protocol.MegapoolNotifyThresholdPath:                        {},
-		protocol.MegapoolLateNotifyFinePath:                         {},
-		protocol.MegapoolDissolvePenaltyPath:                        {},
-	}
-
-	_, exists := saturnOnlySettings[setting]
-	return exists
 }
 
 // Returns true if the given setting is only available on Houston 1.3.1 (before the Saturn upgrade).

@@ -198,7 +198,7 @@ func NewTreeGenerator(logger *log.ColorLogger, logPrefix string, rp RewardsExecu
 		return int(b.rewardsRulesetVersion) - int(a.rewardsRulesetVersion)
 	})
 
-	// The first ruleset whose startInterval is at most t.index is the one to use
+	// The first ruleset whose startInterval is at most t.index is the one to use, but if it requires Saturn and saturn is not yet deployed, use the next one that doesn't require Saturn
 	for _, info := range rewardsIntervalInfos {
 
 		startInterval, err := info.GetStartInterval(network)

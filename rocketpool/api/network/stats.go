@@ -6,14 +6,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/deposit"
-	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
-	updateCheck "github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -28,12 +26,6 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check if Saturn is already deployed
-	saturnDeployed, err := updateCheck.IsSaturnDeployed(rp, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -119,43 +111,32 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		return err
 	})
 
-	if saturnDeployed {
-		// Get total RPL staked
-		wg.Go(func() error {
-			totalStaked, err := node.GetTotalStakedRPL(rp, nil)
-			if err == nil {
-				response.TotalRplStaked = eth.WeiToEth(totalStaked)
-			}
-			return err
-		})
+	// Get total RPL staked
+	wg.Go(func() error {
+		totalStaked, err := node.GetTotalStakedRPL(rp, nil)
+		if err == nil {
+			response.TotalRplStaked = eth.WeiToEth(totalStaked)
+		}
+		return err
+	})
 
-		// Get RPL staked on megapools
-		wg.Go(func() error {
-			megapoolStaked, err := node.GetTotalMegapoolStakedRPL(rp, nil)
-			if err == nil {
-				response.TotalMegapoolRplStaked = eth.WeiToEth(megapoolStaked)
-			}
-			return err
-		})
+	// Get RPL staked on megapools
+	wg.Go(func() error {
+		megapoolStaked, err := node.GetTotalMegapoolStakedRPL(rp, nil)
+		if err == nil {
+			response.TotalMegapoolRplStaked = eth.WeiToEth(megapoolStaked)
+		}
+		return err
+	})
 
-		// Get legacy RPL staked
-		wg.Go(func() error {
-			legacyStaked, err := node.GetTotalLegacyStakedRPL(rp, nil)
-			if err == nil {
-				response.TotalLegacyRplStaked = eth.WeiToEth(legacyStaked)
-			}
-			return err
-		})
-
-	} else {
-		wg.Go(func() error {
-			totalStaked, err := node131.GetTotalRPLStake(rp, nil)
-			if err == nil {
-				response.TotalRplStaked = eth.WeiToEth(totalStaked)
-			}
-			return err
-		})
-	}
+	// Get legacy RPL staked
+	wg.Go(func() error {
+		legacyStaked, err := node.GetTotalLegacyStakedRPL(rp, nil)
+		if err == nil {
+			response.TotalLegacyRplStaked = eth.WeiToEth(legacyStaked)
+		}
+		return err
+	})
 
 	// Get rETH price
 	wg.Go(func() error {
@@ -198,10 +179,17 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		megapoolAddressSet := make(map[common.Address]bool)
 
 		// Fetch the global megapool validator index
-		contracts := rpstate.NetworkContracts{
-			ElBlockNumber: nil,
+		cfg, err := services.GetConfig(c)
+		if err != nil {
+			return fmt.Errorf("error getting config: %w", err)
 		}
-		megapoolValidators, err := rpstate.GetAllMegapoolValidators(rp, &contracts)
+		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+		contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, nil)
+		if err != nil {
+			return fmt.Errorf("error creating network contracts: %w", err)
+		}
+		megapoolValidators, err := rpstate.GetAllMegapoolValidators(rp, contracts)
 		if err != nil {
 			return fmt.Errorf("error getting all megapool validator details: %w", err)
 		}

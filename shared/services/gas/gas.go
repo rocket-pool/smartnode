@@ -42,6 +42,15 @@ func (g *Gas) Assign(rp *rpsvc.Client) {
 	return
 }
 
+// GetMaxGasCostEth returns the maximum possible gas cost in ETH for the given gas info,
+func (g *Gas) GetMaxGasCostEth(gasInfo rocketpool.GasInfo) float64 {
+	limit := uint64(float64(gasInfo.EstGasLimit) * 1.1)
+	if g.gasLimit != 0 {
+		limit = g.gasLimit
+	}
+	return g.maxFeeGwei / eth.WeiPerGwei * float64(limit)
+}
+
 func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bool) (Gas, error) {
 
 	cfg, isNew, err := rp.LoadConfig()

@@ -161,7 +161,6 @@ type MinipoolCloseDetails struct {
 type GetMinipoolCloseDetailsForNodeResponse struct {
 	Status                      string                 `json:"status"`
 	Error                       string                 `json:"error"`
-	IsSaturnDeployed            bool                   `json:"isSaturnDeployed"`
 	ExpressTicketsProvisioned   bool                   `json:"expressTicketsProvisioned"`
 	IsFeeDistributorInitialized bool                   `json:"isFeeDistributorInitialized"`
 	Details                     []MinipoolCloseDetails `json:"details"`
@@ -215,18 +214,6 @@ type CanDelegateUpgradeResponse struct {
 	GasInfo               rocketpool.GasInfo `json:"gasInfo"`
 }
 type DelegateUpgradeResponse struct {
-	Status string      `json:"status"`
-	Error  string      `json:"error"`
-	TxHash common.Hash `json:"txHash"`
-}
-
-type CanDelegateRollbackResponse struct {
-	Status          string             `json:"status"`
-	Error           string             `json:"error"`
-	RollbackAddress common.Address     `json:"rollbackAddress"`
-	GasInfo         rocketpool.GasInfo `json:"gasInfo"`
-}
-type DelegateRollbackResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`

@@ -105,10 +105,6 @@ func newNotifyFinalBalance(c *cli.Context, logger log.ColorLogger) (*notifyFinal
 
 // Notify Final Balance
 func (t *notifyFinalBalance) run(state *state.NetworkState) error {
-	if !state.IsSaturnDeployed {
-		return nil
-	}
-
 	// Log
 	t.log.Println("Checking if there are megapool validators with a final balance withdrawn...")
 

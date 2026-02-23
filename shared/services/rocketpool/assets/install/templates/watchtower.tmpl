@@ -10,6 +10,7 @@ services:
     image: {{.Smartnode.GetSmartnodeContainerTag}}
     container_name: {{.Smartnode.ProjectName}}_watchtower
     restart: unless-stopped
+    tty: true
     volumes:
       - {{.RocketPoolDirectory}}:/.rocketpool
       - {{.Smartnode.DataPath}}:/.rocketpool/data

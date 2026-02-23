@@ -126,7 +126,7 @@ func printPatchNotes(c *cli.Context) {
 	fmt.Println()
 	fmt.Printf("Changes you should be aware of before starting:\n")
 	fmt.Println()
-	fmt.Println("This Smart Node version is compatible with the Saturn-1 upgrade, which is scheduled for Feb 18, 2026 00:00:00 UTC.")
+	fmt.Println("This Smart Node version is compatible with the Saturn 1 upgrade, which is scheduled for Feb 18, 2026 00:00:00 UTC.")
 	fmt.Println("For more information about the biggest Rocket Pool upgrade ever, please see the official documentation: https://docs.rocketpool.net/upgrades/saturn-1/whats-new")
 	fmt.Println()
 	fmt.Println("New megapool commands available:")
@@ -145,6 +145,18 @@ func printPatchNotes(c *cli.Context) {
 	fmt.Println("set-use-latest-delegate (l) — Enable or disable using the latest delegate contract.")
 	fmt.Println("delegate-upgrade (u) — Upgrade the megapool’s delegate contract to the latest version")
 	fmt.Println("dissolve-validator (i) - Dissolve a validator with invalid credentials or a prestaking validator that failed to stake in time")
+	fmt.Println()
+
+	fmt.Printf("%s=== IMPORTANT NOTICE ===%s\n", colorYellow, colorReset)
+	fmt.Println("Starting with v1.19.1, the Smart Node includes an automatic task that will")
+	fmt.Println("set all legacy minipools to use the latest delegate contract.")
+	fmt.Println("For Megapools, node operators continue to have 120 days to choose when to upgrade after a new delegate is released.")
+	fmt.Println()
+	fmt.Println("This is the result of a proposal approved by the pDAO,")
+	fmt.Println("which aims to improve the Rocket Pool protocol and delegate contract management.")
+	fmt.Println("For more information, visit: https://rpips.rocketpool.net/RPIPs/RPIP-77")
+	fmt.Println()
+	fmt.Printf("%sIf you do not wish to opt into using the latest delegate contract on your minipools, you should rollback to v1.19.0.%s\n", colorRed, colorReset)
 	fmt.Println()
 }
 
@@ -1009,7 +1021,7 @@ func pauseService(c *cli.Context) (bool, error) {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!")) {
 		fmt.Println("Cancelled.")
 		return false, nil
 	}

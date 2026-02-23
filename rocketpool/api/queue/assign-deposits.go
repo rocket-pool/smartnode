@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProcessQueue(c *cli.Context, max int64) (*api.CanProcessQueueResponse, error) {
+func canAssignDeposits(c *cli.Context, max int64) (*api.CanAssignDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -33,7 +33,7 @@ func canProcessQueue(c *cli.Context, max int64) (*api.CanProcessQueueResponse, e
 	}
 
 	// Response
-	response := api.CanProcessQueueResponse{}
+	response := api.CanAssignDepositsResponse{}
 
 	// Data
 	var wg errgroup.Group
@@ -65,13 +65,12 @@ func canProcessQueue(c *cli.Context, max int64) (*api.CanProcessQueueResponse, e
 		return nil, err
 	}
 
-	// Check next minipool capacity & deposit pool balance
-	response.CanProcess = !response.AssignDepositsDisabled
+	response.CanAssign = !response.AssignDepositsDisabled
 	return &response, nil
 
 }
 
-func processQueue(c *cli.Context, max int64) (*api.ProcessQueueResponse, error) {
+func assignDeposits(c *cli.Context, max int64) (*api.AssignDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -90,7 +89,7 @@ func processQueue(c *cli.Context, max int64) (*api.ProcessQueueResponse, error) 
 	}
 
 	// Response
-	response := api.ProcessQueueResponse{}
+	response := api.AssignDepositsResponse{}
 
 	// Get transactor
 	opts, err := w.GetNodeAccountTransactor()
@@ -104,9 +103,8 @@ func processQueue(c *cli.Context, max int64) (*api.ProcessQueueResponse, error) 
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
-	// Process queue
+	// Assign deposits
 	hash, err := deposit.AssignDeposits(rp, big.NewInt(max), opts)
-
 	if err != nil {
 		return nil, err
 	}

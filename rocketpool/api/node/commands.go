@@ -1042,7 +1042,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					amountRaw, err := cliutils.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
+					amountRaw, err := cliutils.ValidateEthAmount("send amount", c.Args().Get(0))
 					if err != nil {
 						return err
 					}
@@ -1087,6 +1087,31 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 
 					// Run
 					api.PrintResponse(nodeSend(c, amountRaw, token, toAddress))
+					return nil
+
+				},
+			},
+			{
+				Name:      "send-all",
+				Usage:     "Send the entire token balance from the node account to an address (avoids float64 rounding errors)",
+				UsageText: "rocketpool api node send-all token to",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 2); err != nil {
+						return err
+					}
+					token, err := cliutils.ValidateTokenType("token type", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+					toAddress, err := cliutils.ValidateAddress("to address", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(nodeSendAllTokens(c, token, toAddress))
 					return nil
 
 				},

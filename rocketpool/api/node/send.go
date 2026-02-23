@@ -312,3 +312,125 @@ func nodeSend(c *cli.Context, amountRaw float64, token string, to common.Address
 	return &response, nil
 
 }
+
+// nodeSendAllTokens sends the entire on-chain balance of the specified token to
+// the recipient, using the exact *big.Int balance to avoid float64 rounding
+// errors that would cause "transfer amount exceeds balance" failures.
+// ETH is not supported here; use nodeSend with a pre-computed amount instead.
+func nodeSendAllTokens(c *cli.Context, token string, to common.Address) (*api.NodeSendResponse, error) {
+
+	// Get services
+	if err := services.RequireNodeWallet(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	ec, err := services.GetEthClient(c)
+	if err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.NodeSendResponse{}
+
+	// Get node account
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+
+	// Get transactor
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+
+	// Override the provided pending TX if requested
+	err = eth1.CheckForNonceOverride(c, opts)
+	if err != nil {
+		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
+	}
+
+	// Handle explicit token addresses
+	if strings.HasPrefix(token, "0x") {
+		tokenAddress := common.HexToAddress(token)
+		contract, err := eth.NewErc20Contract(tokenAddress, ec, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error creating ERC20 contract binding: %w", err)
+		}
+
+		balanceWei, err := contract.BalanceOf(nodeAccount.Address, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error getting ERC20 balance: %w", err)
+		}
+
+		tx, err := contract.Transfer(to, balanceWei, opts)
+		if err != nil {
+			return nil, err
+		}
+		response.TxHash = tx.Hash()
+	} else {
+		switch token {
+		case "rpl":
+
+			// Get RocketStorage
+			if err := services.RequireRocketStorage(c); err != nil {
+				return nil, err
+			}
+			balanceWei, err := tokens.GetRPLBalance(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+			hash, err := tokens.TransferRPL(rp, to, balanceWei, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.TxHash = hash
+
+		case "fsrpl":
+
+			// Get RocketStorage
+			if err := services.RequireRocketStorage(c); err != nil {
+				return nil, err
+			}
+			balanceWei, err := tokens.GetFixedSupplyRPLBalance(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+			hash, err := tokens.TransferFixedSupplyRPL(rp, to, balanceWei, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.TxHash = hash
+
+		case "reth":
+
+			// Get RocketStorage
+			if err := services.RequireRocketStorage(c); err != nil {
+				return nil, err
+			}
+			balanceWei, err := tokens.GetRETHBalance(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return nil, err
+			}
+			hash, err := tokens.TransferRETH(rp, to, balanceWei, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.TxHash = hash
+
+		default:
+			return nil, fmt.Errorf("unsupported token '%s' for send-all; use 'eth' with an explicit amount", token)
+		}
+	}
+
+	// Return response
+	return &response, nil
+
+}
