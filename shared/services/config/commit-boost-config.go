@@ -58,9 +58,6 @@ type CommitBoostConfig struct {
 	// The Docker Hub tag for Commit-Boost
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
-	// Custom command line flags
-	AdditionalFlags config.Parameter `yaml:"additionalFlags,omitempty"`
-
 	// The port that Commit-Boost should serve its API on
 	Port config.Parameter `yaml:"port,omitempty"`
 
@@ -187,19 +184,6 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 			},
 		},
 
-		AdditionalFlags: config.Parameter{
-			ID:                 "additionalFlags",
-			Name:               "Additional Flags",
-			Description:        "Additional custom command line flags you want to pass to Commit-Boost, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
-			AffectsContainers:  []config.ContainerID{config.ContainerID_CommitBoost},
-			CanBeBlank:         true,
-			OverwriteOnUpgrade: false,
-			Type:               config.ParameterType_String,
-			Default: map[config.Network]interface{}{
-				config.Network_All: "",
-			},
-		},
-
 		ExternalUrl: config.Parameter{
 			ID:          "externalUrl",
 			Name:        "External URL",
@@ -228,7 +212,6 @@ func (cfg *CommitBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.Port,
 		&cfg.OpenRpcPort,
 		&cfg.ContainerTag,
-		&cfg.AdditionalFlags,
 		&cfg.ExternalUrl,
 	}
 }

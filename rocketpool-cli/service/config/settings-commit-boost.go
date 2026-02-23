@@ -67,7 +67,6 @@ func (configPage *CommitBoostConfigPage) createContent() {
 		&configPage.masterConfig.CommitBoost.Port,
 		&configPage.masterConfig.CommitBoost.OpenRpcPort,
 		&configPage.masterConfig.CommitBoost.ContainerTag,
-		&configPage.masterConfig.CommitBoost.AdditionalFlags,
 	}
 	externalParams := []*cfgtypes.Parameter{&configPage.masterConfig.CommitBoost.ExternalUrl}
 

@@ -19,7 +19,6 @@ services:
     environment:
       - NETWORK={{.Smartnode.Network}}
       - COMMIT_BOOST_PORT={{.CommitBoost.Port}}
-      - COMMIT_BOOST_ADDITIONAL_FLAGS={{.CommitBoost.AdditionalFlags}}
     entrypoint: sh
     command: "/setup/start-commit-boost.sh"
     cap_drop:

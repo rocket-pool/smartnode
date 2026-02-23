@@ -3,7 +3,7 @@ chain = "{{.CommitBoost.GetCurrentChainName}}"
 [pbs]
 docker_image = "{{.CommitBoost.GetContainerTag}}"
 host = "0.0.0.0"
-port = "{{.CommitBoost.Port}}"
+port = {{.CommitBoost.Port}}
 relay_check = true
 wait_all_registrations = true
 
