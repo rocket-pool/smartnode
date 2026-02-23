@@ -270,7 +270,6 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 	currentBorrowedCollateral := float64(0)
 	totalBondedCollateral := float64(0)
 	totalBorrowedCollateral := float64(0)
-	rplPrice := eth.WeiToEth(rewardsInfoResponse.RplPrice)
 	currentRplStake := eth.WeiToEth(rewardsInfoResponse.RplStake)
 	availableRpl := eth.WeiToEth(claimRpl)
 
@@ -280,20 +279,12 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 		currentBondedCollateral = rewardsInfoResponse.BondedCollateralRatio
 		currentBorrowedCollateral = rewardsInfoResponse.BorrowedCollateralRatio
 
-		// Use the original method if Saturn isn't deployed
-		if !rewardsInfoResponse.IsSaturnDeployed {
-			totalBondedCollateral = rplPrice * total / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthBorrowed) - eth.WeiToEth(rewardsInfoResponse.PendingBorrowAmount))
-			totalBorrowedCollateral = rplPrice * total / (eth.WeiToEth(rewardsInfoResponse.EthBorrowed) + eth.WeiToEth(rewardsInfoResponse.PendingBorrowAmount))
-		}
-
-		if rewardsInfoResponse.IsSaturnDeployed {
-			if currentRplStake > 0 {
-				totalBondedCollateral = currentBondedCollateral * total / currentRplStake
-				totalBorrowedCollateral = currentBorrowedCollateral * total / currentRplStake
-			} else {
-				totalBondedCollateral = 0
-				totalBorrowedCollateral = 0
-			}
+		if currentRplStake > 0 {
+			totalBondedCollateral = currentBondedCollateral * total / currentRplStake
+			totalBorrowedCollateral = currentBorrowedCollateral * total / currentRplStake
+		} else {
+			totalBondedCollateral = 0
+			totalBorrowedCollateral = 0
 		}
 
 		fmt.Printf("You currently have %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", currentRplStake, currentBorrowedCollateral*100, currentBondedCollateral*100)

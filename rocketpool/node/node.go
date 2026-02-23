@@ -193,7 +193,6 @@ func run(c *cli.Context) error {
 	wg.Add(2)
 
 	// Run task loop
-	isSaturnDeployedMasterFlag := false
 	go func() {
 		// we assume clients are synced on startup so that we don't send unnecessary alerts
 		wasExecutionClientSynced := true
@@ -238,12 +237,6 @@ func run(c *cli.Context) error {
 				continue
 			}
 			stateLocker.UpdateState(state)
-
-			// Check for Houston
-			if !isSaturnDeployedMasterFlag && state.IsSaturnDeployed {
-				printSaturnMessage(&updateLog)
-				isSaturnDeployedMasterFlag = true
-			}
 
 			// Manage the fee recipient for the node
 			if err := manageFeeRecipient.run(state); err != nil {
@@ -443,13 +436,4 @@ func GetPriorityFee(priorityFee *big.Int, maxFee *big.Int) *big.Int {
 	} else {
 		return quarterMaxFee
 	}
-}
-
-// Print a message if Saturn has been deployed yet
-func printSaturnMessage(log *log.ColorLogger) {
-	log.Println(`
-* ============== Saturn 1 has launched! ===============
-`)
-
-	fmt.Print(saturnArt)
 }

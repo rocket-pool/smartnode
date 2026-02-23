@@ -101,10 +101,6 @@ func newProvisionExpressTickets(c *cli.Context, logger log.ColorLogger) (*provis
 
 // Provision Express tickets
 func (t *provisionExpress) run(state *state.NetworkState) error {
-	if !state.IsSaturnDeployed {
-		return nil
-	}
-
 	// Check if automatic transactions are disabled
 	if t.disabled {
 		return nil

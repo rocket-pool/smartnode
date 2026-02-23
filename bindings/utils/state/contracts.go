@@ -68,7 +68,7 @@ type contractArtifacts struct {
 }
 
 // Get a new network contracts container
-func NewNetworkContracts(rp *rocketpool.RocketPool, isSaturnDeployed bool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) (*NetworkContracts, error) {
+func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Address, balanceBatcherAddress common.Address, opts *bind.CallOpts) (*NetworkContracts, error) {
 	// Get the latest block number if it's not provided
 	if opts == nil {
 		latestElBlock, err := rp.Client.BlockNumber(context.Background())
@@ -180,18 +180,16 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, isSaturnDeployed bool, multi
 	})
 
 	// Saturn wrappers
-	if isSaturnDeployed {
-		wrappers = append(wrappers, contractArtifacts{
-			name:     "rocketMegapoolFactory",
-			contract: &contracts.RocketMegapoolFactory,
-		}, contractArtifacts{
-			name:     "rocketMegapoolManager",
-			contract: &contracts.RocketMegapoolManager,
-		}, contractArtifacts{
-			name:     "rocketNetworkRevenues",
-			contract: &contracts.RocketNetworkRevenues,
-		})
-	}
+	wrappers = append(wrappers, contractArtifacts{
+		name:     "rocketMegapoolFactory",
+		contract: &contracts.RocketMegapoolFactory,
+	}, contractArtifacts{
+		name:     "rocketMegapoolManager",
+		contract: &contracts.RocketMegapoolManager,
+	}, contractArtifacts{
+		name:     "rocketNetworkRevenues",
+		contract: &contracts.RocketNetworkRevenues,
+	})
 
 	// Add the address and ABI getters to multicall
 	for i, wrapper := range wrappers {
@@ -234,12 +232,6 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, isSaturnDeployed bool, multi
 	}
 
 	return contracts, nil
-}
-
-// Returns whether or not Saturn has been deployed
-func (c *NetworkContracts) isSaturnDeployed() bool {
-	constraint, _ := version.NewConstraint(">= 1.4.0")
-	return constraint.Check(c.Version)
 }
 
 // Get the current version of the network

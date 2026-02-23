@@ -199,7 +199,7 @@ func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlo
 	return blockHeaderProof.Hashes, nil
 }
 
-func (state *BeaconState) HistoricalSummaryProof(slot uint64) ([][]byte, error) {
+func (state *BeaconState) HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error) {
 	isHistorical := slot+generic.SlotsPerHistoricalRoot <= state.Slot
 	if !isHistorical {
 		return nil, fmt.Errorf("slot %d is less than %d slots in the past from the state at slot %d, you must build a proof from the block_roots field instead", slot, generic.SlotsPerHistoricalRoot, state.Slot)
@@ -212,8 +212,9 @@ func (state *BeaconState) HistoricalSummaryProof(slot uint64) ([][]byte, error) 
 	// Navigate to the historical_summaries
 	gid := uint64(1)
 	gid = gid*beaconStateChunkCeil + generic.BeaconStateHistoricalSummariesFieldIndex
+
 	// Navigate into the historical summaries vector.
-	arrayIndex := (slot / generic.SlotsPerHistoricalRoot)
+	arrayIndex := (slot / generic.SlotsPerHistoricalRoot) - capellaOffset
 	gid = gid*2*generic.BeaconStateHistoricalSummariesMaxLength + arrayIndex
 
 	proof, err := tree.Prove(int(gid))

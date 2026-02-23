@@ -36,12 +36,6 @@ func nodeStakeRpl(c *cli.Context) error {
 		return err
 	}
 
-	// Check if Saturn is deployed
-	saturnDeployed, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-
 	// Show the pDAO disclaimer
 	fmt.Println(stakeRPLDisclaimer)
 	fmt.Println()
@@ -183,9 +177,7 @@ func nodeStakeRpl(c *cli.Context) error {
 	// Borrow amount for a new LEB8
 	ethBorrowed := eth.EthToWei(24)
 	// Borrow amount for a new megapool validator
-	if saturnDeployed.IsSaturnDeployed {
-		ethBorrowed = new(big.Int).Sub(eth.EthToWei(32), status.ReducedBond)
-	}
+	ethBorrowed = new(big.Int).Sub(eth.EthToWei(32), status.ReducedBond)
 
 	// Amount flag custom percentage input
 	if strings.HasSuffix(c.String("amount"), "%") {
@@ -326,21 +318,11 @@ func nodeStakeRpl(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if saturnDeployed.IsSaturnDeployed {
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You may request to unstake your staked RPL at any time. The unstaked RPL will be withdrawable after an unstaking period of %s.",
-			math.RoundDown(eth.WeiToEth(amountWei), 6),
-			status.UnstakingPeriodDuration))) {
-			fmt.Println("Cancelled.")
-			return nil
-		}
-	} else {
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You will not be able to unstake this RPL until you exit your validators and close your minipools, or reach %.6f staked RPL (%.0f%% of bonded eth)!",
-			math.RoundDown(eth.WeiToEth(amountWei), 6),
-			math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6),
-			status.RplStakeThresholdFraction*100))) {
-			fmt.Println("Cancelled.")
-			return nil
-		}
+	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake %.6f RPL? You may request to unstake your staked RPL at any time. The unstaked RPL will be withdrawable after an unstaking period of %s.",
+		math.RoundDown(eth.WeiToEth(amountWei), 6),
+		status.UnstakingPeriodDuration))) {
+		fmt.Println("Cancelled.")
+		return nil
 	}
 
 	// Stake RPL

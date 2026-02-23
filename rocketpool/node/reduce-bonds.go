@@ -102,10 +102,6 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 
 // Reduce bonds
 func (t *reduceBonds) run(state *state.NetworkState) error {
-	if state.IsSaturnDeployed {
-		return nil
-	}
-
 	// Check if auto-txs were disabled
 	if t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64) == 0 {
 		return nil

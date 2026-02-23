@@ -40,7 +40,7 @@ func closeMinipools(c *cli.Context) error {
 	}
 
 	// Post a warning about express ticket provisioning
-	if details.IsSaturnDeployed && !details.ExpressTicketsProvisioned {
+	if !details.ExpressTicketsProvisioned {
 		if !prompt.Confirm(fmt.Sprintf("%sWARNING: The node has unprovisioned express queue ticket(s). Closing minipool(s) without provisioning will reduce the number of express queue tickets the node is eligible for. Please enter `yes` if you've understood this message.%s`", colorRed, colorReset)) {
 			fmt.Println("Cancelled.")
 			return nil

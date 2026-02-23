@@ -108,34 +108,32 @@ func getStatus(c *cli.Context) error {
 		}
 		fmt.Println()
 
-		if status.IsSaturnDeployed {
-			fmt.Printf("%s=== Megapool ===%s\n", colorGreen, colorReset)
-			if status.MegapoolDeployed {
-				fmt.Printf("The node has a megapool deployed at %s%s%s.", colorBlue, status.MegapoolAddress.Hex(), colorReset)
-				fmt.Println()
-				fmt.Printf("The megapool has %d validators.", status.MegapoolActiveValidatorCount)
-				fmt.Println()
-				if status.MegapoolNodeDebt.Cmp(big.NewInt(0)) > 0 {
-					fmt.Printf("The megapool debt is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
-					fmt.Println()
-				}
-				if status.MegapoolRefundValue.Cmp(big.NewInt(0)) > 0 {
-					fmt.Printf("The megapool refund value is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolRefundValue), 6))
-					fmt.Println()
-				}
-			} else {
-				fmt.Println("The node does not have a megapool deployed yet.")
-			}
-
-			if status.ExpressTicketsProvisioned {
-				fmt.Printf("The node has %d express queue ticket(s).", status.ExpressTicketCount)
-			} else {
-				fmt.Printf("%sThe node has unprovisioned express queue ticket(s). Please provision them using the `rocketpool node provision-express-tickets` command. You are eligible for %d express tickets.%s", colorYellow, status.ExpressTicketCount, colorReset)
-			}
-
+		fmt.Printf("%s=== Megapool ===%s\n", colorGreen, colorReset)
+		if status.MegapoolDeployed {
+			fmt.Printf("The node has a megapool deployed at %s%s%s.", colorBlue, status.MegapoolAddress.Hex(), colorReset)
 			fmt.Println()
+			fmt.Printf("The megapool has %d validators.", status.MegapoolActiveValidatorCount)
 			fmt.Println()
+			if status.MegapoolNodeDebt.Cmp(big.NewInt(0)) > 0 {
+				fmt.Printf("The megapool debt is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
+				fmt.Println()
+			}
+			if status.MegapoolRefundValue.Cmp(big.NewInt(0)) > 0 {
+				fmt.Printf("The megapool refund value is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolRefundValue), 6))
+				fmt.Println()
+			}
+		} else {
+			fmt.Println("The node does not have a megapool deployed yet.")
 		}
+
+		if status.ExpressTicketsProvisioned {
+			fmt.Printf("The node has %d express queue ticket(s).", status.ExpressTicketCount)
+		} else {
+			fmt.Printf("%sThe node has unprovisioned express queue ticket(s). Please provision them using the `rocketpool node provision-express-tickets` command. You are eligible for %d express tickets.%s", colorYellow, status.ExpressTicketCount, colorReset)
+		}
+
+		fmt.Println()
+		fmt.Println()
 
 		// Penalties
 		fmt.Printf("%s=== Penalty Status ===%s\n", colorGreen, colorReset)
@@ -334,61 +332,51 @@ func getStatus(c *cli.Context) error {
 			fmt.Printf("This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n", status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
 		}
 
-		if status.IsSaturnDeployed {
-			fmt.Printf("The node has %.6f megapool staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6))
-			if status.RplStakeLegacy != nil && status.RplStakeLegacy.Cmp(big.NewInt(0)) != 0 {
-				fmt.Printf("The node has %6f legacy staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6))
-				fmt.Printf("The node has a total stake (legacy minipool RPL plus megapool RPL) of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6))
-				if status.RplStakeLegacy.Cmp(status.RplStakeThreshold) > 1 {
-					fmt.Printf(
-						"You can withdraw down to %.6f Legacy RPL (%.0f%% of borrowed eth)\n", math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6), (status.RplStakeThresholdFraction)*100)
-				}
-			}
-			var unstakingPeriodEnd time.Time
-			if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
-				days := int(status.UnstakingPeriodDuration.Hours()) / 24
-				hours := int(status.UnstakingPeriodDuration.Hours()) % 24
-				var unstakingDurationString string
-				if hours > 0 {
-					unstakingDurationString = fmt.Sprintf("%d days, %d hours", days, hours)
-				} else {
-					unstakingDurationString = fmt.Sprintf("%d days", days)
-				}
-				fmt.Printf("The unstaking period is currently %s.\n", unstakingDurationString)
-				// Check if unstaking period passed considering the last unstake time
-				unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
-				if unstakingPeriodEnd.After(status.LatestBlockTime) {
-					fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat))
-				} else {
-					fmt.Printf("Your node has %.6f RPL unstaked. That amount is currently withdrawable.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))
-				}
-			}
-
-			// Get the maximum withdrawable amount for megapool staked rpl
-			var maxAmount big.Int
-			withdrawableFromLocked := new(big.Int).Sub(status.TotalRplStake, status.NodeRPLLocked)
-			withdrawableFromLegacy := new(big.Int).Sub(status.TotalRplStake, status.RplStakeLegacy)
-
-			// maxAmount = min(withdrawableFromLocked, withdrawableFromLegacy, RplStakeMegapool)
-			if withdrawableFromLocked.Cmp(withdrawableFromLegacy) < 0 {
-				maxAmount.Set(withdrawableFromLocked)
-			} else {
-				maxAmount.Set(withdrawableFromLegacy)
-			}
-			if status.RplStakeMegapool.Cmp(&maxAmount) < 0 {
-				maxAmount.Set(status.RplStakeMegapool)
-			}
-
-			fmt.Printf("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
-		} else {
-			// Withdrawal limit pre-saturn 1
-			rplTotalStake := math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6)
-			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6)
-			if rplTotalStake > rplWithdrawalLimit {
+		fmt.Printf("The node has %.6f megapool staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6))
+		if status.RplStakeLegacy != nil && status.RplStakeLegacy.Cmp(big.NewInt(0)) != 0 {
+			fmt.Printf("The node has %6f legacy staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6))
+			fmt.Printf("The node has a total stake (legacy minipool RPL plus megapool RPL) of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6))
+			if status.RplStakeLegacy.Cmp(status.RplStakeThreshold) > 1 {
 				fmt.Printf(
-					"You can withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6), (status.RplStakeThresholdFraction)*100)
+					"You can withdraw down to %.6f Legacy RPL (%.0f%% of borrowed eth)\n", math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6), (status.RplStakeThresholdFraction)*100)
 			}
 		}
+		var unstakingPeriodEnd time.Time
+		if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
+			days := int(status.UnstakingPeriodDuration.Hours()) / 24
+			hours := int(status.UnstakingPeriodDuration.Hours()) % 24
+			var unstakingDurationString string
+			if hours > 0 {
+				unstakingDurationString = fmt.Sprintf("%d days, %d hours", days, hours)
+			} else {
+				unstakingDurationString = fmt.Sprintf("%d days", days)
+			}
+			fmt.Printf("The unstaking period is currently %s.\n", unstakingDurationString)
+			// Check if unstaking period passed considering the last unstake time
+			unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
+			if unstakingPeriodEnd.After(status.LatestBlockTime) {
+				fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat))
+			} else {
+				fmt.Printf("Your node has %.6f RPL unstaked. That amount is currently withdrawable.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))
+			}
+		}
+
+		// Get the maximum withdrawable amount for megapool staked rpl
+		var maxAmount big.Int
+		withdrawableFromLocked := new(big.Int).Sub(status.TotalRplStake, status.NodeRPLLocked)
+		withdrawableFromLegacy := new(big.Int).Sub(status.TotalRplStake, status.RplStakeLegacy)
+
+		// maxAmount = min(withdrawableFromLocked, withdrawableFromLegacy, RplStakeMegapool)
+		if withdrawableFromLocked.Cmp(withdrawableFromLegacy) < 0 {
+			maxAmount.Set(withdrawableFromLocked)
+		} else {
+			maxAmount.Set(withdrawableFromLegacy)
+		}
+		if status.RplStakeMegapool.Cmp(&maxAmount) < 0 {
+			maxAmount.Set(status.RplStakeMegapool)
+		}
+
+		fmt.Printf("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
 
 		fmt.Println()
 

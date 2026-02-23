@@ -53,16 +53,6 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	fmt.Println("Your eth2 client is on the correct network.")
 	fmt.Println()
 
-	saturnDeployed, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-
-	if !saturnDeployed.IsSaturnDeployed {
-		fmt.Println("This command is only available after Saturn 1 is deployed.")
-		return nil
-	}
-
 	var wg errgroup.Group
 	var expressTicketCount uint64
 	var queueDetails api.GetQueueDetailsResponse

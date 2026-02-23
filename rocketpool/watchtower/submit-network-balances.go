@@ -218,16 +218,14 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 		t.log.Printlnf("rETH token supply: %.12f", eth.WeiToEth(balances.RETHSupply))
 
 		var maxRethDelta *big.Int
-		if state.IsSaturnDeployed {
-			t.log.Printlnf("Checking if total ETH needs to be limited due to max Reth ratio delta...")
-			// Fetch the max Reth delta
-			maxRethDelta, err = protocol.GetMaxRethDelta(t.rp, nil)
-			if err != nil {
-				t.handleError(fmt.Errorf("%s %w", logPrefix, err))
-				return
-			}
+		t.log.Printlnf("Checking if total ETH needs to be limited due to max Reth ratio delta...")
+		// Fetch the max Reth delta
+		maxRethDelta, err = protocol.GetMaxRethDelta(t.rp, nil)
+		if err != nil {
+			t.handleError(fmt.Errorf("%s %w", logPrefix, err))
+			return
 		}
-		balances.calculateTotalEthAndRethRate(state.IsSaturnDeployed, maxRethDelta, lastSubmissionRate)
+		balances.calculateTotalEthAndRethRate(maxRethDelta, lastSubmissionRate)
 
 		if balances.OriginalTotalBalanceWei.Cmp(balances.ClampedTotalBalanceWei) != 0 {
 			t.log.Printlnf("Total ETH submission needs to be limited due to max Reth ratio delta: %.6f -> %.6f", eth.WeiToEth(balances.OriginalTotalBalanceWei), eth.WeiToEth(balances.ClampedTotalBalanceWei))
@@ -392,22 +390,19 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		return nil
 	})
 
-	// if Saturn is deployed
-	if state.IsSaturnDeployed {
-		// Get megapool balance details
-		wg.Go(func() error {
-			megapoolBalanceDetails = make([]megapoolBalanceDetail, len(state.MegapoolDetails))
-			i := 0
-			for megapoolAddress, megapoolDetails := range state.MegapoolDetails {
-				megapoolBalanceDetails[i], err = t.getMegapoolBalanceDetails(megapoolAddress, state, megapoolDetails)
-				if err != nil {
-					return fmt.Errorf("error getting megapool balance details: %w", err)
-				}
-				i += 1
+	// Get megapool balance details
+	wg.Go(func() error {
+		megapoolBalanceDetails = make([]megapoolBalanceDetail, len(state.MegapoolDetails))
+		i := 0
+		for megapoolAddress, megapoolDetails := range state.MegapoolDetails {
+			megapoolBalanceDetails[i], err = t.getMegapoolBalanceDetails(megapoolAddress, state, megapoolDetails)
+			if err != nil {
+				return fmt.Errorf("error getting megapool balance details: %w", err)
 			}
-			return nil
-		})
-	}
+			i += 1
+		}
+		return nil
+	})
 
 	// Get distributor balance details
 	wg.Go(func() error {
@@ -682,7 +677,7 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 }
 
 // Calculate the total ETH balance and the rETH rate
-func (b *networkBalances) calculateTotalEthAndRethRate(isSaturnDeployed bool, maxRethDelta *big.Int, lastSubmissionRate float64) {
+func (b *networkBalances) calculateTotalEthAndRethRate(maxRethDelta *big.Int, lastSubmissionRate float64) {
 
 	// Calculate total ETH balance
 	totalEth := big.NewInt(0)
@@ -699,15 +694,9 @@ func (b *networkBalances) calculateTotalEthAndRethRate(isSaturnDeployed bool, ma
 	b.OriginalTotalBalanceWei = totalEth
 	b.OriginalRatioWei = eth.EthToWei(ratio)
 
-	if isSaturnDeployed {
-		b.TotalStaking = big.NewInt(0).Add(b.MinipoolsStaking, b.MegapoolStaking)
-		// Apply the max Reth delta
-		b.applyMaxRethDelta(maxRethDelta, lastSubmissionRate)
-	} else {
-		b.TotalStaking = b.MinipoolsStaking
-		b.ClampedTotalBalanceWei = b.OriginalTotalBalanceWei
-		b.ClampedRatioWei = b.OriginalRatioWei
-	}
+	b.TotalStaking = big.NewInt(0).Add(b.MinipoolsStaking, b.MegapoolStaking)
+	// Apply the max Reth delta
+	b.applyMaxRethDelta(maxRethDelta, lastSubmissionRate)
 
 }
 

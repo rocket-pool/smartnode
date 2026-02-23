@@ -9,7 +9,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -65,7 +64,7 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionC
 }
 
 // Checks the given node's current borrowed ETH, its limit on borrowed ETH, and how much ETH is preparing to be borrowed by pending bond reductions
-func CheckCollateral(saturnDeployed bool, rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (ethBorrowed *big.Int, ethBorrowedLimit *big.Int, pendingBorrowAmount *big.Int, err error) {
+func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (ethBorrowed *big.Int, ethBorrowedLimit *big.Int, pendingBorrowAmount *big.Int, err error) {
 	// Get the node's minipool addresses
 	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, opts)
 	if err != nil {
@@ -107,34 +106,14 @@ func CheckCollateral(saturnDeployed bool, rp *rocketpool.RocketPool, nodeAddress
 	deltas := make([]*big.Int, len(addresses))
 	zeroTime := time.Unix(0, 0)
 
-	if saturnDeployed {
-		wg.Go(func() error {
-			var err error
-			ethBorrowed, err = node.GetNodeETHBorrowed(rp, nodeAddress, opts)
-			if err != nil {
-				return fmt.Errorf("error getting node's borrowed ETH amount: %w", err)
-			}
-			return nil
-		})
-	} else {
-		wg.Go(func() error {
-			var err error
-			ethBorrowed, err = node131.GetNodeEthMatched(rp, nodeAddress, opts)
-			if err != nil {
-				return fmt.Errorf("error getting node's borrowed ETH amount: %w", err)
-			}
-			return nil
-		})
-		wg.Go(func() error {
-			var err error
-			// Matched is renamed borrowed in Saturn v1.4
-			ethBorrowedLimit, err = node131.GetNodeEthMatchedLimit(rp, nodeAddress, opts)
-			if err != nil {
-				return fmt.Errorf("error getting how much ETH the node is able to borrow: %w", err)
-			}
-			return nil
-		})
-	}
+	wg.Go(func() error {
+		var err error
+		ethBorrowed, err = node.GetNodeETHBorrowed(rp, nodeAddress, opts)
+		if err != nil {
+			return fmt.Errorf("error getting node's borrowed ETH amount: %w", err)
+		}
+		return nil
+	})
 
 	for i, address := range addresses {
 		wg.Go(func() error {

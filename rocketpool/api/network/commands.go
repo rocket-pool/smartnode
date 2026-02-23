@@ -180,25 +180,6 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "is-saturn-deployed",
-				Aliases:   []string{"isd"},
-				Usage:     "Checks if Saturn 1 has been deployed yet.",
-				UsageText: "rocketpool api network is-saturn-deployed",
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run
-					api.PrintResponse(isSaturnDeployed(c))
-					return nil
-
-				},
-			},
-
-			{
 				Name:      "latest-delegate",
 				Usage:     "Get the address of the latest minipool delegate contract.",
 				UsageText: "rocketpool api network latest-delegate",

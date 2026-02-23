@@ -139,22 +139,6 @@ func (c *Client) DownloadRewardsFile(interval uint64) (api.DownloadRewardsFileRe
 	return response, nil
 }
 
-// Check if Saturn 1.4 has been deployed yet
-func (c *Client) IsSaturnDeployed() (api.IsSaturnDeployedResponse, error) {
-	responseBytes, err := c.callAPI("network is-saturn-deployed")
-	if err != nil {
-		return api.IsSaturnDeployedResponse{}, fmt.Errorf("could not check if Saturn is deployed: %w", err)
-	}
-	var response api.IsSaturnDeployedResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.IsSaturnDeployedResponse{}, fmt.Errorf("could not decode is-saturn-deployed response: %w", err)
-	}
-	if response.Error != "" {
-		return api.IsSaturnDeployedResponse{}, fmt.Errorf("could not check if Saturn is deployed: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Get the address of the latest minipool delegate contract
 func (c *Client) GetLatestDelegate() (api.GetLatestDelegateResponse, error) {
 	responseBytes, err := c.callAPI("network latest-delegate")

@@ -7,7 +7,6 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -28,16 +27,6 @@ func getNewValidatorBondRequirement(c *cli.Context) (*api.GetNewValidatorBondReq
 
 	// Response
 	response := api.GetNewValidatorBondRequirementResponse{}
-
-	// Check if Saturn is deployed
-	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-	if !saturnDeployed {
-		fmt.Println("This command is only available after Saturn 1 is deployed.")
-		return nil, err
-	}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

@@ -31,16 +31,6 @@ func notifyFinalBalance(c *cli.Context) error {
 		return fmt.Errorf("Error loading configuration: %w", err)
 	}
 
-	// Check if Saturn is already deployed
-	saturnResp, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-	if !saturnResp.IsSaturnDeployed {
-		fmt.Println("This command is only available after the Saturn upgrade.")
-		return nil
-	}
-
 	var validatorId uint64
 	var validatorIndex uint64
 

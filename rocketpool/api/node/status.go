@@ -23,15 +23,12 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
-	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
-	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/alerting/alertmanager/models"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
@@ -72,14 +69,9 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	if reg == nil {
 		return nil, fmt.Errorf("Error getting the signer registry on network [%v].", cfg.Smartnode.Network.Value.(cfgtypes.Network))
 	}
-	saturnDeployed, err := state.IsSaturnDeployed(rp, nil)
-	if err != nil {
-		return nil, err
-	}
 
 	// Response
 	response := api.NodeStatusResponse{}
-	response.IsSaturnDeployed = saturnDeployed
 	response.PenalizedMinipools = map[common.Address]uint64{}
 	response.NodeRPLLocked = big.NewInt(0)
 
@@ -99,52 +91,49 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	if saturnDeployed {
-		wg.Go(func() error {
-			deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
-			if err == nil {
-				response.MegapoolDeployed = deployed
-			}
-			megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
-			if err == nil {
-				response.MegapoolAddress = megapoolAddress
-			}
+	wg.Go(func() error {
+		deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.MegapoolDeployed = deployed
+		}
+		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.MegapoolAddress = megapoolAddress
+		}
 
-			// Load the megapool contract
-			mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+		// Load the megapool contract
+		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+		if err == nil {
+			debt, err := mp.GetDebt(nil)
 			if err == nil {
-				debt, err := mp.GetDebt(nil)
-				if err == nil {
-					response.MegapoolNodeDebt = debt
-				}
-				refund, err := mp.GetRefundValue(nil)
-				if err == nil {
-					response.MegapoolRefundValue = refund
-				}
-				validatorCount, err := mp.GetActiveValidatorCount(nil)
-				if err == nil {
-					response.MegapoolActiveValidatorCount = uint16(validatorCount)
-				}
+				response.MegapoolNodeDebt = debt
 			}
-			return err
-		})
+			refund, err := mp.GetRefundValue(nil)
+			if err == nil {
+				response.MegapoolRefundValue = refund
+			}
+			validatorCount, err := mp.GetActiveValidatorCount(nil)
+			if err == nil {
+				response.MegapoolActiveValidatorCount = uint16(validatorCount)
+			}
+		}
+		return err
+	})
 
-		wg.Go(func() error {
-			expressTicketCount, err := node.GetExpressTicketCount(rp, nodeAccount.Address, nil)
-			if err == nil {
-				response.ExpressTicketCount = expressTicketCount
-			}
-			return err
-		})
-		wg.Go(func() error {
-			provisioned, err := node.GetExpressTicketsProvisioned(rp, nodeAccount.Address, nil)
-			if err == nil {
-				response.ExpressTicketsProvisioned = provisioned
-			}
-			return err
-		})
-
-	}
+	wg.Go(func() error {
+		expressTicketCount, err := node.GetExpressTicketCount(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.ExpressTicketCount = expressTicketCount
+		}
+		return err
+	})
+	wg.Go(func() error {
+		provisioned, err := node.GetExpressTicketsProvisioned(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.ExpressTicketsProvisioned = provisioned
+		}
+		return err
+	})
 
 	wg.Go(func() error {
 		mpDetails, err := mp.GetNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)
@@ -198,89 +187,70 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	if saturnDeployed {
-		wg.Go(func() error {
-			var err error
-			response.LatestBlockTime, err = rp.Client.LatestBlockTime(ctx)
-			return err
-		})
-		// Get the node's locked RPL
-		wg.Go(func() error {
-			var err error
-			response.NodeRPLLocked, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
-			return err
-		})
-		// Get staking details
-		wg.Go(func() error {
-			var err error
-			response.TotalRplStake, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			response.RplStakeMegapool, err = node.GetNodeMegapoolStakedRPL(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			response.RplStakeLegacy, err = node.GetNodeLegacyStakedRPL(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			response.UnstakingRPL, err = node.GetNodeUnstakingRPL(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			unstakingPeriod, err := protocol.GetNodeUnstakingPeriod(rp, nil)
-			if err == nil {
-				response.UnstakingPeriodDuration = time.Duration(unstakingPeriod.Int64()) * time.Second
-			}
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			lastUnstakeTimestamp, err := node.GetNodeLastUnstakeTime(rp, nodeAccount.Address, nil)
-			if err == nil {
-				// Convert the lastUnstakeTimestamp to a time.Time object
-				response.LastRPLUnstakeTime = time.Unix(int64(lastUnstakeTimestamp), 0)
-			}
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			response.RplStakeThreshold, err = node.GetNodeMinimumLegacyRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			response.UnclaimedRewards, err = node.GetUnclaimedRewardsRaw(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			response.ReducedBond, err = protocol.GetReducedBondRaw(rp, nil)
-			return err
-		})
-	} else {
-		// Get the node's locked RPL
-		wg.Go(func() error {
-			var err error
-			response.NodeRPLLocked, err = node131.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			response.RplStakeThreshold, err = node131.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
-		wg.Go(func() error {
-			var err error
-			response.TotalRplStake, err = node131.GetNodeRPLStake(rp, nodeAccount.Address, nil)
-			return err
-		})
-	}
+	wg.Go(func() error {
+		var err error
+		response.LatestBlockTime, err = rp.Client.LatestBlockTime(ctx)
+		return err
+	})
+	// Get the node's locked RPL
+	wg.Go(func() error {
+		var err error
+		response.NodeRPLLocked, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+	// Get staking details
+	wg.Go(func() error {
+		var err error
+		response.TotalRplStake, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.RplStakeMegapool, err = node.GetNodeMegapoolStakedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.RplStakeLegacy, err = node.GetNodeLegacyStakedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.UnstakingRPL, err = node.GetNodeUnstakingRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		unstakingPeriod, err := protocol.GetNodeUnstakingPeriod(rp, nil)
+		if err == nil {
+			response.UnstakingPeriodDuration = time.Duration(unstakingPeriod.Int64()) * time.Second
+		}
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		lastUnstakeTimestamp, err := node.GetNodeLastUnstakeTime(rp, nodeAccount.Address, nil)
+		if err == nil {
+			// Convert the lastUnstakeTimestamp to a time.Time object
+			response.LastRPLUnstakeTime = time.Unix(int64(lastUnstakeTimestamp), 0)
+		}
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.RplStakeThreshold, err = node.GetNodeMinimumLegacyRPLStake(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.UnclaimedRewards, err = node.GetUnclaimedRewardsRaw(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.ReducedBond, err = protocol.GetReducedBondRaw(rp, nil)
+		return err
+	})
 
 	// Get the node onchain voting delegate
 	wg.Go(func() error {
@@ -300,23 +270,15 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	})
 
 	// MinimumLegacyRPLStake and MaximumPerMinipoolStake are both used to compute the RPL amount that a node cannot fall under when withdrawing
-	if saturnDeployed {
-		wg.Go(func() error {
-			var err error
-			response.RplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStake(rp, nil)
-			return err
-		})
-	} else {
-		wg.Go(func() error {
-			var err error
-			response.RplStakeThresholdFraction, err = protocol131.GetMaximumPerMinipoolStake(rp, nil)
-			return err
-		})
-	}
+	wg.Go(func() error {
+		var err error
+		response.RplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStake(rp, nil)
+		return err
+	})
 
 	wg.Go(func() error {
 		var err error
-		response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(saturnDeployed, rp, nodeAccount.Address, nil)
+		response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -482,43 +444,22 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 	}
 
 	totalActiveValidators := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
-	if saturnDeployed {
-		totalActiveValidators = totalActiveValidators + int(response.MegapoolActiveValidatorCount)
-	}
+	totalActiveValidators = totalActiveValidators + int(response.MegapoolActiveValidatorCount)
 
 	if totalActiveValidators > 0 {
 		var wg2 errgroup.Group
 		var rplStakeThresholdFraction *big.Int
 
 		// MinimumLegacyRPLStake and MaximumPerMinipoolStake are both used to compute the RPL amount that a node cannot fall under when withdrawing
-		if saturnDeployed {
-			wg2.Go(func() error {
-				var err error
-				rplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
-				return err
-			})
-		} else {
-			wg2.Go(func() error {
-				var err error
-				rplStakeThresholdFraction, err = protocol131.GetMaximumPerMinipoolStakeRaw(rp, nil)
-				return err
-			})
-		}
+		wg2.Go(func() error {
+			var err error
+			rplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
+			return err
+		})
 
 		// Wait for data
 		if err := wg2.Wait(); err != nil {
 			return nil, err
-		}
-
-		if !saturnDeployed {
-			// Calculate the *real* maximum, including the pending bond reductions
-			trueRplStakeThreshold := eth.EthToWei(32)
-			trueRplStakeThreshold.Mul(trueRplStakeThreshold, big.NewInt(int64(totalActiveValidators)))
-			trueRplStakeThreshold.Sub(trueRplStakeThreshold, response.EthBorrowed)
-			trueRplStakeThreshold.Sub(trueRplStakeThreshold, response.PendingBorrowAmount) // (32 * totalActiveValidators - ethBorrowed - pendingBorrow)
-			trueRplStakeThreshold.Mul(trueRplStakeThreshold, rplStakeThresholdFraction)
-			trueRplStakeThreshold.Div(trueRplStakeThreshold, rplPrice)
-			response.RplStakeThreshold = trueRplStakeThreshold
 		}
 
 		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / (float64(totalActiveValidators)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
