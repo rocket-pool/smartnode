@@ -282,6 +282,7 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 	var wg errgroup.Group
 	// Iterate the maps and query megapool details
 	for megapoolAddress := range megapoolAddressMap {
+		megapoolAddress := megapoolAddress
 		wg.Go(func() error {
 
 			// Load the megapool
@@ -300,9 +301,9 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64) (*NetworkSta
 			state.MegapoolDetails[megapoolAddress] = megapoolDetails
 			return nil
 		})
-		if err := wg.Wait(); err != nil {
-			return nil, fmt.Errorf("error getting all megapool details: %w", err)
-		}
+	}
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting all megapool details: %w", err)
 	}
 	m.logLine("4/7 - Retrieved megapool validator details (%s so far)", time.Since(start))
 
@@ -536,9 +537,9 @@ func (m *NetworkStateManager) createNetworkStateForNode(slotNumber uint64, nodeA
 			state.MegapoolDetails[megapoolAddress] = megapoolDetails
 			return nil
 		})
-		if err := wg.Wait(); err != nil {
-			return nil, fmt.Errorf("error getting all megapool details: %w", err)
-		}
+	}
+	if err := wg.Wait(); err != nil {
+		return nil, fmt.Errorf("error getting all megapool details: %w", err)
 	}
 	m.logLine("%d/%d - Retrieved megapool validator details (total time: %s)", currentStep, steps, time.Since(start))
 

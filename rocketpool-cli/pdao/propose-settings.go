@@ -407,16 +407,7 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 	}
 	defer rp.Close()
 
-	// Check if Saturn is already deployed
-	saturnResp, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-	if !saturnResp.IsSaturnDeployed && isSaturnOnlySetting(setting) {
-		fmt.Println("This command is only available after the Saturn upgrade.")
-		return nil
-	}
-	if saturnResp.IsSaturnDeployed && isHoustonOnlySetting(setting) {
+	if isHoustonOnlySetting(setting) {
 		fmt.Println("This command no longer available in Saturn.")
 		return nil
 	}

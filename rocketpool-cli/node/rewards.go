@@ -88,21 +88,14 @@ func getRewards(c *cli.Context) error {
 		return err
 	}
 
-	// Check if Saturn is already deployed
-	saturnResp, err := rp.IsSaturnDeployed()
+	beaconBalances, err := rp.GetValidatorMapAndBalances()
 	if err != nil {
 		return err
 	}
-	if saturnResp.IsSaturnDeployed {
-		beaconBalances, err := rp.GetValidatorMapAndBalances()
-		if err != nil {
-			return err
-		}
-		megapoolUnskimmedRewards := new(big.Int).Sub(beaconBalances.NodeBond, beaconBalances.NodeShareOfCLBalance)
-		megapoolUnskimmedRewardsFloat := eth.WeiToEth(megapoolUnskimmedRewards)
-		// Add the megapool unskimmed beacon rewards
-		rewards.BeaconRewards = rewards.BeaconRewards + megapoolUnskimmedRewardsFloat
-	}
+	megapoolUnskimmedRewards := new(big.Int).Sub(beaconBalances.NodeBond, beaconBalances.NodeShareOfCLBalance)
+	megapoolUnskimmedRewardsFloat := eth.WeiToEth(megapoolUnskimmedRewards)
+	// Add the megapool unskimmed beacon rewards
+	rewards.BeaconRewards = rewards.BeaconRewards + megapoolUnskimmedRewardsFloat
 
 	fmt.Println("=== ETH ===")
 	fmt.Printf("Your share of unskimmed Beacon Chain (CL) rewards is currently %.6f ETH.\n", rewards.BeaconRewards)

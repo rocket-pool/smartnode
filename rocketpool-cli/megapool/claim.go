@@ -22,16 +22,6 @@ func claim(c *cli.Context) error {
 	}
 	defer rp.Close()
 
-	// Check if Saturn is already deployed
-	saturnResp, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-	if !saturnResp.IsSaturnDeployed {
-		fmt.Println("This command is only available after the Saturn upgrade.")
-		return nil
-	}
-
 	megapoolDetails, err := rp.MegapoolStatus(false)
 	if err != nil {
 		return err

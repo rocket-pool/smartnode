@@ -40,16 +40,6 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
-	// Check if Saturn is deployed
-	saturnResp, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-	if !saturnResp.IsSaturnDeployed {
-		fmt.Println("This command is only available after the Saturn upgrade.")
-		return nil
-	}
-
 	// Get Megapool status
 	status, err := rp.MegapoolStatus(false)
 	if err != nil {
@@ -166,16 +156,6 @@ func getValidatorStatus(c *cli.Context) error {
 	err = cliutils.PrintNetwork(cfg.GetNetwork(), isNew)
 	if err != nil {
 		return err
-	}
-
-	// Check if Saturn is deployed
-	saturnResp, err := rp.IsSaturnDeployed()
-	if err != nil {
-		return err
-	}
-	if !saturnResp.IsSaturnDeployed {
-		fmt.Println("This command is only available after the Saturn upgrade.")
-		return nil
 	}
 
 	// Get Megapool status

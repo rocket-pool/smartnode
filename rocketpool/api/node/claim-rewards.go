@@ -401,67 +401,6 @@ func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big
 
 }
 
-// Get the rewards for the provided interval indices returning the parameters needed for Houston (Separate function so it's easier to remove after the upgrade)
-func getRewardsForIntervalsHouston(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) ([]*big.Int, []*big.Int, []*big.Int, [][]common.Hash, error) {
-
-	// Get the indices
-	seenIndices := map[uint64]bool{}
-	elements := strings.Split(indicesString, ",")
-	indices := []*big.Int{}
-	for _, element := range elements {
-		index, err := strconv.ParseUint(element, 0, 64)
-		if err != nil {
-			return nil, nil, nil, nil, fmt.Errorf("cannot convert index %s to a number: %w", element, err)
-		}
-		// Ignore duplicates
-		_, exists := seenIndices[index]
-		if !exists {
-			indices = append(indices, big.NewInt(0).SetUint64(index))
-			seenIndices[index] = true
-		}
-	}
-
-	// Read the tree files to get the details
-	amountRPL := []*big.Int{}
-	amountETH := []*big.Int{}
-	merkleProofs := [][]common.Hash{}
-
-	// Populate the interval info for each one
-	for _, index := range indices {
-
-		intervalInfo, err := rprewards.GetIntervalInfo(rp, cfg, nodeAddress, index.Uint64(), nil)
-		if err != nil {
-			return nil, nil, nil, nil, err
-		}
-
-		// Validate
-		if !intervalInfo.TreeFileExists {
-			return nil, nil, nil, nil, fmt.Errorf("rewards tree file '%s' doesn't exist", intervalInfo.TreeFilePath)
-		}
-		if !intervalInfo.MerkleRootValid {
-			return nil, nil, nil, nil, fmt.Errorf("merkle root for rewards tree file '%s' doesn't match the canonical merkle root for interval %d", intervalInfo.TreeFilePath, index.Uint64())
-		}
-
-		// Get the rewards from it
-		if intervalInfo.NodeExists {
-			rplForInterval := big.NewInt(0)
-			rplForInterval.Add(rplForInterval, &intervalInfo.CollateralRplAmount.Int)
-			rplForInterval.Add(rplForInterval, &intervalInfo.ODaoRplAmount.Int)
-
-			ethForInterval := big.NewInt(0)
-			ethForInterval.Add(ethForInterval, &intervalInfo.SmoothingPoolEthAmount.Int)
-
-			amountRPL = append(amountRPL, rplForInterval)
-			amountETH = append(amountETH, ethForInterval)
-			merkleProofs = append(merkleProofs, intervalInfo.MerkleProof)
-		}
-	}
-
-	// Return
-	return indices, amountRPL, amountETH, merkleProofs, nil
-
-}
-
 // Get the rewards for the provided interval indices
 func getRewardsForIntervals(rp *rocketpool.RocketPool, cfg *config.RocketPoolConfig, nodeAddress common.Address, indicesString string) (types.Claims, error) {
 
