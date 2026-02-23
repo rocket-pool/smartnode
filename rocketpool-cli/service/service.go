@@ -1210,12 +1210,24 @@ func serviceVersion(c *cli.Context) error {
 		mevBoostString = "Disabled"
 	}
 
+	var commitBoostString string
+	if cfg.EnableCommitBoost.Value.(bool) {
+		if cfg.CommitBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+			commitBoostString = fmt.Sprintf("Enabled (Local Mode)\n\tImage: %s", cfg.CommitBoost.ContainerTag.Value.(string))
+		} else {
+			commitBoostString = "Enabled (External Mode)"
+		}
+	} else {
+		commitBoostString = "Disabled"
+	}
+
 	// Print version info
 	fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
 	fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
 	fmt.Printf("Selected Eth 1.0 client: %s\n", eth1ClientString)
 	fmt.Printf("Selected Eth 2.0 client: %s\n", eth2ClientString)
 	fmt.Printf("MEV-Boost client: %s\n", mevBoostString)
+	fmt.Printf("Commit-Boost client: %s\n", commitBoostString)
 	return nil
 
 }

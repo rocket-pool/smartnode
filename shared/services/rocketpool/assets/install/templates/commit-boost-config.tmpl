@@ -1,0 +1,20 @@
+chain = "{{.CommitBoost.GetCurrentChainName}}"
+
+[pbs]
+docker_image = "{{.CommitBoost.GetContainerTag}}"
+host = "0.0.0.0"
+port = {{.CommitBoost.Port}}
+relay_check = true
+wait_all_registrations = true
+
+{{- range $relay := .CommitBoost.GetEnabledPbsRelayInfo}}
+
+[[relays]]
+id = "{{$relay.ID}}"
+url = "{{$relay.URL}}"
+{{- end -}}
+{{- range $customRelay := .CommitBoost.GetCustomRelays}}
+
+[[relays]] 
+url = "{{$customRelay}}"
+{{- end -}}
