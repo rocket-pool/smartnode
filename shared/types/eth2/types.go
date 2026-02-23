@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"strings"
 
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/deneb"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/electra"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
@@ -24,7 +23,7 @@ type BeaconState interface {
 	GetSlot() uint64
 	ValidatorProof(index uint64) ([][]byte, error)
 	SlotProof(slot uint64) ([][]byte, error)
-	HistoricalSummaryProof(slot uint64, network cfgtypes.Network) ([][]byte, error)
+	HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error)
 	HistoricalSummaryBlockRootProof(slot int) ([][]byte, error)
 	BlockRootProof(slot uint64) ([][]byte, error)
 	BlockHeaderProof() ([][]byte, error)
