@@ -50,6 +50,7 @@ const (
 	PrestakeMegapoolValidatorColor = color.FgHiGreen
 	StakeMegapoolValidatorColor    = color.FgHiBlue
 	NotifyValidatorExitColor       = color.FgHiYellow
+	NotifyFinalBalanceColor        = color.FgHiMagenta
 	DefendChallengeExitColor       = color.FgHiGreen
 	ProvisionExpressTickets        = color.FgMagenta
 	SetUseLatestDelegateColor      = color.FgBlue

@@ -19,6 +19,17 @@ const (
 	dnsLookupTimeout = 5 * time.Second
 )
 
+// Well-known resolvers addressed by IP to
+// avoid a bootstrap DNS lookup.
+var publicIPResolvers = []struct {
+	addr     string // host:port (IP literal)
+	hostname string // special hostname that returns the caller's public IP
+}{
+	{"208.67.222.222:53", "myip.opendns.com"},       // OpenDNS primary
+	{"208.67.220.220:53", "myip.opendns.com"},       // OpenDNS secondary
+	{"216.239.32.10:53", "o-o.myaddr.l.google.com"}, // Google ns1
+}
+
 // Check port connectivity task
 type checkPortConnectivity struct {
 	c   *cli.Context
@@ -98,27 +109,31 @@ func (t *checkPortConnectivity) run() error {
 	return nil
 }
 
-// getPublicIP resolves the node's public IP address by querying the OpenDNS resolver
-// for the special hostname "myip.opendns.com", which echoes back the caller's public IP.
-// This uses a single UDP DNS packet — no HTTP dependency.
+// getPublicIP resolves the node's public IP by querying a well-known resolver for a
+// special hostname that echoes back the caller's IP. Resolver addresses are hard-coded
+// as IP literals to avoid a bootstrap DNS lookup. Falls back through the list on error.
 func getPublicIP() (string, error) {
-	r := &net.Resolver{
-		PreferGo: true,
-		Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-			return (&net.Dialer{}).DialContext(ctx, "udp", "resolver1.opendns.com:53")
-		},
+	var lastErr error
+	for _, res := range publicIPResolvers {
+		resolverAddr := res.addr
+		r := &net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				return (&net.Dialer{}).DialContext(ctx, "udp", resolverAddr)
+			},
+		}
+		ctx, cancel := context.WithTimeout(context.Background(), dnsLookupTimeout)
+		addrs, err := r.LookupHost(ctx, res.hostname)
+		cancel()
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		if len(addrs) > 0 {
+			return addrs[0], nil
+		}
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), dnsLookupTimeout)
-	defer cancel()
-
-	addrs, err := r.LookupHost(ctx, "myip.opendns.com")
-	if err != nil {
-		return "", fmt.Errorf("error resolving public IP via OpenDNS: %w", err)
-	}
-	if len(addrs) == 0 {
-		return "", fmt.Errorf("OpenDNS returned no addresses for myip.opendns.com")
-	}
-	return addrs[0], nil
+	return "", fmt.Errorf("all public IP resolvers failed; last error: %w", lastErr)
 }
 
 // isPortReachable attempts a TCP connection to host:port and returns true if
