@@ -2,6 +2,7 @@
 # This script launches ETH2 validator clients for Rocket Pool's docker stack; only edit if you know what you're doing ;)
 
 GWW_GRAFFITI_FILE="/addons/gww/graffiti.txt"
+echo -n "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef" > "/validators/token-file.txt"
 
 # Set up the network-based flags
 if [ "$NETWORK" = "mainnet" ]; then
@@ -40,10 +41,21 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CC_URL_STRING="$CC_API_ENDPOINT,$FALLBACK_CC_API_ENDPOINT"
     fi
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_LH_NETWORK="--network $LH_NETWORK"
+    else
+        CMD_LH_NETWORK="--testnet-dir /devnet"
+    fi
+
     CMD="/usr/local/bin/lighthouse validator \
         --network $LH_NETWORK \
         --datadir /validators/lighthouse \
         --init-slashing-protection \
+        --http \
+        --http-address 0.0.0.0 \
+        --http-port ${VC_KEYMANAGER_API_PORT:-5062} \
+        --http-token-path  /validators/token-file.txt \
+        --unencrypted-http-transport \
         --logfile-max-number 0 \
         --beacon-nodes $CC_URL_STRING \
         --suggested-fee-recipient $(cat /validators/$FEE_RECIPIENT_FILE) \
@@ -57,7 +69,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CMD="$CMD --enable-doppelganger-protection"
     fi
 
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --builder-proposals --prefer-builder-proposals"
     fi
 
@@ -90,6 +102,12 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         CC_URL_STRING="$CC_API_ENDPOINT,$FALLBACK_CC_API_ENDPOINT"
     fi
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="--network $LODESTAR_NETWORK"
+    else
+        CMD_NETWORK="--paramsFile /devnet/config.yaml"
+    fi
+
     CMD="/usr/app/node_modules/.bin/lodestar validator \
         --network $LODESTAR_NETWORK \
         --dataDir /validators/lodestar \
@@ -98,6 +116,10 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         --keystoresDir /validators/lodestar/validators \
         --secretsDir /validators/lodestar/secrets \
         --suggestedFeeRecipient $(cat /validators/$FEE_RECIPIENT_FILE) \
+        --keymanager true \
+        --keymanager.port ${VC_KEYMANAGER_API_PORT:-5062} \
+        --keymanager.address 0.0.0.0 \
+        --keymanager.tokenFile /validators/token-file.txt \
         $VC_ADDITIONAL_FLAGS"
 
 if [ ! -z "$VC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
@@ -108,7 +130,7 @@ if [ ! -z "$VC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
         CMD="$CMD --doppelgangerProtection"
     fi
 
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --builder"
     fi
 
@@ -143,12 +165,16 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         --data-dir=/ethclient/nimbus_vc \
         --validators-dir=/validators/nimbus/validators \
         --secrets-dir=/validators/nimbus/secrets \
+        --keymanager \
+        --keymanager-port=${VC_KEYMANAGER_API_PORT:-5062} \
+        --keymanager-address=0.0.0.0 \
+        --keymanager-token-file=/validators/token-file.txt \
         --doppelganger-detection=$DOPPELGANGER_DETECTION \
         --suggested-fee-recipient=$(cat /validators/$FEE_RECIPIENT_FILE) \
         --block-monitor-type=event \
         $VC_ADDITIONAL_FLAGS"
 
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --payload-builder"
     fi
 
@@ -174,11 +200,21 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         CC_URL_STRING="$CC_RPC_ENDPOINT,$FALLBACK_CC_RPC_ENDPOINT"
     fi
 
+    if [ "$NETWORK" != "devnet" ]; then
+        CMD_NETWORK="$PRYSM_NETWORK"
+    else
+        CMD_NETWORK="--config-file=/devnet/config.yaml"
+    fi
+
     CMD="/app/cmd/validator/validator \
         --accept-terms-of-use \
         $PRYSM_NETWORK \
         --datadir /validators/prysm-non-hd/direct \
         --wallet-dir /validators/prysm-non-hd \
+        --rpc \
+        --http-host 0.0.0.0 \
+        --http-port ${VC_KEYMANAGER_API_PORT:-5062} \
+        --keymanager-token-file /validators/token-file.txt \
         --wallet-password-file /validators/prysm-non-hd/direct/accounts/secret \
         --beacon-rpc-provider $CC_URL_STRING \
         --suggested-fee-recipient $(cat /validators/$FEE_RECIPIENT_FILE) \
@@ -188,7 +224,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         CMD="$CMD --suggested-gas-limit=$VC_SUGGESTED_BLOCK_GAS_LIMIT"
     fi
     
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --enable-builder"
     fi
 
@@ -235,6 +271,13 @@ if [ "$CC_CLIENT" = "teku" ]; then
         --beacon-node-api-endpoints=$CC_URL_STRING \
         --validators-keystore-locking-enabled=false \
         --log-destination=CONSOLE \
+        --validator-api-enabled=true \
+        --validator-api-port=${VC_KEYMANAGER_API_PORT:-5062} \
+        --validator-api-interface=0.0.0.0 \
+        --validator-api-host-allowlist=* \
+        --validator-api-bearer-file=/validators/token-file.txt \
+        --Xvalidator-api-ssl-enabled=false \
+        --Xvalidator-api-unsafe-hosts-enabled=true \
         --validators-proposer-default-fee-recipient=$(cat /validators/$FEE_RECIPIENT_FILE) \
         $VC_ADDITIONAL_FLAGS"
 
@@ -242,14 +285,14 @@ if [ "$CC_CLIENT" = "teku" ]; then
         CMD="$CMD --doppelganger-detection-enabled"
     fi
 
-    if [ "$ENABLE_MEV_BOOST" = "true" ]; then
+    if [ "$ENABLE_PBS" = "true" ]; then
         CMD="$CMD --validators-builder-registration-default-enabled=true"
         if [ ! -z "$BN_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --validators-builder-registration-default-gas-limit=$BN_SUGGESTED_BLOCK_GAS_LIMIT"
         fi
     fi
 
-    if [ "$TEKU_USE_SLASHING_PROTECTION" = "true"]; then
+    if [ "$TEKU_USE_SLASHING_PROTECTION" = "true" ]; then
         CMD="$CMD --shut-down-when-validator-slashed-enabled=true"
     fi
 

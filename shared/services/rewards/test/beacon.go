@@ -112,11 +112,23 @@ func (m *MockBeaconClient) SetState(state *state.NetworkState) {
 	if m.validatorPubkeys == nil {
 		m.validatorPubkeys = make(map[validatorIndex]types.ValidatorPubkey)
 	}
-	for _, v := range state.ValidatorDetails {
+	for _, v := range state.MinipoolValidatorDetails {
 		if _, ok := m.validatorPubkeys[validatorIndex(v.Index)]; ok {
 			m.t.Fatalf("Validator %s already set", v.Index)
 		}
 		m.validatorPubkeys[validatorIndex(v.Index)] = v.Pubkey
+	}
+	for _, v := range state.MegapoolValidatorGlobalIndex {
+		pubkey := types.BytesToValidatorPubkey(v.Pubkey)
+		details, ok := state.MegapoolValidatorDetails[pubkey]
+		if !ok {
+			continue
+		}
+		vIndex := details.Index
+		if _, ok := m.validatorPubkeys[validatorIndex(vIndex)]; ok {
+			m.t.Fatalf("Validator %s already set", vIndex)
+		}
+		m.validatorPubkeys[validatorIndex(vIndex)] = pubkey
 	}
 }
 
@@ -191,9 +203,12 @@ func (bc *MockBeaconClient) isValidatorActive(validator validatorIndex, e epoch)
 	if !ok {
 		return false, fmt.Errorf("validator %s not found", validator)
 	}
-	validatorDetails, ok := bc.state.ValidatorDetails[validatorPubkey]
+	validatorDetails, ok := bc.state.MinipoolValidatorDetails[validatorPubkey]
 	if !ok {
-		return false, fmt.Errorf("validator %s not found", validatorPubkey)
+		validatorDetails, ok = bc.state.MegapoolValidatorDetails[validatorPubkey]
+		if !ok {
+			return false, fmt.Errorf("validator %s details not found", validatorPubkey)
+		}
 	}
 	// Validators are assigned duties in the epoch they are activated
 	// but not in the epoch they exit

@@ -59,14 +59,13 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
 
     CMD="$PERF_PREFIX /usr/local/bin/lighthouse beacon \
         --network $LH_NETWORK \
-        --datadir /ethclient/lighthouse \
         --port $BN_P2P_PORT \
         --discovery-port $BN_P2P_PORT \
+        --datadir /ethclient/lighthouse \
         --execution-endpoint $EC_ENGINE_ENDPOINT \
         --http \
         --http-address 0.0.0.0 \
         --http-port ${BN_API_PORT:-5052} \
-        --eth1-blocks-per-log-query 150 \
         --disable-upnp \
         --staking \
         --execution-jwt=/secrets/jwtsecret \
@@ -80,8 +79,8 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CMD="$CMD --execution-timeout-multiplier 2"
     fi
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --builder $MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --builder $PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then
@@ -123,8 +122,8 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         CMD="$CMD --terminal-total-difficulty-override $TTD_OVERRIDE"
     fi
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --builder --builder.urls $MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --builder --builder.urls $PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then
@@ -169,7 +168,7 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
             echo "Checkpoint sync complete!"
         fi
     fi
-
+    
     CMD="$PERF_PREFIX /home/user/nimbus-eth2/build/nimbus_beacon_node \
         --non-interactive \
         --enr-auto-update \
@@ -188,8 +187,8 @@ if [ "$CC_CLIENT" = "nimbus" ]; then
         CMD="$CMD --suggested-gas-limit=$BN_SUGGESTED_BLOCK_GAS_LIMIT"
     fi
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --payload-builder --payload-builder-url=$MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --payload-builder --payload-builder-url=$PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then
@@ -215,6 +214,7 @@ fi
 # Prysm startup
 if [ "$CC_CLIENT" = "prysm" ]; then
 
+
     CMD="$PERF_PREFIX /app/cmd/beacon-chain/beacon-chain \
         --accept-terms-of-use \
         $PRYSM_NETWORK \
@@ -232,10 +232,11 @@ if [ "$CC_CLIENT" = "prysm" ]; then
         --jwt-secret=/secrets/jwtsecret \
         --api-timeout 20s \
         --enable-experimental-backfill \
+        --blob-storage-layout=by-epoch \
         $BN_ADDITIONAL_FLAGS"
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --http-mev-relay $MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --http-mev-relay $PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then
@@ -251,7 +252,7 @@ if [ "$CC_CLIENT" = "prysm" ]; then
     if [ "$NETWORK" = "testnet" ]; then
         CMD="$CMD --genesis-state /ethclient/hoodi-genesis.ssz"
     elif [ "$NETWORK" = "devnet" ]; then
-        CMD="$CMD --genesis-state /ethclient/hoodi-genesis.ssz"
+        CMD="$CMD --genesis-state /devnet/genesis.ssz"
     fi
 
     if [ ! -z "$CHECKPOINT_SYNC_URL" ]; then
@@ -290,8 +291,8 @@ if [ "$CC_CLIENT" = "teku" ]; then
         CMD="$CMD --data-storage-mode=archive"
     fi
 
-    if [ ! -z "$MEV_BOOST_URL" ]; then
-        CMD="$CMD --builder-endpoint=$MEV_BOOST_URL"
+    if [ ! -z "$PBS_URL" ]; then
+        CMD="$CMD --builder-endpoint=$PBS_URL"
     fi
 
     if [ ! -z "$BN_MAX_PEERS" ]; then

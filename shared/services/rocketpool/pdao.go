@@ -655,86 +655,6 @@ func (c *Client) GetCurrentVotingDelegate() (api.PDAOCurrentVotingDelegateRespon
 	return response, nil
 }
 
-// IsVotingInitialized checks if a node has initialized voting power
-func (c *Client) IsVotingInitialized() (api.PDAOIsVotingInitializedResponse, error) {
-	responseBytes, err := c.callAPI("pdao is-voting-initialized")
-	if err != nil {
-		return api.PDAOIsVotingInitializedResponse{}, fmt.Errorf("could not call is-voting-initialized: %w", err)
-	}
-	var response api.PDAOIsVotingInitializedResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOIsVotingInitializedResponse{}, fmt.Errorf("could not decode is-voting-initialized response: %w", err)
-	}
-	if response.Error != "" {
-		return api.PDAOIsVotingInitializedResponse{}, fmt.Errorf("error after requesting is-voting-initialized: %s", response.Error)
-	}
-	return response, nil
-}
-
-// CanInitializeVoting fetches the gas estimate and returns and error if voting is already initialized
-func (c *Client) CanInitializeVoting() (api.PDAOCanInitializeVotingResponse, error) {
-	responseBytes, err := c.callAPI("pdao can-initialize-voting")
-	if err != nil {
-		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("could not call can-initialize-voting: %w", err)
-	}
-	var response api.PDAOCanInitializeVotingResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("could not decode can-initialize-voting response: %w", err)
-	}
-	if response.Error != "" {
-		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("error after requesting can-initialize-voting: %s", response.Error)
-	}
-	return response, nil
-}
-
-// InitializeVoting unlocks the node's voting power
-func (c *Client) InitializeVoting() (api.PDAOInitializeVotingResponse, error) {
-	responseBytes, err := c.callAPI("pdao initialize-voting")
-	if err != nil {
-		return api.PDAOInitializeVotingResponse{}, fmt.Errorf("could not call initialize-voting: %w", err)
-	}
-	var response api.PDAOInitializeVotingResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOInitializeVotingResponse{}, fmt.Errorf("could not decode initialize-voting response: %w", err)
-	}
-	if response.Error != "" {
-		return api.PDAOInitializeVotingResponse{}, fmt.Errorf("error after requesting initialize-voting: %s", response.Error)
-	}
-	return response, nil
-}
-
-// CanInitializeVotingWithDelegate fetches whether the node's is initialized for on-chain voting
-func (c *Client) CanInitializeVotingWithDelegate(delegateAddress common.Address) (api.PDAOCanInitializeVotingResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-initialize-voting-with-delegate %s", delegateAddress.Hex()))
-	if err != nil {
-		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("could not call can-initialize-voting-with-delegate: %w", err)
-	}
-	var response api.PDAOCanInitializeVotingResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("could not decode can-initialize-voting-with-delegate response: %w", err)
-	}
-	if response.Error != "" {
-		return api.PDAOCanInitializeVotingResponse{}, fmt.Errorf("error after requesting can-initialize-voting-with-delegate: %s", response.Error)
-	}
-	return response, nil
-}
-
-// InitializeVotingWithDelegate unlocks the node's voting power and sets the delegate in one transaction
-func (c *Client) InitializeVotingWithDelegate(delegateAddress common.Address) (api.PDAOInitializeVotingWithDelegateResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("pdao initialize-voting-with-delegate %s", delegateAddress.Hex()))
-	if err != nil {
-		return api.PDAOInitializeVotingWithDelegateResponse{}, fmt.Errorf("could not call initialize-voting-with-delegate: %w", err)
-	}
-	var response api.PDAOInitializeVotingWithDelegateResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PDAOInitializeVotingWithDelegateResponse{}, fmt.Errorf("could not decode initialize-voting-with-delegate response: %w", err)
-	}
-	if response.Error != "" {
-		return api.PDAOInitializeVotingWithDelegateResponse{}, fmt.Errorf("error after requesting initialize-voting-with-delegate: %s", response.Error)
-	}
-	return response, nil
-}
-
 // CanSetSignallingAddress fetches gas info and if a node can set the signalling address
 func (c *Client) CanSetSignallingAddress(signallingAddress common.Address, signature string) (api.PDAOCanSetSignallingAddressResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-set-signalling-address %s %s", signallingAddress.Hex(), signature))
@@ -795,6 +715,38 @@ func (c *Client) ClearSignallingAddress() (api.PDAOSetSignallingAddressResponse,
 	}
 	if response.Error != "" {
 		return api.PDAOSetSignallingAddressResponse{}, fmt.Errorf("error after requesting clear-signalling-address: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Check whether the node can propose a list of addresses that can update commission share parameters
+func (c *Client) PDAOCanProposeAllowListedControllers(addressList string) (api.PDAOACanProposeAllowListedControllersResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao can-propose-allow-listed-controllers %s", addressList))
+	if err != nil {
+		return api.PDAOACanProposeAllowListedControllersResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-allow-listed-controllers: %w", err)
+	}
+	var response api.PDAOACanProposeAllowListedControllersResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOACanProposeAllowListedControllersResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-allow-listed-controllers response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOACanProposeAllowListedControllersResponse{}, fmt.Errorf("Could not get protocol DAO can-propose-allow-listed-controllers: %s", response.Error)
+	}
+	return response, nil
+}
+
+// Propose a list of addresses that can update commission share parameters
+func (c *Client) PDAOProposeAllowListedControllers(addressList string, blockNumber uint32) (api.PDAOProposeAllowListedControllersResponse, error) {
+	responseBytes, err := c.callAPI(fmt.Sprintf("pdao propose-allow-listed-controllers %s %d", addressList, blockNumber))
+	if err != nil {
+		return api.PDAOProposeAllowListedControllersResponse{}, fmt.Errorf("Could not get protocol DAO propose-allow-listed-controllers: %w", err)
+	}
+	var response api.PDAOProposeAllowListedControllersResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.PDAOProposeAllowListedControllersResponse{}, fmt.Errorf("Could not decode protocol DAO propose-allow-listed-controllers response: %w", err)
+	}
+	if response.Error != "" {
+		return api.PDAOProposeAllowListedControllersResponse{}, fmt.Errorf("Could not get protocol DAO propose-allow-listed-controllers: %s", response.Error)
 	}
 	return response, nil
 }

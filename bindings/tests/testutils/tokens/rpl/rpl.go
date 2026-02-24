@@ -14,7 +14,7 @@ import (
 func MintRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, toAccount *accounts.Account, amount *big.Int) error {
 
 	// Get RPL token contract address
-	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL")
+	rocketTokenRPLAddress, err := rp.GetAddress("rocketTokenRPL", nil)
 	if err != nil {
 		return err
 	}
@@ -37,7 +37,7 @@ func MintRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, toAccoun
 
 // Mint an amount of fixed-supply RPL to an account
 func MintFixedSupplyRPL(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, toAccount *accounts.Account, amount *big.Int) error {
-	rocketTokenFixedSupplyRPL, err := rp.GetContract("rocketTokenRPLFixedSupply")
+	rocketTokenFixedSupplyRPL, err := rp.GetContract("rocketTokenRPLFixedSupply", nil)
 	if err != nil {
 		return err
 	}

@@ -48,6 +48,12 @@ func getMinipoolCloseDetailsForNode(c *cli.Context) (*api.GetMinipoolCloseDetail
 		return nil, err
 	}
 
+	// Check if express tickets have been provisioned for the node
+	response.ExpressTicketsProvisioned, err = node.GetExpressTicketsProvisioned(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if the node's express tickets are provisioned: %w", err)
+	}
+
 	// Check the fee distributor
 	response.IsFeeDistributorInitialized, err = node.GetFeeDistributorInitialized(rp, nodeAccount.Address, nil)
 	if err != nil {

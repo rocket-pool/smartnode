@@ -12,7 +12,7 @@ type MevSelectionMode string
 type NimbusPruningMode string
 type PBSubmissionRef int
 
-// Enum to describe which container(s) a parameter impacts, so the Smartnode knows which
+// Enum to describe which container(s) a parameter impacts, so the Smart Node knows which
 // ones to restart upon a settings change
 const (
 	ContainerID_Unknown      ContainerID = ""
@@ -27,6 +27,7 @@ const (
 	ContainerID_Alertmanager ContainerID = "alertmanager"
 	ContainerID_Exporter     ContainerID = "exporter"
 	ContainerID_MevBoost     ContainerID = "mev-boost"
+	ContainerID_CommitBoost  ContainerID = "commit-boost"
 )
 
 // Enum to describe which network the system is on

@@ -14,24 +14,71 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 )
 
+type NodeDeposit struct {
+	BondAmount         *big.Int    `json:"bondAmount"`
+	UseExpressTicket   bool        `json:"useExpressTicket"`
+	ValidatorPubkey    []byte      `json:"validatorPubkey"`
+	ValidatorSignature []byte      `json:"validatorSignature"`
+	DepositDataRoot    common.Hash `json:"depositDataRoot"`
+}
+
+type Deposits []NodeDeposit
+
 // Estimate the gas of Deposit
-func EstimateDepositGas(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateDepositGas(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", bondAmount, useExpressTicket, validatorPubkey[:], validatorSignature[:], depositDataRoot)
 }
 
 // Make a node deposit
-func Deposit(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (*types.Transaction, error) {
+func Deposit(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (*types.Transaction, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "deposit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	tx, err := rocketNodeDeposit.Transact(opts, "deposit", bondAmount, useExpressTicket, validatorPubkey[:], validatorSignature[:], depositDataRoot)
 	if err != nil {
 		return nil, fmt.Errorf("error making node deposit: %w", err)
+	}
+	return tx, nil
+}
+
+// Estimate the gas of DepositMulti
+func EstimateDepositMultiGas(rp *rocketpool.RocketPool, deposits Deposits, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	gasInfo, err := rocketNodeDeposit.GetTransactionGasInfo(opts, "depositMulti", deposits)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	// Use the estimated gas limit instead of the safe gas limit so we can get closer to the 16M tx gas limit
+	gasInfo.SafeGasLimit = min(
+		uint64(float64(gasInfo.EstGasLimit)), rocketpool.MaxGasLimit)
+	return gasInfo, nil
+}
+
+// Make multiple node deposits
+func DepositMulti(rp *rocketpool.RocketPool, deposits Deposits, opts *bind.TransactOpts) (*types.Transaction, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	if opts.GasLimit == 0 {
+		gasInfo, err := rocketNodeDeposit.GetTransactionGasInfo(opts, "depositMulti", deposits)
+		if err != nil {
+			return nil, fmt.Errorf("error estimating gas for multiple node deposits: %w", err)
+		}
+		opts.GasLimit = min(
+			uint64(float64(gasInfo.EstGasLimit)), rocketpool.MaxGasLimit)
+	}
+	tx, err := rocketNodeDeposit.Transact(opts, "depositMulti", deposits)
+	if err != nil {
+		return nil, fmt.Errorf("error making multiple node deposits: %w", err)
 	}
 	return tx, nil
 }
@@ -58,22 +105,44 @@ func WithdrawEth(rp *rocketpool.RocketPool, nodeAccount common.Address, ethAmoun
 	return tx, nil
 }
 
+// Estimate the gas required to withdraw credit
+func EstimateWithdrawCreditGas(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketDepositPool.GetTransactionGasInfo(opts, "withdrawCredit", amount)
+}
+
+// Withdraws credit store on a node as rETH
+func WithdrawCredit(rp *rocketpool.RocketPool, amount *big.Int, opts *bind.TransactOpts) (*types.Transaction, error) {
+	rocketDepositPool, err := getRocketDepositPool(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := rocketDepositPool.Transact(opts, "withdrawCredit", amount)
+	if err != nil {
+		return nil, fmt.Errorf("error withdrawing credit: %w", err)
+	}
+	return tx, nil
+}
+
 // Estimate the gas of DepositWithCredit
-func EstimateDepositWithCreditGas(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateDepositWithCreditGas(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "depositWithCredit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	return rocketNodeDeposit.GetTransactionGasInfo(opts, "depositWithCredit", bondAmount, useExpressTicket, validatorPubkey[:], validatorSignature[:], depositDataRoot)
 }
 
 // Make a node deposit by using the credit balance
-func DepositWithCredit(rp *rocketpool.RocketPool, bondAmount *big.Int, minimumNodeFee float64, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, salt *big.Int, expectedMinipoolAddress common.Address, opts *bind.TransactOpts) (*types.Transaction, error) {
+func DepositWithCredit(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (*types.Transaction, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
 	if err != nil {
 		return nil, err
 	}
-	tx, err := rocketNodeDeposit.Transact(opts, "depositWithCredit", bondAmount, eth.EthToWei(minimumNodeFee), validatorPubkey[:], validatorSignature[:], depositDataRoot, salt, expectedMinipoolAddress)
+	tx, err := rocketNodeDeposit.Transact(opts, "depositWithCredit", bondAmount, useExpressTicket, validatorPubkey[:], validatorSignature[:], depositDataRoot)
 	if err != nil {
 		return nil, fmt.Errorf("error making node deposit with credit: %w", err)
 	}
@@ -172,6 +241,19 @@ func GetNodeUsableCredit(rp *rocketpool.RocketPool, nodeAddress common.Address, 
 	return *usableCredit, nil
 }
 
+func GetBondRequirement(rp *rocketpool.RocketPool, numValidators *big.Int, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeDeposit, err := getRocketNodeDeposit(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	bondRequirement := new(*big.Int)
+	if err := rocketNodeDeposit.Call(opts, bondRequirement, "getBondRequirement", numValidators); err != nil {
+		return nil, fmt.Errorf("error getting the bond requirement: %w", err)
+	}
+	return *bondRequirement, nil
+}
+
 // Get contracts
 var rocketNodeDepositLock sync.Mutex
 
@@ -179,4 +261,12 @@ func getRocketNodeDeposit(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rock
 	rocketNodeDepositLock.Lock()
 	defer rocketNodeDepositLock.Unlock()
 	return rp.GetContract("rocketNodeDeposit", opts)
+}
+
+var rocketDepositPoolLock sync.Mutex
+
+func getRocketDepositPool(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
+	rocketDepositPoolLock.Lock()
+	defer rocketDepositPoolLock.Unlock()
+	return rp.GetContract("rocketDepositPool", opts)
 }

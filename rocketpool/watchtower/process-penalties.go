@@ -97,8 +97,8 @@ func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log
 	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
+		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
+		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
@@ -477,7 +477,7 @@ func (t *processPenalties) submitPenalty(minipoolAddress common.Address, block *
 	slotBig.FillBytes(blockNumberBuf)
 	penaltyExecuted, err := t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte("network.penalties.executed"), minipoolAddress.Bytes(), blockNumberBuf))
 	if err != nil {
-		return fmt.Errorf("Could not check if penality has already been applied for block %d, minipool %s: %w", block.Slot, minipoolAddress.Hex(), err)
+		return fmt.Errorf("Could not check if penalty has already been applied for block %d, minipool %s: %w", block.Slot, minipoolAddress.Hex(), err)
 	}
 	if penaltyExecuted {
 		t.log.Printlnf("NOTE: Minipool %s was already penalized on block %d, skipping...", minipoolAddress.Hex(), block.Slot)
@@ -505,7 +505,7 @@ func (t *processPenalties) submitPenalty(minipoolAddress common.Address, block *
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei(t.cfg)
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
 		if err != nil {
 			return err
 		}

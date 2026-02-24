@@ -9,7 +9,7 @@ import (
 	"github.com/goccy/go-json"
 )
 
-const gasOracleUrl string = "https://api.etherscan.io/api?module=gastracker&action=gasoracle"
+const gasOracleUrl string = "https://api.etherscan.io/v2/api?chainid=1&module=gastracker&action=gasoracle"
 
 // Standard response
 type gasOracleResponse struct {

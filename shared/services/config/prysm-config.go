@@ -5,10 +5,10 @@ import (
 )
 
 const (
-	prysmBnTest             string = "gcr.io/offchainlabs/prysm/beacon-chain:v6.0.4"
-	prysmBnProd             string = "gcr.io/offchainlabs/prysm/beacon-chain:v6.0.4"
-	prysmVcTest             string = "gcr.io/offchainlabs/prysm/validator:v6.0.4"
-	prysmVcProd             string = "gcr.io/offchainlabs/prysm/validator:v6.0.4"
+	prysmBnTest             string = "gcr.io/offchainlabs/prysm/beacon-chain:v7.1.2"
+	prysmBnProd             string = "gcr.io/offchainlabs/prysm/beacon-chain:v7.1.2"
+	prysmVcTest             string = "gcr.io/offchainlabs/prysm/validator:v7.1.2"
+	prysmVcProd             string = "gcr.io/offchainlabs/prysm/validator:v7.1.2"
 	defaultPrysmRpcPort     uint16 = 5053
 	defaultPrysmOpenRpcPort string = string(config.RPC_Closed)
 	defaultPrysmMaxPeers    uint16 = 70
@@ -136,7 +136,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 		AdditionalBnFlags: config.Parameter{
 			ID:                 "additionalBnFlags",
 			Name:               "Additional Beacon Node Flags",
-			Description:        "Additional custom command line flags you want to pass Prysm's Beacon Node, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Prysm's Beacon Node, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
@@ -147,7 +147,7 @@ func NewPrysmConfig(cfg *RocketPoolConfig) *PrysmConfig {
 		AdditionalVcFlags: config.Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
-			Description:        "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},

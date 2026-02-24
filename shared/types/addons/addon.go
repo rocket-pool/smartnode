@@ -4,7 +4,7 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// Interface for Smartnode addons
+// Interface forSmart Node addons
 type SmartnodeAddon interface {
 	GetName() string
 	GetDescription() string

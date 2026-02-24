@@ -445,28 +445,14 @@ func (mp *minipool_v2) DelegateUpgrade(opts *bind.TransactOpts) (common.Hash, er
 	return tx.Hash(), nil
 }
 
-// Estimate the gas of DelegateRollback
-func (mp *minipool_v2) EstimateDelegateRollbackGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "delegateRollback")
-}
-
-// Rollback to previous delegate contract
-func (mp *minipool_v2) DelegateRollback(opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "delegateRollback")
-	if err != nil {
-		return common.Hash{}, fmt.Errorf("error rolling back delegate for minipool %s: %w", mp.Address.Hex(), err)
-	}
-	return tx.Hash(), nil
-}
-
 // Estimate the gas of SetUseLatestDelegate
-func (mp *minipool_v2) EstimateSetUseLatestDelegateGas(setting bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	return mp.Contract.GetTransactionGasInfo(opts, "setUseLatestDelegate", setting)
+func (mp *minipool_v2) EstimateSetUseLatestDelegateGas(opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return mp.Contract.GetTransactionGasInfo(opts, "setUseLatestDelegate", true)
 }
 
 // If set to true, will automatically use the latest delegate contract
-func (mp *minipool_v2) SetUseLatestDelegate(setting bool, opts *bind.TransactOpts) (common.Hash, error) {
-	tx, err := mp.Contract.Transact(opts, "setUseLatestDelegate", setting)
+func (mp *minipool_v2) SetUseLatestDelegate(opts *bind.TransactOpts) (common.Hash, error) {
+	tx, err := mp.Contract.Transact(opts, "setUseLatestDelegate", true)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error setting use latest delegate for minipool %s: %w", mp.Address.Hex(), err)
 	}

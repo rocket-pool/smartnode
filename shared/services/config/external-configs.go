@@ -31,6 +31,9 @@ type ExternalLighthouseConfig struct {
 	// Toggle for enabling doppelganger detection
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
 
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
+
 	// The Docker Hub tag for Lighthouse
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -54,6 +57,9 @@ type ExternalLodestarConfig struct {
 	// Toggle for enabling doppelganger detection
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
 
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
+
 	// The Docker Hub tag for Lighthouse
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -76,6 +82,9 @@ type ExternalNimbusConfig struct {
 
 	// Toggle for enabling doppelganger detection
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
+
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
 
 	// The Docker Hub tag for Lighthouse
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
@@ -103,6 +112,9 @@ type ExternalPrysmConfig struct {
 	// The URL of the JSON-RPC endpoint for the Validator client
 	JsonRpcUrl config.Parameter `yaml:"jsonRpcUrl,omitempty"`
 
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
+
 	// The Docker Hub tag for Prysm's VC
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
 
@@ -122,6 +134,9 @@ type ExternalTekuConfig struct {
 
 	// The suggested block gas limit
 	SuggestedBlockGasLimit config.Parameter `yaml:"suggestedBlockGasLimit,omitempty"`
+
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
 
 	// The Docker Hub tag for Teku
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
@@ -148,7 +163,7 @@ func NewExternalExecutionConfig(cfg *RocketPoolConfig) *ExternalExecutionConfig 
 		HttpUrl: config.Parameter{
 			ID:                 "httpUrl",
 			Name:               "HTTP URL",
-			Description:        "The URL of the HTTP RPC endpoint for your external Execution client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead, for example 'http://192.168.1.100:8545'.",
+			Description:        "The URL of the HTTP RPC endpoint for your external Execution client.\nNOTE: If you are running it on the same machine as the Smart Node, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead, for example 'http://192.168.1.100:8545'.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
@@ -159,7 +174,7 @@ func NewExternalExecutionConfig(cfg *RocketPoolConfig) *ExternalExecutionConfig 
 		WsUrl: config.Parameter{
 			ID:                 "wsUrl",
 			Name:               "Websocket URL",
-			Description:        "The URL of the Websocket RPC endpoint for your external Execution client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead, for example 'http://192.168.1.100:8546'.",
+			Description:        "The URL of the Websocket RPC endpoint for your external Execution client.\nNOTE: If you are running it on the same machine as the Smart Node, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead, for example 'http://192.168.1.100:8546'.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
@@ -177,7 +192,7 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 		HttpUrl: config.Parameter{
 			ID:                 "httpUrl",
 			Name:               "HTTP URL",
-			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smart Node, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
@@ -237,11 +252,22 @@ func NewExternalLighthouseConfig(cfg *RocketPoolConfig) *ExternalLighthouseConfi
 		AdditionalVcFlags: config.Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
-			Description:        "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 	}
@@ -255,7 +281,7 @@ func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
 		HttpUrl: config.Parameter{
 			ID:                 "httpUrl",
 			Name:               "HTTP URL",
-			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smart Node, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
@@ -315,11 +341,22 @@ func NewExternalLodestarConfig(cfg *RocketPoolConfig) *ExternalLodestarConfig {
 		AdditionalVcFlags: config.Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
-			Description:        "Additional custom command line flags you want to pass Lodestar's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Lodestar's Validator Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 	}
@@ -334,7 +371,7 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 		HttpUrl: config.Parameter{
 			ID:                 "httpUrl",
 			Name:               "HTTP URL",
-			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smart Node, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
@@ -394,11 +431,22 @@ func NewExternalNimbusConfig(cfg *RocketPoolConfig) *ExternalNimbusConfig {
 		AdditionalVcFlags: config.Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
-			Description:        "Additional custom command line flags you want to pass Nimbus's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Nimbus's Validator Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 	}
@@ -412,7 +460,7 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 		HttpUrl: config.Parameter{
 			ID:                 "httpUrl",
 			Name:               "HTTP URL",
-			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smart Node, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
@@ -423,7 +471,7 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 		JsonRpcUrl: config.Parameter{
 			ID:                 "jsonRpcUrl",
 			Name:               "gRPC URL",
-			Description:        "The URL of the gRPC API endpoint for your external client. Prysm's validator client will need this in order to connect to it.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Description:        "The URL of the gRPC API endpoint for your external client. Prysm's validator client will need this in order to connect to it.\nNOTE: If you are running it on the same machine as the Smart Node, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},
@@ -483,11 +531,22 @@ func NewExternalPrysmConfig(cfg *RocketPoolConfig) *ExternalPrysmConfig {
 		AdditionalVcFlags: config.Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
-			Description:        "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Prysm's Validator Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 	}
@@ -501,7 +560,7 @@ func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
 		HttpUrl: config.Parameter{
 			ID:                 "httpUrl",
 			Name:               "HTTP URL",
-			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smartnode, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
+			Description:        "The URL of the HTTP Beacon API endpoint for your external client.\nNOTE: If you are running it on the same machine as the Smart Node, addresses like `localhost` and `127.0.0.1` will not work due to Docker limitations. Enter your machine's LAN IP address instead.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Watchtower, config.ContainerID_Node},
@@ -561,11 +620,22 @@ func NewExternalTekuConfig(cfg *RocketPoolConfig) *ExternalTekuConfig {
 		AdditionalVcFlags: config.Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
-			Description:        "Additional custom command line flags you want to pass Teku's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Teku's Validator Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
 			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
 	}
@@ -586,6 +656,7 @@ func (cfg *ExternalLighthouseConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
@@ -598,6 +669,7 @@ func (cfg *ExternalNimbusConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
@@ -610,6 +682,7 @@ func (cfg *ExternalLodestarConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
@@ -623,6 +696,7 @@ func (cfg *ExternalPrysmConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}
@@ -635,6 +709,7 @@ func (cfg *ExternalTekuConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.Graffiti,
 		&cfg.DoppelgangerDetection,
+		&cfg.KeymanagerApiPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalVcFlags,
 	}

@@ -132,14 +132,17 @@ case "$PLATFORM" in
         # Install OS dependencies
         progress 1 "Installing OS dependencies..."
         { $SUDO_CMD apt-get -y update || fail "Could not update OS package definitions."; } >&2
-        { $SUDO_CMD apt-get -y install apt-transport-https ca-certificates curl gnupg gnupg-agent lsb-release software-properties-common chrony || fail "Could not install OS packages."; } >&2
+        { $SUDO_CMD apt-get -y install apt-transport-https ca-certificates curl gnupg gnupg-agent lsb-release chrony || fail "Could not install OS packages."; } >&2
 
         # Check for existing Docker installation
         progress 2 "Checking if Docker is installed..."
         dpkg-query -W -f='${Status}' docker-ce 2>&1 | grep -q -P '^install ok installed$' > /dev/null
         if [ $? != "0" ]; then
             echo "Installing Docker..."
-            if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
+            # Check for an available installation candidate
+            REPO_FOUND=$(apt-cache policy docker-ce 2>/dev/null | awk '/Candidate:/ {print $2}')
+            if [ -z "$REPO_FOUND" -o "$REPO_FOUND" = "(none)" ]; then
+                echo "No installation candidate found for docker-ce. Setting up Docker repository..."
                 # Install the Docker repo
                 { $SUDO_CMD mkdir -p /etc/apt/keyrings || fail "Could not create APT keyrings directory."; } >&2
                 { curl -fsSL "https://download.docker.com/linux/$PLATFORM_NAME/gpg" | $SUDO_CMD gpg --dearmor -o /etc/apt/keyrings/docker.gpg || fail "Could not add docker repository key."; } >&2
@@ -154,9 +157,11 @@ case "$PLATFORM" in
         dpkg-query -W -f='${Status}' docker-compose-plugin 2>&1 | grep -q -P '^install ok installed$' > /dev/null
         if [ $? != "0" ]; then
             echo "Installing docker-compose-plugin..."
-            if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
-                # Install the Docker repo, removing the legacy one if it exists
-                { $SUDO_CMD add-apt-repository --remove "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/$PLATFORM_NAME $(lsb_release -cs) stable"; } 2>/dev/null
+            # Check for an available installation candidate
+            REPO_FOUND=$(apt-cache policy docker-compose-plugin 2>/dev/null | awk '/Candidate:/ {print $2}')
+            if [ -z "$REPO_FOUND" -o "$REPO_FOUND" = "(none)" ]; then
+                echo "No installation candidate found for docker-compose-plugin. Setting up Docker repository..."
+                # Install the Docker repo
                 { $SUDO_CMD mkdir -p /etc/apt/keyrings || fail "Could not create APT keyrings directory."; } >&2
                 { curl -fsSL "https://download.docker.com/linux/$PLATFORM_NAME/gpg" | $SUDO_CMD gpg --dearmor -o /etc/apt/keyrings/docker.gpg || fail "Could not add docker repository key."; } >&2
                 { echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$PLATFORM_NAME $(lsb_release -cs) stable" | $SUDO_CMD tee /etc/apt/sources.list.d/docker.list > /dev/null || fail "Could not add Docker repository."; } >&2
@@ -267,9 +272,10 @@ else
             if [ $? != "0" ]; then
                 >&2 get_escalation_cmd
                 echo "Installing docker-compose-plugin..."
-                if [ ! -f /etc/apt/sources.list.d/docker.list ]; then
-                    # Install the Docker repo, removing the legacy one if it exists
-                    { $SUDO_CMD add-apt-repository --remove "deb [arch=$(dpkg --print-architecture)] https://download.docker.com/linux/$PLATFORM_NAME $(lsb_release -cs) stable"; } 2>/dev/null
+                # Check for an available installation candidate
+                REPO_FOUND=$(apt-cache policy docker-compose-plugin 2>/dev/null | awk '/Candidate:/ {print $2}')
+                if [ -z "$REPO_FOUND" -o "$REPO_FOUND" = "(none)" ]; then
+                    echo "No installation candidate found for docker-compose-plugin. Setting up Docker repository..."
                     { $SUDO_CMD mkdir -p /etc/apt/keyrings || fail "Could not create APT keyrings directory."; } >&2
                     { curl -fsSL "https://download.docker.com/linux/$PLATFORM_NAME/gpg" | $SUDO_CMD gpg --dearmor -o /etc/apt/keyrings/docker.gpg || fail "Could not add docker repository key."; } >&2
                     { echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/$PLATFORM_NAME $(lsb_release -cs) stable" | $SUDO_CMD tee /etc/apt/sources.list.d/docker.list > /dev/null || fail "Could not add Docker repository."; } >&2
@@ -327,7 +333,7 @@ else
                 RED='\033[0;31m'
                 echo ""
                 echo -e "${RED}**ERROR**"
-                echo "The docker-compose-plugin package is not installed. Starting with v1.7.0, the Smartnode requires this package because the legacy docker-compose script is no longer supported."
+                echo "The docker-compose-plugin package is not installed. Starting with v1.7.0, the Smart Node requires this package because the legacy docker-compose script is no longer supported."
                 echo "Since automatic dependency installation for the $PLATFORM operating system is not supported, you will need to install it manually."
                 echo "Please install docker-compose-plugin manually, then try running `rocketpool service install -d` again to finish updating."
                 echo -e "${RESET}"
@@ -404,6 +410,7 @@ progress 7 "Copying package files to Rocket Pool user data directory..."
 { cp -r "$PACKAGE_FILES_PATH/scripts" "$RP_PATH" || fail "Could not copy scripts folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/templates" "$RP_PATH" || fail "Could not copy templates folder to the Rocket Pool user data directory."; } >&2
 { cp -r "$PACKAGE_FILES_PATH/alerting" "$RP_PATH" || fail "Could not copy alerting folder to the Rocket Pool user data directory."; } >&2
+{ cp -r "$PACKAGE_FILES_PATH/devnet" "$RP_PATH" || fail "Could not copy devnet folder to the Rocket Pool user data directory."; } >&2
 { cp	\
 	"$PACKAGE_FILES_PATH/grafana-prometheus-datasource.yml" \
 	"$PACKAGE_FILES_PATH/prometheus.tmpl" \

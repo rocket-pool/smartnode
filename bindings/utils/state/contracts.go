@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/hashicorp/go-version"
+	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
 )
@@ -52,6 +53,11 @@ type NetworkContracts struct {
 	// Houston
 	RocketDAOProtocolProposal *rocketpool.Contract
 	RocketDAOProtocolVerifier *rocketpool.Contract
+
+	// Saturn
+	RocketMegapoolFactory *rocketpool.Contract
+	RocketMegapoolManager *rocketpool.Contract
+	RocketNetworkRevenues *rocketpool.Contract
 }
 
 type contractArtifacts struct {
@@ -173,6 +179,18 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 		contract: &contracts.RocketDAOProtocolVerifier,
 	})
 
+	// Saturn wrappers
+	wrappers = append(wrappers, contractArtifacts{
+		name:     "rocketMegapoolFactory",
+		contract: &contracts.RocketMegapoolFactory,
+	}, contractArtifacts{
+		name:     "rocketMegapoolManager",
+		contract: &contracts.RocketMegapoolManager,
+	}, contractArtifacts{
+		name:     "rocketNetworkRevenues",
+		contract: &contracts.RocketNetworkRevenues,
+	})
+
 	// Add the address and ABI getters to multicall
 	for i, wrapper := range wrappers {
 		// Add the address getter
@@ -220,6 +238,17 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 func (c *NetworkContracts) getCurrentVersion(rp *rocketpool.RocketPool) error {
 	opts := &bind.CallOpts{
 		BlockNumber: c.ElBlockNumber,
+	}
+
+	depositPoolVersion, err := deposit.GetRocketDepositPoolVersion(rp, opts)
+	if err != nil {
+		return fmt.Errorf("error checking deposit pool version: %w", err)
+	}
+
+	// Check for v1.4 (Saturn 1)
+	if depositPoolVersion > 3 {
+		c.Version, err = version.NewSemver("1.4.0")
+		return err
 	}
 
 	// Check for v1.2

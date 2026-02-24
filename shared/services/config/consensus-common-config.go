@@ -10,6 +10,7 @@ const CheckpointSyncUrlID string = "checkpointSyncUrl"
 const P2pPortID string = "p2pPort"
 const P2pQuicPortID string = "p2pQuicPort"
 const ApiPortID string = "apiPort"
+const KeymanagerApiPortID string = "keymanagerApiPort"
 const OpenApiPortID string = "openApiPort"
 const DoppelgangerDetectionID string = "doppelgangerDetection"
 
@@ -19,6 +20,7 @@ const defaultCheckpointSyncProvider string = ""
 const defaultP2pPort uint16 = 9001
 const defaultP2pQuicPort uint16 = 8001
 const defaultBnApiPort uint16 = 5052
+const defaultKeymanagerApiPort uint16 = 5062
 const defaultOpenBnApiPort string = string(config.RPC_Closed)
 const defaultDoppelgangerDetection bool = true
 
@@ -43,6 +45,9 @@ type ConsensusCommonConfig struct {
 
 	// Toggle for forwarding the HTTP API port outside of Docker
 	OpenApiPort config.Parameter `yaml:"openApiPort,omitempty"`
+
+	// The port to expose the Keymanager API on
+	KeymanagerApiPort config.Parameter `yaml:"keymanagerApiPort,omitempty"`
 
 	// Toggle for enabling doppelganger detection
 	DoppelgangerDetection config.Parameter `yaml:"doppelgangerDetection,omitempty"`
@@ -125,6 +130,17 @@ func NewConsensusCommonConfig(cfg *RocketPoolConfig) *ConsensusCommonConfig {
 			Options:            portModes,
 		},
 
+		KeymanagerApiPort: config.Parameter{
+			ID:                 KeymanagerApiPortID,
+			Name:               "Keymanager API Port",
+			Description:        "The port your validator client should run its Keymanager API on.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultKeymanagerApiPort},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		DoppelgangerDetection: config.Parameter{
 			ID:                 DoppelgangerDetectionID,
 			Name:               "Enable Doppelgänger Detection",
@@ -147,6 +163,7 @@ func (cfg *ConsensusCommonConfig) GetParameters() []*config.Parameter {
 		&cfg.SuggestedBlockGasLimit,
 		&cfg.ApiPort,
 		&cfg.OpenApiPort,
+		&cfg.KeymanagerApiPort,
 		&cfg.DoppelgangerDetection,
 	}
 }

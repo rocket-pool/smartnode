@@ -29,8 +29,10 @@ import (
 
 // Config
 const (
-	RequestUrlFormat   = "%s%s"
-	RequestContentType = "application/json"
+	RequestUrlFormat               = "%s%s"
+	RequestJsonContentType         = "application/json"
+	RequestSSZContentType          = "application/octet-stream"
+	ResponseConsensusVersionHeader = "Eth-Consensus-Version"
 
 	RequestSyncStatusPath                  = "/eth/v1/node/syncing"
 	RequestEth2ConfigPath                  = "/eth/v1/config/spec"
@@ -45,6 +47,7 @@ const (
 	RequestAttestationsPath                = "/eth/v1/beacon/blocks/%s/attestations"
 	RequestBeaconBlockPath                 = "/eth/v2/beacon/blocks/%s"
 	RequestBeaconBlockHeaderPath           = "/eth/v1/beacon/headers/%s"
+	RequestBeaconStatePath                 = "/eth/v2/debug/beacon/states/%d"
 	RequestValidatorSyncDuties             = "/eth/v1/validator/duties/sync/%s"
 	RequestValidatorProposerDuties         = "/eth/v1/validator/duties/proposer/%s"
 	RequestWithdrawalCredentialsChangePath = "/eth/v1/beacon/pool/bls_to_execution_changes"
@@ -438,7 +441,7 @@ func (c *StandardHttpClient) GetValidatorStatuses(pubkeys []types.ValidatorPubke
 
 // Get whether validators have sync duties to perform at given epoch
 func (c *StandardHttpClient) GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error) {
-	// Return if there are not validators to check
+	// Return if there are no validators to check
 	if len(indices) == 0 {
 		return nil, nil
 	}
@@ -856,11 +859,14 @@ func (c *StandardHttpClient) getValidatorBalances(stateId string, indices []stri
 
 // Get validators
 func (c *StandardHttpClient) getValidators(stateId string, pubkeys []string) (ValidatorsResponse, error) {
-	var query string
-	if len(pubkeys) > 0 {
-		query = fmt.Sprintf("?id=%s", strings.Join(pubkeys, ","))
+
+	// Build the post body matching the Beacon API spec:
+	// { "ids": ["pubkey1", "pubkey2", ...], "statuses": [] }
+	postBody := map[string][]string{
+		"ids":      pubkeys,
+		"statuses": []string{},
 	}
-	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestValidatorsPath, stateId) + query)
+	responseBody, status, err := c.postRequest(fmt.Sprintf(RequestValidatorsPath, stateId), postBody)
 	if err != nil {
 		return ValidatorsResponse{}, fmt.Errorf("Could not get validators: %w", err)
 	}
@@ -872,6 +878,36 @@ func (c *StandardHttpClient) getValidators(stateId string, pubkeys []string) (Va
 		return ValidatorsResponse{}, fmt.Errorf("Could not decode validators: %w", err)
 	}
 	return validators, nil
+}
+
+func (c *StandardHttpClient) GetAllValidators() ([]beacon.ValidatorStatus, error) {
+	response, err := c.getValidators("finalized", []string{})
+	if err != nil {
+		return []beacon.ValidatorStatus{}, fmt.Errorf("Could not get all validators: %w", err)
+	}
+
+	validators := make([]beacon.ValidatorStatus, len(response.Data))
+	for i, validator := range response.Data {
+
+		// Add status
+		validators[i] = beacon.ValidatorStatus{
+			Pubkey:                     types.BytesToValidatorPubkey(validator.Validator.Pubkey),
+			Index:                      validator.Index,
+			WithdrawalCredentials:      common.BytesToHash(validator.Validator.WithdrawalCredentials),
+			Balance:                    uint64(validator.Balance),
+			EffectiveBalance:           uint64(validator.Validator.EffectiveBalance),
+			Status:                     beacon.ValidatorState(validator.Status),
+			Slashed:                    validator.Validator.Slashed,
+			ActivationEligibilityEpoch: uint64(validator.Validator.ActivationEligibilityEpoch),
+			ActivationEpoch:            uint64(validator.Validator.ActivationEpoch),
+			ExitEpoch:                  uint64(validator.Validator.ExitEpoch),
+			WithdrawableEpoch:          uint64(validator.Validator.WithdrawableEpoch),
+			Exists:                     true,
+		}
+
+	}
+	return validators, nil
+
 }
 
 // Get validators by pubkeys and status options
@@ -891,7 +927,7 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 			return ValidatorsResponse{}, err
 		}
 
-		// Get slot nuimber
+		// Get slot number
 		slot := *opts.Epoch * uint64(eth2Config.Data.SlotsPerEpoch)
 		stateId = strconv.FormatInt(int64(slot), 10)
 
@@ -974,7 +1010,7 @@ func (c *StandardHttpClient) getAttestations(blockId string) (AttestationsRespon
 
 // Get the target beacon block
 func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse, bool, error) {
-	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, blockId))
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestBeaconBlockPath, fmt.Sprint(blockId)))
 	if err != nil {
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not get beacon block data: %w", err)
 	}
@@ -989,6 +1025,59 @@ func (c *StandardHttpClient) getBeaconBlock(blockId string) (BeaconBlockResponse
 		return BeaconBlockResponse{}, false, fmt.Errorf("Could not decode beacon block data: %w", err)
 	}
 	return beaconBlock, true, nil
+}
+
+// Get the Beacon state for a slot
+func (c *StandardHttpClient) GetBeaconStateSSZ(slot uint64) (*beacon.BeaconStateSSZ, error) {
+	response, err := c.sszRequest(fmt.Sprintf(RequestBeaconStatePath, slot))
+	if err != nil {
+		return nil, fmt.Errorf("Could not get beacon state data: %w", err)
+	}
+	if response.StatusCode != http.StatusOK {
+		responseBody, err := io.ReadAll(response.Body)
+		if err != nil {
+			return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d; response body: '%s'", response.StatusCode, string(responseBody))
+		}
+		return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d", response.StatusCode)
+	}
+
+	// Slurp the body
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("Could not get beacon state data: %w", err)
+	}
+
+	return &beacon.BeaconStateSSZ{
+		Data: body,
+		Fork: response.Header.Get(ResponseConsensusVersionHeader),
+	}, nil
+}
+
+func (c *StandardHttpClient) GetBeaconBlockSSZ(slot uint64) (*beacon.BeaconBlockSSZ, bool, error) {
+	response, err := c.sszRequest(fmt.Sprintf(RequestBeaconBlockPath, fmt.Sprint(slot)))
+	if err != nil {
+		return nil, false, fmt.Errorf("Could not get beacon block data: %w", err)
+	}
+	if response.StatusCode == http.StatusNotFound {
+		return nil, false, nil
+	}
+	if response.StatusCode != http.StatusOK {
+		responseBody, err := io.ReadAll(response.Body)
+		if err != nil {
+			return nil, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", response.StatusCode, string(responseBody))
+		}
+		return nil, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", response.StatusCode, string(responseBody))
+	}
+
+	// Slurp the body
+	body, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, false, fmt.Errorf("Could not get beacon block data: %w", err)
+	}
+	return &beacon.BeaconBlockSSZ{
+		Data: body,
+		Fork: response.Header.Get(ResponseConsensusVersionHeader),
+	}, true, nil
 }
 
 // Get the specified beacon block header
@@ -1095,9 +1184,21 @@ func (c *StandardHttpClient) postWithdrawalCredentialsChange(request BLSToExecut
 
 // Make a GET request but do not read its body yet (allows buffered decoding)
 func (c *StandardHttpClient) getRequestReader(requestPath string) (io.ReadCloser, int, error) {
+	return c.getRequestReaderWithContentType(requestPath, RequestJsonContentType)
+}
 
+// Make a GET request but do not read its body yet (allows buffered decoding)
+func (c *StandardHttpClient) getRequestReaderWithContentType(requestPath string, contentType string) (io.ReadCloser, int, error) {
 	// Send request
-	response, err := http.Get(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath))
+	request, err := http.NewRequest("GET", fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), nil)
+	if err != nil {
+		return nil, 0, err
+	}
+	request.Header.Set("Accept", contentType)
+
+	client := http.Client{}
+
+	response, err := client.Do(request)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1107,9 +1208,14 @@ func (c *StandardHttpClient) getRequestReader(requestPath string) (io.ReadCloser
 
 // Make a GET request to the beacon node and read the body of the response
 func (c *StandardHttpClient) getRequest(requestPath string) ([]byte, int, error) {
+	return c.getRequestWithContentType(requestPath, RequestJsonContentType)
+}
+
+// Make a GET request to the beacon node and read the body of the response
+func (c *StandardHttpClient) getRequestWithContentType(requestPath string, contentType string) ([]byte, int, error) {
 
 	// Send request
-	reader, status, err := c.getRequestReader(requestPath)
+	reader, status, err := c.getRequestReaderWithContentType(requestPath, contentType)
 	if err != nil {
 		return []byte{}, 0, err
 	}
@@ -1127,6 +1233,15 @@ func (c *StandardHttpClient) getRequest(requestPath string) ([]byte, int, error)
 	return body, status, nil
 }
 
+func (c *StandardHttpClient) sszRequest(requestPath string) (*http.Response, error) {
+	request, err := http.NewRequest("GET", fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Accept", RequestSSZContentType)
+	return http.DefaultClient.Do(request)
+}
+
 // Make a POST request to the beacon node
 func (c *StandardHttpClient) postRequest(requestPath string, requestBody interface{}) ([]byte, int, error) {
 
@@ -1138,7 +1253,7 @@ func (c *StandardHttpClient) postRequest(requestPath string, requestBody interfa
 	requestBodyReader := bytes.NewReader(requestBodyBytes)
 
 	// Send request
-	response, err := http.Post(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), RequestContentType, requestBodyReader)
+	response, err := http.Post(fmt.Sprintf(RequestUrlFormat, c.providerAddress, requestPath), RequestJsonContentType, requestBodyReader)
 	if err != nil {
 		return []byte{}, 0, err
 	}

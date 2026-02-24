@@ -16,6 +16,7 @@ services:
       - {{.Smartnode.DataPath}}/validators:/validators
       - {{.RocketPoolDirectory}}/scripts:/setup:ro
       - {{.RocketPoolDirectory}}/addons:/addons
+      - {{.RocketPoolDirectory}}/devnet:/devnet:ro
     networks:
       - net
     environment:
@@ -34,6 +35,7 @@ services:
       - VC_METRICS_PORT={{.VcMetricsPort}}
       - DOPPELGANGER_DETECTION={{.IsDoppelgangerEnabled}}
       - VC_ADDITIONAL_FLAGS={{.VcAdditionalFlags}}
+      - VC_KEYMANAGER_API_PORT={{.KeymanagerApiPort}}
       - FEE_RECIPIENT_FILE={{.FeeRecipientFile}}
       - ENABLE_BITFLY_NODE_METRICS={{.EnableBitflyNodeMetrics}}
       - BITFLY_NODE_METRICS_SECRET={{.BitflyNodeMetrics.Secret}}
@@ -41,8 +43,8 @@ services:
       - BITFLY_NODE_METRICS_MACHINE_NAME={{.BitflyNodeMetrics.MachineName}}
       - GRAFFITI={{.Graffiti}}
       - ADDON_GWW_ENABLED={{.GraffitiWallWriter.GetEnabledParameter}}
-      - MEV_BOOST_URL={{.MevBoostUrl}}
-      - ENABLE_MEV_BOOST={{.EnableMevBoost}}
+      - PBS_URL={{.PbsUrl}}
+      - ENABLE_PBS={{.IsPbsEnabled}}
       {{- if eq .ConsensusClient.String "teku"}}
       - TEKU_USE_SLASHING_PROTECTION={{.Teku.UseSlashingProtection}}
       {{- end}}

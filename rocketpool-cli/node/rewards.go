@@ -2,10 +2,12 @@ package node
 
 import (
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -85,6 +87,15 @@ func getRewards(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	beaconBalances, err := rp.GetValidatorMapAndBalances()
+	if err != nil {
+		return err
+	}
+	megapoolUnskimmedRewards := new(big.Int).Sub(beaconBalances.NodeBond, beaconBalances.NodeShareOfCLBalance)
+	megapoolUnskimmedRewardsFloat := eth.WeiToEth(megapoolUnskimmedRewards)
+	// Add the megapool unskimmed beacon rewards
+	rewards.BeaconRewards = rewards.BeaconRewards + megapoolUnskimmedRewardsFloat
 
 	fmt.Println("=== ETH ===")
 	fmt.Printf("Your share of unskimmed Beacon Chain (CL) rewards is currently %.6f ETH.\n", rewards.BeaconRewards)

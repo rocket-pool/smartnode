@@ -15,11 +15,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/fatih/color"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/beacon/client"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -114,7 +114,7 @@ func GenerateTree(c *cli.Context) error {
 	logger := log.NewColorLogger(color.FgHiWhite)
 	errLogger := log.NewColorLogger(color.FgRed)
 
-	// URL acquisiton
+	// URL acquisition
 	ecUrl := c.String("ec-endpoint")
 	if ecUrl == "" {
 		return fmt.Errorf("ec-endpoint must be provided")
@@ -125,7 +125,7 @@ func GenerateTree(c *cli.Context) error {
 	}
 
 	// Create the EC and BN clients
-	ec, err := ethclient.Dial(ecUrl)
+	ec, err := services.NewEthClient(ecUrl)
 	if err != nil {
 		return fmt.Errorf("error connecting to the EC: %w", err)
 	}
@@ -463,24 +463,32 @@ func (g *treeGenerator) writeFiles(result *rprewards.GenerateTreeResult, votingP
 		g.outputDir,
 		g.cfg.Smartnode.GetRewardsTreeFilename(index, config.RewardsExtensionJSON),
 	)
-	minipoolPerformancePath := filepath.Join(
-		g.outputDir,
-		g.cfg.Smartnode.GetMinipoolPerformanceFilename(index),
-	)
+	var performancePath string
+	if g.ruleset < 11 {
+		performancePath = filepath.Join(
+			g.outputDir,
+			g.cfg.Smartnode.GetMinipoolPerformanceFilename(index),
+		)
+	} else {
+		performancePath = filepath.Join(
+			g.outputDir,
+			g.cfg.Smartnode.GetPerformanceFilename(index),
+		)
+	}
 
 	// Serialize the minipool performance file
-	minipoolPerformanceBytes, err := g.serializeMinipoolPerformance(result)
+	performanceBytes, err := g.serializeMinipoolPerformance(result)
 	if err != nil {
 		return fmt.Errorf("error serializing minipool performance file into JSON: %w", err)
 	}
 
 	// Write it to disk
-	err = os.WriteFile(minipoolPerformancePath, minipoolPerformanceBytes, 0644)
+	err = os.WriteFile(performancePath, performanceBytes, 0644)
 	if err != nil {
-		return fmt.Errorf("error saving minipool performance file to %s: %w", minipoolPerformancePath, err)
+		return fmt.Errorf("error saving minipool performance file to %s: %w", performancePath, err)
 	}
 
-	g.log.Printlnf("Saved minipool performance file to %s", minipoolPerformancePath)
+	g.log.Printlnf("Saved minipool performance file to %s", performancePath)
 	rewardsFile.SetMinipoolPerformanceFileCID("---")
 
 	// Serialize the rewards tree to JSON

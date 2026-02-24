@@ -29,3 +29,27 @@ type ProcessQueueResponse struct {
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
 }
+
+type GetQueueDetailsResponse struct {
+	Status         string `json:"status"`
+	Error          string `json:"error"`
+	TotalLength    uint32 `json:"totalLength"`
+	ExpressLength  uint32 `json:"expressLength"`
+	StandardLength uint32 `json:"standardLength"`
+	ExpressRate    uint64 `json:"expressRate"`
+	QueueIndex     uint32 `json:"queueIndex"`
+}
+
+type CanAssignDepositsResponse struct {
+	Status                 string             `json:"status"`
+	Error                  string             `json:"error"`
+	CanAssign              bool               `json:"canAssign"`
+	AssignDepositsDisabled bool               `json:"assignDepositsDisabled"`
+	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+}
+
+type AssignDepositsResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}

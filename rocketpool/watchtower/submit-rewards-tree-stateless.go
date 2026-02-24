@@ -377,14 +377,14 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	// Create the arrays of rewards per network
 	collateralRplRewards := []*big.Int{}
 	oDaoRplRewards := []*big.Int{}
-	smoothingPoolEthRewards := []*big.Int{}
+	nodeOperatorSmoothingPoolEthRewardsAndVoterShare := []*big.Int{}
 
 	// Create the total rewards for each network
 	for network := uint64(0); rewardsFile.HasRewardsForNetwork(network); network++ {
 
 		collateralRplRewards = append(collateralRplRewards, rewardsFile.GetNetworkCollateralRpl(network))
 		oDaoRplRewards = append(oDaoRplRewards, rewardsFile.GetNetworkOracleDaoRpl(network))
-		smoothingPoolEthRewards = append(smoothingPoolEthRewards, rewardsFile.GetNetworkSmoothingPoolEth(network))
+		nodeOperatorSmoothingPoolEthRewardsAndVoterShare = append(nodeOperatorSmoothingPoolEthRewardsAndVoterShare, rewardsFile.GetNetworkSmoothingPoolEth(network))
 	}
 
 	// Get transactor
@@ -393,23 +393,26 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 		return err
 	}
 
-	// Create the submission
-	submission := rewards.RewardSubmission{
-		RewardIndex:     index,
-		ExecutionBlock:  big.NewInt(0).SetUint64(executionBlock),
-		ConsensusBlock:  big.NewInt(0).SetUint64(consensusBlock),
-		MerkleRoot:      treeRoot,
-		MerkleTreeCID:   cid,
-		IntervalsPassed: intervalsPassed,
-		TreasuryRPL:     rewardsFile.GetTotalProtocolDaoRpl(),
-		NodeRPL:         collateralRplRewards,
-		TrustedNodeRPL:  oDaoRplRewards,
-		NodeETH:         smoothingPoolEthRewards,
-		UserETH:         rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
-	}
+	var gasInfo rocketpool.GasInfo
+	var submission rewards.RewardSubmission
 
+	// Create the submission
+	submission = rewards.RewardSubmission{
+		RewardIndex:      index,
+		ExecutionBlock:   big.NewInt(0).SetUint64(executionBlock),
+		ConsensusBlock:   big.NewInt(0).SetUint64(consensusBlock),
+		MerkleRoot:       treeRoot,
+		IntervalsPassed:  intervalsPassed,
+		TreasuryETH:      rewardsFile.GetTotalProtocolDaoEth(),
+		TreasuryRPL:      rewardsFile.GetTotalProtocolDaoRpl(),
+		NodeRPL:          collateralRplRewards,
+		TrustedNodeRPL:   oDaoRplRewards,
+		NodeETH:          nodeOperatorSmoothingPoolEthRewardsAndVoterShare,
+		UserETH:          rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
+		SmoothingPoolETH: rewardsFile.GetTotalSmoothingPoolBalance(),
+	}
 	// Get the gas limit
-	gasInfo, err := rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
+	gasInfo, err = rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
 	if err != nil {
 		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
 			// Set a gas limit which will intentionally be too low and revert
@@ -433,8 +436,9 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	opts.GasTipCap = eth.GweiToWei(utils.GetWatchtowerPrioFee(t.cfg))
 	opts.GasLimit = gasInfo.SafeGasLimit
 
-	// Submit RPL price
-	hash, err := rewards.SubmitRewardSnapshot(t.rp, submission, opts)
+	var hash common.Hash
+	// Submit rewards snapshot
+	hash, err = rewards.SubmitRewardSnapshot(t.rp, submission, opts)
 	if err != nil {
 		return err
 	}

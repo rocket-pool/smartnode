@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
@@ -85,6 +86,52 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	// Sync
 	var wg errgroup.Group
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	wg.Go(func() error {
+		deployed, err := megapool.GetMegapoolDeployed(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.MegapoolDeployed = deployed
+		}
+		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.MegapoolAddress = megapoolAddress
+		}
+
+		// Load the megapool contract
+		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+		if err == nil {
+			debt, err := mp.GetDebt(nil)
+			if err == nil {
+				response.MegapoolNodeDebt = debt
+			}
+			refund, err := mp.GetRefundValue(nil)
+			if err == nil {
+				response.MegapoolRefundValue = refund
+			}
+			validatorCount, err := mp.GetActiveValidatorCount(nil)
+			if err == nil {
+				response.MegapoolActiveValidatorCount = uint16(validatorCount)
+			}
+		}
+		return err
+	})
+
+	wg.Go(func() error {
+		expressTicketCount, err := node.GetExpressTicketCount(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.ExpressTicketCount = expressTicketCount
+		}
+		return err
+	})
+	wg.Go(func() error {
+		provisioned, err := node.GetExpressTicketsProvisioned(rp, nodeAccount.Address, nil)
+		if err == nil {
+			response.ExpressTicketsProvisioned = provisioned
+		}
+		return err
+	})
 
 	wg.Go(func() error {
 		mpDetails, err := mp.GetNodeMinipoolDetails(rp, bc, nodeAccount.Address, &legacyMinipoolQueueAddress)
@@ -138,17 +185,68 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
+	wg.Go(func() error {
+		var err error
+		response.LatestBlockTime, err = rp.Client.LatestBlockTime(ctx)
+		return err
+	})
 	// Get the node's locked RPL
 	wg.Go(func() error {
 		var err error
-		response.NodeRPLLocked, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+		response.NodeRPLLocked, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
 		return err
 	})
-
-	// Check if Voting is Initialized
+	// Get staking details
 	wg.Go(func() error {
 		var err error
-		response.IsVotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
+		response.TotalRplStake, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.RplStakeMegapool, err = node.GetNodeMegapoolStakedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.RplStakeLegacy, err = node.GetNodeLegacyStakedRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.UnstakingRPL, err = node.GetNodeUnstakingRPL(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		unstakingPeriod, err := protocol.GetNodeUnstakingPeriod(rp, nil)
+		if err == nil {
+			response.UnstakingPeriodDuration = time.Duration(unstakingPeriod.Int64()) * time.Second
+		}
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		lastUnstakeTimestamp, err := node.GetNodeLastUnstakeTime(rp, nodeAccount.Address, nil)
+		if err == nil {
+			// Convert the lastUnstakeTimestamp to a time.Time object
+			response.LastRPLUnstakeTime = time.Unix(int64(lastUnstakeTimestamp), 0)
+		}
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.RplStakeThreshold, err = node.GetNodeMinimumLegacyRPLStake(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.UnclaimedRewards, err = node.GetUnclaimedRewardsRaw(rp, nodeAccount.Address, nil)
+		return err
+	})
+	wg.Go(func() error {
+		var err error
+		response.ReducedBond, err = protocol.GetReducedBondRaw(rp, nil)
 		return err
 	})
 
@@ -169,35 +267,16 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return err
 	})
 
-	// Get staking details
+	// MinimumLegacyRPLStake and MaximumPerMinipoolStake are both used to compute the RPL amount that a node cannot fall under when withdrawing
 	wg.Go(func() error {
 		var err error
-		response.RplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+		response.RplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStake(rp, nil)
 		return err
 	})
+
 	wg.Go(func() error {
 		var err error
-		response.EffectiveRplStake, err = node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		response.MinimumRplStake, err = node.GetNodeMinimumRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		response.MaximumRplStake, err = node.GetNodeMaximumRPLStake(rp, nodeAccount.Address, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		response.MaximumStakeFraction, err = protocol.GetMaximumPerMinipoolStake(rp, nil)
-		return err
-	})
-	wg.Go(func() error {
-		var err error
-		response.EthMatched, response.EthMatchedLimit, response.PendingMatchAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
+		response.EthBorrowed, response.EthBorrowedLimit, response.PendingBorrowAmount, err = rputils.CheckCollateral(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -295,6 +374,8 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
+		// Cancel in-flight requests.
+		cancel()
 		return nil, err
 	}
 
@@ -337,19 +418,17 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 		return nil, err
 	}
 
-	activeMinipools := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
-	if activeMinipools > 0 {
+	totalActiveValidators := response.MinipoolCounts.Total - response.MinipoolCounts.Finalised
+	totalActiveValidators = totalActiveValidators + int(response.MegapoolActiveValidatorCount)
+
+	if totalActiveValidators > 0 {
 		var wg2 errgroup.Group
-		var minStakeFraction *big.Int
-		var maxStakeFraction *big.Int
+		var rplStakeThresholdFraction *big.Int
+
+		// MinimumLegacyRPLStake and MaximumPerMinipoolStake are both used to compute the RPL amount that a node cannot fall under when withdrawing
 		wg2.Go(func() error {
 			var err error
-			minStakeFraction, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
-			return err
-		})
-		wg2.Go(func() error {
-			var err error
-			maxStakeFraction, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
+			rplStakeThresholdFraction, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
 			return err
 		})
 
@@ -358,30 +437,8 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			return nil, err
 		}
 
-		// Calculate the *real* minimum, including the pending bond reductions
-		trueMinimumStake := big.NewInt(0).Add(response.EthMatched, response.PendingMatchAmount)
-		trueMinimumStake.Mul(trueMinimumStake, minStakeFraction)
-		trueMinimumStake.Div(trueMinimumStake, rplPrice)
-
-		// Calculate the *real* maximum, including the pending bond reductions
-		trueMaximumStake := eth.EthToWei(32)
-		trueMaximumStake.Mul(trueMaximumStake, big.NewInt(int64(activeMinipools)))
-		trueMaximumStake.Sub(trueMaximumStake, response.EthMatched)
-		trueMaximumStake.Sub(trueMaximumStake, response.PendingMatchAmount) // (32 * activeMinipools - ethMatched - pendingMatch)
-		trueMaximumStake.Mul(trueMaximumStake, maxStakeFraction)
-		trueMaximumStake.Div(trueMaximumStake, rplPrice)
-
-		response.MinimumRplStake = trueMinimumStake
-		response.MaximumRplStake = trueMaximumStake
-
-		if response.EffectiveRplStake.Cmp(trueMinimumStake) < 0 {
-			response.EffectiveRplStake.SetUint64(0)
-		} else if response.EffectiveRplStake.Cmp(trueMaximumStake) > 0 {
-			response.EffectiveRplStake.Set(trueMaximumStake)
-		}
-
-		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (float64(activeMinipools)*32.0 - eth.WeiToEth(response.EthMatched) - eth.WeiToEth(response.PendingMatchAmount))
-		response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / (eth.WeiToEth(response.EthMatched) + eth.WeiToEth(response.PendingMatchAmount))
+		response.BondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / (float64(totalActiveValidators)*32.0 - eth.WeiToEth(response.EthBorrowed) - eth.WeiToEth(response.PendingBorrowAmount))
+		response.BorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / (eth.WeiToEth(response.EthBorrowed) + eth.WeiToEth(response.PendingBorrowAmount))
 
 		// Calculate the "eligible" info (ignoring pending bond reductions) based on the Beacon Chain
 		_, _, pendingEligibleBorrowedEth, pendingEligibleBondedEth, err := getTrueBorrowAndBondAmounts(rp, bc, nodeAccount.Address)
@@ -389,41 +446,28 @@ func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
 			return nil, fmt.Errorf("error calculating eligible borrowed and bonded amounts: %w", err)
 		}
 
-		// Calculate the "eligible real" minimum based on the Beacon Chain, including pending bond reductions
-		pendingTrueMinimumStake := big.NewInt(0).Mul(pendingEligibleBorrowedEth, minStakeFraction)
-		pendingTrueMinimumStake.Div(pendingTrueMinimumStake, rplPrice)
-
 		// Calculate the "eligible real" maximum based on the Beacon Chain, including the pending bond reductions
-		pendingTrueMaximumStake := big.NewInt(0).Mul(pendingEligibleBondedEth, maxStakeFraction)
+		pendingTrueMaximumStake := big.NewInt(0).Mul(pendingEligibleBondedEth, rplStakeThresholdFraction)
 		pendingTrueMaximumStake.Div(pendingTrueMaximumStake, rplPrice)
 
-		response.PendingMinimumRplStake = pendingTrueMinimumStake
 		response.PendingMaximumRplStake = pendingTrueMaximumStake
-
-		response.PendingEffectiveRplStake = big.NewInt(0).Set(response.RplStake)
-		if response.PendingEffectiveRplStake.Cmp(pendingTrueMinimumStake) < 0 {
-			response.PendingEffectiveRplStake.SetUint64(0)
-		} else if response.PendingEffectiveRplStake.Cmp(pendingTrueMaximumStake) > 0 {
-			response.PendingEffectiveRplStake.Set(pendingTrueMaximumStake)
-		}
 
 		pendingEligibleBondedEthFloat := eth.WeiToEth(pendingEligibleBondedEth)
 		if pendingEligibleBondedEthFloat == 0 {
 			response.PendingBondedCollateralRatio = 0
 		} else {
-			response.PendingBondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / pendingEligibleBondedEthFloat
+			response.PendingBondedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / pendingEligibleBondedEthFloat
 		}
 
 		pendingEligibleBorrowedEthFloat := eth.WeiToEth(pendingEligibleBorrowedEth)
 		if pendingEligibleBorrowedEthFloat == 0 {
 			response.PendingBorrowedCollateralRatio = 0
 		} else {
-			response.PendingBorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.RplStake) / pendingEligibleBorrowedEthFloat
+			response.PendingBorrowedCollateralRatio = eth.WeiToEth(rplPrice) * eth.WeiToEth(response.TotalRplStake) / pendingEligibleBorrowedEthFloat
 		}
 	} else {
 		response.BorrowedCollateralRatio = -1
 		response.BondedCollateralRatio = -1
-		response.PendingEffectiveRplStake = big.NewInt(0)
 		response.PendingMinimumRplStake = big.NewInt(0)
 		response.PendingMaximumRplStake = big.NewInt(0)
 		response.PendingBondedCollateralRatio = -1

@@ -8,7 +8,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -78,7 +77,7 @@ func GetBestApiClient(primary *rocketpool.RocketPool, cfg *config.RocketPoolConf
 		archiveEcUrl := cfg.Smartnode.ArchiveECUrl.Value.(string)
 		if archiveEcUrl != "" {
 			printMessage(fmt.Sprintf("Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", blockNumber.Uint64(), archiveEcUrl))
-			ec, err := ethclient.Dial(archiveEcUrl)
+			ec, err := services.NewEthClient(archiveEcUrl)
 			if err != nil {
 				return nil, fmt.Errorf("Error connecting to archive EC: %w", err)
 			}

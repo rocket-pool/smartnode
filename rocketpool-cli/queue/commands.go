@@ -49,6 +49,30 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+
+			{
+				Name:      "assign-deposits",
+				Aliases:   []string{"ad"},
+				Usage:     "Assign deposits to queued validators",
+				UsageText: "rocketpool queue assign-deposits",
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm all prompts",
+					},
+				},
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return assignDeposits(c)
+
+				},
+			},
 		},
 	})
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -16,8 +17,8 @@ import (
 )
 
 const (
-	legacyNodeBatchSize  int = 100
-	nodeAddressBatchSize int = 1000
+	legacyNodeBatchSize  int = 50
+	nodeAddressBatchSize int = 800
 )
 
 // Complete details for a node
@@ -28,13 +29,22 @@ type NativeNodeDetails struct {
 	FeeDistributorInitialised        bool           `json:"fee_distributor_initialised"`
 	FeeDistributorAddress            common.Address `json:"fee_distributor_address"`
 	RewardNetwork                    *big.Int       `json:"reward_network"`
-	RplStake                         *big.Int       `json:"rpl_stake"`
 	EffectiveRPLStake                *big.Int       `json:"effective_rpl_stake"`
 	MinimumRPLStake                  *big.Int       `json:"minimum_rpl_stake"`
 	MaximumRPLStake                  *big.Int       `json:"maximum_rpl_stake"`
-	EthMatched                       *big.Int       `json:"eth_matched"`
-	EthMatchedLimit                  *big.Int       `json:"eth_matched_limit"`
+	EthBorrowed                      *big.Int       `json:"eth_borrowed"`
+	EthBorrowedLimit                 *big.Int       `json:"eth_borrowed_limit"`
+	MegapoolETHBorrowed              *big.Int       `json:"megapool_eth_borrowed"`
+	MinipoolETHBorrowed              *big.Int       `json:"minipool_eth_borrowed"`
+	EthBonded                        *big.Int       `json:"eth_bonded"`
+	MegapoolEthBonded                *big.Int       `json:"megapool_eth_bonded"`
+	MinipoolETHBonded                *big.Int       `json:"minipool_eth_bonded"`
+	MegapoolStakedRPL                *big.Int       `json:"megapool_staked_rpl"`
+	LegacyStakedRPL                  *big.Int       `json:"legacy_staked_rpl"`
+	UnstakingRPL                     *big.Int       `json:"unstaking_rpl"`
+	LockedRPL                        *big.Int       `json:"locked_rpl"`
 	MinipoolCount                    *big.Int       `json:"minipool_count"`
+	MegapoolValidatorCount           uint32         `json:"megapool_validator_count"`
 	BalanceETH                       *big.Int       `json:"balance_eth"`
 	BalanceRETH                      *big.Int       `json:"balance_reth"`
 	BalanceRPL                       *big.Int       `json:"balance_rpl"`
@@ -50,6 +60,8 @@ type NativeNodeDetails struct {
 	AverageNodeFee                   *big.Int       `json:"average_node_fee"` // Must call CalculateAverageFeeAndDistributorShares to get this
 	CollateralisationRatio           *big.Int       `json:"collateralisation_ratio"`
 	DistributorBalance               *big.Int       `json:"distributor_balance"`
+	MegapoolAddress                  common.Address `json:"megapool_address"`
+	MegapoolDeployed                 bool           `json:"megapool_deployed"`
 }
 
 func timeMax(a, b time.Time) time.Time {
@@ -109,6 +121,19 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 		return NativeNodeDetails{}, err
 	}
 
+	if details.MegapoolDeployed {
+		// Load the megapool contract
+		mp, err := megapool.NewMegaPoolV1(rp, details.MegapoolAddress, opts)
+		if err != nil {
+			return NativeNodeDetails{}, err
+		}
+
+		details.MegapoolValidatorCount, err = mp.GetActiveValidatorCount(nil)
+		if err != nil {
+			return NativeNodeDetails{}, err
+		}
+	}
+
 	// Get the distributor balance
 	distributorBalance, err := rp.Client.BalanceAt(context.Background(), details.FeeDistributorAddress, opts.BlockNumber)
 	if err != nil {
@@ -118,6 +143,7 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	// Do some postprocessing on the node data
 	details.DistributorBalance = distributorBalance
 
+	// TODO effectiveRPLStake and MinimumRPLStake are deprecated in Saturn
 	// Fix the effective stake
 	if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
 		details.EffectiveRPLStake.SetUint64(0)
@@ -200,6 +226,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 		details := &nodeDetails[i]
 		details.DistributorBalance = balances[i]
 
+		// TODO effectiveRPLStake and MinimumRPLStake are deprecated in Saturn
 		// Fix the effective stake
 		if details.EffectiveRPLStake.Cmp(details.MinimumRPLStake) == -1 {
 			details.EffectiveRPLStake.SetUint64(0)
@@ -326,12 +353,7 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	mc.AddCall(contracts.RocketNodeManager, &details.FeeDistributorInitialised, "getFeeDistributorInitialised", address)
 	mc.AddCall(contracts.RocketNodeDistributorFactory, &details.FeeDistributorAddress, "getProxyAddress", address)
 	mc.AddCall(contracts.RocketNodeManager, &details.RewardNetwork, "getRewardNetwork", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.RplStake, "getNodeRPLStake", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.EffectiveRPLStake, "getNodeEffectiveRPLStake", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.MinimumRPLStake, "getNodeMinimumRPLStake", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.MaximumRPLStake, "getNodeMaximumRPLStake", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.EthMatched, "getNodeETHMatched", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.EthMatchedLimit, "getNodeETHMatchedLimit", address)
+
 	mc.AddCall(contracts.RocketMinipoolManager, &details.MinipoolCount, "getNodeMinipoolCount", address)
 	mc.AddCall(contracts.RocketTokenRETH, &details.BalanceRETH, "balanceOf", address)
 	mc.AddCall(contracts.RocketTokenRPL, &details.BalanceRPL, "balanceOf", address)
@@ -344,4 +366,28 @@ func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller,
 	// Atlas
 	mc.AddCall(contracts.RocketNodeDeposit, &details.DepositCreditBalance, "getNodeDepositCredit", address)
 	mc.AddCall(contracts.RocketNodeStaking, &details.CollateralisationRatio, "getNodeETHCollateralisationRatio", address)
+
+	// Saturn
+	// a node's total borrowed ETH amount (minipool + megapool)
+	mc.AddCall(contracts.RocketNodeStaking, &details.EthBorrowed, "getNodeETHBorrowed", address)
+	// a node's borrowed megapool ETH amount
+	mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolETHBorrowed, "getNodeMegapoolETHBorrowed", address)
+	// a node's borrowed minipool ETH amount
+	mc.AddCall(contracts.RocketNodeStaking, &details.MinipoolETHBorrowed, "getNodeMinipoolETHBorrowed", address)
+	// a node's total amount of a node operator's bonded ETH (minipool + megapool)
+	mc.AddCall(contracts.RocketNodeStaking, &details.EthBonded, "getNodeETHBonded", address)
+	// the amount of a node operator's megapool bonded ETH
+	mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolEthBonded, "getNodeMegapoolETHBonded", address)
+	// the amount of a node operator's minipool bonded ETH
+	mc.AddCall(contracts.RocketNodeStaking, &details.MinipoolETHBonded, "getNodeMinipoolETHBonded", address)
+	// the amount of megapool staked RPL for a node operator
+	mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolStakedRPL, "getNodeMegapoolStakedRPL", address)
+	// the amount of legacy staked RPL for a node operator
+	mc.AddCall(contracts.RocketNodeStaking, &details.LegacyStakedRPL, "getNodeLegacyStakedRPL", address)
+	// the timestamp at which a node last unstaked megapool staked RPL
+	mc.AddCall(contracts.RocketNodeStaking, &details.UnstakingRPL, "getNodeUnstakingRPL", address)
+	// the amount of RPL that is locked for a given node
+	mc.AddCall(contracts.RocketNodeStaking, &details.LockedRPL, "getNodeLockedRPL", address)
+	mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolAddress, "getExpectedAddress", address)
+	mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getMegapoolDeployed", address)
 }

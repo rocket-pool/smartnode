@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -24,6 +25,154 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 
 	// Data
 	var wg errgroup.Group
+
+	// New calls introduced in Saturn
+	if response.SaturnDeployed {
+
+		// === Deposit ===
+
+		wg.Go(func() error {
+			var err error
+			response.Deposit.ExpressQueueRate, err = protocol.GetExpressQueueRate(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Deposit.ExpressQueueTicketsBaseProvision, err = protocol.GetExpressQueueTicketsBaseProvision(rp, nil)
+			return err
+		})
+
+		// === Minipool ===
+
+		// MaximumPenaltyCount is not live on devnet yet
+		// wg.Go(func() error {
+		// 	var err error
+		// 	response.Minipool.MaximumPenaltyCount, err = protocol.GetMaximumPenaltyCount(rp, nil)
+		// 	return err
+		// })
+
+		// === Network ===
+
+		wg.Go(func() error {
+			var err error
+			response.Network.NodeCommissionShare, err = protocol.GetNodeShare(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.NodeCommissionShareSecurityCouncilAdder, err = protocol.GetNodeShareSecurityCouncilAdder(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.VoterShare, err = protocol.GetVoterShare(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.ProtocolDAOShare, err = protocol.GetProtocolDAOShare(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.MaxNodeShareSecurityCouncilAdder, err = protocol.GetMaxNodeShareSecurityCouncilAdder(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.MaxRethBalanceDelta, err = protocol.GetMaxRethDelta(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Network.AllowListedControllers, err = protocol.GetAllowListedControllers(rp, nil)
+			return err
+		})
+
+		// === Node ===
+
+		wg.Go(func() error {
+			var err error
+			response.Node.ReducedBond, err = protocol.GetReducedBond(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			nodeUnstakingPeriod, err := protocol.GetNodeUnstakingPeriod(rp, nil)
+			if err == nil {
+				response.Node.NodeUnstakingPeriod = time.Duration(nodeUnstakingPeriod.Int64()) * time.Second
+			}
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Node.MinimumLegacyRplStake, err = protocol.GetMinimumLegacyRPLStakeRaw(rp, nil)
+			return err
+		})
+
+		// === Megapool ===
+
+		wg.Go(func() error {
+			var err error
+			timeBeforeDissolve, err := protocol.GetMegapoolTimeBeforeDissolve(rp, nil)
+			if err == nil {
+				response.Megapool.TimeBeforeDissolve = time.Duration(timeBeforeDissolve) * time.Second
+			}
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.MaximumEthPenalty, err = protocol.GetMaximumEthPenalty(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.NotifyThreshold, err = protocol.GetNotifyThreshold(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.LateNotifyFine, err = protocol.GetLateNotifyFine(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.DissolvePenalty, err = protocol.GetMegapoolDissolvePenalty(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.UserDistributeDelay, err = protocol.GetUserDistributeDelay(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.UserDistributeDelayWithShortfall, err = protocol.GetUserDistributeDelayWithShortfall(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Megapool.PenaltyThreshold, err = protocol.GetPenaltyThreshold(rp, nil)
+			return err
+		})
+
+	}
 
 	// === Auction ===
 
@@ -275,17 +424,20 @@ func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
 		return err
 	})
 
-	wg.Go(func() error {
-		var err error
-		response.Node.MinimumPerMinipoolStake, err = protocol.GetMinimumPerMinipoolStakeRaw(rp, nil)
-		return err
-	})
+	// In Saturn, these two bindings are deprecated in favor of 'GetMinimumLegacyRPLStake'
+	if !response.SaturnDeployed {
+		wg.Go(func() error {
+			var err error
+			response.Node.MinimumPerMinipoolStake, err = protocol131.GetMinimumPerMinipoolStakeRaw(rp, nil)
+			return err
+		})
 
-	wg.Go(func() error {
-		var err error
-		response.Node.MaximumPerMinipoolStake, err = protocol.GetMaximumPerMinipoolStakeRaw(rp, nil)
-		return err
-	})
+		wg.Go(func() error {
+			var err error
+			response.Node.MaximumPerMinipoolStake, err = protocol131.GetMaximumPerMinipoolStakeRaw(rp, nil)
+			return err
+		})
+	}
 
 	// === Proposals ===
 

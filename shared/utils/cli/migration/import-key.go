@@ -44,7 +44,7 @@ func ImportKey(c *cli.Context, rp *rocketpool.Client, minipoolAddress common.Add
 	if c.Bool("no-restart") {
 		return true
 	}
-	if c.Bool("yes") || prompt.Confirm("Would you like to restart the Smartnode's Validator Client now so it loads your validator's key?") {
+	if c.Bool("yes") || prompt.Confirm("Would you like to restart the Smart Node's Validator Client now so it loads your validator's key?") {
 		// Restart the VC
 		fmt.Print("Restarting Validator Client... ")
 		_, err := rp.RestartVc()

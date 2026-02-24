@@ -8,6 +8,8 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/auction"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/claims"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/minipool"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/network"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/node"
@@ -51,7 +53,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 	app.Name = "rocketpool"
 	app.Usage = "Rocket Pool CLI"
 	app.Version = shared.RocketPoolVersion()
-	app.Copyright = "(c) 2025 Rocket Pool Pty Ltd"
+	app.Copyright = "(c) 2026 Rocket Pool Pty Ltd"
 
 	// Initialize app metadata
 	app.Metadata = make(map[string]interface{})
@@ -100,7 +102,9 @@ A special thanks to the Rocket Pool community for all their contributions.
 
 	// Register commands
 	auction.RegisterCommands(app, "auction", []string{"a"})
+	claims.RegisterCommands(app, "claims", []string{"l"})
 	minipool.RegisterCommands(app, "minipool", []string{"m"})
+	megapool.RegisterCommands(app, "megapool", []string{"g"})
 	network.RegisterCommands(app, "network", []string{"e"})
 	node.RegisterCommands(app, "node", []string{"n"})
 	odao.RegisterCommands(app, "odao", []string{"o"})

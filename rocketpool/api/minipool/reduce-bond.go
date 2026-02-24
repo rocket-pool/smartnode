@@ -88,7 +88,7 @@ func canBeginReduceBondAmount(c *cli.Context, minipoolAddress common.Address, ne
 			return fmt.Errorf("error getting node deposit balance for minipool %s: %w", minipoolAddress.Hex(), err)
 		}
 		// How much more ETH they're requesting from the staking pool
-		response.MatchRequest = big.NewInt(0).Sub(nodeDepositAmount, newBondAmountWei)
+		response.BorrowRequest = big.NewInt(0).Sub(nodeDepositAmount, newBondAmountWei)
 		return nil
 	})
 
@@ -249,6 +249,30 @@ func reduceBondAmount(c *cli.Context, minipoolAddress common.Address) (*api.Redu
 		return nil, err
 	}
 	response.TxHash = hash
+
+	// Return response
+	return &response, nil
+}
+
+func getBondReductionEnabled(c *cli.Context) (*api.GetBondReductionEnabledResponse, error) {
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.GetBondReductionEnabledResponse{}
+
+	// Check if bond reduction is enabled
+	bondReductionEnabled, err := protocol.GetBondReductionEnabled(rp, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if bond reduction is enabled: %w", err)
+	}
+	response.BondReductionEnabled = bondReductionEnabled
 
 	// Return response
 	return &response, nil

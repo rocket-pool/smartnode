@@ -152,6 +152,20 @@ const (
 	ValidatorState_WithdrawalDone     ValidatorState = "withdrawal_done"
 )
 
+// SSZ response go into these wrapper types.
+// You can stream Data into a deserializer.
+// Fork is the consensus version, e.g, "deneb" or "electra"
+
+type BeaconStateSSZ struct {
+	Data []byte
+	Fork string
+}
+
+type BeaconBlockSSZ struct {
+	Data []byte
+	Fork string
+}
+
 // Beacon client interface
 type Client interface {
 	GetClientType() (BeaconClientType, error)
@@ -164,6 +178,7 @@ type Client interface {
 	GetBeaconHead() (BeaconHead, error)
 	GetValidatorStatusByIndex(index string, opts *ValidatorStatusOptions) (ValidatorStatus, error)
 	GetValidatorStatus(pubkey types.ValidatorPubkey, opts *ValidatorStatusOptions) (ValidatorStatus, error)
+	GetAllValidators() ([]ValidatorStatus, error)
 	GetValidatorStatuses(pubkeys []types.ValidatorPubkey, opts *ValidatorStatusOptions) (map[types.ValidatorPubkey]ValidatorStatus, error)
 	GetValidatorIndex(pubkey types.ValidatorPubkey) (string, error)
 	GetValidatorSyncDuties(indices []string, epoch uint64) (map[string]bool, error)
@@ -176,4 +191,7 @@ type Client interface {
 	GetEth1DataForEth2Block(blockId string) (Eth1Data, bool, error)
 	GetCommitteesForEpoch(epoch *uint64) (Committees, error)
 	ChangeWithdrawalCredentials(validatorIndex string, fromBlsPubkey types.ValidatorPubkey, toExecutionAddress common.Address, signature types.ValidatorSignature) error
+
+	GetBeaconStateSSZ(slot uint64) (*BeaconStateSSZ, error)
+	GetBeaconBlockSSZ(slot uint64) (*BeaconBlockSSZ, bool, error)
 }

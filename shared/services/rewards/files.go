@@ -39,7 +39,7 @@ func ReadLocalMinipoolPerformanceFile(path string) (*LocalMinipoolPerformanceFil
 		return nil, fmt.Errorf("error unmarshaling rewards file from %s: %w", path, err)
 	}
 
-	return NewLocalFile[IMinipoolPerformanceFile](minipoolPerformance, path), nil
+	return NewLocalFile[IPerformanceFile](minipoolPerformance, path), nil
 }
 
 // Interface for local rewards or minipool performance files
@@ -67,7 +67,7 @@ type ILocalFile interface {
 
 // Type aliases
 type LocalRewardsFile = LocalFile[IRewardsFile]
-type LocalMinipoolPerformanceFile = LocalFile[IMinipoolPerformanceFile]
+type LocalMinipoolPerformanceFile = LocalFile[IPerformanceFile]
 
 // NewLocalFile creates the wrapper, but doesn't write to disk.
 // This should be used when generating new trees / performance files.
@@ -195,15 +195,22 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 	var primaryCid *cid.Cid
 	out := make(map[string]cid.Cid, 4)
 
+	var performancePath string
+	if treeResult.RulesetVersion < 11 {
+		performancePath = smartnode.GetMinipoolPerformancePath(currentIndex, true)
+	} else {
+		performancePath = smartnode.GetPerformancePath(currentIndex)
+	}
+
 	files := []ILocalFile{
 		// Do not reorder!
-		// i == 0 - minipool performance file
-		NewLocalFile[IMinipoolPerformanceFile](
+		// i == 0 - performance file
+		NewLocalFile(
 			treeResult.MinipoolPerformanceFile,
-			smartnode.GetMinipoolPerformancePath(currentIndex, true),
+			performancePath,
 		),
 		// i == 1 - rewards file
-		NewLocalFile[IRewardsFile](
+		NewLocalFile(
 			rewardsFile,
 			smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionJSON),
 		),
@@ -216,7 +223,7 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 		files = append(
 			files,
 			// i == 2 - ssz rewards file
-			NewLocalFile[IRewardsFile](
+			NewLocalFile(
 				rewardsFile,
 				smartnode.GetRewardsTreePath(currentIndex, true, config.RewardsExtensionSSZ),
 			),
@@ -275,6 +282,10 @@ func saveArtifactsImpl(smartnode *config.SmartnodeConfig, treeResult *GenerateTr
 			}
 		}
 
+	}
+
+	if primaryCid == nil {
+		return cid.Cid{}, out, nil
 	}
 	return *primaryCid, out, nil
 }

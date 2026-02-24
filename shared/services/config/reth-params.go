@@ -9,8 +9,8 @@ import (
 
 // Constants
 const (
-	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v1.6.0"
-	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v1.6.0"
+	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v1.11.0"
+	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v1.11.0"
 	rethEventLogInterval int    = 1000
 	rethStopSignal       string = "SIGTERM"
 )
@@ -112,7 +112,7 @@ func NewRethConfig(cfg *RocketPoolConfig) *RethConfig {
 		AdditionalFlags: config.Parameter{
 			ID:                 "additionalFlags",
 			Name:               "Additional Flags",
-			Description:        "Additional custom command line flags you want to pass to Reth, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass to Reth, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},

@@ -40,7 +40,7 @@ func rebuildWallet(c *cli.Context) (*api.RebuildWalletResponse, error) {
 	}
 
 	// Recover validator keys
-	response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, bc, nodeAccount.Address, w, false)
+	response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, false)
 	if err != nil {
 		return nil, err
 	}

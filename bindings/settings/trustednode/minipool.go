@@ -15,6 +15,7 @@ import (
 // Config
 const (
 	MinipoolSettingsContractName  = "rocketDAONodeTrustedSettingsMinipool"
+	DissolvePeriodPath            = "megapool.dissolve.period"
 	ScrubPeriodPath               = "minipool.scrub.period"
 	PromotionScrubPeriodPath      = "minipool.promotion.scrub.period"
 	ScrubPenaltyEnabledPath       = "minipool.scrub.penalty.enabled"
@@ -115,6 +116,25 @@ func ProposeBondReductionWindowLength(rp *rocketpool.RocketPool, value uint64, o
 }
 func EstimateProposeBondReductionWindowLengthGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", BondReductionWindowLengthPath), MinipoolSettingsContractName, BondReductionWindowLengthPath, big.NewInt(int64(value)), opts)
+}
+
+// The amount of time, in seconds, how long after assignment before a validator can be dissolved
+func GetDissolvePeriod(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := minipoolSettingsContract.Call(opts, value, "getDissolvePeriod"); err != nil {
+		return 0, fmt.Errorf("error getting dissolve period: %w", err)
+	}
+	return (*value).Uint64(), nil
+}
+func ProposeDissolvePeriod(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return trustednodedao.ProposeSetUint(rp, fmt.Sprintf("set %s", DissolvePeriodPath), MinipoolSettingsContractName, DissolvePeriodPath, big.NewInt(int64(value)), opts)
+}
+func EstimateProposeDissolvePeriodGas(rp *rocketpool.RocketPool, value uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return trustednodedao.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", DissolvePeriodPath), MinipoolSettingsContractName, DissolvePeriodPath, big.NewInt(int64(value)), opts)
 }
 
 // Get contracts

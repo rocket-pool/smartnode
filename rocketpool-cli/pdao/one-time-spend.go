@@ -53,7 +53,7 @@ func proposeOneTimeSpend(c *cli.Context) error {
 	if rawEnabled {
 		amount, err = cliutils.ValidateBigInt("amount", amountString)
 	} else {
-		amount, err = parseFloat(c, "amount", amountString, false)
+		amount, err = cliutils.ValidateFloat(c, "amount", amountString, false)
 	}
 	if err != nil {
 		return err

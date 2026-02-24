@@ -60,6 +60,50 @@ func (f *SSZFile_v1) MarshalJSON() ([]byte, error) {
 	return json.Marshal(&alias)
 }
 
+type sszfile_v2_alias SSZFile_v2
+
+// This custom unmarshaler avoids creating a landmine where the user
+// may forget to call NewSSZFile_v1 before unmarshaling into the result,
+// which would cause the Magic header to be unset.
+func (f *SSZFile_v2) UnmarshalJSON(data []byte) error {
+	// Disposable type without a custom unmarshal
+	var alias sszfile_v2_alias
+	err := json.Unmarshal(data, &alias)
+	if err != nil {
+		return err
+	}
+	*f = SSZFile_v2(alias)
+
+	// After unmarshaling, set the magic header
+	f.Magic = Magicv2
+
+	// Verify legitimacy of the file
+	return f.Verify()
+}
+
+// When writing JSON, we need to compute the merkle tree to populate the proofs
+func (f *SSZFile_v2) MarshalJSON() ([]byte, error) {
+	if err := f.Verify(); err != nil {
+		return nil, fmt.Errorf("error verifying ssz while serializing json: %w", err)
+	}
+	proofs, err := f.Proofs()
+	if err != nil {
+		return nil, fmt.Errorf("error getting proofs: %w", err)
+	}
+
+	for _, nr := range f.NodeRewards {
+		proof, ok := proofs[nr.Address]
+		if !ok {
+			return nil, fmt.Errorf("error getting proof for node %s", nr.Address)
+		}
+		nr.MerkleProof = proof
+	}
+
+	var alias sszfile_v2_alias
+	alias = sszfile_v2_alias(*f)
+	return json.Marshal(&alias)
+}
+
 func (h *Hash) UnmarshalJSON(data []byte) error {
 	var s string
 	err := json.Unmarshal(data, &s)
@@ -203,6 +247,51 @@ func (n *NodeRewards) UnmarshalJSON(data []byte) error {
 func (n NodeRewards) MarshalJSON() ([]byte, error) {
 	// Node Rewards is a slice, but represented as a map in the json.
 	m := make(map[string]*NodeReward, len(n))
+	// Make sure we sort, first
+	sort.Sort(n)
+	for _, nr := range n {
+		m[nr.Address.String()] = nr
+	}
+
+	// Serialize the map
+	return json.Marshal(m)
+}
+
+func (n *NodeRewards_v2) UnmarshalJSON(data []byte) error {
+	var m map[string]json.RawMessage
+	err := json.Unmarshal(data, &m)
+	if err != nil {
+		return err
+	}
+
+	*n = make(NodeRewards_v2, 0, len(m))
+	for k, v := range m {
+		s := strings.TrimPrefix(k, "0x")
+		addr, err := hex.DecodeString(s)
+		if err != nil {
+			return err
+		}
+
+		if len(addr) != 20 {
+			return fmt.Errorf("address %s wrong size- must be 20 bytes", s)
+		}
+
+		nodeReward := new(NodeReward_v2)
+		copy(nodeReward.Address[:], addr)
+		err = json.Unmarshal(v, nodeReward)
+		if err != nil {
+			return err
+		}
+		*n = append(*n, nodeReward)
+	}
+
+	sort.Sort(*n)
+	return nil
+}
+
+func (n NodeRewards_v2) MarshalJSON() ([]byte, error) {
+	// Node Rewards is a slice, but represented as a map in the json.
+	m := make(map[string]*NodeReward_v2, len(n))
 	// Make sure we sort, first
 	sort.Sort(n)
 	for _, nr := range n {

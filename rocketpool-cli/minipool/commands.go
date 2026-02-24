@@ -99,7 +99,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "import-key",
 				Aliases:   []string{"ik"},
-				Usage:     "Import the externally-derived key for a minipool that was previously a solo validator, so the Smartnode's VC manages it instead of your externally-managed VC.",
+				Usage:     "Import the externally-derived key for a minipool that was previously a solo validator, so the Smart Node's VC manages it instead of your externally-managed VC.",
 				UsageText: "rocketpool minipool import-key minipool-address [options]",
 				Flags: []cli.Flag{
 					cli.StringFlag{
@@ -428,72 +428,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 					// Run
 					return delegateUpgradeMinipools(c)
-
-				},
-			},
-
-			{
-				Name:      "delegate-rollback",
-				Aliases:   []string{"b"},
-				Usage:     "Roll a minipool's delegate contract back to its previous version",
-				UsageText: "rocketpool minipool delegate-rollback [options]",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to rollback (address or 'all')",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
-					}
-
-					// Run
-					return delegateRollbackMinipools(c)
-
-				},
-			},
-
-			{
-				Name:      "set-use-latest-delegate",
-				Aliases:   []string{"l"},
-				Usage:     "Use this to enable or disable the \"use-latest-delegate\" flag on one or more minipools. If enabled, the minipool will ignore its current delegate contract and always use whatever the latest delegate is.",
-				UsageText: "rocketpool minipool set-use-latest-delegate [options] true/false",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to configure the use-latest setting on (address or 'all')",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					setting, err := cliutils.ValidateBool("setting", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
-					}
-
-					// Run
-					return setUseLatestDelegateMinipools(c, setting)
 
 				},
 			},

@@ -9,6 +9,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -29,17 +30,43 @@ const (
 	bucketLimit uint = 2000
 )
 
-func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, bc beacon.Client, address common.Address, w wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
-
+func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, w wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err
 	}
 
 	// Get node's validating pubkeys
-	pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, address, nil)
+	pubkeys, err := minipool.GetNodeValidatingMinipoolPubkeys(rp, nodeAddress, nil)
 	if err != nil {
 		return nil, err
+	}
+
+	// Check if the node has a megapool
+	megapoolDeployed, err := megapool.GetMegapoolDeployed(rp, nodeAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if megapoolDeployed {
+		// Get the megapool address
+		megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAddress, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		// Load the megapool
+		mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+		if err != nil {
+			return nil, err
+		}
+
+		megapoolPubkeys, err := mp.GetMegapoolPubkeys(nil)
+		if err != nil {
+			return nil, err
+		}
+
+		pubkeys = append(pubkeys, megapoolPubkeys...)
 	}
 
 	// Remove zero pubkeys
@@ -55,7 +82,7 @@ func RecoverMinipoolKeys(c *cli.Context, rp *rocketpool.RocketPool, bc beacon.Cl
 	// Get validator statuses by pubkeys
 	statuses, err := bc.GetValidatorStatuses(pubkeys, nil)
 	if err != nil {
-		return nil, fmt.Errorf("Error getting validator statuses: %w", err)
+		return nil, fmt.Errorf("error getting validator statuses: %w", err)
 	}
 
 	// Filter out inactive validators

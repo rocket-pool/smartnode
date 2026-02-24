@@ -142,7 +142,7 @@
       "type": "stat"
     },
     {
-      "description": "The temperature of your CPU (you can set this to Tctl or Tdie, whichever you prefer to monitor).\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
+      "description": "The temperature of your CPU (you can set this to Tctl or Tdie, whichever you prefer to monitor).\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -208,7 +208,7 @@
       "type": "stat"
     },
     {
-      "description": "This will turn red when your system needs to be rebooted because of security updates.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
+      "description": "This will turn red when your system needs to be rebooted because of security updates.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -279,7 +279,7 @@
       "type": "stat"
     },
     {
-      "description": "Tracks any updates that are available for your OS or for Rocket Pool but haven't been applied yet. When one of these numbers is higher than 0, it means you should update your system or Rocket Pool accordingly.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
+      "description": "Tracks any updates that are available for your OS or for Rocket Pool but haven't been applied yet. When one of these numbers is higher than 0, it means you should update your system or Rocket Pool accordingly.\n\nSetting this up is Operating System specific, so it doesn't come ready out of the box; see the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1743,7 +1743,7 @@
         {
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nbeacon_peer_count{job=\"eth2\"} # Teku",
+          "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nsum(beacon_peer_count{job=\"eth2\"}) # Teku",
           "interval": "",
           "legendFormat": "",
           "range": true,
@@ -1830,7 +1830,7 @@
         {
           "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nbeacon_peer_count{job=\"eth2\"} # Teku",
+          "expr": "sum(sync_peers_per_status{job=\"eth2\", sync_status=~\"Synced|Advanced\"}) OR # Lighthouse\nlodestar_peers_sync_count{job=\"eth2\"} OR # Lodestar\nnbc_peers{job=\"eth2\"} OR # Nimbus\np2p_peer_count{job=\"eth2\", state=\"Connected\"} OR # Prysm\nsum(beacon_peer_count{job=\"eth2\"}) # Teku",
           "interval": "",
           "legendFormat": "BN",
           "range": true,
@@ -1932,7 +1932,7 @@
       "type": "timeseries"
     },
     {
-      "description": "The disk space used by your primary (Operating System) hard drive. Change the `device` option in this query to be your machine's hard drive.\n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
+      "description": "The disk space used by your primary (Operating System) hard drive. Change the `device` option in this query to be your machine's hard drive.\n\nSee the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2008,7 +2008,7 @@
       "type": "gauge"
     },
     {
-      "description": "The temperature of your SSD.\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
+      "description": "The temperature of your SSD.\n\nTo get the correct chip and sensor ID, you'll want to run `sensors` from the `lm-sensors` package. See the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2129,7 +2129,7 @@
       "type": "text"
     },
     {
-      "description": "The average read/write latency of your SSD. The lower it is, the faster your machine can process and respond to Beacon Chain activities like attesting. Change the `device` setting in the queries to be the SSD you want to track (typically the one with your chain data on it).\n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
+      "description": "The average read/write latency of your SSD. The lower it is, the faster your machine can process and respond to Beacon Chain activities like attesting. Change the `device` setting in the queries to be the SSD you want to track (typically the one with your chain data on it).\n\nSee the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2244,7 +2244,7 @@
       "type": "timeseries"
     },
     {
-      "description": "A chart showing the network I/O used by your main network adapter over time. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
+      "description": "A chart showing the network I/O used by your main network adapter over time. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -2339,7 +2339,7 @@
       "type": "timeseries"
     },
     {
-      "description": "The total network I/O that has gone through your main network adapter. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/guides/node/grafana.html for more information.",
+      "description": "The total network I/O that has gone through your main network adapter. To make it work, change the `device` setting in the queries to match the name of the network adapter you want to track (you can use `ifconfig` to get a list of network adapters and find the right one). \n\nSee the documentation at https://docs.rocketpool.net/node-staking/grafana for more information.",
       "fieldConfig": {
         "defaults": {
           "color": {

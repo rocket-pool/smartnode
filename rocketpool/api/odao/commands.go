@@ -73,6 +73,74 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "can-penalise-megapool",
+				Aliases:   []string{"cpm"},
+				Usage:     "Checks whether we can penalise a megapool",
+				UsageText: "rocketpool api odao can-penalise-megapool megapool-address block amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					var err error
+					if err = cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					block, err := cliutils.ValidateBigInt("block", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					amount, err := cliutils.ValidateBigInt("amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(canPenaliseMegapool(c, megapoolAddress, block, amount))
+					return nil
+
+				},
+			},
+
+			{
+				Name:      "penalise-megapool",
+				Aliases:   []string{"pm"},
+				Usage:     "Penalise a megapool",
+				UsageText: "rocketpool api odao penalise-megapool megapool-address block amount",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					var err error
+					if err = cliutils.ValidateArgCount(c, 3); err != nil {
+						return err
+					}
+					megapoolAddress, err := cliutils.ValidateAddress("megapool address", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					block, err := cliutils.ValidateBigInt("block", c.Args().Get(1))
+					if err != nil {
+						return err
+					}
+
+					amount, err := cliutils.ValidateBigInt("amount", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(penaliseMegapool(c, megapoolAddress, block, amount))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "proposal-details",
 				Aliases:   []string{"d"},
 				Usage:     "Get details of a proposal",

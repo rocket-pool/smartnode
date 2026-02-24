@@ -732,28 +732,9 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 		}
 
 		// Estimate gas limit
-		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
-			From:     opts.From,
-			To:       priceMessenger.Address,
-			GasPrice: big.NewInt(0), // use 0 gwei for simulation
-			Value:    opts.Value,
-			Data:     input,
-		})
+		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitOptimismPrice: %w", err)
-		}
-
-		// Get the safe gas limit
-		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
-		if gasLimit > rocketpool.MaxGasLimit {
-			gasLimit = rocketpool.MaxGasLimit
-		}
-		if safeGasLimit > rocketpool.MaxGasLimit {
-			safeGasLimit = rocketpool.MaxGasLimit
-		}
-		gasInfo := rocketpool.GasInfo{
-			EstGasLimit:  gasLimit,
-			SafeGasLimit: safeGasLimit,
 		}
 
 		// Print the gas info
@@ -872,28 +853,9 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 		}
 
 		// Estimate gas limit
-		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
-			From:     opts.From,
-			To:       priceMessenger.Address,
-			GasPrice: big.NewInt(0), // use 0 gwei for simulation
-			Value:    opts.Value,
-			Data:     input,
-		})
+		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitPolygonPrice: %w", err)
-		}
-
-		// Get the safe gas limit
-		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
-		if gasLimit > rocketpool.MaxGasLimit {
-			gasLimit = rocketpool.MaxGasLimit
-		}
-		if safeGasLimit > rocketpool.MaxGasLimit {
-			safeGasLimit = rocketpool.MaxGasLimit
-		}
-		gasInfo := rocketpool.GasInfo{
-			EstGasLimit:  gasLimit,
-			SafeGasLimit: safeGasLimit,
 		}
 
 		// Print the gas info
@@ -1004,7 +966,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 	if index == indexToSubmit {
 
 		// Get the current network recommended max fee
-		suggestedMaxFee, err := rpgas.GetHeadlessMaxFeeWei(t.cfg)
+		suggestedMaxFee, err := rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
 		if err != nil {
 			return fmt.Errorf("error getting recommended base fee from the network for Arbitrum price submission: %w", err)
 		}
@@ -1035,28 +997,9 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 		}
 
 		// Estimate gas limit
-		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
-			From:     opts.From,
-			To:       priceMessenger.Address,
-			GasPrice: big.NewInt(0), // use 0 gwei for simulation
-			Value:    opts.Value,
-			Data:     input,
-		})
+		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitArbitrumPrice: %w", err)
-		}
-
-		// Get the safe gas limit
-		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
-		if gasLimit > rocketpool.MaxGasLimit {
-			gasLimit = rocketpool.MaxGasLimit
-		}
-		if safeGasLimit > rocketpool.MaxGasLimit {
-			safeGasLimit = rocketpool.MaxGasLimit
-		}
-		gasInfo := rocketpool.GasInfo{
-			EstGasLimit:  gasLimit,
-			SafeGasLimit: safeGasLimit,
 		}
 
 		// Print the gas info
@@ -1194,28 +1137,9 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 		}
 
 		// Estimate gas limit
-		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
-			From:     opts.From,
-			To:       priceMessenger.Address,
-			GasPrice: big.NewInt(0), // use 0 gwei for simulation
-			Value:    opts.Value,
-			Data:     input,
-		})
+		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitZkSyncEraPrice: %w", err)
-		}
-
-		// Get the safe gas limit
-		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
-		if gasLimit > rocketpool.MaxGasLimit {
-			gasLimit = rocketpool.MaxGasLimit
-		}
-		if safeGasLimit > rocketpool.MaxGasLimit {
-			safeGasLimit = rocketpool.MaxGasLimit
-		}
-		gasInfo := rocketpool.GasInfo{
-			EstGasLimit:  gasLimit,
-			SafeGasLimit: safeGasLimit,
 		}
 
 		// Print the gas info
@@ -1333,28 +1257,9 @@ func (t *submitRplPrice) submitBasePrice() error {
 		}
 
 		// Estimate gas limit
-		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
-			From:     opts.From,
-			To:       priceMessenger.Address,
-			GasPrice: big.NewInt(0), // use 0 gwei for simulation
-			Value:    opts.Value,
-			Data:     input,
-		})
+		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitBasePrice: %w", err)
-		}
-
-		// Get the safe gas limit
-		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
-		if gasLimit > rocketpool.MaxGasLimit {
-			gasLimit = rocketpool.MaxGasLimit
-		}
-		if safeGasLimit > rocketpool.MaxGasLimit {
-			safeGasLimit = rocketpool.MaxGasLimit
-		}
-		gasInfo := rocketpool.GasInfo{
-			EstGasLimit:  gasLimit,
-			SafeGasLimit: safeGasLimit,
 		}
 
 		// Print the gas info
@@ -1498,28 +1403,9 @@ func (t *submitRplPrice) submitScrollPrice() error {
 		opts.Value = messageFee
 
 		// Estimate gas limit
-		gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
-			From:     opts.From,
-			To:       priceMessenger.Address,
-			GasPrice: big.NewInt(0), // use 0 gwei for simulation
-			Value:    opts.Value,
-			Data:     input,
-		})
+		gasInfo, err := t.estimateGasLimit(opts, priceMessenger.Address, input)
 		if err != nil {
 			return fmt.Errorf("Error estimating gas limit of submitScrollPrice: %w", err)
-		}
-
-		// Get the safe gas limit
-		safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
-		if gasLimit > rocketpool.MaxGasLimit {
-			gasLimit = rocketpool.MaxGasLimit
-		}
-		if safeGasLimit > rocketpool.MaxGasLimit {
-			safeGasLimit = rocketpool.MaxGasLimit
-		}
-		gasInfo := rocketpool.GasInfo{
-			EstGasLimit:  gasLimit,
-			SafeGasLimit: safeGasLimit,
 		}
 
 		// Print the gas info
@@ -1553,4 +1439,29 @@ func (t *submitRplPrice) submitScrollPrice() error {
 	}
 
 	return nil
+}
+
+// estimateGasLimit estimates gas limit for a transaction
+func (t *submitRplPrice) estimateGasLimit(opts *bind.TransactOpts, contractAddress *common.Address, input []byte) (rocketpool.GasInfo, error) {
+	// Estimate gas limit
+	gasLimit, err := t.rp.Client.EstimateGas(context.Background(), ethereum.CallMsg{
+		From:     opts.From,
+		To:       contractAddress,
+		GasPrice: nil,
+		Value:    opts.Value,
+		Data:     input,
+	})
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+
+	// Get the safe gas limit
+	safeGasLimit := uint64(float64(gasLimit) * rocketpool.GasLimitMultiplier)
+	gasLimit = min(gasLimit, rocketpool.MaxGasLimit)
+	safeGasLimit = min(safeGasLimit, rocketpool.MaxGasLimit)
+
+	return rocketpool.GasInfo{
+		EstGasLimit:  gasLimit,
+		SafeGasLimit: safeGasLimit,
+	}, nil
 }

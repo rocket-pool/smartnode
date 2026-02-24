@@ -5,7 +5,7 @@ import (
 )
 
 // Constants
-const prometheusTag string = "prom/prometheus:v2.53.1"
+const prometheusTag string = "prom/prometheus:v3.8.0"
 
 // Defaults
 const defaultPrometheusPort uint16 = 9091
@@ -71,7 +71,7 @@ func NewPrometheusConfig(cfg *RocketPoolConfig) *PrometheusConfig {
 		AdditionalFlags: config.Parameter{
 			ID:                 "additionalFlags",
 			Name:               "Additional Prometheus Flags",
-			Description:        "Additional custom command line flags you want to pass to Prometheus, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass to Prometheus, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Grafana},

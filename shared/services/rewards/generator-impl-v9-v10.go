@@ -25,9 +25,6 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Type assertion to ensure SSZFile_v1 is IRewardsFile
-var _ IRewardsFile = (*ssz_types.SSZFile_v1)(nil)
-
 // Implementation for tree generator ruleset v9
 type treeGeneratorImpl_v9_v10 struct {
 	networkState                 *state.NetworkState
@@ -96,7 +93,7 @@ func newTreeGeneratorImpl_v9_v10(rulesetVersion uint64, log *log.ColorLogger, lo
 		invalidNetworkNodes:   map[common.Address]uint64{},
 		minipoolPerformanceFile: &MinipoolPerformanceFile_v2{
 			Index:               index,
-			MinipoolPerformance: map[common.Address]*SmoothingPoolMinipoolPerformance_v2{},
+			MinipoolPerformance: map[common.Address]*MinipoolPerformance_v2{},
 		},
 		nodeRewards:         map[common.Address]*ssz_types.NodeReward{},
 		networkRewards:      map[ssz_types.Layer]*ssz_types.NetworkReward{},
@@ -185,6 +182,7 @@ func (r *treeGeneratorImpl_v9_v10) generateTree(rp RewardsExecutionClient, netwo
 	}
 
 	return &GenerateTreeResult{
+		RulesetVersion:          r.rewardsFile.RulesetVersion,
 		RewardsFile:             r.rewardsFile,
 		InvalidNetworkNodes:     r.invalidNetworkNodes,
 		MinipoolPerformanceFile: r.minipoolPerformanceFile,
@@ -194,10 +192,11 @@ func (r *treeGeneratorImpl_v9_v10) generateTree(rp RewardsExecutionClient, netwo
 
 // Quickly calculates an approximate of the staker's share of the smoothing pool balance without processing Beacon performance
 // Used for approximate returns in the rETH ratio update
-func (r *treeGeneratorImpl_v9_v10) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, bc RewardsBeaconClient) (*big.Int, error) {
+func (r *treeGeneratorImpl_v9_v10) approximateStakerShareOfSmoothingPool(rp RewardsExecutionClient, networkName string, previousRewardsPoolAddresses []common.Address, bc RewardsBeaconClient) (*big.Int, error) {
 	r.log.Printlnf("%s Approximating tree using Ruleset v%d.", r.logPrefix, r.rewardsFile.RulesetVersion)
 
 	r.rp = rp
+	r.previousRewardsPoolAddresses = previousRewardsPoolAddresses
 	r.bc = bc
 	r.validNetworkCache = map[uint64]bool{
 		0: true,
@@ -452,17 +451,13 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 	r.smoothingPoolBalance = r.networkState.NetworkDetails.SmoothingPoolBalance
 	r.log.Printlnf("%s Smoothing Pool Balance: %s (%.3f)", r.logPrefix, r.smoothingPoolBalance.String(), eth.WeiToEth(r.smoothingPoolBalance))
 
-	// Ignore the ETH calculation if there are no rewards
-	if r.smoothingPoolBalance.Cmp(common.Big0) == 0 {
-		return nil
-	}
-
 	if r.rewardsFile.Index == 0 {
 		// This is the first interval, Smoothing Pool rewards are ignored on the first interval since it doesn't have a discrete start time
 		return nil
 	}
 
 	// Get the start time of this interval based on the event from the previous one
+	// This must be done even if there are no smoothing pool rewards, to set the start blocks and timestamps
 	//previousIntervalEvent, err := GetRewardSnapshotEvent(r.rp, r.cfg, r.rewardsFile.Index-1, r.opts) // This is immutable so querying at the head is fine and mitigates issues around calls for pruned EL state
 	previousIntervalEvent, err := r.rp.GetRewardSnapshotEvent(r.previousRewardsPoolAddresses, r.rewardsFile.Index-1, r.opts)
 	if err != nil {
@@ -471,6 +466,11 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 	startElBlockHeader, err := r.getBlocksAndTimesForInterval(previousIntervalEvent)
 	if err != nil {
 		return err
+	}
+
+	// Ignore the ETH calculation if there are no rewards
+	if r.smoothingPoolBalance.Cmp(common.Big0) == 0 {
+		return nil
 	}
 
 	r.elStartTime = time.Unix(int64(startElBlockHeader.Time), 0)
@@ -508,8 +508,8 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 		for _, nodeInfo := range r.nodeDetails {
 			// Check if the node is currently opted in for simplicity
 			if nodeInfo.IsEligible && nodeInfo.IsOptedIn && r.elEndTime.After(nodeInfo.OptInTime) {
-				eligibleBorrowedEth := nodeInfo.EligibleBorrowedEth
-				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeInfo.RplStake)
+				eligibleBorrowedEth := nodeInfo.MinipoolEligibleBorrowedEth
+				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeInfo.LegacyStakedRpl)
 				for _, minipool := range nodeInfo.Minipools {
 					minipool.CompletedAttestations = map[uint64]bool{0: true}
 
@@ -570,7 +570,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateEthRewards(checkBeaconPerformance bo
 			for _, minipoolInfo := range nodeInfo.Minipools {
 				successfulAttestations := uint64(len(minipoolInfo.CompletedAttestations))
 				missingAttestations := uint64(len(minipoolInfo.MissingAttestationSlots))
-				performance := &SmoothingPoolMinipoolPerformance_v2{
+				performance := &MinipoolPerformance_v2{
 					Pubkey:                  minipoolInfo.ValidatorPubkey.Hex(),
 					SuccessfulAttestations:  successfulAttestations,
 					MissedAttestations:      missingAttestations,
@@ -628,8 +628,8 @@ func (r *treeGeneratorImpl_v9_v10) calculateNodeBonuses() (*big.Int, error) {
 		}
 
 		// Get the nodeDetails from the network state
-		eligibleBorrowedEth := nsd.EligibleBorrowedEth
-		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nsd.RplStake)
+		eligibleBorrowedEth := nsd.MinipoolEligibleBorrowedEth
+		_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nsd.LegacyStakedRpl)
 		for _, mpd := range nsd.Minipools {
 			mpi := r.networkState.MinipoolDetailsByAddress[mpd.Address]
 			if !mpi.IsEligibleForBonuses(eligibleEnd) {
@@ -868,7 +868,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 				if !exists {
 					continue
 				}
-				nnd := r.networkState.NodeDetailsByAddress[mpi.NodeAddress]
+				nnd := r.networkState.NodeDetailsByAddress[mpi.Node.Address]
 				nmd := r.networkState.MinipoolDetailsByAddress[mpi.Address]
 
 				// Check that the node is opted into the SP during this slot
@@ -883,7 +883,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 
 				// If the withdrawal is in or after the minipool's withdrawable epoch, adjust it.
 				withdrawalAmount := withdrawal.Amount
-				validatorInfo := r.networkState.ValidatorDetails[mpi.ValidatorPubkey]
+				validatorInfo := r.networkState.MinipoolValidatorDetails[mpi.ValidatorPubkey]
 				if slot >= r.networkState.BeaconConfig.FirstSlotOfEpoch(validatorInfo.WithdrawableEpoch) {
 					// Subtract 32 ETH from the withdrawal amount
 					withdrawalAmount = big.NewInt(0).Sub(withdrawalAmount, thirtyTwoEth)
@@ -911,7 +911,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 		defer committeeData.Release()
 	}
 	if err != nil {
-		return fmt.Errorf("error getting committee and attestaion records for epoch %d: %w", epoch, err)
+		return fmt.Errorf("error getting committee and attestation records for epoch %d: %w", epoch, err)
 	}
 
 	if duringInterval {
@@ -957,7 +957,7 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 			blockTime := r.genesisTime.Add(time.Second * time.Duration(r.networkState.BeaconConfig.SecondsPerSlot*attestation.SlotIndex))
 
 			// Check if each RP validator attested successfully
-			for position, validator := range rpCommittee.Positions {
+			for position, positionInfo := range rpCommittee.Positions {
 				if !attestation.ValidatorAttested(committeeIndex, position, slotInfo.CommitteeSizes) {
 					continue
 				}
@@ -970,23 +970,23 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 				if len(slotInfo.Committees) == 0 {
 					delete(r.intervalDutiesInfo.Slots, attestation.SlotIndex)
 				}
-				delete(validator.MissingAttestationSlots, attestation.SlotIndex)
+				positionInfo.DeleteMissingAttestationSlot(attestation.SlotIndex)
 
 				// Check if this minipool was opted into the SP for this block
-				nodeDetails := r.nodeDetails[validator.NodeIndex]
+				nodeDetails := positionInfo.GetNodeDetails()
 				if blockTime.Before(nodeDetails.OptInTime) || blockTime.After(nodeDetails.OptOutTime) {
 					// Not opted in
 					continue
 				}
 
-				eligibleBorrowedEth := nodeDetails.EligibleBorrowedEth
-				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.RplStake)
+				eligibleBorrowedEth := nodeDetails.MinipoolEligibleBorrowedEth
+				_, percentOfBorrowedEth := r.networkState.GetStakedRplValueInEthAndPercentOfBorrowedEth(eligibleBorrowedEth, nodeDetails.LegacyStakedRpl)
 
 				// Mark this duty as completed
-				validator.CompletedAttestations[attestation.SlotIndex] = true
+				positionInfo.MarkAttestationCompleted(attestation.SlotIndex)
 
 				// Get the pseudoscore for this attestation
-				details := r.networkState.MinipoolDetailsByAddress[validator.Address]
+				details := r.networkState.MinipoolDetailsByAddress[positionInfo.MinipoolInfo.Address]
 				bond, fee := details.GetMinipoolBondAndNodeFee(blockTime)
 
 				if r.rewardsFile.RulesetVersion >= 10 {
@@ -999,7 +999,7 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 				minipoolScore.Add(minipoolScore, fee)           // Total = fee + (bond/32)(1 - fee)
 
 				// Add it to the minipool's score and the total score
-				validator.AttestationScore.Add(&validator.AttestationScore.Int, minipoolScore)
+				positionInfo.MinipoolInfo.AttestationScore.Add(&positionInfo.MinipoolInfo.AttestationScore.Int, minipoolScore)
 				r.totalAttestationScore.Add(r.totalAttestationScore, minipoolScore)
 				r.successfulAttestations++
 			}
@@ -1010,7 +1010,7 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 
 }
 
-// Maps out the attestaion duties for the given epoch
+// Maps out the attestation duties for the given epoch
 func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committees) error {
 
 	// Crawl the committees
@@ -1036,7 +1036,7 @@ func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committee
 		slotInfo.CommitteeSizes[committeeIndex] = committees.ValidatorCount(idx)
 
 		// Check if there are any RP validators in this committee
-		rpValidators := map[int]*MinipoolInfo{}
+		rpValidators := map[int]*PositionInfo{}
 		for position, validator := range committees.Validators(idx) {
 			minipoolInfo, exists := r.validatorIndexMap[validator]
 			if !exists {
@@ -1045,7 +1045,7 @@ func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committee
 			}
 
 			// Check if this minipool was opted into the SP for this block
-			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.NodeAddress]
+			nodeDetails := r.networkState.NodeDetailsByAddress[minipoolInfo.Node.Address]
 			isOptedIn := nodeDetails.SmoothingPoolRegistrationState
 			spRegistrationTime := time.Unix(nodeDetails.SmoothingPoolRegistrationChanged.Int64(), 0)
 			if (isOptedIn && blockTime.Sub(spRegistrationTime) < 0) || // If this block occurred before the node opted in, ignore it
@@ -1061,7 +1061,9 @@ func (r *treeGeneratorImpl_v9_v10) getDutiesForEpoch(committees beacon.Committee
 			}
 
 			// This was a legal RP validator opted into the SP during this slot so add it
-			rpValidators[position] = minipoolInfo
+			rpValidators[position] = &PositionInfo{
+				MinipoolInfo: minipoolInfo,
+			}
 			minipoolInfo.MissingAttestationSlots[slotIndex] = true
 		}
 
@@ -1086,7 +1088,7 @@ func (r *treeGeneratorImpl_v9_v10) createMinipoolIndexMap() error {
 	for _, details := range r.nodeDetails {
 		if details.IsEligible {
 			for _, minipoolInfo := range details.Minipools {
-				status, exists := r.networkState.ValidatorDetails[minipoolInfo.ValidatorPubkey]
+				status, exists := r.networkState.MinipoolValidatorDetails[minipoolInfo.ValidatorPubkey]
 				if !exists {
 					// Remove minipools that don't have indices yet since they're not actually viable
 					//r.log.Printlnf("NOTE: minipool %s (pubkey %s) didn't exist at this slot; removing it", minipoolInfo.Address.Hex(), minipoolInfo.ValidatorPubkey.Hex())
@@ -1155,12 +1157,13 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 			wg.Go(func() error {
 				nativeNodeDetails := r.networkState.NodeDetails[iterationIndex]
 				nodeDetails := &NodeSmoothingDetails{
+					Index:            iterationIndex,
 					Address:          nativeNodeDetails.NodeAddress,
 					Minipools:        []*MinipoolInfo{},
 					SmoothingPoolEth: big.NewInt(0),
 					BonusEth:         big.NewInt(0),
 					RewardsNetwork:   nativeNodeDetails.RewardNetwork.Uint64(),
-					RplStake:         nativeNodeDetails.RplStake,
+					LegacyStakedRpl:  big.NewInt(0).Set(nativeNodeDetails.LegacyStakedRPL),
 				}
 
 				nodeDetails.IsOptedIn = nativeNodeDetails.SmoothingPoolRegistrationState
@@ -1192,8 +1195,7 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 						nodeDetails.Minipools = append(nodeDetails.Minipools, &MinipoolInfo{
 							Address:         mpd.MinipoolAddress,
 							ValidatorPubkey: mpd.Pubkey,
-							NodeAddress:     nodeDetails.Address,
-							NodeIndex:       iterationIndex,
+							Node:            nodeDetails,
 							Fee:             nativeMinipoolDetails.NodeFee,
 							//MissedAttestations:      0,
 							//GoodAttestations:        0,
@@ -1219,7 +1221,7 @@ func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
 	// Populate the eligible borrowed ETH field for all nodes
 	for _, nodeDetails := range r.nodeDetails {
 		nnd := r.networkState.NodeDetailsByAddress[nodeDetails.Address]
-		nodeDetails.EligibleBorrowedEth = r.networkState.GetEligibleBorrowedEth(nnd)
+		nodeDetails.MinipoolEligibleBorrowedEth = r.networkState.GetMinipoolEligibleBorrowedEth(nnd)
 	}
 
 	return nil

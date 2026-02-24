@@ -10,7 +10,7 @@ func createExternalPrysmStep(wiz *wizard, currentStep int, totalSteps int) *text
 	httpUrlLabel := wiz.md.Config.ExternalPrysm.HttpUrl.Name
 	jsonRpcUrlLabel := wiz.md.Config.ExternalPrysm.JsonRpcUrl.Name
 
-	helperText := "Please provide the URL of your Prysm client's HTTP API (for example: `http://192.168.1.40:5052`) and the URL of its JSON RPC API (e.g., `192.168.1.40:5053`).\n\nNote that if you're running it on the same machine as the Smartnode, you cannot use `localhost` or `127.0.0.1`; you must use your machine's LAN IP address."
+	helperText := "Please provide the URL of your Prysm client's HTTP API (for example: `http://192.168.1.40:5052`) and the URL of its JSON RPC API (e.g., `192.168.1.40:5053`).\n\nNote that if you're running it on the same machine as the Smart Node, you cannot use `localhost` or `127.0.0.1`; you must use your machine's LAN IP address."
 
 	show := func(modal *textBoxModalLayout) {
 		wiz.md.setPage(modal.page)

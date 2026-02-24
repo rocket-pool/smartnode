@@ -269,7 +269,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "reset-docker",
 				Aliases:   []string{"rd"},
-				Usage:     "Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts Smartnode.",
+				Usage:     "Cleanup Docker resources, including stopped containers, unused images and networks. Stops and restarts Smart Node.",
 				UsageText: "rocketpool service reset [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
@@ -278,7 +278,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					},
 					cli.BoolFlag{
 						Name:  "all, a",
-						Usage: "Removes all Docker images, including those currently used by the Smartnode stack. This will force a full re-download of all images when the Smartnode is restarted.",
+						Usage: "Removes all Docker images, including those currently used by the Smart Node stack. This will force a full re-download of all images when the Smart Node is restarted.",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -300,7 +300,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "all, a",
-						Usage: "Removes all Docker images, including those currently used by the Smartnode stack. This will force a full re-download of all images when the Smartnode is restarted.",
+						Usage: "Removes all Docker images, including those currently used by the Smart Node stack. This will force a full re-download of all images when the Smart Node is restarted.",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -338,17 +338,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "stats",
 				Aliases:   []string{"a"},
-				Usage:     "View the Rocket Pool service stats",
+				Usage:     "(DEPRECATED) No longer supported. Use 'docker stats -a' instead",
 				UsageText: "rocketpool service stats",
 				Action: func(c *cli.Context) error {
 
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
 					// Run command
-					return serviceStats(c)
+					return serviceStats()
 
 				},
 			},
@@ -497,7 +492,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "terminate",
 				Aliases:   []string{"t"},
-				Usage:     fmt.Sprintf("%sDeletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Also removes your entire `.rocketpool` configuration folder, including your wallet, password, and validator keys. Only use this if you are cleaning up the Smartnode and want to start over!%s", colorRed, colorReset),
+				Usage:     fmt.Sprintf("%sDeletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Also removes your entire `.rocketpool` configuration folder, including your wallet, password, and validator keys. Only use this if you are cleaning up the Smart Node and want to start over!%s", colorRed, colorReset),
 				UsageText: "rocketpool service terminate [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{

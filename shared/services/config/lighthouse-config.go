@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	lighthouseTagPortableTest string = "sigp/lighthouse:v7.1.0"
-	lighthouseTagPortableProd string = "sigp/lighthouse:v7.1.0"
+	lighthouseTagPortableTest string = "sigp/lighthouse:v8.1.0"
+	lighthouseTagPortableProd string = "sigp/lighthouse:v8.1.0"
 	defaultLhMaxPeers         uint16 = 100
 )
 
@@ -80,7 +80,7 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 		AdditionalBnFlags: config.Parameter{
 			ID:                 "additionalBnFlags",
 			Name:               "Additional Beacon Client Flags",
-			Description:        "Additional custom command line flags you want to pass Lighthouse's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Lighthouse's Beacon Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
@@ -91,7 +91,7 @@ func NewLighthouseConfig(cfg *RocketPoolConfig) *LighthouseConfig {
 		AdditionalVcFlags: config.Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
-			Description:        "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Lighthouse's Validator Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},

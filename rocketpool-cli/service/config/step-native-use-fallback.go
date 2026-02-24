@@ -2,7 +2,7 @@ package config
 
 func createNativeUseFallbackStep(wiz *wizard, currentStep int, totalSteps int) *choiceWizardStep {
 
-	helperText := "If you have an extra externally-managed Execution and Consensus client pair that you trust, you can use them as \"fallback\" clients.\nThe Smartnode will connect to these if your primary Execution and Consensus clients go offline for any reason.\n\nWould you like to use a fallback client pair?"
+	helperText := "If you have an extra externally-managed Execution and Consensus client pair that you trust, you can use them as \"fallback\" clients.\nThe Smart Node will connect to these if your primary Execution and Consensus clients go offline for any reason.\n\nWould you like to use a fallback client pair?"
 
 	show := func(modal *choiceModalLayout) {
 		wiz.md.setPage(modal.page)

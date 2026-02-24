@@ -14,7 +14,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -174,11 +173,11 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		// Check if an Archive EC is provided, and if using it would potentially resolve the error
 		errMessage := err.Error()
 		t.log.Printlnf("%s Error getting state for block %d: %s", generationPrefix, elBlockHeader.Number.Uint64(), errMessage)
-		// The primary failed so fall back to the archive node
+		// The state was missing so fall back to the archive node
 		archiveEcUrl := t.cfg.Smartnode.ArchiveECUrl.Value.(string)
 		if archiveEcUrl != "" {
 			t.log.Printlnf("%s Primary EC cannot retrieve state for historical block %d, using archive EC [%s]", generationPrefix, elBlockHeader.Number.Uint64(), archiveEcUrl)
-			ec, err := ethclient.Dial(archiveEcUrl)
+			ec, err := services.NewEthClient(archiveEcUrl)
 			if err != nil {
 				t.handleError(fmt.Errorf("Error connecting to archive EC: %w", err))
 				return

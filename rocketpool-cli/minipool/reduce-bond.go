@@ -38,6 +38,16 @@ func beginReduceBondAmount(c *cli.Context) error {
 		return nil
 	}
 
+	// Check if bond reduction is enabled
+	bondReductionEnabledResponse, err := rp.GetBondReductionEnabled()
+	if err != nil {
+		return fmt.Errorf("error checking if bond reduction is enabled: %w", err)
+	}
+	if !bondReductionEnabledResponse.BondReductionEnabled {
+		fmt.Println("Bond reductions are currently disabled.")
+		return nil
+	}
+
 	// Get minipool statuses
 	status, err := rp.MinipoolStatus()
 	if err != nil {
@@ -137,7 +147,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 	var totalGas uint64 = 0
 	var totalSafeGas uint64 = 0
 	var gasInfo rocketpoolapi.GasInfo
-	totalMatchRequest := big.NewInt(0)
+	totalBorrowRequest := big.NewInt(0)
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanBeginReduceBondAmount(minipool.Address, newBondAmount)
 		if err != nil {
@@ -162,7 +172,7 @@ func beginReduceBondAmount(c *cli.Context) error {
 			gasInfo = canResponse.GasInfo
 			totalGas += canResponse.GasInfo.EstGasLimit
 			totalSafeGas += canResponse.GasInfo.SafeGasLimit
-			totalMatchRequest.Add(totalMatchRequest, canResponse.MatchRequest)
+			totalBorrowRequest.Add(totalBorrowRequest, canResponse.BorrowRequest)
 		}
 	}
 	gasInfo.EstGasLimit = totalGas
@@ -173,10 +183,10 @@ func beginReduceBondAmount(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error checking the node's total collateral: %w", err)
 	}
-	totalMatchAvailable := big.NewInt(0).Sub(collateralResponse.EthMatchedLimit, collateralResponse.EthMatched)
-	totalMatchAvailable.Sub(totalMatchAvailable, collateralResponse.PendingMatchAmount)
-	if totalMatchAvailable.Cmp(totalMatchRequest) < 0 {
-		fmt.Printf("You do not have enough RPL staked to support all of the selected bond reductions.\nYou can borrow %.6f more ETH, but are requesting %.6f ETH with these bond reductions.\nIn total, they would bring you below the minimum RPL staking requirement (including the RPL required for any pending bond reductions you've already started).\nYou will have to stake more RPL first.\n", eth.WeiToEth(totalMatchAvailable), eth.WeiToEth(totalMatchRequest))
+	totalBorrowAvailable := big.NewInt(0).Sub(collateralResponse.EthBorrowedLimit, collateralResponse.EthBorrowed)
+	totalBorrowAvailable.Sub(totalBorrowAvailable, collateralResponse.PendingBorrowAmount)
+	if totalBorrowAvailable.Cmp(totalBorrowRequest) < 0 {
+		fmt.Printf("You do not have enough RPL staked to support all of the selected bond reductions.\nYou can borrow %.6f more ETH, but are requesting %.6f ETH with these bond reductions.\nIn total, they would bring you below the minimum RPL staking requirement (including the RPL required for any pending bond reductions you've already started).\nYou will have to stake more RPL first.\n", eth.WeiToEth(totalBorrowAvailable), eth.WeiToEth(totalBorrowRequest))
 		return nil
 	}
 

@@ -75,9 +75,10 @@ type ExecutePDAOProposalResponse struct {
 }
 
 type GetPDAOSettingsResponse struct {
-	Status  string `json:"status"`
-	Error   string `json:"error"`
-	Auction struct {
+	Status         string `json:"status"`
+	Error          string `json:"error"`
+	SaturnDeployed bool   `json:"saturnDeployed"`
+	Auction        struct {
 		IsCreateLotEnabled    bool          `json:"isCreateLotEnabled"`
 		IsBidOnLotEnabled     bool          `json:"isBidOnLotEnabled"`
 		LotMinimumEthValue    *big.Int      `json:"lotMinimumEthValue"`
@@ -95,6 +96,8 @@ type GetPDAOSettingsResponse struct {
 		MaximumAssignmentsPerDeposit           uint64   `json:"maximumAssignmentsPerDeposit"`
 		MaximumSocialisedAssignmentsPerDeposit uint64   `json:"maximumSocialisedAssignmentsPerDeposit"`
 		DepositFee                             *big.Int `json:"depositFee"`
+		ExpressQueueRate                       uint64   `json:"expressQueueRate"`
+		ExpressQueueTicketsBaseProvision       uint64   `json:"expressQueueTicketsBaseProvision"`
 	} `json:"deposit"`
 
 	Inflation struct {
@@ -109,31 +112,42 @@ type GetPDAOSettingsResponse struct {
 		MaximumCount                uint64        `json:"maximumCount"`
 		UserDistributeWindowStart   time.Duration `json:"userDistributeWindowStart"`
 		UserDistributeWindowLength  time.Duration `json:"userDistributeWindowLength"`
+		MaximumPenaltyCount         uint64        `json:"maximumPenaltyCount"`
 	} `json:"minipool"`
 
 	Network struct {
-		OracleDaoConsensusThreshold *big.Int      `json:"oracleDaoConsensusThreshold"`
-		NodePenaltyThreshold        *big.Int      `json:"nodePenaltyThreshold"`
-		PerPenaltyRate              *big.Int      `json:"perPenaltyRate"`
-		IsSubmitBalancesEnabled     bool          `json:"isSubmitBalancesEnabled"`
-		SubmitBalancesFrequency     time.Duration `json:"submitBalancesFrequency"`
-		IsSubmitPricesEnabled       bool          `json:"isSubmitPricesEnabled"`
-		SubmitPricesFrequency       time.Duration `json:"submitPricesFrequency"`
-		MinimumNodeFee              *big.Int      `json:"minimumNodeFee"`
-		TargetNodeFee               *big.Int      `json:"targetNodeFee"`
-		MaximumNodeFee              *big.Int      `json:"maximumNodeFee"`
-		NodeFeeDemandRange          *big.Int      `json:"nodeFeeDemandRange"`
-		TargetRethCollateralRate    *big.Int      `json:"targetRethCollateralRate"`
-		IsSubmitRewardsEnabled      bool          `json:"isSubmitRewardsEnabled"`
+		OracleDaoConsensusThreshold             *big.Int         `json:"oracleDaoConsensusThreshold"`
+		NodePenaltyThreshold                    *big.Int         `json:"nodePenaltyThreshold"`
+		PerPenaltyRate                          *big.Int         `json:"perPenaltyRate"`
+		IsSubmitBalancesEnabled                 bool             `json:"isSubmitBalancesEnabled"`
+		SubmitBalancesFrequency                 time.Duration    `json:"submitBalancesFrequency"`
+		IsSubmitPricesEnabled                   bool             `json:"isSubmitPricesEnabled"`
+		SubmitPricesFrequency                   time.Duration    `json:"submitPricesFrequency"`
+		MinimumNodeFee                          *big.Int         `json:"minimumNodeFee"`
+		TargetNodeFee                           *big.Int         `json:"targetNodeFee"`
+		MaximumNodeFee                          *big.Int         `json:"maximumNodeFee"`
+		NodeFeeDemandRange                      *big.Int         `json:"nodeFeeDemandRange"`
+		TargetRethCollateralRate                *big.Int         `json:"targetRethCollateralRate"`
+		IsSubmitRewardsEnabled                  bool             `json:"isSubmitRewardsEnabled"`
+		NodeCommissionShare                     *big.Int         `json:"nodeCommissionShare"`
+		NodeCommissionShareSecurityCouncilAdder *big.Int         `json:"nodeCommissionShareSecurityCouncilAdder"`
+		VoterShare                              *big.Int         `json:"voterShare"`
+		ProtocolDAOShare                        *big.Int         `json:"protocolDAOShare"`
+		MaxNodeShareSecurityCouncilAdder        *big.Int         `json:"maxNodeCommissionShareCouncilAdder"`
+		MaxRethBalanceDelta                     *big.Int         `json:"maxRethBalanceDelta"`
+		AllowListedControllers                  []common.Address `json:"allowListedControllers"`
 	} `json:"network"`
 
 	Node struct {
-		IsRegistrationEnabled              bool     `json:"isRegistrationEnabled"`
-		IsSmoothingPoolRegistrationEnabled bool     `json:"isSmoothingPoolRegistrationEnabled"`
-		IsDepositingEnabled                bool     `json:"isDepositingEnabled"`
-		AreVacantMinipoolsEnabled          bool     `json:"areVacantMinipoolsEnabled"`
-		MinimumPerMinipoolStake            *big.Int `json:"minimumPerMinipoolStake"`
-		MaximumPerMinipoolStake            *big.Int `json:"maximumPerMinipoolStake"`
+		IsRegistrationEnabled              bool          `json:"isRegistrationEnabled"`
+		IsSmoothingPoolRegistrationEnabled bool          `json:"isSmoothingPoolRegistrationEnabled"`
+		IsDepositingEnabled                bool          `json:"isDepositingEnabled"`
+		AreVacantMinipoolsEnabled          bool          `json:"areVacantMinipoolsEnabled"`
+		MinimumPerMinipoolStake            *big.Int      `json:"minimumPerMinipoolStake"`
+		MaximumPerMinipoolStake            *big.Int      `json:"maximumPerMinipoolStake"`
+		MinimumLegacyRplStake              *big.Int      `json:"minimumLegacyRplStake"`
+		ReducedBond                        float64       `json:"reducedBond"`
+		NodeUnstakingPeriod                time.Duration `json:"nodeUnstakingPeriod"`
 	} `json:"node"`
 
 	Proposals struct {
@@ -160,6 +174,17 @@ type GetPDAOSettingsResponse struct {
 		ProposalExecuteTime time.Duration `json:"proposalExecuteTime"`
 		ProposalActionTime  time.Duration `json:"proposalActionTime"`
 	} `json:"security"`
+
+	Megapool struct {
+		TimeBeforeDissolve               time.Duration `json:"timeBeforeDissolve"`
+		MaximumEthPenalty                *big.Int      `json:"maximumEthPenalty"`
+		NotifyThreshold                  uint64        `json:"notifyThreshold"`
+		LateNotifyFine                   *big.Int      `json:"lateNotifyFine"`
+		DissolvePenalty                  *big.Int      `json:"dissolvePenalty"`
+		UserDistributeDelay              uint64        `json:"userDistributeDelay"`
+		UserDistributeDelayWithShortfall uint64        `json:"userDistributeDelayWithShortfall"`
+		PenaltyThreshold                 *big.Int      `json:"penaltyThreshold"`
+	} `json:"megapool"`
 }
 
 type CanProposePDAOSettingResponse struct {
@@ -432,7 +457,6 @@ type PDAOStatusResponse struct {
 	OnchainVotingDelegateFormatted string                 `json:"onchainVotingDelegateFormatted"`
 	BlockNumber                    uint32                 `json:"blockNumber"`
 	VerifyEnabled                  bool                   `json:"verifyEnabled"`
-	IsVotingInitialized            bool                   `json:"isVotingInitialized"`
 	SnapshotResponse               SnapshotResponseStruct `json:"snapshotResponse"`
 	IsRPLLockingAllowed            bool                   `json:"isRPLLockingAllowed"`
 	NodeRPLLocked                  *big.Int               `json:"nodeRPLLocked"`
@@ -446,11 +470,10 @@ type PDAOStatusResponse struct {
 }
 
 type PDAOCanSetSignallingAddressResponse struct {
-	Status            string             `json:"status"`
-	Error             string             `json:"error"`
-	GasInfo           rocketpool.GasInfo `json:"gasInfo"`
-	VotingInitialized bool               `json:"votingInitialized"`
-	NodeToSigner      common.Address     `json:"nodeToSigner"`
+	Status       string             `json:"status"`
+	Error        string             `json:"error"`
+	GasInfo      rocketpool.GasInfo `json:"gasInfo"`
+	NodeToSigner common.Address     `json:"nodeToSigner"`
 }
 
 type PDAOSetSignallingAddressResponse struct {
@@ -471,4 +494,19 @@ type PDAOClearSignallingAddressResponse struct {
 	Status string      `json:"status"`
 	Error  string      `json:"error"`
 	TxHash common.Hash `json:"txHash"`
+}
+
+type PDAOACanProposeAllowListedControllersResponse struct {
+	Status                 string             `json:"status"`
+	Error                  string             `json:"error"`
+	BlockNumber            uint32             `json:"blockNumber"`
+	GasInfo                rocketpool.GasInfo `json:"gasInfo"`
+	CanPropose             bool               `json:"canPropose"`
+	IsRplLockingDisallowed bool               `json:"isRplLockingDisallowed"`
+}
+type PDAOProposeAllowListedControllersResponse struct {
+	Status     string      `json:"status"`
+	Error      string      `json:"error"`
+	ProposalId uint64      `json:"proposalId"`
+	TxHash     common.Hash `json:"txHash"`
 }

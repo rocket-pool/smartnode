@@ -183,6 +183,28 @@ func (m *BeaconClientManager) GetBeaconHead() (beacon.BeaconHead, error) {
 	return result.(beacon.BeaconHead), nil
 }
 
+// Get the Beacon State information
+func (m *BeaconClientManager) GetBeaconStateSSZ(slot uint64) (*beacon.BeaconStateSSZ, error) {
+	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
+		return client.GetBeaconStateSSZ(slot)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.(*beacon.BeaconStateSSZ), nil
+}
+
+// Get deneb beacon block by slot
+func (m *BeaconClientManager) GetBeaconBlockSSZ(slot uint64) (*beacon.BeaconBlockSSZ, bool, error) {
+	result1, result2, err := m.runFunction2(func(client beacon.Client) (interface{}, interface{}, error) {
+		return client.GetBeaconBlockSSZ(slot)
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return result1.(*beacon.BeaconBlockSSZ), result2.(bool), nil
+}
+
 // Get a validator's status by its index
 func (m *BeaconClientManager) GetValidatorStatusByIndex(index string, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error) {
 	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
@@ -203,6 +225,16 @@ func (m *BeaconClientManager) GetValidatorStatus(pubkey types.ValidatorPubkey, o
 		return beacon.ValidatorStatus{}, err
 	}
 	return result.(beacon.ValidatorStatus), nil
+}
+
+func (m *BeaconClientManager) GetAllValidators() ([]beacon.ValidatorStatus, error) {
+	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
+		return client.GetAllValidators()
+	})
+	if err != nil {
+		return []beacon.ValidatorStatus{}, err
+	}
+	return result.([]beacon.ValidatorStatus), nil
 }
 
 // Get the statuses of multiple validators by their pubkeys

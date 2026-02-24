@@ -39,6 +39,46 @@ func closeMinipools(c *cli.Context) error {
 		return err
 	}
 
+	// Post a warning about express ticket provisioning
+	if !details.ExpressTicketsProvisioned {
+		if !prompt.Confirm(fmt.Sprintf("%sWARNING: The node has unprovisioned express queue ticket(s). Closing minipool(s) without provisioning will reduce the number of express queue tickets the node is eligible for. Please enter `yes` if you've understood this message.%s`", colorRed, colorReset)) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+		if c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sWould you like to provision express queue tickets for the node?%s", colorYellow, colorReset)) {
+			// Check if the node can provision express tickets
+			canProvision, err := rp.CanProvisionExpressTickets()
+			if err != nil {
+				return err
+			}
+
+			// Sanity check
+			if !canProvision.CanProvision {
+				if canProvision.AlreadyProvisioned {
+					fmt.Println("The node has already provisioned express tickets.")
+				}
+				return nil
+			}
+
+			// Provision express tickets
+			response, err := rp.ProvisionExpressTickets()
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("Provisioning express tickets...\n")
+			cliutils.PrintTransactionHash(rp, response.TxHash)
+			if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
+				return err
+			}
+
+			// Log & return
+			fmt.Printf("The node's express tickets were successfully provisioned.\n")
+		} else {
+			fmt.Println("Continuing without provisioning express queue tickets.")
+		}
+	}
+
 	// Exit if the fee distributor hasn't been initialized yet
 	if !details.IsFeeDistributorInitialized {
 		fmt.Println("Minipools cannot be closed until your fee distributor has been initialized.\nPlease run `rocketpool node initialize-fee-distributor` first, then return here to close your minipools.")

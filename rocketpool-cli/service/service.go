@@ -37,7 +37,8 @@ const (
 	clientDataVolumeName            string = "/ethclient"
 	dataFolderVolumeName            string = "/.rocketpool/data"
 
-	PruneFreeSpaceRequired uint64 = 50 * 1024 * 1024 * 1024
+	PruneFreeSpaceRequired           uint64 = 50 * 1024 * 1024 * 1024
+	NethermindPruneFreeSpaceRequired uint64 = 250 * 1024 * 1024 * 1024
 
 	// Capture the entire image name, including the custom registry if present.
 	// Just ignore the version tag.
@@ -125,6 +126,37 @@ func printPatchNotes(c *cli.Context) {
 	fmt.Println()
 	fmt.Printf("Changes you should be aware of before starting:\n")
 	fmt.Println()
+	fmt.Println("This Smart Node version is compatible with the Saturn 1 upgrade, which is scheduled for Feb 18, 2026 00:00:00 UTC.")
+	fmt.Println("For more information about the biggest Rocket Pool upgrade ever, please see the official documentation: https://docs.rocketpool.net/upgrades/saturn-1/whats-new")
+	fmt.Println()
+	fmt.Println("New megapool commands available:")
+	fmt.Println("deposit (d) — Make a deposit and create new validator(s). Use --count N for up to 35 deposits on the same transaction and --express-tickets to define the amount of express tickets")
+	fmt.Println("status (s) — Show the node’s megapool status")
+	fmt.Println("validators (v) — List the megapool’s validators and their state")
+	fmt.Println("repay-debt (r) — Repay megapool debt")
+	fmt.Println("reduce-bond (e) — Reduce the megapool bond")
+	fmt.Println("claim (c) — Claim distributed megapool rewards that haven’t been claimed yet")
+	fmt.Println("stake (k) — Stake a megapool validator. There is a node task that tries to stake automatically")
+	fmt.Println("exit-queue (x) — Exit a validator from the megapool queue")
+	fmt.Println("exit-validator (t) — Request to exit a megapool validator from the beacon chain")
+	fmt.Println("notify-validator-exit (n) — Notify that a validator exit is in progress. There is a node task that tries to notify the exit automatically. ")
+	fmt.Println("notify-final-balance (f) — Notify that a validator exit completed and the final balance was withdrawn. There is a node task that tries to notify the final balance withdrawal automatically.")
+	fmt.Println("distribute (b) — Distribute accrued execution layer rewards sent to this megapool")
+	fmt.Println("set-use-latest-delegate (l) — Enable or disable using the latest delegate contract.")
+	fmt.Println("delegate-upgrade (u) — Upgrade the megapool’s delegate contract to the latest version")
+	fmt.Println("dissolve-validator (i) - Dissolve a validator with invalid credentials or a prestaking validator that failed to stake in time")
+	fmt.Println()
+
+	fmt.Printf("%s=== IMPORTANT NOTICE ===%s\n", colorYellow, colorReset)
+	fmt.Println("Starting with v1.19.1, the Smart Node includes an automatic task that will")
+	fmt.Println("set all legacy minipools to use the latest delegate contract.")
+	fmt.Println("For Megapools, node operators continue to have 120 days to choose when to upgrade after a new delegate is released.")
+	fmt.Println()
+	fmt.Println("This is the result of a proposal approved by the pDAO,")
+	fmt.Println("which aims to improve the Rocket Pool protocol and delegate contract management.")
+	fmt.Println("For more information, visit: https://rpips.rocketpool.net/RPIPs/RPIP-77")
+	fmt.Println()
+	fmt.Printf("%sIf you do not wish to opt into using the latest delegate contract on your minipools, you should rollback to v1.19.0.%s\n", colorRed, colorReset)
 	fmt.Println()
 }
 
@@ -194,7 +226,7 @@ func configureService(c *cli.Context) error {
 	}
 	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
-		fmt.Printf("%sYour configured Rocket Pool directory of [%s] does not exist.\nPlease follow the instructions at https://docs.rocketpool.net/guides/node/docker.html to install the Smart Node.%s\n", colorYellow, path, colorReset)
+		fmt.Printf("%sYour configured Rocket Pool directory of [%s] does not exist.\nPlease follow the instructions at https://docs.rocketpool.net/node-staking/docker to install the Smart Node.%s\n", colorYellow, path, colorReset)
 		return nil
 	}
 
@@ -274,13 +306,13 @@ func configureService(c *cli.Context) error {
 			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed. If you had a Checkpoint Sync URL provided for your Consensus client, it will be removed and you will need to specify a different one that supports the new network.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
 
 			if !prompt.Confirm("Would you like the Smart Node to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
-				fmt.Println("To change networks manually, please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).")
+				fmt.Println("To change networks manually, please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/node-staking/config-docker#choosing-a-network).")
 				return nil
 			}
 
 			err = changeNetworks(c, rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix))
 			if err != nil {
-				fmt.Printf("%s%s%s\nThe Smart Node could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/guides/node/mainnet.html).\n", colorRed, err.Error(), colorReset)
+				fmt.Printf("%s%s%s\nThe Smart Node could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/node-staking/mainnet.html).\n", colorRed, err.Error(), colorReset)
 			}
 			return nil
 		}
@@ -303,6 +335,13 @@ func configureService(c *cli.Context) error {
 			if !prompt.Confirm("Would you like to restart them automatically now?") {
 				fmt.Println("Please run `rocketpool service start` when you are ready to apply the changes.")
 				return nil
+			}
+
+			// Let's reduce potential downtime by pulling the new containers before restarting
+			fmt.Println("Pulling potential new container images...")
+			err = rp.PullComposeImages(getComposeFiles(c))
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: couldn't pull new images for updated containers: %s\n", err.Error())
 			}
 
 			fmt.Println()
@@ -655,7 +694,7 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 			fmt.Printf("You have changed your validator client from %s to %s. Only %s has elapsed since you stopped %s.\n", currentValidatorName, pendingValidatorName, time.Since(validatorFinishTime), currentValidatorName)
 			fmt.Printf("If you were actively validating while using %s, starting %s without waiting will cause your validators to be slashed due to duplicate attestations!", currentValidatorName, pendingValidatorName)
 			fmt.Println("To prevent slashing, Rocket Pool will delay activating the new client for 15 minutes.")
-			fmt.Println("See the documentation for a more detailed explanation: https://docs.rocketpool.net/guides/node/maintenance/node-migration.html#slashing-and-the-slashing-database")
+			fmt.Println("See the documentation for a more detailed explanation: https://docs.rocketpool.net/node-staking/maintenance/node-migration.html#slashing-and-the-slashing-database")
 			fmt.Printf("If you have read the documentation, understand the risks, and want to bypass this cooldown, run `rocketpool service start --ignore-slash-timer`.%s\n\n", colorReset)
 
 			// Wait for 15 minutes
@@ -753,9 +792,9 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 	selectedEc := cfg.ExecutionClient.Value.(cfgtypes.ExecutionClient)
 
-	// Don't prune besu if it's in archive mode
-	if selectedEc == cfgtypes.ExecutionClient_Besu && cfg.ExecutionCommon.PruningMode.Value == cfgtypes.PruningMode_Archive {
-		fmt.Println("You are using Besu as an archive node.\nArchive nodes should not be pruned. Aborting.")
+	// Don't prune if the EC is in archive mode
+	if cfg.ExecutionCommon.PruningMode.Value == cfgtypes.PruningMode_Archive {
+		fmt.Println("Your Execution Client is being used as an archive node.\nArchive nodes should not be pruned. Aborting.")
 		return nil
 	}
 
@@ -813,8 +852,12 @@ func pruneExecutionClient(c *cli.Context) error {
 		return fmt.Errorf("Error getting free disk space available: %w", err)
 	}
 	freeSpaceHuman := humanize.IBytes(diskUsage.Free)
-	if diskUsage.Free < PruneFreeSpaceRequired {
-		return fmt.Errorf("%sYour disk must have 50 GiB free to prune, but it only has %s free. Please free some space before pruning.%s", colorRed, freeSpaceHuman, colorReset)
+	pruneFreeSpaceRequired := PruneFreeSpaceRequired
+	if cfg.GetNetwork() == cfgtypes.Network_Mainnet && selectedEc == cfgtypes.ExecutionClient_Nethermind {
+		pruneFreeSpaceRequired = NethermindPruneFreeSpaceRequired
+	}
+	if diskUsage.Free < pruneFreeSpaceRequired {
+		return fmt.Errorf("%sYour disk must have %s GiB free to prune, but it only has %s free. Please free some space before pruning.%s", colorRed, humanize.IBytes(pruneFreeSpaceRequired), freeSpaceHuman, colorReset)
 	}
 
 	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
@@ -869,7 +912,7 @@ func pruneExecutionClient(c *cli.Context) error {
 
 }
 
-// Stops Smartnode stack containers, prunes docker, and restarts the Smartnode stack.
+// Stops Smart Node stack containers, prunes docker, and restarts the Smart Node stack.
 func resetDocker(c *cli.Context) error {
 
 	fmt.Println("Once cleanup is complete, Rocket Pool will restart automatically.")
@@ -978,7 +1021,7 @@ func pauseService(c *cli.Context) (bool, error) {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools will be penalized!")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!")) {
 		fmt.Println("Cancelled.")
 		return false, nil
 	}
@@ -1035,15 +1078,9 @@ func serviceLogs(c *cli.Context, aliasedNames ...string) error {
 }
 
 // View the Rocket Pool service stats
-func serviceStats(c *cli.Context) error {
-
-	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
-	defer rp.Close()
-
-	// Print service stats
-	return rp.PrintServiceStats(getComposeFiles(c))
-
+func serviceStats() error {
+	fmt.Println("No longer supported - please run 'docker stats -a' instead.")
+	return nil
 }
 
 // View the Rocket Pool service compose config
@@ -1173,12 +1210,24 @@ func serviceVersion(c *cli.Context) error {
 		mevBoostString = "Disabled"
 	}
 
+	var commitBoostString string
+	if cfg.EnableCommitBoost.Value.(bool) {
+		if cfg.CommitBoost.Mode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
+			commitBoostString = fmt.Sprintf("Enabled (Local Mode)\n\tImage: %s", cfg.CommitBoost.ContainerTag.Value.(string))
+		} else {
+			commitBoostString = "Enabled (External Mode)"
+		}
+	} else {
+		commitBoostString = "Disabled"
+	}
+
 	// Print version info
 	fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
 	fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
 	fmt.Printf("Selected Eth 1.0 client: %s\n", eth1ClientString)
 	fmt.Printf("Selected Eth 2.0 client: %s\n", eth2ClientString)
 	fmt.Printf("MEV-Boost client: %s\n", mevBoostString)
+	fmt.Printf("Commit-Boost client: %s\n", commitBoostString)
 	return nil
 
 }

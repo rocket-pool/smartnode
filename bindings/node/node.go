@@ -20,11 +20,10 @@ import (
 
 // Settings
 const (
-	nodeAddressFastBatchSize    int    = 1000
+	nodeAddressFastBatchSize    int    = 500
 	NodeAddressBatchSize               = 50
 	NodeDetailsBatchSize               = 20
 	SmoothingPoolCountBatchSize uint64 = 2000
-	NativeNodeDetailsBatchSize         = 10000
 )
 
 // Node details
@@ -707,6 +706,132 @@ func ConfirmRPLWithdrawalAddress(rp *rocketpool.RocketPool, nodeAddress common.A
 	return tx.Hash(), nil
 }
 
+// Get express ticket count for a node
+func GetExpressTicketCount(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (uint64, error) {
+	rocketMegapoolFactory, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	expressTicketCount := new(*big.Int)
+	if err := rocketMegapoolFactory.Call(opts, expressTicketCount, "getExpressTicketCount", nodeAddress); err != nil {
+		return 0, fmt.Errorf("error getting express ticket count for node %s: %w", nodeAddress, err)
+	}
+	return (*expressTicketCount).Uint64(), nil
+}
+
+// Consume an express ticket for the given node operator
+func UseExpressTicket(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, nil
+	}
+
+	tx, err := rocketNodeManager.Transact(opts, "useExpressTicket")
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error calling useExpressticket: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
+// Get the megapool address for the given node operator
+func GetMegapoolAddress(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return common.Address{}, err
+	}
+	value := new(common.Address)
+	if err := rocketNodeManager.Call(opts, value, "getMegapoolAddress", nodeAddress); err != nil {
+		return common.Address{}, fmt.Errorf("error getting node %s's megapool address: %w", nodeAddress.Hex(), err)
+	}
+	return *value, nil
+}
+
+// Get the amount of unclaimed ETH rewards for a given node operator
+func GetUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (float64, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	unclaimedRewards := new(*big.Int)
+
+	if err := rocketNodeManager.Call(opts, unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
+		return 0, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
+	}
+	return eth.WeiToEth(*unclaimedRewards), nil
+}
+
+// Get the amount of unclaimed ETH rewards for a given node operator
+func GetUnclaimedRewardsRaw(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (*big.Int, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return nil, err
+	}
+	unclaimedRewards := new(*big.Int)
+
+	if err := rocketNodeManager.Call(opts, unclaimedRewards, "getUnclaimedRewards", nodeAddress); err != nil {
+		return nil, fmt.Errorf("error getting node %s's unclaimed rewards: %w", nodeAddress.Hex(), err)
+	}
+	return *unclaimedRewards, nil
+}
+
+// Estimate the gas for sending unclaimed rewards to node operator's withdrawal address
+func EstimateClaimUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "claimUnclaimedRewards", nodeAddress)
+}
+
+// Sends any unclaimed rewards to node operator's withdrawal address
+func ClaimUnclaimedRewards(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, nil
+	}
+
+	tx, err := rocketNodeManager.Transact(opts, "claimUnclaimedRewards", nodeAddress)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error calling claimUnclaimedRewards for the node %s: %w", nodeAddress.Hex(), err)
+	}
+	return tx.Hash(), nil
+}
+
+// Check if the node's express tickets have been provisioned yet
+func GetExpressTicketsProvisioned(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (bool, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, opts)
+	if err != nil {
+		return false, err
+	}
+	provisioned := new(bool)
+	if err := rocketNodeManager.Call(opts, provisioned, "getExpressTicketsProvisioned", nodeAddress); err != nil {
+		return false, fmt.Errorf("error checking if node %s's express tickets are provisioned: %w", nodeAddress.Hex(), err)
+	}
+	return *provisioned, nil
+}
+
+// Estimate the gas for provisioning the node's express tickets
+func EstimateProvisionExpressTicketsGas(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNodeManager.GetTransactionGasInfo(opts, "provisionExpressTickets", nodeAddress)
+}
+
+// Provision the node's express tickets
+func ProvisionExpressTickets(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.TransactOpts) (common.Hash, error) {
+	rocketNodeManager, err := getRocketNodeManager(rp, nil)
+	if err != nil {
+		return common.Hash{}, err
+	}
+	tx, err := rocketNodeManager.Transact(opts, "provisionExpressTickets", nodeAddress)
+	if err != nil {
+		return common.Hash{}, fmt.Errorf("error provisioning express tickets: %w", err)
+	}
+	return tx.Hash(), nil
+}
+
 // Get contracts
 var rocketNodeManagerLock sync.Mutex
 
@@ -714,28 +839,4 @@ func getRocketNodeManager(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rock
 	rocketNodeManagerLock.Lock()
 	defer rocketNodeManagerLock.Unlock()
 	return rp.GetContract("rocketNodeManager", opts)
-}
-
-var rocketNetworkPricesLock sync.Mutex
-
-func getRocketNetworkPrices(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketNetworkPricesLock.Lock()
-	defer rocketNetworkPricesLock.Unlock()
-	return rp.GetContract("rocketNetworkPrices", opts)
-}
-
-var rocketNetworkBalancesLock sync.Mutex
-
-func getRocketNetworkBalances(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketNetworkBalancesLock.Lock()
-	defer rocketNetworkBalancesLock.Unlock()
-	return rp.GetContract("rocketNetworkBalances", opts)
-}
-
-var rocketDAONodeTrustedActionsLock sync.Mutex
-
-func getRocketDAONodeTrustedActions(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketDAONodeTrustedActionsLock.Lock()
-	defer rocketDAONodeTrustedActionsLock.Unlock()
-	return rp.GetContract("rocketDAONodeTrustedActions", opts)
 }

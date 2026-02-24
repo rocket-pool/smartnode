@@ -322,7 +322,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of RPL to stake (also accepts custom percentages for 8-ETH minipools (eg. 3% of borrowed ETH as RPL), or 'all' for all of your RPL)",
+						Usage: "The amount of RPL to stake (also accepts custom percentages for a validator (eg. 3% of borrowed ETH as RPL), or 'all' for all of your RPL)",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
@@ -502,26 +502,18 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "deposit",
-				Aliases:   []string{"d"},
-				Usage:     "Make a deposit and create a minipool",
-				UsageText: "rocketpool node deposit [options]",
+				Name:      "withdraw-credit",
+				Aliases:   []string{"wc"},
+				Usage:     "(Saturn) Withdraw ETH credit from the node as rETH",
+				UsageText: "rocketpool node withdraw-credit [options]",
 				Flags: []cli.Flag{
 					cli.StringFlag{
 						Name:  "amount, a",
-						Usage: "The amount of ETH to deposit (8 or 16)",
-					},
-					cli.StringFlag{
-						Name:  "max-slippage, s",
-						Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
+						Usage: "The amount of ETH to withdraw (or 'max')",
 					},
 					cli.BoolFlag{
 						Name:  "yes, y",
-						Usage: "Automatically confirm deposit",
-					},
-					cli.StringFlag{
-						Name:  "salt, l",
-						Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
+						Usage: "Automatically confirm ETH withdrawal",
 					},
 				},
 				Action: func(c *cli.Context) error {
@@ -532,89 +524,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Validate flags
-					if c.String("amount") != "" {
-						if _, err := cliutils.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
-							return err
-						}
-					}
-					if c.String("max-slippage") != "" && c.String("max-slippage") != "auto" {
-						if _, err := cliutils.ValidatePercentage("maximum commission rate slippage", c.String("max-slippage")); err != nil {
-							return err
-						}
-					}
-					if c.String("salt") != "" {
-						if _, err := cliutils.ValidateBigInt("salt", c.String("salt")); err != nil {
+					if c.String("amount") != "" && c.String("amount") != "max" {
+						if _, err := cliutils.ValidatePositiveEthAmount("withdrawal amount", c.String("amount")); err != nil {
 							return err
 						}
 					}
 
 					// Run
-					return nodeDeposit(c)
-
-				},
-			},
-
-			{
-				Name:      "create-vacant-minipool",
-				Aliases:   []string{"cvm"},
-				Usage:     "Create an empty minipool, which can be used to migrate an existing solo staking validator as part of the 0x00 to 0x01 withdrawal credentials upgrade",
-				UsageText: "rocketpool node create-vacant-minipool pubkey [options]",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of ETH to deposit (8 or 16)",
-					},
-					cli.StringFlag{
-						Name:  "max-slippage, s",
-						Usage: "The maximum acceptable slippage in node commission rate for the deposit (or 'auto'). Only relevant when the commission rate is not fixed.",
-					},
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm all interactive questions",
-					},
-					cli.StringFlag{
-						Name:  "salt, l",
-						Usage: "An optional seed to use when generating the new minipool's address. Use this if you want it to have a custom vanity address.",
-					},
-					cli.StringFlag{
-						Name:  "mnemonic, m",
-						Usage: "Use this flag if you want to recreate your validator's private key within the Smartnode's VC instead of running it via your own VC, and have the Smartnode reassign your validator's withdrawal credentials to the new minipool address automatically.",
-					},
-					cli.BoolFlag{
-						Name:  "no-restart",
-						Usage: "Don't restart the Validator Client after importing the key. Note that the key won't be loaded (and won't attest) until you restart the VC to load it.",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-					pubkey, err := cliutils.ValidatePubkey("pubkey", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					// Validate flags
-					if c.String("amount") != "" {
-						if _, err := cliutils.ValidatePositiveEthAmount("deposit amount", c.String("amount")); err != nil {
-							return err
-						}
-					}
-					if c.String("max-slippage") != "" && c.String("max-slippage") != "auto" {
-						if _, err := cliutils.ValidatePercentage("maximum commission rate slippage", c.String("max-slippage")); err != nil {
-							return err
-						}
-					}
-					if c.String("salt") != "" {
-						if _, err := cliutils.ValidateBigInt("salt", c.String("salt")); err != nil {
-							return err
-						}
-					}
-
-					// Run
-					return createVacantMinipool(c, pubkey)
+					return nodeWithdrawCredit(c)
 
 				},
 			},
@@ -622,7 +539,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "send",
 				Aliases:   []string{"n"},
-				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).",
+				Usage:     "Send ETH or tokens from the node account to an address. ENS names supported. Use 'all' as the amount to send the entire balance. <token> can be 'rpl', 'eth', 'fsrpl' (for the old RPL v1 token), 'reth', or the address of an arbitrary token you want to send (including the 0x prefix).",
 				UsageText: "rocketpool node send [options] amount token to",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
@@ -636,17 +553,25 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
 						return err
 					}
-					amount, err := cliutils.ValidatePositiveEthAmount("send amount", c.Args().Get(0))
-					if err != nil {
-						return err
+
+					amountStr := c.Args().Get(0)
+					sendAll := strings.EqualFold(amountStr, "all")
+					var amount float64
+					if !sendAll {
+						var err error
+						amount, err = cliutils.ValidatePositiveEthAmount("send amount", amountStr)
+						if err != nil {
+							return err
+						}
 					}
+
 					token, err := cliutils.ValidateTokenType("token type", c.Args().Get(1))
 					if err != nil {
 						return err
 					}
 
 					// Run
-					return nodeSend(c, amount, token, c.Args().Get(2))
+					return nodeSend(c, amount, sendAll, token, c.Args().Get(2))
 
 				},
 			},
@@ -817,6 +742,46 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					// Run
 					return sendMessage(c, c.Args().Get(0), message)
 
+				},
+			},
+
+			{
+				Name:      "claim-unclaimed-rewards",
+				Aliases:   []string{"cur"},
+				Usage:     "Sends any unclaimed rewards to the node's withdrawal address",
+				UsageText: "rocketpool node claim-unclaimed-rewards",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+					// Run
+					return claimUnclaimedRewards(c)
+
+				},
+			},
+
+			{
+				Name:      "provision-express-tickets",
+				Aliases:   []string{"pet"},
+				Usage:     "Provision the node's express tickets",
+				UsageText: "rocketpool node provision-express-tickets",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					return provisionExpressTickets(c)
+				},
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes, y",
+						Usage: "Automatically confirm provision",
+					},
 				},
 			},
 		},

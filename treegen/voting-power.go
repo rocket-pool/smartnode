@@ -24,7 +24,35 @@ type VotingPowerFile struct {
 	NodePower      map[common.Address]*rewards.QuotedBigInt `json:"nodePower"`
 }
 
-func getNodeVotingPower(s *state.NetworkState, ethProvided *big.Int, nodeStake *big.Int) *big.Int {
+func getNodeVotingPower(s *state.NetworkState, nodeIdx int) *big.Int {
+	node := s.NodeDetails[nodeIdx]
+
+	activeMinipoolCount := int64(0)
+	for _, mpd := range s.MinipoolDetailsByNode[node.NodeAddress] {
+		// Ignore finalised
+		if mpd.Finalised {
+			continue
+		}
+
+		activeMinipoolCount += 1
+	}
+
+	// Get provided ETH (32 * minipoolCount - matched)
+	ethProvided := big.NewInt(activeMinipoolCount * 32)
+	ethProvided.Mul(ethProvided, oneEth)
+	ethProvided.Sub(ethProvided, node.EthBorrowed)
+
+	// Add megapool provided ETH
+	if node.MegapoolDeployed {
+		megapoolProvidedEth := s.MegapoolDetails[node.MegapoolAddress].NodeBond
+		ethProvided.Add(ethProvided, megapoolProvidedEth)
+	}
+
+	// Get total RPL staked
+	nodeStake := big.NewInt(0)
+	nodeStake.Add(nodeStake, node.LegacyStakedRPL)
+	nodeStake.Add(nodeStake, node.MegapoolStakedRPL)
+
 	rplPrice := s.NetworkDetails.RplPrice
 
 	// No RPL staked means no voting power
@@ -64,25 +92,11 @@ func (g *treeGenerator) GenerateVotingPower(s *state.NetworkState) *VotingPowerF
 	out.ExecutionBlock = s.ElBlockNumber
 	out.TotalPower = rewards.NewQuotedBigInt(0)
 	out.NodePower = make(map[common.Address]*rewards.QuotedBigInt, len(s.NodeDetails))
-	for _, node := range s.NodeDetails {
-		activeMinipoolCount := int64(0)
-		for _, mpd := range s.MinipoolDetailsByNode[node.NodeAddress] {
-			// Ignore finalised
-			if mpd.Finalised {
-				continue
-			}
-
-			activeMinipoolCount += 1
-		}
-
-		// Get provided ETH (32 * minipoolCount - matched)
-		ethProvided := big.NewInt(activeMinipoolCount * 32)
-		ethProvided.Mul(ethProvided, oneEth)
-		ethProvided.Sub(ethProvided, node.EthMatched)
+	for idx, node := range s.NodeDetails {
 
 		// Calculate the Voting Power
 		nodeVotingPower := rewards.NewQuotedBigInt(0)
-		nodeVotingPower.Set(getNodeVotingPower(s, ethProvided, node.RplStake))
+		nodeVotingPower.Set(getNodeVotingPower(s, idx))
 		out.TotalPower.Add(&out.TotalPower.Int, &nodeVotingPower.Int)
 		out.NodePower[node.NodeAddress] = nodeVotingPower
 	}

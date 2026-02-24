@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
+	rewards131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
@@ -42,7 +43,33 @@ func (client *defaultRewardsExecutionClient) HeaderByNumber(ctx context.Context,
 }
 
 func (client *defaultRewardsExecutionClient) GetRewardsEvent(index uint64, rocketRewardsPoolAddresses []common.Address, opts *bind.CallOpts) (bool, rewards.RewardsEvent, error) {
-	return rewards.GetRewardsEvent(client.RocketPool, index, rocketRewardsPoolAddresses, opts)
+	found, rewardsEvent, err := rewards.GetRewardsEvent(client.RocketPool, index, rocketRewardsPoolAddresses, opts)
+	if err == nil && found {
+		return found, rewardsEvent, nil
+	}
+	// Try the old v1.3.1 format if the new one fails
+	found, eventHouston, err := rewards131.GetRewardsEvent(client.RocketPool, index, rocketRewardsPoolAddresses, opts)
+	if err != nil {
+		return false, rewards.RewardsEvent{}, fmt.Errorf("error getting rewards event for index %d: %w", index, err)
+	}
+	event := rewards.RewardsEvent{
+		Index:             eventHouston.Index,
+		IntervalsPassed:   eventHouston.IntervalsPassed,
+		ConsensusBlock:    eventHouston.ConsensusBlock,
+		ExecutionBlock:    eventHouston.ExecutionBlock,
+		IntervalStartTime: eventHouston.IntervalStartTime,
+		IntervalEndTime:   eventHouston.IntervalEndTime,
+		MerkleRoot:        eventHouston.MerkleRoot,
+		TreasuryRPL:       eventHouston.TreasuryRPL,
+		TreasuryETH:       big.NewInt(0),
+		TrustedNodeRPL:    eventHouston.TrustedNodeRPL,
+		SubmissionTime:    eventHouston.SubmissionTime,
+		NodeRPL:           eventHouston.NodeRPL,
+		NodeETH:           rewardsEvent.NodeETH,
+		UserETH:           rewardsEvent.UserETH,
+	}
+	return found, event, nil
+
 }
 
 func (client *defaultRewardsExecutionClient) GetRewardSnapshotEvent(previousRewardsPoolAddresses []common.Address, interval uint64, opts *bind.CallOpts) (rewards.RewardsEvent, error) {

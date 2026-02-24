@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
+
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
@@ -130,7 +131,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 				return fmt.Errorf("Error calculating lifetime node rewards: rewards file %s doesn't exist but interval %d was claimed", intervalInfo.TreeFilePath, claimedInterval)
 			}
 			rplRewards.Add(rplRewards, &intervalInfo.CollateralRplAmount.Int)
-			ethRewards.Add(ethRewards, &intervalInfo.SmoothingPoolEthAmount.Int)
+			ethRewards.Add(ethRewards, &intervalInfo.TotalEthAmount.Int)
 		}
 
 		// Get the unclaimed rewards
@@ -144,7 +145,7 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 			}
 			if intervalInfo.NodeExists {
 				unclaimedRplRewardsWei.Add(unclaimedRplRewardsWei, &intervalInfo.CollateralRplAmount.Int)
-				unclaimedEthRewardsWei.Add(unclaimedEthRewardsWei, &intervalInfo.SmoothingPoolEthAmount.Int)
+				unclaimedEthRewardsWei.Add(unclaimedEthRewardsWei, &intervalInfo.TotalEthAmount.Int)
 			}
 		}
 
@@ -175,18 +176,9 @@ func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
 		return err
 	})
 
-	// Get the node's effective stake
-	wg.Go(func() error {
-		effectiveStake, err := node.GetNodeEffectiveRPLStake(rp, nodeAccount.Address, nil)
-		if err == nil {
-			response.EffectiveRplStake = eth.WeiToEth(effectiveStake)
-		}
-		return err
-	})
-
 	// Get the node's total stake
 	wg.Go(func() error {
-		stake, err := node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+		stake, err := node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
 		if err == nil {
 			response.TotalRplStake = eth.WeiToEth(stake)
 		}

@@ -81,7 +81,7 @@ func TestDetails(t *testing.T) {
 	}
 
 	// Set minipool withdrawable status
-	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil {
+	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.GetAddress(), trustedNodeAccount.GetTransactor()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -136,12 +136,12 @@ func TestDetails(t *testing.T) {
 			t.Errorf("Incorrect minipool user deposit assigned time %v", user.DepositAssignedTime)
 		}
 	}
-	if withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.Address, nil); err != nil {
+	if withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.GetAddress(), nil); err != nil {
 		t.Error(err)
 	} else {
 		withdrawalPrefix := byte(1)
 		padding := make([]byte, 11)
-		expectedWithdrawalCredentials := bytes.Join([][]byte{{withdrawalPrefix}, padding, mp.Address.Bytes()}, []byte{})
+		expectedWithdrawalCredentials := bytes.Join([][]byte{{withdrawalPrefix}, padding, mp.GetAddress().Bytes()}, []byte{})
 		if !bytes.Equal(withdrawalCredentials.Bytes(), expectedWithdrawalCredentials) {
 			t.Errorf("Incorrect minipool withdrawal credentials %s", hex.EncodeToString(withdrawalCredentials.Bytes()))
 		}
@@ -228,7 +228,7 @@ func TestStake(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.Address, nil)
+	withdrawalCredentials, err := minipool.GetMinipoolWithdrawalCredentials(rp, mp.GetAddress(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -345,7 +345,7 @@ func TestClose(t *testing.T) {
 	}
 
 	// Get & check initial minipool exists status
-	if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+	if exists, err := minipool.GetMinipoolExists(rp, mp.GetAddress(), nil); err != nil {
 		t.Error(err)
 	} else if !exists {
 		t.Error("Incorrect initial minipool exists status")
@@ -354,7 +354,7 @@ func TestClose(t *testing.T) {
 	// Simulate a post-merge withdrawal by sending 16 ETH to the minipool
 	opts := nodeAccount.GetTransactor()
 	opts.Value = eth.EthToWei(16)
-	hash, err := eth.SendTransaction(rp.Client, mp.Address, big.NewInt(1337), opts) // Ganache's default chain ID is 1337
+	hash, err := eth.SendTransaction(rp.Client, mp.GetAddress(), big.NewInt(1337), opts) // Ganache's default chain ID is 1337
 	if err != nil {
 		t.Errorf("Error sending ETH to minipool: %s", err.Error())
 	}
@@ -366,7 +366,7 @@ func TestClose(t *testing.T) {
 	}
 
 	// Get & check updated minipool exists status
-	if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+	if exists, err := minipool.GetMinipoolExists(rp, mp.GetAddress(), nil); err != nil {
 		t.Error(err)
 	} else if exists {
 		t.Error("Incorrect updated minipool exists status")
@@ -430,7 +430,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
 	}
 
 	// Set minipool withdrawable status
-	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil {
+	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.GetAddress(), trustedNodeAccount.GetTransactor()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -443,7 +443,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
 	// Withdraw minipool validator balance
 	opts := swcAccount.GetTransactor()
 	opts.Value = eth.EthToWei(32)
-	if _, err := mp.Contract.Transfer(opts); err != nil {
+	if _, err := mp.GetContract().Transfer(opts); err != nil {
 		t.Fatal(err)
 	}
 
@@ -490,7 +490,7 @@ func TestWithdrawValidatorBalance(t *testing.T) {
 	}
 
 	// Confirm the minipool still exists
-	if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+	if exists, err := minipool.GetMinipoolExists(rp, mp.GetAddress(), nil); err != nil {
 		t.Error(err)
 	} else if !exists {
 		t.Error("Minipool no longer exists but it should")
@@ -548,7 +548,7 @@ func TestWithdrawValidatorBalanceAndFinalise(t *testing.T) {
 	}
 
 	// Set minipool withdrawable status
-	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.Address, trustedNodeAccount.GetTransactor()); err != nil {
+	if _, err := minipool.SubmitMinipoolWithdrawable(rp, mp.GetAddress(), trustedNodeAccount.GetTransactor()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -561,7 +561,7 @@ func TestWithdrawValidatorBalanceAndFinalise(t *testing.T) {
 	// Withdraw minipool validator balance
 	opts := swcAccount.GetTransactor()
 	opts.Value = eth.EthToWei(32)
-	if _, err := mp.Contract.Transfer(opts); err != nil {
+	if _, err := mp.GetContract().Transfer(opts); err != nil {
 		t.Fatal(err)
 	}
 
@@ -603,102 +603,12 @@ func TestWithdrawValidatorBalanceAndFinalise(t *testing.T) {
 	}
 
 	// Confirm the minipool still exists
-	if exists, err := minipool.GetMinipoolExists(rp, mp.Address, nil); err != nil {
+	if exists, err := minipool.GetMinipoolExists(rp, mp.GetAddress(), nil); err != nil {
 		t.Error(err)
 	} else if !exists {
 		t.Error("Minipool doesn't exist but it should")
 	}
 
-}
-
-func TestDelegateUpgradeAndRollback(t *testing.T) {
-	// State snapshotting
-	if err := evm.TakeSnapshot(); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		if err := evm.RevertSnapshot(); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	// Register nodes
-	if _, err := node.RegisterNode(rp, "Australia/Brisbane", nodeAccount.GetTransactor()); err != nil {
-		t.Fatal(err)
-	}
-	if err := nodeutils.RegisterTrustedNode(rp, ownerAccount, trustedNodeAccount); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create minipool
-	mp, err := minipoolutils.CreateMinipool(t, rp, ownerAccount, nodeAccount, eth.EthToWei(16), 1)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Get original delegate contract
-	originalDelegate, err := mp.GetEffectiveDelegate(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	newDelegate := common.HexToAddress("0x1111111111111111111111111111111111111111")
-	newAbi := "[{\"name\":\"foo\",\"type\":\"function\",\"inputs\":[],\"outputs\":[]}]"
-
-	// Upgrade the network delegate contract
-	_, err = trustednodedao.BootstrapUpgrade(rp, "upgradeContract", "rocketMinipoolDelegate", newAbi, newDelegate, ownerAccount.GetTransactor())
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Get new effective delegate
-	effectiveDelegate, err := mp.GetEffectiveDelegate(nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Check
-	if effectiveDelegate != originalDelegate {
-		t.Errorf("Effective delegate %s did not match original delegate %s", effectiveDelegate.Hex(), originalDelegate.Hex())
-	}
-
-	// Call upgrade
-	if _, err := mp.DelegateUpgrade(nodeAccount.GetTransactor()); err != nil {
-		t.Fatal(err)
-	}
-
-	// Check effective delegate
-	if effectiveDelegate, err = mp.GetEffectiveDelegate(nil); err != nil {
-		t.Fatal(err)
-	} else if effectiveDelegate != newDelegate {
-		t.Errorf("Effective delegate %s did not match new delegate %s", effectiveDelegate.Hex(), newDelegate.Hex())
-	}
-
-	// Check previous delegate
-	if previousDelegate, err := mp.GetPreviousDelegate(nil); err != nil {
-		t.Fatal(err)
-	} else if previousDelegate != originalDelegate {
-		t.Errorf("Previous delegate %s did not match original delegate %s", previousDelegate.Hex(), originalDelegate.Hex())
-	}
-
-	// Check current delegate
-	if currentDelegate, err := mp.GetDelegate(nil); err != nil {
-		t.Fatal(err)
-	} else if currentDelegate != newDelegate {
-		t.Errorf("Current delegate %s did not match new delegate %s", currentDelegate.Hex(), newDelegate.Hex())
-	}
-
-	// Rollback
-	if _, err := mp.DelegateRollback(nodeAccount.GetTransactor()); err != nil {
-		t.Fatal(err)
-	}
-
-	// Get new effective delegate
-	if effectiveDelegate, err = mp.GetEffectiveDelegate(nil); err != nil {
-		t.Fatal(err)
-	} else if effectiveDelegate != originalDelegate {
-		t.Errorf("Effective delegate %s did not match original delegate %s", effectiveDelegate.Hex(), newDelegate.Hex())
-	}
 }
 
 func TestUseLatestDelegate(t *testing.T) {

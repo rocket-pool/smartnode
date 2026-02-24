@@ -6,8 +6,8 @@ import (
 
 // Constants
 const (
-	besuTagTest          string = "hyperledger/besu:25.7.0"
-	besuTagProd          string = "hyperledger/besu:25.7.0"
+	besuTagTest          string = "hyperledger/besu:26.1.0"
+	besuTagProd          string = "hyperledger/besu:26.1.0"
 	besuEventLogInterval int    = 1000
 	besuMaxPeers         uint16 = 25
 	besuStopSignal       string = "SIGTERM"
@@ -110,7 +110,7 @@ func NewBesuConfig(cfg *RocketPoolConfig) *BesuConfig {
 		AdditionalFlags: config.Parameter{
 			ID:                 "additionalFlags",
 			Name:               "Additional Flags",
-			Description:        "Additional custom command line flags you want to pass to Besu, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass to Besu, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1},

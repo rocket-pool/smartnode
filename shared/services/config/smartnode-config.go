@@ -18,6 +18,7 @@ const (
 	SnapshotID                         string = "rocketpool-dao.eth"
 	rewardsTreeFilenameFormat          string = "rp-rewards-%s-%d%s"
 	minipoolPerformanceFilenameFormat  string = "rp-minipool-performance-%s-%d%s"
+	performanceFilenameFormat          string = "rp-performance-%s-%d%s"
 	RewardsTreeIpfsExtension           string = ".zst"
 	RewardsTreesFolder                 string = "rewards-trees"
 	ChecksumTableFilename              string = "checksums.sha384"
@@ -29,15 +30,16 @@ const (
 	PrimaryRewardsFileUrl              string = "https://%s.ipfs.dweb.link/%s"
 	SecondaryRewardsFileUrl            string = "https://ipfs.io/ipfs/%s/%s"
 	GithubRewardsFileUrl               string = "https://github.com/rocket-pool/rewards-trees/raw/main/%s/%s"
-	FeeRecipientFilename               string = "rp-fee-recipient.txt"
+	GlobalFeeRecipientFilename         string = "rp-fee-recipient.txt"
 	NativeFeeRecipientFilename         string = "rp-fee-recipient-env.txt"
+	PerKeyFeeRecipientFilename         string = "rp-fee-recipient-per-key"
 )
 
 // Defaults
 const (
 	defaultProjectName       string = "rocketpool"
-	WatchtowerMaxFeeDefault  uint64 = 200
-	WatchtowerPrioFeeDefault uint64 = 3
+	WatchtowerMaxFeeDefault  uint64 = 30
+	WatchtowerPrioFeeDefault uint64 = 1
 )
 
 type RewardsExtension string
@@ -109,8 +111,8 @@ type SmartnodeConfig struct {
 	// The toggle for enabling pDAO proposal verification duties
 	VerifyProposals config.Parameter `yaml:"verifyProposals,omitempty"`
 
-	// Threshold for automatic vote power initialization transactions
-	AutoInitVPThreshold config.Parameter `yaml:"autoInitVPThreshold,omitempty"`
+	// Delay for automatic queue assignment
+	AutoAssignmentDelay config.Parameter `yaml:"autoAssignmentDelay,omitempty"`
 
 	///////////////////////////
 	// Non-editable settings //
@@ -216,7 +218,7 @@ type SmartnodeConfig struct {
 	flashbotsProtectUrl map[config.Network]string `yaml:"-"`
 }
 
-// Generates a new Smartnode configuration
+// Generates a newSmart Node configuration
 func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 	return &SmartnodeConfig{
@@ -226,7 +228,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		ProjectName: config.Parameter{
 			ID:                 ProjectNameID,
 			Name:               "Project Name",
-			Description:        "This is the prefix that will be attached to all of the Docker containers managed by the Smartnode.",
+			Description:        "This is the prefix that will be attached to all of the Docker containers managed by the Smart Node.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultProjectName},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Exporter},
@@ -271,7 +273,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		ManualMaxFee: config.Parameter{
 			ID:                 "manualMaxFee",
 			Name:               "Manual Max Fee",
-			Description:        "Set this if you want all of the Smartnode's transactions to use this specific max fee value (in gwei), which is the most you'd be willing to pay (*including the priority fee*).\n\nA value of 0 will show you the current suggested max fee based on the current network conditions and let you specify it each time you do a transaction.\n\nAny other value will ignore the recommended max fee and explicitly use this value instead.\n\nThis applies to automated transactions (such as claiming RPL and staking minipools) as well.",
+			Description:        "Set this if you want all of the Smart Node's transactions to use this specific max fee value (in gwei), which is the most you'd be willing to pay (*including the priority fee*).\n\nA value of 0 will show you the current suggested max fee based on the current network conditions and let you specify it each time you do a transaction.\n\nAny other value will ignore the recommended max fee and explicitly use this value instead.\n\nThis applies to automated transactions (such as claiming RPL and staking minipools) as well.",
 			Type:               config.ParameterType_Float,
 			Default:            map[config.Network]interface{}{config.Network_All: float64(0)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
@@ -293,7 +295,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		AutoTxGasThreshold: config.Parameter{
 			ID:   "minipoolStakeGasThreshold",
 			Name: "Automatic TX Gas Threshold",
-			Description: "Occasionally, the Smartnode will attempt to perform some automatic transactions (such as the second `stake` transaction to finish launching a minipool or the `reduce bond` transaction to convert a 16-ETH minipool to an 8-ETH one). During these, your node will use the `Rapid` suggestion from the gas estimator as its max fee.\n\nThis threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
+			Description: "Occasionally, the Smart Node will attempt to perform some automatic transactions (such as the second `stake` transaction to finish launching a minipool or the `reduce bond` transaction to convert a 16-ETH minipool to an 8-ETH one). During these, your node will use the `Rapid` suggestion from the gas estimator as its max fee.\n\nThis threshold is a limit (in gwei) you can put on that suggestion; your node will not `stake` the new minipool until the suggestion is below this limit.\n\n" +
 				"A value of 0 will disable non-essential automatic transactions (such as minipool balance distribution and bond reduction), but essential transactions (such as minipool staking and solo migration promotion) will not be disabled.\n\n" +
 				"NOTE: the node will ignore this limit and automatically execute transactions at whatever the suggested fee happens to be once too much time has passed since those transactions were first eligible. You may end up paying more than you wanted to if you set this too low!",
 			Type:               config.ParameterType_Float,
@@ -306,7 +308,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		DistributeThreshold: config.Parameter{
 			ID:                 "distributeThreshold",
 			Name:               "Auto-Distribute Threshold",
-			Description:        "The Smartnode will regularly check the balance of each of your minipools on the Execution Layer (**not** the Beacon Chain).\nIf any of them have a balance greater than this threshold (in ETH), the Smartnode will automatically distribute the balance. This will send your share of the balance to your withdrawal address.\n\nMust be less than 8 ETH.\n\nSet this to 0 to disable automatic distributes.\n[orange]WARNING: if you disable automatic distribution, you **must** ensure you distribute your minipool's balance before it reaches 8 ETH or you will no longer be able to distribute your rewards until you exit the minipool!",
+			Description:        "The Smart Node will regularly check the balance of each of your minipools on the Execution Layer (**not** the Beacon Chain).\nIf any of them have a balance greater than this threshold (in ETH), the Smart Node will automatically distribute the balance. This will send your share of the balance to your withdrawal address.\n\nMust be less than 8 ETH.\n\nSet this to 0 to disable automatic distributes.\n[orange]WARNING: if you disable automatic distribution, you **must** ensure you distribute your minipool's balance before it reaches 8 ETH or you will no longer be able to distribute your rewards until you exit the minipool!",
 			Type:               config.ParameterType_Float,
 			Default:            map[config.Network]interface{}{config.Network_All: float64(1)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
@@ -317,7 +319,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		VerifyProposals: config.Parameter{
 			ID:                 "verifyProposals",
 			Name:               "Enable PDAO Proposal Checker",
-			Description:        "Check this box to opt into the responsibility for verifying Protocol DAO proposals once the Houston upgrade has been activated. Your node will regularly check for new proposals, verify their correctness, and submit challenges to any that do not match the on-chain data (e.g., if someone tampered with voting power and attempted to cheat).\n\nTo learn more about the PDAO proposal checking duty, including requirements and RPL bonding, please see the documentation at https://docs.rocketpool.net/guides/houston/pdao#challenge-process.",
+			Description:        "Check this box to opt into the responsibility for verifying Protocol DAO proposals once the Houston upgrade has been activated. Your node will regularly check for new proposals, verify their correctness, and submit challenges to any that do not match the on-chain data (e.g., if someone tampered with voting power and attempted to cheat).\n\nTo learn more about the PDAO proposal checking duty, including requirements and RPL bonding, please see the documentation at https://docs.rocketpool.net/pdao#challenge-process.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
@@ -325,14 +327,12 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: false,
 		},
 
-		AutoInitVPThreshold: config.Parameter{
-			ID:   "autoInitVPThreshold",
-			Name: "Auto-Init Vote Power Gas Threshold",
-			Description: "The Smartnode will regularly check if the node has initialized voting power and attempt to initialize voting power if it isn't initialized.\n\n" +
-				"This threshold is a limit (in gwei) you can set on this automatic transaction; your node will not attempt to initialize voting power if the network suggested fee is below this limit.\n\n" +
-				"A value of 0 will disable this task. Disable this if your node was registered post-houston or your vote power is already initialized.\n\n",
-			Type:               config.ParameterType_Float,
-			Default:            map[config.Network]interface{}{config.Network_All: float64(5)},
+		AutoAssignmentDelay: config.Parameter{
+			ID:                 "autoAssignmentDelay",
+			Name:               "Automatic queue assignment delay",
+			Description:        "The Smart Node will periodically check whether its megapool is next in the queue. It will wait for the number of hours specified by this parameter after the last assignment before performing the assignment automatically.\n\n",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: uint16(48)},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -372,7 +372,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		RewardsTreeCustomUrl: config.Parameter{
 			ID:                 "rewardsTreeCustomUrl",
 			Name:               "Rewards Tree Custom Download URLs",
-			Description:        "The Smartnode will automatically download missing rewards tree files from trusted sources like IPFS and Rocket Pool's repository on GitHub. Use this field if you would like to manually specify additional sources that host the rewards tree files, so the Smartnode can download from them as well.\nMultiple URLs can be provided using ';' as separator).\n\nUse '%s' to specify the location of the rewards file name in the URL - for example: `https://my-cool-domain.com/rewards-trees/mainnet/%s`.",
+			Description:        "The Smart Node will automatically download missing rewards tree files from trusted sources like IPFS and Rocket Pool's repository on GitHub. Use this field if you would like to manually specify additional sources that host the rewards tree files, so the Smart Node can download from them as well.\nMultiple URLs can be provided using ';' as separator).\n\nUse '%s' to specify the location of the rewards file name in the URL - for example: `https://my-cool-domain.com/rewards-trees/mainnet/%s`.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Watchtower},
@@ -421,7 +421,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		stakeUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://stake.rocketpool.net",
-			config.Network_Devnet:  "TBD",
+			config.Network_Devnet:  "https://devnet.rocketpool.net",
 			config.Network_Testnet: "https://testnet.rocketpool.net",
 		},
 
@@ -433,7 +433,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		storageAddress: map[config.Network]string{
 			config.Network_Mainnet: "0x1d8f8f00cfa6758d7bE78336684788Fb0ee0Fa46",
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  "0x990BC2c12d2a39e5FD92111B98A728bf39742478",
 			config.Network_Testnet: "0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1",
 		},
 
@@ -445,13 +445,13 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		rplTokenAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xD33526068D116cE69F19A9ee46F0bd304F21A51f",
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  "0xce59520Cbaec3B399a5245e72C0F21df791202FE",
 			config.Network_Testnet: "0x1Cc9cF5586522c6F483E84A19c3C2B0B6d027bF0",
 		},
 
 		rethAddress: map[config.Network]string{
 			config.Network_Mainnet: "0xae78736Cd615f374D3085123A210448E74Fc6393",
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  "0x3aC886F531BEb95f08F73fDb21528BE3c63AA82F",
 			config.Network_Testnet: "0x7322c24752f79c05FFD1E2a6FCB97020C1C264F1",
 		},
 
@@ -523,7 +523,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		snapshotApiDomain: map[config.Network]string{
 			config.Network_Mainnet: "hub.snapshot.org",
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  "hub.snapshot.org",
 			config.Network_Testnet: "hub.snapshot.org",
 		},
 
@@ -531,13 +531,20 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Mainnet: {
 				common.HexToAddress("0x594Fb75D3dc2DFa0150Ad03F99F97817747dd4E1"),
 				common.HexToAddress("0xA805d68b61956BC92d556F2bE6d18747adAeEe82"),
+				common.HexToAddress("0xEE4d2A71cF479e0D3d0c3c2C923dbfEB57E73111"),
 			},
-			config.Network_Devnet:  {},
-			config.Network_Testnet: {},
+			config.Network_Devnet: {
+				common.HexToAddress("0x556791EC1aa443df339E340E6f20d06a1cD21583"),
+			},
+			config.Network_Testnet: {
+				common.HexToAddress("0x4a625C617a44E60F74E3fe3bf6d6333b63766e91"),
+			},
 		},
 
 		previousRocketDAOProtocolVerifier: map[config.Network][]common.Address{
-			config.Network_Mainnet: {},
+			config.Network_Mainnet: {
+				common.HexToAddress("0xd1f7e573cdC64FC0B201ca37aB50bC7Dd880040A"),
+			},
 			config.Network_Devnet:  {},
 			config.Network_Testnet: {},
 		},
@@ -610,7 +617,7 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 
 		flashbotsProtectUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://rpc.flashbots.net/",
-			config.Network_Devnet:  "",
+			config.Network_Devnet:  "https://rpc-hoodi.flashbots.net/",
 			config.Network_Testnet: "https://rpc-hoodi.flashbots.net/",
 		},
 	}
@@ -628,7 +635,7 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.AutoTxGasThreshold,
 		&cfg.DistributeThreshold,
 		&cfg.VerifyProposals,
-		&cfg.AutoInitVPThreshold,
+		&cfg.AutoAssignmentDelay,
 		&cfg.RewardsTreeMode,
 		&cfg.PriceBalanceSubmissionReferenceTimestamp,
 		&cfg.RewardsTreeCustomUrl,
@@ -805,6 +812,10 @@ func (cfg *SmartnodeConfig) GetMinipoolPerformanceFilename(interval uint64) stri
 	return cfg.formatRewardsFilename(minipoolPerformanceFilenameFormat, interval, RewardsExtensionJSON)
 }
 
+func (cfg *SmartnodeConfig) GetPerformanceFilename(interval uint64) string {
+	return cfg.formatRewardsFilename(performanceFilenameFormat, interval, RewardsExtensionJSON)
+}
+
 func (cfg *SmartnodeConfig) GetRewardsTreePath(interval uint64, daemon bool, extension RewardsExtension) string {
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
@@ -816,6 +827,13 @@ func (cfg *SmartnodeConfig) GetMinipoolPerformancePath(interval uint64, daemon b
 	return filepath.Join(
 		cfg.GetRewardsTreeDirectory(daemon),
 		cfg.GetMinipoolPerformanceFilename(interval),
+	)
+}
+
+func (cfg *SmartnodeConfig) GetPerformancePath(interval uint64) string {
+	return filepath.Join(
+		cfg.GetRewardsTreeDirectory(true),
+		cfg.GetPerformanceFilename(interval),
 	)
 }
 
@@ -835,12 +853,20 @@ func (cfg *SmartnodeConfig) GetWatchtowerFolder(daemon bool) string {
 	return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder)
 }
 
-func (cfg *SmartnodeConfig) GetFeeRecipientFilePath() string {
+func (cfg *SmartnodeConfig) GetGlobalFeeRecipientFilePath() string {
 	if !cfg.parent.IsNativeMode {
-		return filepath.Join(DaemonDataPath, "validators", FeeRecipientFilename)
+		return filepath.Join(DaemonDataPath, "validators", GlobalFeeRecipientFilename)
 	}
 
 	return filepath.Join(cfg.DataPath.Value.(string), "validators", NativeFeeRecipientFilename)
+}
+
+func (cfg *SmartnodeConfig) GetPerKeyFeeRecipientFilePath() string {
+	if !cfg.parent.IsNativeMode {
+		return filepath.Join(DaemonDataPath, "validators", PerKeyFeeRecipientFilename)
+	}
+
+	return filepath.Join(cfg.DataPath.Value.(string), "validators", PerKeyFeeRecipientFilename)
 }
 
 func (cfg *SmartnodeConfig) GetV100RewardsPoolAddress() common.Address {
@@ -959,12 +985,12 @@ func getNetworkOptions() []config.ParameterOption {
 			Value:       config.Network_Mainnet,
 		}, {
 			Name:        "Hoodi Testnet",
-			Description: "This is the Hoodi test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smartnode in a free, safe environment before moving to Mainnet.",
+			Description: "This is the Hoodi test network, which is the next generation of long-lived testnets for Ethereum. It uses free fake ETH and free fake RPL to make fake validators.\nUse this if you want to practice running the Smart Node in a free, safe environment before moving to Mainnet.",
 			Value:       config.Network_Testnet,
 		},
 	}
 
-	if strings.Contains(shared.RocketPoolVersion(), "-dev") {
+	if strings.Contains(shared.RocketPoolVersion(), "dev") {
 		options = append(options, config.ParameterOption{
 			Name:        "Devnet",
 			Description: "This is a development network used by Rocket Pool engineers to test new features and contract upgrades before they are promoted to a Testnet for staging. You should not use this network unless invited to do so by the developers.",

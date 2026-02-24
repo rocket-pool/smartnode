@@ -6,14 +6,14 @@ import (
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
-// The page wrapper for the Smartnode config
+// The page wrapper for the Smart Node config
 type SmartnodeConfigPage struct {
 	home   *settingsHome
 	page   *page
 	layout *standardLayout
 }
 
-// Creates a new page for the Smartnode settings
+// Creates a new page for the Smart Node settings
 func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 
 	configPage := &SmartnodeConfigPage{
@@ -25,7 +25,7 @@ func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 		home.homePage,
 		"settings-smartnode",
 		"Smartnode and TX Fees",
-		"Select this to configure the settings for the Smartnode itself, including the defaults and limits on transaction fees.",
+		"Select this to configure the settings for the Smart Node itself, including the defaults and limits on transaction fees.",
 		configPage.layout.grid,
 	)
 
@@ -38,7 +38,7 @@ func (configPage *SmartnodeConfigPage) getPage() *page {
 	return configPage.page
 }
 
-// Creates the content for the Smartnode settings page
+// Creates the content for the Smart Node settings page
 func (configPage *SmartnodeConfigPage) createContent() {
 
 	// Create the layout

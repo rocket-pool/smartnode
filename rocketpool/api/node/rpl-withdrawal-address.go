@@ -7,10 +7,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/storage"
+	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
@@ -75,10 +75,9 @@ func canSetRPLWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address
 	// Get the RPL stake amount
 	wg.Go(func() error {
 		var err error
-		rplStake, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+		rplStake, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
 		return err
 	})
-
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return nil, err

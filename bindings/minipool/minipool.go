@@ -12,7 +12,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 )
 
 // Settings
@@ -25,9 +24,9 @@ const (
 
 // Minipool details
 type MinipoolDetails struct {
-	Address common.Address          `json:"address"`
-	Exists  bool                    `json:"exists"`
-	Pubkey  rptypes.ValidatorPubkey `json:"pubkey"`
+	Address common.Address        `json:"address"`
+	Exists  bool                  `json:"exists"`
+	Pubkey  types.ValidatorPubkey `json:"pubkey"`
 }
 
 // The counts of minipools per status
@@ -203,17 +202,17 @@ func GetNodeMinipoolAddresses(rp *rocketpool.RocketPool, nodeAddress common.Addr
 }
 
 // Get a node's validating minipool pubkeys
-func GetNodeValidatingMinipoolPubkeys(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) ([]rptypes.ValidatorPubkey, error) {
+func GetNodeValidatingMinipoolPubkeys(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) ([]types.ValidatorPubkey, error) {
 
 	// Get minipool count
 	minipoolCount, err := GetNodeValidatingMinipoolCount(rp, nodeAddress, opts)
 	if err != nil {
-		return []rptypes.ValidatorPubkey{}, err
+		return []types.ValidatorPubkey{}, err
 	}
 
 	// Load pubkeys in batches
 	var lock = sync.RWMutex{}
-	pubkeys := make([]rptypes.ValidatorPubkey, minipoolCount)
+	pubkeys := make([]types.ValidatorPubkey, minipoolCount)
 	for bsi := uint64(0); bsi < minipoolCount; bsi += MinipoolAddressBatchSize {
 
 		// Get batch start & end index
@@ -240,7 +239,7 @@ func GetNodeValidatingMinipoolPubkeys(rp *rocketpool.RocketPool, nodeAddress com
 			})
 		}
 		if err := wg.Wait(); err != nil {
-			return []rptypes.ValidatorPubkey{}, err
+			return []types.ValidatorPubkey{}, err
 		}
 
 	}
@@ -256,7 +255,7 @@ func GetMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 	// Data
 	var wg errgroup.Group
 	var exists bool
-	var pubkey rptypes.ValidatorPubkey
+	var pubkey types.ValidatorPubkey
 
 	// Load data
 	wg.Go(func() error {
@@ -491,7 +490,7 @@ func GetNodeValidatingMinipoolAt(rp *rocketpool.RocketPool, nodeAddress common.A
 }
 
 // Get a minipool address by validator pubkey
-func GetMinipoolByPubkey(rp *rocketpool.RocketPool, pubkey rptypes.ValidatorPubkey, opts *bind.CallOpts) (common.Address, error) {
+func GetMinipoolByPubkey(rp *rocketpool.RocketPool, pubkey types.ValidatorPubkey, opts *bind.CallOpts) (common.Address, error) {
 	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
 		return common.Address{}, err
@@ -517,14 +516,14 @@ func GetMinipoolExists(rp *rocketpool.RocketPool, minipoolAddress common.Address
 }
 
 // Get a minipool's validator pubkey
-func GetMinipoolPubkey(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (rptypes.ValidatorPubkey, error) {
+func GetMinipoolPubkey(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (types.ValidatorPubkey, error) {
 	rocketMinipoolManager, err := getRocketMinipoolManager(rp, opts)
 	if err != nil {
-		return rptypes.ValidatorPubkey{}, err
+		return types.ValidatorPubkey{}, err
 	}
-	pubkey := new(rptypes.ValidatorPubkey)
+	pubkey := new(types.ValidatorPubkey)
 	if err := rocketMinipoolManager.Call(opts, pubkey, "getMinipoolPubkey", minipoolAddress); err != nil {
-		return rptypes.ValidatorPubkey{}, fmt.Errorf("error getting minipool %s pubkey: %w", minipoolAddress.Hex(), err)
+		return types.ValidatorPubkey{}, fmt.Errorf("error getting minipool %s pubkey: %w", minipoolAddress.Hex(), err)
 	}
 	return *pubkey, nil
 }

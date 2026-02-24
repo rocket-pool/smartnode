@@ -23,27 +23,38 @@ type RplPriceResponse struct {
 }
 
 type NetworkStatsResponse struct {
-	Status                    string         `json:"status"`
-	Error                     string         `json:"error"`
-	TotalValueLocked          float64        `json:"totalValueLocked"`
-	DepositPoolBalance        float64        `json:"depositPoolBalance"`
-	MinipoolCapacity          float64        `json:"minipoolCapacity"`
-	StakerUtilization         float64        `json:"stakerUtilization"`
-	NodeFee                   float64        `json:"nodeFee"`
-	NodeCount                 uint64         `json:"nodeCount"`
-	InitializedMinipoolCount  uint64         `json:"initializedMinipoolCount"`
-	PrelaunchMinipoolCount    uint64         `json:"prelaunchMinipoolCount"`
-	StakingMinipoolCount      uint64         `json:"stakingMinipoolCount"`
-	WithdrawableMinipoolCount uint64         `json:"withdrawableMinipoolCount"`
-	DissolvedMinipoolCount    uint64         `json:"dissolvedMinipoolCount"`
-	FinalizedMinipoolCount    uint64         `json:"finalizedMinipoolCount"`
-	RplPrice                  float64        `json:"rplPrice"`
-	TotalRplStaked            float64        `json:"totalRplStaked"`
-	EffectiveRplStaked        float64        `json:"effectiveRplStaked"`
-	RethPrice                 float64        `json:"rethPrice"`
-	SmoothingPoolNodes        uint64         `json:"smoothingPoolNodes"`
-	SmoothingPoolAddress      common.Address `json:"SmoothingPoolAddress"`
-	SmoothingPoolBalance      float64        `json:"smoothingPoolBalance"`
+	Status                           string         `json:"status"`
+	Error                            string         `json:"error"`
+	TotalValueLocked                 float64        `json:"totalValueLocked"`
+	DepositPoolBalance               float64        `json:"depositPoolBalance"`
+	MinipoolCapacity                 float64        `json:"minipoolCapacity"`
+	StakerUtilization                float64        `json:"stakerUtilization"`
+	NodeFee                          float64        `json:"nodeFee"`
+	NodeCount                        uint64         `json:"nodeCount"`
+	InitializedMinipoolCount         uint64         `json:"initializedMinipoolCount"`
+	PrelaunchMinipoolCount           uint64         `json:"prelaunchMinipoolCount"`
+	StakingMinipoolCount             uint64         `json:"stakingMinipoolCount"`
+	WithdrawableMinipoolCount        uint64         `json:"withdrawableMinipoolCount"`
+	DissolvedMinipoolCount           uint64         `json:"dissolvedMinipoolCount"`
+	FinalizedMinipoolCount           uint64         `json:"finalizedMinipoolCount"`
+	RplPrice                         float64        `json:"rplPrice"`
+	TotalRplStaked                   float64        `json:"totalRplStaked"`
+	TotalMegapoolRplStaked           float64        `json:"totalMegapoolRplStaked"`
+	TotalLegacyRplStaked             float64        `json:"totalLegacyRplStaked"`
+	EffectiveRplStaked               float64        `json:"effectiveRplStaked"`
+	RethPrice                        float64        `json:"rethPrice"`
+	SmoothingPoolNodes               uint64         `json:"smoothingPoolNodes"`
+	SmoothingPoolAddress             common.Address `json:"SmoothingPoolAddress"`
+	SmoothingPoolBalance             float64        `json:"smoothingPoolBalance"`
+	MegapoolContractCount            uint64         `json:"megapoolContractCount"`
+	MegapoolValidatorCount           uint64         `json:"megapoolValidatorCount"`
+	MegapoolValidatorStakingCount    uint64         `json:"megapoolValidatorStakingCount"`
+	MegapoolValidatorInPrestakeCount uint64         `json:"megapoolValidatorInPrestakeCount"`
+	MegapoolValidatorInQueueCount    uint64         `json:"megapoolValidatorInQueueCount"`
+	MegapoolValidatorExitedCount     uint64         `json:"megapoolValidatorExitedCount"`
+	MegapoolValidatorLockedCount     uint64         `json:"megapoolValidatorLockedCount"`
+	MegapoolValidatorExitingCount    uint64         `json:"megapoolValidatorExitingCount"`
+	MegapoolValidatorDissolvedCount  uint64         `json:"megapoolValidatorDissolvedCount"`
 }
 
 type NetworkTimezonesResponse struct {
@@ -80,7 +91,6 @@ type NetworkDAOProposalsResponse struct {
 	TotalDelegatedVp               *big.Int               `json:"totalDelegateVp"`
 	SumVotingPower                 *big.Int               `json:"sumVotingPower"`
 	VotingDelegate                 common.Address         `json:"votingDelegate"`
-	IsVotingInitialized            bool                   `json:"isVotingInitialized"`
 	VotingPower                    *big.Int               `json:"votingPower"`
 	BlockNumber                    uint32                 `json:"blockNumber"`
 	IsNodeRegistered               bool                   `json:"isNodeRegistered"`
@@ -115,8 +125,8 @@ type GetLatestDelegateResponse struct {
 	Address common.Address `json:"address"`
 }
 
-type IsHoustonHotfixDeployedResponse struct {
-	Status                  string `json:"status"`
-	Error                   string `json:"error"`
-	IsHoustonHotfixDeployed bool   `json:"isHoustonHotfixDeployed"`
+type IsSaturnDeployedResponse struct {
+	Status           string `json:"status"`
+	Error            string `json:"error"`
+	IsSaturnDeployed bool   `json:"isSaturnDeployed"`
 }

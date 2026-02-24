@@ -37,19 +37,9 @@ type reduceBonds struct {
 	rp             *rocketpool.RocketPool
 	d              *client.Client
 	gasThreshold   float64
-	disabled       bool
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
-}
-
-// Details required to check for bond reduction eligibility
-type minipoolBondReductionDetails struct {
-	Address             common.Address
-	DepositBalance      *big.Int
-	ReduceBondTime      time.Time
-	ReduceBondCancelled bool
-	Status              types.MinipoolStatus
 }
 
 // Create reduce bonds task
@@ -73,13 +63,7 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 		return nil, err
 	}
 
-	// Check if auto-bond-reduction is disabled
 	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
-	disabled := false
-	if gasThreshold == 0 {
-		logger.Println("Automatic tx gas threshold is 0, disabling auto-reduce.")
-		disabled = true
-	}
 
 	// Get the user-requested max fee
 	maxFeeGwei := cfg.Smartnode.ManualMaxFee.Value.(float64)
@@ -94,8 +78,8 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 	priorityFeeGwei := cfg.Smartnode.PriorityFee.Value.(float64)
 	var priorityFee *big.Int
 	if priorityFeeGwei == 0 {
-		logger.Println("WARNING: priority fee was missing or 0, setting a default of 2.")
-		priorityFee = eth.GweiToWei(2)
+		logger.Printlnf("WARNING: priority fee was missing or 0, setting a default of %.2f.", rpgas.DefaultPriorityFeeGwei)
+		priorityFee = eth.GweiToWei(rpgas.DefaultPriorityFeeGwei)
 	} else {
 		priorityFee = eth.GweiToWei(priorityFeeGwei)
 	}
@@ -109,7 +93,6 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 		rp:             rp,
 		d:              d,
 		gasThreshold:   gasThreshold,
-		disabled:       disabled,
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
@@ -119,9 +102,8 @@ func newReduceBonds(c *cli.Context, logger log.ColorLogger) (*reduceBonds, error
 
 // Reduce bonds
 func (t *reduceBonds) run(state *state.NetworkState) error {
-
-	// Check if auto-reduce is disabled
-	if t.disabled {
+	// Check if auto-txs were disabled
+	if t.cfg.Smartnode.AutoTxGasThreshold.Value.(float64) == 0 {
 		return nil
 	}
 
@@ -150,7 +132,7 @@ func (t *reduceBonds) run(state *state.NetworkState) error {
 	}
 	latestBlockTime := time.Unix(int64(latestEth1Block.Time), 0)
 
-	// Get reduceable minipools
+	// Get reducible minipools
 	minipools, err := t.getReduceableMinipools(nodeAccount.Address, windowStart, windowLength, latestBlockTime, state, opts)
 	if err != nil {
 		return err
@@ -269,7 +251,7 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei(t.cfg)
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
 		if err != nil {
 			return false, err
 		}
@@ -302,7 +284,7 @@ func (t *reduceBonds) forceFeeDistribution() (bool, error) {
 	return true, nil
 }
 
-// Get reduceable minipools
+// Get reducible minipools
 func (t *reduceBonds) getReduceableMinipools(nodeAddress common.Address, windowStart time.Duration, windowLength time.Duration, latestBlockTime time.Time, state *state.NetworkState, opts *bind.CallOpts) ([]*rpstate.NativeMinipoolDetails, error) {
 
 	// Filter minipools
@@ -379,7 +361,7 @@ func (t *reduceBonds) reduceBond(mpd *rpstate.NativeMinipoolDetails, windowStart
 	// Get the max fee
 	maxFee := t.maxFee
 	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWei(t.cfg)
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
 		if err != nil {
 			return false, err
 		}

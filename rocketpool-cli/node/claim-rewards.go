@@ -33,7 +33,8 @@ func nodeClaimRewards(c *cli.Context) error {
 	defer rp.Close()
 
 	// Provide a notice
-	fmt.Printf("%sWelcome to the new rewards system!\nYou no longer need to claim rewards at each interval - you can simply let them accumulate and claim them whenever you want.\nHere you can see which intervals you haven't claimed yet, and how many rewards you earned during each one.%s\n\n", colorBlue, colorReset)
+	fmt.Printf("%sWelcome to the new rewards system!\nYou no longer need to claim rewards at each interval - you can simply let them accumulate and claim them whenever you want.\nHere you can see which intervals you haven't claimed yet, and how many rewards you earned during each one.%s\n", colorBlue, colorReset)
+	fmt.Println()
 
 	// Get eligible intervals
 	rewardsInfoResponse, err := rp.GetRewardsInfo()
@@ -109,7 +110,8 @@ func nodeClaimRewards(c *cli.Context) error {
 
 	// Print the info for all available periods
 	totalRpl := big.NewInt(0)
-	totalEth := big.NewInt(0)
+	totalSmoothingEth := big.NewInt(0)
+	totalVoterShareEth := big.NewInt(0)
 	for _, intervalInfo := range rewardsInfoResponse.UnclaimedIntervals {
 		fmt.Printf("Rewards for Interval %d (%s to %s):\n", intervalInfo.Index, intervalInfo.StartTime.Local(), intervalInfo.EndTime.Local())
 		fmt.Printf("\tStaking:        %.6f RPL\n", eth.WeiToEth(&intervalInfo.CollateralRplAmount.Int))
@@ -117,15 +119,19 @@ func nodeClaimRewards(c *cli.Context) error {
 			fmt.Printf("\tOracle DAO:     %.6f RPL\n", eth.WeiToEth(&intervalInfo.ODaoRplAmount.Int))
 		}
 		fmt.Printf("\tSmoothing Pool: %.6f ETH\n\n", eth.WeiToEth(&intervalInfo.SmoothingPoolEthAmount.Int))
+		fmt.Printf("\tVoter Share:    %.6f ETH\n", eth.WeiToEth(&intervalInfo.VoterShareEth.Int))
+		fmt.Printf("\tTotal:          %.6f ETH\n\n", eth.WeiToEth(&intervalInfo.TotalEthAmount.Int))
 
 		totalRpl.Add(totalRpl, &intervalInfo.CollateralRplAmount.Int)
 		totalRpl.Add(totalRpl, &intervalInfo.ODaoRplAmount.Int)
-		totalEth.Add(totalEth, &intervalInfo.SmoothingPoolEthAmount.Int)
+		totalSmoothingEth.Add(totalSmoothingEth, &intervalInfo.SmoothingPoolEthAmount.Int)
+		totalVoterShareEth.Add(totalVoterShareEth, &intervalInfo.VoterShareEth.Int)
 	}
 
 	fmt.Println("Total Pending Rewards:")
 	fmt.Printf("\t%.6f RPL\n", eth.WeiToEth(totalRpl))
-	fmt.Printf("\t%.6f ETH\n\n", eth.WeiToEth(totalEth))
+	fmt.Printf("\t%.6f Smoothing Pool ETH\n", eth.WeiToEth(totalSmoothingEth))
+	fmt.Printf("\t%.6f Voter Share ETH\n\n", eth.WeiToEth(totalVoterShareEth))
 
 	// Get the list of intervals to claim
 	var indices []uint64
@@ -186,6 +192,7 @@ func nodeClaimRewards(c *cli.Context) error {
 				claimRpl.Add(claimRpl, &intervalInfo.CollateralRplAmount.Int)
 				claimRpl.Add(claimRpl, &intervalInfo.ODaoRplAmount.Int)
 				claimEth.Add(claimEth, &intervalInfo.SmoothingPoolEthAmount.Int)
+				claimEth.Add(claimEth, &intervalInfo.VoterShareEth.Int)
 			}
 		}
 	}
@@ -263,17 +270,23 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 	currentBorrowedCollateral := float64(0)
 	totalBondedCollateral := float64(0)
 	totalBorrowedCollateral := float64(0)
-	rplPrice := eth.WeiToEth(rewardsInfoResponse.RplPrice)
 	currentRplStake := eth.WeiToEth(rewardsInfoResponse.RplStake)
 	availableRpl := eth.WeiToEth(claimRpl)
 
 	// Print info about autostaking RPL
 	total := currentRplStake + availableRpl
-	if rewardsInfoResponse.ActiveMinipools > 0 {
+	if rewardsInfoResponse.ActiveMinipools > 0 || rewardsInfoResponse.ActiveMegapoolValidators > 0 {
 		currentBondedCollateral = rewardsInfoResponse.BondedCollateralRatio
 		currentBorrowedCollateral = rewardsInfoResponse.BorrowedCollateralRatio
-		totalBondedCollateral = rplPrice * total / (float64(rewardsInfoResponse.ActiveMinipools)*32.0 - eth.WeiToEth(rewardsInfoResponse.EthMatched) - eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
-		totalBorrowedCollateral = rplPrice * total / (eth.WeiToEth(rewardsInfoResponse.EthMatched) + eth.WeiToEth(rewardsInfoResponse.PendingMatchAmount))
+
+		if currentRplStake > 0 {
+			totalBondedCollateral = currentBondedCollateral * total / currentRplStake
+			totalBorrowedCollateral = currentBorrowedCollateral * total / currentRplStake
+		} else {
+			totalBondedCollateral = 0
+			totalBorrowedCollateral = 0
+		}
+
 		fmt.Printf("You currently have %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", currentRplStake, currentBorrowedCollateral*100, currentBondedCollateral*100)
 	} else {
 		fmt.Println("You do not have any active minipools, so restaking RPL will not lead to any rewards.")

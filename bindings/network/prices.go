@@ -1,6 +1,7 @@
 package network
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"sync"
@@ -143,8 +144,20 @@ func GetPriceUpdatedEvent(rp *rocketpool.RocketPool, blockNumber uint64, opts *b
 	addressFilter := rocketNetworkPricesAddress
 	topicFilter := [][]common.Hash{{pricesUpdatedEvent.ID}, {indexBytes}}
 
+	// Get current head block to avoid querying beyond it
+	currentBlock, err := rp.Client.BlockNumber(context.Background())
+	if err != nil {
+		return false, PriceUpdatedEvent{}, fmt.Errorf("error getting current block number: %w", err)
+	}
+
+	// Calculate toBlock, capped at current head block
+	toBlock := blockNumber + 1000
+	if toBlock > currentBlock {
+		toBlock = currentBlock
+	}
+
 	// Get the event logs
-	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(100), big.NewInt(int64(blockNumber)), big.NewInt(int64(blockNumber+1000)), nil)
+	logs, err := eth.GetLogs(rp, addressFilter, topicFilter, big.NewInt(100), big.NewInt(int64(blockNumber)), big.NewInt(int64(toBlock)), nil)
 	if err != nil {
 		return false, PriceUpdatedEvent{}, err
 	}

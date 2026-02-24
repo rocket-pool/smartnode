@@ -9,8 +9,8 @@ import (
 // Logger with ANSI color output
 type ColorLogger struct {
 	Color       color.Attribute
-	sprintFunc  func(a ...interface{}) string
-	sprintfFunc func(format string, a ...interface{}) string
+	sprintFunc  func(a ...any) string
+	sprintfFunc func(format string, a ...any) string
 }
 
 // Create new color logger
@@ -23,21 +23,21 @@ func NewColorLogger(colorAttr color.Attribute) ColorLogger {
 }
 
 // Print values
-func (l *ColorLogger) Print(v ...interface{}) {
+func (l *ColorLogger) Print(v ...any) {
 	log.Print(l.sprintFunc(v...))
 }
 
 // Print values with a newline
-func (l *ColorLogger) Println(v ...interface{}) {
+func (l *ColorLogger) Println(v ...any) {
 	log.Println(l.sprintFunc(v...))
 }
 
 // Print a formatted string
-func (l *ColorLogger) Printf(format string, v ...interface{}) {
+func (l *ColorLogger) Printf(format string, v ...any) {
 	log.Print(l.sprintfFunc(format, v...))
 }
 
 // Print a formatted string with a newline
-func (l *ColorLogger) Printlnf(format string, v ...interface{}) {
+func (l *ColorLogger) Printlnf(format string, v ...any) {
 	log.Println(l.sprintfFunc(format, v...))
 }

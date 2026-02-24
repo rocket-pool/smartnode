@@ -101,13 +101,6 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 		return nil
 	})
 
-	// Check if Voting is initialized and add to response
-	wg.Go(func() error {
-		var err error
-		response.IsVotingInitialized, err = network.GetVotingInitialized(rp, nodeAccount.Address, nil)
-		return err
-	})
-
 	// Check whether RPL locking is allowed for the node
 	wg.Go(func() error {
 		var err error
@@ -118,7 +111,7 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 	// Get the node's locked RPL
 	wg.Go(func() error {
 		var err error
-		response.NodeRPLLocked, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+		response.NodeRPLLocked, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -175,15 +168,10 @@ func getStatus(c *cli.Context) (*api.PDAOStatusResponse, error) {
 		return nil, err
 	}
 
-	// Get the delegated voting power if voting is initialized
-	if response.IsVotingInitialized {
-		totalDelegatedVP, _, _, err := propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
-		if err != nil {
-			return nil, err
-		}
-		response.TotalDelegatedVp = totalDelegatedVP
-	} else {
-		response.TotalDelegatedVp = nil
+	// Get the delegated voting power
+	response.TotalDelegatedVp, _, _, err = propMgr.GetArtifactsForVoting(response.BlockNumber, nodeAccount.Address)
+	if err != nil {
+		return nil, err
 	}
 
 	// Get the local tree

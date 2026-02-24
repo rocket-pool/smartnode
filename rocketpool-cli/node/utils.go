@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"slices"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 	"unicode"
@@ -259,51 +258,6 @@ func promptTimezone() string {
 	return timezone
 }
 
-// Prompt user for a minimum node fee
-func promptMinNodeFee(networkCurrentNodeFee, networkMinNodeFee float64) float64 {
-
-	// Get suggested min node fee
-	suggestedMinNodeFee := networkCurrentNodeFee - defaultMaxNodeFeeSlippage
-	if suggestedMinNodeFee < networkMinNodeFee {
-		suggestedMinNodeFee = networkMinNodeFee
-	}
-
-	// Prompt for suggested max slippage
-	fmt.Printf("The current network node commission rate that your minipool should receive is %f%%.\n", networkCurrentNodeFee*100)
-	fmt.Printf("The suggested maximum commission rate slippage for your deposit transaction is %f%%.\n", defaultMaxNodeFeeSlippage*100)
-	fmt.Printf("This will result in your minipool receiving a minimum possible commission rate of %f%%.\n", suggestedMinNodeFee*100)
-	if prompt.Confirm("Do you want to use the suggested maximum commission rate slippage?") {
-		return suggestedMinNodeFee
-	}
-
-	// Prompt for custom max slippage
-	for {
-
-		// Get max slippage
-		maxNodeFeeSlippagePercStr := prompt.Prompt("Please enter a maximum commission rate slippage % for your deposit:", "^\\d+(\\.\\d+)?$", "Invalid maximum commission rate slippage")
-		maxNodeFeeSlippagePerc, _ := strconv.ParseFloat(maxNodeFeeSlippagePercStr, 64)
-		maxNodeFeeSlippage := maxNodeFeeSlippagePerc / 100
-		if maxNodeFeeSlippage < 0 || maxNodeFeeSlippage > 1 {
-			fmt.Println("Invalid maximum commission rate slippage")
-			fmt.Println("")
-			continue
-		}
-
-		// Calculate min node fee
-		minNodeFee := networkCurrentNodeFee - maxNodeFeeSlippage
-		if minNodeFee < networkMinNodeFee {
-			minNodeFee = networkMinNodeFee
-		}
-
-		// Confirm max slippage
-		if prompt.Confirm(fmt.Sprintf("You have chosen a maximum commission rate slippage of %f%%, resulting in a minimum possible commission rate of %f%%. Is this correct?", maxNodeFeeSlippage*100, minNodeFee*100)) {
-			return minNodeFee
-		}
-
-	}
-
-}
-
 // Prompt for the password to a solo validator key as part of migration
 func promptForSoloKeyPassword(rp *rocketpool.Client, cfg *config.RocketPoolConfig, pubkey types.ValidatorPubkey) (string, error) {
 
@@ -358,7 +312,7 @@ func promptForSoloKeyPassword(rp *rocketpool.Client, cfg *config.RocketPoolConfi
 	}
 
 	if len(pubkeyPasswords) == 0 {
-		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smartnode stack, you will need to put its keystore file into custom-keys first", pubkey.String())
+		return "", fmt.Errorf("couldn't find the keystore for validator %s in the custom-keys directory; if you want to import this key into the Smart Node stack, you will need to put its keystore file into custom-keys first", pubkey.String())
 	}
 
 	// Store it in the file

@@ -5,6 +5,8 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	protocol131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/protocol"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -61,14 +63,14 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 	// Get the node's RPL stake
 	wg.Go(func() error {
 		var err error
-		stakedRpl, err = node.GetNodeRPLStake(rp, nodeAccount.Address, nil)
+		stakedRpl, err = node.GetNodeStakedRPL(rp, nodeAccount.Address, nil)
 		return err
 	})
 
 	// Get the node's locked RPL
 	wg.Go(func() error {
 		var err error
-		lockedRpl, err = node.GetNodeRPLLocked(rp, nodeAccount.Address, nil)
+		lockedRpl, err = node.GetNodeLockedRPL(rp, nodeAccount.Address, nil)
 		return err
 	})
 
@@ -494,6 +496,68 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing SubmitRewardsEnabled: %w", err)
 			}
+
+		// NodeShare
+		case protocol.NetworkNodeCommissionSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeNodeShareGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing NodeShare: %w", err)
+			}
+		// NodeShareSecurityCouncilAdder
+		case protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeNodeShareSecurityCouncilAdderGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing NodeShareSecurityCouncilAdder: %w", err)
+			}
+		// VoterShare
+		case protocol.NetworkVoterSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeVoterShareGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing VoterShare: %w", err)
+			}
+		// ProtocolDAOShare
+		case protocol.NetworkPDAOSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeProtocolDAOShare(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing ProtocolDAOShare: %w", err)
+			}
+		//MaxNodeShareSecurityCouncilAdder
+		case protocol.NetworkMaxNodeShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateMaxNodeShareSecurityCouncilAdder(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MaxNodeShareSecurityCouncilAdder: %w", err)
+			}
+		//MaxRethBalanceDelta
+		case protocol.NetworkMaxRethBalanceDeltaPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateMaxRethDeltaGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MaxRethBalanceDelta: %w", err)
+			}
+
 		}
 
 	case protocol.NodeSettingsContractName:
@@ -541,28 +605,58 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing VacantMinipoolsEnabled: %w", err)
 			}
-
 		// MinimumPerMinipoolStake
-		case protocol.MinimumPerMinipoolStakeSettingPath:
+		case protocol131.MinimumPerMinipoolStakeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposeMinimumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasInfo, err = protocol131.EstimateProposeMinimumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing MinimumPerMinipoolStake: %w", err)
 			}
-
 		// MaximumPerMinipoolStake
-		case protocol.MaximumPerMinipoolStakeSettingPath:
+		case protocol131.MaximumPerMinipoolStakeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			response.GasInfo, err = protocol.EstimateProposeMaximumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
+			response.GasInfo, err = protocol131.EstimateProposeMaximumPerMinipoolStakeGas(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error estimating gas for proposing MaximumPerMinipoolStake: %w", err)
 			}
+		// MinimumLegacyRplStake
+		case protocol.MinimumLegacyRplStakePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeMinimumLecacyRPLStakeGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MinimumLegacyRplStake: %w", err)
+			}
+
+		// ReducedBond
+		case protocol.ReducedBondSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeReducedBond(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing ReducedBond: %w", err)
+			}
+		// NodeUnstakingPeriod
+		case protocol.NodeUnstakingPeriodSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeNodeUnstakingPeriod(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing NodeUnstakingPeriod: %w", err)
+			}
+
 		}
 
 	case protocol.ProposalsSettingsContractName:
@@ -747,6 +841,91 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 				return nil, fmt.Errorf("error estimating gas for proposing SecurityProposalActionTime: %w", err)
 			}
 		}
+
+	case protocol.MegapoolSettingsContractName:
+		switch settingName {
+		// TimeBeforeDissolve
+		case protocol.MegapoolTimeBeforeDissolveSettingsPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeMegapoolTimeBeforeDissolve(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing TimeBeforeDissolve: %w", err)
+			}
+		// MaximumEthPenalty
+		case protocol.MegapoolMaximumMegapoolEthPenaltyPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeMaximumEthPenalty(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing MaximumEthPenalty: %w", err)
+			}
+		// NotifyThreshold
+		case protocol.MegapoolNotifyThresholdPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeNotifyThreshold(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing NotifyThreshold: %w", err)
+			}
+		// LateNofifyFine
+		case protocol.MegapoolLateNotifyFinePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeLateNotifyFine(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing LateNofifyFine: %w", err)
+			}
+		// DissolvePenalty
+		case protocol.MegapoolDissolvePenaltyPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeDissolvePenalty(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing DissolvePenalty: %w", err)
+			}
+		// UserDistributeDelay
+		case protocol.MegapoolUserDistributeDelayPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeUserDistributeDelay(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing UserDistributeDelay: %w", err)
+			}
+		// UserDistributeDelayWithShortfall
+		case protocol.MegapoolUserDistributeDelayShortfallPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeUserDistributeDelayWithShortfall(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing UserDistributeDelayWithShortfall: %w", err)
+			}
+		// PenaltyThreshold
+		case protocol.MegapoolPenaltyThreshold:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposePenaltyThreshold(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing PenaltyThreshold: %w", err)
+			}
+		}
+
 	}
 
 	// Make sure a setting was actually hit
@@ -1185,6 +1364,67 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing SubmitRewardsEnabled: %w", err)
 			}
+		// NodeShare
+		case protocol.NetworkNodeCommissionSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeNodeShare(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing NodeShare: %w", err)
+			}
+		// NodeShareSecurityCouncilAdder
+		case protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeNodeShareSecurityCouncilAdder(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing NodeShareSecurityCouncilAdder: %w", err)
+			}
+		// VoterShare
+		case protocol.NetworkVoterSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeVoterShare(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing VoterShare: %w", err)
+			}
+		// ProtocolDAOShare
+		case protocol.NetworkPDAOSharePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeProtocolDAOShare(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing ProtocolDAOShare: %w", err)
+			}
+		// MaxNodeShareSecurityCouncilAdder
+		case protocol.NetworkMaxNodeShareSecurityCouncilAdderPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMaxNodeShareSecurityCouncilAdder(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MaxNodeShareSecurityCouncilAdder: %w", err)
+			}
+		// MaxRethBalanceDelta
+		case protocol.NetworkMaxRethBalanceDeltaPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMaxRethDelta(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MaxRethBalanceDelta: %w", err)
+			}
+
 		}
 
 	case protocol.NodeSettingsContractName:
@@ -1232,28 +1472,57 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 			if err != nil {
 				return nil, fmt.Errorf("error proposing VacantMinipoolsEnabled: %w", err)
 			}
-
 		// MinimumPerMinipoolStake
-		case protocol.MinimumPerMinipoolStakeSettingPath:
+		case protocol131.MinimumPerMinipoolStakeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			proposalID, hash, err = protocol.ProposeMinimumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
+			proposalID, hash, err = protocol131.ProposeMinimumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing MinimumPerMinipoolStake: %w", err)
 			}
-
 		// MaximumPerMinipoolStake
-		case protocol.MaximumPerMinipoolStakeSettingPath:
+		case protocol131.MaximumPerMinipoolStakeSettingPath:
 			newValue, err := cliutils.ValidateBigInt(valueName, value)
 			if err != nil {
 				return nil, err
 			}
-			proposalID, hash, err = protocol.ProposeMaximumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
+			proposalID, hash, err = protocol131.ProposeMaximumPerMinipoolStake(rp, newValue, blockNumber, pollard, opts)
 			if err != nil {
 				return nil, fmt.Errorf("error proposing MaximumPerMinipoolStake: %w", err)
 			}
+		// MinimumLegacyRplStake
+		case protocol.MinimumLegacyRplStakePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMinimumLecacyRPLStake(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MinimumLegacyRplStake: %w", err)
+			}
+		// ReducedBond
+		case protocol.ReducedBondSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeReducedBond(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing ReduceBond: %w", err)
+			}
+		// NodeUnstakingPeriod
+		case protocol.NodeUnstakingPeriodSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeNodeUnstakingPeriod(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing NodeUnstakingPeriod: %w", err)
+			}
+
 		}
 
 	case protocol.ProposalsSettingsContractName:
@@ -1440,6 +1709,92 @@ func proposeSetting(c *cli.Context, contractName string, settingName string, val
 				return nil, fmt.Errorf("error proposing SecurityProposalActionTime: %w", err)
 			}
 		}
+
+	case protocol.MegapoolSettingsContractName:
+		switch settingName {
+		// TimeBeforeDissolve
+		case protocol.MegapoolTimeBeforeDissolveSettingsPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMegapoolTimeBeforeDissolve(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing TimeBeforeDissolve: %w", err)
+			}
+		// MaximumEthPenalty
+		case protocol.MegapoolMaximumMegapoolEthPenaltyPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeMaximumEthPenalty(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing MaximumEthPenalty: %w", err)
+			}
+		// NotifyThreshold
+		case protocol.MegapoolNotifyThresholdPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeNotifyThreshold(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing NotifyThreshold: %w", err)
+			}
+		// LateNotifyFine
+		case protocol.MegapoolLateNotifyFinePath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeLateNotifyFine(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing LateNotifyFine: %w", err)
+			}
+		// DissolvePenalty
+		case protocol.MegapoolDissolvePenaltyPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeDissolvePenalty(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing DissolvePenalty: %w", err)
+			}
+		// UserDistributeDelay
+		case protocol.MegapoolUserDistributeDelayPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeUserDistributeDelay(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing UserDistributeDelay: %w", err)
+			}
+		// UserDistributeDelayWithShortfall
+		case protocol.MegapoolUserDistributeDelayShortfallPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeUserDistributeDelayWithShortfall(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing UserDistributeDelayWithShortfall: %w", err)
+			}
+		// PenaltyThreshold
+		case protocol.MegapoolPenaltyThreshold:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposePenaltyThreshold(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing PenaltyThreshold: %w", err)
+			}
+
+		}
+
 	}
 
 	// Make sure a setting was actually hit

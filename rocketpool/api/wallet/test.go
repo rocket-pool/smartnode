@@ -73,7 +73,7 @@ func testRecoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletRespo
 	response.AccountAddress = nodeAccount.Address
 
 	if !c.Bool("skip-validator-key-recovery") {
-		response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, bc, nodeAccount.Address, w, true)
+		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, true)
 		if err != nil {
 			return nil, err
 		}
@@ -170,7 +170,7 @@ func testSearchAndRecoverWallet(c *cli.Context, mnemonic string, address common.
 	response.AccountAddress = nodeAccount.Address
 
 	if !c.Bool("skip-validator-key-recovery") {
-		response.ValidatorKeys, err = walletutils.RecoverMinipoolKeys(c, rp, bc, nodeAccount.Address, w, true)
+		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, true)
 		if err != nil {
 			return nil, err
 		}

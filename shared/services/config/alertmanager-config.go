@@ -24,6 +24,7 @@ const AlertingRulesConfigFile string = "alerting/rules/default.yml"
 const defaultAlertmanagerPort uint16 = 9093
 const defaultAlertmanagerHost string = "localhost"
 const defaultAlertmanagerOpenPort config.RPCMode = config.RPC_Closed
+const defaultLowETHBalanceThreshold float64 = 0.01
 
 // Configuration for Alertmanager
 type AlertmanagerConfig struct {
@@ -69,6 +70,8 @@ type AlertmanagerConfig struct {
 	AlertEnabled_LowDiskSpaceCritical      config.Parameter `yaml:"alertEnabled_LowDiskSpaceCritical,omitempty"`
 	AlertEnabled_OSUpdatesAvailable        config.Parameter `yaml:"alertEnabled_OSUpdatesAvailable,omitempty"`
 	AlertEnabled_RPUpdatesAvailable        config.Parameter `yaml:"alertEnabled_RPUpdatesAvailable,omitempty"`
+	AlertEnabled_LowETHBalance             config.Parameter `yaml:"alertEnabled_LowETHBalance,omitempty"`
+	LowETHBalanceThreshold                 config.Parameter `yaml:"lowETHBalanceThreshold,omitempty"`
 	// Alerts manually sent in alerting.go:
 	AlertEnabled_FeeRecipientChanged         config.Parameter `yaml:"alertEnabled_FeeRecipientChanged,omitempty"`
 	AlertEnabled_MinipoolBondReduced         config.Parameter `yaml:"alertEnabled_MinipoolBondReduced,omitempty"`
@@ -89,7 +92,7 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		EnableAlerting: config.Parameter{
 			ID:                 "enableAlerting",
 			Name:               "Enable Alerting",
-			Description:        "Enable the Smartnode's alerting system. This will provide you alerts when important events occur with your node.",
+			Description:        "Enable the Smart Node's alerting system. This will provide you alerts when important events occur with your node.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Alertmanager},
@@ -253,6 +256,20 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		AlertEnabled_BeaconClientSyncComplete: createParameterForAlertEnablement(
 			"BeaconClientSyncComplete",
 			"beacon client is synced"),
+		AlertEnabled_LowETHBalance: createParameterForAlertEnablement(
+			"LowETHBalance",
+			"Low ETH Balance"),
+
+		LowETHBalanceThreshold: config.Parameter{
+			ID:                 "lowETHBalanceThreshold",
+			Name:               "Low ETH Balance Threshold",
+			Description:        "The threshold for the low ETH balance alert.",
+			Type:               config.ParameterType_Float,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultLowETHBalanceThreshold},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Prometheus},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
 	}
 }
 
@@ -298,6 +315,8 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.AlertEnabled_MinipoolStaked,
 		&cfg.AlertEnabled_ExecutionClientSyncComplete,
 		&cfg.AlertEnabled_BeaconClientSyncComplete,
+		&cfg.AlertEnabled_LowETHBalance,
+		&cfg.LowETHBalanceThreshold,
 	}
 }
 

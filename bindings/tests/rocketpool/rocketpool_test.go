@@ -11,7 +11,7 @@ import (
 func TestGetAddress(t *testing.T) {
 
 	// Get contract address
-	address1, err := rp.GetAddress("rocketDepositPool")
+	address1, err := rp.GetAddress("rocketDepositPool", nil)
 	if err != nil {
 		t.Fatalf("error getting contract address: %s", err)
 	} else if bytes.Equal(address1.Bytes(), common.Address{}.Bytes()) {
@@ -19,7 +19,7 @@ func TestGetAddress(t *testing.T) {
 	}
 
 	// Get cached contract address
-	address2, err := rp.GetAddress("rocketDepositPool")
+	address2, err := rp.GetAddress("rocketDepositPool", nil)
 	if err != nil {
 		t.Fatalf("error getting cached contract address: %s", err)
 	} else if !bytes.Equal(address2.Bytes(), address1.Bytes()) {
@@ -31,7 +31,7 @@ func TestGetAddress(t *testing.T) {
 func TestGetAddresses(t *testing.T) {
 
 	// Get contract addresses
-	addresses1, err := rp.GetAddresses("rocketNodeManager", "rocketNodeDeposit")
+	addresses1, err := rp.GetAddresses(nil, "rocketNodeManager", "rocketNodeDeposit")
 	if err != nil {
 		t.Fatalf("error getting contract addresses: %s", err)
 	} else {
@@ -43,7 +43,7 @@ func TestGetAddresses(t *testing.T) {
 	}
 
 	// Get cached contract addresses
-	addresses2, err := rp.GetAddresses("rocketNodeManager", "rocketNodeDeposit")
+	addresses2, err := rp.GetAddresses(nil, "rocketNodeManager", "rocketNodeDeposit")
 	if err != nil {
 		t.Fatalf("error getting cached contract addresses: %s", err)
 	} else {
@@ -59,13 +59,13 @@ func TestGetAddresses(t *testing.T) {
 func TestGetABI(t *testing.T) {
 
 	// Get ABI
-	abi1, err := rp.GetABI("rocketDepositPool")
+	abi1, err := rp.GetABI("rocketDepositPool", nil)
 	if err != nil {
 		t.Fatalf("error getting contract ABI: %s", err)
 	}
 
 	// Get cached ABI
-	abi2, err := rp.GetABI("rocketDepositPool")
+	abi2, err := rp.GetABI("rocketDepositPool", nil)
 	if err != nil {
 		t.Fatalf("error getting cached contract ABI: %s", err)
 	} else {
@@ -87,13 +87,13 @@ func TestGetABI(t *testing.T) {
 func TestGetABIs(t *testing.T) {
 
 	// Get ABIs
-	abis1, err := rp.GetABIs("rocketNodeManager", "rocketNodeDeposit")
+	abis1, err := rp.GetABIs(nil, "rocketNodeManager", "rocketNodeDeposit")
 	if err != nil {
 		t.Fatalf("error getting contract ABIs: %s", err)
 	}
 
 	// Get cached ABIs
-	abis2, err := rp.GetABIs("rocketNodeManager", "rocketNodeDeposit")
+	abis2, err := rp.GetABIs(nil, "rocketNodeManager", "rocketNodeDeposit")
 	if err != nil {
 		t.Fatalf("error getting cached contract ABIs: %s", err)
 	} else {
@@ -117,12 +117,12 @@ func TestGetABIs(t *testing.T) {
 func TestGetContract(t *testing.T) {
 
 	// Get contract
-	if _, err := rp.GetContract("rocketDepositPool"); err != nil {
+	if _, err := rp.GetContract("rocketDepositPool", nil); err != nil {
 		t.Fatalf("error getting contract: %s", err)
 	}
 
 	// Get cached contract
-	if _, err := rp.GetContract("rocketDepositPool"); err != nil {
+	if _, err := rp.GetContract("rocketDepositPool", nil); err != nil {
 		t.Fatalf("error getting cached contract: %s", err)
 	}
 
@@ -131,12 +131,12 @@ func TestGetContract(t *testing.T) {
 func TestGetContracts(t *testing.T) {
 
 	// Get contracts
-	if _, err := rp.GetContracts("rocketNodeManager", "rocketNodeDeposit"); err != nil {
+	if _, err := rp.GetContracts(nil, "rocketNodeManager", "rocketNodeDeposit"); err != nil {
 		t.Fatalf("error getting contracts: %s", err)
 	}
 
 	// Get cached contracts
-	if _, err := rp.GetContracts("rocketNodeManager", "rocketNodeDeposit"); err != nil {
+	if _, err := rp.GetContracts(nil, "rocketNodeManager", "rocketNodeDeposit"); err != nil {
 		t.Fatalf("error getting cached contracts: %s", err)
 	}
 
@@ -145,12 +145,12 @@ func TestGetContracts(t *testing.T) {
 func TestMakeContract(t *testing.T) {
 
 	// Make contract
-	if _, err := rp.MakeContract("rocketMinipool", common.HexToAddress("0x1111111111111111111111111111111111111111")); err != nil {
+	if _, err := rp.MakeContract("rocketMinipool", common.HexToAddress("0x1111111111111111111111111111111111111111"), nil); err != nil {
 		t.Fatalf("error making contract: %s", err)
 	}
 
 	// Make contract with cached ABI
-	if _, err := rp.MakeContract("rocketMinipool", common.HexToAddress("0x2222222222222222222222222222222222222222")); err != nil {
+	if _, err := rp.MakeContract("rocketMinipool", common.HexToAddress("0x2222222222222222222222222222222222222222"), nil); err != nil {
 		t.Fatalf("error making contract with cached ABI: %s", err)
 	}
 

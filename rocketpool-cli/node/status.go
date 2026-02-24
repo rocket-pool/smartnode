@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"sort"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -22,8 +23,8 @@ const (
 	colorRed              string = "\033[31m"
 	colorGreen            string = "\033[32m"
 	colorYellow           string = "\033[33m"
-	smoothingPoolLink     string = "https://docs.rocketpool.net/guides/redstone/whats-new.html#smoothing-pool"
-	signallingAddressLink string = "https://docs.rocketpool.net/guides/houston/participate#setting-your-snapshot-signalling-address"
+	smoothingPoolLink     string = "https://docs.rocketpool.net/upgrades/redstone/whats-new#smoothing-pool"
+	signallingAddressLink string = "https://docs.rocketpool.net/pdao/participate#setting-your-snapshot-signalling-address"
 	maxAlertItems         int    = 3
 )
 
@@ -78,12 +79,6 @@ func getStatus(c *cli.Context) error {
 		return err
 	}
 
-	// Check Houston 1.3.1 is Active
-	hotfix, err := rp.IsHoustonHotfixDeployed()
-	if err != nil {
-		return fmt.Errorf("error checking if Houston Hotfix has been deployed: %w", err)
-	}
-
 	// Account address & balances
 	fmt.Printf("%s=== Account and Balances ===%s\n", colorGreen, colorReset)
 	fmt.Printf(
@@ -97,7 +92,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
 	}
 	fmt.Printf(
-		"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new minipools.\n",
+		"The node has %.6f ETH in its credit balance and %.6f ETH staked on its behalf. %.6f can be used to make new validators.\n",
 		math.RoundDown(eth.WeiToEth(status.CreditBalance), 6),
 		math.RoundDown(eth.WeiToEth(status.EthOnBehalfBalance), 6),
 		math.RoundDown(eth.WeiToEth(status.UsableCreditAndEthOnBehalfBalance), 6),
@@ -111,7 +106,34 @@ func getStatus(c *cli.Context) error {
 		if status.Trusted {
 			fmt.Println("The node is a member of the oracle DAO - it can vote on DAO proposals and perform watchtower duties.")
 		}
-		fmt.Println("")
+		fmt.Println()
+
+		fmt.Printf("%s=== Megapool ===%s\n", colorGreen, colorReset)
+		if status.MegapoolDeployed {
+			fmt.Printf("The node has a megapool deployed at %s%s%s.", colorBlue, status.MegapoolAddress.Hex(), colorReset)
+			fmt.Println()
+			fmt.Printf("The megapool has %d validators.", status.MegapoolActiveValidatorCount)
+			fmt.Println()
+			if status.MegapoolNodeDebt.Cmp(big.NewInt(0)) > 0 {
+				fmt.Printf("The megapool debt is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
+				fmt.Println()
+			}
+			if status.MegapoolRefundValue.Cmp(big.NewInt(0)) > 0 {
+				fmt.Printf("The megapool refund value is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolRefundValue), 6))
+				fmt.Println()
+			}
+		} else {
+			fmt.Println("The node does not have a megapool deployed yet.")
+		}
+
+		if status.ExpressTicketsProvisioned {
+			fmt.Printf("The node has %d express queue ticket(s).", status.ExpressTicketCount)
+		} else {
+			fmt.Printf("%sThe node has unprovisioned express queue ticket(s). Please provision them using the `rocketpool node provision-express-tickets` command. You are eligible for %d express tickets.%s", colorYellow, status.ExpressTicketCount, colorReset)
+		}
+
+		fmt.Println()
+		fmt.Println()
 
 		// Penalties
 		fmt.Printf("%s=== Penalty Status ===%s\n", colorGreen, colorReset)
@@ -185,12 +207,6 @@ func getStatus(c *cli.Context) error {
 
 		// Onchain voting status
 		fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
-		if status.IsVotingInitialized {
-			fmt.Println("The node has been initialized for onchain voting.")
-
-		} else {
-			fmt.Println("The node has NOT been initialized for onchain voting. You need to run `rocketpool pdao initialize-voting` to participate in onchain votes.")
-		}
 
 		if status.OnchainVotingDelegate == blankAddress {
 			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
@@ -311,46 +327,58 @@ func getStatus(c *cli.Context) error {
 		fmt.Printf("%s=== RPL Stake ===%s\n", colorGreen, colorReset)
 		fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.")
 		fmt.Println()
-		fmt.Printf(
-			"The node has a total stake of %.6f RPL.\n",
-			math.RoundDown(eth.WeiToEth(status.RplStake), 6))
+		fmt.Printf("The node has a total stake of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6))
 		if status.BorrowedCollateralRatio > 0 {
-			rplTooLow := (status.RplStake.Cmp(status.MinimumRplStake) < 0)
-			rplTotalStake := math.RoundDown(eth.WeiToEth(status.RplStake), 6)
-			rplWithdrawalLimit := math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6)
-			if rplTooLow {
-				fmt.Printf(
-					"This is currently %s%.2f%% of its borrowed ETH%s and %.2f%% of its bonded ETH.\n",
-					colorRed, status.BorrowedCollateralRatio*100, colorReset, status.BondedCollateralRatio*100)
-			} else {
-				fmt.Printf(
-					"This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n",
-					status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
-			}
-			if !hotfix.IsHoustonHotfixDeployed {
-				fmt.Printf(
-					"It must keep at least %.6f RPL staked to claim RPL rewards (10%% of borrowed ETH).\n", math.RoundDown(eth.WeiToEth(status.MinimumRplStake), 6))
-				fmt.Printf(
-					"RPIP-30 is in effect and the node will gradually earn rewards in amounts above the previous limit of 150%% of bonded ETH. Read more at https://github.com/rocket-pool/RPIPs/blob/main/RPIPs/RPIP-30.md\n")
-				if rplTotalStake > rplWithdrawalLimit {
-					fmt.Printf(
-						"You can now withdraw down to %.6f RPL (%.0f%% of bonded eth)\n", math.RoundDown(eth.WeiToEth(status.MaximumRplStake), 6), (status.MaximumStakeFraction)*100)
-				}
-				if rplTooLow {
-					fmt.Printf("%sWARNING: you are currently undercollateralized. You must stake at least %.6f more RPL in order to claim RPL rewards.%s\n", colorRed, math.RoundUp(eth.WeiToEth(big.NewInt(0).Sub(status.MinimumRplStake, status.RplStake)), 6), colorReset)
-				}
-			}
+			fmt.Printf("This is currently %.2f%% of its borrowed ETH and %.2f%% of its bonded ETH.\n", status.BorrowedCollateralRatio*100, status.BondedCollateralRatio*100)
 		}
-		fmt.Println()
 
-		if !hotfix.IsHoustonHotfixDeployed {
-			remainingAmount := big.NewInt(0).Sub(status.EthMatchedLimit, status.EthMatched)
-			remainingAmount.Sub(remainingAmount, status.PendingMatchAmount)
-			remainingAmountEth := int(eth.WeiToEth(remainingAmount))
-			remainingFor8EB := max(remainingAmountEth/24, 0)
-			remainingFor16EB := max(remainingAmountEth/16, 0)
-			fmt.Printf("The node has enough RPL staked to make %d more 8-ETH minipools (or %d more 16-ETH minipools).\n\n", remainingFor8EB, remainingFor16EB)
+		fmt.Printf("The node has %.6f megapool staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6))
+		if status.RplStakeLegacy != nil && status.RplStakeLegacy.Cmp(big.NewInt(0)) != 0 {
+			fmt.Printf("The node has %6f legacy staked RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6))
+			fmt.Printf("The node has a total stake (legacy minipool RPL plus megapool RPL) of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6))
+			if status.RplStakeLegacy.Cmp(status.RplStakeThreshold) > 1 {
+				fmt.Printf(
+					"You can withdraw down to %.6f Legacy RPL (%.0f%% of borrowed eth)\n", math.RoundDown(eth.WeiToEth(status.RplStakeThreshold), 6), (status.RplStakeThresholdFraction)*100)
+			}
 		}
+		var unstakingPeriodEnd time.Time
+		if status.UnstakingRPL.Cmp(big.NewInt(0)) > 0 {
+			days := int(status.UnstakingPeriodDuration.Hours()) / 24
+			hours := int(status.UnstakingPeriodDuration.Hours()) % 24
+			var unstakingDurationString string
+			if hours > 0 {
+				unstakingDurationString = fmt.Sprintf("%d days, %d hours", days, hours)
+			} else {
+				unstakingDurationString = fmt.Sprintf("%d days", days)
+			}
+			fmt.Printf("The unstaking period is currently %s.\n", unstakingDurationString)
+			// Check if unstaking period passed considering the last unstake time
+			unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
+			if unstakingPeriodEnd.After(status.LatestBlockTime) {
+				fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat))
+			} else {
+				fmt.Printf("Your node has %.6f RPL unstaked. That amount is currently withdrawable.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))
+			}
+		}
+
+		// Get the maximum withdrawable amount for megapool staked rpl
+		var maxAmount big.Int
+		withdrawableFromLocked := new(big.Int).Sub(status.TotalRplStake, status.NodeRPLLocked)
+		withdrawableFromLegacy := new(big.Int).Sub(status.TotalRplStake, status.RplStakeLegacy)
+
+		// maxAmount = min(withdrawableFromLocked, withdrawableFromLegacy, RplStakeMegapool)
+		if withdrawableFromLocked.Cmp(withdrawableFromLegacy) < 0 {
+			maxAmount.Set(withdrawableFromLocked)
+		} else {
+			maxAmount.Set(withdrawableFromLegacy)
+		}
+		if status.RplStakeMegapool.Cmp(&maxAmount) < 0 {
+			maxAmount.Set(status.RplStakeMegapool)
+		}
+
+		fmt.Printf("You have %.6f RPL staked on your megapool and can request to unstake up to %.6f RPL\n", math.RoundDown(eth.WeiToEth(status.RplStakeMegapool), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
+
+		fmt.Println()
 
 		// Minipool details
 		fmt.Printf("%s=== Minipools ===%s\n", colorGreen, colorReset)

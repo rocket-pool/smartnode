@@ -23,6 +23,7 @@ const (
 	MaximumMinipoolCountSettingPath               string = "minipool.maximum.count"
 	MinipoolUserDistributeWindowStartSettingPath  string = "minipool.user.distribute.window.start"
 	MinipoolUserDistributeWindowLengthSettingPath string = "minipool.user.distribute.window.length"
+	MinipoolMaximumPenaltyCountSettingPath        string = "minipool.maximum.penalty.count"
 )
 
 // Minipool withdrawable event submissions currently enabled
@@ -151,6 +152,25 @@ func ProposeMinipoolUserDistributeWindowLength(rp *rocketpool.RocketPool, value 
 }
 func EstimateProposeMinipoolUserDistributeWindowLengthGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MinipoolUserDistributeWindowLengthSettingPath), MinipoolSettingsContractName, MinipoolUserDistributeWindowLengthSettingPath, value, blockNumber, treeNodes, opts)
+}
+
+// The number of penalties on a minipool
+func GetMaximumPenaltyCount(rp *rocketpool.RocketPool, opts *bind.CallOpts) (uint64, error) {
+	minipoolSettingsContract, err := getMinipoolSettingsContract(rp, opts)
+	if err != nil {
+		return 0, err
+	}
+	value := new(*big.Int)
+	if err := minipoolSettingsContract.Call(opts, value, "getMaximumPenaltyCount"); err != nil {
+		return 0, fmt.Errorf("error getting maximum minipool penalty count: %w", err)
+	}
+	return (*value).Uint64(), nil
+}
+func ProposeMaximumPenaltyCount(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (uint64, common.Hash, error) {
+	return protocol.ProposeSetUint(rp, fmt.Sprintf("set %s", MinipoolMaximumPenaltyCountSettingPath), MinipoolSettingsContractName, MinipoolMaximumPenaltyCountSettingPath, value, blockNumber, treeNodes, opts)
+}
+func EstimateProposeMaximumPenaltyCountGas(rp *rocketpool.RocketPool, value *big.Int, blockNumber uint32, treeNodes []types.VotingTreeNode, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	return protocol.EstimateProposeSetUintGas(rp, fmt.Sprintf("set %s", MaximumMinipoolCountSettingPath), MinipoolMaximumPenaltyCountSettingPath, MinipoolMaximumPenaltyCountSettingPath, value, blockNumber, treeNodes, opts)
 }
 
 // Get contracts

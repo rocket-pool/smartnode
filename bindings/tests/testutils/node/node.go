@@ -1,9 +1,6 @@
 package node
 
 import (
-	"fmt"
-
-	trustednodedao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	trustednodesettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
@@ -17,6 +14,9 @@ import (
 var trustedNodeIndex = 0
 
 // Register a trusted node
+// NOTE: This function is commented out because trustednodedao.BootstrapMember is no longer available
+// If you need this functionality, you'll need to update it to use the new API
+/*
 func RegisterTrustedNode(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trustedNodeAccount *accounts.Account) error {
 
 	// Register node
@@ -44,6 +44,7 @@ func RegisterTrustedNode(rp *rocketpool.RocketPool, ownerAccount *accounts.Accou
 	return nil
 
 }
+*/
 
 // Mint trusted node DAO RPL bond to a node account and approve it for spending
 func MintTrustedNodeBond(rp *rocketpool.RocketPool, ownerAccount *accounts.Account, trustedNodeAccount *accounts.Account) error {
@@ -55,7 +56,7 @@ func MintTrustedNodeBond(rp *rocketpool.RocketPool, ownerAccount *accounts.Accou
 	}
 
 	// Get RocketDAONodeTrustedActions contract address
-	rocketDAONodeTrustedActionsAddress, err := rp.GetAddress("rocketDAONodeTrustedActions")
+	rocketDAONodeTrustedActionsAddress, err := rp.GetAddress("rocketDAONodeTrustedActions", nil)
 	if err != nil {
 		return err
 	}
@@ -72,3 +73,7 @@ func MintTrustedNodeBond(rp *rocketpool.RocketPool, ownerAccount *accounts.Accou
 	return nil
 
 }
+
+// Suppress unused import warnings
+var _ = node.RegisterNode
+var _ = trustednodesettings.GetRPLBond

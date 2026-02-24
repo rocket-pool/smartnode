@@ -29,10 +29,6 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 	if err != nil {
 		return nil, err
 	}
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
 
 	// Response
 	response := api.NetworkStatsResponse{}
@@ -117,27 +113,29 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 
 	// Get total RPL staked
 	wg.Go(func() error {
-		totalStaked, err := node.GetTotalRPLStake(rp, nil)
+		totalStaked, err := node.GetTotalStakedRPL(rp, nil)
 		if err == nil {
 			response.TotalRplStaked = eth.WeiToEth(totalStaked)
 		}
 		return err
 	})
 
-	// Get total effective RPL staked
+	// Get RPL staked on megapools
 	wg.Go(func() error {
-		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
-		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
-		contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, nil)
-		if err != nil {
-			return fmt.Errorf("error getting network contracts: %w", err)
+		megapoolStaked, err := node.GetTotalMegapoolStakedRPL(rp, nil)
+		if err == nil {
+			response.TotalMegapoolRplStaked = eth.WeiToEth(megapoolStaked)
 		}
-		totalEffectiveStake, err := rpstate.GetTotalEffectiveRplStake(rp, contracts)
-		if err != nil {
-			return fmt.Errorf("error getting total effective stake: %w", err)
+		return err
+	})
+
+	// Get legacy RPL staked
+	wg.Go(func() error {
+		legacyStaked, err := node.GetTotalLegacyStakedRPL(rp, nil)
+		if err == nil {
+			response.TotalLegacyRplStaked = eth.WeiToEth(legacyStaked)
 		}
-		response.EffectiveRplStaked = eth.WeiToEth(totalEffectiveStake)
-		return nil
+		return err
 	})
 
 	// Get rETH price
@@ -173,6 +171,73 @@ func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
 		}
 
 		response.SmoothingPoolBalance = eth.WeiToEth(smoothingPoolBalance)
+		return nil
+	})
+
+	wg.Go(func() error {
+
+		megapoolAddressSet := make(map[common.Address]bool)
+
+		// Fetch the global megapool validator index
+		cfg, err := services.GetConfig(c)
+		if err != nil {
+			return fmt.Errorf("error getting config: %w", err)
+		}
+		multicallerAddress := common.HexToAddress(cfg.Smartnode.GetMulticallAddress())
+		balanceBatcherAddress := common.HexToAddress(cfg.Smartnode.GetBalanceBatcherAddress())
+		contracts, err := rpstate.NewNetworkContracts(rp, multicallerAddress, balanceBatcherAddress, nil)
+		if err != nil {
+			return fmt.Errorf("error creating network contracts: %w", err)
+		}
+		megapoolValidators, err := rpstate.GetAllMegapoolValidators(rp, contracts)
+		if err != nil {
+			return fmt.Errorf("error getting all megapool validator details: %w", err)
+		}
+		megapoolStakedCount := 0
+		megapoolPrestakeCount := 0
+		megapoolInQueueCount := 0
+		megapoolExitedCount := 0
+		megapoolLockedCount := 0
+		megapoolExitingCount := 0
+		megapoolDissolvedCount := 0
+		megapoolValidatorCount := 0
+		megapoolContractCount := 0
+		for _, validator := range megapoolValidators {
+			// Count the number of unique megapool addresses
+			megapoolAddressSet[validator.MegapoolAddress] = true
+			if validator.ValidatorInfo.Staked {
+				megapoolStakedCount++
+			}
+			if validator.ValidatorInfo.InPrestake {
+				megapoolPrestakeCount++
+			}
+			if validator.ValidatorInfo.InQueue {
+				megapoolInQueueCount++
+			}
+			if validator.ValidatorInfo.Exited {
+				megapoolExitedCount++
+			}
+			if validator.ValidatorInfo.Locked {
+				megapoolLockedCount++
+			}
+			if validator.ValidatorInfo.Exiting {
+				megapoolExitingCount++
+			}
+			if validator.ValidatorInfo.Dissolved {
+				megapoolDissolvedCount++
+			}
+		}
+		megapoolContractCount = len(megapoolAddressSet)
+		megapoolValidatorCount = megapoolStakedCount + megapoolPrestakeCount + megapoolInQueueCount + megapoolExitedCount + megapoolLockedCount + megapoolExitingCount + megapoolDissolvedCount
+		response.MegapoolContractCount = uint64(megapoolContractCount)
+		response.MegapoolValidatorCount = uint64(megapoolValidatorCount)
+		response.MegapoolValidatorStakingCount = uint64(megapoolStakedCount)
+		response.MegapoolValidatorInPrestakeCount = uint64(megapoolPrestakeCount)
+		response.MegapoolValidatorInQueueCount = uint64(megapoolInQueueCount)
+		response.MegapoolValidatorExitedCount = uint64(megapoolExitedCount)
+		response.MegapoolValidatorLockedCount = uint64(megapoolLockedCount)
+		response.MegapoolValidatorExitingCount = uint64(megapoolExitingCount)
+		response.MegapoolValidatorDissolvedCount = uint64(megapoolDissolvedCount)
 		return nil
 	})
 

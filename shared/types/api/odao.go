@@ -314,3 +314,15 @@ type GetTNDAOMinipoolSettingsResponse struct {
 	BondReductionWindowStart  uint64 `json:"bondReductionWindowStart"`
 	BondReductionWindowLength uint64 `json:"bondReductionWindowLength"`
 }
+
+type CanPenaliseMegapoolResponse struct {
+	Status      string             `json:"status"`
+	Error       string             `json:"error"`
+	CanPenalise bool               `json:"canPenalise"`
+	GasInfo     rocketpool.GasInfo `json:"gasInfo"`
+}
+type PenaliseMegapoolResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}

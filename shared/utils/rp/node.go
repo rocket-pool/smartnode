@@ -63,8 +63,8 @@ func GetNodeValidatorIndices(rp *rocketpool.RocketPool, ec rocketpool.ExecutionC
 	return validatorIndices, nil
 }
 
-// Checks the given node's current matched ETH, its limit on matched ETH, and how much ETH is preparing to be matched by pending bond reductions
-func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (ethMatched *big.Int, ethMatchedLimit *big.Int, pendingMatchAmount *big.Int, err error) {
+// Checks the given node's current borrowed ETH, its limit on borrowed ETH, and how much ETH is preparing to be borrowed by pending bond reductions
+func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts *bind.CallOpts) (ethBorrowed *big.Int, ethBorrowedLimit *big.Int, pendingBorrowAmount *big.Int, err error) {
 	// Get the node's minipool addresses
 	addresses, err := minipool.GetNodeMinipoolAddresses(rp, nodeAddress, opts)
 	if err != nil {
@@ -108,23 +108,14 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 
 	wg.Go(func() error {
 		var err error
-		ethMatched, err = node.GetNodeEthMatched(rp, nodeAddress, opts)
+		ethBorrowed, err = node.GetNodeETHBorrowed(rp, nodeAddress, opts)
 		if err != nil {
-			return fmt.Errorf("error getting node's matched ETH amount: %w", err)
+			return fmt.Errorf("error getting node's borrowed ETH amount: %w", err)
 		}
 		return nil
 	})
-	wg.Go(func() error {
-		var err error
-		ethMatchedLimit, err = node.GetNodeEthMatchedLimit(rp, nodeAddress, opts)
-		if err != nil {
-			return fmt.Errorf("error getting how much ETH the node is able to borrow: %w", err)
-		}
-		return nil
-	})
+
 	for i, address := range addresses {
-		i := i
-		address := address
 		wg.Go(func() error {
 			reduceBondTime, err := minipool.GetReduceBondTime(rp, address, opts)
 			if err != nil {
@@ -170,12 +161,12 @@ func CheckCollateral(rp *rocketpool.RocketPool, nodeAddress common.Address, opts
 		return
 	}
 
-	// Get the total pending match
+	// Get the total pending borrow amount
 	totalDelta := big.NewInt(0)
 	for _, delta := range deltas {
 		totalDelta.Add(totalDelta, delta)
 	}
-	pendingMatchAmount = totalDelta
+	pendingBorrowAmount = totalDelta
 
 	return
 }

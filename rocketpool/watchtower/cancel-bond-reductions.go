@@ -83,7 +83,6 @@ func newCancelBondReductions(c *cli.Context, logger log.ColorLogger, errorLogger
 
 // Start the bond reduction cancellation thread
 func (t *cancelBondReductions) run(state *state.NetworkState) error {
-
 	// Wait for eth clients to sync
 	if err := services.WaitEthClientSynced(t.c, true); err != nil {
 		return err
@@ -154,7 +153,7 @@ func (t *cancelBondReductions) checkBondReductions(state *state.NetworkState) er
 	// Check the status of each one
 	threshold := uint64(32000000000) - scrubBuffer
 	for _, mpd := range reductionMps {
-		validator := state.ValidatorDetails[mpd.Pubkey]
+		validator := state.MinipoolValidatorDetails[mpd.Pubkey]
 		if validator.Exists {
 			switch validator.Status {
 			case beacon.ValidatorState_PendingInitialized,

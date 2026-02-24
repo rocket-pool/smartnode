@@ -96,8 +96,13 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 	var correctFeeRecipient common.Address
 	if feeRecipientInfo.IsInSmoothingPool || feeRecipientInfo.IsInOptOutCooldown {
 		correctFeeRecipient = feeRecipientInfo.SmoothingPoolAddress
-	} else {
+	} else if feeRecipientInfo.HasMinipools {
+		// If NO has minipools, use the fee distributor address as the global fee recipient.
+		// When they also have megapool validators we're going to need to override the fee recipient on a per key basis.
 		correctFeeRecipient = feeRecipientInfo.FeeDistributorAddress
+	} else {
+		// If NO doesn't have minipools and is not in the smoothing pool, use the megapool address as the global fee recipient.
+		correctFeeRecipient = feeRecipientInfo.MegapoolAddress
 	}
 
 	// Check if the VC is using the correct fee recipient
@@ -106,39 +111,46 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 		return fmt.Errorf("error validating fee recipient files: %w", err)
 	}
 
-	if !fileExists {
-		m.log.Println("Fee recipient files don't all exist, regenerating...")
-	} else if !correctAddress {
+	if !fileExists || !correctAddress {
 		m.log.Printlnf("WARNING: Fee recipient files did not contain the correct fee recipient of %s, regenerating...", correctFeeRecipient.Hex())
-	} else {
-		// Files are all correct, return.
-		return nil
-	}
-
-	// Regenerate the fee recipient files
-	err = rpsvc.UpdateFeeRecipientFile(correctFeeRecipient, m.cfg)
-	alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, err == nil)
-	if err != nil {
-		m.log.Println("***ERROR***")
-		m.log.Printlnf("Error updating fee recipient files: %s", err.Error())
-		m.log.Println("Shutting down the validator client for safety to prevent you from being penalized...")
-
-		err = validator.StopValidator(m.cfg, m.bc, &m.log, m.d)
+		// Regenerate the fee recipient files
+		err = rpsvc.UpdateGlobalFeeRecipientFile(correctFeeRecipient, m.cfg)
+		alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, err == nil)
 		if err != nil {
-			return fmt.Errorf("error stopping validator client: %w", err)
+			m.log.Println("***ERROR***")
+			m.log.Printlnf("Error updating fee recipient files: %s", err.Error())
+			m.log.Println("Shutting down the validator client for safety to prevent you from being penalized...")
+
+			err = validator.StopValidator(m.cfg, m.bc, &m.log, m.d)
+			if err != nil {
+				return fmt.Errorf("error stopping validator client: %w", err)
+			}
+			return nil
 		}
-		return nil
+
+		// Restart the VC
+		m.log.Println("Fee recipient files updated successfully! Restarting validator client...")
+		err = validator.RestartValidator(m.cfg, m.bc, &m.log, m.d)
+		if err != nil {
+			return fmt.Errorf("error restarting validator client: %w", err)
+		}
+
 	}
 
-	// Restart the VC
-	m.log.Println("Fee recipient files updated successfully! Restarting validator client...")
-	err = validator.RestartValidator(m.cfg, m.bc, &m.log, m.d)
-	if err != nil {
-		return fmt.Errorf("error restarting validator client: %w", err)
+	// If minipools + megapool and not on the smoothing pool we need to split fee recipients
+	// The Fee distributor will be the global fee recipient and we override the fee recipient for megapool validator keys
+	if feeRecipientInfo.HasMegapoolValidators && feeRecipientInfo.HasMinipools && !feeRecipientInfo.IsInSmoothingPool {
+		// Get the megapool pubkeys
+		pubkeys := state.MegapoolToPubkeysMap[feeRecipientInfo.MegapoolAddress]
+		// Override megapool validator fee recipients
+		err = rpsvc.UpdateFeeRecipientPerKey(pubkeys, feeRecipientInfo.MegapoolAddress, m.cfg)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Log & return
-	m.log.Println("Successfully restarted, you are now validating safely.")
-	return nil
+	m.log.Println("Successfully checked for the correct fee recipient, you are now validating safely.")
 
+	return nil
 }

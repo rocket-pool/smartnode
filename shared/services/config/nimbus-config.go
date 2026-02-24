@@ -8,12 +8,12 @@ import (
 
 const (
 	// Testnet
-	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v25.7.1"
-	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v25.7.1"
+	nimbusBnTagTest string = "statusim/nimbus-eth2:multiarch-v26.2.1"
+	nimbusVcTagTest string = "statusim/nimbus-validator-client:multiarch-v26.2.1"
 
 	// Mainnet
-	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v25.7.1"
-	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v25.7.1"
+	nimbusBnTagProd string = "statusim/nimbus-eth2:multiarch-v26.2.1"
+	nimbusVcTagProd string = "statusim/nimbus-validator-client:multiarch-v26.2.1"
 
 	defaultNimbusMaxPeersArm uint16 = 100
 	defaultNimbusMaxPeersAmd uint16 = 160
@@ -117,7 +117,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 		AdditionalBnFlags: config.Parameter{
 			ID:                 "additionalBnFlags",
 			Name:               "Additional Beacon Client Flags",
-			Description:        "Additional custom command line flags you want to pass Nimbus's Beacon Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Nimbus's Beacon Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
@@ -128,7 +128,7 @@ func NewNimbusConfig(cfg *RocketPoolConfig) *NimbusConfig {
 		AdditionalVcFlags: config.Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
-			Description:        "Additional custom command line flags you want to pass Nimbus's Validator Client, to take advantage of other settings that the Smartnode's configuration doesn't cover.",
+			Description:        "Additional custom command line flags you want to pass Nimbus's Validator Client, to take advantage of other settings that the Smart Node's configuration doesn't cover.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator},

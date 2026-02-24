@@ -98,6 +98,9 @@ if [ "$CLIENT" = "geth" ]; then
             --pprof \
             $EC_ADDITIONAL_FLAGS"
 
+        if [ "$NETWORK" = "devnet" ]; then\
+            CMD="$CMD --bootnodes $BOOTNODE_ENODE_LIST"
+        fi
         if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --miner.gaslimit $EC_SUGGESTED_BLOCK_GAS_LIMIT"
         fi
@@ -185,7 +188,6 @@ if [ "$CLIENT" = "nethermind" ]; then
         --Init.WebSocketsEnabled true \
         --JsonRpc.WebSocketsPort ${EC_WS_PORT:-8546} \
         --JsonRpc.JwtSecretFile=/secrets/jwtsecret \
-        --Pruning.Mode=None \
         --Pruning.FullPruningTrigger=VolumeFreeSpace \
         --Pruning.FullPruningThresholdMb=$RP_NETHERMIND_FULL_PRUNING_THRESHOLD_MB \
         --Pruning.FullPruningCompletionBehavior AlwaysShutdown \
@@ -198,14 +200,17 @@ if [ "$CLIENT" = "nethermind" ]; then
 
     if [ "$EC_PRUNING_MODE" = "archive" ]; then
         CMD="$CMD --Sync.DownloadBodiesInFastSync=false --Sync.DownloadReceiptsInFastSync=false --Sync.FastSync=false --Sync.SnapSync=false --Sync.FastBlocks=false --Sync.PivotNumber=0"
+        CMD="$CMD --Pruning.Mode=None"
     fi
 
     if [ "$EC_PRUNING_MODE" = "fullNode" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=0 --Sync.AncientReceiptsBarrier=0"
+        CMD="$CMD --Pruning.Mode=Hybrid"
     fi
 
     if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
         CMD="$CMD --Sync.AncientBodiesBarrier=15537394 --Sync.AncientReceiptsBarrier=15537394"
+        CMD="$CMD --Pruning.Mode=Hybrid"
     fi
     
     # Add optional supplemental primary JSON-RPC modules
@@ -282,7 +287,7 @@ if [ "$CLIENT" = "besu" ]; then
         CMD="$PERF_PREFIX /opt/besu/bin/besu \
             $BESU_NETWORK \
             --data-path=/ethclient/besu \
-            --fast-sync-min-peers=3 \
+            --fast-sync-min-peers=2 \
             --rpc-http-enabled \
             --rpc-http-host=0.0.0.0 \
             --rpc-http-port=${EC_HTTP_PORT:-8545} \
@@ -333,7 +338,7 @@ if [ "$CLIENT" = "besu" ]; then
         fi
 
         if [ ! -z "$BESU_MAX_BACK_LAYERS" ]; then
-            CMD="$CMD --bonsai-maximum-back-layers-to-load=$BESU_MAX_BACK_LAYERS"
+            CMD="$CMD --bonsai-historical-block-limit=$BESU_MAX_BACK_LAYERS"
         fi
 
         if [ "$BESU_JVM_HEAP_SIZE" -gt "0" ]; then
@@ -382,16 +387,17 @@ if [ "$CLIENT" = "reth" ]; then
         CMD="$CMD --prune.receipts.before 0"
         CMD="$CMD --prune.senderrecovery.full"
         CMD="$CMD --prune.accounthistory.distance 10064"
-        CMD="$CMD --prune.storagehistory.distance 100064"
+        CMD="$CMD --prune.storagehistory.distance 10064"
     fi
 
     if [ "$EC_PRUNING_MODE" = "historyExpiry" ]; then
         CMD="$CMD --block-interval 5"
         CMD="$CMD --prune.senderrecovery.full"
         CMD="$CMD --prune.accounthistory.distance 10064"
-        CMD="$CMD --prune.storagehistory.distance 100064"
+        CMD="$CMD --prune.storagehistory.distance 10064"
         CMD="$CMD --prune.bodies.pre-merge"
-        CMD="$CMD --prune.receipts.before 15537394"
+        CMD="$CMD --prune.receipts.pre-merge"
+        CMD="$CMD --prune.transaction-lookup.distance=10064"
     fi
 
     if [ ! -z "$EC_MAX_PEERS" ]; then

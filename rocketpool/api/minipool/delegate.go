@@ -108,121 +108,8 @@ func delegateUpgrade(c *cli.Context, minipoolAddress common.Address) (*api.Deleg
 
 }
 
-func canDelegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.CanDelegateRollbackResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.CanDelegateRollbackResponse{}
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check the version and deposit type
-	depositType, err := minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
-	}
-	version := mp.GetVersion()
-	if depositType == rptypes.Variable && version == 3 {
-		return nil, fmt.Errorf("you cannot rollback your delegate after reducing your bond, as this would render your minipool unable to distribute its balance")
-	}
-
-	// Get the previous delegate
-	rollbackAddress, err := mp.GetPreviousDelegate(nil)
-	if err != nil {
-		return nil, err
-	}
-	response.RollbackAddress = rollbackAddress
-
-	// Get gas estimate
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	gasInfo, err := mp.EstimateDelegateRollbackGas(opts)
-	if err == nil {
-		response.GasInfo = gasInfo
-	}
-
-	// Return response
-	return &response, nil
-
-}
-
-func delegateRollback(c *cli.Context, minipoolAddress common.Address) (*api.DelegateRollbackResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
-	response := api.DelegateRollbackResponse{}
-
-	// Create minipool
-	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check the version and deposit type
-	depositType, err := minipool.GetMinipoolDepositType(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting minipool %s deposit type: %w", minipoolAddress.Hex(), err)
-	}
-	version := mp.GetVersion()
-	if depositType == rptypes.Variable && version == 3 {
-		return nil, fmt.Errorf("you cannot rollback your delegate after reducing your bond, as this would render your minipool unable to distribute its balance")
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
-	// Rollback
-	hash, err := mp.DelegateRollback(opts)
-	if err != nil {
-		return nil, err
-	}
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
-
-}
-
-func canSetUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, setting bool) (*api.CanSetUseLatestDelegateResponse, error) {
+func canSetUseLatestDelegate(c *cli.Context, minipoolAddress common.Address) (*api.CanSetUseLatestDelegateResponse, error) {
+	setting := true
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -277,7 +164,7 @@ func canSetUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, set
 	if err != nil {
 		return nil, err
 	}
-	gasInfo, err := mp.EstimateSetUseLatestDelegateGas(setting, opts)
+	gasInfo, err := mp.EstimateSetUseLatestDelegateGas(opts)
 	if err == nil {
 		response.GasInfo = gasInfo
 	}
@@ -287,7 +174,8 @@ func canSetUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, set
 
 }
 
-func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, setting bool) (*api.SetUseLatestDelegateResponse, error) {
+func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address) (*api.SetUseLatestDelegateResponse, error) {
+	setting := true
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -350,7 +238,7 @@ func setUseLatestDelegate(c *cli.Context, minipoolAddress common.Address, settin
 	}
 
 	// Set the new setting
-	hash, err := mp.SetUseLatestDelegate(setting, opts)
+	hash, err := mp.SetUseLatestDelegate(opts)
 	if err != nil {
 		return nil, err
 	}
