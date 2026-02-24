@@ -55,6 +55,22 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	return response, nil
 }
 
+// Get active alerts from Alertmanager
+func (c *Client) NodeAlerts() (api.NodeAlertsResponse, error) {
+	responseBytes, err := c.callAPI("node alerts")
+	if err != nil {
+		return api.NodeAlertsResponse{}, fmt.Errorf("could not get node alerts: %w", err)
+	}
+	var response api.NodeAlertsResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeAlertsResponse{}, fmt.Errorf("could not decode node alerts response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeAlertsResponse{}, fmt.Errorf("could not get node alerts: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can be registered
 func (c *Client) CanRegisterNode(timezoneLocation string) (api.CanRegisterNodeResponse, error) {
 	responseBytes, err := c.callAPI("node can-register", timezoneLocation)

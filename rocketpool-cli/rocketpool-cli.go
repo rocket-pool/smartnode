@@ -20,16 +20,12 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
-	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 const (
 	colorReset    string = "\033[0m"
-	colorRed      string = "\033[31m"
-	colorGreen    string = "\033[32m"
 	colorYellow   string = "\033[33m"
 	maxAlertItems int    = 3
 )
@@ -139,33 +135,39 @@ A special thanks to the Rocket Pool community for all their contributions.
 	}
 
 	app.After = func(c *cli.Context) error {
+		// Skip alert display when no subcommand was actually invoked (e.g. --help, --version).
+		if !c.Args().Present() {
+			return nil
+		}
 
-		// Create Rocket Pool client
 		rp := rocketpool.NewClientFromCtx(c)
 		defer rp.Close()
 
-		cfg, err := services.GetConfig(c)
-		if err != nil {
-			return err
+		// Check if the user has enabled the "show alerts after every command" setting.
+		// Errors here are intentionally swallowed — config may not exist yet.
+		cfg, _, err := rp.LoadConfig()
+		if err != nil || cfg.Alertmanager.ShowAlertsOnCLI.Value != true {
+			return nil
 		}
 
-		// Fetch node alerts
-		alerts, err := alerting.FetchNodeAlerts(cfg)
+		// Fetch alerts through the daemon so it works in both Docker and native mode.
+		// Errors here are intentionally swallowed — alerts are informational and must
+		// never obscure the result of the primary command.
+		response, err := rp.NodeAlerts()
 		if err != nil {
-			return err
+			return nil
 		}
 
-		// Display alerts if any exist
-		if len(alerts) > 0 {
-			fmt.Printf("\n%s=== Alerts ===%s\n", colorGreen, colorReset)
-			for i, alert := range alerts {
+		if len(response.Alerts) > 0 {
+			fmt.Printf("\n%s=== Alerts ===%s\n", colorYellow, colorReset)
+			for i, alert := range response.Alerts {
 				fmt.Println(alert.ColorString())
 				if i == maxAlertItems-1 {
 					break
 				}
 			}
-			if len(alerts) > maxAlertItems {
-				fmt.Printf("... and %d more.\n", len(alerts)-maxAlertItems)
+			if len(response.Alerts) > maxAlertItems {
+				fmt.Printf("... and %d more.\n", len(response.Alerts)-maxAlertItems)
 			}
 		}
 

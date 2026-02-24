@@ -35,6 +35,25 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "alerts",
+				Aliases:   []string{"al"},
+				Usage:     "Get active alerts from Alertmanager",
+				UsageText: "rocketpool api node alerts",
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					// Run
+					api.PrintResponse(getAlerts(c))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "sync",
 				Aliases:   []string{"y"},
 				Usage:     "Get the sync progress of the eth1 and eth2 clients",

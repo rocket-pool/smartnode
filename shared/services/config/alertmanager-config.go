@@ -37,6 +37,9 @@ type AlertmanagerConfig struct {
 	// Whether alerting is enabled
 	EnableAlerting config.Parameter `yaml:"enableAlerting,omitempty"`
 
+	// Whether to show active alerts at the end of every CLI command
+	ShowAlertsOnCLI config.Parameter `yaml:"showAlertsOnCLI,omitempty"`
+
 	// Port for alertmanager UI & API
 	Port config.Parameter `yaml:"port,omitempty"`
 
@@ -96,6 +99,17 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Alertmanager},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		ShowAlertsOnCLI: config.Parameter{
+			ID:                 "showAlertsOnCLI",
+			Name:               "Show Alerts After Every Command",
+			Description:        "When enabled, any active alerts will be printed at the end of every CLI command output.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: true},
+			AffectsContainers:  []config.ContainerID{},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
@@ -290,6 +304,7 @@ func createParameterForAlertEnablement(uniqueName string, label string) config.P
 func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.EnableAlerting,
+		&cfg.ShowAlertsOnCLI,
 		&cfg.Port,
 		&cfg.OpenPort,
 		&cfg.NativeModeHost,
