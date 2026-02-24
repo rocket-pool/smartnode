@@ -28,7 +28,7 @@ import (
 // Config
 var (
 	tasksInterval, _ = time.ParseDuration("5m")
-	taskCooldown, _  = time.ParseDuration("10s")
+	taskCooldown, _  = time.ParseDuration("1s")
 )
 
 //go:embed saturn-art.txt
@@ -50,9 +50,11 @@ const (
 	PrestakeMegapoolValidatorColor = color.FgHiGreen
 	StakeMegapoolValidatorColor    = color.FgHiBlue
 	NotifyValidatorExitColor       = color.FgHiYellow
+	NotifyFinalBalanceColor        = color.FgHiMagenta
 	DefendChallengeExitColor       = color.FgHiGreen
 	ProvisionExpressTickets        = color.FgMagenta
 	SetUseLatestDelegateColor      = color.FgBlue
+	CheckPortConnectivityColor     = color.FgHiRed
 )
 
 // Register node command
@@ -187,6 +189,10 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+	checkPorts, err := newCheckPortConnectivity(c, log.NewColorLogger(CheckPortConnectivityColor))
+	if err != nil {
+		return err
+	}
 
 	// Wait group to handle the various threads
 	wg := new(sync.WaitGroup)
@@ -315,6 +321,12 @@ func run(c *cli.Context) error {
 
 			// Run the set use latest delegate check
 			if err := setUseLatestDelegate.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			time.Sleep(taskCooldown)
+
+			// Run the port connectivity check
+			if err := checkPorts.run(); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)

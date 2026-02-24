@@ -192,6 +192,32 @@ func getAlertSettingsForEvent(succeeded bool) (strfmt.DateTime, Severity, string
 	return endsAt, severity, succeededOrFailedText
 }
 
+// Sends an alert when the execution client's P2P port is not accessible from the internet.
+func AlertEth1P2PPortNotOpen(cfg *config.RocketPoolConfig, port uint16) error {
+	alert := createAlert(
+		fmt.Sprintf("Eth1P2PPortNotOpen-%d", port),
+		fmt.Sprintf("Execution Client P2P Port %d Not Accessible", port),
+		fmt.Sprintf("The execution client P2P port %d is not accessible from the internet. Check your firewall and port forwarding settings.", port),
+		SeverityCritical,
+		strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo)),
+		map[string]string{"port": fmt.Sprintf("%d", port)},
+	)
+	return sendAlert(alert, cfg)
+}
+
+// Sends an alert when the beacon chain's P2P port is not accessible from the internet.
+func AlertBeaconP2PPortNotOpen(cfg *config.RocketPoolConfig, port uint16) error {
+	alert := createAlert(
+		fmt.Sprintf("BeaconP2PPortNotOpen-%d", port),
+		fmt.Sprintf("Beacon Chain P2P Port %d Not Accessible", port),
+		fmt.Sprintf("The beacon chain P2P port %d is not accessible from the internet. This may affect validator performance. Check your firewall and port forwarding settings.", port),
+		SeverityCritical,
+		strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo)),
+		map[string]string{"port": fmt.Sprintf("%d", port)},
+	)
+	return sendAlert(alert, cfg)
+}
+
 func AlertExecutionClientSyncComplete(cfg *config.RocketPoolConfig) error {
 	if cfg.Alertmanager.AlertEnabled_ExecutionClientSyncComplete.Value != true {
 		logMessage("alert for ExecutionClientSyncComplete is disabled, not sending.")

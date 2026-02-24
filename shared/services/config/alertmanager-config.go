@@ -83,6 +83,8 @@ type AlertmanagerConfig struct {
 	AlertEnabled_MinipoolStaked              config.Parameter `yaml:"alertEnabled_MinipoolStaked,omitempty"`
 	AlertEnabled_ExecutionClientSyncComplete config.Parameter `yaml:"alertEnabled_ExecutionClientSyncComplete,omitempty"`
 	AlertEnabled_BeaconClientSyncComplete    config.Parameter `yaml:"alertEnabled_BeaconClientSyncComplete,omitempty"`
+	// Whether to periodically check if the eth1 and eth2 P2P ports are open to the internet
+	AlertEnabled_PortConnectivityCheck config.Parameter `yaml:"alertEnabled_PortConnectivityCheck,omitempty"`
 }
 
 func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
@@ -270,6 +272,16 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		AlertEnabled_BeaconClientSyncComplete: createParameterForAlertEnablement(
 			"BeaconClientSyncComplete",
 			"beacon client is synced"),
+		AlertEnabled_PortConnectivityCheck: config.Parameter{
+			ID:                 "alertEnabled_PortConnectivityCheck",
+			Name:               "Enable Port Connectivity Check",
+			Description:        "Periodically check whether the execution client P2P port (default 30303) and the beacon chain P2P port (default 9001) are reachable from the internet, and send an alert if either port is not accessible.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: true},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
 		AlertEnabled_LowETHBalance: createParameterForAlertEnablement(
 			"LowETHBalance",
 			"Low ETH Balance"),
@@ -330,6 +342,7 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.AlertEnabled_MinipoolStaked,
 		&cfg.AlertEnabled_ExecutionClientSyncComplete,
 		&cfg.AlertEnabled_BeaconClientSyncComplete,
+		&cfg.AlertEnabled_PortConnectivityCheck,
 		&cfg.AlertEnabled_LowETHBalance,
 		&cfg.LowETHBalanceThreshold,
 	}
