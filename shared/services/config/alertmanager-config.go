@@ -24,7 +24,7 @@ const AlertingRulesConfigFile string = "alerting/rules/default.yml"
 const defaultAlertmanagerPort uint16 = 9093
 const defaultAlertmanagerHost string = "localhost"
 const defaultAlertmanagerOpenPort config.RPCMode = config.RPC_Closed
-const defaultLowETHBalanceThreshold float64 = 0.05
+const defaultLowETHBalanceThreshold float64 = 0.01
 
 // Configuration for Alertmanager
 type AlertmanagerConfig struct {
