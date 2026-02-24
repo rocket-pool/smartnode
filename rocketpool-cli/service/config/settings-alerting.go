@@ -9,6 +9,7 @@ import (
 
 var alertingParametersNativeMode map[string]interface{} = map[string]interface{}{
 	"enableAlerting":                           nil,
+	"showAlertsOnCLI":                          nil,
 	"nativeModeHost":                           nil,
 	"nativeModePort":                           nil,
 	"discordWebhookURL":                        nil,
@@ -27,6 +28,7 @@ var alertingParametersNativeMode map[string]interface{} = map[string]interface{}
 
 var alertingParametersDockerMode map[string]interface{} = map[string]interface{}{
 	"enableAlerting":                           nil,
+	"showAlertsOnCLI":                          nil,
 	"port":                                     nil,
 	"openPort":                                 nil,
 	"containerTag":                             nil,

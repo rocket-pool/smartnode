@@ -730,10 +730,9 @@ type NodeEthBalanceResponse struct {
 }
 
 type NodeAlertsResponse struct {
-	Status string `json:"status"`
-	Error  string `json:"error"`
-	// TODO: change to GettableAlerts
-	Message string `json:"message"`
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	Alerts []NodeAlert `json:"alerts"`
 }
 
 type GetExpressTicketCountResponse struct {
