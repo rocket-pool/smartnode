@@ -17,13 +17,13 @@ type CommitBoostConfigPage struct {
 	selectionModeBox      *parameterizedFormItem
 	localItems            []*parameterizedFormItem
 	externalItems         []*parameterizedFormItem
-	flashbotsBox            *parameterizedFormItem
-	bloxrouteMaxProfitBox   *parameterizedFormItem
-	bloxrouteRegulatedBox   *parameterizedFormItem
-	titanRegionalBox        *parameterizedFormItem
-	ultrasoundFilteredBox   *parameterizedFormItem
-	btcsOfacBox             *parameterizedFormItem
-} 
+	flashbotsBox          *parameterizedFormItem
+	bloxrouteMaxProfitBox *parameterizedFormItem
+	bloxrouteRegulatedBox *parameterizedFormItem
+	titanRegionalBox      *parameterizedFormItem
+	ultrasoundFilteredBox *parameterizedFormItem
+	btcsOfacBox           *parameterizedFormItem
+}
 
 // Creates a new page for the Commit-Boost settings
 func NewCommitBoostConfigPage(home *settingsHome) *CommitBoostConfigPage {
