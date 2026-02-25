@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -16,7 +17,7 @@ import (
 
 // Get node status
 func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
-	responseBytes, err := c.callAPI("node status")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/status", nil)
 	if err != nil {
 		return api.NodeStatusResponse{}, fmt.Errorf("Could not get node status: %w", err)
 	}
@@ -56,7 +57,7 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 
 // Get active alerts from Alertmanager
 func (c *Client) NodeAlerts() (api.NodeAlertsResponse, error) {
-	responseBytes, err := c.callAPI("node alerts")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/alerts", nil)
 	if err != nil {
 		return api.NodeAlertsResponse{}, fmt.Errorf("could not get node alerts: %w", err)
 	}
@@ -72,7 +73,7 @@ func (c *Client) NodeAlerts() (api.NodeAlertsResponse, error) {
 
 // Check whether the node can be registered
 func (c *Client) CanRegisterNode(timezoneLocation string) (api.CanRegisterNodeResponse, error) {
-	responseBytes, err := c.callAPI("node can-register", timezoneLocation)
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-register", url.Values{"timezoneLocation": {timezoneLocation}})
 	if err != nil {
 		return api.CanRegisterNodeResponse{}, fmt.Errorf("Could not get can register node status: %w", err)
 	}
@@ -88,7 +89,7 @@ func (c *Client) CanRegisterNode(timezoneLocation string) (api.CanRegisterNodeRe
 
 // Register the node
 func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse, error) {
-	responseBytes, err := c.callAPI("node register", timezoneLocation)
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/register", url.Values{"timezoneLocation": {timezoneLocation}})
 	if err != nil {
 		return api.RegisterNodeResponse{}, fmt.Errorf("Could not register node: %w", err)
 	}
@@ -104,7 +105,10 @@ func (c *Client) RegisterNode(timezoneLocation string) (api.RegisterNodeResponse
 
 // Checks if the node's primary withdrawal address can be set
 func (c *Client) CanSetNodePrimaryWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.CanSetNodePrimaryWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node can-set-primary-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-set-primary-withdrawal-address", url.Values{
+		"address": {withdrawalAddress.Hex()},
+		"confirm": {strconv.FormatBool(confirm)},
+	})
 	if err != nil {
 		return api.CanSetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node primary withdrawal address: %w", err)
 	}
@@ -120,7 +124,10 @@ func (c *Client) CanSetNodePrimaryWithdrawalAddress(withdrawalAddress common.Add
 
 // Set the node's primary withdrawal address
 func (c *Client) SetNodePrimaryWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.SetNodePrimaryWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node set-primary-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/set-primary-withdrawal-address", url.Values{
+		"address": {withdrawalAddress.Hex()},
+		"confirm": {strconv.FormatBool(confirm)},
+	})
 	if err != nil {
 		return api.SetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not set node primary withdrawal address: %w", err)
 	}
@@ -136,7 +143,7 @@ func (c *Client) SetNodePrimaryWithdrawalAddress(withdrawalAddress common.Addres
 
 // Checks if the node's primary withdrawal address can be confirmed
 func (c *Client) CanConfirmNodePrimaryWithdrawalAddress() (api.CanSetNodePrimaryWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node can-confirm-primary-withdrawal-address")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-confirm-primary-withdrawal-address", nil)
 	if err != nil {
 		return api.CanSetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node primary withdrawal address: %w", err)
 	}
@@ -152,7 +159,7 @@ func (c *Client) CanConfirmNodePrimaryWithdrawalAddress() (api.CanSetNodePrimary
 
 // Confirm the node's primary withdrawal address
 func (c *Client) ConfirmNodePrimaryWithdrawalAddress() (api.SetNodePrimaryWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node confirm-primary-withdrawal-address")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/confirm-primary-withdrawal-address", nil)
 	if err != nil {
 		return api.SetNodePrimaryWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node primary withdrawal address: %w", err)
 	}
@@ -168,7 +175,10 @@ func (c *Client) ConfirmNodePrimaryWithdrawalAddress() (api.SetNodePrimaryWithdr
 
 // Checks if the node's RPL withdrawal address can be set
 func (c *Client) CanSetNodeRPLWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.CanSetNodeRPLWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node can-set-rpl-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-set-rpl-withdrawal-address", url.Values{
+		"address": {withdrawalAddress.Hex()},
+		"confirm": {strconv.FormatBool(confirm)},
+	})
 	if err != nil {
 		return api.CanSetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not get can set node RPL withdrawal address: %w", err)
 	}
@@ -184,7 +194,10 @@ func (c *Client) CanSetNodeRPLWithdrawalAddress(withdrawalAddress common.Address
 
 // Set the node's RPL withdrawal address
 func (c *Client) SetNodeRPLWithdrawalAddress(withdrawalAddress common.Address, confirm bool) (api.SetNodeRPLWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node set-rpl-withdrawal-address", withdrawalAddress.Hex(), strconv.FormatBool(confirm))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/set-rpl-withdrawal-address", url.Values{
+		"address": {withdrawalAddress.Hex()},
+		"confirm": {strconv.FormatBool(confirm)},
+	})
 	if err != nil {
 		return api.SetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not set node RPL withdrawal address: %w", err)
 	}
@@ -200,7 +213,7 @@ func (c *Client) SetNodeRPLWithdrawalAddress(withdrawalAddress common.Address, c
 
 // Checks if the node's RPL withdrawal address can be confirmed
 func (c *Client) CanConfirmNodeRPLWithdrawalAddress() (api.CanSetNodeRPLWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node can-confirm-rpl-withdrawal-address")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-confirm-rpl-withdrawal-address", nil)
 	if err != nil {
 		return api.CanSetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not get can confirm node RPL withdrawal address: %w", err)
 	}
@@ -216,7 +229,7 @@ func (c *Client) CanConfirmNodeRPLWithdrawalAddress() (api.CanSetNodeRPLWithdraw
 
 // Confirm the node's RPL withdrawal address
 func (c *Client) ConfirmNodeRPLWithdrawalAddress() (api.SetNodeRPLWithdrawalAddressResponse, error) {
-	responseBytes, err := c.callAPI("node confirm-rpl-withdrawal-address")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/confirm-rpl-withdrawal-address", nil)
 	if err != nil {
 		return api.SetNodeRPLWithdrawalAddressResponse{}, fmt.Errorf("Could not confirm node RPL withdrawal address: %w", err)
 	}
@@ -232,7 +245,7 @@ func (c *Client) ConfirmNodeRPLWithdrawalAddress() (api.SetNodeRPLWithdrawalAddr
 
 // Checks if the node's timezone location can be set
 func (c *Client) CanSetNodeTimezone(timezoneLocation string) (api.CanSetNodeTimezoneResponse, error) {
-	responseBytes, err := c.callAPI("node can-set-timezone", timezoneLocation)
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-set-timezone", url.Values{"timezoneLocation": {timezoneLocation}})
 	if err != nil {
 		return api.CanSetNodeTimezoneResponse{}, fmt.Errorf("Could not get can set node timezone: %w", err)
 	}
@@ -248,7 +261,7 @@ func (c *Client) CanSetNodeTimezone(timezoneLocation string) (api.CanSetNodeTime
 
 // Set the node's timezone location
 func (c *Client) SetNodeTimezone(timezoneLocation string) (api.SetNodeTimezoneResponse, error) {
-	responseBytes, err := c.callAPI("node set-timezone", timezoneLocation)
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/set-timezone", url.Values{"timezoneLocation": {timezoneLocation}})
 	if err != nil {
 		return api.SetNodeTimezoneResponse{}, fmt.Errorf("Could not set node timezone: %w", err)
 	}
@@ -264,7 +277,7 @@ func (c *Client) SetNodeTimezone(timezoneLocation string) (api.SetNodeTimezoneRe
 
 // Check whether the node can swap RPL tokens
 func (c *Client) CanNodeSwapRpl(amountWei *big.Int) (api.CanNodeSwapRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-swap-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-swap-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.CanNodeSwapRplResponse{}, fmt.Errorf("Could not get can node swap RPL status: %w", err)
 	}
@@ -280,7 +293,7 @@ func (c *Client) CanNodeSwapRpl(amountWei *big.Int) (api.CanNodeSwapRplResponse,
 
 // Get the gas estimate for approving legacy RPL interaction
 func (c *Client) NodeSwapRplApprovalGas(amountWei *big.Int) (api.NodeSwapRplApproveGasResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node get-swap-rpl-approval-gas %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/get-swap-rpl-approval-gas", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeSwapRplApproveGasResponse{}, fmt.Errorf("Could not get old RPL approval gas: %w", err)
 	}
@@ -296,7 +309,7 @@ func (c *Client) NodeSwapRplApprovalGas(amountWei *big.Int) (api.NodeSwapRplAppr
 
 // Approves old RPL for a token swap
 func (c *Client) NodeSwapRplApprove(amountWei *big.Int) (api.NodeSwapRplApproveResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl-approve-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/swap-rpl-approve-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeSwapRplApproveResponse{}, fmt.Errorf("Could not approve old RPL: %w", err)
 	}
@@ -312,7 +325,10 @@ func (c *Client) NodeSwapRplApprove(amountWei *big.Int) (api.NodeSwapRplApproveR
 
 // Swap node's old RPL tokens for new RPL tokens, waiting for the approval to be included in a block first
 func (c *Client) NodeWaitAndSwapRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeSwapRplSwapResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-swap-rpl %s %s", amountWei.String(), approvalTxHash.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/wait-and-swap-rpl", url.Values{
+		"amountWei":      {amountWei.String()},
+		"approvalTxHash": {approvalTxHash.Hex()},
+	})
 	if err != nil {
 		return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %w", err)
 	}
@@ -328,7 +344,7 @@ func (c *Client) NodeWaitAndSwapRpl(amountWei *big.Int, approvalTxHash common.Ha
 
 // Swap node's old RPL tokens for new RPL tokens
 func (c *Client) NodeSwapRpl(amountWei *big.Int) (api.NodeSwapRplSwapResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/swap-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeSwapRplSwapResponse{}, fmt.Errorf("Could not swap node's RPL tokens: %w", err)
 	}
@@ -344,7 +360,7 @@ func (c *Client) NodeSwapRpl(amountWei *big.Int) (api.NodeSwapRplSwapResponse, e
 
 // Get a node's legacy RPL allowance for swapping on the new RPL contract
 func (c *Client) GetNodeSwapRplAllowance() (api.NodeSwapRplAllowanceResponse, error) {
-	responseBytes, err := c.callAPI("node swap-rpl-allowance")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/swap-rpl-allowance", nil)
 	if err != nil {
 		return api.NodeSwapRplAllowanceResponse{}, fmt.Errorf("Could not get node swap RPL allowance: %w", err)
 	}
@@ -360,7 +376,7 @@ func (c *Client) GetNodeSwapRplAllowance() (api.NodeSwapRplAllowanceResponse, er
 
 // Check whether the node can stake RPL
 func (c *Client) CanNodeStakeRpl(amountWei *big.Int) (api.CanNodeStakeRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-stake-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-stake-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.CanNodeStakeRplResponse{}, fmt.Errorf("Could not get can node stake RPL status: %w", err)
 	}
@@ -376,7 +392,7 @@ func (c *Client) CanNodeStakeRpl(amountWei *big.Int) (api.CanNodeStakeRplRespons
 
 // Get the gas estimate for approving new RPL interaction
 func (c *Client) NodeStakeRplApprovalGas(amountWei *big.Int) (api.NodeStakeRplApproveGasResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node get-stake-rpl-approval-gas %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/get-stake-rpl-approval-gas", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeStakeRplApproveGasResponse{}, fmt.Errorf("Could not get new RPL approval gas: %w", err)
 	}
@@ -392,7 +408,7 @@ func (c *Client) NodeStakeRplApprovalGas(amountWei *big.Int) (api.NodeStakeRplAp
 
 // Approve RPL for staking against the node
 func (c *Client) NodeStakeRplApprove(amountWei *big.Int) (api.NodeStakeRplApproveResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl-approve-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/stake-rpl-approve-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeStakeRplApproveResponse{}, fmt.Errorf("Could not approve RPL for staking: %w", err)
 	}
@@ -408,7 +424,10 @@ func (c *Client) NodeStakeRplApprove(amountWei *big.Int) (api.NodeStakeRplApprov
 
 // Stake RPL against the node waiting for approvalTxHash to be included in a block first
 func (c *Client) NodeWaitAndStakeRpl(amountWei *big.Int, approvalTxHash common.Hash) (api.NodeStakeRplStakeResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node wait-and-stake-rpl %s %s", amountWei.String(), approvalTxHash.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/wait-and-stake-rpl", url.Values{
+		"amountWei":      {amountWei.String()},
+		"approvalTxHash": {approvalTxHash.Hex()},
+	})
 	if err != nil {
 		return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %w", err)
 	}
@@ -424,7 +443,7 @@ func (c *Client) NodeWaitAndStakeRpl(amountWei *big.Int, approvalTxHash common.H
 
 // Stake RPL against the node
 func (c *Client) NodeStakeRpl(amountWei *big.Int) (api.NodeStakeRplStakeResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/stake-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeStakeRplStakeResponse{}, fmt.Errorf("Could not stake node RPL: %w", err)
 	}
@@ -440,7 +459,7 @@ func (c *Client) NodeStakeRpl(amountWei *big.Int) (api.NodeStakeRplStakeResponse
 
 // Get a node's RPL allowance for the staking contract
 func (c *Client) GetNodeStakeRplAllowance() (api.NodeStakeRplAllowanceResponse, error) {
-	responseBytes, err := c.callAPI("node stake-rpl-allowance")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/stake-rpl-allowance", nil)
 	if err != nil {
 		return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not get node stake RPL allowance: %w", err)
 	}
@@ -456,7 +475,7 @@ func (c *Client) GetNodeStakeRplAllowance() (api.NodeStakeRplAllowanceResponse, 
 
 // Checks if the node operator can set RPL locking allowed
 func (c *Client) CanSetRPLLockingAllowed(allowed bool) (api.CanSetRplLockingAllowedResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-rpl-locking-allowed %t", allowed))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-set-rpl-locking-allowed", url.Values{"allowed": {strconv.FormatBool(allowed)}})
 	if err != nil {
 		return api.CanSetRplLockingAllowedResponse{}, fmt.Errorf("Could not get can set RPL locking allowed: %w", err)
 	}
@@ -472,7 +491,7 @@ func (c *Client) CanSetRPLLockingAllowed(allowed bool) (api.CanSetRplLockingAllo
 
 // Sets the allow state for the node to lock RPL
 func (c *Client) SetRPLLockingAllowed(allowed bool) (api.SetRplLockingAllowedResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node set-rpl-locking-allowed %t", allowed))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/set-rpl-locking-allowed", url.Values{"allowed": {strconv.FormatBool(allowed)}})
 	if err != nil {
 		return api.SetRplLockingAllowedResponse{}, fmt.Errorf("Could not set RPL locking allowed: %w", err)
 	}
@@ -488,7 +507,10 @@ func (c *Client) SetRPLLockingAllowed(allowed bool) (api.SetRplLockingAllowedRes
 
 // Checks if the node operator can set RPL stake for allowed
 func (c *Client) CanSetStakeRPLForAllowed(caller common.Address, allowed bool) (api.CanSetStakeRplForAllowedResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-stake-rpl-for-allowed %s %t", caller.Hex(), allowed))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-set-stake-rpl-for-allowed", url.Values{
+		"caller":  {caller.Hex()},
+		"allowed": {strconv.FormatBool(allowed)},
+	})
 	if err != nil {
 		return api.CanSetStakeRplForAllowedResponse{}, fmt.Errorf("Could not get can set stake RPL for allowed: %w", err)
 	}
@@ -504,7 +526,10 @@ func (c *Client) CanSetStakeRPLForAllowed(caller common.Address, allowed bool) (
 
 // Sets the allow state of another address staking on behalf of the node
 func (c *Client) SetStakeRPLForAllowed(caller common.Address, allowed bool) (api.SetStakeRplForAllowedResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node set-stake-rpl-for-allowed %s %t", caller.Hex(), allowed))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/set-stake-rpl-for-allowed", url.Values{
+		"caller":  {caller.Hex()},
+		"allowed": {strconv.FormatBool(allowed)},
+	})
 	if err != nil {
 		return api.SetStakeRplForAllowedResponse{}, fmt.Errorf("Could not set stake RPL for allowed: %w", err)
 	}
@@ -520,7 +545,7 @@ func (c *Client) SetStakeRPLForAllowed(caller common.Address, allowed bool) (api
 
 // Check whether the node can withdraw RPL
 func (c *Client) CanNodeWithdrawRpl() (api.CanNodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI("node can-withdraw-rpl")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-withdraw-rpl", nil)
 	if err != nil {
 		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
 	}
@@ -536,7 +561,7 @@ func (c *Client) CanNodeWithdrawRpl() (api.CanNodeWithdrawRplResponse, error) {
 
 // Withdraw RPL staked against the node
 func (c *Client) NodeWithdrawRpl() (api.NodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI("node withdraw-rpl")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/withdraw-rpl", nil)
 	if err != nil {
 		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
 	}
@@ -552,7 +577,7 @@ func (c *Client) NodeWithdrawRpl() (api.NodeWithdrawRplResponse, error) {
 
 // Check whether the node can unstake legacy RPL
 func (c *Client) CanNodeUnstakeLegacyRpl(amountWei *big.Int) (api.CanNodeUnstakeLegacyRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-unstake-legacy-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-unstake-legacy-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.CanNodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not get can node unstake legacy RPL status: %w", err)
 	}
@@ -568,7 +593,7 @@ func (c *Client) CanNodeUnstakeLegacyRpl(amountWei *big.Int) (api.CanNodeUnstake
 
 // Unstake legacy RPL staked against the node
 func (c *Client) NodeUnstakeLegacyRpl(amountWei *big.Int) (api.NodeUnstakeLegacyRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node unstake-legacy-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/unstake-legacy-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeUnstakeLegacyRplResponse{}, fmt.Errorf("Could not unstake node legacy RPL: %w", err)
 	}
@@ -585,7 +610,7 @@ func (c *Client) NodeUnstakeLegacyRpl(amountWei *big.Int) (api.NodeUnstakeLegacy
 // Check whether the node can withdraw RPL
 // Used if saturn is not deployed (v1.3.1)
 func (c *Client) CanNodeWithdrawRplV1_3_1(amountWei *big.Int) (api.CanNodeWithdrawRplv1_3_1Response, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl-v131 %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-withdraw-rpl-v131", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.CanNodeWithdrawRplv1_3_1Response{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
 	}
@@ -602,7 +627,7 @@ func (c *Client) CanNodeWithdrawRplV1_3_1(amountWei *big.Int) (api.CanNodeWithdr
 // Withdraw RPL staked against the node
 // Used if saturn is not deployed (v1.3.1)
 func (c *Client) NodeWithdrawRplV1_3_1(amountWei *big.Int) (api.NodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-rpl-v131 %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/withdraw-rpl-v131", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
 	}
@@ -618,7 +643,7 @@ func (c *Client) NodeWithdrawRplV1_3_1(amountWei *big.Int) (api.NodeWithdrawRplR
 
 // Check whether the node can unstake RPL
 func (c *Client) CanNodeUnstakeRpl(amountWei *big.Int) (api.CanNodeUnstakeRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-unstake-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-unstake-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.CanNodeUnstakeRplResponse{}, fmt.Errorf("Could not get can node unstake RPL status: %w", err)
 	}
@@ -634,7 +659,7 @@ func (c *Client) CanNodeUnstakeRpl(amountWei *big.Int) (api.CanNodeUnstakeRplRes
 
 // Unstake RPL staked against the node
 func (c *Client) NodeUnstakeRpl(amountWei *big.Int) (api.NodeUnstakeRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node unstake-rpl %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/unstake-rpl", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeUnstakeRplResponse{}, fmt.Errorf("Could not unstake node RPL: %w", err)
 	}
@@ -650,7 +675,7 @@ func (c *Client) NodeUnstakeRpl(amountWei *big.Int) (api.NodeUnstakeRplResponse,
 
 // Check whether we can withdraw ETH staked on behalf of the node
 func (c *Client) CanNodeWithdrawEth(amountWei *big.Int) (api.CanNodeWithdrawEthResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-eth %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-withdraw-eth", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.CanNodeWithdrawEthResponse{}, fmt.Errorf("Could not get can node withdraw ETH status: %w", err)
 	}
@@ -666,7 +691,7 @@ func (c *Client) CanNodeWithdrawEth(amountWei *big.Int) (api.CanNodeWithdrawEthR
 
 // Withdraw ETH staked on behalf of the node
 func (c *Client) NodeWithdrawEth(amountWei *big.Int) (api.NodeWithdrawEthResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-eth %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/withdraw-eth", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeWithdrawEthResponse{}, fmt.Errorf("Could not withdraw node ETH: %w", err)
 	}
@@ -682,7 +707,7 @@ func (c *Client) NodeWithdrawEth(amountWei *big.Int) (api.NodeWithdrawEthRespons
 
 // Check whether we can withdraw credit from the node
 func (c *Client) CanNodeWithdrawCredit(amountWei *big.Int) (api.CanNodeWithdrawCreditResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-credit %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-withdraw-credit", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.CanNodeWithdrawCreditResponse{}, fmt.Errorf("Could not get can node withdraw credit status: %w", err)
 	}
@@ -698,7 +723,7 @@ func (c *Client) CanNodeWithdrawCredit(amountWei *big.Int) (api.CanNodeWithdrawC
 
 // Withdraw credit from the node as rETH
 func (c *Client) NodeWithdrawCredit(amountWei *big.Int) (api.NodeWithdrawCreditResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-credit %s", amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/withdraw-credit", url.Values{"amountWei": {amountWei.String()}})
 	if err != nil {
 		return api.NodeWithdrawCreditResponse{}, fmt.Errorf("Could not withdraw credit: %w", err)
 	}
@@ -714,7 +739,13 @@ func (c *Client) NodeWithdrawCredit(amountWei *big.Int) (api.NodeWithdrawCreditR
 
 // Check whether the node can make multiple deposits
 func (c *Client) CanNodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, expressTickets uint64) (api.CanNodeDepositsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-deposit %s %f %s %d %d", amountWei.String(), minFee, salt.String(), expressTickets, count))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-deposit", url.Values{
+		"count":          {strconv.FormatUint(count, 10)},
+		"amountWei":      {amountWei.String()},
+		"minFee":         {strconv.FormatFloat(minFee, 'f', -1, 64)},
+		"salt":           {salt.String()},
+		"expressTickets": {strconv.FormatUint(expressTickets, 10)},
+	})
 	if err != nil {
 		return api.CanNodeDepositsResponse{}, fmt.Errorf("Could not get can node deposits status: %w", err)
 	}
@@ -730,7 +761,15 @@ func (c *Client) CanNodeDeposits(count uint64, amountWei *big.Int, minFee float6
 
 // Make multiple node deposits
 func (c *Client) NodeDeposits(count uint64, amountWei *big.Int, minFee float64, salt *big.Int, useCreditBalance bool, expressTickets uint64, submit bool) (api.NodeDepositsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node deposit %s %f %s %t %d %t %d", amountWei.String(), minFee, salt.String(), useCreditBalance, expressTickets, submit, count))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/deposit", url.Values{
+		"count":            {strconv.FormatUint(count, 10)},
+		"amountWei":        {amountWei.String()},
+		"minFee":           {strconv.FormatFloat(minFee, 'f', -1, 64)},
+		"salt":             {salt.String()},
+		"expressTickets":   {strconv.FormatUint(expressTickets, 10)},
+		"useCreditBalance": {strconv.FormatBool(useCreditBalance)},
+		"submit":           {strconv.FormatBool(submit)},
+	})
 	if err != nil {
 		return api.NodeDepositsResponse{}, fmt.Errorf("Could not make node deposits: %w", err)
 	}
@@ -746,7 +785,11 @@ func (c *Client) NodeDeposits(count uint64, amountWei *big.Int, minFee float64, 
 
 // Check whether the node can send tokens
 func (c *Client) CanNodeSend(amountRaw float64, token string, toAddress common.Address) (api.CanNodeSendResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-send %.10f %s %s", amountRaw, token, toAddress.Hex()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-send", url.Values{
+		"amountRaw": {strconv.FormatFloat(amountRaw, 'f', 10, 64)},
+		"token":     {token},
+		"to":        {toAddress.Hex()},
+	})
 	if err != nil {
 		return api.CanNodeSendResponse{}, fmt.Errorf("Could not get can node send status: %w", err)
 	}
@@ -762,7 +805,11 @@ func (c *Client) CanNodeSend(amountRaw float64, token string, toAddress common.A
 
 // Send tokens from the node to an address
 func (c *Client) NodeSend(amountRaw float64, token string, toAddress common.Address) (api.NodeSendResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node send %.10f %s %s", amountRaw, token, toAddress.Hex()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/send", url.Values{
+		"amountRaw": {strconv.FormatFloat(amountRaw, 'f', 10, 64)},
+		"token":     {token},
+		"to":        {toAddress.Hex()},
+	})
 	if err != nil {
 		return api.NodeSendResponse{}, fmt.Errorf("Could not send tokens from node: %w", err)
 	}
@@ -779,7 +826,10 @@ func (c *Client) NodeSend(amountRaw float64, token string, toAddress common.Addr
 // Send all tokens of the given type from the node to an address.
 // Uses the exact on-chain *big.Int balance to avoid float64 rounding errors.
 func (c *Client) NodeSendAll(token string, toAddress common.Address) (api.NodeSendResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node send-all %s %s", token, toAddress.Hex()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/send-all", url.Values{
+		"token": {token},
+		"to":    {toAddress.Hex()},
+	})
 	if err != nil {
 		return api.NodeSendResponse{}, fmt.Errorf("Could not send tokens from node: %w", err)
 	}
@@ -795,7 +845,10 @@ func (c *Client) NodeSendAll(token string, toAddress common.Address) (api.NodeSe
 
 // Check whether the node can burn tokens
 func (c *Client) CanNodeBurn(amountWei *big.Int, token string) (api.CanNodeBurnResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-burn %s %s", amountWei.String(), token))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-burn", url.Values{
+		"amountWei": {amountWei.String()},
+		"token":     {token},
+	})
 	if err != nil {
 		return api.CanNodeBurnResponse{}, fmt.Errorf("Could not get can node burn status: %w", err)
 	}
@@ -811,7 +864,10 @@ func (c *Client) CanNodeBurn(amountWei *big.Int, token string) (api.CanNodeBurnR
 
 // Burn tokens owned by the node for ETH
 func (c *Client) NodeBurn(amountWei *big.Int, token string) (api.NodeBurnResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node burn %s %s", amountWei.String(), token))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/burn", url.Values{
+		"amountWei": {amountWei.String()},
+		"token":     {token},
+	})
 	if err != nil {
 		return api.NodeBurnResponse{}, fmt.Errorf("Could not burn tokens owned by node: %w", err)
 	}
@@ -827,7 +883,7 @@ func (c *Client) NodeBurn(amountWei *big.Int, token string) (api.NodeBurnRespons
 
 // Get node sync progress
 func (c *Client) NodeSync() (api.NodeSyncProgressResponse, error) {
-	responseBytes, err := c.callAPI("node sync")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/sync", nil)
 	if err != nil {
 		return api.NodeSyncProgressResponse{}, fmt.Errorf("Could not get node sync: %w", err)
 	}
@@ -843,7 +899,7 @@ func (c *Client) NodeSync() (api.NodeSyncProgressResponse, error) {
 
 // Check whether the node has RPL rewards available to claim
 func (c *Client) CanNodeClaimRpl() (api.CanNodeClaimRplResponse, error) {
-	responseBytes, err := c.callAPI("node can-claim-rpl-rewards")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-claim-rpl-rewards", nil)
 	if err != nil {
 		return api.CanNodeClaimRplResponse{}, fmt.Errorf("Could not get can node claim rpl rewards status: %w", err)
 	}
@@ -859,7 +915,7 @@ func (c *Client) CanNodeClaimRpl() (api.CanNodeClaimRplResponse, error) {
 
 // Claim available RPL rewards
 func (c *Client) NodeClaimRpl() (api.NodeClaimRplResponse, error) {
-	responseBytes, err := c.callAPI("node claim-rpl-rewards")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/claim-rpl-rewards", nil)
 	if err != nil {
 		return api.NodeClaimRplResponse{}, fmt.Errorf("Could not claim rpl rewards: %w", err)
 	}
@@ -875,7 +931,7 @@ func (c *Client) NodeClaimRpl() (api.NodeClaimRplResponse, error) {
 
 // Get node RPL rewards status
 func (c *Client) NodeRewards() (api.NodeRewardsResponse, error) {
-	responseBytes, err := c.callAPI("node rewards")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/rewards", nil)
 	if err != nil {
 		return api.NodeRewardsResponse{}, fmt.Errorf("Could not get node rewards: %w", err)
 	}
@@ -891,7 +947,7 @@ func (c *Client) NodeRewards() (api.NodeRewardsResponse, error) {
 
 // Get the deposit contract info for Rocket Pool and the Beacon Client
 func (c *Client) DepositContractInfo() (api.DepositContractInfoResponse, error) {
-	responseBytes, err := c.callAPI("node deposit-contract-info")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/deposit-contract-info", nil)
 	if err != nil {
 		return api.DepositContractInfoResponse{}, fmt.Errorf("Could not get deposit contract info: %w", err)
 	}
@@ -907,7 +963,7 @@ func (c *Client) DepositContractInfo() (api.DepositContractInfoResponse, error) 
 
 // Get the initialization status of the fee distributor contract
 func (c *Client) IsFeeDistributorInitialized() (api.NodeIsFeeDistributorInitializedResponse, error) {
-	responseBytes, err := c.callAPI("node is-fee-distributor-initialized")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/is-fee-distributor-initialized", nil)
 	if err != nil {
 		return api.NodeIsFeeDistributorInitializedResponse{}, fmt.Errorf("Could not get fee distributor initialization status: %w", err)
 	}
@@ -923,7 +979,7 @@ func (c *Client) IsFeeDistributorInitialized() (api.NodeIsFeeDistributorInitiali
 
 // Get the gas cost for initializing the fee distributor contract
 func (c *Client) GetInitializeFeeDistributorGas() (api.NodeInitializeFeeDistributorGasResponse, error) {
-	responseBytes, err := c.callAPI("node get-initialize-fee-distributor-gas")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/get-initialize-fee-distributor-gas", nil)
 	if err != nil {
 		return api.NodeInitializeFeeDistributorGasResponse{}, fmt.Errorf("Could not get initialize fee distributor gas: %w", err)
 	}
@@ -939,7 +995,7 @@ func (c *Client) GetInitializeFeeDistributorGas() (api.NodeInitializeFeeDistribu
 
 // Initialize the fee distributor contract
 func (c *Client) InitializeFeeDistributor() (api.NodeInitializeFeeDistributorResponse, error) {
-	responseBytes, err := c.callAPI("node initialize-fee-distributor")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/initialize-fee-distributor", nil)
 	if err != nil {
 		return api.NodeInitializeFeeDistributorResponse{}, fmt.Errorf("Could not initialize fee distributor: %w", err)
 	}
@@ -955,7 +1011,7 @@ func (c *Client) InitializeFeeDistributor() (api.NodeInitializeFeeDistributorRes
 
 // Check if distributing ETH from the node's fee distributor is possible
 func (c *Client) CanDistribute() (api.NodeCanDistributeResponse, error) {
-	responseBytes, err := c.callAPI("node can-distribute")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-distribute", nil)
 	if err != nil {
 		return api.NodeCanDistributeResponse{}, fmt.Errorf("Could not get can distribute: %w", err)
 	}
@@ -971,7 +1027,7 @@ func (c *Client) CanDistribute() (api.NodeCanDistributeResponse, error) {
 
 // Distribute ETH from the node's fee distributor
 func (c *Client) Distribute() (api.NodeDistributeResponse, error) {
-	responseBytes, err := c.callAPI("node distribute")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/distribute", nil)
 	if err != nil {
 		return api.NodeDistributeResponse{}, fmt.Errorf("Could not distribute ETH: %w", err)
 	}
@@ -987,7 +1043,7 @@ func (c *Client) Distribute() (api.NodeDistributeResponse, error) {
 
 // Get info about your eligible rewards periods, including balances and Merkle proofs
 func (c *Client) GetRewardsInfo() (api.NodeGetRewardsInfoResponse, error) {
-	responseBytes, err := c.callAPI("node get-rewards-info")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/get-rewards-info", nil)
 	if err != nil {
 		return api.NodeGetRewardsInfoResponse{}, fmt.Errorf("Could not get rewards info: %w", err)
 	}
@@ -1003,11 +1059,11 @@ func (c *Client) GetRewardsInfo() (api.NodeGetRewardsInfoResponse, error) {
 
 // Check if the rewards for the given intervals can be claimed
 func (c *Client) CanNodeClaimRewards(indices []uint64) (api.CanNodeClaimRewardsResponse, error) {
-	indexStrings := []string{}
-	for _, index := range indices {
-		indexStrings = append(indexStrings, fmt.Sprint(index))
+	indexStrings := make([]string, len(indices))
+	for i, idx := range indices {
+		indexStrings[i] = strconv.FormatUint(idx, 10)
 	}
-	responseBytes, err := c.callAPI("node can-claim-rewards", strings.Join(indexStrings, ","))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-claim-rewards", url.Values{"indices": {strings.Join(indexStrings, ",")}})
 	if err != nil {
 		return api.CanNodeClaimRewardsResponse{}, fmt.Errorf("Could not check if can claim rewards: %w", err)
 	}
@@ -1023,11 +1079,11 @@ func (c *Client) CanNodeClaimRewards(indices []uint64) (api.CanNodeClaimRewardsR
 
 // Claim rewards for the given reward intervals
 func (c *Client) NodeClaimRewards(indices []uint64) (api.NodeClaimRewardsResponse, error) {
-	indexStrings := []string{}
-	for _, index := range indices {
-		indexStrings = append(indexStrings, fmt.Sprint(index))
+	indexStrings := make([]string, len(indices))
+	for i, idx := range indices {
+		indexStrings[i] = strconv.FormatUint(idx, 10)
 	}
-	responseBytes, err := c.callAPI("node claim-rewards", strings.Join(indexStrings, ","))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/claim-rewards", url.Values{"indices": {strings.Join(indexStrings, ",")}})
 	if err != nil {
 		return api.NodeClaimRewardsResponse{}, fmt.Errorf("Could not claim rewards: %w", err)
 	}
@@ -1043,11 +1099,14 @@ func (c *Client) NodeClaimRewards(indices []uint64) (api.NodeClaimRewardsRespons
 
 // Check if the rewards for the given intervals can be claimed, and RPL restaked automatically
 func (c *Client) CanNodeClaimAndStakeRewards(indices []uint64, stakeAmountWei *big.Int) (api.CanNodeClaimAndStakeRewardsResponse, error) {
-	indexStrings := []string{}
-	for _, index := range indices {
-		indexStrings = append(indexStrings, fmt.Sprint(index))
+	indexStrings := make([]string, len(indices))
+	for i, idx := range indices {
+		indexStrings[i] = strconv.FormatUint(idx, 10)
 	}
-	responseBytes, err := c.callAPI("node can-claim-and-stake-rewards", strings.Join(indexStrings, ","), stakeAmountWei.String())
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-claim-and-stake-rewards", url.Values{
+		"indices":     {strings.Join(indexStrings, ",")},
+		"stakeAmount": {stakeAmountWei.String()},
+	})
 	if err != nil {
 		return api.CanNodeClaimAndStakeRewardsResponse{}, fmt.Errorf("Could not check if can claim and stake rewards: %w", err)
 	}
@@ -1063,11 +1122,14 @@ func (c *Client) CanNodeClaimAndStakeRewards(indices []uint64, stakeAmountWei *b
 
 // Claim rewards for the given reward intervals and restake RPL automatically
 func (c *Client) NodeClaimAndStakeRewards(indices []uint64, stakeAmountWei *big.Int) (api.NodeClaimAndStakeRewardsResponse, error) {
-	indexStrings := []string{}
-	for _, index := range indices {
-		indexStrings = append(indexStrings, fmt.Sprint(index))
+	indexStrings := make([]string, len(indices))
+	for i, idx := range indices {
+		indexStrings[i] = strconv.FormatUint(idx, 10)
 	}
-	responseBytes, err := c.callAPI("node claim-and-stake-rewards", strings.Join(indexStrings, ","), stakeAmountWei.String())
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/claim-and-stake-rewards", url.Values{
+		"indices":     {strings.Join(indexStrings, ",")},
+		"stakeAmount": {stakeAmountWei.String()},
+	})
 	if err != nil {
 		return api.NodeClaimAndStakeRewardsResponse{}, fmt.Errorf("Could not claim and stake rewards: %w", err)
 	}
@@ -1083,7 +1145,7 @@ func (c *Client) NodeClaimAndStakeRewards(indices []uint64, stakeAmountWei *big.
 
 // Check whether or not the node is opted into the Smoothing Pool
 func (c *Client) NodeGetSmoothingPoolRegistrationStatus() (api.GetSmoothingPoolRegistrationStatusResponse, error) {
-	responseBytes, err := c.callAPI("node get-smoothing-pool-registration-status")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/get-smoothing-pool-registration-status", nil)
 	if err != nil {
 		return api.GetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not get smoothing pool registration status: %w", err)
 	}
@@ -1099,7 +1161,7 @@ func (c *Client) NodeGetSmoothingPoolRegistrationStatus() (api.GetSmoothingPoolR
 
 // Check if the node's Smoothing Pool status can be changed
 func (c *Client) CanNodeSetSmoothingPoolStatus(status bool) (api.CanSetSmoothingPoolRegistrationStatusResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-set-smoothing-pool-status %t", status))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-set-smoothing-pool-status", url.Values{"status": {strconv.FormatBool(status)}})
 	if err != nil {
 		return api.CanSetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not get can-set-smoothing-pool-status: %w", err)
 	}
@@ -1115,7 +1177,7 @@ func (c *Client) CanNodeSetSmoothingPoolStatus(status bool) (api.CanSetSmoothing
 
 // Sets the node's Smoothing Pool opt-in status
 func (c *Client) NodeSetSmoothingPoolStatus(status bool) (api.SetSmoothingPoolRegistrationStatusResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node set-smoothing-pool-status %t", status))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/set-smoothing-pool-status", url.Values{"status": {strconv.FormatBool(status)}})
 	if err != nil {
 		return api.SetSmoothingPoolRegistrationStatusResponse{}, fmt.Errorf("Could not set smoothing pool status: %w", err)
 	}
@@ -1130,7 +1192,7 @@ func (c *Client) NodeSetSmoothingPoolStatus(status bool) (api.SetSmoothingPoolRe
 }
 
 func (c *Client) ResolveEnsName(name string) (api.ResolveEnsNameResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node resolve-ens-name %s", name))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/resolve-ens-name", url.Values{"name": {name}})
 	if err != nil {
 		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not resolve ENS name: %w", err)
 	}
@@ -1143,8 +1205,9 @@ func (c *Client) ResolveEnsName(name string) (api.ResolveEnsNameResponse, error)
 	}
 	return response, nil
 }
+
 func (c *Client) ReverseResolveEnsName(name string) (api.ResolveEnsNameResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node reverse-resolve-ens-name %s", name))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/reverse-resolve-ens-name", url.Values{"address": {name}})
 	if err != nil {
 		return api.ResolveEnsNameResponse{}, fmt.Errorf("Could not reverse resolve ENS name: %w", err)
 	}
@@ -1162,7 +1225,7 @@ func (c *Client) ReverseResolveEnsName(name string) (api.ResolveEnsNameResponse,
 func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {
 	// Ignore sync status so we can sign messages even without ready clients
 	c.ignoreSyncCheck = true
-	responseBytes, err := c.callAPI("node sign-message", message)
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/sign-message", url.Values{"message": {message}})
 	if err != nil {
 		return api.NodeSignResponse{}, fmt.Errorf("Could not sign message: %w", err)
 	}
@@ -1179,7 +1242,7 @@ func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {
 
 // Get the node's collateral info, including pending bond reductions
 func (c *Client) CheckCollateral() (api.CheckCollateralResponse, error) {
-	responseBytes, err := c.callAPI("node check-collateral")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/check-collateral", nil)
 	if err != nil {
 		return api.CheckCollateralResponse{}, fmt.Errorf("Could not get check-collateral status: %w", err)
 	}
@@ -1195,7 +1258,7 @@ func (c *Client) CheckCollateral() (api.CheckCollateralResponse, error) {
 
 // Get the ETH balance of the node address
 func (c *Client) GetEthBalance() (api.NodeEthBalanceResponse, error) {
-	responseBytes, err := c.callAPI("node get-eth-balance")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/get-eth-balance", nil)
 	if err != nil {
 		return api.NodeEthBalanceResponse{}, fmt.Errorf("Could not get get-eth-balance status: %w", err)
 	}
@@ -1211,7 +1274,10 @@ func (c *Client) GetEthBalance() (api.NodeEthBalanceResponse, error) {
 
 // Estimates the gas for sending a zero-value message with a payload
 func (c *Client) CanSendMessage(address common.Address, message []byte) (api.CanNodeSendMessageResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-send-message %s %s", address.Hex(), hex.EncodeToString(message)))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-send-message", url.Values{
+		"address": {address.Hex()},
+		"message": {hex.EncodeToString(message)},
+	})
 	if err != nil {
 		return api.CanNodeSendMessageResponse{}, fmt.Errorf("Could not get can-send-message response: %w", err)
 	}
@@ -1227,7 +1293,10 @@ func (c *Client) CanSendMessage(address common.Address, message []byte) (api.Can
 
 // Sends a zero-value message with a payload
 func (c *Client) SendMessage(address common.Address, message []byte) (api.NodeSendMessageResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node send-message %s %s", address.Hex(), hex.EncodeToString(message)))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/send-message", url.Values{
+		"address": {address.Hex()},
+		"message": {hex.EncodeToString(message)},
+	})
 	if err != nil {
 		return api.NodeSendMessageResponse{}, fmt.Errorf("Could not get send-message response: %w", err)
 	}
@@ -1243,7 +1312,7 @@ func (c *Client) SendMessage(address common.Address, message []byte) (api.NodeSe
 
 // Get the number of express tickets available for the node
 func (c *Client) GetExpressTicketCount() (api.GetExpressTicketCountResponse, error) {
-	responseBytes, err := c.callAPI("node get-express-ticket-count")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/get-express-ticket-count", nil)
 	if err != nil {
 		return api.GetExpressTicketCountResponse{}, fmt.Errorf("Could not get express ticket count: %w", err)
 	}
@@ -1259,7 +1328,7 @@ func (c *Client) GetExpressTicketCount() (api.GetExpressTicketCountResponse, err
 
 // Check if the node's express tickets have been provisioned
 func (c *Client) GetExpressTicketsProvisioned() (api.GetExpressTicketsProvisionedResponse, error) {
-	responseBytes, err := c.callAPI("node get-express-tickets-provisioned")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/get-express-tickets-provisioned", nil)
 	if err != nil {
 		return api.GetExpressTicketsProvisionedResponse{}, fmt.Errorf("Could not get express tickets provisioned: %w", err)
 	}
@@ -1274,7 +1343,7 @@ func (c *Client) GetExpressTicketsProvisioned() (api.GetExpressTicketsProvisione
 }
 
 func (c *Client) CanProvisionExpressTickets() (api.CanProvisionExpressTicketsResponse, error) {
-	responseBytes, err := c.callAPI("node can-provision-express-tickets")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-provision-express-tickets", nil)
 	if err != nil {
 		return api.CanProvisionExpressTicketsResponse{}, fmt.Errorf("Could not get can-provision-express-tickets response: %w", err)
 	}
@@ -1289,7 +1358,7 @@ func (c *Client) CanProvisionExpressTickets() (api.CanProvisionExpressTicketsRes
 }
 
 func (c *Client) ProvisionExpressTickets() (api.ProvisionExpressTicketsResponse, error) {
-	responseBytes, err := c.callAPI("node provision-express-tickets")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/provision-express-tickets", nil)
 	if err != nil {
 		return api.ProvisionExpressTicketsResponse{}, fmt.Errorf("Could not get provision-express-tickets response: %w", err)
 	}
@@ -1305,7 +1374,7 @@ func (c *Client) ProvisionExpressTickets() (api.ProvisionExpressTicketsResponse,
 
 // Check whether the node can claim unclaimed rewards
 func (c *Client) CanClaimUnclaimedRewards(nodeAddress common.Address) (api.CanClaimUnclaimedRewardsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-claim-unclaimed-rewards %s", nodeAddress.Hex()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/can-claim-unclaimed-rewards", url.Values{"nodeAddress": {nodeAddress.Hex()}})
 	if err != nil {
 		return api.CanClaimUnclaimedRewardsResponse{}, fmt.Errorf("Could not get can-claim-unclaimed-rewards response: %w", err)
 	}
@@ -1321,7 +1390,7 @@ func (c *Client) CanClaimUnclaimedRewards(nodeAddress common.Address) (api.CanCl
 
 // Send unclaimed rewards to a node operator's withdrawal address
 func (c *Client) ClaimUnclaimedRewards(nodeAddress common.Address) (api.ClaimUnclaimedRewardsResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node claim-unclaimed-rewards %s", nodeAddress.Hex()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/node/claim-unclaimed-rewards", url.Values{"nodeAddress": {nodeAddress.Hex()}})
 	if err != nil {
 		return api.ClaimUnclaimedRewardsResponse{}, fmt.Errorf("Could not get claim-unclaimed-rewards response: %w", err)
 	}
@@ -1337,7 +1406,7 @@ func (c *Client) ClaimUnclaimedRewards(nodeAddress common.Address) (api.ClaimUnc
 
 // Get the bond requirement for a number of validators
 func (c *Client) GetBondRequirement(numValidators uint64) (api.GetBondRequirementResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node get-bond-requirement %d", numValidators))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/node/get-bond-requirement", url.Values{"numValidators": {strconv.FormatUint(numValidators, 10)}})
 	if err != nil {
 		return api.GetBondRequirementResponse{}, fmt.Errorf("Could not get get-bond-requirement response: %w", err)
 	}
