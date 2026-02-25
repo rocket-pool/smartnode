@@ -36,6 +36,10 @@ services:
       {{- else if eq .ConsensusClient.String "prysm"}}
       - "{{.Prysm.P2pQuicPort}}:{{.Prysm.P2pQuicPort}}/udp"
       {{- end}}
+      {{- if and (eq .ConsensusClient.String "teku") .IsIPv6Enabled}}
+      - "{{.Teku.P2pIpv6Port}}:{{.Teku.P2pIpv6Port}}/udp"
+      - "{{.Teku.P2pIpv6Port}}:{{.Teku.P2pIpv6Port}}/tcp"
+      {{- end}}
       {{- range $entry := .GetBnOpenPorts}}
       - "{{$entry}}"
       {{- end}}
@@ -64,6 +68,7 @@ services:
       - ENABLE_METRICS={{.EnableMetrics}}
       - BN_METRICS_PORT={{.BnMetricsPort}}
       - EXTERNAL_IP={{.GetExternalIp}}
+      - ENABLE_IPV6={{.IsIPv6Enabled}}
       - CHECKPOINT_SYNC_URL={{.ConsensusCommon.CheckpointSyncProvider}}
       - DOPPELGANGER_DETECTION={{.IsDoppelgangerEnabled}}
       - BN_ADDITIONAL_FLAGS={{.GetBNAdditionalFlags}}
@@ -80,6 +85,7 @@ services:
       {{- if eq .ConsensusClient.String "teku"}}
       - TEKU_JVM_HEAP_SIZE={{.Teku.JvmHeapSize}}
       - TEKU_ARCHIVE_MODE={{.Teku.ArchiveMode}}
+      - BN_IPV6_P2P_PORT={{.Teku.P2pIpv6Port}}
       {{- else if eq .ConsensusClient.String "prysm"}}
       - BN_RPC_PORT={{.Prysm.RpcPort}}
       - BN_P2P_QUIC_PORT={{.Prysm.P2pQuicPort}}
@@ -105,5 +111,8 @@ services:
     {{- end}}
 networks:
   net:
+    {{- if .IsIPv6Enabled}}
+    enable_ipv6: true
+    {{- end}}
 volumes:
   eth2clientdata:
