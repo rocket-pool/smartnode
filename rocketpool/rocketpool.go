@@ -7,11 +7,9 @@ import (
 
 	cli "github.com/urfave/cli/v3"
 
-	"github.com/rocket-pool/smartnode/rocketpool/api"
 	"github.com/rocket-pool/smartnode/rocketpool/node"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower"
 	"github.com/rocket-pool/smartnode/shared"
-	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 
 	blsversionpin "github.com/herumi/bls-eth-go-binary/bls"
 )
@@ -83,25 +81,13 @@ func main() {
 	}
 
 	// Register commands
-	api.RegisterCommands(app, "api", []string{"a"})
 	node.RegisterCommands(app, "node", []string{"n"})
 	watchtower.RegisterCommands(app, "watchtower", []string{"w"})
 
-	// Get command being run
-	var commandName string
-	app.Before = func(ctx context.Context, c *cli.Command) (context.Context, error) {
-		commandName = c.Args().First()
-		return ctx, nil
-	}
-
 	// Run application
 	if err := app.Run(context.Background(), os.Args); err != nil {
-		if commandName == "api" {
-			apiutils.PrintErrorResponse(err)
-		} else {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
 	}
 
 }

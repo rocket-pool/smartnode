@@ -154,40 +154,6 @@ func (c *Client) ProposeLeaveTNDAO() (api.ProposeTNDAOLeaveResponse, error) {
 	return response, nil
 }
 
-// Check whether the node can propose replacing its position with a new member
-// No server-side handler exists for this command; kept on callAPI.
-func (c *Client) CanProposeReplaceTNDAOMember(memberAddress common.Address, memberId, memberUrl string) (api.CanProposeTNDAOReplaceResponse, error) {
-	responseBytes, err := c.callAPI("odao can-propose-replace", memberAddress.Hex(), memberId, memberUrl)
-	if err != nil {
-		return api.CanProposeTNDAOReplaceResponse{}, fmt.Errorf("Could not get can propose replacing oracle DAO member status: %w", err)
-	}
-	var response api.CanProposeTNDAOReplaceResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanProposeTNDAOReplaceResponse{}, fmt.Errorf("Could not decode can propose replacing oracle DAO member response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanProposeTNDAOReplaceResponse{}, fmt.Errorf("Could not get can propose replacing oracle DAO member status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Propose replacing the node's position with a new member
-// No server-side handler exists for this command; kept on callAPI.
-func (c *Client) ProposeReplaceTNDAOMember(memberAddress common.Address, memberId, memberUrl string) (api.ProposeTNDAOReplaceResponse, error) {
-	responseBytes, err := c.callAPI("odao propose-replace", memberAddress.Hex(), memberId, memberUrl)
-	if err != nil {
-		return api.ProposeTNDAOReplaceResponse{}, fmt.Errorf("Could not propose replacing oracle DAO member: %w", err)
-	}
-	var response api.ProposeTNDAOReplaceResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ProposeTNDAOReplaceResponse{}, fmt.Errorf("Could not decode propose replacing oracle DAO member response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ProposeTNDAOReplaceResponse{}, fmt.Errorf("Could not propose replacing oracle DAO member: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Check whether the node can propose kicking a member
 func (c *Client) CanProposeKickFromTNDAO(memberAddress common.Address, fineAmountWei *big.Int) (api.CanProposeTNDAOKickResponse, error) {
 	responseBytes, err := c.callHTTPAPI("GET", "/api/odao/can-propose-kick", url.Values{
@@ -405,57 +371,6 @@ func (c *Client) LeaveTNDAO(bondRefundAddress common.Address) (api.LeaveTNDAORes
 	}
 	if response.Error != "" {
 		return api.LeaveTNDAOResponse{}, fmt.Errorf("Could not leave oracle DAO: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can replace its position in the oracle DAO
-// No server-side handler exists for this command; kept on callAPI.
-func (c *Client) CanReplaceTNDAOMember() (api.CanReplaceTNDAOPositionResponse, error) {
-	responseBytes, err := c.callAPI("odao can-replace")
-	if err != nil {
-		return api.CanReplaceTNDAOPositionResponse{}, fmt.Errorf("Could not get can replace oracle DAO member status: %w", err)
-	}
-	var response api.CanReplaceTNDAOPositionResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanReplaceTNDAOPositionResponse{}, fmt.Errorf("Could not decode can replace oracle DAO member response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanReplaceTNDAOPositionResponse{}, fmt.Errorf("Could not get can replace oracle DAO member status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Replace the node's position in the oracle DAO (requires an executed replace proposal)
-// No server-side handler exists for this command; kept on callAPI.
-func (c *Client) ReplaceTNDAOMember() (api.ReplaceTNDAOPositionResponse, error) {
-	responseBytes, err := c.callAPI("odao replace")
-	if err != nil {
-		return api.ReplaceTNDAOPositionResponse{}, fmt.Errorf("Could not replace oracle DAO member: %w", err)
-	}
-	var response api.ReplaceTNDAOPositionResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ReplaceTNDAOPositionResponse{}, fmt.Errorf("Could not decode replace oracle DAO member response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ReplaceTNDAOPositionResponse{}, fmt.Errorf("Could not replace oracle DAO member: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can propose a setting update (generic)
-// No server-side handler for the no-argument "can-propose-setting" command; kept on callAPI.
-func (c *Client) CanProposeTNDAOSetting() (api.CanProposeTNDAOSettingResponse, error) {
-	responseBytes, err := c.callAPI("odao can-propose-setting")
-	if err != nil {
-		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting status: %w", err)
-	}
-	var response api.CanProposeTNDAOSettingResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not decode can propose setting response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanProposeTNDAOSettingResponse{}, fmt.Errorf("Could not get can propose setting status: %s", response.Error)
 	}
 	return response, nil
 }

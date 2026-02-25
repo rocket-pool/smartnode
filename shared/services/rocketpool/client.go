@@ -122,7 +122,6 @@ func checkClientStatus(rp *Client) (bool, error) {
 
 	// Primary EC and CC are good
 	if ecMgrStatus.PrimaryClientStatus.IsSynced && bcMgrStatus.PrimaryClientStatus.IsSynced {
-		rp.SetClientStatusFlags(true, false)
 		return true, nil
 	}
 
@@ -1039,11 +1038,6 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 }
 
 // Set the flags for ignoring EC and CC sync checks and forcing fallbacks to prevent unnecessary duplication of effort by the API during CLI commands
-func (c *Client) SetClientStatusFlags(ignoreSyncCheck bool, forceFallbacks bool) {
-	c.ignoreSyncCheck = ignoreSyncCheck
-	c.forceFallbacks = forceFallbacks
-}
-
 func (c *Client) checkIfCommandExists(command string) (bool, error) {
 	// Run `type` to check for existence
 	cmd := fmt.Sprintf("type %s", command)
@@ -1326,7 +1320,7 @@ func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, er
 		return nil, fmt.Errorf("error building HTTP request for %s %s: %w", method, path, err)
 	}
 
-	if c.debugPrint {
+	if c.globals.DebugPrint {
 		fmt.Printf("HTTP API: %s %s\n", method, target)
 	}
 
@@ -1341,7 +1335,7 @@ func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, er
 		return nil, fmt.Errorf("error reading HTTP API response for %s %s: %w", method, path, err)
 	}
 
-	if c.debugPrint {
+	if c.globals.DebugPrint {
 		fmt.Printf("HTTP API response (%d): %s\n", resp.StatusCode, string(responseBytes))
 	}
 
