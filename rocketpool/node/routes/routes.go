@@ -6,8 +6,10 @@ import (
 	"github.com/urfave/cli"
 
 	auctionroutes "github.com/rocket-pool/smartnode/rocketpool/api/auction"
+	megapoolroutes "github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	networkroutes "github.com/rocket-pool/smartnode/rocketpool/api/network"
 	queueroutes "github.com/rocket-pool/smartnode/rocketpool/api/queue"
+	securityroutes "github.com/rocket-pool/smartnode/rocketpool/api/security"
 	serviceroutes "github.com/rocket-pool/smartnode/rocketpool/api/service"
 	walletroutes "github.com/rocket-pool/smartnode/rocketpool/api/wallet"
 )
@@ -20,8 +22,10 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
 	})
 
 	auctionroutes.RegisterRoutes(mux, c)
+	megapoolroutes.RegisterRoutes(mux, c)
 	networkroutes.RegisterRoutes(mux, c)
 	queueroutes.RegisterRoutes(mux, c)
+	securityroutes.RegisterRoutes(mux, c)
 	serviceroutes.RegisterRoutes(mux, c)
 	walletroutes.RegisterRoutes(mux, c)
 }
