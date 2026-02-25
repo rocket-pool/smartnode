@@ -11,10 +11,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-// WriteResponse serialises response as JSON and writes it to w, applying the
-// same Status/Error population logic as PrintResponse.
-// response must be a pointer to a struct with string fields named Status and
-// Error (same contract as PrintResponse).
+// WriteResponse serialises response as JSON and writes it to w.
+// response must be a pointer to a struct with string fields named Status and Error.
 func WriteResponse(w http.ResponseWriter, response interface{}, responseError error) {
 	r := reflect.ValueOf(response)
 	if !(r.Kind() == reflect.Ptr && r.Type().Elem().Kind() == reflect.Struct) {

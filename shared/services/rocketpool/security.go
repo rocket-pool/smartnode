@@ -3,9 +3,7 @@ package rocketpool
 import (
 	"fmt"
 	"net/url"
-	"strings"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -74,41 +72,6 @@ func (c *Client) SecurityProposal(id uint64) (api.SecurityProposalResponse, erro
 	return response, nil
 }
 
-// NOTE: ProposeInvite/ProposeKick/ProposeKickMulti/ProposeReplace do not have
-// server-side handlers in the security API package; they remain on callAPI.
-
-// Check whether the node can propose inviting a new member
-func (c *Client) SecurityCanProposeInvite(memberId string, memberAddress common.Address) (api.SecurityCanProposeInviteResponse, error) {
-	responseBytes, err := c.callAPI("security can-propose-invite", memberId, memberAddress.Hex())
-	if err != nil {
-		return api.SecurityCanProposeInviteResponse{}, fmt.Errorf("Could not get security-can-propose-invite status: %w", err)
-	}
-	var response api.SecurityCanProposeInviteResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SecurityCanProposeInviteResponse{}, fmt.Errorf("Could not decode security-can-propose-invite response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SecurityCanProposeInviteResponse{}, fmt.Errorf("Could not get security-can-propose-invite status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Propose inviting a new member
-func (c *Client) SecurityProposeInvite(memberId string, memberAddress common.Address) (api.SecurityProposeInviteResponse, error) {
-	responseBytes, err := c.callAPI("security propose-invite", memberId, memberAddress.Hex())
-	if err != nil {
-		return api.SecurityProposeInviteResponse{}, fmt.Errorf("Could not propose security council invite: %w", err)
-	}
-	var response api.SecurityProposeInviteResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SecurityProposeInviteResponse{}, fmt.Errorf("Could not decode propose security council invite response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SecurityProposeInviteResponse{}, fmt.Errorf("Could not propose security council invite: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Check whether the node can propose to leave the security council
 func (c *Client) SecurityProposeLeave() (api.SecurityProposeLeaveResponse, error) {
 	responseBytes, err := c.callHTTPAPI("POST", "/api/security/propose-leave", nil)
@@ -137,110 +100,6 @@ func (c *Client) SecurityCanProposeLeave() (api.SecurityCanProposeLeaveResponse,
 	}
 	if response.Error != "" {
 		return api.SecurityCanProposeLeaveResponse{}, fmt.Errorf("Could not get security-can-propose-leave status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can propose kicking a member
-func (c *Client) SecurityCanProposeKick(memberAddress common.Address) (api.SecurityCanProposeKickResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security can-propose-kick %s", memberAddress.Hex()))
-	if err != nil {
-		return api.SecurityCanProposeKickResponse{}, fmt.Errorf("Could not get security-can-propose-kick status: %w", err)
-	}
-	var response api.SecurityCanProposeKickResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SecurityCanProposeKickResponse{}, fmt.Errorf("Could not decode security-can-propose-kick response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SecurityCanProposeKickResponse{}, fmt.Errorf("Could not get security-can-propose-kick status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Propose kicking a member
-func (c *Client) SecurityProposeKick(memberAddress common.Address) (api.SecurityProposeKickResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security propose-kick %s", memberAddress.Hex()))
-	if err != nil {
-		return api.SecurityProposeKickResponse{}, fmt.Errorf("Could not propose kicking security council member: %w", err)
-	}
-	var response api.SecurityProposeKickResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SecurityProposeKickResponse{}, fmt.Errorf("Could not decode propose kicking security council member response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SecurityProposeKickResponse{}, fmt.Errorf("Could not propose kicking security council member: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can propose kicking multiple members
-func (c *Client) SecurityCanProposeKickMulti(addresses []common.Address) (api.SecurityCanProposeKickMultiResponse, error) {
-	addressStrings := make([]string, len(addresses))
-	for i, address := range addresses {
-		addressStrings[i] = address.Hex()
-	}
-	responseBytes, err := c.callAPI(fmt.Sprintf("security can-propose-kick-multi %s", strings.Join(addressStrings, ",")))
-	if err != nil {
-		return api.SecurityCanProposeKickMultiResponse{}, fmt.Errorf("Could not get security-can-propose-kick-multi status: %w", err)
-	}
-	var response api.SecurityCanProposeKickMultiResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SecurityCanProposeKickMultiResponse{}, fmt.Errorf("Could not decode security-can-propose-kick-multi response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SecurityCanProposeKickMultiResponse{}, fmt.Errorf("Could not get security-can-propose-kick-multi status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Propose kicking multiple members
-func (c *Client) SecurityProposeKickMulti(addresses []common.Address) (api.SecurityProposeKickMultiResponse, error) {
-	addressStrings := make([]string, len(addresses))
-	for i, address := range addresses {
-		addressStrings[i] = address.Hex()
-	}
-	responseBytes, err := c.callAPI(fmt.Sprintf("security propose-kick-multi %s", strings.Join(addressStrings, ",")))
-	if err != nil {
-		return api.SecurityProposeKickMultiResponse{}, fmt.Errorf("Could not propose kicking multiple security council members: %w", err)
-	}
-	var response api.SecurityProposeKickMultiResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SecurityProposeKickMultiResponse{}, fmt.Errorf("Could not decode propose kicking multiple security council members response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SecurityProposeKickMultiResponse{}, fmt.Errorf("Could not propose kicking multiple security council members: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether the node can propose replacing someone on the security council
-func (c *Client) SecurityCanProposeReplace(existingAddress common.Address, newID string, newAddress common.Address) (api.SecurityCanProposeReplaceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security can-propose-replace-member %s", existingAddress.Hex()), newID, newAddress.Hex())
-	if err != nil {
-		return api.SecurityCanProposeReplaceResponse{}, fmt.Errorf("Could not get security-can-propose-replace status: %w", err)
-	}
-	var response api.SecurityCanProposeReplaceResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SecurityCanProposeReplaceResponse{}, fmt.Errorf("Could not decode security-can-propose-replace response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SecurityCanProposeReplaceResponse{}, fmt.Errorf("Could not get security-can-propose-replace status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Propose replacing someone on the security council
-func (c *Client) SecurityProposeReplace(existingAddress common.Address, newID string, newAddress common.Address) (api.SecurityProposeReplaceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security propose-replace-member %s", existingAddress.Hex()), newID, newAddress.Hex())
-	if err != nil {
-		return api.SecurityProposeReplaceResponse{}, fmt.Errorf("Could not propose replacement of security council member: %w", err)
-	}
-	var response api.SecurityProposeReplaceResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SecurityProposeReplaceResponse{}, fmt.Errorf("Could not decode propose replacement of security council member response: %w", err)
-	}
-	if response.Error != "" {
-		return api.SecurityProposeReplaceResponse{}, fmt.Errorf("Could not propose replacement of security council member: %s", response.Error)
 	}
 	return response, nil
 }

@@ -2,6 +2,7 @@ package rocketpool
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -10,7 +11,7 @@ import (
 
 // Wait for a transaction
 func (c *Client) WaitForTransaction(txHash common.Hash) (api.APIResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("wait %s", txHash.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/wait", url.Values{"txHash": {txHash.Hex()}})
 	if err != nil {
 		return api.APIResponse{}, fmt.Errorf("Error waiting for tx: %w", err)
 	}
