@@ -6,9 +6,10 @@ import (
 )
 
 const (
-	tekuTagTest         string = "consensys/teku:26.2.0"
-	tekuTagProd         string = "consensys/teku:26.2.0"
-	defaultTekuMaxPeers uint16 = 100
+	tekuTagTest            string = "consensys/teku:26.2.0"
+	tekuTagProd            string = "consensys/teku:26.2.0"
+	defaultTekuMaxPeers    uint16 = 100
+	defaultTekuP2pIpv6Port uint16 = 9090
 )
 
 // Configuration for Teku
@@ -35,6 +36,9 @@ type TekuConfig struct {
 
 	// Custom command line flags for the BN
 	AdditionalBnFlags config.Parameter `yaml:"additionalBnFlags,omitempty"`
+
+	// The IPv6 P2P port for Teku (Teku uses a separate port for IPv6)
+	P2pIpv6Port config.Parameter `yaml:"p2pIpv6Port,omitempty"`
 
 	// Custom command line flags for the VC
 	AdditionalVcFlags config.Parameter `yaml:"additionalVcFlags,omitempty"`
@@ -120,6 +124,17 @@ func NewTekuConfig(cfg *RocketPoolConfig) *TekuConfig {
 			OverwriteOnUpgrade: false,
 		},
 
+		P2pIpv6Port: config.Parameter{
+			ID:                 "p2pIpv6Port",
+			Name:               "P2P IPv6 Port",
+			Description:        "The port Teku uses for P2P communication over IPv6. Teku requires a dedicated port for IPv6 (separate from the main P2P port). Only used when IPv6 support is enabled.",
+			Type:               config.ParameterType_Uint16,
+			Default:            map[config.Network]interface{}{config.Network_All: defaultTekuP2pIpv6Port},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		AdditionalVcFlags: config.Parameter{
 			ID:                 "additionalVcFlags",
 			Name:               "Additional Validator Client Flags",
@@ -142,6 +157,7 @@ func (cfg *TekuConfig) GetParameters() []*config.Parameter {
 		&cfg.UseSlashingProtection,
 		&cfg.ContainerTag,
 		&cfg.AdditionalBnFlags,
+		&cfg.P2pIpv6Port,
 		&cfg.AdditionalVcFlags,
 	}
 }

@@ -75,6 +75,9 @@ type RocketPoolConfig struct {
 	ConsensusClient         config.Parameter `yaml:"consensusClient,omitempty"`
 	ExternalConsensusClient config.Parameter `yaml:"externalConsensusClient,omitempty"`
 
+	// IPv6 networking
+	EnableIPv6 config.Parameter `yaml:"enableIPv6,omitempty"`
+
 	// Metrics settings
 	EnableMetrics           config.Parameter `yaml:"enableMetrics,omitempty"`
 	EnableODaoMetrics       config.Parameter `yaml:"enableODaoMetrics,omitempty"`
@@ -343,6 +346,17 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			}},
 		},
 
+		EnableIPv6: config.Parameter{
+			ID:                 "enableIPv6",
+			Name:               "Enable IPv6",
+			Description:        "Enable IPv6 support for the Docker network used by the Smart Node. Enable this if your machine only has an IPv6 address, or if you want your Ethereum clients to communicate over IPv6.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Alertmanager, config.ContainerID_Exporter, config.ContainerID_MevBoost, config.ContainerID_CommitBoost},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		EnableMetrics: config.Parameter{
 			ID:                 "enableMetrics",
 			Name:               "Enable Metrics",
@@ -558,6 +572,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 		&cfg.ConsensusClientMode,
 		&cfg.ConsensusClient,
 		&cfg.ExternalConsensusClient,
+		&cfg.EnableIPv6,
 		&cfg.EnableMetrics,
 		&cfg.EnableODaoMetrics,
 		&cfg.EnableBitflyNodeMetrics,
@@ -1305,6 +1320,12 @@ func (cfg *RocketPoolConfig) GetECAdditionalFlags() (string, error) {
 	}
 
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
+}
+
+// IsIPv6Enabled returns true if IPv6 support is enabled for the Docker network.
+// Used by text/template to conditionally add enable_ipv6 to compose network definitions.
+func (cfg *RocketPoolConfig) IsIPv6Enabled() bool {
+	return cfg.EnableIPv6.Value.(bool)
 }
 
 // Used by text/template to format eth1.yml
