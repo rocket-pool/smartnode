@@ -9,6 +9,7 @@ import (
 	megapoolroutes "github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	minipoolroutes "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	networkroutes "github.com/rocket-pool/smartnode/rocketpool/api/network"
+	noderoutes "github.com/rocket-pool/smartnode/rocketpool/api/node"
 	odaoroutes "github.com/rocket-pool/smartnode/rocketpool/api/odao"
 	pdaoroutes "github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	queueroutes "github.com/rocket-pool/smartnode/rocketpool/api/queue"
@@ -28,6 +29,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
 	megapoolroutes.RegisterRoutes(mux, c)
 	minipoolroutes.RegisterRoutes(mux, c)
 	networkroutes.RegisterRoutes(mux, c)
+	noderoutes.RegisterRoutes(mux, c)
 	odaoroutes.RegisterRoutes(mux, c)
 	pdaoroutes.RegisterRoutes(mux, c)
 	queueroutes.RegisterRoutes(mux, c)
