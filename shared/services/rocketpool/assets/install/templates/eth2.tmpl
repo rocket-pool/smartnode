@@ -31,10 +31,20 @@ services:
     ports:
       - "{{$p2p}}:{{$p2p}}/udp"
       - "{{$p2p}}:{{$p2p}}/tcp"
+      {{- if .IsIPv6Enabled}}
+      - "[::]:{{$p2p}}:{{$p2p}}/udp"
+      - "[::]:{{$p2p}}:{{$p2p}}/tcp"
+      {{- end}}
       {{- if eq .ConsensusClient.String "lighthouse"}}
       - "{{.Lighthouse.P2pQuicPort}}:{{.Lighthouse.P2pQuicPort}}/udp"
+      {{- if .IsIPv6Enabled}}
+      - "[::]:{{.Lighthouse.P2pQuicPort}}:{{.Lighthouse.P2pQuicPort}}/udp"
+      {{- end}}
       {{- else if eq .ConsensusClient.String "prysm"}}
       - "{{.Prysm.P2pQuicPort}}:{{.Prysm.P2pQuicPort}}/udp"
+      {{- if .IsIPv6Enabled}}
+      - "[::]:{{.Prysm.P2pQuicPort}}:{{.Prysm.P2pQuicPort}}/udp"
+      {{- end}}
       {{- end}}
       {{- if and (eq .ConsensusClient.String "teku") .IsIPv6Enabled}}
       - "{{.Teku.P2pIpv6Port}}:{{.Teku.P2pIpv6Port}}/udp"

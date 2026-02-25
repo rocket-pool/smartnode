@@ -25,11 +25,11 @@ var publicIPResolvers = []struct {
 	addr     string // host:port (IP literal)
 	hostname string // special hostname that returns the caller's public IP
 }{
-	{"208.67.222.222:53", "myip.opendns.com"},             // OpenDNS primary (IPv4)
-	{"208.67.220.220:53", "myip.opendns.com"},             // OpenDNS secondary (IPv4)
-	{"216.239.32.10:53", "o-o.myaddr.l.google.com"},       // Google ns1 (IPv4)
-	{"[2620:119:35::35]:53", "myip.opendns.com"},          // OpenDNS primary (IPv6)
-	{"[2620:119:53::53]:53", "myip.opendns.com"},          // OpenDNS secondary (IPv6)
+	{"208.67.222.222:53", "myip.opendns.com"},                // OpenDNS primary (IPv4)
+	{"208.67.220.220:53", "myip.opendns.com"},                // OpenDNS secondary (IPv4)
+	{"216.239.32.10:53", "o-o.myaddr.l.google.com"},          // Google ns1 (IPv4)
+	{"[2620:119:35::35]:53", "myip.opendns.com"},             // OpenDNS primary (IPv6)
+	{"[2620:119:53::53]:53", "myip.opendns.com"},             // OpenDNS secondary (IPv6)
 	{"[2001:4860:4860::8888]:53", "o-o.myaddr.l.google.com"}, // Google ns1 (IPv6)
 }
 
