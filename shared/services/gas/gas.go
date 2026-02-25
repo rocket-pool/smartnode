@@ -106,20 +106,20 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 			}
 			maxFeeGwei = eth.WeiToGwei(maxFeeWei)
 		} else {
-			// Try to get the latest gas prices from Etherchain
-			etherchainData, err := etherchain.GetGasPrices(cfg)
+			// Try to get the latest gas prices from Etherscan
+			etherscanData, err := etherscan.GetGasPrices()
 			if err == nil {
 				// Print the Etherchain data and ask for an amount
-				maxFeeGwei = handleEtherchainGasPrices(etherchainData, gasInfo, maxPriorityFeeGwei, gasLimit)
+				maxFeeGwei = handleEtherscanGasPrices(etherscanData, gasInfo, maxPriorityFeeGwei, gasLimit)
 
 			} else {
-				// Fallback to Etherscan
+				// Fallback to Etherchain
 				// Etherscan does not have a hoodi endpoint. Fallback uses the mainnet url in all cases.
-				fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
-				etherscanData, err := etherscan.GetGasPrices()
+				fmt.Printf("%sWarning: couldn't get gas estimates from Etherscan - %s\nFalling back to Etherchain%s\n", colorYellow, err.Error(), colorReset)
+				etherchainData, err := etherchain.GetGasPrices(cfg)
 				if err == nil {
-					// Print the Etherscan data and ask for an amount
-					maxFeeGwei = handleEtherscanGasPrices(etherscanData, gasInfo, maxPriorityFeeGwei, gasLimit)
+					// Print the Etherchain data and ask for an amount
+					maxFeeGwei = handleEtherchainGasPrices(etherchainData, gasInfo, maxPriorityFeeGwei, gasLimit)
 				} else {
 					return Gas{}, fmt.Errorf("Error getting gas price suggestions: %w", err)
 				}
@@ -172,15 +172,15 @@ func GetHeadlessMaxFeeWeiWithLatestBlock(cfg *config.RocketPoolConfig, rp *rocke
 		return gasPrice, nil
 	}
 
-	etherchainData, err := etherchain.GetGasPrices(cfg)
+	etherscanData, err := etherscan.GetGasPrices()
 	if err == nil {
-		return etherchainData.RapidWei, nil
+		return eth.GweiToWei(etherscanData.FastGwei), nil
 	} else {
 		// Etherscan does not have a hoodi endpoint. Fallback uses the mainnet url in all cases.
-		fmt.Printf("%sWarning: couldn't get gas estimates from Etherchain - %s\nFalling back to Etherscan%s\n", colorYellow, err.Error(), colorReset)
-		etherscanData, err := etherscan.GetGasPrices()
+		fmt.Printf("%sWarning: couldn't get gas estimates from Etherscan - %s\nFalling back to Etherchain%s\n", colorYellow, err.Error(), colorReset)
+		etherchainData, err := etherchain.GetGasPrices(cfg)
 		if err == nil {
-			return eth.GweiToWei(etherscanData.FastGwei), nil
+			return etherchainData.FastWei, nil
 		}
 	}
 	return nil, fmt.Errorf("error getting gas estimates")
