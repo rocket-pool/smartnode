@@ -3,6 +3,7 @@ package rocketpool
 import (
 	"fmt"
 	"math/big"
+	"net/url"
 
 	"github.com/goccy/go-json"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -10,7 +11,7 @@ import (
 
 // Get RPL auction status
 func (c *Client) AuctionStatus() (api.AuctionStatusResponse, error) {
-	responseBytes, err := c.callAPI("auction status")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/auction/status", nil)
 	if err != nil {
 		return api.AuctionStatusResponse{}, fmt.Errorf("Could not get auction status: %w", err)
 	}
@@ -35,7 +36,7 @@ func (c *Client) AuctionStatus() (api.AuctionStatusResponse, error) {
 
 // Get RPL lots for auction
 func (c *Client) AuctionLots() (api.AuctionLotsResponse, error) {
-	responseBytes, err := c.callAPI("auction lots")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/auction/lots", nil)
 	if err != nil {
 		return api.AuctionLotsResponse{}, fmt.Errorf("Could not get auction lots: %w", err)
 	}
@@ -84,7 +85,7 @@ func (c *Client) AuctionLots() (api.AuctionLotsResponse, error) {
 
 // Check whether the node can create a new lot
 func (c *Client) CanCreateLot() (api.CanCreateLotResponse, error) {
-	responseBytes, err := c.callAPI("auction can-create-lot")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/auction/can-create-lot", nil)
 	if err != nil {
 		return api.CanCreateLotResponse{}, fmt.Errorf("Could not get can create lot status: %w", err)
 	}
@@ -100,7 +101,7 @@ func (c *Client) CanCreateLot() (api.CanCreateLotResponse, error) {
 
 // Create a new lot
 func (c *Client) CreateLot() (api.CreateLotResponse, error) {
-	responseBytes, err := c.callAPI("auction create-lot")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/auction/create-lot", nil)
 	if err != nil {
 		return api.CreateLotResponse{}, fmt.Errorf("Could not create lot: %w", err)
 	}
@@ -116,7 +117,10 @@ func (c *Client) CreateLot() (api.CreateLotResponse, error) {
 
 // Check whether the node can bid on a lot
 func (c *Client) CanBidOnLot(lotIndex uint64, amountWei *big.Int) (api.CanBidOnLotResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("auction can-bid-lot %d %s", lotIndex, amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/auction/can-bid-lot", url.Values{
+		"lotIndex":  {fmt.Sprintf("%d", lotIndex)},
+		"amountWei": {amountWei.String()},
+	})
 	if err != nil {
 		return api.CanBidOnLotResponse{}, fmt.Errorf("Could not get can bid on lot status: %w", err)
 	}
@@ -132,7 +136,10 @@ func (c *Client) CanBidOnLot(lotIndex uint64, amountWei *big.Int) (api.CanBidOnL
 
 // Bid on a lot
 func (c *Client) BidOnLot(lotIndex uint64, amountWei *big.Int) (api.BidOnLotResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("auction bid-lot %d %s", lotIndex, amountWei.String()))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/auction/bid-lot", url.Values{
+		"lotIndex":  {fmt.Sprintf("%d", lotIndex)},
+		"amountWei": {amountWei.String()},
+	})
 	if err != nil {
 		return api.BidOnLotResponse{}, fmt.Errorf("Could not bid on lot: %w", err)
 	}
@@ -148,7 +155,9 @@ func (c *Client) BidOnLot(lotIndex uint64, amountWei *big.Int) (api.BidOnLotResp
 
 // Check whether the node can claim RPL from a lot
 func (c *Client) CanClaimFromLot(lotIndex uint64) (api.CanClaimFromLotResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("auction can-claim-lot %d", lotIndex))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/auction/can-claim-lot", url.Values{
+		"lotIndex": {fmt.Sprintf("%d", lotIndex)},
+	})
 	if err != nil {
 		return api.CanClaimFromLotResponse{}, fmt.Errorf("Could not get can claim RPL from lot status: %w", err)
 	}
@@ -164,7 +173,9 @@ func (c *Client) CanClaimFromLot(lotIndex uint64) (api.CanClaimFromLotResponse, 
 
 // Claim RPL from a lot
 func (c *Client) ClaimFromLot(lotIndex uint64) (api.ClaimFromLotResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("auction claim-lot %d", lotIndex))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/auction/claim-lot", url.Values{
+		"lotIndex": {fmt.Sprintf("%d", lotIndex)},
+	})
 	if err != nil {
 		return api.ClaimFromLotResponse{}, fmt.Errorf("Could not claim RPL from lot: %w", err)
 	}
@@ -180,7 +191,9 @@ func (c *Client) ClaimFromLot(lotIndex uint64) (api.ClaimFromLotResponse, error)
 
 // Check whether the node can recover unclaimed RPL from a lot
 func (c *Client) CanRecoverUnclaimedRPLFromLot(lotIndex uint64) (api.CanRecoverRPLFromLotResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("auction can-recover-lot %d", lotIndex))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/auction/can-recover-lot", url.Values{
+		"lotIndex": {fmt.Sprintf("%d", lotIndex)},
+	})
 	if err != nil {
 		return api.CanRecoverRPLFromLotResponse{}, fmt.Errorf("Could not get can recover unclaimed RPL from lot status: %w", err)
 	}
@@ -196,7 +209,9 @@ func (c *Client) CanRecoverUnclaimedRPLFromLot(lotIndex uint64) (api.CanRecoverR
 
 // Recover unclaimed RPL from a lot (returning it to the auction contract)
 func (c *Client) RecoverUnclaimedRPLFromLot(lotIndex uint64) (api.RecoverRPLFromLotResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("auction recover-lot %d", lotIndex))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/auction/recover-lot", url.Values{
+		"lotIndex": {fmt.Sprintf("%d", lotIndex)},
+	})
 	if err != nil {
 		return api.RecoverRPLFromLotResponse{}, fmt.Errorf("Could not recover unclaimed RPL from lot: %w", err)
 	}

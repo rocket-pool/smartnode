@@ -55,3 +55,17 @@ func PortModes(warningOverride string) []ParameterOption {
 		Value:       RPC_OpenExternal,
 	}}
 }
+
+// RestrictedPortModes returns port mode options limited to Closed or Localhost only.
+// Used for ports that must never be exposed externally (e.g. the node API).
+func RestrictedPortModes() []ParameterOption {
+	return []ParameterOption{{
+		Name:        "Closed",
+		Description: "Do not allow connections to the port",
+		Value:       RPC_Closed,
+	}, {
+		Name:        "Open to Localhost",
+		Description: "Allow connections from this host only",
+		Value:       RPC_OpenLocalhost,
+	}}
+}

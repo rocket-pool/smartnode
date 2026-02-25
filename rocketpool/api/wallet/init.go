@@ -11,6 +11,10 @@ import (
 )
 
 func initWallet(c *cli.Context) (*api.InitWalletResponse, error) {
+	return initWalletWithPath(c, c.String("derivation-path"))
+}
+
+func initWalletWithPath(c *cli.Context, derivationPath string) (*api.InitWalletResponse, error) {
 
 	// Get services
 	w, err := services.GetWallet(c)
@@ -27,7 +31,7 @@ func initWallet(c *cli.Context) (*api.InitWalletResponse, error) {
 	}
 
 	// Get the derivation path
-	path := c.String("derivation-path")
+	path := derivationPath
 	switch path {
 	case "":
 		path = wallet.DefaultNodeKeyPath

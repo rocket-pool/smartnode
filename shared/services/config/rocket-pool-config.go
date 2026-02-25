@@ -1254,6 +1254,19 @@ func (cfg *RocketPoolConfig) GetECStopSignal() (string, error) {
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
 }
 
+// Gets the port mapping string for the node API webserver.
+// In Docker mode this always returns "127.0.0.1:PORT:PORT/tcp" so the CLI on
+// the host can reach the server.  In native mode Docker is not involved so an
+// empty string is returned.
+// Used by text/template to format node.tmpl.
+func (cfg *RocketPoolConfig) GetNodeOpenPorts() string {
+	if cfg.IsNativeMode {
+		return ""
+	}
+	port := cfg.Smartnode.APIPort.Value.(uint16)
+	return fmt.Sprintf("\"127.0.0.1:%d:%d/tcp\"", port, port)
+}
+
 // Gets the stop signal of the ec container
 // Used by text/template to format eth1.yml
 func (cfg *RocketPoolConfig) GetECOpenAPIPorts() string {

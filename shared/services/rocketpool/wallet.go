@@ -2,6 +2,7 @@ package rocketpool
 
 import (
 	"fmt"
+	"net/url"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -11,7 +12,7 @@ import (
 
 // Get wallet status
 func (c *Client) WalletStatus() (api.WalletStatusResponse, error) {
-	responseBytes, err := c.callAPI("wallet status")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/wallet/status", nil)
 	if err != nil {
 		return api.WalletStatusResponse{}, fmt.Errorf("Could not get wallet status: %w", err)
 	}
@@ -27,7 +28,7 @@ func (c *Client) WalletStatus() (api.WalletStatusResponse, error) {
 
 // Set wallet password
 func (c *Client) SetPassword(password string) (api.SetPasswordResponse, error) {
-	responseBytes, err := c.callAPI("wallet set-password", password)
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/set-password", url.Values{"password": {password}})
 	if err != nil {
 		return api.SetPasswordResponse{}, fmt.Errorf("Could not set wallet password: %w", err)
 	}
@@ -43,7 +44,7 @@ func (c *Client) SetPassword(password string) (api.SetPasswordResponse, error) {
 
 // Initialize wallet
 func (c *Client) InitWallet(derivationPath string) (api.InitWalletResponse, error) {
-	responseBytes, err := c.callAPI("wallet init --derivation-path", derivationPath)
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/init", url.Values{"derivationPath": {derivationPath}})
 	if err != nil {
 		return api.InitWalletResponse{}, fmt.Errorf("Could not initialize wallet: %w", err)
 	}
@@ -59,16 +60,16 @@ func (c *Client) InitWallet(derivationPath string) (api.InitWalletResponse, erro
 
 // Recover wallet
 func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (api.RecoverWalletResponse, error) {
-	command := "wallet recover "
+	skipStr := "false"
 	if skipValidatorKeyRecovery {
-		command += "--skip-validator-key-recovery "
+		skipStr = "true"
 	}
-	if walletIndex != 0 {
-		command += fmt.Sprintf("--wallet-index %d ", walletIndex)
-	}
-	command += "--derivation-path"
-
-	responseBytes, err := c.callAPI(command, derivationPath, mnemonic)
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/recover", url.Values{
+		"mnemonic":                 {mnemonic},
+		"skipValidatorKeyRecovery": {skipStr},
+		"derivationPath":           {derivationPath},
+		"walletIndex":              {fmt.Sprintf("%d", walletIndex)},
+	})
 	if err != nil {
 		return api.RecoverWalletResponse{}, fmt.Errorf("Could not recover wallet: %w", err)
 	}
@@ -84,12 +85,15 @@ func (c *Client) RecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, d
 
 // Search and recover wallet
 func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address, skipValidatorKeyRecovery bool) (api.SearchAndRecoverWalletResponse, error) {
-	command := "wallet search-and-recover "
+	skipStr := "false"
 	if skipValidatorKeyRecovery {
-		command += "--skip-validator-key-recovery "
+		skipStr = "true"
 	}
-
-	responseBytes, err := c.callAPI(command, mnemonic, address.Hex())
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/search-and-recover", url.Values{
+		"mnemonic":                 {mnemonic},
+		"address":                  {address.Hex()},
+		"skipValidatorKeyRecovery": {skipStr},
+	})
 	if err != nil {
 		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not search and recover wallet: %w", err)
 	}
@@ -103,18 +107,18 @@ func (c *Client) SearchAndRecoverWallet(mnemonic string, address common.Address,
 	return response, nil
 }
 
-// Recover wallet
+// Recover wallet (test, no save)
 func (c *Client) TestRecoverWallet(mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (api.RecoverWalletResponse, error) {
-	command := "wallet test-recovery "
+	skipStr := "false"
 	if skipValidatorKeyRecovery {
-		command += "--skip-validator-key-recovery "
+		skipStr = "true"
 	}
-	if walletIndex != 0 {
-		command += fmt.Sprintf("--wallet-index %d ", walletIndex)
-	}
-	command += "--derivation-path"
-
-	responseBytes, err := c.callAPI(command, derivationPath, mnemonic)
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/test-recover", url.Values{
+		"mnemonic":                 {mnemonic},
+		"skipValidatorKeyRecovery": {skipStr},
+		"derivationPath":           {derivationPath},
+		"walletIndex":              {fmt.Sprintf("%d", walletIndex)},
+	})
 	if err != nil {
 		return api.RecoverWalletResponse{}, fmt.Errorf("Could not test recover wallet: %w", err)
 	}
@@ -128,14 +132,17 @@ func (c *Client) TestRecoverWallet(mnemonic string, skipValidatorKeyRecovery boo
 	return response, nil
 }
 
-// Search and recover wallet
+// Search and recover wallet (test, no save)
 func (c *Client) TestSearchAndRecoverWallet(mnemonic string, address common.Address, skipValidatorKeyRecovery bool) (api.SearchAndRecoverWalletResponse, error) {
-	command := "wallet test-search-and-recover "
+	skipStr := "false"
 	if skipValidatorKeyRecovery {
-		command += "--skip-validator-key-recovery "
+		skipStr = "true"
 	}
-
-	responseBytes, err := c.callAPI(command, mnemonic, address.Hex())
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/test-search-and-recover", url.Values{
+		"mnemonic":                 {mnemonic},
+		"address":                  {address.Hex()},
+		"skipValidatorKeyRecovery": {skipStr},
+	})
 	if err != nil {
 		return api.SearchAndRecoverWalletResponse{}, fmt.Errorf("Could not test search and recover wallet: %w", err)
 	}
@@ -151,7 +158,7 @@ func (c *Client) TestSearchAndRecoverWallet(mnemonic string, address common.Addr
 
 // Rebuild wallet
 func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
-	responseBytes, err := c.callAPI("wallet rebuild")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/rebuild", nil)
 	if err != nil {
 		return api.RebuildWalletResponse{}, fmt.Errorf("Could not rebuild wallet: %w", err)
 	}
@@ -167,7 +174,7 @@ func (c *Client) RebuildWallet() (api.RebuildWalletResponse, error) {
 
 // Estimate the gas required to set an ENS reverse record to a name
 func (c *Client) EstimateGasSetEnsName(name string) (api.SetEnsNameResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("wallet estimate-gas-set-ens-name %s", name))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/wallet/estimate-gas-set-ens-name", url.Values{"name": {name}})
 	if err != nil {
 		return api.SetEnsNameResponse{}, fmt.Errorf("Could not get estimate-gas-set-ens-name response: %w", err)
 	}
@@ -183,7 +190,7 @@ func (c *Client) EstimateGasSetEnsName(name string) (api.SetEnsNameResponse, err
 
 // Set an ENS reverse record to a name
 func (c *Client) SetEnsName(name string) (api.SetEnsNameResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("wallet set-ens-name %s", name))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/set-ens-name", url.Values{"name": {name}})
 	if err != nil {
 		return api.SetEnsNameResponse{}, fmt.Errorf("Could not update ENS record: %w", err)
 	}
@@ -199,7 +206,7 @@ func (c *Client) SetEnsName(name string) (api.SetEnsNameResponse, error) {
 
 // Export wallet
 func (c *Client) ExportWallet() (api.ExportWalletResponse, error) {
-	responseBytes, err := c.callAPI("wallet export")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/wallet/export", nil)
 	if err != nil {
 		return api.ExportWalletResponse{}, fmt.Errorf("Could not export wallet: %w", err)
 	}
@@ -215,7 +222,7 @@ func (c *Client) ExportWallet() (api.ExportWalletResponse, error) {
 
 // Set the node address to an arbitrary address
 func (c *Client) Masquerade(address common.Address) (api.MasqueradeResponse, error) {
-	responseBytes, err := c.callAPI("wallet masquerade", address.Hex())
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/masquerade", url.Values{"address": {address.Hex()}})
 	if err != nil {
 		return api.MasqueradeResponse{}, fmt.Errorf("Could not masquerade wallet: %w", err)
 	}
@@ -231,7 +238,7 @@ func (c *Client) Masquerade(address common.Address) (api.MasqueradeResponse, err
 
 // Delete the address file, ending a masquerade
 func (c *Client) EndMasquerade() (api.EndMasqueradeResponse, error) {
-	responseBytes, err := c.callAPI("wallet end-masquerade")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/end-masquerade", nil)
 	if err != nil {
 		return api.EndMasqueradeResponse{}, fmt.Errorf("Could not end masquerade: %w", err)
 	}

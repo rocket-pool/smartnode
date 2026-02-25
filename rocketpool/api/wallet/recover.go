@@ -19,6 +19,10 @@ const (
 )
 
 func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse, error) {
+	return recoverWalletWithParams(c, mnemonic, c.Bool("skip-validator-key-recovery"), c.String("derivation-path"), c.Uint("wallet-index"))
+}
+
+func recoverWalletWithParams(c *cli.Context, mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (*api.RecoverWalletResponse, error) {
 
 	// Get services
 	w, err := services.GetWallet(c)
@@ -26,7 +30,7 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 		return nil, err
 	}
 	var rp *rocketpool.RocketPool
-	if !c.Bool("skip-validator-key-recovery") {
+	if !skipValidatorKeyRecovery {
 		if err := services.RequireRocketStorage(c); err != nil {
 			return nil, err
 		}
@@ -49,7 +53,7 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 	}
 
 	// Get the derivation path
-	path := c.String("derivation-path")
+	path := derivationPath
 	switch path {
 	case "":
 		path = wallet.DefaultNodeKeyPath
@@ -58,9 +62,6 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 	case "mew":
 		path = wallet.MyEtherWalletNodeKeyPath
 	}
-
-	// Get the wallet index
-	walletIndex := c.Uint("wallet-index")
 
 	// Recover wallet
 	if err := w.Recover(path, walletIndex, mnemonic); err != nil {
@@ -74,7 +75,7 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 	}
 	response.AccountAddress = nodeAccount.Address
 
-	if !c.Bool("skip-validator-key-recovery") {
+	if !skipValidatorKeyRecovery {
 		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, false)
 		if err != nil {
 			return nil, err
@@ -92,6 +93,10 @@ func recoverWallet(c *cli.Context, mnemonic string) (*api.RecoverWalletResponse,
 }
 
 func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Address) (*api.SearchAndRecoverWalletResponse, error) {
+	return searchAndRecoverWalletWithParams(c, mnemonic, address, c.Bool("skip-validator-key-recovery"))
+}
+
+func searchAndRecoverWalletWithParams(c *cli.Context, mnemonic string, address common.Address, skipValidatorKeyRecovery bool) (*api.SearchAndRecoverWalletResponse, error) {
 
 	// Get services
 	w, err := services.GetWallet(c)
@@ -99,7 +104,7 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 		return nil, err
 	}
 	var rp *rocketpool.RocketPool
-	if !c.Bool("skip-validator-key-recovery") {
+	if !skipValidatorKeyRecovery {
 		if err := services.RequireRocketStorage(c); err != nil {
 			return nil, err
 		}
@@ -173,7 +178,7 @@ func searchAndRecoverWallet(c *cli.Context, mnemonic string, address common.Addr
 	}
 	response.AccountAddress = nodeAccount.Address
 
-	if !c.Bool("skip-validator-key-recovery") {
+	if !skipValidatorKeyRecovery {
 		response.ValidatorKeys, err = walletutils.RecoverNodeKeys(c, rp, bc, nodeAccount.Address, w, false)
 		if err != nil {
 			return nil, err

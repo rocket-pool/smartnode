@@ -1,13 +1,16 @@
 package node
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"math/big"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -124,6 +127,15 @@ func run(c *cli.Context) error {
 	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
 	updateLog := log.NewColorLogger(UpdateColor)
+
+	// Create a context that is cancelled on SIGINT/SIGTERM so the HTTP server
+	// and other background goroutines can shut down gracefully.
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	// Start the HTTP API server.  It runs in the background for the lifetime
+	// of the daemon and serves all migrated API endpoints.
+	startHTTP(ctx, c, cfg)
 
 	// Create the state manager
 	m := state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bc, &updateLog)

@@ -410,13 +410,21 @@ func getNetworkNameFromId(networkId uint) string {
 
 }
 
+// ecStatusTimeout is the per-call deadline used when probing an EC for its
+// network ID, sync progress, or latest block.  10 seconds is long enough to
+// tolerate transient load on a healthy client while still returning quickly
+// when the client is unresponsive.
+const ecStatusTimeout = 10 * time.Second
+
 // Check the client status
 func checkEcStatus(client *ethClient) api.ClientStatus {
 
 	status := api.ClientStatus{}
 
 	// Get the NetworkId
-	networkId, err := client.NetworkID(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), ecStatusTimeout)
+	networkId, err := client.NetworkID(ctx)
+	cancel()
 	if err != nil {
 		status.Error = fmt.Sprintf("Sync progress check failed with [%s]", err.Error())
 		status.IsSynced = false
@@ -428,8 +436,10 @@ func checkEcStatus(client *ethClient) api.ClientStatus {
 		status.NetworkId = uint(networkId.Uint64())
 	}
 
-	// Get the fallback's sync progress
-	progress, err := client.SyncProgress(context.Background())
+	// Get the sync progress
+	ctx, cancel = context.WithTimeout(context.Background(), ecStatusTimeout)
+	progress, err := client.SyncProgress(ctx)
+	cancel()
 	if err != nil {
 		status.Error = fmt.Sprintf("Sync progress check failed with [%s]", err.Error())
 		status.IsSynced = false
