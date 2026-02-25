@@ -79,7 +79,6 @@ type NodeStatusResponse struct {
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
-	Alerts                       []NodeAlert       `json:"alerts"`
 	SignallingAddress            common.Address    `json:"signallingAddress"`
 	SignallingAddressFormatted   string            `json:"signallingAddressFormatted"`
 	Minipools                    []MinipoolDetails `json:"minipools"`
@@ -116,7 +115,7 @@ func (n NodeAlert) IsSuppressed() bool {
 }
 
 func (n NodeAlert) Name() string {
-	value, ok := n.Annotations["alertname"]
+	value, ok := n.Labels["alertname"]
 	if !ok {
 		return ""
 	}
