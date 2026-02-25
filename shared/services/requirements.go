@@ -264,7 +264,9 @@ func getRocketStorageLoaded(c *cli.Context) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	code, err := ec.CodeAt(context.Background(), common.HexToAddress(cfg.Smartnode.GetStorageAddress()), nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	code, err := ec.CodeAt(ctx, common.HexToAddress(cfg.Smartnode.GetStorageAddress()), nil)
 	if err != nil {
 		return false, err
 	}
@@ -477,7 +479,9 @@ func waitEthClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, err
 		}
 
 		// Get sync progress
-		progress, err := clientToCheck.SyncProgress(context.Background())
+		pollCtx, pollCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		progress, err := clientToCheck.SyncProgress(pollCtx)
+		pollCancel()
 		if err != nil {
 			return false, err
 		}
@@ -595,7 +599,9 @@ func waitBeaconClientSynced(c *cli.Context, verbose bool, timeout int64) (bool, 
 
 // Confirm the EC's latest block is within the threshold of the current system clock
 func IsSyncWithinThreshold(ec rocketpool.ExecutionClient) (bool, time.Time, error) {
-	t, err := ec.LatestBlockTime(context.Background())
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	t, err := ec.LatestBlockTime(ctx)
 	if err != nil {
 		return false, time.Time{}, err
 	}

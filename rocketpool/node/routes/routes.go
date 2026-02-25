@@ -26,6 +26,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	apiroutes.RegisterVersionRoute(mux)
 	apiroutes.RegisterWaitRoute(mux, c)
 	auctionroutes.RegisterRoutes(mux, c)
 	megapoolroutes.RegisterRoutes(mux, c)

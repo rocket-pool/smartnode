@@ -3,6 +3,7 @@ package rocketpool
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -42,9 +43,6 @@ const (
 	BackupSettingsFile       string = "user-settings-backup.yml"
 	PrometheusConfigTemplate string = "prometheus.tmpl"
 	PrometheusFile           string = "prometheus.yml"
-
-	APIContainerSuffix string = "_api"
-	APIBinPath         string = "/go/bin/rocketpool"
 
 	templatesDir                  string = "templates"
 	overrideDir                   string = "override"
@@ -531,40 +529,29 @@ func (c *Client) PrintServiceCompose(composeFiles []string) error {
 
 // Get the Rocket Pool service version
 func (c *Client) GetServiceVersion() (string, error) {
-
-	// Get service container version output
-	var cmd string
-	if c.daemonPath == "" {
-		containerName, err := c.getAPIContainerName()
-		if err != nil {
-			return "", err
-		}
-		cmd = fmt.Sprintf("docker exec %s %s --version", shellescape.Quote(containerName), shellescape.Quote(APIBinPath))
-	} else {
-		cmd = fmt.Sprintf("%s --version", shellescape.Quote(c.daemonPath))
+	type versionResponse struct {
+		Status  string `json:"status"`
+		Error   string `json:"error"`
+		Version string `json:"version"`
 	}
-	versionBytes, err := c.readOutput(cmd)
+
+	responseBytes, err := c.callHTTPAPI("GET", "/api/version", nil)
 	if err != nil {
 		return "", fmt.Errorf("Could not get Rocket Pool service version: %w", err)
 	}
-
-	// Get the version string
-	outputString := string(versionBytes)
-	elements := strings.Fields(outputString) // Split on whitespace
-	if len(elements) < 1 {
-		return "", fmt.Errorf("Could not parse Rocket Pool service version number from output '%s'", outputString)
+	var response versionResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return "", fmt.Errorf("Could not decode Rocket Pool service version response: %w", err)
 	}
-	versionString := elements[len(elements)-1]
+	if response.Error != "" {
+		return "", fmt.Errorf("Could not get Rocket Pool service version: %s", response.Error)
+	}
 
-	// Make sure it's a semantic version
-	version, err := semver.Make(versionString)
+	version, err := semver.Make(response.Version)
 	if err != nil {
-		return "", fmt.Errorf("Could not parse Rocket Pool service version number from output '%s': %w", outputString, err)
+		return "", fmt.Errorf("Could not parse Rocket Pool service version number '%s': %w", response.Version, err)
 	}
-
-	// Return the parsed semantic version (extra safety)
 	return version.String(), nil
-
 }
 
 // Increments the custom nonce parameter.
@@ -1138,7 +1125,6 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 
 	// These containers always run
 	toDeploy := []string{
-		config.ApiContainerName,
 		config.NodeContainerName,
 		config.WatchtowerContainerName,
 		config.ValidatorContainerName,
@@ -1269,14 +1255,22 @@ func (c *Client) getAPIURL() string {
 	return c.apiURL
 }
 
-// callHTTPAPI calls the node's HTTP API server.
+// callHTTPAPI calls the node's HTTP API server with a 5-minute safety timeout.
 // method is "GET" or "POST".
 // path is the URL path, e.g. "/api/node/status".
-// params are appended as query string parameters for GET or as a JSON body
-// for POST.
+// params are appended as query string parameters for GET or as a form body for POST.
 // The response body is returned as-is; callers unmarshal it the same way
 // they currently unmarshal the output of callAPI.
 func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer cancel()
+	return c.callHTTPAPICtx(ctx, method, path, params)
+}
+
+// callHTTPAPICtx is the context-aware core of callHTTPAPI.  Use it directly
+// when a tighter deadline is required (e.g. optional/informational requests
+// that must not block the user).
+func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params url.Values) ([]byte, error) {
 	base := c.getAPIURL()
 	if base == "" {
 		return nil, fmt.Errorf("node HTTP API URL is not configured (APIPort may be 0)")
@@ -1291,10 +1285,10 @@ func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, er
 		if len(params) > 0 {
 			target += "?" + params.Encode()
 		}
-		req, err = http.NewRequest(http.MethodGet, target, nil)
+		req, err = http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	case http.MethodPost:
 		body := []byte(params.Encode())
-		req, err = http.NewRequest(http.MethodPost, target, bytes.NewReader(body))
+		req, err = http.NewRequestWithContext(ctx, http.MethodPost, target, bytes.NewReader(body))
 		if err == nil {
 			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		}
@@ -1329,18 +1323,6 @@ func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, er
 	}
 
 	return responseBytes, nil
-}
-
-// Get the API container name
-func (c *Client) getAPIContainerName() (string, error) {
-	cfg, _, err := c.LoadConfig()
-	if err != nil {
-		return "", err
-	}
-	if cfg.Smartnode.ProjectName.Value == "" {
-		return "", errors.New("Rocket Pool docker project name not set")
-	}
-	return cfg.Smartnode.ProjectName.Value.(string) + APIContainerSuffix, nil
 }
 
 // Run a command and print its output

@@ -1,12 +1,14 @@
 package rocketpool
 
 import (
+	"context"
 	"encoding/hex"
 	"fmt"
 	"math/big"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -56,9 +58,13 @@ func (c *Client) NodeStatus() (api.NodeStatusResponse, error) {
 	return response, nil
 }
 
-// Get active alerts from Alertmanager
+// Get active alerts from Alertmanager.
+// Uses a short 2-second timeout: alerts are informational and displayed after
+// every command, so they must never block the user if the daemon is not yet up.
 func (c *Client) NodeAlerts() (api.NodeAlertsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/node/alerts", nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	responseBytes, err := c.callHTTPAPICtx(ctx, "GET", "/api/node/alerts", nil)
 	if err != nil {
 		return api.NodeAlertsResponse{}, fmt.Errorf("could not get node alerts: %w", err)
 	}
