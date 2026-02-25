@@ -49,6 +49,12 @@ type CommitBoostConfig struct {
 	// Titan regional relay
 	TitanRegionalRelay config.Parameter `yaml:"cbTitanRegionalEnabled,omitempty"`
 
+	// Ultra Sound filtered relay
+	UltrasoundFilteredRelay config.Parameter `yaml:"cbUltrasoundFilteredEnabled,omitempty"`
+
+	// BTCS OFAC+ relay
+	BtcsOfacRelay config.Parameter `yaml:"cbBtcsOfacEnabled,omitempty"`
+
 	// Custom relays provided by the user (comma-separated URLs)
 	CustomRelays config.Parameter `yaml:"customRelays,omitempty"`
 
@@ -134,6 +140,8 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 		BloxRouteMaxProfitRelay: generateCbRelayParameter("cbBloxRouteMaxProfitEnabled", relayMap[config.MevRelayID_BloxrouteMaxProfit]),
 		BloxRouteRegulatedRelay: generateCbRelayParameter("cbBloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
 		TitanRegionalRelay:      generateCbRelayParameter("cbTitanRegionalEnabled", relayMap[config.MevRelayID_TitanRegional]),
+		UltrasoundFilteredRelay: generateCbRelayParameter("cbUltrasoundFilteredEnabled", relayMap[config.MevRelayID_UltrasoundFiltered]),
+		BtcsOfacRelay:           generateCbRelayParameter("cbBtcsOfacEnabled", relayMap[config.MevRelayID_BTCSOfac]),
 
 		CustomRelays: config.Parameter{
 			ID:                 "customRelays",
@@ -208,6 +216,8 @@ func (cfg *CommitBoostConfig) GetParameters() []*config.Parameter {
 		&cfg.BloxRouteMaxProfitRelay,
 		&cfg.BloxRouteRegulatedRelay,
 		&cfg.TitanRegionalRelay,
+		&cfg.UltrasoundFilteredRelay,
+		&cfg.BtcsOfacRelay,
 		&cfg.CustomRelays,
 		&cfg.Port,
 		&cfg.OpenRpcPort,
@@ -298,6 +308,8 @@ func (cfg *CommitBoostConfig) getEnabledRelays() []config.MevRelay {
 		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteMaxProfitRelay, config.MevRelayID_BloxrouteMaxProfit, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.BloxRouteRegulatedRelay, config.MevRelayID_BloxrouteRegulated, currentNetwork)
 		relays = cfg.maybeAddRelay(relays, cfg.TitanRegionalRelay, config.MevRelayID_TitanRegional, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.UltrasoundFilteredRelay, config.MevRelayID_UltrasoundFiltered, currentNetwork)
+		relays = cfg.maybeAddRelay(relays, cfg.BtcsOfacRelay, config.MevRelayID_BTCSOfac, currentNetwork)
 	}
 
 	return relays
@@ -399,6 +411,30 @@ func createCommitBoostRelays() []config.MevRelay {
 				config.Network_Mainnet: "https://0x8c4ed5e24fe5c6ae21018437bde147693f68cda427cd1122cf20819c30eda7ed74f72dece09bb313f2a1855595ab677d@regional.titanrelay.xyz",
 				config.Network_Testnet: "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
 				config.Network_Devnet:  "https://0xaa58208899c6105603b74396734a6263cc7d947f444f396a90f7b7d3e65d102aec7e5e5291b27e08d02c50a050825c2f@hoodi.titanrelay.xyz",
+			},
+			Regulated: true,
+		},
+
+		// Ultra Sound (filtering)
+		{
+			ID:          config.MevRelayID_UltrasoundFiltered,
+			Name:        "Ultra Sound (filtering)",
+			Description: "The ultra sound relay is a credibly-neutral and permissionless relay — a public good from the ultrasound.money team. This is the OFAC-filtering version.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0xa1559ace749633b997cb3fdacffb890aeebdb0f5a3b6aaa7eeeaf1a38af0a8fe88b9e4b1f61f236d2e64d95733327a62@relay-filtered.ultrasound.money?id=rocketpool",
+				config.Network_Testnet: "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool",
+				config.Network_Devnet:  "https://0xb1559beef7b5ba3127485bbbb090362d9f497ba64e177ee2c8e7db74746306efad687f2cf8574e38d70067d40ef136dc@relay-filtered-hoodi.ultrasound.money?id=rocketpool",
+			},
+			Regulated: true,
+		},
+
+		// BTCS OFAC+
+		{
+			ID:          config.MevRelayID_BTCSOfac,
+			Name:        "BTCS OFAC+",
+			Description: "Select this to enable the BTCS OFAC+ regulated relay.",
+			Urls: map[config.Network]string{
+				config.Network_Mainnet: "https://0xb66921e917a8f4cfc3c52e10c1e5c77b1255693d9e6ed6f5f444b71ca4bb610f2eff4fa98178efbf4dd43a30472c497e@relay.btcs.com",
 			},
 			Regulated: true,
 		},
