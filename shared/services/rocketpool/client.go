@@ -72,17 +72,12 @@ func SyncRatioToPercent(in float64) float64 {
 type Client struct {
 	configPath         string
 	daemonPath         string
-	maxFee             float64
-	maxPrioFee         float64
-	gasLimit           uint64
-	customNonce        *big.Int
-	client             *ssh.Client
-	originalMaxFee     float64
-	originalMaxPrioFee float64
-	originalGasLimit   uint64
-	debugPrint         bool
-	ignoreSyncCheck    bool
-	forceFallbacks     bool
+	maxFee      float64
+	maxPrioFee  float64
+	gasLimit    uint64
+	customNonce *big.Int
+	client      *ssh.Client
+	debugPrint  bool
 
 	// apiURL is the base URL for the node's HTTP API server.
 	// It is derived lazily from config on first use.
@@ -116,7 +111,6 @@ func checkClientStatus(rp *Client) (bool, error) {
 
 	// Primary EC and CC are good
 	if ecMgrStatus.PrimaryClientStatus.IsSynced && bcMgrStatus.PrimaryClientStatus.IsSynced {
-		rp.SetClientStatusFlags(true, false)
 		return true, nil
 	}
 
@@ -132,7 +126,6 @@ func checkClientStatus(rp *Client) (bool, error) {
 		// Fallback EC and CC are good
 		if ecMgrStatus.FallbackClientStatus.IsSynced && bcMgrStatus.FallbackClientStatus.IsSynced {
 			fmt.Printf("%sNOTE: primary clients are not ready, using fallback clients...\n\tPrimary EC status: %s\n\tPrimary CC status: %s%s\n\n", colorYellow, primaryEcStatus, primaryBcStatus, colorReset)
-			rp.SetClientStatusFlags(true, true)
 			return true, nil
 		}
 
@@ -153,17 +146,12 @@ func NewClientFromCtx(c *cli.Context) *Client {
 
 	// Return client
 	client := &Client{
-		configPath:         os.ExpandEnv(c.GlobalString("config-path")),
-		daemonPath:         os.ExpandEnv(c.GlobalString("daemon-path")),
-		maxFee:             c.GlobalFloat64("maxFee"),
-		maxPrioFee:         c.GlobalFloat64("maxPrioFee"),
-		gasLimit:           c.GlobalUint64("gasLimit"),
-		originalMaxFee:     c.GlobalFloat64("maxFee"),
-		originalMaxPrioFee: c.GlobalFloat64("maxPrioFee"),
-		originalGasLimit:   c.GlobalUint64("gasLimit"),
-		debugPrint:         c.GlobalBool("debug"),
-		forceFallbacks:     false,
-		ignoreSyncCheck:    false,
+		configPath: os.ExpandEnv(c.GlobalString("config-path")),
+		daemonPath: os.ExpandEnv(c.GlobalString("daemon-path")),
+		maxFee:     c.GlobalFloat64("maxFee"),
+		maxPrioFee: c.GlobalFloat64("maxPrioFee"),
+		gasLimit:   c.GlobalUint64("gasLimit"),
+		debugPrint: c.GlobalBool("debug"),
 	}
 
 	if nonce, ok := c.App.Metadata["nonce"]; ok {
@@ -1035,11 +1023,6 @@ func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit 
 }
 
 // Set the flags for ignoring EC and CC sync checks and forcing fallbacks to prevent unnecessary duplication of effort by the API during CLI commands
-func (c *Client) SetClientStatusFlags(ignoreSyncCheck bool, forceFallbacks bool) {
-	c.ignoreSyncCheck = ignoreSyncCheck
-	c.forceFallbacks = forceFallbacks
-}
-
 func (c *Client) checkIfCommandExists(command string) (bool, error) {
 	// Run `type` to check for existence
 	cmd := fmt.Sprintf("type %s", command)
@@ -1348,126 +1331,6 @@ func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, er
 	return responseBytes, nil
 }
 
-// Call the Rocket Pool API
-func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
-	// Sanitize and parse the args
-	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
-
-	// Create the command to run
-	var cmd string
-	if c.daemonPath == "" {
-		containerName, err := c.getAPIContainerName()
-		if err != nil {
-			return []byte{}, err
-		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
-	} else {
-		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
-			c.daemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
-			ignoreSyncCheckFlag,
-			forceFallbackECFlag,
-			c.getGasOpts(),
-			c.getCustomNonce(),
-			args)
-	}
-
-	// Run the command
-	return c.runApiCall(cmd)
-}
-
-// Call the Rocket Pool API with some custom environment variables
-func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, otherArgs ...string) ([]byte, error) {
-	// Sanitize and parse the args
-	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
-
-	// Create the command to run
-	var cmd string
-	if c.daemonPath == "" {
-		envArgs := ""
-		for key, value := range envVars {
-			os.Setenv(key, shellescape.Quote(value))
-			envArgs += fmt.Sprintf("-e %s ", key)
-		}
-		containerName, err := c.getAPIContainerName()
-		if err != nil {
-			return []byte{}, err
-		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s %s api %s", envArgs, shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
-	} else {
-		envArgs := ""
-		for key, value := range envVars {
-			envArgs += fmt.Sprintf("%s=%s ", key, shellescape.Quote(value))
-		}
-		cmd = fmt.Sprintf("%s %s --settings %s %s %s %s %s api %s",
-			envArgs,
-			c.daemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
-			ignoreSyncCheckFlag,
-			forceFallbackECFlag,
-			c.getGasOpts(),
-			c.getCustomNonce(),
-			args)
-	}
-
-	// Run the command
-	return c.runApiCall(cmd)
-}
-
-func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, string, string) {
-	// Sanitize arguments
-	var sanitizedArgs []string
-	for arg := range strings.FieldsSeq(args) {
-		sanitizedArg := shellescape.Quote(arg)
-		sanitizedArgs = append(sanitizedArgs, sanitizedArg)
-	}
-	args = strings.Join(sanitizedArgs, " ")
-	if len(otherArgs) > 0 {
-		for _, arg := range otherArgs {
-			sanitizedArg := shellescape.Quote(arg)
-			args += fmt.Sprintf(" %s", sanitizedArg)
-		}
-	}
-
-	ignoreSyncCheckFlag := ""
-	if c.ignoreSyncCheck {
-		ignoreSyncCheckFlag = "--ignore-sync-check"
-	}
-	forceFallbacksFlag := ""
-	if c.forceFallbacks {
-		forceFallbacksFlag = "--force-fallbacks"
-	}
-
-	return ignoreSyncCheckFlag, forceFallbacksFlag, args
-}
-
-func (c *Client) runApiCall(cmd string) ([]byte, error) {
-	if c.debugPrint {
-		fmt.Println("To API:")
-		fmt.Println(cmd)
-	}
-
-	output, err := c.readOutput(cmd)
-
-	if c.debugPrint {
-		if output != nil {
-			fmt.Println("API Out:")
-			fmt.Println(string(output))
-		}
-		if err != nil {
-			fmt.Println("API Err:")
-			fmt.Println(err.Error())
-		}
-	}
-
-	// Reset the gas settings after the call
-	c.maxFee = c.originalMaxFee
-	c.maxPrioFee = c.originalMaxPrioFee
-	c.gasLimit = c.originalGasLimit
-
-	return output, err
-}
-
 // Get the API container name
 func (c *Client) getAPIContainerName() (string, error) {
 	cfg, _, err := c.LoadConfig()
@@ -1478,24 +1341,6 @@ func (c *Client) getAPIContainerName() (string, error) {
 		return "", errors.New("Rocket Pool docker project name not set")
 	}
 	return cfg.Smartnode.ProjectName.Value.(string) + APIContainerSuffix, nil
-}
-
-// Get gas price & limit flags
-func (c *Client) getGasOpts() string {
-	var opts string
-	opts += fmt.Sprintf("--maxFee %f ", c.maxFee)
-	opts += fmt.Sprintf("--maxPrioFee %f ", c.maxPrioFee)
-	opts += fmt.Sprintf("--gasLimit %d ", c.gasLimit)
-	return opts
-}
-
-func (c *Client) getCustomNonce() string {
-	// Set the custom nonce
-	nonce := ""
-	if c.customNonce != nil {
-		nonce = fmt.Sprintf("--nonce %s", c.customNonce.String())
-	}
-	return nonce
 }
 
 // Run a command and print its output

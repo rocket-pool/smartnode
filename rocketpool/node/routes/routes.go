@@ -5,6 +5,7 @@ import (
 
 	"github.com/urfave/cli"
 
+	apiroutes "github.com/rocket-pool/smartnode/rocketpool/api"
 	auctionroutes "github.com/rocket-pool/smartnode/rocketpool/api/auction"
 	megapoolroutes "github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	minipoolroutes "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
@@ -25,6 +26,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
 		w.WriteHeader(http.StatusOK)
 	})
 
+	apiroutes.RegisterWaitRoute(mux, c)
 	auctionroutes.RegisterRoutes(mux, c)
 	megapoolroutes.RegisterRoutes(mux, c)
 	minipoolroutes.RegisterRoutes(mux, c)
