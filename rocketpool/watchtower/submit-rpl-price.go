@@ -402,11 +402,28 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	if hasSubmittedPastBlock || lastSubmissionBlock == 0 || !eventFound {
 		// If the node participated in consensus, find the next submission target
 		var targetBlockHeader *types.Header
-		_, nextSubmissionTime, targetBlockHeader, err = utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
+		var validTarget bool
+		_, nextSubmissionTime, targetBlockHeader, validTarget, err = utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
 		if err != nil {
 			return err
 		}
 		targetBlockNumber = targetBlockHeader.Number.Uint64()
+		if !validTarget {
+			if targetBlockNumber == lastSubmissionBlock {
+				// No submission needed: Already submitted for this block
+				t.log.Println("Prices have already been submitted for this block")
+			}
+			if targetBlockNumber < lastSubmissionBlock {
+				t.log.Printlnf("Target block %d is behind last submission block %d", targetBlockNumber, lastSubmissionBlock)
+			}
+			return nil
+		}
+	}
+
+	if targetBlockNumber > state.ElBlockNumber {
+		// No submission needed: Target block in the future
+		t.log.Println("Not enough time has passed for the next price submission")
+		return nil
 	}
 
 	if targetBlockNumber == 0 {

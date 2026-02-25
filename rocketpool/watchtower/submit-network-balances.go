@@ -160,22 +160,25 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 	// Log
 	t.log.Println("Checking for network balance checkpoint...")
-	slotNumber, targetSlotTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
+	slotNumber, targetSlotTime, targetBlockHeader, validTarget, err := utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
 	if err != nil {
 		return err
 	}
 	targetBlockNumber := targetBlockHeader.Number.Uint64()
-
-	if targetBlockNumber > state.ElBlockNumber || targetBlockNumber == lastSubmissionBlock {
-		if targetBlockNumber > state.ElBlockNumber {
-			// No submission needed: Target block in the future
-			t.log.Println("not enough time has passed for the next price/balances submission")
-			return nil
-		}
+	if !validTarget {
 		if targetBlockNumber == lastSubmissionBlock {
 			// No submission needed: Already submitted for this block
-			t.log.Println("balances have already been submitted for this block")
+			t.log.Println("Balances have already been submitted for this block")
 		}
+		if targetBlockNumber < lastSubmissionBlock {
+			t.log.Printlnf("Target block %d is behind last submission block %d", targetBlockNumber, lastSubmissionBlock)
+		}
+		return nil
+	}
+
+	if targetBlockNumber > state.ElBlockNumber {
+		// No submission needed: Target block in the future
+		t.log.Println("Not enough time has passed for the next balances submission")
 		return nil
 	}
 
