@@ -23,7 +23,7 @@ type CommitBoostConfigPage struct {
 	titanRegionalBox        *parameterizedFormItem
 	ultrasoundFilteredBox   *parameterizedFormItem
 	btcsOfacBox             *parameterizedFormItem
-}
+} 
 
 // Creates a new page for the Commit-Boost settings
 func NewCommitBoostConfigPage(home *settingsHome) *CommitBoostConfigPage {
