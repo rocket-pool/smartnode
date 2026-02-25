@@ -24,7 +24,7 @@ func NewSmartnodeConfigPage(home *settingsHome) *SmartnodeConfigPage {
 	configPage.page = newPage(
 		home.homePage,
 		"settings-smartnode",
-		"Smartnode and TX Fees",
+		"Smart Node and TX Fees",
 		"Select this to configure the settings for the Smart Node itself, including the defaults and limits on transaction fees.",
 		configPage.layout.grid,
 	)
@@ -67,7 +67,8 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	})
 
 	// Set up the form items
-	formItems := createParameterizedFormItems(masterConfig.Smartnode.GetParameters(), layout.descriptionBox)
+	params := append(masterConfig.Smartnode.GetParameters(), &masterConfig.EnableIPv6, &masterConfig.Alertmanager.ShowAlertsOnCLI)
+	formItems := createParameterizedFormItems(params, layout.descriptionBox)
 	for _, formItem := range formItems {
 		layout.form.AddFormItem(formItem.item)
 		layout.parameters[formItem.item] = formItem
