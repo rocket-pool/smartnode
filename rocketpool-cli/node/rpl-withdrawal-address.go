@@ -144,14 +144,14 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 
 	// Log & return
 	if !c.Bool("force") {
-		stakeUrl := ""
+		nodeManagerUrl := ""
 		config, _, err := rp.LoadConfig()
 		if err == nil {
-			stakeUrl = config.Smartnode.GetStakeUrl()
+			nodeManagerUrl = config.Smartnode.GetNodeManagerUrl() + "/rpl-withdrawal-address"
 		}
-		if stakeUrl != "" {
+		if nodeManagerUrl != "" {
 			fmt.Printf("The node's RPL withdrawal address update to %s is now pending.\n"+
-				"To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddressString, stakeUrl)
+				"To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddressString, nodeManagerUrl)
 		} else {
 			fmt.Printf("The node's RPL withdrawal address update to %s is now pending.\n"+
 				"To confirm it, please visit the Rocket Pool website.", withdrawalAddressString)

@@ -129,14 +129,14 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 
 	// Log & return
 	if !c.Bool("force") {
-		stakeUrl := ""
+		nodeManagerUrl := ""
 		config, _, err := rp.LoadConfig()
 		if err == nil {
-			stakeUrl = config.Smartnode.GetStakeUrl()
+			nodeManagerUrl = config.Smartnode.GetNodeManagerUrl() + "/primary-withdrawal-address"
 		}
-		if stakeUrl != "" {
+		if nodeManagerUrl != "" {
 			fmt.Printf("The node's primary withdrawal address update to %s is now pending.\n"+
-				"To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddressString, stakeUrl)
+				"To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddressString, nodeManagerUrl)
 		} else {
 			fmt.Printf("The node's primary withdrawal address update to %s is now pending.\n"+
 				"To confirm it, please visit the Rocket Pool website.", withdrawalAddressString)
