@@ -2,6 +2,7 @@ package rocketpool
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -11,7 +12,7 @@ import (
 
 // Get security council status
 func (c *Client) SecurityStatus() (api.SecurityStatusResponse, error) {
-	responseBytes, err := c.callAPI("security status")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/status", nil)
 	if err != nil {
 		return api.SecurityStatusResponse{}, fmt.Errorf("Could not get security council status: %w", err)
 	}
@@ -27,7 +28,7 @@ func (c *Client) SecurityStatus() (api.SecurityStatusResponse, error) {
 
 // Get the security council members
 func (c *Client) SecurityMembers() (api.SecurityMembersResponse, error) {
-	responseBytes, err := c.callAPI("security members")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/members", nil)
 	if err != nil {
 		return api.SecurityMembersResponse{}, fmt.Errorf("Could not get security council members: %w", err)
 	}
@@ -43,7 +44,7 @@ func (c *Client) SecurityMembers() (api.SecurityMembersResponse, error) {
 
 // Get the security council proposals
 func (c *Client) SecurityProposals() (api.SecurityProposalsResponse, error) {
-	responseBytes, err := c.callAPI("security proposals")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/proposals", nil)
 	if err != nil {
 		return api.SecurityProposalsResponse{}, fmt.Errorf("Could not get security council proposals: %w", err)
 	}
@@ -59,7 +60,7 @@ func (c *Client) SecurityProposals() (api.SecurityProposalsResponse, error) {
 
 // Get details of a proposal
 func (c *Client) SecurityProposal(id uint64) (api.SecurityProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security proposal-details %d", id))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/proposal-details", url.Values{"id": {fmt.Sprintf("%d", id)}})
 	if err != nil {
 		return api.SecurityProposalResponse{}, fmt.Errorf("Could not get security council proposal: %w", err)
 	}
@@ -72,6 +73,9 @@ func (c *Client) SecurityProposal(id uint64) (api.SecurityProposalResponse, erro
 	}
 	return response, nil
 }
+
+// NOTE: ProposeInvite/ProposeKick/ProposeKickMulti/ProposeReplace do not have
+// server-side handlers in the security API package; they remain on callAPI.
 
 // Check whether the node can propose inviting a new member
 func (c *Client) SecurityCanProposeInvite(memberId string, memberAddress common.Address) (api.SecurityCanProposeInviteResponse, error) {
@@ -107,7 +111,7 @@ func (c *Client) SecurityProposeInvite(memberId string, memberAddress common.Add
 
 // Check whether the node can propose to leave the security council
 func (c *Client) SecurityProposeLeave() (api.SecurityProposeLeaveResponse, error) {
-	responseBytes, err := c.callAPI("security propose-leave")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/security/propose-leave", nil)
 	if err != nil {
 		return api.SecurityProposeLeaveResponse{}, fmt.Errorf("Could not get security-propose-leave status: %w", err)
 	}
@@ -123,7 +127,7 @@ func (c *Client) SecurityProposeLeave() (api.SecurityProposeLeaveResponse, error
 
 // Check whether the node can propose leaving the security council
 func (c *Client) SecurityCanProposeLeave() (api.SecurityCanProposeLeaveResponse, error) {
-	responseBytes, err := c.callAPI("security can-propose-leave")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/can-propose-leave", nil)
 	if err != nil {
 		return api.SecurityCanProposeLeaveResponse{}, fmt.Errorf("Could not get security-can-propose-leave status: %w", err)
 	}
@@ -175,7 +179,6 @@ func (c *Client) SecurityCanProposeKickMulti(addresses []common.Address) (api.Se
 	for i, address := range addresses {
 		addressStrings[i] = address.Hex()
 	}
-
 	responseBytes, err := c.callAPI(fmt.Sprintf("security can-propose-kick-multi %s", strings.Join(addressStrings, ",")))
 	if err != nil {
 		return api.SecurityCanProposeKickMultiResponse{}, fmt.Errorf("Could not get security-can-propose-kick-multi status: %w", err)
@@ -196,7 +199,6 @@ func (c *Client) SecurityProposeKickMulti(addresses []common.Address) (api.Secur
 	for i, address := range addresses {
 		addressStrings[i] = address.Hex()
 	}
-
 	responseBytes, err := c.callAPI(fmt.Sprintf("security propose-kick-multi %s", strings.Join(addressStrings, ",")))
 	if err != nil {
 		return api.SecurityProposeKickMultiResponse{}, fmt.Errorf("Could not propose kicking multiple security council members: %w", err)
@@ -211,7 +213,7 @@ func (c *Client) SecurityProposeKickMulti(addresses []common.Address) (api.Secur
 	return response, nil
 }
 
-// Check whether the node can propose replacing someone on the security council with another member
+// Check whether the node can propose replacing someone on the security council
 func (c *Client) SecurityCanProposeReplace(existingAddress common.Address, newID string, newAddress common.Address) (api.SecurityCanProposeReplaceResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("security can-propose-replace-member %s", existingAddress.Hex()), newID, newAddress.Hex())
 	if err != nil {
@@ -219,7 +221,7 @@ func (c *Client) SecurityCanProposeReplace(existingAddress common.Address, newID
 	}
 	var response api.SecurityCanProposeReplaceResponse
 	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.SecurityCanProposeReplaceResponse{}, fmt.Errorf("Could not decode protocol DAO can-propose-replace-member-of-security-council response: %w", err)
+		return api.SecurityCanProposeReplaceResponse{}, fmt.Errorf("Could not decode security-can-propose-replace response: %w", err)
 	}
 	if response.Error != "" {
 		return api.SecurityCanProposeReplaceResponse{}, fmt.Errorf("Could not get security-can-propose-replace status: %s", response.Error)
@@ -227,7 +229,7 @@ func (c *Client) SecurityCanProposeReplace(existingAddress common.Address, newID
 	return response, nil
 }
 
-// Propose replacing someone on the security council with another member
+// Propose replacing someone on the security council
 func (c *Client) SecurityProposeReplace(existingAddress common.Address, newID string, newAddress common.Address) (api.SecurityProposeReplaceResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("security propose-replace-member %s", existingAddress.Hex()), newID, newAddress.Hex())
 	if err != nil {
@@ -245,7 +247,7 @@ func (c *Client) SecurityProposeReplace(existingAddress common.Address, newID st
 
 // Check whether the node can cancel a proposal
 func (c *Client) SecurityCanCancelProposal(proposalId uint64) (api.SecurityCanCancelProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security can-cancel-proposal %d", proposalId))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/can-cancel-proposal", url.Values{"id": {fmt.Sprintf("%d", proposalId)}})
 	if err != nil {
 		return api.SecurityCanCancelProposalResponse{}, fmt.Errorf("Could not get security-can-cancel-proposal status: %w", err)
 	}
@@ -261,7 +263,7 @@ func (c *Client) SecurityCanCancelProposal(proposalId uint64) (api.SecurityCanCa
 
 // Cancel a proposal made by the node
 func (c *Client) SecurityCancelProposal(proposalId uint64) (api.SecurityCancelProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security cancel-proposal %d", proposalId))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/security/cancel-proposal", url.Values{"id": {fmt.Sprintf("%d", proposalId)}})
 	if err != nil {
 		return api.SecurityCancelProposalResponse{}, fmt.Errorf("Could not cancel security council proposal: %w", err)
 	}
@@ -277,7 +279,7 @@ func (c *Client) SecurityCancelProposal(proposalId uint64) (api.SecurityCancelPr
 
 // Check whether the node can vote on a proposal
 func (c *Client) SecurityCanVoteOnProposal(proposalId uint64) (api.SecurityCanVoteOnProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security can-vote-proposal %d", proposalId))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/can-vote-proposal", url.Values{"id": {fmt.Sprintf("%d", proposalId)}})
 	if err != nil {
 		return api.SecurityCanVoteOnProposalResponse{}, fmt.Errorf("Could not get security-can-vote-on-proposal status: %w", err)
 	}
@@ -293,7 +295,14 @@ func (c *Client) SecurityCanVoteOnProposal(proposalId uint64) (api.SecurityCanVo
 
 // Vote on a proposal
 func (c *Client) SecurityVoteOnProposal(proposalId uint64, support bool) (api.SecurityVoteOnProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security vote-proposal %d %t", proposalId, support))
+	supportStr := "false"
+	if support {
+		supportStr = "true"
+	}
+	responseBytes, err := c.callHTTPAPI("POST", "/api/security/vote-proposal", url.Values{
+		"id":      {fmt.Sprintf("%d", proposalId)},
+		"support": {supportStr},
+	})
 	if err != nil {
 		return api.SecurityVoteOnProposalResponse{}, fmt.Errorf("Could not vote on security council proposal: %w", err)
 	}
@@ -309,7 +318,7 @@ func (c *Client) SecurityVoteOnProposal(proposalId uint64, support bool) (api.Se
 
 // Check whether the node can execute a proposal
 func (c *Client) SecurityCanExecuteProposal(proposalId uint64) (api.SecurityCanExecuteProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security can-execute-proposal %d", proposalId))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/can-execute-proposal", url.Values{"id": {fmt.Sprintf("%d", proposalId)}})
 	if err != nil {
 		return api.SecurityCanExecuteProposalResponse{}, fmt.Errorf("Could not get security-can-execute-proposal status: %w", err)
 	}
@@ -325,7 +334,7 @@ func (c *Client) SecurityCanExecuteProposal(proposalId uint64) (api.SecurityCanE
 
 // Execute a proposal
 func (c *Client) SecurityExecuteProposal(proposalId uint64) (api.SecurityExecuteProposalResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security execute-proposal %d", proposalId))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/security/execute-proposal", url.Values{"id": {fmt.Sprintf("%d", proposalId)}})
 	if err != nil {
 		return api.SecurityExecuteProposalResponse{}, fmt.Errorf("Could not execute security council proposal: %w", err)
 	}
@@ -341,7 +350,7 @@ func (c *Client) SecurityExecuteProposal(proposalId uint64) (api.SecurityExecute
 
 // Check whether the node can join the security council
 func (c *Client) SecurityCanJoin() (api.SecurityCanJoinResponse, error) {
-	responseBytes, err := c.callAPI("security can-join")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/can-join", nil)
 	if err != nil {
 		return api.SecurityCanJoinResponse{}, fmt.Errorf("Could not get security-can-join status: %w", err)
 	}
@@ -357,7 +366,7 @@ func (c *Client) SecurityCanJoin() (api.SecurityCanJoinResponse, error) {
 
 // Join the security council (requires an executed invite proposal)
 func (c *Client) SecurityJoin() (api.SecurityJoinResponse, error) {
-	responseBytes, err := c.callAPI("security join")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/security/join", nil)
 	if err != nil {
 		return api.SecurityJoinResponse{}, fmt.Errorf("Could not join security council: %w", err)
 	}
@@ -373,7 +382,7 @@ func (c *Client) SecurityJoin() (api.SecurityJoinResponse, error) {
 
 // Check whether the node can leave the security council
 func (c *Client) SecurityCanLeave() (api.SecurityCanLeaveResponse, error) {
-	responseBytes, err := c.callAPI("security can-leave")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/can-leave", nil)
 	if err != nil {
 		return api.SecurityCanLeaveResponse{}, fmt.Errorf("Could not get security-can-leave status: %w", err)
 	}
@@ -389,7 +398,7 @@ func (c *Client) SecurityCanLeave() (api.SecurityCanLeaveResponse, error) {
 
 // Leave the security council (requires an executed leave proposal)
 func (c *Client) SecurityLeave() (api.SecurityLeaveResponse, error) {
-	responseBytes, err := c.callAPI("security leave")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/security/leave", nil)
 	if err != nil {
 		return api.SecurityLeaveResponse{}, fmt.Errorf("Could not leave security council: %w", err)
 	}
@@ -405,7 +414,11 @@ func (c *Client) SecurityLeave() (api.SecurityLeaveResponse, error) {
 
 // Check whether the node can propose updating a PDAO setting
 func (c *Client) SecurityCanProposeSetting(contract string, setting string, value string) (api.SecurityCanProposeSettingResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security can-propose-setting %s %s %s", contract, setting, value))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/security/can-propose-setting", url.Values{
+		"contractName": {contract},
+		"settingName":  {setting},
+		"value":        {value},
+	})
 	if err != nil {
 		return api.SecurityCanProposeSettingResponse{}, fmt.Errorf("Could not get security-can-propose-setting: %w", err)
 	}
@@ -421,7 +434,11 @@ func (c *Client) SecurityCanProposeSetting(contract string, setting string, valu
 
 // Propose updating a PDAO setting
 func (c *Client) SecurityProposeSetting(contract string, setting string, value string) (api.SecurityProposeSettingResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("security propose-setting %s %s %s", contract, setting, value))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/security/propose-setting", url.Values{
+		"contractName": {contract},
+		"settingName":  {setting},
+		"value":        {value},
+	})
 	if err != nil {
 		return api.SecurityProposeSettingResponse{}, fmt.Errorf("Could not propose security council setting: %w", err)
 	}
