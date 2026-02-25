@@ -11,7 +11,7 @@ import (
 // Deletes the data folder including the wallet file, password file, and all validator keys.
 // Don't use this unless you have a very good reason to do it (such as switching from a Testnet to Mainnet).
 func (c *Client) TerminateDataFolder() (api.TerminateDataFolderResponse, error) {
-	responseBytes, err := c.callAPI("service terminate-data-folder")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/service/terminate-data-folder", nil)
 	if err != nil {
 		return api.TerminateDataFolderResponse{}, fmt.Errorf("Could not delete data folder: %w", err)
 	}
@@ -27,7 +27,7 @@ func (c *Client) TerminateDataFolder() (api.TerminateDataFolderResponse, error) 
 
 // Gets the status of the configured Execution and Beacon clients
 func (c *Client) GetClientStatus() (api.ClientStatusResponse, error) {
-	responseBytes, err := c.callAPI("service get-client-status")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/service/get-client-status", nil)
 	if err != nil {
 		return api.ClientStatusResponse{}, fmt.Errorf("Could not get client status: %w", err)
 	}
@@ -43,7 +43,7 @@ func (c *Client) GetClientStatus() (api.ClientStatusResponse, error) {
 
 // Restarts the Validator client
 func (c *Client) RestartVc() (api.RestartVcResponse, error) {
-	responseBytes, err := c.callAPI("service restart-vc")
+	responseBytes, err := c.callHTTPAPI("POST", "/api/service/restart-vc", nil)
 	if err != nil {
 		return api.RestartVcResponse{}, fmt.Errorf("Could not get restart-vc status: %w", err)
 	}
