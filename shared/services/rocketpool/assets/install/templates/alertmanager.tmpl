@@ -21,5 +21,8 @@ services:
       - net
 networks:
   net:
+    {{- if .IsIPv6Enabled}}
+    enable_ipv6: true
+    {{- end}}
 volumes:
   alertmanager-data:
