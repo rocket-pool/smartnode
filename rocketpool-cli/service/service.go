@@ -129,7 +129,6 @@ func printPatchNotes(c *cli.Context) {
 	fmt.Println("This Smart Node version is compatible with the Saturn 1 upgrade. The upgrade took place on Feb 18, 2026 00:00:00 UTC.")
 	fmt.Println("For more information about the biggest Rocket Pool upgrade ever, please see the official documentation: https://docs.rocketpool.net/upgrades/saturn-1/whats-new")
 	fmt.Println()
-	
 
 	fmt.Printf("%s=== IMPORTANT NOTICE ===%s\n", colorYellow, colorReset)
 	fmt.Println("Starting with v1.19.1, the Smart Node includes an automatic task that will")
