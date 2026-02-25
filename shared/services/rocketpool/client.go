@@ -2,17 +2,21 @@ package rocketpool
 
 import (
 	"bufio"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
 	"io/fs"
 	"math"
 	"math/big"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/fatih/color"
@@ -79,6 +83,11 @@ type Client struct {
 	debugPrint         bool
 	ignoreSyncCheck    bool
 	forceFallbacks     bool
+
+	// apiURL is the base URL for the node's HTTP API server.
+	// It is derived lazily from config on first use.
+	apiURL     string
+	apiURLOnce sync.Once
 }
 
 func getClientStatusString(clientStatus api.ClientStatus) string {
@@ -1258,6 +1267,85 @@ func (c *Client) composeAddons(cfg *config.RocketPoolConfig, rocketpoolDir strin
 
 	return deployedContainers, nil
 
+}
+
+// getAPIURL returns the base URL for the node's HTTP API server, e.g.
+// "http://127.0.0.1:8280".  The result is derived from config and cached.
+func (c *Client) getAPIURL() string {
+	c.apiURLOnce.Do(func() {
+		cfg, _, err := c.LoadConfig()
+		if err != nil {
+			return
+		}
+		port, ok := cfg.Smartnode.APIPort.Value.(uint16)
+		if !ok || port == 0 {
+			return
+		}
+		c.apiURL = fmt.Sprintf("http://127.0.0.1:%d", port)
+	})
+	return c.apiURL
+}
+
+// callHTTPAPI calls the node's HTTP API server.
+// method is "GET" or "POST".
+// path is the URL path, e.g. "/api/node/status".
+// params are appended as query string parameters for GET or as a JSON body
+// for POST.
+// The response body is returned as-is; callers unmarshal it the same way
+// they currently unmarshal the output of callAPI.
+func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, error) {
+	base := c.getAPIURL()
+	if base == "" {
+		return nil, fmt.Errorf("node HTTP API URL is not configured (APIPort may be 0)")
+	}
+
+	target := base + path
+
+	var req *http.Request
+	var err error
+	switch method {
+	case http.MethodGet:
+		if len(params) > 0 {
+			target += "?" + params.Encode()
+		}
+		req, err = http.NewRequest(http.MethodGet, target, nil)
+	case http.MethodPost:
+		body := []byte(params.Encode())
+		req, err = http.NewRequest(http.MethodPost, target, bytes.NewReader(body))
+		if err == nil {
+			req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		}
+	default:
+		return nil, fmt.Errorf("unsupported HTTP method: %s", method)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("error building HTTP request for %s %s: %w", method, path, err)
+	}
+
+	if c.debugPrint {
+		fmt.Printf("HTTP API: %s %s\n", method, target)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error calling HTTP API %s %s: %w", method, path, err)
+	}
+	defer resp.Body.Close()
+
+	responseBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("error reading HTTP API response for %s %s: %w", method, path, err)
+	}
+
+	if c.debugPrint {
+		fmt.Printf("HTTP API response (%d): %s\n", resp.StatusCode, string(responseBytes))
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("HTTP API %s %s returned status %d: %s", method, path, resp.StatusCode, string(responseBytes))
+	}
+
+	return responseBytes, nil
 }
 
 // Call the Rocket Pool API
