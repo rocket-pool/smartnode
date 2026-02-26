@@ -135,7 +135,6 @@ func NewCommitBoostConfig(cfg *RocketPoolConfig) *CommitBoostConfig {
 			}},
 		},
 
-		// Explicit relay params
 		FlashbotsRelay:          generateCbRelayParameter("cbFlashbotsEnabled", relayMap[config.MevRelayID_Flashbots]),
 		BloxRouteMaxProfitRelay: generateCbRelayParameter("cbBloxRouteMaxProfitEnabled", relayMap[config.MevRelayID_BloxrouteMaxProfit]),
 		BloxRouteRegulatedRelay: generateCbRelayParameter("cbBloxRouteRegulatedEnabled", relayMap[config.MevRelayID_BloxrouteRegulated]),
@@ -362,7 +361,6 @@ func (cfg *CommitBoostConfig) GetContainerTag() string {
 }
 
 // Create the default Commit-Boost PBS relays.
-// Following hyperdrive's approach, only regulated/compliant relays are included.
 func createCommitBoostRelays() []config.MevRelay {
 	relays := []config.MevRelay{
 		// Flashbots
