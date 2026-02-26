@@ -82,12 +82,13 @@ func getStatus(c *cli.Context) error {
 	// Account address & balances
 	fmt.Printf("%s=== Account and Balances ===%s\n", colorGreen, colorReset)
 	fmt.Printf(
-		"The node %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
+		"The node %s%s%s has a balance of %.6f ETH, %.6f RPL, and %.6f rETH.\n",
 		colorBlue,
 		status.AccountAddressFormatted,
 		colorReset,
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6),
-		math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6))
+		math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6),
+		math.RoundDown(eth.WeiToEth(status.AccountBalances.RETH), 6))
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 		fmt.Printf("The node has a balance of %.6f old RPL which can be swapped for new RPL.\n", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))
 	}
