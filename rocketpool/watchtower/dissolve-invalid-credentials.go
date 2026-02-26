@@ -97,7 +97,8 @@ func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *
 			// Fetch the validator from the beacon state to compare credentials
 			validatorFromState, err := t.bc.GetValidatorStatus(types.ValidatorPubkey(validator.Pubkey), nil)
 			if err != nil {
-				t.log.Printlnf("Error fetching validator %s from beacon state: %s", validatorFromState.Index, err)
+				pubkey := types.BytesToValidatorPubkey(validator.Pubkey).String()
+				t.log.Printlnf("error getting the beacon state for validator 0x%s on megapool %s: %s", pubkey, validator.MegapoolAddress, err)
 				continue
 			}
 			if !validatorFromState.Exists {
