@@ -275,7 +275,7 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 		AlertEnabled_PortConnectivityCheck: config.Parameter{
 			ID:                 "alertEnabled_PortConnectivityCheck",
 			Name:               "Enable Port Connectivity Check",
-			Description:        "Periodically check whether the execution client P2P port (default 30303) and the beacon chain P2P port (default 9001) are reachable from the internet, and send an alert if either port is not accessible.",
+			Description:        "Periodically check whether the execution/consensus client P2P ports (default 30303 and 9001) are reachable from the internet, and send an alert if either port is not accessible.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: true},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
