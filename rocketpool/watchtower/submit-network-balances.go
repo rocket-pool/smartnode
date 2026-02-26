@@ -536,11 +536,11 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 				// Convert the validator index to a uint64
 				validatorIndex, err := strconv.ParseUint(megapoolValidatorDetails.Index, 10, 64)
 				if err != nil {
-					fmt.Printf("An error occurred while converting the validator index to a uint64: %s\n", err)
+					return megapoolBalanceDetails, fmt.Errorf("error converting validator index %s to uint64: %w", megapoolValidatorDetails.Index, err)
 				}
 				_, _, _, withdrawal, _, err := services.FindWithdrawalBlockAndArrayPosition(searchWithdrawSlot, validatorIndex, t.bc)
 				if err != nil {
-					fmt.Printf("An error occurred while searching for the withdrawn balance: %s\n", err)
+					return megapoolBalanceDetails, fmt.Errorf("error finding withdrawal for validator %d: %w", validatorIndex, err)
 				}
 				// Track the withdrawn balance so we can discount it from the pending rewards on the contract
 				totalWithdrawnBalance.Add(totalWithdrawnBalance, eth.GweiToWei(float64(withdrawal.Amount)))

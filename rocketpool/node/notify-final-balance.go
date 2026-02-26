@@ -194,7 +194,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 
 	withdrawalProof, proofSlot, stateUsed, err := services.GetWithdrawalProofForSlot(t.c, slot, validatorIndex)
 	if err != nil {
-		fmt.Printf("An error occurred: %s\n", err)
+		return fmt.Errorf("error getting withdrawal proof for validator 0x%s (index: %d): %w", validatorPubkey.String(), validatorIndex, err)
 	}
 	t.log.Printlnf("The Beacon WithdrawalSlot for validator ID %d is: %d", validatorInfo.ValidatorId, withdrawalProof.WithdrawalSlot)
 
