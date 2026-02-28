@@ -8,6 +8,9 @@ import (
 	log "github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
+// TestCheckPortConnectivity_Run verifies that the port connectivity task correctly
+// decides whether to perform network checks based on the client modes and global
+// alerting settings.
 func TestCheckPortConnectivity_Run(t *testing.T) {
 	logger := log.NewColorLogger(0)
 	tests := []struct {
@@ -99,6 +102,8 @@ func TestCheckPortConnectivity_Run(t *testing.T) {
 	}
 }
 
+// TestCheckPortConnectivity_SkipSpecificPort verifies that when one client is local
+// and another is external, only the local client's P2P port is checked.
 func TestCheckPortConnectivity_SkipSpecificPort(t *testing.T) {
 	config := cfg.NewRocketPoolConfig("", false)
 	config.ExecutionClientMode.Value = cfgtypes.Mode_External
