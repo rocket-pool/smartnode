@@ -17,6 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
+	"github.com/rocket-pool/smartnode/shared/services/connectivity"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
@@ -189,7 +190,8 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	checkPorts, err := newCheckPortConnectivity(c, log.NewColorLogger(CheckPortConnectivityColor))
+	var checkPorts *connectivity.CheckPortConnectivity
+	checkPorts, err = connectivity.NewCheckPortConnectivity(c, cfg, log.NewColorLogger(CheckPortConnectivityColor))
 	if err != nil {
 		return err
 	}
@@ -326,7 +328,7 @@ func run(c *cli.Context) error {
 			time.Sleep(taskCooldown)
 
 			// Run the port connectivity check
-			if err := checkPorts.run(); err != nil {
+			if err := checkPorts.Run(); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)

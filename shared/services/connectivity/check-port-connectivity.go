@@ -1,4 +1,4 @@
-package node
+package connectivity
 
 import (
 	"context"
@@ -13,9 +13,9 @@ import (
 
 	"github.com/urfave/cli"
 
-	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
-	"github.com/rocket-pool/smartnode/shared/services/config"
+	cfg "github.com/rocket-pool/smartnode/shared/services/config"
+	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -36,36 +36,45 @@ var publicIPResolvers = []struct {
 }
 
 // Check port connectivity task
-type checkPortConnectivity struct {
+type CheckPortConnectivity struct {
 	c   *cli.Context
 	log log.ColorLogger
-	cfg *config.RocketPoolConfig
+	cfg *cfg.RocketPoolConfig
 
 	// Track previous state to avoid flooding with repeated alerts
 	wasEth1PortOpen  bool
 	wasBeaconP2POpen bool
+
+	// Function pointers for network and alerting actions (to facilitate testing)
+	GetPublicIP                    func() (string, error)
+	IsPortReachableNATReflection   func(string, uint16) bool
+	IsPortReachableExternalService func(uint16) (bool, string, error)
+	AlertEth1P2PPortNotOpen        func(*cfg.RocketPoolConfig, uint16) error
+	AlertBeaconP2PPortNotOpen      func(*cfg.RocketPoolConfig, uint16) error
 }
 
 // Create check port connectivity task
-func newCheckPortConnectivity(c *cli.Context, logger log.ColorLogger) (*checkPortConnectivity, error) {
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-
-	return &checkPortConnectivity{
+func NewCheckPortConnectivity(c *cli.Context, config *cfg.RocketPoolConfig, logger log.ColorLogger) (*CheckPortConnectivity, error) {
+	return &CheckPortConnectivity{
 		c:   c,
 		log: logger,
-		cfg: cfg,
+		cfg: config,
 		// Assume ports are open at startup to avoid spurious alerts on first cycle
 		wasEth1PortOpen:  true,
 		wasBeaconP2POpen: true,
+
+		// Default implementations
+		GetPublicIP:                    getPublicIP,
+		IsPortReachableNATReflection:   isPortReachableNATReflection,
+		IsPortReachableExternalService: isPortReachableExternalService,
+		AlertEth1P2PPortNotOpen:        alerting.AlertEth1P2PPortNotOpen,
+		AlertBeaconP2PPortNotOpen:      alerting.AlertBeaconP2PPortNotOpen,
 	}, nil
 }
 
 // Check whether the configured execution/consensus client P2P ports are
 // reachable from the internet. Sends an alert the first time either port is detected as closed.
-func (t *checkPortConnectivity) run() error {
+func (t *CheckPortConnectivity) Run() error {
 	if t.cfg.Alertmanager.EnableAlerting.Value != true {
 		return nil
 	}
@@ -74,8 +83,8 @@ func (t *checkPortConnectivity) run() error {
 	}
 	t.log.Print("Checking port connectivity...")
 
-	isLocalEc := t.cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local
-	isLocalCc := t.cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local
+	isLocalEc := t.cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local
+	isLocalCc := t.cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local
 
 	if !isLocalEc && !isLocalCc {
 		return nil
@@ -85,19 +94,19 @@ func (t *checkPortConnectivity) run() error {
 	ccOpen := false
 	ecP2PPort := t.cfg.ExecutionCommon.P2pPort.Value.(uint16)
 	ccP2PPort := t.cfg.ConsensusCommon.P2pPort.Value.(uint16)
-	publicIP, err := getPublicIP()
+	publicIP, err := t.GetPublicIP()
 	if err == nil {
 		if isLocalEc {
-			ecOpen = isPortReachableNATReflection(publicIP, ecP2PPort)
+			ecOpen = t.IsPortReachableNATReflection(publicIP, ecP2PPort)
 		}
 		if isLocalCc {
-			ccOpen = isPortReachableNATReflection(publicIP, ccP2PPort)
+			ccOpen = t.IsPortReachableNATReflection(publicIP, ccP2PPort)
 		}
 	}
 
 	if isLocalEc && !ecOpen {
 		// Fallback to using an external service
-		ecOpen, _, err = isPortReachableExternalService(ecP2PPort)
+		ecOpen, _, err = t.IsPortReachableExternalService(ecP2PPort)
 		if err != nil {
 			return fmt.Errorf("error checking port connectivity: %w", err)
 		}
@@ -112,7 +121,7 @@ func (t *checkPortConnectivity) run() error {
 			if t.wasEth1PortOpen {
 				t.log.Printlnf("WARNING: Execution client P2P port %d is not accessible from the internet.", ecP2PPort)
 			}
-			if err := alerting.AlertEth1P2PPortNotOpen(t.cfg, ecP2PPort); err != nil {
+			if err := t.AlertEth1P2PPortNotOpen(t.cfg, ecP2PPort); err != nil {
 				t.log.Printlnf("WARNING: Could not send Eth1P2PPortNotOpen alert: %s", err.Error())
 			}
 		}
@@ -121,7 +130,7 @@ func (t *checkPortConnectivity) run() error {
 
 	if isLocalCc && !ccOpen {
 		// Fallback to using an external service
-		ccOpen, _, err = isPortReachableExternalService(ccP2PPort)
+		ccOpen, _, err = t.IsPortReachableExternalService(ccP2PPort)
 		if err != nil {
 			return fmt.Errorf("error checking port connectivity: %w", err)
 		}
@@ -136,7 +145,7 @@ func (t *checkPortConnectivity) run() error {
 			if t.wasBeaconP2POpen {
 				t.log.Printlnf("WARNING: Consensus client P2P port %d is not accessible from the internet.", ccP2PPort)
 			}
-			if err := alerting.AlertBeaconP2PPortNotOpen(t.cfg, ccP2PPort); err != nil {
+			if err := t.AlertBeaconP2PPortNotOpen(t.cfg, ccP2PPort); err != nil {
 				t.log.Printlnf("WARNING: Could not send BeaconP2PPortNotOpen alert: %s", err.Error())
 			}
 		}
