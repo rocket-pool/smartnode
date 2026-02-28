@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/mitchellh/go-homedir"
 	"golang.org/x/text/cases"
@@ -19,6 +20,9 @@ const AlertmanagerConfigFile string = "alerting/alertmanager.yml"
 // Note: Alerting rules are actually loaded by prometheus, but we control the alerting settings here.
 const AlertingRulesConfigTemplate string = "alerting/rules/default.tmpl"
 const AlertingRulesConfigFile string = "alerting/rules/default.yml"
+
+const HighStorageRulesConfigTemplate string = "alerting/rules/high-storage.tmpl"
+const HighStorageRulesConfigFile string = "alerting/rules/high-storage.yml"
 
 // Defaults
 const defaultAlertmanagerPort uint16 = 9093
@@ -372,6 +376,24 @@ func (cfg *AlertmanagerConfig) UpdateConfigurationFiles(configPath string) error
 	if err != nil {
 		return fmt.Errorf("error processing alerting rules template: %w", err)
 	}
+
+	isLocalEc := cfg.Parent.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local
+	isLocalCc := cfg.Parent.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local
+
+	// Only apply high-storage rules if at least one client is managed locally.
+	// We don't require much storage if the EC/CC are external.
+	// Note that the warning alert is still active in the default rules and this is just for critical low storage alerts.
+	if isLocalEc || isLocalCc {
+		err = cfg.processTemplate(configPath, HighStorageRulesConfigTemplate, HighStorageRulesConfigFile, "{{{", "}}}")
+		if err != nil {
+			return fmt.Errorf("error processing high-storage alerting rules template: %w", err)
+		}
+	} else {
+		if fileToRemove, err := homedir.Expand(fmt.Sprintf("%s/%s", configPath, HighStorageRulesConfigFile)); err == nil {
+			os.Remove(fileToRemove)
+		}
+	}
+
 	return nil
 }
 
