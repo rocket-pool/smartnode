@@ -86,6 +86,9 @@ func (t *CheckPortConnectivity) Run() error {
 	isLocalEc := t.cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local
 	isLocalCc := t.cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local
 
+	// Only perform checks if at least one client is managed locally.
+	// We don't check external clients because the node operator is responsible for their
+	// connectivity, and they may be behind a different firewall or NAT entirely.
 	if !isLocalEc && !isLocalCc {
 		return nil
 	}

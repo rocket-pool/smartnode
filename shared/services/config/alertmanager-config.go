@@ -380,6 +380,9 @@ func (cfg *AlertmanagerConfig) UpdateConfigurationFiles(configPath string) error
 	isLocalEc := cfg.Parent.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local
 	isLocalCc := cfg.Parent.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local
 
+	// Only apply high-storage rules if at least one client is managed locally.
+	// We don't require much storage if the EC/CC are external.
+	// Note that the warning alert is still active in the default rules and this is just for critical low storage alerts.
 	if isLocalEc || isLocalCc {
 		err = cfg.processTemplate(configPath, HighStorageRulesConfigTemplate, HighStorageRulesConfigFile, "{{{", "}}}")
 		if err != nil {
