@@ -38,9 +38,17 @@ func TestCheckPortConnectivity_Run(t *testing.T) {
 			expectNetCalls:      false,
 		},
 		{
-			name:                "local EC + external CC -> performs checks (for EC)",
+			name:                "local EC + external CC -> performs checks",
 			ecMode:              cfgtypes.Mode_Local,
 			ccMode:              cfgtypes.Mode_External,
+			enableAlerting:      true,
+			portAlertingEnabled: true,
+			expectNetCalls:      true,
+		},
+		{
+			name:                "external EC + local CC -> performs checks",
+			ecMode:              cfgtypes.Mode_External,
+			ccMode:              cfgtypes.Mode_Local,
 			enableAlerting:      true,
 			portAlertingEnabled: true,
 			expectNetCalls:      true,
