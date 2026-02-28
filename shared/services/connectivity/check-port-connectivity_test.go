@@ -80,11 +80,11 @@ func TestCheckPortConnectivity_Run(t *testing.T) {
 			task := &CheckPortConnectivity{
 				cfg:                            config,
 				log:                            logger,
-				GetPublicIP:                    mockGetPublicIP,
-				IsPortReachableNATReflection:   mockIsPortReachable,
-				IsPortReachableExternalService: mockExternalCheck,
-				AlertEth1P2PPortNotOpen:        mockAlert,
-				AlertBeaconP2PPortNotOpen:      mockAlert,
+				getPublicIP:                    mockGetPublicIP,
+				isPortReachableNATReflection:   mockIsPortReachable,
+				isPortReachableExternalService: mockExternalCheck,
+				alertEth1P2PPortNotOpen:        mockAlert,
+				alertBeaconP2PPortNotOpen:      mockAlert,
 			}
 
 			err := task.Run()
@@ -112,10 +112,10 @@ func TestCheckPortConnectivity_SkipSpecificPort(t *testing.T) {
 	task := &CheckPortConnectivity{
 		cfg: config,
 		log: log.NewColorLogger(0),
-		GetPublicIP: func() (string, error) {
+		getPublicIP: func() (string, error) {
 			return "1.2.3.4", nil
 		},
-		IsPortReachableNATReflection: func(host string, port uint16) bool {
+		isPortReachableNATReflection: func(host string, port uint16) bool {
 			if port == config.ExecutionCommon.P2pPort.Value.(uint16) {
 				ecChecked = true
 			}
@@ -124,11 +124,11 @@ func TestCheckPortConnectivity_SkipSpecificPort(t *testing.T) {
 			}
 			return true
 		},
-		IsPortReachableExternalService: func(port uint16) (bool, string, error) {
+		isPortReachableExternalService: func(port uint16) (bool, string, error) {
 			return true, "", nil
 		},
-		AlertEth1P2PPortNotOpen:   func(*cfg.RocketPoolConfig, uint16) error { return nil },
-		AlertBeaconP2PPortNotOpen: func(*cfg.RocketPoolConfig, uint16) error { return nil },
+		alertEth1P2PPortNotOpen:   func(*cfg.RocketPoolConfig, uint16) error { return nil },
+		alertBeaconP2PPortNotOpen: func(*cfg.RocketPoolConfig, uint16) error { return nil },
 	}
 
 	task.Run()
