@@ -92,18 +92,6 @@ groups:
           description: "{{ $labels.instance }} has low disk space. Currently has {{ humanize $value }} GB free."
       {{{- end }}}
 
-      {{{- if .AlertEnabled_LowDiskSpaceCritical.Value }}}
-      - alert: LowDiskSpaceCritical
-        # NOTE: 50GB taken from PruneFreeSpaceRequired in rocketpool-cli's nethermind pruning (it won't prune below 50GB)
-        expr: node_filesystem_avail_bytes{job="node", mountpoint="/"} / 1024^3 < 50
-        labels:
-          severity: critical
-          job: node
-        annotations:
-          summary: "Device {{ $labels.device }} on instance {{ $labels.instance }} has critically low disk space"
-          description: "{{ $labels.instance }} has critically low disk space. Currently has {{ humanize $value }} GB free."
-      {{{- end }}}
-
       {{{- if .AlertEnabled_OSUpdatesAvailable.Value }}}
       - alert: OSUpdatesAvailable
         expr: max(os_upgrades_pending{job="node"}) > 0

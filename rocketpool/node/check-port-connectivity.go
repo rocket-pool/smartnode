@@ -74,57 +74,74 @@ func (t *checkPortConnectivity) run() error {
 	}
 	t.log.Print("Checking port connectivity...")
 
+	isLocalEc := t.cfg.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local
+	isLocalCc := t.cfg.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local
+
+	if !isLocalEc && !isLocalCc {
+		return nil
+	}
+
 	ecOpen := false
 	ccOpen := false
 	ecP2PPort := t.cfg.ExecutionCommon.P2pPort.Value.(uint16)
 	ccP2PPort := t.cfg.ConsensusCommon.P2pPort.Value.(uint16)
 	publicIP, err := getPublicIP()
 	if err == nil {
-		ecOpen = isPortReachableNATReflection(publicIP, ecP2PPort)
-		ccOpen = isPortReachableNATReflection(publicIP, ccP2PPort)
+		if isLocalEc {
+			ecOpen = isPortReachableNATReflection(publicIP, ecP2PPort)
+		}
+		if isLocalCc {
+			ccOpen = isPortReachableNATReflection(publicIP, ccP2PPort)
+		}
 	}
-	if !ecOpen {
+
+	if isLocalEc && !ecOpen {
 		// Fallback to using an external service
 		ecOpen, _, err = isPortReachableExternalService(ecP2PPort)
 		if err != nil {
 			return fmt.Errorf("error checking port connectivity: %w", err)
 		}
 	}
-	if ecOpen {
-		t.log.Printf("Port %d is OPEN.", ecP2PPort)
-		if !t.wasEth1PortOpen {
-			t.log.Printlnf("Execution client P2P port %d is now accessible from the internet.", ecP2PPort)
+	if isLocalEc {
+		if ecOpen {
+			t.log.Printf("Port %d is OPEN.", ecP2PPort)
+			if !t.wasEth1PortOpen {
+				t.log.Printlnf("Execution client P2P port %d is now accessible from the internet.", ecP2PPort)
+			}
+		} else {
+			if t.wasEth1PortOpen {
+				t.log.Printlnf("WARNING: Execution client P2P port %d is not accessible from the internet.", ecP2PPort)
+			}
+			if err := alerting.AlertEth1P2PPortNotOpen(t.cfg, ecP2PPort); err != nil {
+				t.log.Printlnf("WARNING: Could not send Eth1P2PPortNotOpen alert: %s", err.Error())
+			}
 		}
-	} else {
-		if t.wasEth1PortOpen {
-			t.log.Printlnf("WARNING: Execution client P2P port %d is not accessible from the internet.", ecP2PPort)
-		}
-		if err := alerting.AlertEth1P2PPortNotOpen(t.cfg, ecP2PPort); err != nil {
-			t.log.Printlnf("WARNING: Could not send Eth1P2PPortNotOpen alert: %s", err.Error())
-		}
+		t.wasEth1PortOpen = ecOpen
 	}
-	t.wasEth1PortOpen = ecOpen
-	if !ccOpen {
+
+	if isLocalCc && !ccOpen {
 		// Fallback to using an external service
 		ccOpen, _, err = isPortReachableExternalService(ccP2PPort)
 		if err != nil {
 			return fmt.Errorf("error checking port connectivity: %w", err)
 		}
 	}
-	if ccOpen {
-		t.log.Printf("Port %d is OPEN.", ccP2PPort)
-		if !t.wasBeaconP2POpen {
-			t.log.Printlnf("Consensus client P2P port %d is now accessible from the internet.", ccP2PPort)
+	if isLocalCc {
+		if ccOpen {
+			t.log.Printf("Port %d is OPEN.", ccP2PPort)
+			if !t.wasBeaconP2POpen {
+				t.log.Printlnf("Consensus client P2P port %d is now accessible from the internet.", ccP2PPort)
+			}
+		} else {
+			if t.wasBeaconP2POpen {
+				t.log.Printlnf("WARNING: Consensus client P2P port %d is not accessible from the internet.", ccP2PPort)
+			}
+			if err := alerting.AlertBeaconP2PPortNotOpen(t.cfg, ccP2PPort); err != nil {
+				t.log.Printlnf("WARNING: Could not send BeaconP2PPortNotOpen alert: %s", err.Error())
+			}
 		}
-	} else {
-		if t.wasBeaconP2POpen {
-			t.log.Printlnf("WARNING: Consensus client P2P port %d is not accessible from the internet.", ccP2PPort)
-		}
-		if err := alerting.AlertBeaconP2PPortNotOpen(t.cfg, ccP2PPort); err != nil {
-			t.log.Printlnf("WARNING: Could not send BeaconP2PPortNotOpen alert: %s", err.Error())
-		}
+		t.wasBeaconP2POpen = ccOpen
 	}
-	t.wasBeaconP2POpen = ccOpen
 
 	return nil
 }
