@@ -1296,23 +1296,23 @@ func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, othe
 	// Create the command to run
 	var cmd string
 	if c.daemonPath == "" {
-		envArgs := ""
+		var envArgs strings.Builder
 		for key, value := range envVars {
 			os.Setenv(key, shellescape.Quote(value))
-			envArgs += fmt.Sprintf("-e %s ", key)
+			envArgs.WriteString(fmt.Sprintf("-e %s ", key))
 		}
 		containerName, err := c.getAPIContainerName()
 		if err != nil {
 			return []byte{}, err
 		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s %s api %s", envArgs, shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
+		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s %s api %s", envArgs.String(), shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
 	} else {
-		envArgs := ""
+		var envArgs strings.Builder
 		for key, value := range envVars {
-			envArgs += fmt.Sprintf("%s=%s ", key, shellescape.Quote(value))
+			envArgs.WriteString(fmt.Sprintf("%s=%s ", key, shellescape.Quote(value)))
 		}
 		cmd = fmt.Sprintf("%s %s --settings %s %s %s %s %s api %s",
-			envArgs,
+			envArgs.String(),
 			c.daemonPath,
 			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
 			ignoreSyncCheckFlag,
