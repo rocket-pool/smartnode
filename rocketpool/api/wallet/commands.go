@@ -1,6 +1,10 @@
 package wallet
 
 import (
+	"fmt"
+	"os"
+	"strings"
+
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
@@ -86,7 +90,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "recover",
 				Aliases:   []string{"r"},
 				Usage:     "Recover a node wallet from a mnemonic phrase",
-				UsageText: "rocketpool api wallet recover mnemonic",
+				UsageText: "rocketpool api wallet recover [options] [mnemonic]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
 						Name:  "skip-validator-key-recovery, k",
@@ -96,6 +100,10 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 						Name:  "derivation-path, d",
 						Usage: "Specify the derivation path for the wallet.\nOmit this flag (or leave it blank) for the default of \"m/44'/60'/0'/0/%d\" (where %d is the index).\nSet this to \"ledgerLive\" to use Ledger Live's path of \"m/44'/60'/%d/0/0\".\nSet this to \"mew\" to use MyEtherWallet's path of \"m/44'/60'/0'/%d\".\nFor custom paths, simply enter them here.",
 					},
+					cli.StringFlag{
+						Name:  "mnemonic-file, f",
+						Usage: "Specify the path to the mnemonic.\nOmit this flag to enter the mnemonic via plain text.",
+					},
 					cli.UintFlag{
 						Name:  "wallet-index, i",
 						Usage: "Specify the index to use with the derivation path when recovering your wallet",
@@ -104,11 +112,29 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
+					// Validate input
+					// Must supply either --mnemonic-file or via stdin, but not both
+					if (c.String("mnemonic-file") == "") == (c.Args().Get(0) == "") {
+						return fmt.Errorf("Please specify a mnemonic file or mnemonic via stdin, but not both")
 					}
-					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", c.Args().Get(0))
+
+					// Read mnemonic from file
+					var providedMnemonic string
+					if c.String("mnemonic-file") != "" {
+						bytes, err := os.ReadFile(c.String("mnemonic-file"))
+						if err != nil {
+							return err
+						}
+						providedMnemonic = strings.TrimSpace(string(bytes))
+					}
+
+					// Read mnemonic from stdin
+					if c.Args().Get(0) != "" {
+						providedMnemonic = c.Args().Get(0)
+					}
+
+					// Validate mnemonic
+					mnemonic, err := cliutils.ValidateWalletMnemonic("mnemonic", providedMnemonic)
 					if err != nil {
 						return err
 					}
