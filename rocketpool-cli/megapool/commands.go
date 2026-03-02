@@ -332,6 +332,34 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					return distribute(c)
 				},
 			},
+			// Add set-use-latest-delegate command
+			{
+				Name:      "set-use-latest-delegate",
+				Aliases:   []string{"l"},
+				Usage:     "Set the megapool to always use the latest delegate",
+				UsageText: "rocketpool megapool set-use-latest-delegate use-latest-delegate",
+
+				Action: func(c *cli.Context) error {
+
+					// Validate args
+					if err := cliutils.ValidateArgCount(c, 1); err != nil {
+						return err
+					}
+
+					useLatest, err := cliutils.ValidateBool("use-latest-delegate", c.Args().Get(0))
+					if err != nil {
+						return err
+					}
+
+					return setUseLatestDelegateMegapool(c, useLatest)
+				},
+				Flags: []cli.Flag{
+					cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
+				},
+			},
 		},
 	})
 }

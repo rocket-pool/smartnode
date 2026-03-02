@@ -87,9 +87,9 @@ func getStatus(c *cli.Context) error {
 	}
 
 	if status.Megapool.UseLatestDelegate {
-		fmt.Println("The megapool is set to automatically upgrade to the latest delegate.")
+		fmt.Println("The megapool is set to automatically upgrade to the latest delegate. You can toggle this setting using 'rocketpool megapool set-use-latest-delegate'.")
 	} else {
-		fmt.Println("The megapool has automatic delegate upgrades disabled.")
+		fmt.Println("The megapool has automatic delegate upgrades disabled. You can toggle this setting using 'rocketpool megapool set-use-latest-delegate'.")
 		if status.Megapool.DelegateExpiry > 0 {
 			fmt.Printf("Your current megapool delegate expires at %sblock %d%s.\n", colorBlue, status.Megapool.DelegateExpiry, colorReset)
 		}
