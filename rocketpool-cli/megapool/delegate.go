@@ -89,6 +89,13 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 
 	megapoolAddress := status.Megapool.Address
 
+	// Print message we're updating the setting
+	if setting == true {
+		fmt.Printf("Updating the use-latest-delegate setting for megapool %s to enabled...\n", megapoolAddress.Hex())
+	} else {
+		fmt.Printf("Updating the use-latest-delegate setting for megapool %s to disabled...\n", megapoolAddress.Hex())
+	}
+
 	// Get the gas estimate
 	canResponse, err := rp.CanSetUseLatestDelegateMegapool(megapoolAddress, setting)
 	if err != nil {
@@ -110,7 +117,7 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to change the auto-upgrade setting for your megapool?")) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to change the use-latest-delegate setting for your megapool?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -122,15 +129,15 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 		return nil
 	}
 
-	// Log and wait for the auto-upgrade setting update
-	fmt.Printf("Updating the auto-upgrade setting for megapool %s...\n", megapoolAddress.Hex())
+	// Log and wait for the use-latest-delegate setting update
+	fmt.Printf("Updating the use-latest-delegate setting for megapool %s...\n", megapoolAddress.Hex())
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Return
-	fmt.Printf("Successfully updated the auto-upgrade setting for megapool %s.\n", megapoolAddress.Hex())
+	fmt.Printf("Successfully updated the use-latest-delegate setting for megapool %s.\n", megapoolAddress.Hex())
 	return nil
 
 }

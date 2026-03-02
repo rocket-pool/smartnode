@@ -362,7 +362,7 @@ func (c *Client) DelegateUpgradeMegapool(address common.Address) (api.MegapoolDe
 	return response, nil
 }
 
-// Get the megapool's auto-upgrade setting
+// Get the megapool's use-latest-delegate setting
 func (c *Client) GetUseLatestDelegate(address common.Address) (api.MegapoolGetUseLatestDelegateResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool get-use-latest-delegate %s", address.Hex()))
 	if err != nil {
@@ -378,7 +378,7 @@ func (c *Client) GetUseLatestDelegate(address common.Address) (api.MegapoolGetUs
 	return response, nil
 }
 
-// Check whether a megapool can have its auto-upgrade setting changed
+// Check whether a megapool can have its use-latest-delegate setting changed
 func (c *Client) CanSetUseLatestDelegateMegapool(address common.Address, setting bool) (api.MegapoolCanSetUseLatestDelegateResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool can-set-use-latest-delegate %s %t", address.Hex(), setting))
 	if err != nil {
@@ -394,7 +394,7 @@ func (c *Client) CanSetUseLatestDelegateMegapool(address common.Address, setting
 	return response, nil
 }
 
-// Change a megapool's auto-upgrade setting
+// Change a megapool's use-latest-delegate setting
 func (c *Client) SetUseLatestDelegateMegapool(address common.Address, setting bool) (api.MegapoolSetUseLatestDelegateResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("megapool set-use-latest-delegate %s %t", address.Hex(), setting))
 	if err != nil {
