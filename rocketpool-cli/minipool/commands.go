@@ -194,40 +194,9 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "begin-bond-reduction",
-				Aliases:   []string{"bbr"},
-				Usage:     "Begins the ETH bond reduction process for a minipool, taking it from 16 ETH down to 8 ETH (begins conversion of a 16 ETH minipool to an LEB8)",
-				UsageText: "rocketpool minipool begin-bond-reduction [options]",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to begin the bond reduction for (address or 'all')",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
-					}
-
-					// Run
-					return beginReduceBondAmount(c)
-
-				},
-			},
-
-			{
 				Name:      "reduce-bond",
 				Aliases:   []string{"rb"},
-				Usage:     "Manually completes the ETH bond reduction process for a minipool from 16 ETH down to 8 ETH once it is eligible. Please run `begin-bond-reduction` first to start this process.",
+				Usage:     "Manually completes the ETH bond reduction process for a minipool from 16 ETH down to 8 ETH once it is eligible. Note that `begin-bond-reduction` has been removed after Saturn 1.",
 				UsageText: "rocketpool minipool reduce-bond [options]",
 				Flags: []cli.Flag{
 					cli.StringFlag{

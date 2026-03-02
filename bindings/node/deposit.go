@@ -24,28 +24,6 @@ type NodeDeposit struct {
 
 type Deposits []NodeDeposit
 
-// Estimate the gas of Deposit
-func EstimateDepositGas(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
-	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
-	if err != nil {
-		return rocketpool.GasInfo{}, err
-	}
-	return rocketNodeDeposit.GetTransactionGasInfo(opts, "deposit", bondAmount, useExpressTicket, validatorPubkey[:], validatorSignature[:], depositDataRoot)
-}
-
-// Make a node deposit
-func Deposit(rp *rocketpool.RocketPool, bondAmount *big.Int, useExpressTicket bool, validatorPubkey rptypes.ValidatorPubkey, validatorSignature rptypes.ValidatorSignature, depositDataRoot common.Hash, opts *bind.TransactOpts) (*types.Transaction, error) {
-	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)
-	if err != nil {
-		return nil, err
-	}
-	tx, err := rocketNodeDeposit.Transact(opts, "deposit", bondAmount, useExpressTicket, validatorPubkey[:], validatorSignature[:], depositDataRoot)
-	if err != nil {
-		return nil, fmt.Errorf("error making node deposit: %w", err)
-	}
-	return tx, nil
-}
-
 // Estimate the gas of DepositMulti
 func EstimateDepositMultiGas(rp *rocketpool.RocketPool, deposits Deposits, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketNodeDeposit, err := getRocketNodeDeposit(rp, nil)

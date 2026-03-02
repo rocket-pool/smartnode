@@ -6,7 +6,6 @@ import (
 
 const (
 	colorReset  string = "\033[0m"
-	colorRed    string = "\033[31m"
 	colorYellow string = "\033[33m"
 )
 

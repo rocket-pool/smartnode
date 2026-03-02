@@ -577,35 +577,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "set-voting-delegate",
-				Aliases:   []string{"sv"},
-				Usage:     "(DEPRECATED) Use `rocketpool pdao set-signalling-address` instead",
-				UsageText: "rocketpool node set-voting-delegate",
-				Action: func(c *cli.Context) error {
-
-					// Run
-					fmt.Println("(DEPRECATED) Use `rocketpool pdao set-signalling-address` instead.")
-					fmt.Println("For more information, please refer to the Governance article on Medium (https://medium.com/rocket-pool/rocket-pool-protocol-dao-governance-a3c3e92904e0).")
-					return nil
-
-				},
-			},
-
-			{
-				Name:      "clear-voting-delegate",
-				Aliases:   []string{"cv"},
-				Usage:     "(DEPRECATED) Use `rocketpool pdao clear-signalling-address` instead",
-				UsageText: "rocketpool node clear-voting-delegate",
-				Action: func(c *cli.Context) error {
-
-					// Run
-					fmt.Println("(DEPRECATED) Use `rocketpool pdao clear-signalling-address` instead.")
-					fmt.Println("For more information, please refer to the Governance article on Medium (https://medium.com/rocket-pool/rocket-pool-protocol-dao-governance-a3c3e92904e0).")
-					return nil
-				},
-			},
-
-			{
 				Name:      "initialize-fee-distributor",
 				Aliases:   []string{"z"},
 				Usage:     "Create the fee distributor contract for your node, so you can withdraw priority fees and MEV rewards after the merge",

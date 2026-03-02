@@ -1060,12 +1060,6 @@ func serviceLogs(c *cli.Context, aliasedNames ...string) error {
 
 }
 
-// View the Rocket Pool service stats
-func serviceStats() error {
-	fmt.Println("No longer supported - please run 'docker stats -a' instead.")
-	return nil
-}
-
 // View the Rocket Pool service compose config
 func serviceCompose(c *cli.Context) error {
 

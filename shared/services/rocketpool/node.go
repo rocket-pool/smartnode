@@ -10,7 +10,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
 
-	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	utils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
@@ -345,7 +344,7 @@ func (c *Client) NodeSwapRpl(amountWei *big.Int) (api.NodeSwapRplSwapResponse, e
 
 // Get a node's legacy RPL allowance for swapping on the new RPL contract
 func (c *Client) GetNodeSwapRplAllowance() (api.NodeSwapRplAllowanceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node swap-rpl-allowance"))
+	responseBytes, err := c.callAPI("node swap-rpl-allowance")
 	if err != nil {
 		return api.NodeSwapRplAllowanceResponse{}, fmt.Errorf("Could not get node swap RPL allowance: %w", err)
 	}
@@ -441,7 +440,7 @@ func (c *Client) NodeStakeRpl(amountWei *big.Int) (api.NodeStakeRplStakeResponse
 
 // Get a node's RPL allowance for the staking contract
 func (c *Client) GetNodeStakeRplAllowance() (api.NodeStakeRplAllowanceResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node stake-rpl-allowance"))
+	responseBytes, err := c.callAPI("node stake-rpl-allowance")
 	if err != nil {
 		return api.NodeStakeRplAllowanceResponse{}, fmt.Errorf("Could not get node stake RPL allowance: %w", err)
 	}
@@ -521,7 +520,7 @@ func (c *Client) SetStakeRPLForAllowed(caller common.Address, allowed bool) (api
 
 // Check whether the node can withdraw RPL
 func (c *Client) CanNodeWithdrawRpl() (api.CanNodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-withdraw-rpl"))
+	responseBytes, err := c.callAPI("node can-withdraw-rpl")
 	if err != nil {
 		return api.CanNodeWithdrawRplResponse{}, fmt.Errorf("Could not get can node withdraw RPL status: %w", err)
 	}
@@ -537,7 +536,7 @@ func (c *Client) CanNodeWithdrawRpl() (api.CanNodeWithdrawRplResponse, error) {
 
 // Withdraw RPL staked against the node
 func (c *Client) NodeWithdrawRpl() (api.NodeWithdrawRplResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node withdraw-rpl"))
+	responseBytes, err := c.callAPI("node withdraw-rpl")
 	if err != nil {
 		return api.NodeWithdrawRplResponse{}, fmt.Errorf("Could not withdraw node RPL: %w", err)
 	}
@@ -1174,38 +1173,6 @@ func (c *Client) SignMessage(message string) (api.NodeSignResponse, error) {
 	}
 	if response.Error != "" {
 		return api.NodeSignResponse{}, fmt.Errorf("Could not sign message: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check whether a vacant minipool can be created for solo staker migration
-func (c *Client) CanCreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey) (api.CanCreateVacantMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node can-create-vacant-minipool %s %f %s %s", amountWei.String(), minFee, salt.String(), pubkey.Hex()))
-	if err != nil {
-		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not get can create vacant minipool status: %w", err)
-	}
-	var response api.CanCreateVacantMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not decode can create vacant minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanCreateVacantMinipoolResponse{}, fmt.Errorf("Could not get can create vacant minipool status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Create a vacant minipool, which can be used to migrate a solo staker
-func (c *Client) CreateVacantMinipool(amountWei *big.Int, minFee float64, salt *big.Int, pubkey types.ValidatorPubkey) (api.CreateVacantMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("node create-vacant-minipool %s %f %s %s", amountWei.String(), minFee, salt.String(), pubkey.Hex()))
-	if err != nil {
-		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %w", err)
-	}
-	var response api.CreateVacantMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not decode create vacant minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CreateVacantMinipoolResponse{}, fmt.Errorf("Could not get create vacant minipool status: %s", response.Error)
 	}
 	return response, nil
 }

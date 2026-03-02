@@ -336,19 +336,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "stats",
-				Aliases:   []string{"a"},
-				Usage:     "(DEPRECATED) No longer supported. Use 'docker stats -a' instead",
-				UsageText: "rocketpool service stats",
-				Action: func(c *cli.Context) error {
-
-					// Run command
-					return serviceStats()
-
-				},
-			},
-
-			{
 				Name:      "compose",
 				Usage:     "View the Rocket Pool service docker compose config",
 				UsageText: "rocketpool service compose",
@@ -414,10 +401,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					cli.BoolFlag{
 						Name:  "verbose, r",
 						Usage: "Print installation script command output",
-					},
-					cli.StringFlag{
-						Name:  "version, v",
-						Usage: "DEPRECATED: The update tracker package version to install",
 					},
 				},
 				Action: func(c *cli.Context) error {
