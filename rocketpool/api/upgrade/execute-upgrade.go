@@ -73,7 +73,7 @@ func canExecuteUpgrade(c *cli.Context, upgradeProposalId uint64) (*api.CanExecut
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return nil, err	
+		return nil, err
 	}
 
 	// Update & return response
