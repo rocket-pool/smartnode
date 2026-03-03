@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/rocketpool/api/security"
+	"github.com/rocket-pool/smartnode/rocketpool/api/upgrade"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/bindings/utils"
@@ -78,6 +79,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	security.RegisterSubcommands(&command, "security", []string{"c"})
 	apiservice.RegisterSubcommands(&command, "service", []string{"s"})
 	wallet.RegisterSubcommands(&command, "wallet", []string{"w"})
+	upgrade.RegisterSubcommands(&command, "upgrade", []string{"u"})
 	debug.RegisterSubcommands(&command, "debug", []string{"d"})
 
 	// Append a general wait-for-transaction command to support async operations

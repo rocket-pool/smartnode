@@ -693,6 +693,32 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 				},
 			},
+			{
+				Name:    "upgrade",
+				Aliases: []string{"u"},
+				Usage:   "Upgrade Proposals",
+				Subcommands: []cli.Command{
+
+					{
+						Name:      "get-upgrade-proposals",
+						Aliases:   []string{"g"},
+						Usage:     "Get the upgrade proposals",
+						UsageText: "rocketpool odao upgrade get-upgrade-proposals",
+						Action: func(c *cli.Context) error {
+							return getUpgradeProposals(c)
+						},
+					},
+					{
+						Name:      "execute-upgrade",
+						Aliases:   []string{"eu"},
+						Usage:     "Execute an upgrade",
+						UsageText: "rocketpool odao upgrade execute-upgrade upgrade-proposal-id",
+						Action: func(c *cli.Context) error {
+							return executeUpgrade(c)
+						},
+					},
+				},
+			},
 		},
 	})
 }

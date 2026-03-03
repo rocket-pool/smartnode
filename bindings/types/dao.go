@@ -21,6 +21,18 @@ const (
 	Executed
 )
 
+var UpgradeProposalStates = []string{"Pending", "Succeeded", "Vetoed", "Executed"}
+
+// Upgrade proposal states
+type UpgradeProposalState uint8
+
+const (
+	UpgradeProposalState_Pending UpgradeProposalState = iota
+	UpgradeProposalState_Succeeded
+	UpgradeProposalState_Vetoed
+	UpgradeProposalState_Executed
+)
+
 var ProposalStates = []string{"Pending", "Active", "Cancelled", "Defeated", "Succeeded", "Expired", "Executed"}
 
 // pDAO proposal states
