@@ -377,13 +377,12 @@ func (cfg *AlertmanagerConfig) UpdateConfigurationFiles(configPath string) error
 		return fmt.Errorf("error processing alerting rules template: %w", err)
 	}
 
-	isLocalEc := cfg.Parent.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local
-	isLocalCc := cfg.Parent.ConsensusClientMode.Value.(config.Mode) == config.Mode_Local
-
-	// Only apply high-storage rules if at least one client is managed locally.
+	// Only apply high-storage rules if clients are locally managed.
 	// We don't require much storage if the EC/CC are external.
 	// Note that the warning alert is still active in the default rules and this is just for critical low storage alerts.
-	if isLocalEc || isLocalCc {
+	// (EC and CC are always both local or both external - mixed configurations are rejected during validation.)
+	isLocalMode := cfg.Parent.ExecutionClientMode.Value.(config.Mode) == config.Mode_Local
+	if isLocalMode {
 		err = cfg.processTemplate(configPath, HighStorageRulesConfigTemplate, HighStorageRulesConfigFile, "{{{", "}}}")
 		if err != nil {
 			return fmt.Errorf("error processing high-storage alerting rules template: %w", err)

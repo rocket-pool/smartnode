@@ -79,18 +79,6 @@ func TestUpdateConfigurationFiles_HighStorageRules(t *testing.T) {
 			ccMode:        cfgtypes.Mode_External,
 			expectCreated: false,
 		},
-		{
-			name:          "local EC + external CC creates high-storage.yml",
-			ecMode:        cfgtypes.Mode_Local,
-			ccMode:        cfgtypes.Mode_External,
-			expectCreated: true,
-		},
-		{
-			name:          "external EC + local CC creates high-storage.yml",
-			ecMode:        cfgtypes.Mode_External,
-			ccMode:        cfgtypes.Mode_Local,
-			expectCreated: true,
-		},
 	}
 
 	for _, tc := range tests {
