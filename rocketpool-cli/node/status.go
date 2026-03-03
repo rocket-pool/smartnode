@@ -25,7 +25,6 @@ const (
 	colorYellow           string = "\033[33m"
 	smoothingPoolLink     string = "https://docs.rocketpool.net/upgrades/redstone/whats-new#smoothing-pool"
 	signallingAddressLink string = "https://docs.rocketpool.net/pdao/participate#setting-your-snapshot-signalling-address"
-	maxAlertItems         int    = 3
 )
 
 func getStatus(c *cli.Context) error {
