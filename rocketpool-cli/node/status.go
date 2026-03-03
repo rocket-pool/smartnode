@@ -380,9 +380,10 @@ func getStatus(c *cli.Context) error {
 
 		fmt.Println()
 
-		// Minipool details
-		fmt.Printf("%s=== Minipools ===%s\n", colorGreen, colorReset)
 		if status.MinipoolCounts.Total > 0 {
+
+			// Minipool details
+			fmt.Printf("%s=== Minipools ===%s\n", colorGreen, colorReset)
 
 			// Minipools
 			fmt.Printf("The node has a total of %d active minipool(s):\n", status.MinipoolCounts.Total-status.MinipoolCounts.Finalised)
@@ -414,8 +415,6 @@ func getStatus(c *cli.Context) error {
 				fmt.Printf("* %d minipool(s) are finalized and no longer active.\n", status.MinipoolCounts.Finalised)
 			}
 
-		} else {
-			fmt.Println("The node does not have any minipools yet.")
 		}
 
 	} else {
