@@ -116,7 +116,6 @@ func installService(c *cli.Context) error {
 }
 
 // Print the latest patch notes for this release
-// TODO: get this from an external source and don't hardcode it into the CLI
 func printPatchNotes(c *cli.Context) {
 
 	fmt.Print(shared.Logo())
@@ -128,18 +127,6 @@ func printPatchNotes(c *cli.Context) {
 	fmt.Println()
 	fmt.Println("This Smart Node version is compatible with the Saturn 1 upgrade. The upgrade took place on Feb 18, 2026 00:00:00 UTC.")
 	fmt.Println("For more information about the biggest Rocket Pool upgrade ever, please see the official documentation: https://docs.rocketpool.net/upgrades/saturn-1/whats-new")
-	fmt.Println()
-
-	fmt.Printf("%s=== IMPORTANT NOTICE ===%s\n", colorYellow, colorReset)
-	fmt.Println("Starting with v1.19.1, the Smart Node includes an automatic task that will")
-	fmt.Println("set all legacy minipools to use the latest delegate contract.")
-	fmt.Println("For Megapools, node operators continue to have 120 days to choose when to upgrade after a new delegate is released.")
-	fmt.Println()
-	fmt.Println("This is the result of a proposal approved by the pDAO,")
-	fmt.Println("which aims to improve the Rocket Pool protocol and delegate contract management.")
-	fmt.Println("For more information, visit: https://rpips.rocketpool.net/RPIPs/RPIP-77")
-	fmt.Println()
-	fmt.Printf("%sIf you do not wish to opt into using the latest delegate contract on your minipools, you should rollback to v1.19.0.%s\n", colorRed, colorReset)
 	fmt.Println()
 }
 
