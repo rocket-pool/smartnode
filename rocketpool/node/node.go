@@ -14,6 +14,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/urfave/cli"
 
+	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
@@ -30,9 +31,6 @@ var (
 	tasksInterval, _ = time.ParseDuration("5m")
 	taskCooldown, _  = time.ParseDuration("1s")
 )
-
-//go:embed saturn-art.txt
-var saturnArt string
 
 const (
 	MaxConcurrentEth1Requests = 200
@@ -54,7 +52,7 @@ const (
 	DefendChallengeExitColor       = color.FgHiGreen
 	ProvisionExpressTickets        = color.FgMagenta
 	SetUseLatestDelegateColor      = color.FgBlue
-	CheckPortConnectivityColor     = color.FgHiRed
+	CheckPortConnectivityColor     = color.FgHiYellow
 )
 
 // Register node command
@@ -109,6 +107,13 @@ func run(c *cli.Context) error {
 		return err
 	}
 
+	protocolVersion, err := utils.GetCurrentVersion(rp, nil)
+	if err != nil {
+		return fmt.Errorf("error getting protocol version: %w", err)
+	}
+
+	fmt.Printf("Protocol version: %s\n", protocolVersion)
+
 	// Print the current mode
 	if cfg.IsNativeMode {
 		fmt.Println("Starting node daemon in Native Mode.")
@@ -154,7 +159,7 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	notifyFinalBalance, err := newNotifyFinalBalance(c, log.NewColorLogger(NotifyValidatorExitColor))
+	notifyFinalBalance, err := newNotifyFinalBalance(c, log.NewColorLogger(NotifyFinalBalanceColor))
 	if err != nil {
 		return err
 	}
@@ -233,6 +238,19 @@ func run(c *cli.Context) error {
 				updateLog.Println("Beacon client is now synced.")
 				wasBeaconClientSynced = true
 				alerting.AlertBeaconClientSyncComplete(cfg)
+			}
+
+			// Check if the protocol version has changed
+			newProtocolVersion, err := utils.GetCurrentVersion(rp, nil)
+			if err != nil {
+				errorLog.Println(err)
+				time.Sleep(taskCooldown)
+				continue
+			}
+			if newProtocolVersion.Compare(protocolVersion) != 0 {
+				updateLog.Printlnf("Protocol version changed to: %s\n", newProtocolVersion)
+				updateLog.Println("Exiting daemon to load the new contracts...")
+				os.Exit(0)
 			}
 
 			// Update the network state
