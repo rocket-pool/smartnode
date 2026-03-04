@@ -1,6 +1,7 @@
 package node
 
 import (
+	"fmt"
 	"math/big"
 
 	"github.com/docker/docker/client"
@@ -118,55 +119,63 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 		return err
 	}
 
-	// Check if the megapool is deployed
-	deployed, err := megapool.GetMegapoolDeployed(t.rp, nodeAccount.Address, opts)
-	if err != nil {
-		return err
+	nodeDetails, exists := state.NodeDetailsByAddress[nodeAccount.Address]
+	if !exists {
+		return fmt.Errorf("node account %s not found in state", nodeAccount.Address.Hex())
 	}
-	if !deployed {
+
+	if !nodeDetails.MegapoolDeployed {
 		return nil
 	}
 
-	// Get the megapool address
-	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(t.rp, nodeAccount.Address, opts)
-	if err != nil {
-		return err
-	}
+	megapoolAddress := nodeDetails.MegapoolAddress
 
-	// Load the megapool
 	mp, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
 	if err != nil {
 		return err
 	}
 
-	// Iterate over megapool validators checking whether they're ready to notify exit
-	validatorCount, err := mp.GetValidatorCount(opts)
+	var currentEpoch uint64
+
+	head, err := t.bc.GetBeaconHead()
 	if err != nil {
 		return err
 	}
-	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount), opts)
-	if err != nil {
-		return err
-	}
+	currentEpoch = head.Epoch
 
-	for i := uint32(0); i < uint32(validatorCount); i++ {
-		if validatorInfo[i].Activated && validatorInfo[i].WithdrawableEpoch < FarFutureEpoch && validatorInfo[i].Staked && !validatorInfo[i].Exited && !validatorInfo[i].Exiting {
-			beaconState, err := services.GetBeaconState(t.bc)
-			if err != nil {
-				return err
-			}
+	validatorDetailsToProve := make(map[uint32]beacon.ValidatorStatus)
+	pubkeys := state.MegapoolToPubkeysMap[megapoolAddress]
+	for _, pubkey := range pubkeys {
+		validatorDetails, exists := state.MegapoolValidatorDetails[pubkey]
+		if !exists {
+			return fmt.Errorf("validator %s not found in state", pubkey.Hex())
+		}
 
-			if beaconState.GetValidators()[validatorInfo[i].ValidatorIndex].WithdrawableEpoch < FarFutureEpoch {
+		validatorInfo := state.MegapoolValidatorInfo[pubkey]
 
-				// Log
-				t.log.Printlnf("The validator ID %d needs an exit proof", validatorInfo[i].ValidatorId)
-
-				// Call Notify Exit
-				t.createExitProof(t.rp, beaconState, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
-			}
+		if currentEpoch > validatorDetails.ActivationEpoch && validatorDetails.WithdrawableEpoch < FarFutureEpoch && validatorInfo.ValidatorInfo.Staked && !validatorInfo.ValidatorInfo.Exited && !validatorInfo.ValidatorInfo.Exiting {
+			validatorDetailsToProve[validatorInfo.ValidatorId] = validatorDetails
 		}
 	}
 
+	// Check if there are any validators to notify
+	if len(validatorDetailsToProve) == 0 {
+		return nil
+	}
+
+	beaconState, err := services.GetBeaconState(t.bc)
+	if err != nil {
+		return err
+	}
+
+	for validatorId, validatorDetails := range validatorDetailsToProve {
+
+		// Log
+		t.log.Printlnf("The validator id %d needs an exit proof", validatorId)
+
+		// Call Notify Exit
+		t.createExitProof(t.rp, beaconState, mp, validatorId, state, types.ValidatorPubkey(validatorDetails.Pubkey), opts)
+	}
 	// Return
 	return nil
 

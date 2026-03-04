@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli"
 
@@ -19,8 +18,6 @@ import (
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	apitypes "github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
@@ -119,50 +116,48 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 		return err
 	}
 
-	// Check if the megapool is deployed
-	deployed, err := megapool.GetMegapoolDeployed(t.rp, nodeAccount.Address, opts)
-	if err != nil {
-		return err
+	nodeDetails, exists := state.NodeDetailsByAddress[nodeAccount.Address]
+	if !exists {
+		return fmt.Errorf("node account %s not found in state", nodeAccount.Address.Hex())
 	}
-	if !deployed {
+
+	if !nodeDetails.MegapoolDeployed {
 		return nil
 	}
 
-	// Get the megapool address
-	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(t.rp, nodeAccount.Address, opts)
-	if err != nil {
-		return err
-	}
+	megapoolAddress := nodeDetails.MegapoolAddress
 
-	// Load the megapool
 	mp, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
 	if err != nil {
 		return err
 	}
 
-	// Iterate over megapool validators checking whether they're ready to submit a final balance proof
-	validatorCount, err := mp.GetValidatorCount(nil)
-	if err != nil {
-		return err
-	}
-	validatorInfo, err := services.GetMegapoolValidatorDetails(t.rp, t.bc, mp, megapoolAddress, uint32(validatorCount), opts)
-	if err != nil {
-		return err
-	}
-
-	// Get the beacon state
-	beaconState, err := services.GetBeaconState(t.bc)
-	if err != nil {
-		return err
-	}
-
-	for i := uint32(0); i < uint32(validatorCount); i++ {
-		if validatorInfo[i].BeaconStatus.Status == "withdrawal_done" && validatorInfo[i].Exiting && !validatorInfo[i].Exited && validatorInfo[i].BeaconStatus.EffectiveBalance == 0 {
-			// Log
-			t.log.Printlnf("The validator ID %d needs a final balance proof", validatorInfo[i].ValidatorId)
-
-			t.createFinalBalanceProof(t.rp, mp, validatorInfo[i], state, types.ValidatorPubkey(validatorInfo[i].PubKey), beaconState, opts)
+	validatorDetailsToProve := make(map[uint32]beacon.ValidatorStatus)
+	pubkeys := state.MegapoolToPubkeysMap[megapoolAddress]
+	for _, pubkey := range pubkeys {
+		validatorDetails, exists := state.MegapoolValidatorDetails[pubkey]
+		if !exists {
+			return fmt.Errorf("validator %s not found in state", pubkey.Hex())
 		}
+
+		validatorInfo := state.MegapoolValidatorInfo[pubkey]
+
+		if validatorDetails.Status == beacon.ValidatorState_WithdrawalDone && validatorInfo.ValidatorInfo.Exiting && !validatorInfo.ValidatorInfo.Exited && validatorDetails.EffectiveBalance == 0 {
+			validatorDetailsToProve[validatorInfo.ValidatorId] = validatorDetails
+		}
+	}
+
+	// Check if there are any validators to notify
+	if len(validatorDetailsToProve) == 0 {
+		return nil
+	}
+
+	// Notify the validators
+	for validatorId, validatorDetails := range validatorDetailsToProve {
+		// Log
+		t.log.Printlnf("The validator id %d needs a final balance proof", validatorId)
+
+		t.createFinalBalanceProof(t.rp, mp, state, validatorId, validatorDetails, opts)
 	}
 
 	// Return
@@ -170,7 +165,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 
 }
 
-func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorInfo apitypes.MegapoolValidatorDetails, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, beaconState eth2.BeaconState, callopts *bind.CallOpts) error {
+func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, mp megapool.Megapool, state *state.NetworkState, validatorId uint32, validatorDetails beacon.ValidatorStatus, callopts *bind.CallOpts) error {
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
@@ -180,7 +175,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 
 	t.log.Printlnf("Crafting a final balance proof. This process can take several seconds and is CPU and memory intensive. If you don't see a [FINISHED] log entry your system may not have enough resources to perform this operation.")
 
-	validatorIndexStr, err := t.bc.GetValidatorIndex(validatorPubkey)
+	validatorIndexStr, err := t.bc.GetValidatorIndex(validatorDetails.Pubkey)
 	if err != nil {
 		return err
 	}
@@ -190,15 +185,15 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 		return err
 	}
 
-	slot := validatorInfo.WithdrawableEpoch * 32
+	slot := validatorDetails.WithdrawableEpoch * 32
 
 	withdrawalProof, proofSlot, stateUsed, err := services.GetWithdrawalProofForSlot(t.c, slot, validatorIndex)
 	if err != nil {
-		return fmt.Errorf("error getting withdrawal proof for validator 0x%s (index: %d): %w", validatorPubkey.String(), validatorIndex, err)
+		return fmt.Errorf("error getting withdrawal proof for validator 0x%s (index: %d): %w", validatorDetails.Pubkey.String(), validatorIndex, err)
 	}
-	t.log.Printlnf("The Beacon WithdrawalSlot for validator ID %d is: %d", validatorInfo.ValidatorId, withdrawalProof.WithdrawalSlot)
+	t.log.Printlnf("The Beacon WithdrawalSlot for validator index %d is: %d", validatorDetails.Index, withdrawalProof.WithdrawalSlot)
 
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, proofSlot, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, stateUsed)
+	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, proofSlot, t.w, state.BeaconConfig, mp.GetAddress(), validatorDetails.Pubkey, stateUsed)
 	if err != nil {
 		t.log.Printlnf("There was an error during the proof creation process: %w", err)
 		return err
@@ -221,9 +216,9 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	t.log.Printlnf("The validator final balance proof has been successfully created.")
 
 	// Get the gas limit
-	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, mp.GetAddress(), validatorInfo.ValidatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
+	gasInfo, err := megapool.EstimateNotifyFinalBalance(rp, mp.GetAddress(), validatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
 	if err != nil {
-		t.log.Printlnf("Could not estimate the gas required to notify final balance on megapool validator %d: %w", validatorInfo.ValidatorId, err)
+		t.log.Printlnf("Could not estimate the gas required to notify final balance on megapool validator %d: %w", validatorId, err)
 		return err
 	}
 	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
@@ -246,7 +241,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	opts.GasLimit = gas.Uint64()
 
 	// Call Notify Final Balance
-	tx, err := megapool.NotifyFinalBalance(rp, mp.GetAddress(), validatorInfo.ValidatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
+	tx, err := megapool.NotifyFinalBalance(rp, mp.GetAddress(), validatorId, slotTimestamp, finalBalanceProof, validatorProof, slotProof, opts)
 	if err != nil {
 		return err
 	}
@@ -258,7 +253,7 @@ func (t *notifyFinalBalance) createFinalBalanceProof(rp *rocketpool.RocketPool, 
 	}
 
 	// Log
-	t.log.Printlnf("Successfully notified validator %d final balance.", validatorInfo.ValidatorId)
+	t.log.Printlnf("Successfully notified validator %d final balance.", validatorId)
 
 	// Return
 	return nil
