@@ -372,6 +372,7 @@ func (cfg *AlertmanagerConfig) UpdateConfigurationFiles(configPath string) error
 	if err != nil {
 		return fmt.Errorf("error processing alerting rules template: %w", err)
 	}
+
 	return nil
 }
 
