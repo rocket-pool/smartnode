@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"math/rand"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -90,6 +92,13 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
+
+	protocolVersion, err := utils.GetCurrentVersion(rp, nil)
+	if err != nil {
+		return fmt.Errorf("error getting protocol version: %w", err)
+	}
+
+	fmt.Printf("Protocol version: %s\n", protocolVersion)
 
 	// Print the current mode
 	if cfg.IsNativeMode {
@@ -203,6 +212,19 @@ func run(c *cli.Context) error {
 				errorLog.Println(err)
 				time.Sleep(taskCooldown)
 				continue
+			}
+
+			// Check if the protocol version has changed
+			newProtocolVersion, err := utils.GetCurrentVersion(rp, nil)
+			if err != nil {
+				errorLog.Println(err)
+				time.Sleep(taskCooldown)
+				continue
+			}
+			if newProtocolVersion.Compare(protocolVersion) != 0 {
+				updateLog.Printlnf("Protocol version changed to: %s\n", newProtocolVersion)
+				updateLog.Println("Exiting daemon to load the new contracts...")
+				os.Exit(0)
 			}
 
 			// Get the Beacon block
