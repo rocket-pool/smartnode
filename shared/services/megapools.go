@@ -636,26 +636,33 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 	expressQueueLength := queueDetails.ExpressQueueLength.Uint64()
 	expressQueueRate := queueDetails.ExpressQueueRate
 	standardQueueLength := queueDetails.StandardQueueLength.Uint64()
-
 	queueInterval := expressQueueRate + 1
+	// How many express slots have already been consumed in the current cycle
+	expressUsedInCurrentCycle := queueIndex % queueInterval
 
 	var overallPosition uint64
+
 	if queueKey == "deposit.queue.express" {
-		standardEntriesBefore := (pos + (queueIndex % queueInterval)) / expressQueueRate
+		var standardEntriesBefore uint64
+		expressRemainingInCycle := expressQueueRate - expressUsedInCurrentCycle
+		if pos > expressRemainingInCycle {
+			standardEntriesBefore = (pos - expressRemainingInCycle + expressQueueRate - 1) / expressQueueRate
+		}
 		if standardEntriesBefore > standardQueueLength {
 			standardEntriesBefore = standardQueueLength
 		}
 		overallPosition = pos + standardEntriesBefore
+
 	} else {
-		expressEntriesbefore := (pos * expressQueueLength) + (expressQueueRate - (queueIndex % queueInterval))
-		if expressEntriesbefore > expressQueueLength {
-			expressEntriesbefore = expressQueueLength
+		expressRemainingInCycle := expressQueueRate - expressUsedInCurrentCycle
+		expressEntriesBefore := (pos-1)*expressQueueRate + expressRemainingInCycle
+		if expressEntriesBefore > expressQueueLength {
+			expressEntriesBefore = expressQueueLength
 		}
-		overallPosition = pos + expressEntriesbefore
+		overallPosition = pos + expressEntriesBefore
 	}
 
 	return new(big.Int).SetUint64(overallPosition), err
-
 }
 
 func GetWithdrawalProofForSlotFromAPI(c *cli.Context, finalizedSlot uint64, withdrawalSlot uint64, validatorIndex uint64, network cfgtypes.Network) (megapool.FinalBalanceProof, uint64, error) {
