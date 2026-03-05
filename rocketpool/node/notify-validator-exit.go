@@ -148,7 +148,8 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 	for _, pubkey := range pubkeys {
 		validatorDetails, exists := state.MegapoolValidatorDetails[pubkey]
 		if !exists {
-			return fmt.Errorf("validator %s not found in state", pubkey.Hex())
+			// validator not in the state yet, skipping
+			continue
 		}
 
 		validatorInfo := state.MegapoolValidatorInfo[pubkey]

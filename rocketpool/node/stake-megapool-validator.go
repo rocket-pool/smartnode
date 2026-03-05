@@ -149,11 +149,11 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 
 	// store validators that need to be staked
-	validatorsToStake := make(map[uint32]bool)
+	validatorsToStake := make(map[uint32]types.ValidatorPubkey)
 
 	for i := uint32(0); i < uint32(validatorCount); i++ {
 		if validatorInfo[i].InPrestake && validatorInfo[i].BeaconStatus.Index != "" {
-			validatorsToStake[validatorInfo[i].ValidatorId] = true
+			validatorsToStake[validatorInfo[i].ValidatorId] = types.ValidatorPubkey(validatorInfo[i].PubKey)
 		}
 	}
 
@@ -169,12 +169,12 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 
 	// Iterate over validators to stake
-	for validatorId, _ := range validatorsToStake {
+	for validatorId, validatorPubkey := range validatorsToStake {
 		// Log
 		t.log.Printlnf("The validator id %d needs to be staked", validatorId)
 
 		// Call Stake
-		t.stakeValidator(t.rp, beaconState, mp, validatorId, state, types.ValidatorPubkey(validatorInfo[validatorId].PubKey), opts)
+		t.stakeValidator(t.rp, beaconState, mp, validatorId, state, validatorPubkey, opts)
 	}
 
 	if err := validator.RestartValidator(t.cfg, t.bc, &t.log, t.d); err != nil {
