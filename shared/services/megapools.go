@@ -575,7 +575,7 @@ func GetMegapoolValidatorDetails(rp *rocketpool.RocketPool, bc beacon.Client, mp
 				} else {
 					queueKey = "deposit.queue.standard"
 				}
-				validator.QueuePosition, err = calculatePositionInQueue(rp, queueDetails, megapoolAddress, validator.ValidatorId, queueKey)
+				validator.QueuePosition, err = calculatePositionInQueue(rp, queueDetails, megapoolAddress, validator.ValidatorId, queueKey, findInQueue)
 				if err != nil {
 					return fmt.Errorf("error getting queue position for validator ID %d: %w", validator.ValidatorId, err)
 				}
@@ -620,9 +620,11 @@ func findInQueue(rp *rocketpool.RocketPool, megapoolAddress common.Address, vali
 
 }
 
-func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueDetails, megapoolAddress common.Address, validatorId uint32, queueKey string) (*big.Int, error) {
+type findInQueueFunc func(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, queueKey string, start *big.Int, end *big.Int) (*big.Int, error)
 
-	position, err := findInQueue(rp, megapoolAddress, validatorId, queueKey, big.NewInt(0), big.NewInt(0))
+func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueDetails, megapoolAddress common.Address,
+	validatorId uint32, queueKey string, finder findInQueueFunc) (*big.Int, error) {
+	position, err := finder(rp, megapoolAddress, validatorId, queueKey, big.NewInt(0), big.NewInt(0))
 	if err != nil {
 		return nil, fmt.Errorf("Could not find position in queue %s for validatorId %d: %w", queueKey, validatorId, err)
 	}
