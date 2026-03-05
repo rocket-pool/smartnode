@@ -287,7 +287,6 @@ if [ "$CLIENT" = "besu" ]; then
         CMD="$PERF_PREFIX /opt/besu/bin/besu \
             $BESU_NETWORK \
             --data-path=/ethclient/besu \
-            --fast-sync-min-peers=2 \
             --rpc-http-enabled \
             --rpc-http-host=0.0.0.0 \
             --rpc-http-port=${EC_HTTP_PORT:-8545} \
