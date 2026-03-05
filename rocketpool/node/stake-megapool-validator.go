@@ -2,7 +2,6 @@ package node
 
 import (
 	"math/big"
-	"strconv"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -149,38 +148,40 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 		return err
 	}
 
+	// store validators that need to be staked
+	validatorsToStake := make(map[uint32]types.ValidatorPubkey)
+
+	for i := uint32(0); i < uint32(validatorCount); i++ {
+		if validatorInfo[i].InPrestake && validatorInfo[i].BeaconStatus.Index != "" {
+			validatorsToStake[validatorInfo[i].ValidatorId] = types.ValidatorPubkey(validatorInfo[i].PubKey)
+		}
+	}
+
+	// Check if we have any validators to stake
+	if len(validatorsToStake) == 0 {
+		return nil
+	}
+
+	// Load the beacon state
 	beaconState, err := services.GetBeaconState(t.bc)
 	if err != nil {
 		return err
 	}
-	stakedCount := 0
-	for i := uint32(0); i < uint32(validatorCount); i++ {
-		if validatorInfo[i].InPrestake && validatorInfo[i].BeaconStatus.Index != "" {
-			// Convert str to int
-			indexInt, err := strconv.Atoi(validatorInfo[i].BeaconStatus.Index)
-			if err != nil {
-				return err
-			}
-			if indexInt < len(beaconState.GetValidators()) {
-				// Log
-				t.log.Printlnf("The validator %d needs to be staked", validatorInfo[i].ValidatorId)
 
-				// Call Stake
-				t.stakeValidator(t.rp, beaconState, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), opts)
-				stakedCount++
-			}
-		}
+	// Iterate over validators to stake
+	for validatorId, validatorPubkey := range validatorsToStake {
+		// Log
+		t.log.Printlnf("The validator id %d needs to be staked", validatorId)
+
+		// Call Stake
+		t.stakeValidator(t.rp, beaconState, mp, validatorId, state, validatorPubkey, opts)
 	}
 
-	if stakedCount > 0 {
-		if err := validator.RestartValidator(t.cfg, t.bc, &t.log, t.d); err != nil {
-			return err
-		}
+	if err := validator.RestartValidator(t.cfg, t.bc, &t.log, t.d); err != nil {
+		return err
 	}
 
-	// Return
 	return nil
-
 }
 
 func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaconState eth2.BeaconState, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, callopts *bind.CallOpts) error {
