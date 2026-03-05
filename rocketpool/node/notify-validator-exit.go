@@ -148,11 +148,17 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 	for _, pubkey := range pubkeys {
 		validatorDetails, exists := state.MegapoolValidatorDetails[pubkey]
 		if !exists {
-			// validator not in the state yet, skipping
+			// Log
+			t.log.Printlnf("Validator %s not found in the megapool validator details map", pubkey.String())
 			continue
 		}
 
-		validatorInfo := state.MegapoolValidatorInfo[pubkey]
+		validatorInfo, exists := state.MegapoolValidatorInfo[pubkey]
+		if !exists {
+			// Log
+			t.log.Printlnf("Validator %s not found in the megapool validator info map", pubkey.String())
+			continue
+		}
 
 		if currentEpoch > validatorDetails.ActivationEpoch && validatorDetails.WithdrawableEpoch < FarFutureEpoch && validatorInfo.ValidatorInfo.Staked && !validatorInfo.ValidatorInfo.Exited && !validatorInfo.ValidatorInfo.Exiting {
 			validatorDetailsToProve[validatorInfo.ValidatorId] = validatorDetails
@@ -175,7 +181,11 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 		t.log.Printlnf("The validator id %d needs an exit proof", validatorId)
 
 		// Call Notify Exit
-		t.createExitProof(t.rp, beaconState, mp, validatorId, state, types.ValidatorPubkey(validatorDetails.Pubkey), opts)
+		err := t.createExitProof(t.rp, beaconState, mp, validatorId, state, types.ValidatorPubkey(validatorDetails.Pubkey), opts)
+		// dont return if there was an error, just log it so we can continue with the next validator
+		if err != nil {
+			t.log.Printlnf("Error creating exit proof for validator %d: %w", validatorId, err)
+		}
 	}
 	// Return
 	return nil

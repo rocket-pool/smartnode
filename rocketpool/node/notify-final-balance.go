@@ -137,11 +137,17 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 	for _, pubkey := range pubkeys {
 		validatorDetails, exists := state.MegapoolValidatorDetails[pubkey]
 		if !exists {
-			// validator not in the state yet, skipping
+			// Log
+			t.log.Printlnf("Validator %s not found in the megapool validator details", pubkey.String())
 			continue
 		}
 
-		validatorInfo := state.MegapoolValidatorInfo[pubkey]
+		validatorInfo, exists := state.MegapoolValidatorInfo[pubkey]
+		if !exists {
+			// Log
+			t.log.Printlnf("Validator %s not found in the megapool validator info map", pubkey.String())
+			continue
+		}
 
 		if validatorDetails.Status == beacon.ValidatorState_WithdrawalDone && validatorInfo.ValidatorInfo.Exiting && !validatorInfo.ValidatorInfo.Exited && validatorDetails.EffectiveBalance == 0 {
 			validatorDetailsToProve[validatorInfo.ValidatorId] = validatorDetails
@@ -158,7 +164,11 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 		// Log
 		t.log.Printlnf("The validator id %d needs a final balance proof", validatorId)
 
-		t.createFinalBalanceProof(t.rp, mp, state, validatorId, validatorDetails, opts)
+		err := t.createFinalBalanceProof(t.rp, mp, state, validatorId, validatorDetails, opts)
+		// dont return if there was an error, just log it so we can continue with the next validator
+		if err != nil {
+			t.log.Printlnf("Error creating final balance proof for validator %d: %w", validatorId, err)
+		}
 	}
 
 	// Return
