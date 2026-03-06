@@ -566,7 +566,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			fmt.Println()
 			color.YellowPrintln("**If you did NOT change clients, you can safely ignore this warning.**")
 			fmt.Println()
-			if !prompt.Confirm("%s", color.Yellow("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:")) {
+			if !prompt.ConfirmYellow("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:") {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -1033,7 +1033,7 @@ func pauseService(c *cli.Context) (bool, error) {
 func terminateService(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("%s", color.Red("WARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again."))) {
+	if !(c.Bool("yes") || prompt.ConfirmRed("WARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1255,7 +1255,7 @@ func resyncEth1(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("%s", color.Red("Are you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!"))) {
+	if !(c.Bool("yes") || prompt.ConfirmRed("Are you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1378,7 +1378,7 @@ func resyncEth2(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("%s", color.Red("Are you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!"))) {
+	if !(c.Bool("yes") || prompt.ConfirmRed("Are you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

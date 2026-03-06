@@ -39,6 +39,20 @@ func Confirm(fmtStr string, args ...any) bool {
 	return (strings.ToLower(response[:1]) == "y")
 }
 
+func confirmColor(colorFunc func(string) string, fmtStr string, args ...any) bool {
+	initialPrompt := fmt.Sprintf(fmtStr, args...)
+	response := Prompt(fmt.Sprintf("%s [y/n]", colorFunc(initialPrompt)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+	return (strings.ToLower(response[:1]) == "y")
+}
+
+func ConfirmRed(fmtStr string, args ...any) bool {
+	return confirmColor(color.Red, fmtStr, args...)
+}
+
+func ConfirmYellow(fmtStr string, args ...any) bool {
+	return confirmColor(color.Yellow, fmtStr, args...)
+}
+
 // Prompt for 'I agree' confirmation (used on important questions to avoid a quick 'y' response from the user)
 func ConfirmWithIAgree(fmtStr string, args ...any) bool {
 	initialPrompt := fmt.Sprintf(fmtStr, args...)
