@@ -17,12 +17,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
-
-const bold string = "\033[1m"
-const unbold string = "\033[0m"
 
 // Prompt for a wallet password
 func promptPassword() string {
@@ -45,7 +43,7 @@ func promptPassword() string {
 func PromptMnemonic() string {
 	for {
 		lengthInput := promptcli.Prompt(
-			"Please enter the "+bold+"number"+unbold+" of words in your mnemonic phrase (24 by default):",
+			"Please enter the "+color.Bold("number")+" of words in your mnemonic phrase (24 by default):",
 			"^[1-9][0-9]*$",
 			"Please enter a valid number.")
 
@@ -63,7 +61,7 @@ func PromptMnemonic() string {
 
 		i := 0
 		for mv.Filled() == false {
-			prompt := fmt.Sprintf("Enter %sWord Number %d%s of your mnemonic:", bold, i+1, unbold)
+			prompt := fmt.Sprintf("Enter %s of your mnemonic:", color.BoldSprintf("word number %d", i+1))
 			word := promptcli.PromptPassword(prompt, "^[a-zA-Z]+$", "Please enter a single word only.")
 
 			if err := mv.AddWord(strings.ToLower(word)); err != nil {
@@ -124,7 +122,11 @@ func promptForCustomKeyPasswords(rp *rocketpool.Client, cfg *config.RocketPoolCo
 
 	// Prompt the user with a warning message
 	if !testOnly {
-		fmt.Printf("%sWARNING:\nThe Smart Node has detected that you have custom (externally-derived) validator keys for your minipools.\nIf these keys were actively used for validation by a service such as Allnodes, you MUST CONFIRM WITH THAT SERVICE that they have stopped validating and disabled those keys, and will NEVER validate with them again.\nOtherwise, you may both run the same keys at the same time which WILL RESULT IN YOUR VALIDATORS BEING SLASHED.%s\n\n", colorRed, colorReset)
+		color.RedPrintln("WARNING:")
+		color.RedPrintln("The Smart Node has detected that you have custom (externally-derived) validator keys for your minipools.")
+		color.RedPrintln("If these keys were actively used for validation by a service such as Allnodes, you MUST CONFIRM WITH THAT SERVICE that they have stopped validating and disabled those keys, and will NEVER validate with them again.")
+		color.RedPrintln("Otherwise, you may both run the same keys at the same time which WILL RESULT IN YOUR VALIDATORS BEING SLASHED.")
+		fmt.Println()
 
 		if !promptcli.Confirm("Please confirm that you have coordinated with the service that was running your minipool validators previously to ensure they have STOPPED validation for your minipools, will NEVER start them again, and you have manually confirmed on a Blockchain explorer such as https://beaconcha.in that your minipools are no longer attesting.") {
 			fmt.Println("Cancelled.")
