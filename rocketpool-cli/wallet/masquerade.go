@@ -5,6 +5,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
@@ -14,7 +15,7 @@ func masquerade(c *cli.Context) error {
 	rp := rocketpool.NewClientFromCtx(c)
 	defer rp.Close()
 
-	fmt.Printf("Masquerading allows you to set your node address to any address you want. All commands will act as though your node wallet is for that address. Since you don't have the private key for that address, you can't submit transactions or sign messages though; commands will be %sread-only%s until you end the masquerade with `rocketpool wallet end-masquerade`.\n", colorYellow, colorReset)
+	fmt.Println("Masquerading allows you to set your node address to any address you want. All commands will act as though your node wallet is for that address. Since you don't have the private key for that address, you can't submit transactions or sign messages though; commands will be", color.Yellow("read-only"), "until you end the masquerade with `rocketpool wallet end-masquerade`.")
 	fmt.Println()
 
 	// Get address
@@ -29,7 +30,7 @@ func masquerade(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to masquerade as %s%s%s?", colorBlue, addressString, colorReset)) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to masquerade as %s?", color.LightBlue(addressString))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -40,7 +41,7 @@ func masquerade(c *cli.Context) error {
 		return fmt.Errorf("error running masquerade: %w", err)
 	}
 
-	fmt.Printf("Your node is now masquerading as address %s%s%s.\n", colorBlue, addressString, colorReset)
+	fmt.Printf("Your node is now masquerading as address %s.\n", color.LightBlue(addressString))
 
 	return nil
 }

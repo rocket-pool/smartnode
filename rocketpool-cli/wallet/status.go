@@ -8,6 +8,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 func getStatus(c *cli.Context) error {
@@ -38,12 +39,12 @@ func getStatus(c *cli.Context) error {
 	emptyAddress := common.Address{}
 	if status.IsMasquerading {
 		if status.NodeAddress != emptyAddress {
-			fmt.Printf("The node wallet is initialized, but you are currently masquerading as %s%s%s\n", colorBlue, status.AccountAddress, colorReset)
+			fmt.Printf("The node wallet is initialized, but you are currently masquerading as %s\n", color.LightBlue(status.AccountAddress.Hex()))
 			fmt.Printf("Wallet Address: %s\n", status.NodeAddress)
-			fmt.Printf("%sDue to this mismatch, the node cannot submit transactions. Use the command 'rocketpool wallet end-masquerade' to end masquerading and restore your wallet address.%s", colorYellow, colorReset)
+			color.YellowPrintln("Due to this mismatch, the node cannot submit transactions. Use the command 'rocketpool wallet end-masquerade' to end masquerading and restore your wallet address.")
 		} else {
-			fmt.Printf("The node wallet has not been initialized, but you are currently masquerading as %s%s%s\n", colorBlue, status.AccountAddress, colorReset)
-			fmt.Printf("%sThe node cannot submit transactions. Use the command 'rocketpool wallet end-masquerade' to end masquerading.%s", colorYellow, colorReset)
+			fmt.Printf("The node wallet has not been initialized, but you are currently masquerading as %s\n", color.LightBlue(status.AccountAddress.Hex()))
+			color.YellowPrintln("The node cannot submit transactions. Use the command 'rocketpool wallet end-masquerade' to end masquerading.")
 		}
 	} else {
 		// Not Masquerading
