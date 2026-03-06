@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -65,25 +66,31 @@ func distributeBalance(c *cli.Context) error {
 
 	// Print ineligible ones
 	if len(versionTooLowMinipools) > 0 {
-		fmt.Printf("%sWARNING: The following minipools are using an old delegate and cannot have their rewards safely distributed:\n", colorYellow)
+		color.YellowPrintln("WARNING: The following minipools are using an old delegate and cannot have their rewards safely distributed:")
 		for _, mp := range versionTooLowMinipools {
-			fmt.Printf("\t%s\n", mp.Address)
+			color.YellowPrintf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` in order to distribute their ETH balances.%s\n\n", colorReset)
+		fmt.Println()
+		color.YellowPrintln("Please upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` in order to distribute their ETH balances.")
+		fmt.Println()
 	}
 	if len(balanceLessThanRefundMinipools) > 0 {
-		fmt.Printf("%sWARNING: The following minipools have refunds larger than their current balances and cannot be distributed at this time:\n", colorYellow)
+		color.YellowPrintln("WARNING: The following minipools have refunds larger than their current balances and cannot be distributed at this time:")
 		for _, mp := range balanceLessThanRefundMinipools {
-			fmt.Printf("\t%s\n", mp.Address)
+			color.YellowPrintf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nIf you have recently migrated these minipools from solo validators, please wait until enough rewards have been sent from the Beacon Chain to your minipools to cover your refund amounts.%s\n\n", colorReset)
+		fmt.Println()
+		color.YellowPrintln("If you have recently migrated these minipools from solo validators, please wait until enough rewards have been sent from the Beacon Chain to your minipools to cover your refund amounts.")
+		fmt.Println()
 	}
 	if len(balanceTooBigMinipools) > 0 {
-		fmt.Printf("%sWARNING: The following minipools have over 8 ETH in their balances (after accounting for refunds):\n", colorYellow)
+		color.YellowPrintln("WARNING: The following minipools have over 8 ETH in their balances (after accounting for refunds):")
 		for _, mp := range balanceTooBigMinipools {
-			fmt.Printf("\t%s\n", mp.Address)
+			color.YellowPrintf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nDistributing these minipools will close them, effectively terminating them. If you're sure you want to do this, please use `rocketpool minipool close` on them instead.%s\n\n", colorReset)
+		fmt.Println()
+		color.YellowPrintln("Distributing these minipools will close them, effectively terminating them. If you're sure you want to do this, please use `rocketpool minipool close` on them instead.")
+		fmt.Println()
 	}
 
 	if len(eligibleMinipools) == 0 {
