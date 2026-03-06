@@ -38,11 +38,11 @@ func closeMinipools(c *cli.Context) error {
 
 	// Post a warning about express ticket provisioning
 	if !details.ExpressTicketsProvisioned {
-		if !prompt.Confirm("%s", color.Red("WARNING: The node has unprovisioned express queue ticket(s). Closing minipool(s) without provisioning will reduce the number of express queue tickets the node is eligible for. Please enter `yes` if you've understood this message.")) {
+		if !prompt.ConfirmRed("WARNING: The node has unprovisioned express queue ticket(s). Closing minipool(s) without provisioning will reduce the number of express queue tickets the node is eligible for. Please enter `yes` if you've understood this message.") {
 			fmt.Println("Cancelled.")
 			return nil
 		}
-		if c.Bool("yes") || prompt.Confirm("%s", color.Yellow("Would you like to provision express queue tickets for the node?")) {
+		if c.Bool("yes") || prompt.ConfirmYellow("Would you like to provision express queue tickets for the node?") {
 			// Check if the node can provision express tickets
 			canProvision, err := rp.CanProvisionExpressTickets()
 			if err != nil {
@@ -238,7 +238,7 @@ func closeMinipools(c *cli.Context) error {
 		}
 		if distributableBalance.Cmp(thirtyTwo) < 0 {
 			// More than 31.5 but less than 32, ETH will be slashed with a yellow warning
-			if !prompt.Confirm("%s", color.YellowSprintf("WARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6))) {
+			if !prompt.ConfirmYellow("WARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
