@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 // Creates CLI argument flags from the parameters of the configuration struct
@@ -440,7 +441,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 			{
 				Name:      "resync-eth1",
-				Usage:     fmt.Sprintf("%sDeletes the main ETH1 client's chain data and resyncs it from scratch. Only use this as a last resort!%s", colorRed, colorReset),
+				Usage:     color.Red("Deletes the main ETH1 client's chain data and resyncs it from scratch. Only use this as a last resort!"),
 				UsageText: "rocketpool service resync-eth1",
 				Action: func(c *cli.Context) error {
 
@@ -457,7 +458,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 			{
 				Name:      "resync-eth2",
-				Usage:     fmt.Sprintf("%sDeletes the ETH2 client's chain data and resyncs it from scratch. Only use this as a last resort!%s", colorRed, colorReset),
+				Usage:     color.Red("Deletes the ETH2 client's chain data and resyncs it from scratch. Only use this as a last resort!"),
 				UsageText: "rocketpool service resync-eth2",
 				Action: func(c *cli.Context) error {
 
@@ -475,7 +476,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			{
 				Name:      "terminate",
 				Aliases:   []string{"t"},
-				Usage:     fmt.Sprintf("%sDeletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Also removes your entire `.rocketpool` configuration folder, including your wallet, password, and validator keys. Only use this if you are cleaning up the Smart Node and want to start over!%s", colorRed, colorReset),
+				Usage:     color.Red("Deletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Also removes your entire `.rocketpool` configuration folder, including your wallet, password, and validator keys. Only use this if you are cleaning up the Smart Node and want to start over!"),
 				UsageText: "rocketpool service terminate [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{

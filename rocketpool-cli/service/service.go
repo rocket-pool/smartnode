@@ -20,6 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/shirou/gopsutil/v3/disk"
 )
@@ -44,13 +45,7 @@ const (
 	// Just ignore the version tag.
 	dockerImageRegex string = "(?P<image>.+):.*"
 
-	colorReset     string = "\033[0m"
-	colorBold      string = "\033[1m"
-	colorRed       string = "\033[31m"
-	colorYellow    string = "\033[33m"
-	colorGreen     string = "\033[32m"
-	colorLightBlue string = "\033[36m"
-	clearLine      string = "\033[2K"
+	clearLine string = "\033[2K"
 )
 
 // Install the Rocket Pool service
@@ -59,8 +54,10 @@ func installService(c *cli.Context) error {
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || prompt.Confirm(
-		"The Rocket Pool %s service will be installed.\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
-		shared.RocketPoolVersion(), colorGreen, colorReset,
+		"%s",
+		fmt.Sprintf("The Rocket Pool %s service will be installed.\n\n", shared.RocketPoolVersion())+
+			color.Green("If you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.\n")+
+			"Are you sure you want to continue?",
 	)) {
 		fmt.Println("Cancelled.")
 		return nil
@@ -102,13 +99,15 @@ func installService(c *cli.Context) error {
 	}
 
 	// Report next steps
-	fmt.Printf("%s\n=== Next Steps ===\n", colorLightBlue)
-	fmt.Printf("Run 'rocketpool service config' to review the settings changes for this update, or to continue setting up your node.%s\n", colorReset)
+	color.LightBluePrintln("=== Next Steps ===")
+	color.LightBluePrintln("Run 'rocketpool service config' to review the settings changes for this update, or to continue setting up your node.")
 
 	// Print the docker permissions notice
 	if isNew {
-		fmt.Printf("\n%sNOTE:\nSince this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.\n", colorYellow)
-		fmt.Printf("This is necessary for your user account to have permissions to use Docker.%s", colorReset)
+		fmt.Println()
+		color.YellowPrintln("NOTE:")
+		color.YellowPrintln("Since this is your first time installing Rocket Pool, please start a new shell session by logging out and back in or restarting the machine.")
+		color.YellowPrintln("This is necessary for your user account to have permissions to use Docker.")
 	}
 
 	return nil
@@ -121,9 +120,9 @@ func printPatchNotes(c *cli.Context) {
 	fmt.Print(shared.Logo())
 	fmt.Println()
 	fmt.Println()
-	fmt.Printf("%s=== Smart Node v%s ===%s\n", colorGreen, shared.RocketPoolVersion(), colorReset)
+	color.GreenPrintf("=== Smart Node v%s ===\n", shared.RocketPoolVersion())
 	fmt.Println()
-	fmt.Printf("Changes you should be aware of before starting:\n")
+	fmt.Println("Changes you should be aware of before starting:")
 	fmt.Println()
 	fmt.Println("This Smart Node version is compatible with the Saturn 1 upgrade. The upgrade took place on Feb 18, 2026 00:00:00 UTC.")
 	fmt.Println("For more information about the biggest Rocket Pool upgrade ever, please see the official documentation: https://docs.rocketpool.net/upgrades/saturn-1/whats-new")
@@ -155,7 +154,8 @@ func installUpdateTracker(c *cli.Context) error {
 	fmt.Println("")
 	fmt.Println("The Rocket Pool update tracker service was successfully installed!")
 	fmt.Println("")
-	fmt.Printf("%sNOTE:\nPlease restart the Smart Node stack to enable update tracking on the metrics dashboard.%s\n", colorYellow, colorReset)
+	color.YellowPrintln("NOTE:")
+	color.YellowPrintln("Please restart the Smart Node stack to enable update tracking on the metrics dashboard.")
 	fmt.Println("")
 	return nil
 
@@ -196,7 +196,8 @@ func configureService(c *cli.Context) error {
 	}
 	_, err = os.Stat(path)
 	if os.IsNotExist(err) {
-		fmt.Printf("%sYour configured Rocket Pool directory of [%s] does not exist.\nPlease follow the instructions at https://docs.rocketpool.net/node-staking/docker to install the Smart Node.%s\n", colorYellow, path, colorReset)
+		color.YellowPrintf("Your configured Rocket Pool directory of [%s] does not exist.\n", path)
+		color.YellowPrintln("Please follow the instructions at https://docs.rocketpool.net/node-staking/docker to install the Smart Node.")
 		return nil
 	}
 
@@ -273,7 +274,12 @@ func configureService(c *cli.Context) error {
 				return fmt.Errorf("error saving config: %w", err)
 			}
 
-			fmt.Printf("%sWARNING: You have requested to change networks.\n\nAll of your existing chain data, your node wallet, and your validator keys will be removed. If you had a Checkpoint Sync URL provided for your Consensus client, it will be removed and you will need to specify a different one that supports the new network.\n\nPlease confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.\n\n%s", colorYellow, colorReset)
+			color.YellowPrintln("WARNING: You have requested to change networks.")
+			fmt.Println()
+			color.YellowPrintln("All of your existing chain data, your node wallet, and your validator keys will be removed. If you had a Checkpoint Sync URL provided for your Consensus client, it will be removed and you will need to specify a different one that supports the new network.")
+			fmt.Println()
+			color.YellowPrintln("Please confirm you have backed up everything you want to keep, because it will be deleted if you answer `y` to the prompt below.")
+			fmt.Println()
 
 			if !prompt.Confirm("Would you like the Smart Node to automatically switch networks for you? This will destroy and rebuild your `data` folder and all of Rocket Pool's Docker containers.") {
 				fmt.Println("To change networks manually, please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/node-staking/config-docker#choosing-a-network).")
@@ -282,7 +288,8 @@ func configureService(c *cli.Context) error {
 
 			err = changeNetworks(c, rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix))
 			if err != nil {
-				fmt.Printf("%s%s%s\nThe Smart Node could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/node-staking/mainnet.html).\n", colorRed, err.Error(), colorReset)
+				color.RedPrintln(err.Error())
+				fmt.Println("The Smart Node could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/node-staking/mainnet.html).")
 			}
 			return nil
 		}
@@ -487,9 +494,11 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Force all Docker or all Hybrid
 	if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External {
-		fmt.Printf("%sYou are using a locally-managed Execution client and an externally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.%s\n", colorRed, colorReset)
+		color.RedPrintln("You are using a locally-managed Execution client and an externally-managed Consensus client.")
+		color.RedPrintln("This configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	} else if cfg.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_External && cfg.ConsensusClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local {
-		fmt.Printf("%sYou are using an externally-managed Execution client and a locally-managed Consensus client.\nThis configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.%s\n", colorRed, colorReset)
+		color.RedPrintln("You are using an externally-managed Execution client and a locally-managed Consensus client.")
+		color.RedPrintln("This configuration is not compatible with The Merge; please select either locally-managed or externally-managed for both the EC and CC.")
 	}
 
 	if isNew {
@@ -508,7 +517,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
 			}
 			rp.SaveConfig(cfg)
-			fmt.Printf("%sUpdated settings successfully.%s\n", colorGreen, colorReset)
+			color.GreenPrintln("Updated settings successfully.")
 		} else {
 			fmt.Println("Cancelled.")
 			return nil
@@ -536,11 +545,12 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	// Validate the config
 	errors := cfg.Validate()
 	if len(errors) > 0 {
-		fmt.Printf("%sYour configuration encountered errors. You must correct the following in order to start Rocket Pool:\n\n", colorRed)
+		color.RedPrintln("Your configuration encountered errors. You must correct the following in order to start Rocket Pool:")
+		fmt.Println()
 		for _, err := range errors {
-			fmt.Printf("%s\n\n", err)
+			color.RedPrintf("%s\n", err)
+			fmt.Println()
 		}
-		fmt.Println(colorReset)
 		return nil
 	}
 
@@ -548,29 +558,35 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		// Do the client swap check
 		err := checkForValidatorChange(rp, cfg)
 		if err != nil {
-			fmt.Printf("%sWARNING: couldn't verify that the validator container can be safely restarted:\n\t%s\n", colorYellow, err.Error())
-			fmt.Println("If you are changing to a different ETH2 client, it may resubmit an attestation you have already submitted.")
-			fmt.Println("This will slash your validator!")
-			fmt.Println("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.")
+			color.YellowPrintln("WARNING: couldn't verify that the validator container can be safely restarted:")
+			color.YellowPrintf("\t%s\n", err.Error())
+			color.YellowPrintln("If you are changing to a different ETH2 client, it may resubmit an attestation you have already submitted.")
+			color.YellowPrintln("This will slash your validator!")
+			color.YellowPrintln("To prevent slashing, you must wait 15 minutes from the time you stopped the clients before starting them again.")
 			fmt.Println()
-			fmt.Println("**If you did NOT change clients, you can safely ignore this warning.**")
+			color.YellowPrintln("**If you did NOT change clients, you can safely ignore this warning.**")
 			fmt.Println()
-			if !prompt.Confirm("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset) {
+			if !prompt.Confirm("%s", color.Yellow("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:")) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
 		}
 	} else {
-		fmt.Printf("%sIgnoring anti-slashing safety delay.%s\n", colorYellow, colorReset)
+		color.YellowPrintln("Ignoring anti-slashing safety delay.")
 	}
 
 	// Write a note on doppelganger protection
 	doppelgangerEnabled, err := cfg.IsDoppelgangerEnabled()
 	if err != nil {
-		fmt.Printf("%sCouldn't check if you have Doppelganger Protection enabled: %s\nIf you do, your validator will miss up to 3 attestations when it starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", colorYellow, err.Error(), colorReset)
+		color.YellowPrintf("Couldn't check if you have Doppelganger Protection enabled: %s\n", err.Error())
+		color.YellowPrintln("If you do, your validator will miss up to 3 attestations when it starts.")
+		color.YellowPrintln("This is *intentional* and does not indicate a problem with your node.")
 	} else if doppelgangerEnabled {
-		fmt.Printf("%sNOTE: You currently have Doppelganger Protection enabled.\nYour validator will miss up to 3 attestations when it starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", colorYellow, colorReset)
+		color.YellowPrintln("NOTE: You currently have Doppelganger Protection enabled.")
+		color.YellowPrintln("Your validator will miss up to 3 attestations when it starts.")
+		color.YellowPrintln("This is *intentional* and does not indicate a problem with your node.")
 	}
+	fmt.Println()
 
 	// Start service
 	err = rp.StartService(getComposeFiles(c))
@@ -622,7 +638,10 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 		consensusClient, _ := cfg.GetSelectedConsensusClient()
 		// Warn about Lodestar
 		if consensusClient == cfgtypes.ConsensusClient_Lodestar {
-			fmt.Printf("%sNOTE:\nIf this is your first time running Lodestar and you have existing minipools, you must run `rocketpool wallet rebuild` after the Smart Node starts to generate the validator keys for it.\nIf you have run it before or you don't have any minipools, you can ignore this message.%s\n\n", colorYellow, colorReset)
+			color.YellowPrintln("NOTE:")
+			color.YellowPrintln("If this is your first time running Lodestar and you have existing minipools, you must run `rocketpool wallet rebuild` after the Smart Node starts to generate the validator keys for it.")
+			color.YellowPrintln("If you have run it before or you don't have any minipools, you can ignore this message.")
+			fmt.Println()
 		}
 
 		// Get the time that the container responsible for validator duties exited
@@ -642,7 +661,7 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 			return fmt.Errorf("Error getting container [%s] status: %w", validatorDutyContainerName, err)
 		}
 		if validatorFinishTime == zeroTime || status == "running" {
-			fmt.Printf("%sValidator is currently running, stopping it...%s\n", colorYellow, colorReset)
+			color.YellowPrintln("Validator is currently running, stopping it...")
 			response, err := rp.StopContainer(validatorDutyContainerName)
 			validatorFinishTime = time.Now()
 			if err != nil {
@@ -660,12 +679,13 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 			fmt.Printf("The validator has been offline for %s, which is long enough to prevent slashing.\n", time.Since(validatorFinishTime))
 			fmt.Println("The new client can be safely started.")
 		} else {
-			fmt.Printf("%s=== WARNING ===\n", colorRed)
-			fmt.Printf("You have changed your validator client from %s to %s. Only %s has elapsed since you stopped %s.\n", currentValidatorName, pendingValidatorName, time.Since(validatorFinishTime), currentValidatorName)
-			fmt.Printf("If you were actively validating while using %s, starting %s without waiting will cause your validators to be slashed due to duplicate attestations!", currentValidatorName, pendingValidatorName)
-			fmt.Println("To prevent slashing, Rocket Pool will delay activating the new client for 15 minutes.")
-			fmt.Println("See the documentation for a more detailed explanation: https://docs.rocketpool.net/node-staking/maintenance/node-migration.html#slashing-and-the-slashing-database")
-			fmt.Printf("If you have read the documentation, understand the risks, and want to bypass this cooldown, run `rocketpool service start --ignore-slash-timer`.%s\n\n", colorReset)
+			color.RedPrintln("=== WARNING ===")
+			color.RedPrintf("You have changed your validator client from %s to %s. Only %s has elapsed since you stopped %s.\n", currentValidatorName, pendingValidatorName, time.Since(validatorFinishTime), currentValidatorName)
+			color.RedPrintf("If you were actively validating while using %s, starting %s without waiting will cause your validators to be slashed due to duplicate attestations!", currentValidatorName, pendingValidatorName)
+			color.RedPrintln("To prevent slashing, Rocket Pool will delay activating the new client for 15 minutes.")
+			color.RedPrintln("See the documentation for a more detailed explanation: https://docs.rocketpool.net/node-staking/maintenance/node-migration.html#slashing-and-the-slashing-database")
+			color.RedPrintln("If you have read the documentation, understand the risks, and want to bypass this cooldown, run `rocketpool service start --ignore-slash-timer`.")
+			fmt.Println()
 
 			// Wait for 15 minutes
 			for remainingTime > 0 {
@@ -675,7 +695,6 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 				fmt.Printf("%s\r", clearLine)
 			}
 
-			fmt.Println(colorReset)
 			fmt.Println("You may now safely start the validator without fear of being slashed.")
 		}
 	}
@@ -770,10 +789,12 @@ func pruneExecutionClient(c *cli.Context) error {
 
 	// Print the appropriate warnings before pruning
 	if selectedEc == cfgtypes.ExecutionClient_Geth {
-		fmt.Printf("%sGeth has a new feature that renders pruning obsolete. However, as this is a new feature you may have to resync with `rocketpool service resync-eth1` before this takes effect.%s\n", colorYellow, colorReset)
+		color.YellowPrintln("Geth has a new feature that renders pruning obsolete. However, as this is a new feature you may have to resync with `rocketpool service resync-eth1` before this takes effect.")
 		fmt.Println("This will shut down your main execution client and prune its database, freeing up disk space.")
 		if cfg.UseFallbackClients.Value == false {
-			fmt.Printf("%sYou do not have a fallback execution client configured.\nYour node will no longer be able to perform any validation duties (attesting or proposing blocks) until pruning is done.\nPlease configure a fallback client with `rocketpool service config` before running this.%s\n", colorRed, colorReset)
+			color.RedPrintln("You do not have a fallback execution client configured.")
+			color.RedPrintln("Your node will no longer be able to perform any validation duties (attesting or proposing blocks) until pruning is done.")
+			color.RedPrintln("Please configure a fallback client with `rocketpool service config` before running this.")
 		} else {
 			fmt.Println("You have fallback clients enabled. Rocket Pool (and your consensus client) will use that while the main client is pruning.")
 		}
@@ -827,7 +848,7 @@ func pruneExecutionClient(c *cli.Context) error {
 		pruneFreeSpaceRequired = NethermindPruneFreeSpaceRequired
 	}
 	if diskUsage.Free < pruneFreeSpaceRequired {
-		return fmt.Errorf("%sYour disk must have %s GiB free to prune, but it only has %s free. Please free some space before pruning.%s", colorRed, humanize.IBytes(pruneFreeSpaceRequired), freeSpaceHuman, colorReset)
+		return fmt.Errorf("Your disk must have %s GiB free to prune, but it only has %s free. Please free some space before pruning.", humanize.IBytes(pruneFreeSpaceRequired), freeSpaceHuman)
 	}
 
 	fmt.Printf("Your disk has %s free, which is enough to prune.\n", freeSpaceHuman)
@@ -876,7 +897,8 @@ func pruneExecutionClient(c *cli.Context) error {
 	fmt.Println("Done! Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
 	fmt.Println("Once it's done, it will restart automatically and resume normal operation.")
 
-	fmt.Println(colorYellow + "NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!\nYou must let it run to completion!" + colorReset)
+	color.YellowPrintln("NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!")
+	color.YellowPrintln("You must let it run to completion!")
 
 	return nil
 
@@ -985,10 +1007,15 @@ func pauseService(c *cli.Context) (bool, error) {
 	// Write a note on doppelganger protection
 	doppelgangerEnabled, err := cfg.IsDoppelgangerEnabled()
 	if err != nil {
-		fmt.Printf("%sCouldn't check if you have Doppelganger Protection enabled: %s\nIf you do, stopping your validator will cause it to miss up to 3 attestations when it next starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", colorYellow, err.Error(), colorReset)
+		color.YellowPrintf("Couldn't check if you have Doppelganger Protection enabled: %s\n", err.Error())
+		color.YellowPrintln("If you do, stopping your validator will cause it to miss up to 3 attestations when it next starts.")
+		color.YellowPrintln("This is *intentional* and does not indicate a problem with your node.")
 	} else if doppelgangerEnabled {
-		fmt.Printf("%sNOTE: You currently have Doppelganger Protection enabled.\nIf you stop your validator, it will miss up to 3 attestations when it next starts.\nThis is *intentional* and does not indicate a problem with your node.%s\n\n", colorYellow, colorReset)
+		color.YellowPrintln("NOTE: You currently have Doppelganger Protection enabled.")
+		color.YellowPrintln("If you stop your validator, it will miss up to 3 attestations when it next starts.")
+		color.YellowPrintln("This is *intentional* and does not indicate a problem with your node.")
 	}
+	fmt.Println()
 
 	// Prompt for confirmation
 	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!")) {
@@ -1006,7 +1033,7 @@ func pauseService(c *cli.Context) (bool, error) {
 func terminateService(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.%s", colorRed, colorReset)) {
+	if !(c.Bool("yes") || prompt.Confirm("%s", color.Red("WARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again."))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1218,7 +1245,8 @@ func resyncEth1(c *cli.Context) error {
 	}
 
 	fmt.Println("This will delete the chain data of your primary ETH1 client and resync it from scratch.")
-	fmt.Printf("%sYou should only do this if your ETH1 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n", colorYellow, colorReset)
+	color.YellowPrintln("You should only do this if your ETH1 client has failed and can no longer start or sync properly.")
+	color.YellowPrintln("This is meant to be a last resort.")
 
 	// Get the container prefix
 	prefix, err := rp.GetContainerPrefix()
@@ -1227,7 +1255,7 @@ func resyncEth1(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("%sAre you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!%s", colorRed, colorReset)) {
+	if !(c.Bool("yes") || prompt.Confirm("%s", color.Red("Are you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!"))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1237,10 +1265,10 @@ func resyncEth1(c *cli.Context) error {
 	fmt.Printf("Stopping %s...\n", executionContainerName)
 	result, err := rp.StopContainer(executionContainerName)
 	if err != nil {
-		fmt.Printf("%sWARNING: Stopping main ETH1 container failed: %s%s\n", colorYellow, err.Error(), colorReset)
+		color.YellowPrintf("WARNING: Stopping main ETH1 container failed: %s\n", err.Error())
 	}
 	if result != executionContainerName {
-		fmt.Printf("%sWARNING: Unexpected output while stopping main ETH1 container: %s%s\n", colorYellow, result, colorReset)
+		color.YellowPrintf("WARNING: Unexpected output while stopping main ETH1 container: %s\n", result)
 	}
 
 	// Get ETH1 volume name
@@ -1299,7 +1327,9 @@ func resyncEth2(c *cli.Context) error {
 	}
 
 	fmt.Println("This will delete the chain data of your ETH2 client and resync it from scratch.")
-	fmt.Printf("%sYou should only do this if your ETH2 client has failed and can no longer start or sync properly.\nThis is meant to be a last resort.%s\n\n", colorYellow, colorReset)
+	color.YellowPrintln("You should only do this if your ETH2 client has failed and can no longer start or sync properly.")
+	color.YellowPrintln("This is meant to be a last resort.")
+	fmt.Println()
 
 	// Get the parameters that the selected client doesn't support
 	var unsupportedParams []string
@@ -1330,19 +1360,25 @@ func resyncEth2(c *cli.Context) error {
 		}
 	}
 	if !supportsCheckpointSync {
-		fmt.Printf("%sYour ETH2 client (%s) does not support checkpoint sync.\nIf you have active validators, they %swill be considered offline and will leak ETH%s%s while the client is syncing.%s\n\n", colorRed, clientName, colorBold, colorReset, colorRed, colorReset)
+		color.RedPrintln("Your ETH2 client (%s) does not support checkpoint sync.", clientName)
+		color.RedPrintln("If you have active validators, they", color.Bold("will be considered offline and will leak ETH"), "while the client is syncing.")
+		fmt.Println()
 	} else {
 		// Get the current checkpoint sync URL
 		checkpointSyncUrl := cfg.ConsensusCommon.CheckpointSyncProvider.Value.(string)
 		if checkpointSyncUrl == "" {
-			fmt.Printf("%sYou do not have a checkpoint sync provider configured.\nIf you have active validators, they %swill be considered offline and will lose ETH%s%s until your ETH2 client finishes syncing.\nWe strongly recommend you configure a checkpoint sync provider with `rocketpool service config` so it syncs instantly before running this.%s\n\n", colorRed, colorBold, colorReset, colorRed, colorReset)
+			color.RedPrintln("You do not have a checkpoint sync provider configured.")
+			color.RedPrintln("If you have active validators, they", color.Bold("will be considered offline and will leak ETH"), "while the client is syncing.")
+			color.RedPrintln("We strongly recommend you configure a checkpoint sync provider with `rocketpool service config` so it syncs instantly before running this.")
+			fmt.Println()
 		} else {
-			fmt.Printf("You have a checkpoint sync provider configured (%s).\nYour ETH2 client will use it to sync to the head of the Beacon Chain instantly after being rebuilt.\n\n", checkpointSyncUrl)
+			fmt.Printf("You have a checkpoint sync provider configured (%s).\n", checkpointSyncUrl)
+			fmt.Println("Your ETH2 client will use it to sync to the head of the Beacon Chain instantly after being rebuilt.")
 		}
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("%sAre you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!%s", colorRed, colorReset)) {
+	if !(c.Bool("yes") || prompt.Confirm("%s", color.Red("Are you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!"))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1380,20 +1416,20 @@ func resyncEth2(c *cli.Context) error {
 			fmt.Printf("Stopping %s...\n", container.Names)
 			result, err := rp.StopContainer(container.Names)
 			if err != nil {
-				fmt.Printf("%sWARNING: Stopping container %s failed: %s%s\n", colorYellow, container.Names, err.Error(), colorReset)
+				color.YellowPrintf("WARNING: Stopping container %s failed: %s\n", container.Names, err.Error())
 			}
 			if result != container.Names {
-				fmt.Printf("%sWARNING: Unexpected output while stopping container %s: %s%s\n", colorYellow, container.Names, result, colorReset)
+				color.YellowPrintf("WARNING: Unexpected output while stopping container %s: %s\n", container.Names, result)
 			}
 		}
 
 		fmt.Printf("Deleting %s...\n", container.Names)
 		result, err := rp.RemoveContainer(container.Names)
 		if err != nil {
-			fmt.Printf("%sWARNING: Deleting container %s failed: %s%s\n", colorYellow, container.Names, err.Error(), colorReset)
+			color.YellowPrintf("WARNING: Deleting container %s failed: %s\n", container.Names, err.Error())
 		}
 		if result != container.Names {
-			fmt.Printf("%sWARNING: Unexpected output while deleting container %s: %s%s\n", colorYellow, container.Names, result, colorReset)
+			color.YellowPrintf("WARNING: Unexpected output while deleting container %s: %s\n", container.Names, result)
 		}
 	}
 
