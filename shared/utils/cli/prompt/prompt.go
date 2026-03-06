@@ -52,9 +52,10 @@ func ConfirmWithIAgree(initialPrompt string) bool {
 func Select(initialPrompt string, options []string) (int, string) {
 
 	// Get prompt
-	prompt := initialPrompt
+	var prompt strings.Builder
+	prompt.WriteString(initialPrompt)
 	for i, option := range options {
-		prompt += fmt.Sprintf("\n%d: %s", (i + 1), option)
+		prompt.WriteString(fmt.Sprintf("\n%d: %s", (i + 1), option))
 	}
 
 	// Get expected response format
@@ -65,7 +66,7 @@ func Select(initialPrompt string, options []string) (int, string) {
 	expectedFormat := fmt.Sprintf("^(%s)$", strings.Join(optionNumbers, "|"))
 
 	// Prompt user
-	response := Prompt(prompt, expectedFormat, "Please enter a number corresponding to an option")
+	response := Prompt(prompt.String(), expectedFormat, "Please enter a number corresponding to an option")
 
 	// Get selected option
 	index, _ := strconv.Atoi(response)
