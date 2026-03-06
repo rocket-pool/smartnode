@@ -431,12 +431,12 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 		},
 
 		OpenAPIPort: config.Parameter{
-			ID:          "openAPIPort",
-			Name:        "Expose API Port",
-			Description: "Expose the API port to other processes on your machine. For security reasons, this port can only be exposed to localhost. It is recommended to keep this setting on Closed unless you have a specific reason to expose it.",
-			Type:        config.ParameterType_Choice,
-			Default:     map[config.Network]interface{}{config.Network_All: config.RPC_Closed},
-			AffectsContainers: []config.ContainerID{config.ContainerID_Node},
+			ID:                 "openAPIPort",
+			Name:               "Expose API Port",
+			Description:        "Expose the API port to other processes on your machine. For security reasons, this port can only be exposed to localhost. It is recommended to keep this setting on Closed unless you have a specific reason to expose it.",
+			Type:               config.ParameterType_Choice,
+			Default:            map[config.Network]interface{}{config.Network_All: config.RPC_Closed},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options:            config.RestrictedPortModes(),
