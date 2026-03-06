@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -147,20 +148,16 @@ func (n NodeAlert) Severity() string {
 }
 
 func (n NodeAlert) ColorString() string {
-	const (
-		colorReset  string = "\033[0m"
-		colorRed    string = "\033[31m"
-		colorYellow string = "\033[33m"
-	)
 	suppressed := ""
 	if n.IsSuppressed() {
 		suppressed = " (suppressed)"
 	}
-	alertColor := colorYellow
+	alertColor := color.Yellow
 	if n.Severity() == "critical" {
-		alertColor = colorRed
+		alertColor = color.Red
 	}
-	return fmt.Sprintf("%s%s%s%s %s: %s", alertColor, n.Severity(), suppressed, colorReset, n.Summary(), n.Description())
+	header := alertColor(fmt.Sprintf("%s%s", n.Severity(), suppressed))
+	return fmt.Sprintf("%s %s: %s", header, n.Summary(), n.Description())
 }
 
 type CanRegisterNodeResponse struct {
