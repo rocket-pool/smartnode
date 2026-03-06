@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/security"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/update"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -26,9 +27,7 @@ import (
 
 const (
 	colorReset    string = "\033[0m"
-	colorRed      string = "\033[31m"
 	colorYellow   string = "\033[33m"
-	colorGreen    string = "\033[32m"
 	maxAlertItems int    = 3
 )
 
@@ -125,8 +124,12 @@ A special thanks to the Rocket Pool community for all their contributions.
 				Name:  "force, f",
 				Usage: "Force the update even if the current version is the latest",
 			},
+			cli.BoolFlag{
+				Name:  "skip-signature-verification, s",
+				Usage: "Don't verify the singature of the release",
+			},
 		},
-		Action: update,
+		Action: update.Update,
 	})
 
 	app.Before = func(c *cli.Context) error {

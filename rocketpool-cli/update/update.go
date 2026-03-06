@@ -1,4 +1,4 @@
-package main
+package update
 
 import (
 	"fmt"
@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/rocket-pool/smartnode/shared"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
@@ -41,7 +42,7 @@ func validateOsArch() error {
 func errorPartialSuccess(err error) {
 	fmt.Fprintln(os.Stderr, "An error occurred after the cli binary was updated, but before the service was.")
 	fmt.Fprintln(os.Stderr, "The error was:")
-	fmt.Fprintf(os.Stderr, "%s    %s%s\n", colorRed, err.Error(), colorReset)
+	fmt.Fprintf(os.Stderr, "    %s\n", cliutils.Red(err.Error()))
 	fmt.Fprintln(os.Stderr)
 	printPartialSuccessNextSteps()
 	os.Exit(1)
@@ -65,7 +66,7 @@ func forkCommand(binaryPath string, yes bool, args ...string) *exec.Cmd {
 	return cmd
 }
 
-func update(c *cli.Context) error {
+func Update(c *cli.Context) error {
 	// Get the pwd and argv[0]
 	pwd, err := os.Getwd()
 	if err != nil {
@@ -81,11 +82,11 @@ func update(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("Your detected os/architecture is %s%s/%s%s.\n", colorGreen, runtime.GOOS, runtime.GOARCH, colorReset)
+	fmt.Printf("Your detected os/architecture is %s/%s.\n", cliutils.Green(runtime.GOOS), cliutils.Green(runtime.GOARCH))
 	fmt.Println()
 
 	if !c.Bool("yes") {
-		ok := prompt.Confirm("The cli at %s%s%s will be replaced. Continue?", colorYellow, oldBinaryPath, colorReset)
+		ok := prompt.Confirm("The cli at %s will be replaced. Continue?", cliutils.Yellow(oldBinaryPath))
 		if !ok {
 			return nil
 		}
@@ -108,7 +109,7 @@ func update(c *cli.Context) error {
 
 	// Download the new binary
 	downloadUrl := fmt.Sprintf(downloadUrlFormatString, runtime.GOOS, runtime.GOARCH)
-	fmt.Printf("Downloading the new binary from %s%s%s\n", colorGreen, downloadUrl, colorReset)
+	fmt.Printf("Downloading the new binary from %s\n", cliutils.Green(downloadUrl))
 	fmt.Println()
 	response, err := http.Get(downloadUrl)
 	if err != nil {
@@ -135,11 +136,11 @@ func update(c *cli.Context) error {
 	newVersion = strings.TrimPrefix(newVersion, "rocketpool version ")
 
 	if strings.EqualFold(shared.RocketPoolVersion(), newVersion) && !c.Bool("force") {
-		fmt.Printf("%sYou are already on the latest version of smartnode: %s.%s\n", colorGreen, newVersion, colorReset)
+		fmt.Println(cliutils.Green(fmt.Sprintf("You are already on the latest version of smartnode: %s.", newVersion)))
 		return nil
 	}
 
-	fmt.Printf("Updating from %s%s%s to %s%s%s\n", colorYellow, shared.RocketPoolVersion(), colorReset, colorGreen, newVersion, colorReset)
+	fmt.Printf("Updating from %s to %s\n", cliutils.Yellow(shared.RocketPoolVersion()), cliutils.Green(newVersion))
 
 	// Rename the temporary file to the actual binary
 	err = os.Rename(tempFile.Name(), oldBinaryPath)
@@ -148,7 +149,7 @@ func update(c *cli.Context) error {
 	}
 
 	fmt.Println()
-	fmt.Printf("%sThe cli has been updated.%s\n", colorGreen, colorReset)
+	fmt.Println(cliutils.Green("The cli has been updated."))
 	fmt.Println()
 
 	if !c.Bool("yes") {
@@ -189,9 +190,9 @@ func update(c *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("%sThe upgrade to Smart Node %s has been completed.%s\n", colorGreen, newVersion, colorReset)
+	fmt.Println(cliutils.Green(fmt.Sprintf("The upgrade to Smart Node %s has been completed.", newVersion)))
 	fmt.Println()
-	fmt.Printf("%sPlease monitor your validators for a few minutes for issues.%s\n", colorYellow, colorReset)
+	fmt.Println(cliutils.Yellow("Please monitor your validators for a few minutes for issues."))
 	fmt.Println()
 
 	return nil
