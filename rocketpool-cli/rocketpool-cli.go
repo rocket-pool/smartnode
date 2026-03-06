@@ -26,7 +26,9 @@ import (
 
 const (
 	colorReset    string = "\033[0m"
+	colorRed      string = "\033[31m"
 	colorYellow   string = "\033[33m"
+	colorGreen    string = "\033[32m"
 	maxAlertItems int    = 3
 )
 
@@ -109,6 +111,23 @@ A special thanks to the Rocket Pool community for all their contributions.
 	security.RegisterCommands(app, "security", []string{"c"})
 	service.RegisterCommands(app, "service", []string{"s"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
+
+	// Add a command that updates the smart node cli.
+	app.Commands = append(app.Commands, cli.Command{
+		Name:  "update",
+		Usage: "Update the cli binary",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "yes, y",
+				Usage: "Automatically confirm the update",
+			},
+			cli.BoolFlag{
+				Name:  "force, f",
+				Usage: "Force the update even if the current version is the latest",
+			},
+		},
+		Action: update,
+	})
 
 	app.Before = func(c *cli.Context) error {
 		// Check user ID
