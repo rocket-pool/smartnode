@@ -97,7 +97,7 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex()))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

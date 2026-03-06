@@ -70,7 +70,7 @@ func proposeRecurringSpend(c *cli.Context) error {
 		}
 	}
 	startTime := time.Unix(int64(startTimeUnix), 0)
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("The provided timestamp corresponds to %s - is this correct?", startTime.UTC().String()))) {
+	if !(c.Bool("yes") || prompt.Confirm("The provided timestamp corresponds to %s - is this correct?", startTime.UTC().String())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

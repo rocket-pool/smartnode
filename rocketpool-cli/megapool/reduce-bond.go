@@ -37,7 +37,7 @@ func reduceBond(c *cli.Context) error {
 	if megapoolDetails.Megapool.NodeBond.Cmp(megapoolDetails.Megapool.BondRequirement) > 0 {
 		maxAmountInEth := eth.WeiToEth(megapoolDetails.Megapool.NodeBond.Sub(megapoolDetails.Megapool.NodeBond, megapoolDetails.Megapool.BondRequirement))
 		fmt.Printf("You have %.6f of excess bond.\n", maxAmountInEth)
-		if prompt.Confirm(fmt.Sprintf("Do you want to reduce %.6f ETH of your node bond?", maxAmountInEth)) {
+		if prompt.Confirm("Do you want to reduce %.6f ETH of your node bond?", maxAmountInEth) {
 			// Convert maxAmountInEth to string
 			amount = maxAmountInEth
 		} else {
@@ -74,7 +74,7 @@ func reduceBond(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to reduce %.6f of the megapool bond?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to reduce %.6f of the megapool bond?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

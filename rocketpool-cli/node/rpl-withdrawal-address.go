@@ -95,7 +95,7 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 				return err
 			}
 
-			if !prompt.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString)) {
+			if !prompt.Confirm("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -125,7 +125,7 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 	if canResponse.RPLStake.Cmp(common.Big0) == 1 {
 		fmt.Printf("%sNOTE: You currently have %.6f RPL staked. Withdrawing it will *no longer* send it to your primary withdrawal address. It will be sent to the new RPL withdrawal address instead. Please verify you have control over that address before confirming this!%s\n", colorYellow, eth.WeiToEth(canResponse.RPLStake), colorReset)
 	}
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -94,7 +94,7 @@ func assignDeposits(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to assign %d validators?", maxValidators))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to assign %d validators?", maxValidators)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

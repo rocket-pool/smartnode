@@ -55,7 +55,7 @@ func claimUnclaimedRewards(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to claim %.6f ETH in unclaimed rewards?", math.RoundDown(eth.WeiToEth(status.UnclaimedRewards), 6)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to claim %.6f ETH in unclaimed rewards?", math.RoundDown(eth.WeiToEth(status.UnclaimedRewards), 6))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

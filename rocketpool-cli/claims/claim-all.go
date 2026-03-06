@@ -882,7 +882,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 				if autoConfirm {
 					fmt.Printf("  %sContinuing with remaining %d claim(s)...%s\n", colorYellow, remaining, colorReset)
 				} else {
-					if !prompt.Confirm(fmt.Sprintf("  The above claim failed. Continue with the remaining %d claim(s)?", remaining)) {
+					if !prompt.Confirm("  The above claim failed. Continue with the remaining %d claim(s)?", remaining) {
 						skippedCount = remaining
 						fmt.Println("  Aborting remaining claims.")
 						break

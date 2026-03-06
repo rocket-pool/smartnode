@@ -217,7 +217,7 @@ func distributeBalance(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to distribute the ETH balance of %d minipools?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to distribute the ETH balance of %d minipools?", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

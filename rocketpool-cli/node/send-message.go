@@ -52,7 +52,7 @@ func sendMessage(c *cli.Context, toAddressOrENS string, message []byte) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send a message to %s?", toAddressString))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to send a message to %s?", toAddressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

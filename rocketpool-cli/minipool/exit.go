@@ -93,7 +93,7 @@ func exitMinipools(c *cli.Context) error {
 	fmt.Printf("Once your funds have been withdrawn, you can run `rocketpool minipool close` to distribute them to your withdrawal address and close the minipool.\n\n%s", colorReset)
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.ConfirmWithIAgree(fmt.Sprintf("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.ConfirmWithIAgree("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

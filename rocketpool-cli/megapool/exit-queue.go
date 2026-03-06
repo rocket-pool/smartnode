@@ -169,7 +169,7 @@ func exitQueue(c *cli.Context) error {
 	}
 
 	// Ask for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to exit %d validator(s) from the megapool queue?", len(canExitResponses)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to exit %d validator(s) from the megapool queue?", len(canExitResponses))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

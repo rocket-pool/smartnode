@@ -83,7 +83,7 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 				return err
 			}
 
-			if !prompt.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString)) {
+			if !prompt.Confirm("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -110,7 +110,7 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

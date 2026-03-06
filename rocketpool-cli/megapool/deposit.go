@@ -138,7 +138,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	fmt.Printf("The total bond requirement is %.2f ETH.\n", totalBondRequirementEth)
 	fmt.Println()
 
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: You are about to create %d new megapool validator(s), requiring a total of: %.2f ETH).%s\nWould you like to continue?", colorYellow, count, totalBondRequirementEth, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm("%sNOTE: You are about to create %d new megapool validator(s), requiring a total of: %.2f ETH).%s\nWould you like to continue?", colorYellow, count, totalBondRequirementEth, colorReset)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -272,13 +272,13 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	// Prompt for confirmation
 
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
+	if !(c.Bool("yes") || prompt.Confirm(
 		"You are about to deposit %.6f ETH to create %d new megapool validator(s).\n"+
 			"%sARE YOU SURE YOU WANT TO DO THIS? %s\n",
 		math.RoundDown(eth.WeiToEth(totalBondRequirement), 6),
 		count,
 		colorYellow,
-		colorReset))) {
+		colorReset)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

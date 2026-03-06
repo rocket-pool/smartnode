@@ -68,7 +68,7 @@ func stake(c *cli.Context) error {
 		}
 
 		// Warning reg the time necessary to build the proof
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("The stake operation will construct a beacon state proof that the deposit for validator ID %d was correct. This will take several seconds to finish.\nDo you want to continue?", validatorId))) {
+		if !(c.Bool("yes") || prompt.Confirm("The stake operation will construct a beacon state proof that the deposit for validator ID %d was correct. This will take several seconds to finish.\nDo you want to continue?", validatorId)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -96,7 +96,7 @@ func stake(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to stake validator id %d", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to stake validator id %d", validatorId)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

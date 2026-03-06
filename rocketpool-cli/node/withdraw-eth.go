@@ -57,7 +57,7 @@ func nodeWithdrawEth(c *cli.Context) error {
 		// Get maximum withdrawable amount
 		maxAmount := status.EthOnBehalfBalance
 		// Prompt for maximum amount
-		if prompt.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6))) {
+		if prompt.Confirm("Would you like to withdraw the maximum amount of staked ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(maxAmount), 6)) {
 			amountWei = maxAmount
 		} else {
 
@@ -95,7 +95,7 @@ func nodeWithdrawEth(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to withdraw %.6f ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to withdraw %.6f ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
