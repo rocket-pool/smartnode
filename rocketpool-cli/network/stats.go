@@ -37,7 +37,8 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("Total Value Locked:          %f ETH\n", response.TotalValueLocked)
 	fmt.Printf("Deposit Pool Balance:        %f ETH\n", response.DepositPoolBalance)
 	fmt.Printf("Minipool Queue Demand:       %f ETH\n", response.MinipoolCapacity)
-	fmt.Printf("Deposit Pool ETH Used:       %f%%\n\n", response.StakerUtilization*100)
+	fmt.Printf("Deposit Pool ETH Used:       %f%%\n", response.StakerUtilization*100)
+	fmt.Println()
 
 	color.GreenPrintln("============== Nodes ==============")
 	fmt.Printf("Current Commission Rate:     %f%%\n", response.NodeFee*100)
@@ -48,7 +49,8 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("    Staking:                 %d\n", response.StakingMinipoolCount)
 	fmt.Printf("    Withdrawable:            %d\n", response.WithdrawableMinipoolCount)
 	fmt.Printf("    Dissolved:               %d\n", response.DissolvedMinipoolCount)
-	fmt.Printf("Finalized Minipools:         %d\n\n", response.FinalizedMinipoolCount)
+	fmt.Printf("Finalized Minipools:         %d\n", response.FinalizedMinipoolCount)
+	fmt.Println()
 
 	color.GreenPrintln("=========== Megapools ============")
 	fmt.Printf("Megapool contracts deployed: %d\n", response.MegapoolContractCount)
@@ -59,12 +61,14 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("     Exited:                 %d\n", response.MegapoolValidatorExitedCount)
 	fmt.Printf("     Locked:                 %d\n", response.MegapoolValidatorLockedCount)
 	fmt.Printf("     Exiting:                %d\n", response.MegapoolValidatorExitingCount)
-	fmt.Printf("     Dissolved:              %d\n\n", response.MegapoolValidatorDissolvedCount)
+	fmt.Printf("     Dissolved:              %d\n", response.MegapoolValidatorDissolvedCount)
+	fmt.Println()
 
 	color.GreenPrintln("========== Smoothing Pool ==========")
 	fmt.Printf("Contract Address:            %s\n", color.LightBlue(response.SmoothingPoolAddress.Hex()))
 	fmt.Printf("Nodes Opted in:              %d\n", response.SmoothingPoolNodes)
-	fmt.Printf("Pending Balance:             %f\n\n", response.SmoothingPoolBalance)
+	fmt.Printf("Pending Balance:             %f\n", response.SmoothingPoolBalance)
+	fmt.Println()
 
 	color.GreenPrintln("============== Tokens ==============")
 	fmt.Printf("rETH Price (ETH / rETH):     %f ETH\n", response.RethPrice)
@@ -72,6 +76,7 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("Total RPL staked:            %f RPL\n", response.TotalRplStaked)
 	fmt.Printf("Total Megapool RPL staked:   %f RPL\n", response.TotalMegapoolRplStaked)
 	fmt.Printf("Total Legacy RPL staked:     %f RPL\n", response.TotalLegacyRplStaked)
+	fmt.Println()
 
 	return nil
 
