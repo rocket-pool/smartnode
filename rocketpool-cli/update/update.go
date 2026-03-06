@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/update/assets"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
@@ -43,7 +43,7 @@ func validateOsArch() error {
 func errorPartialSuccess(err error) {
 	fmt.Fprintln(os.Stderr, "An error occurred after the cli binary was updated, but before the service was.")
 	fmt.Fprintln(os.Stderr, "The error was:")
-	fmt.Fprintf(os.Stderr, "    %s\n", cliutils.Red(err.Error()))
+	color.RedPrintf("    %s\n", err.Error())
 	fmt.Fprintln(os.Stderr)
 	printPartialSuccessNextSteps()
 	os.Exit(1)
@@ -97,11 +97,11 @@ func Update(c *cli.Context) error {
 		return err
 	}
 
-	fmt.Printf("Your detected os/architecture is %s/%s.\n", cliutils.Green(runtime.GOOS), cliutils.Green(runtime.GOARCH))
+	fmt.Printf("Your detected os/architecture is %s/%s.\n", color.Green(runtime.GOOS), color.Green(runtime.GOARCH))
 	fmt.Println()
 
 	if !c.Bool("yes") {
-		ok := prompt.Confirm("The cli at %s will be replaced. Continue?", cliutils.Yellow(oldBinaryPath))
+		ok := prompt.Confirm("The cli at %s will be replaced. Continue?", color.Yellow(oldBinaryPath))
 		if !ok {
 			return nil
 		}
@@ -124,7 +124,7 @@ func Update(c *cli.Context) error {
 
 	// Download the new binary
 	downloadUrl := fmt.Sprintf(downloadUrlFormatString, runtime.GOOS, runtime.GOARCH)
-	fmt.Printf("Downloading the new binary from %s\n", cliutils.Green(downloadUrl))
+	fmt.Printf("Downloading the new binary from %s\n", color.Green(downloadUrl))
 	fmt.Println()
 	response, err := http.Get(downloadUrl)
 	if err != nil {
@@ -152,9 +152,9 @@ func Update(c *cli.Context) error {
 		if err != nil {
 			return fmt.Errorf("error verifying signed binary: %w", err)
 		}
-		fmt.Printf("Signed by %s\n", cliutils.Green(signer.PrimaryKey.KeyIdString()))
+		fmt.Printf("Signed by %s\n", color.Green(signer.PrimaryKey.KeyIdString()))
 		for _, identity := range signer.Identities {
-			fmt.Printf("  %s\n", cliutils.Green(identity.Name))
+			fmt.Printf("  %s\n", color.Green(identity.Name))
 		}
 	} else {
 		_, err = io.Copy(tempFile, response.Body)
@@ -175,11 +175,11 @@ func Update(c *cli.Context) error {
 	newVersion = strings.TrimPrefix(newVersion, "rocketpool version ")
 
 	if strings.EqualFold(shared.RocketPoolVersion(), newVersion) && !c.Bool("force") {
-		fmt.Println(cliutils.Green(fmt.Sprintf("You are already on the latest version of smartnode: %s.", newVersion)))
+		color.GreenPrintf("You are already on the latest version of smartnode: %s.", newVersion)
 		return nil
 	}
 
-	fmt.Printf("Updating from %s to %s\n", cliutils.Yellow(shared.RocketPoolVersion()), cliutils.Green(newVersion))
+	fmt.Printf("Updating from %s to %s\n", color.Yellow(shared.RocketPoolVersion()), color.Green(newVersion))
 
 	// Rename the temporary file to the actual binary
 	err = os.Rename(tempFile.Name(), oldBinaryPath)
@@ -188,7 +188,7 @@ func Update(c *cli.Context) error {
 	}
 
 	fmt.Println()
-	fmt.Println(cliutils.Green("The cli has been updated."))
+	color.GreenPrintln("The cli has been updated.")
 	fmt.Println()
 
 	if !c.Bool("yes") {
@@ -229,9 +229,9 @@ func Update(c *cli.Context) error {
 		return nil
 	}
 
-	fmt.Println(cliutils.Green(fmt.Sprintf("The upgrade to Smart Node %s has been completed.", newVersion)))
+	color.GreenPrintf("The upgrade to Smart Node %s has been completed.", newVersion)
 	fmt.Println()
-	fmt.Println(cliutils.Yellow("Please monitor your validators for a few minutes for issues."))
+	color.YellowPrintln("Please monitor your validators for a few minutes for issues.")
 	fmt.Println()
 
 	return nil
