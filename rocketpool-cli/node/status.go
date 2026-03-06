@@ -15,14 +15,11 @@ import (
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 const (
-	colorReset            string = "\033[0m"
-	colorRed              string = "\033[31m"
-	colorGreen            string = "\033[32m"
-	colorYellow           string = "\033[33m"
 	smoothingPoolLink     string = "https://docs.rocketpool.net/upgrades/redstone/whats-new#smoothing-pool"
 	signallingAddressLink string = "https://docs.rocketpool.net/pdao/participate#setting-your-snapshot-signalling-address"
 )
@@ -79,12 +76,10 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Account address & balances
-	fmt.Printf("%s=== Account and Balances ===%s\n", colorGreen, colorReset)
+	color.GreenPrintln("=== Account and Balances ===")
 	fmt.Printf(
-		"The node %s%s%s has a balance of %.6f ETH, %.6f RPL, and %.6f rETH.\n",
-		colorBlue,
-		status.AccountAddressFormatted,
-		colorReset,
+		"The node %s has a balance of %.6f ETH, %.6f RPL, and %.6f rETH.\n",
+		color.LightBlue(status.AccountAddressFormatted),
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.ETH), 6),
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.RPL), 6),
 		math.RoundDown(eth.WeiToEth(status.AccountBalances.RETH), 6))
@@ -108,19 +103,15 @@ func getStatus(c *cli.Context) error {
 		}
 		fmt.Println()
 
-		fmt.Printf("%s=== Megapool ===%s\n", colorGreen, colorReset)
+		color.GreenPrintln("=== Megapool ===")
 		if status.MegapoolDeployed {
-			fmt.Printf("The node has a megapool deployed at %s%s%s.", colorBlue, status.MegapoolAddress.Hex(), colorReset)
-			fmt.Println()
-			fmt.Printf("The megapool has %d validators.", status.MegapoolActiveValidatorCount)
-			fmt.Println()
+			fmt.Printf("The node has a megapool deployed at %s.\n", color.LightBlue(status.MegapoolAddress.Hex()))
+			fmt.Printf("The megapool has %d validators.\n", status.MegapoolActiveValidatorCount)
 			if status.MegapoolNodeDebt.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("The megapool debt is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
-				fmt.Println()
+				fmt.Printf("The megapool debt is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.MegapoolNodeDebt), 6))
 			}
 			if status.MegapoolRefundValue.Cmp(big.NewInt(0)) > 0 {
-				fmt.Printf("The megapool refund value is %.6f ETH.", math.RoundDown(eth.WeiToEth(status.MegapoolRefundValue), 6))
-				fmt.Println()
+				fmt.Printf("The megapool refund value is %.6f ETH.\n", math.RoundDown(eth.WeiToEth(status.MegapoolRefundValue), 6))
 			}
 		} else {
 			fmt.Println("The node does not have a megapool deployed yet.")
@@ -129,14 +120,14 @@ func getStatus(c *cli.Context) error {
 		if status.ExpressTicketsProvisioned {
 			fmt.Printf("The node has %d express queue ticket(s).", status.ExpressTicketCount)
 		} else {
-			fmt.Printf("%sThe node has unprovisioned express queue ticket(s). Please provision them using the `rocketpool node provision-express-tickets` command. You are eligible for %d express tickets.%s", colorYellow, status.ExpressTicketCount, colorReset)
+			color.YellowPrintf("The node has unprovisioned express queue ticket(s). Please provision them using the `rocketpool node provision-express-tickets` command. You are eligible for %d express tickets.", status.ExpressTicketCount)
 		}
 
 		fmt.Println()
 		fmt.Println()
 
 		// Penalties
-		fmt.Printf("%s=== Penalty Status ===%s\n", colorGreen, colorReset)
+		color.GreenPrintln("=== Penalty Status ===")
 		if len(status.PenalizedMinipools) > 0 {
 			strikeMinipools := []common.Address{}
 			infractionMinipools := []common.Address{}
@@ -152,11 +143,10 @@ func getStatus(c *cli.Context) error {
 				sort.Slice(strikeMinipools, func(i, j int) bool { // Sort them lexicographically
 					return strikeMinipools[i].Hex() < strikeMinipools[j].Hex()
 				})
-				fmt.Printf("%sWARNING: The following minipools have been given strikes for cheating with an invalid fee recipient:\n", colorYellow)
+				color.YellowPrintln("WARNING: The following minipools have been given strikes for cheating with an invalid fee recipient:")
 				for _, mp := range strikeMinipools {
-					fmt.Printf("\t%s: %d strikes\n", mp.Hex(), status.PenalizedMinipools[mp])
+					color.YellowPrintf("\t%s: %d strikes\n", mp.Hex(), status.PenalizedMinipools[mp])
 				}
-				fmt.Println(colorReset)
 				fmt.Println()
 			}
 
@@ -164,11 +154,10 @@ func getStatus(c *cli.Context) error {
 				sort.Slice(infractionMinipools, func(i, j int) bool { // Sort them lexicographically
 					return infractionMinipools[i].Hex() < infractionMinipools[j].Hex()
 				})
-				fmt.Printf("%sWARNING: The following minipools have been given infractions for cheating with an invalid fee recipient:\n", colorRed)
+				color.RedPrintln("WARNING: The following minipools have been given infractions for cheating with an invalid fee recipient:")
 				for _, mp := range infractionMinipools {
-					fmt.Printf("\t%s: %d infractions\n", mp.Hex(), status.PenalizedMinipools[mp]-2)
+					color.RedPrintf("\t%s: %d infractions\n", mp.Hex(), status.PenalizedMinipools[mp]-2)
 				}
-				fmt.Println(colorReset)
 				fmt.Println()
 			}
 		} else {
@@ -177,12 +166,13 @@ func getStatus(c *cli.Context) error {
 		}
 
 		// Signalling Status
-		fmt.Printf("%s=== Signalling on Snapshot ===%s\n", colorGreen, colorReset)
+		color.GreenPrintln("=== Signalling on Snapshot ===")
 		blankAddress := common.Address{}
 		if status.SignallingAddress == blankAddress {
-			fmt.Printf("The node does not currently have a snapshot signalling address set.\nTo learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
+			fmt.Println("The node does not currently have a snapshot signalling address set.")
+			fmt.Printf("To learn more about snapshot signalling, please visit %s.\n", signallingAddressLink)
 		} else {
-			fmt.Printf("The node has a signalling address of %s%s%s which can represent it when voting on Rocket Pool Snapshot governance proposals.\n", colorBlue, status.SignallingAddressFormatted, colorReset)
+			fmt.Println("The node has a signalling address of", color.LightBlue(status.SignallingAddressFormatted), "which can represent it when voting on Rocket Pool Snapshot governance proposals.")
 		}
 
 		if status.SnapshotResponse.Error != "" {
@@ -206,14 +196,14 @@ func getStatus(c *cli.Context) error {
 		}
 
 		// Onchain voting status
-		fmt.Printf("%s=== Onchain Voting ===%s\n", colorGreen, colorReset)
+		color.GreenPrintln("=== Onchain Voting ===")
 
 		if status.OnchainVotingDelegate == blankAddress {
 			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
 		} else if status.OnchainVotingDelegate == status.AccountAddress {
 			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
 		} else {
-			fmt.Printf("The node has a voting delegate of %s%s%s which can represent it when voting on Rocket Pool onchain governance proposals.\n", colorBlue, status.OnchainVotingDelegateFormatted, colorReset)
+			fmt.Println("The node has a voting delegate of", color.LightBlue(status.OnchainVotingDelegateFormatted), "which can represent it when voting on Rocket Pool onchain governance proposals.")
 		}
 		if status.IsRPLLockingAllowed {
 			fmt.Print("The node is allowed to lock RPL to create governance proposals/challenges.\n")
@@ -228,80 +218,75 @@ func getStatus(c *cli.Context) error {
 		fmt.Println("")
 
 		// Primary withdrawal address & balances
-		fmt.Printf("%s=== Primary Withdrawal Address ===%s\n", colorGreen, colorReset)
+		color.GreenPrintln("=== Primary Withdrawal Address ===")
 		if !bytes.Equal(status.AccountAddress.Bytes(), status.PrimaryWithdrawalAddress.Bytes()) {
 			fmt.Printf(
-				"The node's primary withdrawal address %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
-				colorBlue,
-				status.PrimaryWithdrawalAddressFormatted,
-				colorReset,
+				"The node's primary withdrawal address %s has a balance of %.6f ETH and %.6f RPL.\n",
+				color.LightBlue(status.PrimaryWithdrawalAddressFormatted),
 				math.RoundDown(eth.WeiToEth(status.PrimaryWithdrawalBalances.ETH), 6),
 				math.RoundDown(eth.WeiToEth(status.PrimaryWithdrawalBalances.RPL), 6))
 		} else {
-			fmt.Printf("%sThe node's primary withdrawal address has not been changed, so ETH rewards and minipool withdrawals will be sent to the node itself.\n", colorYellow)
-			fmt.Printf("Consider changing this to a cold wallet address that you control using the `set-withdrawal-address` command.\n%s", colorReset)
+			color.YellowPrintln("The node's primary withdrawal address has not been changed, so ETH rewards and minipool withdrawals will be sent to the node itself.")
+			color.YellowPrintln("Consider changing this to a cold wallet address that you control using the `set-withdrawal-address` command.")
 		}
 		fmt.Println("")
 		if status.PendingPrimaryWithdrawalAddress.Hex() != blankAddress.Hex() {
-			fmt.Printf("%sThe node's primary withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingPrimaryWithdrawalAddressFormatted)
-			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
+			color.YellowPrintf("The node's primary withdrawal address has a pending change to %s which has not been confirmed yet.\n", status.PendingPrimaryWithdrawalAddressFormatted)
+			color.YellowPrintln("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.")
 			fmt.Println("")
 		}
 
 		// RPL withdrawal address & balances
-		fmt.Printf("%s=== RPL Withdrawal Address ===%s\n", colorGreen, colorReset)
+		color.GreenPrintln("=== RPL Withdrawal Address ===")
 		if !status.IsRPLWithdrawalAddressSet {
-			fmt.Printf("The node's RPL withdrawal address has not been set. All RPL rewards will be sent to the primary withdrawal address.\n")
+			fmt.Println("The node's RPL withdrawal address has not been set. All RPL rewards will be sent to the primary withdrawal address.")
 		} else if bytes.Equal(status.AccountAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
-			fmt.Printf("The node's RPL withdrawal address has been explicitly set to the node address itself (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
+			fmt.Printf("The node's RPL withdrawal address has been explicitly set to the node address itself (%s).\n", color.LightBlue(status.RPLWithdrawalAddressFormatted))
 		} else if bytes.Equal(status.PrimaryWithdrawalAddress.Bytes(), status.RPLWithdrawalAddress.Bytes()) {
-			fmt.Printf("The node's RPL withdrawal address has been explicitly set to the primary withdrawal address (%s%s%s).\n", colorBlue, status.RPLWithdrawalAddressFormatted, colorReset)
+			fmt.Printf("The node's RPL withdrawal address has been explicitly set to the primary withdrawal address (%s).\n", color.LightBlue(status.RPLWithdrawalAddressFormatted))
 		} else {
 			fmt.Printf(
-				"The node's RPL withdrawal address %s%s%s has a balance of %.6f ETH and %.6f RPL.\n",
-				colorBlue,
-				status.RPLWithdrawalAddressFormatted,
-				colorReset,
+				"The node's RPL withdrawal address %s has a balance of %.6f ETH and %.6f RPL.\n",
+				color.LightBlue(status.RPLWithdrawalAddressFormatted),
 				math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.ETH), 6),
 				math.RoundDown(eth.WeiToEth(status.RPLWithdrawalBalances.RPL), 6))
 		}
 		fmt.Println("")
 		if status.PendingRPLWithdrawalAddress.Hex() != blankAddress.Hex() {
-			fmt.Printf("%sThe node's RPL withdrawal address has a pending change to %s which has not been confirmed yet.\n", colorYellow, status.PendingRPLWithdrawalAddressFormatted)
-			fmt.Printf("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.%s\n", colorReset)
+			color.YellowPrintf("The node's RPL withdrawal address has a pending change to %s which has not been confirmed yet.\n", status.PendingRPLWithdrawalAddressFormatted)
+			color.YellowPrintln("Please visit the Rocket Pool website with a web3-compatible wallet to complete this change.")
 			fmt.Println("")
 		}
 
 		// Fee distributor details
-		fmt.Printf("%s=== Fee Distributor and Smoothing Pool ===%s\n", colorGreen, colorReset)
-		fmt.Printf("The node's fee distributor %s%s%s has a balance of %.6f ETH.\n", colorBlue, status.FeeRecipientInfo.FeeDistributorAddress.Hex(), colorReset, math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
+		color.GreenPrintln("=== Fee Distributor and Smoothing Pool ===")
+		fmt.Printf("The node's fee distributor %s has a balance of %.6f ETH.\n", color.LightBlue(status.FeeRecipientInfo.FeeDistributorAddress.Hex()), math.RoundDown(eth.WeiToEth(status.FeeDistributorBalance), 6))
 		if cfg.IsNativeMode && !status.FeeRecipientInfo.IsInSmoothingPool && !status.FeeRecipientInfo.IsInOptOutCooldown {
-			fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
+			color.YellowPrintln("NOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!")
 		}
 		if !status.IsFeeDistributorInitialized {
-			fmt.Printf("\n%sThe fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.%s\n", colorYellow, colorReset)
+			fmt.Println()
+			color.YellowPrintln("The fee distributor hasn't been initialized yet. When you are able, please initialize it with `rocketpool node initialize-fee-distributor`.")
 		}
 		if status.FeeRecipientInfo.IsInSmoothingPool {
 			fmt.Printf(
-				"The node is currently opted into the Smoothing Pool (%s%s%s).\n",
-				colorBlue,
-				status.FeeRecipientInfo.SmoothingPoolAddress.Hex(),
-				colorReset)
+				"The node is currently opted into the Smoothing Pool (%s).\n",
+				color.LightBlue(status.FeeRecipientInfo.SmoothingPoolAddress.Hex()),
+			)
 			if cfg.IsNativeMode {
-				fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
+				color.YellowPrintln("NOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!")
 			}
 		} else if status.FeeRecipientInfo.IsInOptOutCooldown {
-			fmt.Printf(
-				"The node is currently opting out of the Smoothing Pool, but cannot safely change its fee recipient yet.\nIt must remain the Smoothing Pool's address (%s%s%s) until the opt-out process is complete.\nIt can safely be changed once Epoch %d is finalized on the Beacon Chain.\n",
-				colorBlue,
-				status.FeeRecipientInfo.SmoothingPoolAddress.Hex(),
-				colorReset,
-				status.FeeRecipientInfo.OptOutEpoch)
+			fmt.Println("The node is currently opting out of the Smoothing Pool, but cannot safely change its fee recipient yet.")
+			fmt.Println("")
+			fmt.Printf("It must remain the Smoothing Pool's address (%s) until the opt-out process is complete.\n", color.LightBlue(status.FeeRecipientInfo.SmoothingPoolAddress.Hex()))
+			fmt.Printf("It can safely be changed once Epoch %d is finalized on the Beacon Chain.\n", status.FeeRecipientInfo.OptOutEpoch)
 			if cfg.IsNativeMode {
-				fmt.Printf("%sNOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!%s\n", colorYellow, colorReset)
+				color.YellowPrintln("NOTE: You are in Native Mode; you MUST ensure that your Validator Client is using this address as its fee recipient!")
 			}
 		} else {
-			fmt.Printf("The node is not opted into the Smoothing Pool.\nTo learn more about the Smoothing Pool, please visit %s.\n", smoothingPoolLink)
+			fmt.Println("The node is not opted into the Smoothing Pool.")
+			fmt.Printf("To learn more about the Smoothing Pool, please visit %s.\n", smoothingPoolLink)
 			// Count the number of 8 ETH, <10% commission minipools
 			poolsWithMissingCommission := 0
 			leb16wei := new(big.Int)
@@ -311,12 +296,8 @@ func getStatus(c *cli.Context) error {
 					poolsWithMissingCommission++
 				}
 			}
-			if poolsWithMissingCommission == 1 {
-				fmt.Printf("%sYou have %d minipool that would earn extra commission if you opted into the smoothing pool!%s\n", colorYellow, poolsWithMissingCommission, colorReset)
-				fmt.Println("See https://rpips.rocketpool.net/RPIPs/RPIP-62 for more information about bonus commission, or run `rocketpool node join-smoothing-pool` to opt in.")
-			}
-			if poolsWithMissingCommission > 1 {
-				fmt.Printf("%sYou have %d minipools that would earn extra commission if you opted into the smoothing pool!%s\n", colorYellow, poolsWithMissingCommission, colorReset)
+			if poolsWithMissingCommission > 0 {
+				color.YellowPrintf("You have %d minipool(s) that would earn extra commission if you opted into the smoothing pool!\n", poolsWithMissingCommission)
 				fmt.Println("See https://rpips.rocketpool.net/RPIPs/RPIP-62 for more information about bonus commission, or run `rocketpool node join-smoothing-pool` to opt in.")
 			}
 		}
@@ -324,7 +305,7 @@ func getStatus(c *cli.Context) error {
 		fmt.Println()
 
 		// RPL stake details
-		fmt.Printf("%s=== RPL Stake ===%s\n", colorGreen, colorReset)
+		color.GreenPrintln("=== RPL Stake ===")
 		fmt.Println("NOTE: The following figures take *any pending bond reductions* into account.")
 		fmt.Println()
 		fmt.Printf("The node has a total stake of %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.TotalRplStake), 6))
@@ -383,7 +364,7 @@ func getStatus(c *cli.Context) error {
 		if status.MinipoolCounts.Total > 0 {
 
 			// Minipool details
-			fmt.Printf("%s=== Minipools ===%s\n", colorGreen, colorReset)
+			color.GreenPrintln("=== Minipools ===")
 
 			// Minipools
 			fmt.Printf("The node has a total of %d active minipool(s):\n", status.MinipoolCounts.Total-status.MinipoolCounts.Finalised)
@@ -422,7 +403,8 @@ func getStatus(c *cli.Context) error {
 	}
 
 	if status.Warning != "" {
-		fmt.Printf("\n%sWARNING: %s%s\n", colorRed, status.Warning, colorReset)
+		fmt.Println()
+		color.RedPrintln("WARNING: " + status.Warning)
 	}
 
 	// Return
