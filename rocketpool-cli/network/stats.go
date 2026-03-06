@@ -6,10 +6,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-)
-
-const (
-	colorBlue string = "\033[36m"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 func getStats(c *cli.Context) error {
@@ -36,13 +33,13 @@ func getStats(c *cli.Context) error {
 		response.DissolvedMinipoolCount
 
 	// Print & return
-	fmt.Printf("%s========== General Stats ==========%s\n", colorGreen, colorReset)
+	color.GreenPrintln("========== General Stats ==========")
 	fmt.Printf("Total Value Locked:          %f ETH\n", response.TotalValueLocked)
 	fmt.Printf("Deposit Pool Balance:        %f ETH\n", response.DepositPoolBalance)
 	fmt.Printf("Minipool Queue Demand:       %f ETH\n", response.MinipoolCapacity)
 	fmt.Printf("Deposit Pool ETH Used:       %f%%\n\n", response.StakerUtilization*100)
 
-	fmt.Printf("%s============== Nodes ==============%s\n", colorGreen, colorReset)
+	color.GreenPrintln("============== Nodes ==============")
 	fmt.Printf("Current Commission Rate:     %f%%\n", response.NodeFee*100)
 	fmt.Printf("Node Count:                  %d\n", response.NodeCount)
 	fmt.Printf("Active Minipools:            %d\n", activeMinipools)
@@ -53,7 +50,7 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("    Dissolved:               %d\n", response.DissolvedMinipoolCount)
 	fmt.Printf("Finalized Minipools:         %d\n\n", response.FinalizedMinipoolCount)
 
-	fmt.Printf("%s=========== Megapools ============%s\n", colorGreen, colorReset)
+	color.GreenPrintln("=========== Megapools ============")
 	fmt.Printf("Megapool contracts deployed: %d\n", response.MegapoolContractCount)
 	fmt.Printf("Total megapool validators:  %d\n", response.MegapoolValidatorCount)
 	fmt.Printf("     Staking:                %d\n", response.MegapoolValidatorStakingCount)
@@ -64,12 +61,12 @@ func getStats(c *cli.Context) error {
 	fmt.Printf("     Exiting:                %d\n", response.MegapoolValidatorExitingCount)
 	fmt.Printf("     Dissolved:              %d\n\n", response.MegapoolValidatorDissolvedCount)
 
-	fmt.Printf("%s========== Smoothing Pool =========%s\n", colorGreen, colorReset)
-	fmt.Printf("Contract Address:            %s%s%s\n", colorBlue, response.SmoothingPoolAddress.Hex(), colorReset)
+	color.GreenPrintln("========== Smoothing Pool ==========")
+	fmt.Printf("Contract Address:            %s\n", color.LightBlue(response.SmoothingPoolAddress.Hex()))
 	fmt.Printf("Nodes Opted in:              %d\n", response.SmoothingPoolNodes)
 	fmt.Printf("Pending Balance:             %f\n\n", response.SmoothingPoolBalance)
 
-	fmt.Printf("%s============== Tokens =============%s\n", colorGreen, colorReset)
+	color.GreenPrintln("============== Tokens ==============")
 	fmt.Printf("rETH Price (ETH / rETH):     %f ETH\n", response.RethPrice)
 	fmt.Printf("RPL Price (ETH / RPL):       %f ETH\n", response.RplPrice)
 	fmt.Printf("Total RPL staked:            %f RPL\n", response.TotalRplStaked)
