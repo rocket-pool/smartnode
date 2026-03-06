@@ -46,7 +46,7 @@ func leave(c *cli.Context) error {
 		}
 
 		// Prompt for node address
-		if prompt.Confirm(fmt.Sprintf("Would you like to refund your RPL bond to your node account (%s)?", wallet.AccountAddress.Hex())) {
+		if prompt.Confirm("Would you like to refund your RPL bond to your node account (%s)?", wallet.AccountAddress.Hex()) {
 			bondRefundAddress = wallet.AccountAddress
 		} else {
 
@@ -81,7 +81,7 @@ func leave(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to leave the oracle DAO and refund your RPL bond to %s? This action cannot be undone!", bondRefundAddress.Hex()))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to leave the oracle DAO and refund your RPL bond to %s? This action cannot be undone!", bondRefundAddress.Hex())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

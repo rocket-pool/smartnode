@@ -109,7 +109,7 @@ func bidOnLot(c *cli.Context) error {
 		maxAmount.Quo(&tmp, eth.EthToWei(1))
 
 		// Prompt for maximum amount
-		if prompt.Confirm(fmt.Sprintf("Would you like to bid the maximum amount of ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
+		if prompt.Confirm("Would you like to bid the maximum amount of ETH (%.6f ETH)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6)) {
 			amountWei = &maxAmount
 		} else {
 
@@ -145,7 +145,7 @@ func bidOnLot(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Details.Index))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to bid %.6f ETH on lot %d? Bids are final and non-refundable.", math.RoundDown(eth.WeiToEth(amountWei), 6), selectedLot.Details.Index)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -48,7 +48,7 @@ func defeatProposal(c *cli.Context, proposalID uint64, challengedIndex uint64) e
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to defeat proposal %d?", proposalID))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to defeat proposal %d?", proposalID)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

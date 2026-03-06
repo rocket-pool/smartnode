@@ -29,7 +29,7 @@ func masquerade(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to masquerade as %s%s%s?", colorBlue, addressString, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to masquerade as %s%s%s?", colorBlue, addressString, colorReset)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -61,7 +61,7 @@ func proposeSecurityCouncilInvite(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to propose inviting %s (%s) to the security council?", id, address.Hex()))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose inviting %s (%s) to the security council?", id, address.Hex())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -108,7 +108,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6)))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -211,7 +211,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to unstake %.6f RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to unstake %.6f RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -261,7 +261,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 			fmt.Printf("You have %.6f legacy RPL and can request to unstake up to %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
 			// Prompt for maximum amount
-			if prompt.Confirm(fmt.Sprintf("Would you like to unstake the maximum amount of legacy RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
+			if prompt.Confirm("Would you like to unstake the maximum amount of legacy RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6)) {
 				amountWei = &maxAmount
 			} else {
 				// Prompt for custom amount
@@ -307,7 +307,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to unstake %.6f legacy RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to unstake %.6f legacy RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -366,7 +366,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		maxAmount.Sub(&maxAmount, status.NodeRPLLocked)
 		if maxAmount.Sign() == 1 {
 			// Prompt for maximum amount
-			if prompt.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
+			if prompt.Confirm("Would you like to withdraw the maximum amount of staked RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6)) {
 				amountWei = &maxAmount
 			} else {
 
@@ -418,7 +418,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

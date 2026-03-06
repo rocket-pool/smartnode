@@ -52,7 +52,7 @@ func addAddressToStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to allow %s to stake RPL for your node?", addressString))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to allow %s to stake RPL for your node?", addressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -113,7 +113,7 @@ func removeAddressFromStakeRplWhitelist(c *cli.Context, addressOrENS string) err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to remove %s from your RPL staking whitelist?", addressString))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to remove %s from your RPL staking whitelist?", addressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

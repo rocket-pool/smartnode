@@ -41,11 +41,11 @@ func closeMinipools(c *cli.Context) error {
 
 	// Post a warning about express ticket provisioning
 	if !details.ExpressTicketsProvisioned {
-		if !prompt.Confirm(fmt.Sprintf("%sWARNING: The node has unprovisioned express queue ticket(s). Closing minipool(s) without provisioning will reduce the number of express queue tickets the node is eligible for. Please enter `yes` if you've understood this message.%s`", colorRed, colorReset)) {
+		if !prompt.Confirm("%sWARNING: The node has unprovisioned express queue ticket(s). Closing minipool(s) without provisioning will reduce the number of express queue tickets the node is eligible for. Please enter `yes` if you've understood this message.%s`", colorRed, colorReset) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
-		if c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sWould you like to provision express queue tickets for the node?%s", colorYellow, colorReset)) {
+		if c.Bool("yes") || prompt.Confirm("%sWould you like to provision express queue tickets for the node?%s", colorYellow, colorReset) {
 			// Check if the node can provision express tickets
 			canProvision, err := rp.CanProvisionExpressTickets()
 			if err != nil {
@@ -212,7 +212,7 @@ func closeMinipools(c *cli.Context) error {
 				fmt.Printf("\n%sIf you are *sure* you want to close the minipool anyway, rerun this command with the `--confirm-slashing` flag. Doing so WILL RESULT in both your ETH bond and your RPL collateral being slashed.%s\n", colorRed, colorReset)
 				return nil
 			}
-			if !prompt.ConfirmWithIAgree(fmt.Sprintf("\n%sYou have the `--confirm-slashing` flag enabled. Closing this minipool WILL RESULT in the complete loss of your initial ETH bond and enough of your RPL stake to cover the losses to the staking pool. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, colorReset)) {
+			if !prompt.ConfirmWithIAgree("\n%sYou have the `--confirm-slashing` flag enabled. Closing this minipool WILL RESULT in the complete loss of your initial ETH bond and enough of your RPL stake to cover the losses to the staking pool. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, colorReset) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -222,7 +222,7 @@ func closeMinipools(c *cli.Context) error {
 
 		if distributableBalance.Cmp(yellowThreshold) < 0 {
 			// More than the user deposit balance but less than 31.5, ETH will be slashed with a red warning
-			if !prompt.ConfirmWithIAgree(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), colorReset)) {
+			if !prompt.ConfirmWithIAgree("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), colorReset) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -231,7 +231,7 @@ func closeMinipools(c *cli.Context) error {
 		}
 		if distributableBalance.Cmp(thirtyTwo) < 0 {
 			// More than 31.5 but less than 32, ETH will be slashed with a yellow warning
-			if !prompt.Confirm(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorYellow, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), colorReset)) {
+			if !prompt.Confirm("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorYellow, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), colorReset) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -257,7 +257,7 @@ func closeMinipools(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to close %d minipools?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to close %d minipools?", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -49,7 +49,7 @@ func penaliseMegapool(c *cli.Context, megapoolAddress common.Address, block *big
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(eth.WeiToEth(amountWei), 6), megapoolAddress, block))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(eth.WeiToEth(amountWei), 6), megapoolAddress, block)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -18,6 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/security"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/update"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -109,6 +110,27 @@ A special thanks to the Rocket Pool community for all their contributions.
 	security.RegisterCommands(app, "security", []string{"c"})
 	service.RegisterCommands(app, "service", []string{"s"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
+
+	// Add a command that updates the smart node cli.
+	app.Commands = append(app.Commands, cli.Command{
+		Name:  "update",
+		Usage: "Update the cli binary",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "yes, y",
+				Usage: "Automatically confirm the update",
+			},
+			cli.BoolFlag{
+				Name:  "force, f",
+				Usage: "Force the update even if the current version is the latest",
+			},
+			cli.BoolFlag{
+				Name:  "skip-signature-verification, s",
+				Usage: "Don't verify the singature of the release",
+			},
+		},
+		Action: update.Update,
+	})
 
 	app.Before = func(c *cli.Context) error {
 		// Check user ID

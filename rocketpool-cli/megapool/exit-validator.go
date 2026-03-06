@@ -83,7 +83,7 @@ func exitValidator(c *cli.Context) error {
 	fmt.Printf("Once your funds have been withdrawn, you can run `rocketpool megapool notify-validator-exit` to distribute them to your withdrawal address.\n\n%s", colorReset)
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to EXIT validator id %d?", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to EXIT validator id %d?", validatorId)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -45,7 +45,7 @@ func finalizeProposal(c *cli.Context, proposalID uint64) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to finalize proposal %d?", proposalID))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to finalize proposal %d?", proposalID)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
