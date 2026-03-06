@@ -13,7 +13,15 @@ const colorYellow string = "\033[33m"
 const colorLightBlue string = "\033[36m"
 
 func color(color, msg string) string {
-	return fmt.Sprintf("%s%s%s", color, msg, colorReset)
+	return color + msg + colorReset
+}
+
+func colorPrintln(colorFunc func(string) string, msgs ...string) {
+	colorized := make([]string, len(msgs))
+	for i, msg := range msgs {
+		colorized[i] = colorFunc(msg)
+	}
+	fmt.Println(strings.Join(colorized, " "))
 }
 
 func Red(msg string) string {
@@ -21,7 +29,7 @@ func Red(msg string) string {
 }
 
 func RedPrintln(msgs ...string) {
-	fmt.Println(Red(strings.Join(msgs, " ")))
+	colorPrintln(Red, msgs...)
 }
 
 func RedPrintf(format string, a ...any) {
@@ -37,7 +45,7 @@ func Green(msg string) string {
 }
 
 func GreenPrintln(msgs ...string) {
-	fmt.Println(Green(strings.Join(msgs, " ")))
+	colorPrintln(Green, msgs...)
 }
 
 func GreenPrintf(format string, a ...any) {
@@ -53,7 +61,7 @@ func Yellow(msg string) string {
 }
 
 func YellowPrintln(msgs ...string) {
-	fmt.Println(Yellow(strings.Join(msgs, " ")))
+	colorPrintln(Yellow, msgs...)
 }
 
 func YellowPrintf(format string, a ...any) {
@@ -69,7 +77,7 @@ func LightBlue(msg string) string {
 }
 
 func LightBluePrintln(msgs ...string) {
-	fmt.Println(LightBlue(strings.Join(msgs, " ")))
+	colorPrintln(LightBlue, msgs...)
 }
 
 func LightBluePrintf(format string, a ...any) {
@@ -85,7 +93,7 @@ func Bold(msg string) string {
 }
 
 func BoldPrintln(msgs ...string) {
-	fmt.Println(Bold(strings.Join(msgs, " ")))
+	colorPrintln(Bold, msgs...)
 }
 
 func BoldPrintf(format string, a ...any) {
