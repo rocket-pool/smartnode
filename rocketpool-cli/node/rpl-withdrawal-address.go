@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
@@ -42,9 +43,6 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 	}
 
 	// Print the "pending" disclaimer
-	colorReset := "\033[0m"
-	colorRed := "\033[31m"
-	colorYellow := "\033[33m"
 	var confirm bool
 	fmt.Println("You are about to change your RPL withdrawal address. All future RPL rewards/refunds will be sent there.")
 	if !c.Bool("force") {
@@ -52,11 +50,13 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 		fmt.Println("By default, this will put your new RPL withdrawal address into a \"pending\" state.")
 		fmt.Println("Rocket Pool will continue to use your old RPL withdrawal address (or your primary withdrawal address if your RPL withdrawal address has not been set) until you confirm that you own the new address via the Rocket Pool website.")
 		fmt.Println("You will need to use a web3-compatible wallet (such as MetaMask) with your new address to confirm it.")
-		fmt.Printf("%sIf you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.\n\n%s", colorYellow, colorReset)
+		color.YellowPrintln("If you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.")
+		fmt.Println()
 	} else {
 		confirm = true
-		fmt.Printf("%sYou have specified the \"--force\" option, so your new address will take effect immediately.\n", colorRed)
-		fmt.Printf("Please ensure that you have the correct address - if you do not control the new address, you will not be able to change this once set!%s\n\n", colorReset)
+		color.RedPrintln("You have specified the \"--force\" option, so your new address will take effect immediately.")
+		color.RedPrintln("Please ensure that you have the correct address - if you do not control the new address, you will not be able to change this once set!")
+		fmt.Println()
 	}
 
 	// Check if the withdrawal address can be set
@@ -123,7 +123,7 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) erro
 
 	// Prompt for confirmation
 	if canResponse.RPLStake.Cmp(common.Big0) == 1 {
-		fmt.Printf("%sNOTE: You currently have %.6f RPL staked. Withdrawing it will *no longer* send it to your primary withdrawal address. It will be sent to the new RPL withdrawal address instead. Please verify you have control over that address before confirming this!%s\n", colorYellow, eth.WeiToEth(canResponse.RPLStake), colorReset)
+		color.YellowPrintf("NOTE: You currently have %.6f RPL staked. Withdrawing it will *no longer* send it to your primary withdrawal address. It will be sent to the new RPL withdrawal address instead. Please verify you have control over that address before confirming this!\n", eth.WeiToEth(canResponse.RPLStake))
 	}
 	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString)) {
 		fmt.Println("Cancelled.")
