@@ -9,13 +9,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-)
 
-const colorReset string = "\033[0m"
-const colorRed string = "\033[31m"
-const colorGreen string = "\033[32m"
-const colorYellow string = "\033[33m"
-const colorLightBlue string = "\033[36m"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
+)
 
 // Prompt for user input
 func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {
@@ -81,7 +77,7 @@ func Select(initialPrompt string, options []string) (int, string) {
 
 // Prompts the user to verify that there is nobody looking over their shoulder before printing sensitive information.
 func ConfirmSecureSession(warning string) bool {
-	if !Confirm("%s%s%s\nAre you sure you want to continue?", colorYellow, warning, colorReset) {
+	if !Confirm("%s\nAre you sure you want to continue?", color.Yellow(warning)) {
 		fmt.Println("Cancelled.")
 		return false
 	}
