@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/rocket-pool/smartnode/rocketpool-cli/update/assets"
 	"github.com/rocket-pool/smartnode/shared"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
@@ -119,9 +120,33 @@ func Update(c *cli.Context) error {
 		return fmt.Errorf("error downloading new binary: %s", response.Status)
 	}
 	defer response.Body.Close()
-	_, err = io.Copy(tempFile, response.Body)
-	if err != nil {
-		return fmt.Errorf("error copying new binary to temporary file: %w", err)
+	if !c.Bool("skip-signature-verification") {
+		// Download the signature file
+		fmt.Println("Verifying the binary signature")
+		signatureUrl := fmt.Sprintf("%s.sig", downloadUrl)
+		fmt.Printf("Downloading the signature from %s\n", signatureUrl)
+		signatureResponse, err := http.Get(signatureUrl)
+		if err != nil {
+			return fmt.Errorf("error downloading signature: %w", err)
+		}
+		defer signatureResponse.Body.Close()
+		if signatureResponse.StatusCode != 200 {
+			return fmt.Errorf("error downloading signature: %s", signatureResponse.Status)
+		}
+		teeReader := io.TeeReader(response.Body, tempFile)
+		signer, err := assets.VerifySignedBinary(teeReader, signatureResponse.Body)
+		if err != nil {
+			return fmt.Errorf("error verifying signed binary: %w", err)
+		}
+		fmt.Printf("Signed by %s\n", cliutils.Green(signer.PrimaryKey.KeyIdString()))
+		for _, identity := range signer.Identities {
+			fmt.Printf("  %s\n", cliutils.Green(identity.Name))
+		}
+	} else {
+		_, err = io.Copy(tempFile, response.Body)
+		if err != nil {
+			return fmt.Errorf("error copying new binary to temporary file: %w", err)
+		}
 	}
 	tempFile.Close()
 
