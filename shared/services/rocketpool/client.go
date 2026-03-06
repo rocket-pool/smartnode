@@ -29,6 +29,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/template"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	clicolor "github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -122,7 +123,10 @@ func checkClientStatus(rp *Client) (bool, error) {
 
 		// Fallback EC and CC are good
 		if ecMgrStatus.FallbackClientStatus.IsSynced && bcMgrStatus.FallbackClientStatus.IsSynced {
-			fmt.Printf("%sNOTE: primary clients are not ready, using fallback clients...\n\tPrimary EC status: %s\n\tPrimary CC status: %s%s\n\n", colorYellow, primaryEcStatus, primaryBcStatus, colorReset)
+			clicolor.YellowPrintln("NOTE: primary clients are not ready, using fallback clients...")
+			clicolor.YellowPrintf("\tPrimary EC status: %s\n", primaryEcStatus)
+			clicolor.YellowPrintf("\tPrimary CC status: %s\n", primaryBcStatus)
+			fmt.Println()
 			rp.SetClientStatusFlags(true, true)
 			return true, nil
 		}
@@ -1208,23 +1212,23 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	// Create the custom keys dir
 	customKeyDir, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys"))
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
+		clicolor.YellowPrintf("WARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder manually.\n", err.Error())
 		return deployedContainers, nil
 	}
 	err = os.MkdirAll(customKeyDir, 0775)
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), customKeyDir, colorReset)
+		clicolor.YellowPrintf("WARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder [%s] manually.\n", err.Error(), customKeyDir)
 	}
 
 	// Create the rewards file dir
 	rewardsFileDir, err := homedir.Expand(cfg.Smartnode.GetRewardsTreeDirectory(false))
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't expand the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
+		clicolor.YellowPrintf("WARNING: Couldn't expand the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder manually.\n", err.Error())
 		return deployedContainers, nil
 	}
 	err = os.MkdirAll(rewardsFileDir, 0775)
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), rewardsFileDir, colorReset)
+		clicolor.YellowPrintf("WARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.\n", err.Error(), rewardsFileDir)
 	}
 
 	return c.composeAddons(cfg, rocketpoolDir, deployedContainers)

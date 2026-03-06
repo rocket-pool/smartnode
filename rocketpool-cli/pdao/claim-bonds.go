@@ -110,7 +110,7 @@ func claimBonds(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to claim bonds and rewards from %d proposals?", len(selectedClaims)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to claim bonds and rewards from %d proposals?", len(selectedClaims))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

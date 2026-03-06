@@ -75,7 +75,7 @@ func dissolveValidator(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to DISSOLVE megapool validator ID: %d?", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to DISSOLVE megapool validator ID: %d?", validatorId)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

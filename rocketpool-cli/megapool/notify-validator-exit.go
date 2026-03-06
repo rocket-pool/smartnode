@@ -75,7 +75,7 @@ func notifyValidatorExit(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to notify about the validator id %d exit?", validatorId))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to notify about the validator id %d exit?", validatorId)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

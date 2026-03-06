@@ -116,7 +116,7 @@ func executeProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to execute %d proposals?", len(selectedProposals)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to execute %d proposals?", len(selectedProposals))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

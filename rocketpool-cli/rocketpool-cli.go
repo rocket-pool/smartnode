@@ -18,16 +18,16 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/security"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/update"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 const (
-	colorReset    string = "\033[0m"
-	colorYellow   string = "\033[33m"
-	maxAlertItems int    = 3
+	maxAlertItems int = 3
 )
 
 // Run
@@ -110,6 +110,27 @@ A special thanks to the Rocket Pool community for all their contributions.
 	service.RegisterCommands(app, "service", []string{"s"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
+	// Add a command that updates the smart node cli.
+	app.Commands = append(app.Commands, cli.Command{
+		Name:  "update",
+		Usage: "Update the cli binary",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "yes, y",
+				Usage: "Automatically confirm the update",
+			},
+			cli.BoolFlag{
+				Name:  "force, f",
+				Usage: "Force the update even if the current version is the latest",
+			},
+			cli.BoolFlag{
+				Name:  "skip-signature-verification, s",
+				Usage: "Don't verify the singature of the release",
+			},
+		},
+		Action: update.Update,
+	})
+
 	app.Before = func(c *cli.Context) error {
 		// Check user ID
 		if os.Getuid() == 0 && !c.GlobalBool("allow-root") {
@@ -159,7 +180,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 		}
 
 		if len(response.Alerts) > 0 {
-			fmt.Printf("\n%s=== Alerts ===%s\n", colorYellow, colorReset)
+			color.YellowPrintln("=== Alerts ===")
 			for i, alert := range response.Alerts {
 				fmt.Println(alert.ColorString())
 				if i == maxAlertItems-1 {

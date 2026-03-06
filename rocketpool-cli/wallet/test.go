@@ -9,14 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
-)
-
-const (
-	colorReset  string = "\033[0m"
-	colorRed    string = "\033[31m"
-	colorGreen  string = "\033[32m"
-	colorYellow string = "\033[33m"
-	colorBlue   string = "\033[36m"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 func testRecovery(c *cli.Context) error {
@@ -35,7 +28,10 @@ func testRecovery(c *cli.Context) error {
 	}
 
 	// Prompt a notice about test recovery
-	fmt.Printf("%sNOTE:\nThis command will test the recovery of your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools, but will not actually write any files; it's simply a \"dry run\" of recovery.\nUse `rocketpool wallet recover` to actually recover the wallet and validator keys.%s\n\n", colorYellow, colorReset)
+	color.YellowPrintln("NOTE:")
+	color.YellowPrintln("This command will test the recovery of your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools, but will not actually write any files; it's simply a \"dry run\" of recovery.")
+	color.YellowPrintln("Use `rocketpool wallet recover` to actually recover the wallet and validator keys.")
+	fmt.Println()
 
 	// Prompt for mnemonic
 	var mnemonic string

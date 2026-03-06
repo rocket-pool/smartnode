@@ -16,12 +16,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-)
-
-const (
-	colorBlue string = "\033[36m"
 )
 
 func closeMinipools(c *cli.Context) error {
@@ -41,11 +38,11 @@ func closeMinipools(c *cli.Context) error {
 
 	// Post a warning about express ticket provisioning
 	if !details.ExpressTicketsProvisioned {
-		if !prompt.Confirm(fmt.Sprintf("%sWARNING: The node has unprovisioned express queue ticket(s). Closing minipool(s) without provisioning will reduce the number of express queue tickets the node is eligible for. Please enter `yes` if you've understood this message.%s`", colorRed, colorReset)) {
+		if !prompt.ConfirmRed("WARNING: The node has unprovisioned express queue ticket(s). Closing minipool(s) without provisioning will reduce the number of express queue tickets the node is eligible for. Please enter `yes` if you've understood this message.") {
 			fmt.Println("Cancelled.")
 			return nil
 		}
-		if c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sWould you like to provision express queue tickets for the node?%s", colorYellow, colorReset)) {
+		if c.Bool("yes") || prompt.ConfirmYellow("Would you like to provision express queue tickets for the node?") {
 			// Check if the node can provision express tickets
 			canProvision, err := rp.CanProvisionExpressTickets()
 			if err != nil {
@@ -81,7 +78,8 @@ func closeMinipools(c *cli.Context) error {
 
 	// Exit if the fee distributor hasn't been initialized yet
 	if !details.IsFeeDistributorInitialized {
-		fmt.Println("Minipools cannot be closed until your fee distributor has been initialized.\nPlease run `rocketpool node initialize-fee-distributor` first, then return here to close your minipools.")
+		fmt.Println("Minipools cannot be closed until your fee distributor has been initialized.")
+		fmt.Println("Please run `rocketpool node initialize-fee-distributor` first, then return here to close your minipools.")
 		return nil
 	}
 
@@ -117,25 +115,31 @@ func closeMinipools(c *cli.Context) error {
 
 	// Print ineligible ones
 	if len(unwithdrawnMinipools) > 0 {
-		fmt.Printf("%sNOTE: The following minipools have not had their full balances withdrawn from the Beacon Chain yet:\n", colorBlue)
+		color.LightBluePrintln("NOTE: The following minipools have not had their full balances withdrawn from the Beacon Chain yet:")
 		for _, mp := range unwithdrawnMinipools {
-			fmt.Printf("\t%s\n", mp.Address)
+			color.LightBluePrintf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nTo close them, first run `rocketpool minipool exit` on them and wait until their balances have been withdrawn.%s\n\n", colorReset)
+		fmt.Println()
+		color.LightBluePrintln("To close them, first run `rocketpool minipool exit` on them and wait until their balances have been withdrawn.")
+		fmt.Println()
 	}
 	if len(versionTooLowMinipools) > 0 {
-		fmt.Printf("%sWARNING: The following minipools are using an old delegate and cannot be safely closed:\n", colorYellow)
+		color.YellowPrintln("WARNING: The following minipools are using an old delegate and cannot be safely closed:")
 		for _, mp := range versionTooLowMinipools {
-			fmt.Printf("\t%s\n", mp.Address)
+			color.YellowPrintf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` in order to close them.%s\n\n", colorReset)
+		fmt.Println()
+		color.YellowPrintln("Please upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` in order to close them.")
+		fmt.Println()
 	}
 	if len(balanceLessThanRefundMinipools) > 0 {
-		fmt.Printf("%sWARNING: The following minipools have refunds larger than their current balances and cannot be closed at this time:\n", colorYellow)
+		color.YellowPrintln("WARNING: The following minipools have refunds larger than their current balances and cannot be closed at this time:")
 		for _, mp := range balanceLessThanRefundMinipools {
-			fmt.Printf("\t%s\n", mp.Address)
+			color.YellowPrintf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nIf you have recently exited their validators from the Beacon Chain, please wait until their balances have been sent to the minipools before closing them.%s\n\n", colorReset)
+		fmt.Println()
+		color.YellowPrintln("If you have recently exited their validators from the Beacon Chain, please wait until their balances have been sent to the minipools before closing them.")
+		fmt.Println()
 	}
 
 	// Check for closable minipools
@@ -207,12 +211,15 @@ func closeMinipools(c *cli.Context) error {
 		// If there isn't enough eth to pay back rETH holders, warn that RPL and ETH will both be penalized
 		if distributableBalance.Cmp(minipool.UserDepositBalance) < 0 {
 			// Less than the user deposit balance, ETH + RPL will be slashed
-			fmt.Printf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH which is lower than the amount borrowed from the staking pool (%.6f ETH).\nPlease visit the Rocket Pool Discord's #support channel (https://discord.gg/rocketpool) if you are not expecting this.%s\n", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.UserDepositBalance), 6), colorReset)
+			color.RedPrintf("WARNING: Minipool %s has a distributable balance of %.6f ETH which is lower than the amount borrowed from the staking pool (%.6f ETH).\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.UserDepositBalance), 6))
+			color.RedPrintln("Please visit the Rocket Pool Discord's #support channel (https://discord.gg/rocketpool) if you are not expecting this.")
 			if !c.Bool("confirm-slashing") {
-				fmt.Printf("\n%sIf you are *sure* you want to close the minipool anyway, rerun this command with the `--confirm-slashing` flag. Doing so WILL RESULT in both your ETH bond and your RPL collateral being slashed.%s\n", colorRed, colorReset)
+				fmt.Println()
+				color.RedPrintln("If you are *sure* you want to close the minipool anyway, rerun this command with the `--confirm-slashing` flag. Doing so WILL RESULT in both your ETH bond and your RPL collateral being slashed.")
 				return nil
 			}
-			if !prompt.ConfirmWithIAgree(fmt.Sprintf("\n%sYou have the `--confirm-slashing` flag enabled. Closing this minipool WILL RESULT in the complete loss of your initial ETH bond and enough of your RPL stake to cover the losses to the staking pool. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, colorReset)) {
+			fmt.Println()
+			if !prompt.ConfirmWithIAgree("%s", color.Red("You have the `--confirm-slashing` flag enabled. Closing this minipool WILL RESULT in the complete loss of your initial ETH bond and enough of your RPL stake to cover the losses to the staking pool. Please confirm you understand this and want to continue closing the minipool.")) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -222,7 +229,7 @@ func closeMinipools(c *cli.Context) error {
 
 		if distributableBalance.Cmp(yellowThreshold) < 0 {
 			// More than the user deposit balance but less than 31.5, ETH will be slashed with a red warning
-			if !prompt.ConfirmWithIAgree(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorRed, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), colorReset)) {
+			if !prompt.ConfirmWithIAgree("%s", color.RedSprintf("WARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6))) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -231,7 +238,7 @@ func closeMinipools(c *cli.Context) error {
 		}
 		if distributableBalance.Cmp(thirtyTwo) < 0 {
 			// More than 31.5 but less than 32, ETH will be slashed with a yellow warning
-			if !prompt.Confirm(fmt.Sprintf("%sWARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.%s", colorYellow, minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6), colorReset)) {
+			if !prompt.ConfirmYellow("WARNING: Minipool %s has a distributable balance of %.6f ETH. Closing it in this state WILL RESULT in a loss of ETH. You will only receive %.6f ETH back. Please confirm you understand this and want to continue closing the minipool.", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.NodeShare), 6)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -257,7 +264,7 @@ func closeMinipools(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to close %d minipools?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to close %d minipools?", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

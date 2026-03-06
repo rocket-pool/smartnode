@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
@@ -86,25 +87,31 @@ func rescueDissolved(c *cli.Context) error {
 
 	// Print ineligible ones
 	if len(versionTooLowMinipools) > 0 {
-		fmt.Printf("%sWARNING: The following minipools are using an old delegate and cannot be safely rescued:\n", colorYellow)
+		color.YellowPrintf("WARNING: The following minipools are using an old delegate and cannot be safely rescued:\n")
 		for _, mp := range versionTooLowMinipools {
-			fmt.Printf("\t%s\n", mp.Address)
+			color.YellowPrintf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nPlease upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` before rescuing them.%s\n\n", colorReset)
+		fmt.Println()
+		color.YellowPrintln("Please upgrade the delegate for these minipools using `rocketpool minipool delegate-upgrade` before rescuing them.")
+		fmt.Println()
 	}
 	if len(balanceCompletedMinipools) > 0 {
-		fmt.Printf("%sNOTE: The following minipools already have 32 ETH or more deposited:\n", colorYellow)
+		color.YellowPrintf("NOTE: The following minipools already have 32 ETH or more deposited:\n")
 		for _, mp := range balanceCompletedMinipools {
-			fmt.Printf("\t%s\n", mp.Address)
+			color.YellowPrintf("\t%s\n", mp.Address)
 		}
-		fmt.Printf("\nThese minipools don't need to be rescued.%s\n\n", colorReset)
+		fmt.Println()
+		color.YellowPrintln("These minipools don't need to be rescued.")
+		fmt.Println()
 	}
 	if len(invalidBeaconStateMinipools) > 0 {
-		fmt.Printf("%sNOTE: The following minipools have an invalid state on the Beacon Chain (expected 'initialized_pending'):\n", colorYellow)
+		color.YellowPrintf("NOTE: The following minipools have an invalid state on the Beacon Chain (expected 'initialized_pending'):\n")
 		for _, mp := range invalidBeaconStateMinipools {
-			fmt.Printf("\t%s (%s)\n", mp.Address, mp.BeaconState)
+			color.YellowPrintf("\t%s (%s)\n", mp.Address, mp.BeaconState)
 		}
-		fmt.Printf("\nThese minipools cannot currently be rescued.%s\n\n", colorReset)
+		fmt.Println()
+		color.YellowPrintln("These minipools cannot currently be rescued.")
+		fmt.Println()
 	}
 
 	// Check for rescuable minipools
@@ -113,7 +120,9 @@ func rescueDissolved(c *cli.Context) error {
 		return nil
 	}
 
-	fmt.Printf("%sNOTE: the amounts required for completion below use the validator balances according to the Beacon Chain.\nIf you have recently sent a rescue deposit to this minipool, please wait until it has been registered with the Beacon Chain for these remaining amounts to be accurate.%s\n\n", colorYellow, colorReset)
+	color.YellowPrintln("NOTE: the amounts required for completion below use the validator balances according to the Beacon Chain.")
+	color.YellowPrintln("If you have recently sent a rescue deposit to this minipool, please wait until it has been registered with the Beacon Chain for these remaining amounts to be accurate.")
+	fmt.Println()
 
 	// Get selected minipools
 	var selectedMinipool *api.MinipoolRescueDissolvedDetails
@@ -205,7 +214,7 @@ func rescueDissolved(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -223,7 +232,8 @@ func rescueDissolved(c *cli.Context) error {
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return fmt.Errorf("Could not rescue minipool %s: %s.\n", selectedMinipool.Address.Hex(), err.Error())
 	} else {
-		fmt.Printf("Successfully deposited to minipool %s.\nPlease watch its status on a chain explorer such as https://beaconcha.in; it may take up to 24 hours for this deposit to be seen by the chain.\n", selectedMinipool.Address.Hex())
+		fmt.Printf("Successfully deposited to minipool %s.\n", selectedMinipool.Address.Hex())
+		fmt.Println("Please watch its status on a chain explorer such as https://beaconcha.in; it may take up to 24 hours for this deposit to be seen by the chain.")
 	}
 
 	// Return

@@ -13,17 +13,14 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
 // Config
 const (
-	colorReset  string = "\033[0m"
-	colorRed    string = "\033[31m"
-	colorGreen  string = "\033[32m"
-	colorYellow string = "\033[33m"
-	maxCount    uint64 = 35
+	maxCount uint64 = 35
 )
 
 func nodeMegapoolDeposit(c *cli.Context) error {
@@ -138,7 +135,10 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	fmt.Printf("The total bond requirement is %.2f ETH.\n", totalBondRequirementEth)
 	fmt.Println()
 
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sNOTE: You are about to create %d new megapool validator(s), requiring a total of: %.2f ETH).%s\nWould you like to continue?", colorYellow, count, totalBondRequirementEth, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm("%s%s",
+		color.YellowSprintf("NOTE: You are about to create %d new megapool validator(s), requiring a total of: %.2f ETH).\n", count, totalBondRequirementEth),
+		"Would you like to continue?",
+	)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -230,9 +230,10 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 				fmt.Printf("This deposit will use %.6f ETH from your credit balance plus ETH staked on your behalf and will not require any ETH from your node wallet.\n\n", eth.WeiToEth(usableCredit))
 			}
 		} else {
-			fmt.Printf("%sNOTE: Your credit balance cannot currently be used to create a new megapool validator.\n"+
-				"This may be because the deposit pool has insufficient ETH or the credit balance is not enough to cover any part of the deposit.%s\n"+
-				"If you want to continue the deposit now, you will have to pay the full bond amount from your wallet.\n\n", colorYellow, colorReset)
+			color.YellowPrintln("NOTE: Your credit balance cannot currently be used to create a new megapool validator.")
+			color.YellowPrintln("This may be because the deposit pool has insufficient ETH or the credit balance is not enough to cover any part of the deposit.")
+			color.YellowPrintln("If you want to continue the deposit now, you will have to pay the full bond amount from your wallet.")
+			fmt.Println()
 		}
 		// Prompt for confirmation
 		if !(c.Bool("yes") || prompt.Confirm("Would you like to continue?")) {
@@ -243,24 +244,23 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	}
 
 	// Check to see if eth2 is synced
-	colorReset := "\033[0m"
-	colorRed := "\033[31m"
-	colorYellow := "\033[33m"
 	syncResponse, err := rp.NodeSync()
 	if err != nil {
-		fmt.Printf("%s**WARNING**: Can't verify the sync status of your consensus client.\nYOU WILL LOSE ETH if your megapool validator is activated before it is fully synced.\n"+
-			"Reason: %s\n%s", colorRed, err, colorReset)
+		color.RedPrintln("**WARNING**: Can't verify the sync status of your consensus client.")
+		color.RedPrintln("YOU WILL LOSE ETH if your megapool validator is activated before it is fully synced.")
+		color.RedPrintf("Reason: %s\n", err)
 	} else {
 		if syncResponse.BcStatus.PrimaryClientStatus.IsSynced {
-			fmt.Printf("Your consensus client is synced, you may safely create a megapool validator.\n")
+			fmt.Println("Your consensus client is synced, you may safely create a megapool validator.")
 		} else if syncResponse.BcStatus.FallbackEnabled {
 			if syncResponse.BcStatus.FallbackClientStatus.IsSynced {
-				fmt.Printf("Your fallback consensus client is synced, you may safely create a megapool validator.\n")
+				fmt.Println("Your fallback consensus client is synced, you may safely create a megapool validator.")
 			} else {
-				fmt.Printf("%s**WARNING**: neither your primary nor fallback consensus clients are fully synced.\nYOU WILL LOSE ETH if your megapool validator is activated before they are fully synced.\n%s", colorRed, colorReset)
+				color.RedPrintln("**WARNING**: neither your primary nor fallback consensus clients are fully synced.")
+				color.RedPrintln("YOU WILL LOSE ETH if your megapool validator is activated before they are fully synced.")
 			}
 		} else {
-			fmt.Printf("%s**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.\nYOU WILL LOSE ETH if your megapool validator is activated before it is fully synced.\n%s", colorRed, colorReset)
+			color.RedPrintln("**WARNING**: your primary consensus client is either not fully synced or offline and you do not have a fallback client configured.")
 		}
 	}
 
@@ -272,13 +272,11 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 
 	// Prompt for confirmation
 
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
-		"You are about to deposit %.6f ETH to create %d new megapool validator(s).\n"+
-			"%sARE YOU SURE YOU WANT TO DO THIS? %s\n",
+	if !(c.Bool("yes") || prompt.Confirm("You are about to deposit %.6f ETH to create %d new megapool validator(s).\n%s",
 		math.RoundDown(eth.WeiToEth(totalBondRequirement), 6),
 		count,
-		colorYellow,
-		colorReset))) {
+		color.Yellow("ARE YOU SURE YOU WANT TO DO THIS?"),
+	)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

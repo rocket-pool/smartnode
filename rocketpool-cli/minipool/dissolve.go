@@ -111,7 +111,7 @@ func dissolveMinipools(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to dissolve %d minipool(s)? This action cannot be undone!", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to dissolve %d minipool(s)? This action cannot be undone!", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

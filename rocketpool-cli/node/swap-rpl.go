@@ -54,7 +54,7 @@ func nodeSwapRpl(c *cli.Context) error {
 		entireAmount := status.AccountBalances.FixedSupplyRPL
 
 		// Prompt for entire amount
-		if prompt.Confirm(fmt.Sprintf("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(entireAmount), 6))) {
+		if prompt.Confirm("Would you like to swap your entire old RPL balance (%.6f RPL)?", math.RoundDown(eth.WeiToEth(entireAmount), 6)) {
 			amountWei = entireAmount
 		} else {
 
@@ -146,7 +146,7 @@ func nodeSwapRpl(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

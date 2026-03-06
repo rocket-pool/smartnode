@@ -7,13 +7,12 @@ import (
 	"runtime/pprof"
 
 	"github.com/felixge/fgprof"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/urfave/cli/v2"
 )
 
 const (
-	version    string = "1.5.2"
-	colorReset string = "\033[0m"
-	colorRed   string = "\033[31m"
+	version string = "1.5.2"
 )
 
 func main() {
@@ -124,12 +123,12 @@ func main() {
 		if cpuprofile != "" {
 			f, err := os.Create(cpuprofile)
 			if err != nil {
-				fmt.Printf("%sError generating tree: %s%s\n", colorRed, err.Error(), colorReset)
+				color.RedPrintf("Error generating tree: %s\n", err.Error())
 				os.Exit(1)
 			}
 			defer f.Close()
 			if err := pprof.StartCPUProfile(f); err != nil {
-				fmt.Printf("%sError generating tree: %s%s\n", colorRed, err.Error(), colorReset)
+				color.RedPrintf("Error generating tree: %s\n", err.Error())
 				os.Exit(1)
 			}
 			defer pprof.StopCPUProfile()
@@ -140,13 +139,13 @@ func main() {
 			defer func() {
 				f, err := os.Create(memprofile)
 				if err != nil {
-					fmt.Printf("%sError saving heap profile: %s%s\n", colorRed, err.Error(), colorReset)
+					color.RedPrintf("Error saving heap profile: %s\n", err.Error())
 					os.Exit(1)
 				}
 				defer f.Close()
 				runtime.GC()
 				if err := pprof.WriteHeapProfile(f); err != nil {
-					fmt.Printf("%sError saving heap profile: %s%s\n", colorRed, err.Error(), colorReset)
+					color.RedPrintf("Error saving heap profile: %s\n", err.Error())
 				}
 			}()
 		}
@@ -155,7 +154,7 @@ func main() {
 		if fgprofile != "" {
 			f, err := os.Create(fgprofile)
 			if err != nil {
-				fmt.Printf("%sError saving heap profile: %s%s\n", colorRed, err.Error(), colorReset)
+				color.RedPrintf("Error saving heap profile: %s\n", err.Error())
 				os.Exit(1)
 			}
 			closure := fgprof.Start(f, fgprof.FormatPprof)
@@ -174,7 +173,7 @@ func main() {
 	fmt.Println("")
 	err := app.Run(os.Args)
 	if err != nil {
-		fmt.Printf("%sError generating tree: %s%s\n", colorRed, err.Error(), colorReset)
+		color.RedPrintf("Error generating tree: %s\n", err.Error())
 		os.Exit(1)
 	}
 	fmt.Println("")

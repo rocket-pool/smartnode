@@ -12,15 +12,10 @@ import (
 	"github.com/rocket-pool/smartnode/addons/rescue_node/pb"
 	"github.com/rocket-pool/smartnode/shared/types/addons"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 const (
-	colorReset  string = "\033[0m"
-	colorRed    string = "\033[31m"
-	colorGreen  string = "\033[32m"
-	colorYellow string = "\033[33m"
-	colorBlue   string = "\033[36m"
-
 	soloAuthValidity = 10 * time.Hour * 24
 	rpAuthValidity   = 15 * time.Hour * 24
 )
@@ -129,33 +124,33 @@ func (r *RescueNode) PrintStatusText(nodeAddr common.Address) {
 		return
 	}
 
-	fmt.Printf("%s=== Rescue Node Add-on Enabled ===%s\n", colorYellow, colorReset)
+	color.YellowPrintln("=== Rescue Node Add-on Enabled ===")
 	// Check the Username
 	usernameNodeAddr, err := r.getCredentialNodeId()
 	if err != nil {
-		fmt.Printf("%s%v%s\n", colorRed, err, colorReset)
+		color.RedPrintln(err.Error())
 	} else {
-		fmt.Printf("Using a credential issued to %s%s%s.\n", colorBlue, usernameNodeAddr.String(), colorReset)
+		fmt.Printf("Using a credential issued to %s.\n", color.LightBlue(usernameNodeAddr.String()))
 		if !bytes.Equal(usernameNodeAddr.Bytes(), nodeAddr.Bytes()) {
-			fmt.Printf("%s - WARNING: This does not match the Node Account!%s\n", colorYellow, colorReset)
+			color.YellowPrintln(" - WARNING: This does not match the Node Account!")
 		}
 	}
 
 	credentialDetails, err := r.getCredentialDetails()
 	if err != nil {
-		fmt.Printf("%s%v%s\n", colorRed, err, colorReset)
+		color.RedPrintln(err.Error())
 	} else {
 		if credentialDetails.solo {
-			fmt.Printf("%s - WARNING: This credential was issued to a solo staker!%s\n", colorYellow, colorReset)
+			color.YellowPrintln(" - WARNING: This credential was issued to a solo staker!")
 		}
 
 		timeLeft := credentialDetails.GetTimeLeft().Truncate(time.Second)
 		if timeLeft < 0 {
-			fmt.Printf("%sWARNING: This credential expired %s ago!%s\n", colorRed, timeLeft.String(), colorReset)
+			color.RedPrintf("WARNING: This credential expired %s ago!\n", timeLeft.String())
 		} else if timeLeft < time.Hour*24 {
-			fmt.Printf("%sWARNING: This credential expires in %s!%s\n", colorYellow, timeLeft.String(), colorReset)
+			color.YellowPrintf("WARNING: This credential expires in %s!\n", timeLeft.String())
 		} else {
-			fmt.Printf("%sThis credential expires in %s.%s\n", colorGreen, timeLeft.String(), colorReset)
+			color.GreenPrintf("This credential expires in %s.\n", timeLeft.String())
 		}
 	}
 }

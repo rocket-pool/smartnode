@@ -10,6 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 // Settings
@@ -71,10 +72,9 @@ func getSyncProgress(c *cli.Context) error {
 		return err
 	}
 	if !depositContractInfo.SufficientSync {
-		colorReset := "\033[0m"
-		colorYellow := "\033[33m"
-		fmt.Printf("%sYour execution client hasn't synced enough to determine if your execution and consensus clients are on the same network.\n", colorYellow)
-		fmt.Printf("To run this safety check, try again later when the execution client has made more sync progress.%s\n\n", colorReset)
+		color.YellowPrintln("Your execution client hasn't synced enough to determine if your execution and consensus clients are on the same network.")
+		color.YellowPrintln("To run this safety check, try again later when the execution client has made more sync progress.")
+		fmt.Println()
 	} else if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
 		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
 		cliutils.PrintDepositMismatchError(

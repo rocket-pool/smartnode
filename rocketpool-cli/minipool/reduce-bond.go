@@ -128,7 +128,7 @@ func reduceBondAmount(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to reduce the bond for %d minipools from 16 ETH to 8 ETH?", len(selectedMinipools)))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to reduce the bond for %d minipools from 16 ETH to 8 ETH?", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

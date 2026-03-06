@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
@@ -41,9 +42,6 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 	}
 
 	// Print the "pending" disclaimer
-	colorReset := "\033[0m"
-	colorRed := "\033[31m"
-	colorYellow := "\033[33m"
 	var confirm bool
 	fmt.Println("You are about to change your primary withdrawal address. All future ETH rewards/refunds will be sent there.\nIf you haven't set your RPL withdrawal address, RPL rewards will be sent there as well.")
 	if !c.Bool("force") {
@@ -51,11 +49,13 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 		fmt.Println("By default, this will put your new primary withdrawal address into a \"pending\" state.")
 		fmt.Println("Rocket Pool will continue to use your old primary withdrawal address until you confirm that you own the new address via the Rocket Pool website.")
 		fmt.Println("You will need to use a web3-compatible wallet (such as MetaMask) with your new address to confirm it.")
-		fmt.Printf("%sIf you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.\n\n%s", colorYellow, colorReset)
+		color.YellowPrintln("If you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.")
+		fmt.Println()
 	} else {
 		confirm = true
-		fmt.Printf("%sYou have specified the \"--force\" option, so your new address will take effect immediately.\n", colorRed)
-		fmt.Printf("Please ensure that you have the correct address - if you do not control the new address, you will not be able to change this once set!%s\n\n", colorReset)
+		color.RedPrintln("You have specified the \"--force\" option, so your new address will take effect immediately.")
+		color.RedPrintln("Please ensure that you have the correct address - if you do not control the new address, you will not be able to change this once set!")
+		fmt.Println()
 	}
 
 	// Check if the withdrawal address can be set
@@ -83,7 +83,7 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 				return err
 			}
 
-			if !prompt.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString)) {
+			if !prompt.Confirm("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -110,7 +110,7 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

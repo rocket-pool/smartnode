@@ -16,6 +16,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	clicolor "github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -386,9 +387,7 @@ func (p *ExecutionClientManager) CheckStatus(cfg *config.RocketPoolConfig) *api.
 		expectedChainID := cfg.Smartnode.GetChainID()
 		if status.FallbackClientStatus.Error == "" && status.FallbackClientStatus.NetworkId != expectedChainID {
 			p.fallbackReady = false
-			colorReset := "\033[0m"
-			colorYellow := "\033[33m"
-			status.FallbackClientStatus.Error = fmt.Sprintf("The fallback client is using a different chain [%s%s%s, Chain ID %d] than what your node is configured for [%s, Chain ID %d]", colorYellow, getNetworkNameFromId(status.FallbackClientStatus.NetworkId), colorReset, status.FallbackClientStatus.NetworkId, getNetworkNameFromId(expectedChainID), expectedChainID)
+			status.FallbackClientStatus.Error = fmt.Sprintf("The fallback client is using a different chain [%s, Chain ID %d] than what your node is configured for [%s, Chain ID %d]", clicolor.Yellow(getNetworkNameFromId(status.FallbackClientStatus.NetworkId)), status.FallbackClientStatus.NetworkId, getNetworkNameFromId(expectedChainID), expectedChainID)
 			return status
 		}
 	}

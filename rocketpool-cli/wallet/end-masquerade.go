@@ -5,6 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
@@ -28,10 +29,12 @@ func endMasquerade(c *cli.Context) error {
 
 	walletUninitialized := common.Address{}
 	if status.NodeAddress == walletUninitialized {
-		fmt.Printf("The node wallet is uninitialized. You will no longer be masquerading as %s%s%s.\n\n", colorBlue, status.AccountAddress.Hex(), colorReset)
+		fmt.Printf("The node wallet is uninitialized. You will no longer be masquerading as %s.\n", color.LightBlue(status.AccountAddress.Hex()))
+		fmt.Println()
 
 	} else {
-		fmt.Printf("The node wallet is %s%s%s. You will no longer be masquerading as %s%s%s.\n\n", colorBlue, status.NodeAddress, colorReset, colorBlue, status.AccountAddress.Hex(), colorReset)
+		fmt.Printf("The node wallet is %s. You will no longer be masquerading as %s.\n", color.LightBlue(status.NodeAddress.Hex()), color.LightBlue(status.AccountAddress.Hex()))
+		fmt.Println()
 	}
 
 	// Prompt for confirmation
