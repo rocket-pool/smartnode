@@ -97,7 +97,7 @@ func cancelProposal(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to cancel proposal %d?", selectedProposal.ID))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to cancel proposal %d?", selectedProposal.ID)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

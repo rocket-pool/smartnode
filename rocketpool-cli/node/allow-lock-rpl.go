@@ -38,7 +38,7 @@ func setRPLLockingAllowed(c *cli.Context, allowedToLock bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(allowString)) {
+	if !(c.Bool("yes") || prompt.Confirm("%s", allowString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

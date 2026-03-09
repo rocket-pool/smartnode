@@ -72,13 +72,13 @@ func nodeSend(c *cli.Context, amountRaw float64, sendAll bool, token string, toA
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, canSend.TokenSymbol)
 		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
 
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to send %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	} else {
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, token)
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to send %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -160,7 +160,7 @@ func nodeSendAll(c *cli.Context, rp *rocketpool.Client, token string, toAddress 
 		fmt.Printf("Gas reserve:     %.8f ETH\n", gasCost)
 		fmt.Printf("Send amount:     %.8f ETH\n\n", amountRaw)
 
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.8f ETH to %s? This action cannot be undone!", amountRaw, toAddressString))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to send %.8f ETH to %s? This action cannot be undone!", amountRaw, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -190,13 +190,13 @@ func nodeSendAll(c *cli.Context, rp *rocketpool.Client, token string, toAddress 
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, canSend.TokenSymbol)
 		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
 
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send all %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to send all %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	} else {
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, token)
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send all %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to send all %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

@@ -27,9 +27,9 @@ ${BIN_DIR}/rocketpool-cli-$1-$2: ${bin_deps}
 ifndef NO_DOCKER
 	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=0 \
 		-e GOARCH=$2 -e GOOS=$1 --workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
-		go build -o $$@ rocketpool-cli/rocketpool-cli.go
+		go build -o $$@ ./rocketpool-cli/
 else
-	CGO_ENABLED=0 GOOS=$1 GOARCH=$2 go build -o $$@ ./rocketpool-cli/rocketpool-cli.go
+	CGO_ENABLED=0 GOOS=$1 GOARCH=$2 go build -o $$@ ./rocketpool-cli/
 endif
 endef
 

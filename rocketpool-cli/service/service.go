@@ -58,10 +58,10 @@ func installService(c *cli.Context) error {
 	dataPath := ""
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf(
+	if !(c.Bool("yes") || prompt.Confirm(
 		"The Rocket Pool %s service will be installed.\n\n%sIf you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.%s\nAre you sure you want to continue?",
 		shared.RocketPoolVersion(), colorGreen, colorReset,
-	))) {
+	)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -555,7 +555,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 			fmt.Println()
 			fmt.Println("**If you did NOT change clients, you can safely ignore this warning.**")
 			fmt.Println()
-			if !prompt.Confirm(fmt.Sprintf("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset)) {
+			if !prompt.Confirm("Press y when you understand the above warning, have waited, and are ready to start Rocket Pool:%s", colorReset) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -1006,7 +1006,7 @@ func pauseService(c *cli.Context) (bool, error) {
 func terminateService(c *cli.Context) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm("%sWARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.%s", colorRed, colorReset)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1227,7 +1227,7 @@ func resyncEth1(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm("%sAre you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!%s", colorRed, colorReset)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1342,7 +1342,7 @@ func resyncEth2(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("%sAre you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!%s", colorRed, colorReset))) {
+	if !(c.Bool("yes") || prompt.Confirm("%sAre you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!%s", colorRed, colorReset)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

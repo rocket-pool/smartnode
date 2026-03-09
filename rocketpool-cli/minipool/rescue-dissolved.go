@@ -205,7 +205,7 @@ func rescueDissolved(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()))) {
+	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

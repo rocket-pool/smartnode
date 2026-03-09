@@ -16,6 +16,26 @@ const colorGreen string = "\033[32m"
 const colorYellow string = "\033[33m"
 const colorLightBlue string = "\033[36m"
 
+func Red(msg string) string {
+	return color(colorRed, msg)
+}
+
+func Green(msg string) string {
+	return color(colorGreen, msg)
+}
+
+func Yellow(msg string) string {
+	return color(colorYellow, msg)
+}
+
+func LightBlue(msg string) string {
+	return color(colorLightBlue, msg)
+}
+
+func color(color, msg string) string {
+	return fmt.Sprintf("%s%s%s", color, msg, colorReset)
+}
+
 // Print a TX's details to the console.
 func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {
 

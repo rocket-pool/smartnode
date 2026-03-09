@@ -110,7 +110,7 @@ func promptTimezone() string {
 
 	// Confirm detected time zone
 	if timezone != "" {
-		if !prompt.Confirm(fmt.Sprintf("The detected timezone is '%s', would you like to register using this timezone?", timezone)) {
+		if !prompt.Confirm("The detected timezone is '%s', would you like to register using this timezone?", timezone) {
 			timezone = ""
 		} else {
 			return timezone
@@ -164,7 +164,7 @@ func promptTimezone() string {
 	if len(countryNames) == 0 {
 		for timezone == "" {
 			timezone = prompt.Prompt("Please enter a timezone to register with in the format 'Country/City' (use Etc/UTC if you prefer not to answer):", "^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$", "Please enter a timezone in the format 'Country/City' (use Etc/UTC if you prefer not to answer)")
-			if !prompt.Confirm(fmt.Sprintf("You have chosen to register with the timezone '%s', is this correct?", timezone)) {
+			if !prompt.Confirm("You have chosen to register with the timezone '%s', is this correct?", timezone) {
 				timezone = ""
 			}
 		}

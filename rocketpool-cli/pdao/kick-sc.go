@@ -118,7 +118,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex()))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex())) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -165,7 +165,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to propose kicking these members from the security council?\n%s", kickString))) {
+		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose kicking these members from the security council?\n%s", kickString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
