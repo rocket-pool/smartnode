@@ -49,11 +49,11 @@ const (
 )
 
 // Install the Rocket Pool service
-func installService(c *cli.Context) error {
+func installService(yes, verbose, noDeps bool, path string) error {
 	dataPath := ""
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(
+	if !(yes || prompt.Confirm(
 		"%s",
 		fmt.Sprintf("The Rocket Pool %s service will be installed.\n\n", shared.RocketPoolVersion())+
 			color.Green("If you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.\n")+
@@ -81,7 +81,7 @@ func installService(c *cli.Context) error {
 	}
 
 	// Install service
-	err = rp.InstallService(c.Bool("verbose"), c.Bool("no-deps"), c.String("path"), dataPath)
+	err = rp.InstallService(verbose, noDeps, path, dataPath)
 	if err != nil {
 		return err
 	}
@@ -90,7 +90,7 @@ func installService(c *cli.Context) error {
 	fmt.Println("")
 	fmt.Println("The Rocket Pool service was successfully installed!")
 
-	printPatchNotes(c)
+	printPatchNotes()
 
 	// Reload the config after installation
 	_, isNew, err = rp.LoadConfig()
@@ -115,7 +115,7 @@ func installService(c *cli.Context) error {
 }
 
 // Print the latest patch notes for this release
-func printPatchNotes(c *cli.Context) {
+func printPatchNotes() {
 
 	fmt.Print(shared.Logo())
 	fmt.Println()
@@ -130,10 +130,10 @@ func printPatchNotes(c *cli.Context) {
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
-func installUpdateTracker(c *cli.Context) error {
+func installUpdateTracker(yes, verbose bool) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(
+	if !(yes || prompt.Confirm(
 		"This will add the ability to display any available Operating System updates or new Rocket Pool versions on the metrics dashboard. "+
 			"Are you sure you want to install the update tracker?")) {
 		fmt.Println("Cancelled.")
@@ -145,7 +145,7 @@ func installUpdateTracker(c *cli.Context) error {
 	defer rp.Close()
 
 	// Install service
-	err := rp.InstallUpdateTracker(c.Bool("verbose"))
+	err := rp.InstallUpdateTracker(verbose)
 	if err != nil {
 		return err
 	}
@@ -162,7 +162,7 @@ func installUpdateTracker(c *cli.Context) error {
 }
 
 // View the Rocket Pool service status
-func serviceStatus(c *cli.Context) error {
+func serviceStatus(composeFiles []string) error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
@@ -181,41 +181,26 @@ func serviceStatus(c *cli.Context) error {
 	}
 
 	// Print service status
-	return rp.PrintServiceStatus(getComposeFiles(c))
+	return rp.PrintServiceStatus(composeFiles)
 
 }
 
-// Configure the service
-func configureService(c *cli.Context) error {
-
-	// Make sure the config directory exists first
-	configPath := c.GlobalString("config-path")
-	path, err := homedir.Expand(configPath)
-	if err != nil {
-		return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
-	}
-	_, err = os.Stat(path)
-	if os.IsNotExist(err) {
-		color.YellowPrintf("Your configured Rocket Pool directory of [%s] does not exist.\n", path)
-		color.YellowPrintln("Please follow the instructions at https://docs.rocketpool.net/node-staking/docker to install the Smart Node.")
-		return nil
-	}
+func configureServicePrecheck() (isNew bool, cfg, oldCfg *config.RocketPoolConfig, err error) {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Load the config, checking to see if it's new (hasn't been installed before)
-	var oldCfg *config.RocketPoolConfig
-	cfg, isNew, err := rp.LoadConfig()
+	cfg, isNew, err = rp.LoadConfig()
 	if err != nil {
-		return fmt.Errorf("error loading user settings: %w", err)
+		return false, nil, nil, fmt.Errorf("error loading user settings: %w", err)
 	}
 
 	// Check if this is a new install
 	isUpdate, err := rp.IsFirstRun()
 	if err != nil {
-		return fmt.Errorf("error checking for first-run status: %w", err)
+		return false, nil, nil, fmt.Errorf("error checking for first-run status: %w", err)
 	}
 
 	// For upgrades, move the config to the old one and create a new upgraded copy
@@ -224,23 +209,61 @@ func configureService(c *cli.Context) error {
 		cfg = cfg.CreateCopy()
 		err = cfg.UpdateDefaults()
 		if err != nil {
-			return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
+			return false, nil, nil, fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
 		}
 	}
 
 	cfg.ConfirmUpdateSuggestedSettings()
 
-	// Save the config and exit in headless mode
-	if c.NumFlags() > 0 {
-		err := configureHeadless(c, cfg)
+	return isNew, cfg, oldCfg, nil
+}
+
+// This function is the exception to the rule-
+// we pass cli.Context here and here only because
+// otherwise it's very difficult to set config values by CLI flag.
+func configureServiceHeadless(c *cli.Context) error {
+	// Get RP client
+	rp := rocketpool.NewClient()
+	defer rp.Close()
+
+	_, cfg, _, err := configureServicePrecheck()
+	if err != nil {
+		return err
+	}
+
+	// Root params
+	for _, param := range cfg.GetParameters() {
+		err := updateConfigParamFromCliArg(c, "", param, cfg)
 		if err != nil {
 			return fmt.Errorf("error updating config from provided arguments: %w", err)
 		}
-		return rp.SaveConfig(cfg)
 	}
 
-	// Check for native mode
-	isNative := c.GlobalIsSet("daemon-path")
+	// Subconfigs
+	for sectionName, subconfig := range cfg.GetSubconfigs() {
+		for _, param := range subconfig.GetParameters() {
+			err := updateConfigParamFromCliArg(c, sectionName, param, cfg)
+			if err != nil {
+				return fmt.Errorf("error updating config from provided arguments: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// Configure the service
+func configureService(configPath string, isNative, yes bool, composeFiles []string) error {
+	// Get RP client
+	rp := rocketpool.NewClient()
+	defer rp.Close()
+
+	isNew, cfg, oldCfg, err := configureServicePrecheck()
+	if err != nil {
+		return err
+	}
+
+	isUpdate := !isNew && oldCfg != nil
 
 	app := tview.NewApplication()
 	md := cliconfig.NewMainDisplay(app, oldCfg, cfg, isNew, isUpdate, isNative)
@@ -286,7 +309,7 @@ func configureService(c *cli.Context) error {
 				return nil
 			}
 
-			err = changeNetworks(c, rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix))
+			err = changeNetworks(rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix), composeFiles)
 			if err != nil {
 				color.RedPrintln(err.Error())
 				fmt.Println("The Smart Node could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/node-staking/mainnet.html).")
@@ -300,7 +323,11 @@ func configureService(c *cli.Context) error {
 				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
 				return nil
 			}
-			return startService(c, true)
+			return startService(startServiceParams{
+				yes:                    yes,
+				ignoreConfigSuggestion: true,
+				composeFiles:           composeFiles,
+			})
 		}
 
 		// Query for service start if this is old and there are containers to change
@@ -316,7 +343,7 @@ func configureService(c *cli.Context) error {
 
 			// Let's reduce potential downtime by pulling the new containers before restarting
 			fmt.Println("Pulling potential new container images...")
-			err = rp.PullComposeImages(getComposeFiles(c))
+			err = rp.PullComposeImages(composeFiles)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Warning: couldn't pull new images for updated containers: %s\n", err.Error())
 			}
@@ -331,7 +358,11 @@ func configureService(c *cli.Context) error {
 
 			fmt.Println()
 			fmt.Println("Applying changes and restarting containers...")
-			return startService(c, true)
+			return startService(startServiceParams{
+				yes:                    yes,
+				ignoreConfigSuggestion: true,
+				composeFiles:           composeFiles,
+			})
 		}
 	} else {
 		fmt.Println("Your changes have not been saved. Your Smart Node configuration is the same as it was before.")
@@ -339,31 +370,6 @@ func configureService(c *cli.Context) error {
 	}
 
 	return err
-}
-
-// Updates a configuration from the provided CLI arguments headlessly
-func configureHeadless(c *cli.Context, cfg *config.RocketPoolConfig) error {
-
-	// Root params
-	for _, param := range cfg.GetParameters() {
-		err := updateConfigParamFromCliArg(c, "", param, cfg)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Subconfigs
-	for sectionName, subconfig := range cfg.GetSubconfigs() {
-		for _, param := range subconfig.GetParameters() {
-			err := updateConfigParamFromCliArg(c, sectionName, param, cfg)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return nil
-
 }
 
 // Updates a config parameter from a CLI flag
@@ -415,11 +421,11 @@ func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *cfgt
 }
 
 // Handle a network change by terminating the service, deleting everything, and starting over
-func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName string) error {
+func changeNetworks(rp *rocketpool.Client, apiContainerName string, composeFiles []string) error {
 
 	// Stop all of the containers
 	fmt.Println("Stopping containers... ")
-	err := rp.PauseService(getComposeFiles(c))
+	err := rp.PauseService(composeFiles)
 	if err != nil {
 		return fmt.Errorf("error stopping service: %w", err)
 	}
@@ -454,7 +460,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 
 	// Terminate the current setup
 	fmt.Println("Removing old installation... ")
-	err = rp.StopService(getComposeFiles(c))
+	err = rp.StopService(composeFiles)
 	if err != nil {
 		return fmt.Errorf("error terminating old installation: %w", err)
 	}
@@ -469,7 +475,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 
 	// Start the service
 	fmt.Println("Starting Rocket Pool... ")
-	err = rp.StartService(getComposeFiles(c))
+	err = rp.StartService(composeFiles)
 	if err != nil {
 		return fmt.Errorf("error starting service: %w", err)
 	}
@@ -479,8 +485,16 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 
 }
 
+type startServiceParams struct {
+	yes bool // Whether to automatically confirm prompts
+	// N.B.: This should ALYWAYS be false unless --ignore-slash-timer is set!
+	ignoreSlashTimer       bool     // Whether to ignore the slash timer
+	ignoreConfigSuggestion bool     // Whether to skip suggesting the user run config first
+	composeFiles           []string // The compose files to start the service with
+}
+
 // Start the Rocket Pool service
-func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
+func startService(params startServiceParams) error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
@@ -510,8 +524,8 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	if err != nil {
 		return fmt.Errorf("error checking for first-run status: %w", err)
 	}
-	if isUpdate && !ignoreConfigSuggestion {
-		if c.Bool("yes") || prompt.Confirm("Smart Node upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
+	if isUpdate && !params.ignoreConfigSuggestion {
+		if params.yes || prompt.Confirm("Smart Node upgrade detected - starting will overwrite certain settings with the latest defaults (such as container versions).\nYou may want to run `service config` first to see what's changed.\n\nWould you like to continue starting the service?") {
 			err = cfg.UpdateDefaults()
 			if err != nil {
 				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
@@ -554,7 +568,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 		return nil
 	}
 
-	if !c.Bool("ignore-slash-timer") {
+	if !params.ignoreSlashTimer {
 		// Do the client swap check
 		err := checkForValidatorChange(rp, cfg)
 		if err != nil {
@@ -589,7 +603,7 @@ func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 	fmt.Println()
 
 	// Start service
-	err = rp.StartService(getComposeFiles(c))
+	err = rp.StartService(params.composeFiles)
 	if err != nil {
 		return err
 	}
@@ -756,7 +770,7 @@ func getDockerImageName(imageString string) (string, error) {
 }
 
 // Prepares the execution client for pruning
-func pruneExecutionClient(c *cli.Context) error {
+func pruneExecutionClient(yes bool) error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
@@ -811,7 +825,7 @@ func pruneExecutionClient(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to prune your main execution client?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to prune your main execution client?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -905,14 +919,14 @@ func pruneExecutionClient(c *cli.Context) error {
 }
 
 // Stops Smart Node stack containers, prunes docker, and restarts the Smart Node stack.
-func resetDocker(c *cli.Context) error {
+func resetDocker(yes, all bool, composeFiles []string) error {
 
 	fmt.Println("Once cleanup is complete, Rocket Pool will restart automatically.")
 	fmt.Println()
 
 	// Stop...
 	// NOTE: pauseService prompts for confirmation, so we don't need to do it here
-	confirmed, err := pauseService(c)
+	confirmed, err := pauseService(yes, composeFiles)
 	if err != nil {
 		return err
 	}
@@ -923,7 +937,7 @@ func resetDocker(c *cli.Context) error {
 	}
 
 	// Prune images...
-	err = pruneDocker(c)
+	err = pruneDocker(all, composeFiles)
 	if err != nil {
 		return fmt.Errorf("error pruning Docker: %s", err)
 	}
@@ -931,14 +945,18 @@ func resetDocker(c *cli.Context) error {
 	// Restart...
 	// NOTE: startService does some other sanity checks and messages that we leverage here:
 	fmt.Println("Restarting Rocket Pool...")
-	err = startService(c, true)
+	err = startService(startServiceParams{
+		yes:                    yes,
+		ignoreConfigSuggestion: true,
+		composeFiles:           composeFiles,
+	})
 	if err != nil {
 		return fmt.Errorf("error starting Rocket Pool: %s", err)
 	}
 	return nil
 }
 
-func pruneDocker(c *cli.Context) error {
+func pruneDocker(deleteAllImages bool, composeFiles []string) error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
@@ -947,9 +965,8 @@ func pruneDocker(c *cli.Context) error {
 	// NOTE: we deliberately avoid using `docker system prune -a` and delete all
 	//   images manually so that we can preserve the current smartnode-stack
 	//   images, _unless_ the user specified --all option
-	deleteAllImages := c.Bool("all")
 	if !deleteAllImages {
-		ourImages, err := rp.GetComposeImages(getComposeFiles(c))
+		ourImages, err := rp.GetComposeImages(composeFiles)
 		if err != nil {
 			return fmt.Errorf("error getting compose images: %w", err)
 		}
@@ -992,7 +1009,7 @@ func pruneDocker(c *cli.Context) error {
 }
 
 // Pause the Rocket Pool service. Returns whether the action proceeded (was confirmed by user and no error occurred before starting it)
-func pauseService(c *cli.Context) (bool, error) {
+func pauseService(yes bool, composeFiles []string) (bool, error) {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
@@ -1018,22 +1035,22 @@ func pauseService(c *cli.Context) (bool, error) {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!")) {
+	if !(yes || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!")) {
 		fmt.Println("Cancelled.")
 		return false, nil
 	}
 
 	// Pause service
-	err = rp.PauseService(getComposeFiles(c))
+	err = rp.PauseService(composeFiles)
 	return true, err
 
 }
 
 // Terminate the Rocket Pool service
-func terminateService(c *cli.Context) error {
+func terminateService(yes bool, composeFiles []string, configPath string) error {
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.ConfirmRed("WARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.")) {
+	if !(yes || prompt.ConfirmRed("WARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1043,12 +1060,12 @@ func terminateService(c *cli.Context) error {
 	defer rp.Close()
 
 	// Stop service
-	return rp.TerminateService(getComposeFiles(c), c.GlobalString("config-path"))
+	return rp.TerminateService(composeFiles, configPath)
 
 }
 
 // View the Rocket Pool service logs
-func serviceLogs(c *cli.Context, aliasedNames ...string) error {
+func serviceLogs(tail string, composeFiles []string, aliasedNames ...string) error {
 
 	// Handle name aliasing
 	serviceNames := []string{}
@@ -1070,24 +1087,24 @@ func serviceLogs(c *cli.Context, aliasedNames ...string) error {
 	defer rp.Close()
 
 	// Print service logs
-	return rp.PrintServiceLogs(getComposeFiles(c), c.String("tail"), serviceNames...)
+	return rp.PrintServiceLogs(composeFiles, tail, serviceNames...)
 
 }
 
 // View the Rocket Pool service compose config
-func serviceCompose(c *cli.Context) error {
+func serviceCompose(composeFiles []string) error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Print service compose config
-	return rp.PrintServiceCompose(getComposeFiles(c))
+	return rp.PrintServiceCompose(composeFiles)
 
 }
 
 // View the Rocket Pool service version information
-func serviceVersion(c *cli.Context) error {
+func serviceVersion() error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
@@ -1113,7 +1130,7 @@ func serviceVersion(c *cli.Context) error {
 
 	// Handle native mode
 	if cfg.IsNativeMode {
-		fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
+		fmt.Printf("Rocket Pool client version: %s\n", shared.RocketPoolVersion())
 		fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
 		fmt.Println("Configured for Native Mode")
 		return nil
@@ -1213,7 +1230,7 @@ func serviceVersion(c *cli.Context) error {
 	}
 
 	// Print version info
-	fmt.Printf("Rocket Pool client version: %s\n", c.App.Version)
+	fmt.Printf("Rocket Pool client version: %s\n", shared.RocketPoolVersion())
 	fmt.Printf("Rocket Pool service version: %s\n", serviceVersion)
 	fmt.Printf("Selected Eth 1.0 client: %s\n", eth1ClientString)
 	fmt.Printf("Selected Eth 2.0 client: %s\n", eth2ClientString)
@@ -1223,13 +1240,8 @@ func serviceVersion(c *cli.Context) error {
 
 }
 
-// Get the compose file paths for a CLI context
-func getComposeFiles(c *cli.Context) []string {
-	return c.Parent().StringSlice("compose-file")
-}
-
 // Destroy and resync the eth1 client from scratch
-func resyncEth1(c *cli.Context) error {
+func resyncEth1(yes bool, composeFiles []string) error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
@@ -1255,7 +1267,7 @@ func resyncEth1(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.ConfirmRed("Are you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!")) {
+	if !(yes || prompt.ConfirmRed("Are you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1299,7 +1311,11 @@ func resyncEth1(c *cli.Context) error {
 
 	// Restart Rocket Pool
 	fmt.Printf("Rebuilding %s and restarting Rocket Pool...\n", executionContainerName)
-	err = startService(c, true)
+	err = startService(startServiceParams{
+		yes:                    yes,
+		ignoreConfigSuggestion: true,
+		composeFiles:           composeFiles,
+	})
 	if err != nil {
 		return fmt.Errorf("Error starting Rocket Pool: %s", err)
 	}
@@ -1311,7 +1327,7 @@ func resyncEth1(c *cli.Context) error {
 }
 
 // Destroy and resync the eth2 client from scratch
-func resyncEth2(c *cli.Context) error {
+func resyncEth2(yes bool, composeFiles []string) error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
@@ -1378,7 +1394,7 @@ func resyncEth2(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.ConfirmRed("Are you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!")) {
+	if !(yes || prompt.ConfirmRed("Are you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1445,7 +1461,11 @@ func resyncEth2(c *cli.Context) error {
 
 	// Restart Rocket Pool
 	fmt.Printf("Rebuilding %s and restarting Rocket Pool...\n", beaconContainerName)
-	err = startService(c, true)
+	err = startService(startServiceParams{
+		yes:                    yes,
+		ignoreConfigSuggestion: true,
+		composeFiles:           composeFiles,
+	})
 	if err != nil {
 		return fmt.Errorf("Error starting Rocket Pool: %s", err)
 	}
@@ -1457,7 +1477,7 @@ func resyncEth2(c *cli.Context) error {
 }
 
 // Generate a YAML file that shows the current configuration schema, including all of the parameters and their descriptions
-func getConfigYaml(c *cli.Context) error {
+func getConfigYaml() error {
 	cfg := config.NewRocketPoolConfig("", false)
 	bytes, err := yaml.Marshal(cfg)
 	if err != nil {
