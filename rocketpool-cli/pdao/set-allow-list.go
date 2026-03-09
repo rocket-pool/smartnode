@@ -8,6 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
@@ -58,9 +59,9 @@ func setAllowListedControllers(c *cli.Context) error {
 
 	// Prompt for confirmation
 	if addressListStr == "" {
-		fmt.Printf("%sYou are proposing to remove all allowlisted controllers%s\n", colorGreen, colorReset)
+		color.GreenPrintln("You are proposing to remove all allowlisted controllers")
 	} else {
-		fmt.Printf("%sYou have selected propose %v as the allowlisted controllers%s\n", colorGreen, addressListStr, colorReset)
+		color.GreenPrintln("You have selected propose %v as the allowlisted controllers", addressListStr)
 	}
 	fmt.Println()
 

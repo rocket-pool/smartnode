@@ -16,11 +16,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-)
-
-const (
-	colorBlue string = "\033[36m"
 )
 
 func nodeClaimRewards(c *cli.Context) error {
@@ -33,7 +30,9 @@ func nodeClaimRewards(c *cli.Context) error {
 	defer rp.Close()
 
 	// Provide a notice
-	fmt.Printf("%sWelcome to the new rewards system!\nYou no longer need to claim rewards at each interval - you can simply let them accumulate and claim them whenever you want.\nHere you can see which intervals you haven't claimed yet, and how many rewards you earned during each one.%s\n", colorBlue, colorReset)
+	color.LightBluePrintln("Welcome to the new rewards system!")
+	color.LightBluePrintln("You no longer need to claim rewards at each interval - you can simply let them accumulate and claim them whenever you want.")
+	color.LightBluePrintln("Here you can see which intervals you haven't claimed yet, and how many rewards you earned during each one.")
 	fmt.Println()
 
 	// Get eligible intervals
@@ -43,7 +42,7 @@ func nodeClaimRewards(c *cli.Context) error {
 	}
 
 	if !rewardsInfoResponse.Registered {
-		fmt.Printf("This node is not currently registered.\n")
+		fmt.Println("This node is not currently registered.")
 		return nil
 	}
 
@@ -63,7 +62,7 @@ func nodeClaimRewards(c *cli.Context) error {
 	// Download the Merkle trees for all unclaimed intervals that don't exist
 	if len(missingIntervals) > 0 || len(invalidIntervals) > 0 {
 		fmt.Println()
-		fmt.Printf("%sNOTE: If you would like to regenerate these tree files manually, please answer `n` to the prompt below and run `rocketpool network generate-rewards-tree` before claiming your rewards.%s\n", colorBlue, colorReset)
+		color.LightBluePrintln("NOTE: If you would like to regenerate these tree files manually, please answer `n` to the prompt below and run `rocketpool network generate-rewards-tree` before claiming your rewards.")
 		if !prompt.Confirm("Would you like to download all missing rewards tree files now?") {
 			fmt.Println("Cancelled.")
 			return nil

@@ -12,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
 )
@@ -89,7 +90,7 @@ func notifyFinalBalance(c *cli.Context) error {
 		}
 	}
 
-	fmt.Printf("%sFetching the beacon state to craft a final balance proof. This process can take several minutes and is CPU and memory intensive.%s", colorYellow, colorReset)
+	color.YellowPrintln("Fetching the beacon state to craft a final balance proof. This process can take several minutes and is CPU and memory intensive.")
 	fmt.Println()
 
 	response, err := rp.CanNotifyFinalBalance(validatorId, slot)

@@ -1,11 +1,10 @@
 package wallet
 
 import (
-	"fmt"
-
 	"github.com/urfave/cli"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 // Register commands
@@ -233,7 +232,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 
 			{
 				Name:      "purge",
-				Usage:     fmt.Sprintf("%sDeletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!%s", colorRed, colorReset),
+				Usage:     color.Red("Deletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!"),
 				UsageText: "rocketpool wallet purge",
 				Action: func(c *cli.Context) error {
 

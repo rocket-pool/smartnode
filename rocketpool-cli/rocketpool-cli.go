@@ -23,12 +23,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 const (
-	colorReset    string = "\033[0m"
-	colorYellow   string = "\033[33m"
-	maxAlertItems int    = 3
+	maxAlertItems int = 3
 )
 
 // Run
@@ -181,7 +180,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 		}
 
 		if len(response.Alerts) > 0 {
-			fmt.Printf("\n%s=== Alerts ===%s\n", colorYellow, colorReset)
+			color.YellowPrintln("=== Alerts ===")
 			for i, alert := range response.Alerts {
 				fmt.Println(alert.ColorString())
 				if i == maxAlertItems-1 {

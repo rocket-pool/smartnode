@@ -9,6 +9,7 @@ import (
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
@@ -38,7 +39,10 @@ func recoverWallet(c *cli.Context) error {
 	}
 
 	// Prompt a notice about test recovery
-	fmt.Printf("%sNOTE:\nThis command will fully regenerate your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools.\nIf you just want to test recovery to ensure it works without actually regenerating the files, please use `rocketpool wallet test-recovery` instead.%s\n\n", colorYellow, colorReset)
+	color.YellowPrintln("NOTE:")
+	color.YellowPrintln("This command will fully regenerate your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools.")
+	color.YellowPrintln("If you just want to test recovery to ensure it works without actually regenerating the files, please use `rocketpool wallet test-recovery` instead.")
+	fmt.Println()
 
 	// Set password if not set
 	if !status.PasswordSet {
@@ -56,7 +60,7 @@ func recoverWallet(c *cli.Context) error {
 	// Handle validator key recovery skipping
 	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
 	if !skipValidatorKeyRecovery && !ready {
-		fmt.Printf("%sEth Clients are not available.%s Validator keys cannot be recovered until they are synced and ready.\n", colorYellow, colorReset)
+		fmt.Println(color.Yellow("Eth Clients are not available.") + " Validator keys cannot be recovered until they are synced and ready.")
 		fmt.Println("You can recover them later with 'rocketpool wallet rebuild'")
 		if !promptcli.Confirm("Would you like to skip recovering the validator keys, and recover the node wallet only?") {
 			fmt.Println("Cancelled.")
