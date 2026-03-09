@@ -7,7 +7,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -15,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func executeProposal(c *cli.Context) error {
+func executeProposal(proposal string, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -46,17 +45,17 @@ func executeProposal(c *cli.Context) error {
 
 	// Get selected proposal
 	var selectedProposals []dao.ProposalDetails
-	if c.String("proposal") == "all" {
+	if proposal == "all" {
 
 		// Select all proposals
 		selectedProposals = executableProposals
 
-	} else if c.String("proposal") != "" {
+	} else if proposal != "" {
 
 		// Get selected proposal ID
-		selectedId, err := strconv.ParseUint(c.String("proposal"), 10, 64)
+		selectedId, err := strconv.ParseUint(proposal, 10, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid proposal ID '%s': %w", c.String("proposal"), err)
+			return fmt.Errorf("Invalid proposal ID '%s': %w", proposal, err)
 		}
 
 		// Get matching proposal
@@ -110,13 +109,13 @@ func executeProposal(c *cli.Context) error {
 	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to execute %d proposals?", len(selectedProposals))) {
+	if !(yes || prompt.Confirm("Are you sure you want to execute %d proposals?", len(selectedProposals))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

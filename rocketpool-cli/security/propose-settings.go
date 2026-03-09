@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -13,78 +12,78 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func proposeSettingAuctionIsCreateLotEnabled(c *cli.Context, value bool) error {
+func proposeSettingAuctionIsCreateLotEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.CreateLotEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.AuctionSettingsContractName, protocol.CreateLotEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingAuctionIsBidOnLotEnabled(c *cli.Context, value bool) error {
+func proposeSettingAuctionIsBidOnLotEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.AuctionSettingsContractName, protocol.BidOnLotEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.AuctionSettingsContractName, protocol.BidOnLotEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingDepositIsDepositingEnabled(c *cli.Context, value bool) error {
+func proposeSettingDepositIsDepositingEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.DepositEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.DepositEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingDepositAreDepositAssignmentsEnabled(c *cli.Context, value bool) error {
+func proposeSettingDepositAreDepositAssignmentsEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.DepositSettingsContractName, protocol.AssignDepositsEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.DepositSettingsContractName, protocol.AssignDepositsEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingMinipoolIsSubmitWithdrawableEnabled(c *cli.Context, value bool) error {
+func proposeSettingMinipoolIsSubmitWithdrawableEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.MinipoolSettingsContractName, protocol.MinipoolSubmitWithdrawableEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.MinipoolSubmitWithdrawableEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingMinipoolIsBondReductionEnabled(c *cli.Context, value bool) error {
+func proposeSettingMinipoolIsBondReductionEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.MinipoolSettingsContractName, protocol.BondReductionEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.MinipoolSettingsContractName, protocol.BondReductionEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingNetworkIsSubmitBalancesEnabled(c *cli.Context, value bool) error {
+func proposeSettingNetworkIsSubmitBalancesEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitBalancesEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitBalancesEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingNetworkIsSubmitPricesEnabled(c *cli.Context, value bool) error {
+func proposeSettingNetworkIsSubmitPricesEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitPricesEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitPricesEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingNetworkIsSubmitRewardsEnabled(c *cli.Context, value bool) error {
+func proposeSettingNetworkIsSubmitRewardsEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.SubmitRewardsEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.SubmitRewardsEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingNodeIsRegistrationEnabled(c *cli.Context, value bool) error {
+func proposeSettingNodeIsRegistrationEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.NodeRegistrationEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeRegistrationEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingNodeIsSmoothingPoolRegistrationEnabled(c *cli.Context, value bool) error {
+func proposeSettingNodeIsSmoothingPoolRegistrationEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.SmoothingPoolRegistrationEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.SmoothingPoolRegistrationEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingNodeIsDepositingEnabled(c *cli.Context, value bool) error {
+func proposeSettingNodeIsDepositingEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.NodeDepositEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.NodeDepositEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingNodeAreVacantMinipoolsEnabled(c *cli.Context, value bool) error {
+func proposeSettingNodeAreVacantMinipoolsEnabled(value bool, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NodeSettingsContractName, protocol.VacantMinipoolsEnabledSettingPath, trueValue)
+	return proposeSetting(protocol.NodeSettingsContractName, protocol.VacantMinipoolsEnabledSettingPath, trueValue, yes)
 }
 
-func proposeSettingNodeComissionShareSecurityCouncilAdder(c *cli.Context, value *big.Int) error {
+func proposeSettingNodeComissionShareSecurityCouncilAdder(value *big.Int, yes bool) error {
 	trueValue := fmt.Sprint(value)
-	return proposeSetting(c, protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, trueValue)
+	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkNodeCommissionShareSecurityCouncilAdderPath, trueValue, yes)
 }
 
 // Master general proposal function
-func proposeSetting(c *cli.Context, contract string, setting string, value string) error {
+func proposeSetting(contract string, setting string, value string, yes bool) error {
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
@@ -99,13 +98,13 @@ func proposeSetting(c *cli.Context, contract string, setting string, value strin
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
