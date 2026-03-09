@@ -3,15 +3,13 @@ package auction
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func createLot(c *cli.Context) error {
+func createLot(yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -37,13 +35,13 @@ func createLot(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canCreate.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canCreate.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to create this lot?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to create this lot?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

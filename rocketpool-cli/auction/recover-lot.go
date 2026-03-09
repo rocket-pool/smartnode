@@ -6,7 +6,6 @@ import (
 
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -16,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func recoverRplFromLot(c *cli.Context) error {
+func recoverRplFromLot(lot string, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -47,17 +46,17 @@ func recoverRplFromLot(c *cli.Context) error {
 
 	// Get selected lots
 	var selectedLots []api.LotDetails
-	if c.String("lot") == "all" {
+	if lot == "all" {
 
 		// Select all recoverable lots
 		selectedLots = recoverableLots
 
-	} else if c.String("lot") != "" {
+	} else if lot != "" {
 
 		// Get selected lot index
-		selectedIndex, err := strconv.ParseUint(c.String("lot"), 10, 64)
+		selectedIndex, err := strconv.ParseUint(lot, 10, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid lot ID '%s': %w", c.String("lot"), err)
+			return fmt.Errorf("Invalid lot ID '%s': %w", lot, err)
 		}
 
 		// Get matching lot
@@ -109,13 +108,13 @@ func recoverRplFromLot(c *cli.Context) error {
 	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Get max fees
-	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to recover %d lots?", len(selectedLots))) {
+	if !(yes || prompt.Confirm("Are you sure you want to recover %d lots?", len(selectedLots))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
