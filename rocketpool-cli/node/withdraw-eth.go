@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -15,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func nodeWithdrawEth(c *cli.Context) error {
+func nodeWithdrawEth(amount string, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -26,7 +25,7 @@ func nodeWithdrawEth(c *cli.Context) error {
 
 	// Get withdrawal amount
 	var amountWei *big.Int
-	if c.String("amount") == "max" {
+	if amount == "max" {
 
 		// Get node status
 		status, err := rp.NodeStatus()
@@ -37,12 +36,12 @@ func nodeWithdrawEth(c *cli.Context) error {
 		// Set amount to maximum withdrawable amount
 		amountWei = status.EthOnBehalfBalance
 
-	} else if c.String("amount") != "" {
+	} else if amount != "" {
 
 		// Parse amount
-		withdrawalAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		withdrawalAmount, err := strconv.ParseFloat(amount, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid withdrawal amount '%s': %w", c.String("amount"), err)
+			return fmt.Errorf("Invalid withdrawal amount '%s': %w", amount, err)
 		}
 		amountWei = eth.EthToWei(withdrawalAmount)
 
@@ -89,13 +88,13 @@ func nodeWithdrawEth(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to withdraw %.6f ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
+	if !(yes || prompt.Confirm("Are you sure you want to withdraw %.6f ETH?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

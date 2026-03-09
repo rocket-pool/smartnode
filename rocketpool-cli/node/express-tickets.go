@@ -5,10 +5,9 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
-	"github.com/urfave/cli"
 )
 
-func provisionExpressTickets(c *cli.Context) error {
+func provisionExpressTickets() error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()

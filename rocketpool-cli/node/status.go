@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -24,7 +23,7 @@ const (
 	signallingAddressLink string = "https://docs.rocketpool.net/pdao/participate#setting-your-snapshot-signalling-address"
 )
 
-func getStatus(c *cli.Context) error {
+func getStatus() error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()

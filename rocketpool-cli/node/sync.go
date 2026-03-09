@@ -5,8 +5,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -48,7 +46,7 @@ func printSyncProgress(status *api.ClientManagerStatus, name string) {
 	printClientStatus(&status.FallbackClientStatus, fmt.Sprintf("fallback %s client", name))
 }
 
-func getSyncProgress(c *cli.Context) error {
+func getSyncProgress() error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()

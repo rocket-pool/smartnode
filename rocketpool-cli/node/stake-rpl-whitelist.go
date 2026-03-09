@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -13,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func addAddressToStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
+func addAddressToStakeRplWhitelist(addressOrENS string, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -46,13 +45,13 @@ func addAddressToStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to allow %s to stake RPL for your node?", addressString)) {
+	if !(yes || prompt.Confirm("Are you sure you want to allow %s to stake RPL for your node?", addressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -74,7 +73,7 @@ func addAddressToStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
 	return nil
 }
 
-func removeAddressFromStakeRplWhitelist(c *cli.Context, addressOrENS string) error {
+func removeAddressFromStakeRplWhitelist(addressOrENS string, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -107,13 +106,13 @@ func removeAddressFromStakeRplWhitelist(c *cli.Context, addressOrENS string) err
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to remove %s from your RPL staking whitelist?", addressString)) {
+	if !(yes || prompt.Confirm("Are you sure you want to remove %s from your RPL staking whitelist?", addressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

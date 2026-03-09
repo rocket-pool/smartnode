@@ -9,7 +9,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
@@ -20,7 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func nodeClaimRewards(c *cli.Context) error {
+func nodeClaimRewards(restakeAmountFlag string, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -140,7 +139,7 @@ func nodeClaimRewards(c *cli.Context) error {
 	}
 	for {
 		indexSelection := ""
-		if !c.Bool("yes") {
+		if !yes {
 			indexSelection = prompt.Prompt("Which intervals would you like to claim? Use a comma separated list (such as '1,2,3') or leave it blank to claim all intervals at once.", "^$|^\\d+(,\\d+)*$", "Invalid index selection")
 		}
 
@@ -198,7 +197,7 @@ func nodeClaimRewards(c *cli.Context) error {
 	fmt.Printf("With this selection, you will claim %.6f RPL and %.6f ETH.\n\n", eth.WeiToEth(claimRpl), eth.WeiToEth(claimEth))
 
 	// Get restake amount
-	restakeAmountWei, err := getRestakeAmount(c, rewardsInfoResponse, claimRpl)
+	restakeAmountWei, err := getRestakeAmount(restakeAmountFlag, yes, rewardsInfoResponse, claimRpl)
 	if err != nil {
 		return err
 	}
@@ -211,7 +210,7 @@ func nodeClaimRewards(c *cli.Context) error {
 		}
 
 		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(canClaim.GasInfo, rp, c.Bool("yes"))
+		err = gas.AssignMaxFeeAndLimit(canClaim.GasInfo, rp, yes)
 		if err != nil {
 			return err
 		}
@@ -222,14 +221,14 @@ func nodeClaimRewards(c *cli.Context) error {
 		}
 
 		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(canClaim.GasInfo, rp, c.Bool("yes"))
+		err = gas.AssignMaxFeeAndLimit(canClaim.GasInfo, rp, yes)
 		if err != nil {
 			return err
 		}
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to claim your rewards?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to claim your rewards?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -262,7 +261,7 @@ func nodeClaimRewards(c *cli.Context) error {
 }
 
 // Determine how much RPL to restake
-func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfoResponse, claimRpl *big.Int) (*big.Int, error) {
+func getRestakeAmount(restakeAmountFlag string, yes bool, rewardsInfoResponse api.NodeGetRewardsInfoResponse, claimRpl *big.Int) (*big.Int, error) {
 
 	// Get the current collateral
 	currentBondedCollateral := float64(0)
@@ -293,7 +292,6 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 
 	// Handle restaking automation or prompts
 	var restakeAmountWei *big.Int
-	restakeAmountFlag := c.String("restake-amount")
 
 	if restakeAmountFlag == "all" {
 		// Restake everything with no regard for collateral level
@@ -313,7 +311,7 @@ func getRestakeAmount(c *cli.Context, rewardsInfoResponse api.NodeGetRewardsInfo
 			fmt.Printf("Automatically restaking %.6f RPL, which will bring you to a total of %.6f RPL staked (%.2f%% borrowed collateral, %.2f%% bonded collateral).\n", stakeAmount, total, totalBorrowedCollateral*100, totalBondedCollateral*100)
 			restakeAmountWei = eth.EthToWei(stakeAmount)
 		}
-	} else if c.Bool("yes") {
+	} else if yes {
 		// Ignore automatic restaking if `-y` is specified but `-a` isn't
 		fmt.Println("Automatic restaking is not requested.")
 		restakeAmountWei = nil
