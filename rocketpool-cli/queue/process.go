@@ -4,15 +4,13 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func processQueue(c *cli.Context) error {
+func processQueue(yes bool) error {
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
@@ -50,13 +48,13 @@ func processQueue(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canProcess.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canProcess.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Do you accept this gas fee?")) {
+	if !(yes || prompt.Confirm("Do you accept this gas fee?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

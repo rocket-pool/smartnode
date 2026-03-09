@@ -27,7 +27,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getStatus(c)
+					return getStatus()
 
 				},
 			},
@@ -45,7 +45,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return processQueue(c)
+					return processQueue(c.Bool("yes"))
 
 				},
 			},
@@ -69,7 +69,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return assignDeposits(c)
+					return assignDeposits(c.Bool("yes"))
 
 				},
 			},
