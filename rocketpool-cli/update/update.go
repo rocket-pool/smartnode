@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -68,14 +67,10 @@ func forkCommand(binaryPath string, yes bool, args ...string) *exec.Cmd {
 }
 
 func Update(c *cli.Context) error {
-	// Get the pwd and argv[0]
-	pwd, err := os.Getwd()
+	oldBinaryPath, err := os.Executable()
 	if err != nil {
-		return err
+		return fmt.Errorf("error getting path of current executable: %w", err)
 	}
-	argv0 := os.Args[0]
-
-	oldBinaryPath := filepath.Join(pwd, argv0)
 
 	// Validate the OS and architecture
 	err = validateOsArch()
