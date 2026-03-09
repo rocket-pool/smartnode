@@ -5,7 +5,6 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -14,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func join(c *cli.Context) error {
+func join(yes bool, swap bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -30,7 +29,7 @@ func join(c *cli.Context) error {
 	}
 
 	// If a custom nonce is set, print the multi-transaction warning
-	if c.GlobalUint64("nonce") != 0 {
+	if rocketpool.Defaults.CustomNonce != nil {
 		cliutils.PrintMultiTransactionNonceWarning()
 	}
 
@@ -38,7 +37,7 @@ func join(c *cli.Context) error {
 	if status.AccountBalances.FixedSupplyRPL.Cmp(big.NewInt(0)) > 0 {
 
 		// Confirm swapping RPL
-		if c.Bool("swap") || prompt.Confirm("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)) {
+		if swap || prompt.Confirm("The node has a balance of %.6f old RPL. Would you like to swap it for new RPL before transferring your bond?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)) {
 
 			// Check allowance
 			allowance, err := rp.GetNodeSwapRplAllowance()
@@ -51,7 +50,7 @@ func join(c *cli.Context) error {
 				fmt.Println("This only needs to be done once for your node.")
 
 				// If a custom nonce is set, print the multi-transaction warning
-				if c.GlobalUint64("nonce") != 0 {
+				if rocketpool.Defaults.CustomNonce != nil {
 					cliutils.PrintMultiTransactionNonceWarning()
 				}
 
@@ -66,13 +65,13 @@ func join(c *cli.Context) error {
 					return err
 				}
 				// Assign max fees
-				err = gas.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, c.Bool("yes"))
+				err = gas.AssignMaxFeeAndLimit(approvalGas.GasInfo, rp, yes)
 				if err != nil {
 					return err
 				}
 
 				// Prompt for confirmation
-				if !(c.Bool("yes") || prompt.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
+				if !(yes || prompt.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -91,7 +90,7 @@ func join(c *cli.Context) error {
 				fmt.Println("Successfully approved access to legacy RPL.")
 
 				// If a custom nonce is set, increment it for the next transaction
-				if c.GlobalUint64("nonce") != 0 {
+				if rocketpool.Defaults.CustomNonce != nil {
 					rp.IncrementCustomNonce()
 				}
 			}
@@ -110,13 +109,13 @@ func join(c *cli.Context) error {
 			}
 			fmt.Println("RPL Swap Gas Info:")
 			// Assign max fees
-			err = gas.AssignMaxFeeAndLimit(canSwap.GasInfo, rp, c.Bool("yes"))
+			err = gas.AssignMaxFeeAndLimit(canSwap.GasInfo, rp, yes)
 			if err != nil {
 				return err
 			}
 
 			// Prompt for confirmation
-			if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))) {
+			if !(yes || prompt.Confirm("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -138,7 +137,7 @@ func join(c *cli.Context) error {
 			fmt.Println("")
 
 			// If a custom nonce is set, increment it for the next transaction
-			if c.GlobalUint64("nonce") != 0 {
+			if rocketpool.Defaults.CustomNonce != nil {
 				rp.IncrementCustomNonce()
 			}
 		}
@@ -165,14 +164,14 @@ func join(c *cli.Context) error {
 
 	// Display gas estimate
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canJoin.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canJoin.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 	rp.PrintMultiTxWarning()
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.")) {
+	if !(yes || prompt.Confirm("Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -187,7 +186,7 @@ func join(c *cli.Context) error {
 	cliutils.PrintTransactionHashNoCancel(rp, hash)
 
 	// If a custom nonce is set, increment it for the next transaction
-	if c.GlobalUint64("nonce") != 0 {
+	if rocketpool.Defaults.CustomNonce != nil {
 		rp.IncrementCustomNonce()
 	}
 
