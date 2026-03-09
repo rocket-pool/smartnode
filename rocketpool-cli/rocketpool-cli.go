@@ -128,7 +128,13 @@ A special thanks to the Rocket Pool community for all their contributions.
 				Usage: "Don't verify the singature of the release",
 			},
 		},
-		Action: update.Update,
+		Action: func(c *cli.Context) error {
+			return update.Update(
+				c.Bool("yes"),
+				c.Bool("skip-signature-verification"),
+				c.Bool("force"),
+			)
+		},
 	})
 
 	app.Before = func(c *cli.Context) error {
