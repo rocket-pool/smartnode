@@ -12,7 +12,7 @@ import (
 
 func masquerade(c *cli.Context) error {
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	fmt.Println("Masquerading allows you to set your node address to any address you want. All commands will act as though your node wallet is for that address. Since you don't have the private key for that address, you can't submit transactions or sign messages though; commands will be", color.Yellow("read-only"), "until you end the masquerade with `rocketpool wallet end-masquerade`.")

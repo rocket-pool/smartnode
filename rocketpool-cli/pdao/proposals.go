@@ -33,7 +33,7 @@ func filterProposalState(state string, stateFilter string) bool {
 func getProposals(c *cli.Context, stateFilter string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -98,7 +98,7 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 func getProposal(c *cli.Context, id uint64) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

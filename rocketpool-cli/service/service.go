@@ -64,7 +64,7 @@ func installService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Attempt to load the config to see if any settings need to be passed along to the install script
@@ -141,7 +141,7 @@ func installUpdateTracker(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Install service
@@ -165,7 +165,7 @@ func installUpdateTracker(c *cli.Context) error {
 func serviceStatus(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the config
@@ -202,7 +202,7 @@ func configureService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Load the config, checking to see if it's new (hasn't been installed before)
@@ -483,7 +483,7 @@ func changeNetworks(c *cli.Context, rp *rocketpool.Client, apiContainerName stri
 func startService(c *cli.Context, ignoreConfigSuggestion bool) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Update the Prometheus template with the assigned ports
@@ -759,7 +759,7 @@ func getDockerImageName(imageString string) (string, error) {
 func pruneExecutionClient(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the config
@@ -941,7 +941,7 @@ func resetDocker(c *cli.Context) error {
 func pruneDocker(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// NOTE: we deliberately avoid using `docker system prune -a` and delete all
@@ -995,7 +995,7 @@ func pruneDocker(c *cli.Context) error {
 func pauseService(c *cli.Context) (bool, error) {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the config
@@ -1039,7 +1039,7 @@ func terminateService(c *cli.Context) error {
 	}
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Stop service
@@ -1066,7 +1066,7 @@ func serviceLogs(c *cli.Context, aliasedNames ...string) error {
 	}
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Print service logs
@@ -1078,7 +1078,7 @@ func serviceLogs(c *cli.Context, aliasedNames ...string) error {
 func serviceCompose(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Print service compose config
@@ -1090,7 +1090,7 @@ func serviceCompose(c *cli.Context) error {
 func serviceVersion(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the config
@@ -1232,7 +1232,7 @@ func getComposeFiles(c *cli.Context) []string {
 func resyncEth1(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the config
@@ -1314,7 +1314,7 @@ func resyncEth1(c *cli.Context) error {
 func resyncEth2(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the merged config

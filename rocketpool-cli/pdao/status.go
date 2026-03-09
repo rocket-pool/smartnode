@@ -26,7 +26,7 @@ const (
 func getStatus(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get wallet status

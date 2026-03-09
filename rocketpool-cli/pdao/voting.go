@@ -15,7 +15,7 @@ import (
 
 func pdaoSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

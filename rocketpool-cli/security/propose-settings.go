@@ -86,7 +86,7 @@ func proposeSettingNodeComissionShareSecurityCouncilAdder(c *cli.Context, value 
 // Master general proposal function
 func proposeSetting(c *cli.Context, contract string, setting string, value string) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

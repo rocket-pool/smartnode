@@ -13,7 +13,7 @@ import (
 func importKey(c *cli.Context, minipoolAddress common.Address) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

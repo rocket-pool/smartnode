@@ -17,7 +17,7 @@ import (
 
 func penaliseMegapool(c *cli.Context, megapoolAddress common.Address, block *big.Int) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

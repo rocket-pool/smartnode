@@ -69,7 +69,7 @@ func forkCommand(binaryPath string, yes bool, args ...string) *exec.Cmd {
 
 func Update(c *cli.Context) error {
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the config

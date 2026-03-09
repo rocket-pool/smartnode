@@ -13,7 +13,7 @@ import (
 func delegateUpgradeMegapool(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func delegateUpgradeMegapool(c *cli.Context) error {
 
 func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

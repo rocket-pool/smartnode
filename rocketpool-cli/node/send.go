@@ -17,7 +17,7 @@ import (
 func nodeSend(c *cli.Context, amountRaw float64, sendAll bool, token string, toAddressOrENS string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ import (
 
 func endMasquerade(c *cli.Context) error {
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get wallet status

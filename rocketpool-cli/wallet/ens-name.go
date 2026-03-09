@@ -14,7 +14,7 @@ import (
 func setEnsName(c *cli.Context, name string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

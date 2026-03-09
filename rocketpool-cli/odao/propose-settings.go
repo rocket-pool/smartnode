@@ -16,7 +16,7 @@ import (
 func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorumPercent float64) error {
 func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountEth float64) error {
 func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint64) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -172,7 +172,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
 func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -231,7 +231,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan str
 func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -290,7 +290,7 @@ func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan str
 func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimespan string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -349,7 +349,7 @@ func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimesp
 func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimespan string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -408,7 +408,7 @@ func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimesp
 func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -467,7 +467,7 @@ func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan
 func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -526,7 +526,7 @@ func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod string) error {
 func proposeSettingPromotionScrubPeriod(c *cli.Context, scrubPeriod string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -585,7 +585,7 @@ func proposeSettingPromotionScrubPeriod(c *cli.Context, scrubPeriod string) erro
 func proposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -637,7 +637,7 @@ func proposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) error {
 func proposeSettingBondReductionWindowStart(c *cli.Context, windowStart string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -696,7 +696,7 @@ func proposeSettingBondReductionWindowStart(c *cli.Context, windowStart string) 
 func proposeSettingBondReductionWindowLength(c *cli.Context, windowLength string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

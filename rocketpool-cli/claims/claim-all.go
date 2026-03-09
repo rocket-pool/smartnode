@@ -52,7 +52,7 @@ func (c pendingClaim) valueString() string {
 func claimAll(c *cli.Context, statusOnly bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

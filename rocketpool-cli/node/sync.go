@@ -51,7 +51,7 @@ func printSyncProgress(status *api.ClientManagerStatus, name string) {
 func getSyncProgress(c *cli.Context) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the config

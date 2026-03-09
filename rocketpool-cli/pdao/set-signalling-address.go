@@ -14,7 +14,7 @@ import (
 func setSignallingAddress(c *cli.Context, signallingAddress common.Address, signature string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func setSignallingAddress(c *cli.Context, signallingAddress common.Address, sign
 func clearSignallingAddress(c *cli.Context) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

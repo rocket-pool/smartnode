@@ -13,7 +13,7 @@ import (
 
 func finalizeProposal(c *cli.Context, proposalID uint64) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

@@ -139,6 +139,15 @@ A special thanks to the Rocket Pool community for all their contributions.
 			os.Exit(1)
 		}
 
+		Defaults := rocketpool.Globals{
+			ConfigPath: os.ExpandEnv(c.GlobalString("config-path")),
+			DaemonPath: os.ExpandEnv(c.GlobalString("daemon-path")),
+			MaxFee:     c.GlobalFloat64("maxFee"),
+			MaxPrioFee: c.GlobalFloat64("maxPrioFee"),
+			GasLimit:   c.GlobalUint64("gasLimit"),
+			DebugPrint: c.GlobalBool("debug"),
+		}
+
 		// If set, validate custom nonce
 		customNonce := c.GlobalString("nonce")
 		if customNonce != "" {
@@ -148,9 +157,10 @@ A special thanks to the Rocket Pool community for all their contributions.
 				os.Exit(1)
 			}
 
-			// Save the parsed value on Metadata so we don't need to reparse it later
-			c.App.Metadata["nonce"] = nonce
+			Defaults.CustomNonce = nonce
 		}
+
+		rocketpool.SetDefaults(Defaults)
 
 		return nil
 	}
@@ -161,7 +171,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 			return nil
 		}
 
-		rp := rocketpool.NewClientFromCtx(c)
+		rp := rocketpool.NewClient()
 		defer rp.Close()
 
 		// Check if the user has enabled the "show alerts after every command" setting.
