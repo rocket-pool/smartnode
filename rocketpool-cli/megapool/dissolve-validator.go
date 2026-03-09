@@ -8,10 +8,48 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func dissolveValidator(c *cli.Context) error {
+func getDissolvableValidator() (uint64, bool, error) {
+
+	// Get RP client
+	rp, err := rocketpool.NewClient().WithReady()
+	if err != nil {
+		return 0, false, err
+	}
+	defer rp.Close()
+
+	// Get Megapool status
+	status, err := rp.MegapoolStatus(false)
+	if err != nil {
+		return 0, false, err
+	}
+
+	validatorsInPrestake := []api.MegapoolValidatorDetails{}
+
+	for _, validator := range status.Megapool.Validators {
+		if validator.InPrestake {
+			validatorsInPrestake = append(validatorsInPrestake, validator)
+		}
+	}
+
+	if len(validatorsInPrestake) == 0 {
+		fmt.Println("No validators can be dissolved at the moment")
+		return 0, false, nil
+	}
+
+	options := make([]string, len(validatorsInPrestake))
+	for vi, v := range validatorsInPrestake {
+		options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+	}
+	selected, _ := prompt.Select("Please select a validator to DISSOLVE:", options)
+
+	// Get validators
+	validatorId := uint64(validatorsInPrestake[selected].ValidatorId)
+	return validatorId, true, nil
+}
+
+func dissolveValidator(validatorId uint64, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -19,41 +57,6 @@ func dissolveValidator(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
-
-	var validatorId uint64
-
-	if c.IsSet("validator-id") {
-		validatorId = c.Uint64("validator-id")
-	} else {
-		// Get Megapool status
-		status, err := rp.MegapoolStatus(false)
-		if err != nil {
-			return err
-		}
-
-		validatorsInPrestake := []api.MegapoolValidatorDetails{}
-
-		for _, validator := range status.Megapool.Validators {
-			if validator.InPrestake {
-				validatorsInPrestake = append(validatorsInPrestake, validator)
-			}
-		}
-		if len(validatorsInPrestake) > 0 {
-
-			options := make([]string, len(validatorsInPrestake))
-			for vi, v := range validatorsInPrestake {
-				options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
-			}
-			selected, _ := prompt.Select("Please select a validator to DISSOLVE:", options)
-
-			// Get validators
-			validatorId = uint64(validatorsInPrestake[selected].ValidatorId)
-
-		} else {
-			fmt.Println("No validators can be dissolved at the moment")
-			return nil
-		}
-	}
 
 	// Check megapool validator can be dissolved
 	canDissolve, err := rp.CanDissolveValidator(validatorId)
@@ -69,13 +72,13 @@ func dissolveValidator(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canDissolve.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canDissolve.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to DISSOLVE megapool validator ID: %d?", validatorId)) {
+	if !(yes || prompt.Confirm("Are you sure you want to DISSOLVE megapool validator ID: %d?", validatorId)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

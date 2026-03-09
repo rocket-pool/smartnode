@@ -42,7 +42,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeMegapoolDeposit(c)
+					return nodeMegapoolDeposit(c.Uint64("count"), c.Int64("express-tickets"), c.Bool("yes"))
 
 				},
 			},
@@ -59,7 +59,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getStatus(c)
+					return getStatus()
 
 				},
 			},
@@ -76,7 +76,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getValidatorStatus(c)
+					return getValidatorStatus()
 
 				},
 			},
@@ -99,7 +99,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return repayDebt(c)
+					return repayDebt(c.Bool("yes"))
 				},
 			},
 			{
@@ -121,7 +121,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return reduceBond(c)
+					return reduceBond(c.Bool("yes"))
 				},
 			},
 			{
@@ -143,7 +143,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return claim(c)
+					return claim(c.Bool("yes"))
 				},
 			},
 			{
@@ -168,8 +168,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 
+					var validatorId uint64
+					if !c.IsSet("validator-id") {
+						var err error
+						var found bool
+						validatorId, found, err = getStakableValidator()
+						if err != nil {
+							return err
+						}
+						if !found {
+							return nil
+						}
+					} else {
+						validatorId = c.Uint64("validator-id")
+					}
+
 					// Run
-					return stake(c)
+					return stake(validatorId, c.Bool("yes"))
 				},
 			},
 			{
@@ -199,7 +214,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return exitQueue(c)
+					return exitQueue(c.String("validator-id"), c.Bool("yes"))
 				},
 			},
 			{
@@ -224,8 +239,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 
+					var validatorId uint64
+					if !c.IsSet("validator-id") {
+						var err error
+						var found bool
+						validatorId, found, err = getDissolvableValidator()
+						if err != nil {
+							return err
+						}
+						if !found {
+							return nil
+						}
+					} else {
+						validatorId = c.Uint64("validator-id")
+					}
+
 					// Run
-					return dissolveValidator(c)
+					return dissolveValidator(validatorId, c.Bool("yes"))
 				},
 			},
 			{
@@ -250,8 +280,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 
+					var validatorId uint64
+					if !c.IsSet("validator-id") {
+						var err error
+						var found bool
+						validatorId, found, err = getExitableValidator()
+						if err != nil {
+							return err
+						}
+						if !found {
+							return nil
+						}
+					} else {
+						validatorId = c.Uint64("validator-id")
+					}
+
 					// Run
-					return exitValidator(c)
+					return exitValidator(validatorId, c.Bool("yes"))
 				},
 			},
 			{
@@ -276,8 +321,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 
+					var validatorId uint64
+					if !c.IsSet("validator-id") {
+						var err error
+						var found bool
+						validatorId, found, err = getExitedValidator()
+						if err != nil {
+							return err
+						}
+						if !found {
+							return nil
+						}
+					} else {
+						validatorId = c.Uint64("validator-id")
+					}
+
 					// Run
-					return notifyValidatorExit(c)
+					return notifyValidatorExit(validatorId, c.Bool("yes"))
 				},
 			},
 			{
@@ -306,8 +366,16 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 
+					validatorId, validatorIndex, found, err := getNotifiableValidator()
+					if err != nil {
+						return err
+					}
+					if !found {
+						return nil
+					}
+
 					// Run
-					return notifyFinalBalance(c)
+					return notifyFinalBalance(validatorId, validatorIndex, c.Uint64("slot"), c.Bool("yes"))
 				},
 			},
 			{
@@ -329,7 +397,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return distribute(c)
+					return distribute(c.Bool("yes"))
 				},
 			},
 			// Add set-use-latest-delegate command
@@ -351,7 +419,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 
-					return setUseLatestDelegateMegapool(c, useLatest)
+					return setUseLatestDelegateMegapool(useLatest, c.Bool("yes"))
 				},
 				Flags: []cli.Flag{
 					cli.BoolFlag{

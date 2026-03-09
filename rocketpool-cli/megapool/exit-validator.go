@@ -8,7 +8,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
 type ByIndex []api.MegapoolValidatorDetails
@@ -17,7 +16,50 @@ func (a ByIndex) Len() int           { return len(a) }
 func (a ByIndex) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByIndex) Less(i, j int) bool { return a[i].ValidatorIndex < a[j].ValidatorIndex }
 
-func exitValidator(c *cli.Context) error {
+func getExitableValidator() (uint64, bool, error) {
+	// Get RP client
+	rp, err := rocketpool.NewClient().WithReady()
+	if err != nil {
+		return 0, false, err
+	}
+	defer rp.Close()
+
+	// Get Megapool status
+	status, err := rp.MegapoolStatus(false)
+	if err != nil {
+		return 0, false, err
+	}
+
+	activeValidators := []api.MegapoolValidatorDetails{}
+
+	for _, validator := range status.Megapool.Validators {
+		if validator.Activated && !validator.Exiting && !validator.Exited {
+			// Check if validator is old enough to exit
+			earliestExitEpoch := validator.BeaconStatus.ActivationEpoch + 256
+			if status.BeaconHead.Epoch >= earliestExitEpoch {
+				activeValidators = append(activeValidators, validator)
+			}
+		}
+	}
+	if len(activeValidators) > 0 {
+		sort.Sort(ByIndex(activeValidators))
+
+		options := make([]string, len(activeValidators))
+		for vi, v := range activeValidators {
+			options[vi] = fmt.Sprintf("ID: %d - Index: %d Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
+		}
+		selected, _ := prompt.Select("Please select a validator to EXIT:", options)
+
+		// Get validators
+		return uint64(activeValidators[selected].ValidatorId), true, nil
+
+	} else {
+		fmt.Println("No validators can be exited at the moment")
+		return 0, false, nil
+	}
+}
+
+func exitValidator(validatorId uint64, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -25,47 +67,6 @@ func exitValidator(c *cli.Context) error {
 		return err
 	}
 	defer rp.Close()
-
-	// List the validators that can be exited
-	var validatorId uint64
-
-	if c.IsSet("validator-id") {
-		validatorId = c.Uint64("validator-id")
-	} else {
-		// Get Megapool status
-		status, err := rp.MegapoolStatus(false)
-		if err != nil {
-			return err
-		}
-
-		activeValidators := []api.MegapoolValidatorDetails{}
-
-		for _, validator := range status.Megapool.Validators {
-			if validator.Activated && !validator.Exiting && !validator.Exited {
-				// Check if validator is old enough to exit
-				earliestExitEpoch := validator.BeaconStatus.ActivationEpoch + 256
-				if status.BeaconHead.Epoch >= earliestExitEpoch {
-					activeValidators = append(activeValidators, validator)
-				}
-			}
-		}
-		if len(activeValidators) > 0 {
-			sort.Sort(ByIndex(activeValidators))
-
-			options := make([]string, len(activeValidators))
-			for vi, v := range activeValidators {
-				options[vi] = fmt.Sprintf("ID: %d - Index: %d Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
-			}
-			selected, _ := prompt.Select("Please select a validator to EXIT:", options)
-
-			// Get validators
-			validatorId = uint64(activeValidators[selected].ValidatorId)
-
-		} else {
-			fmt.Println("No validators can be exited at the moment")
-			return nil
-		}
-	}
 
 	response, err := rp.CanExitValidator(validatorId)
 	if err != nil {
@@ -86,7 +87,7 @@ func exitValidator(c *cli.Context) error {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to EXIT validator id %d?", validatorId)) {
+	if !(yes || prompt.Confirm("Are you sure you want to EXIT validator id %d?", validatorId)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

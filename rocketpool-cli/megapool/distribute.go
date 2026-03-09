@@ -10,10 +10,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func distribute(c *cli.Context) error {
+func distribute(yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -81,13 +80,13 @@ func distribute(c *cli.Context) error {
 	fmt.Println()
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to distribute your megapool rewards?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to distribute your megapool rewards?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

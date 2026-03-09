@@ -12,14 +12,13 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-	"github.com/urfave/cli"
 )
 
 const (
 	TimeFormat = "2006-01-02, 15:04 -0700 MST"
 )
 
-func getStatus(c *cli.Context) error {
+func getStatus() error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -138,7 +137,7 @@ func getStatus(c *cli.Context) error {
 
 }
 
-func getValidatorStatus(c *cli.Context) error {
+func getValidatorStatus() error {
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {

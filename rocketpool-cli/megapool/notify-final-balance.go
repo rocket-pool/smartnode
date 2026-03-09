@@ -14,10 +14,47 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func notifyFinalBalance(c *cli.Context) error {
+func getNotifiableValidator() (uint64, uint64, bool, error) {
+
+	// Get RP client
+	rp, err := rocketpool.NewClient().WithReady()
+	if err != nil {
+		return 0, 0, false, err
+	}
+	defer rp.Close()
+	// Get Megapool status
+	status, err := rp.MegapoolStatus(true)
+	if err != nil {
+		return 0, 0, false, err
+	}
+
+	exitingValidators := []api.MegapoolValidatorDetails{}
+
+	for _, validator := range status.Megapool.Validators {
+		if validator.Exiting && validator.BeaconStatus.Status == beacon.ValidatorState_WithdrawalDone {
+			exitingValidators = append(exitingValidators, validator)
+		}
+	}
+	if len(exitingValidators) > 0 {
+		sort.Sort(ByIndex(exitingValidators))
+		options := make([]string, len(exitingValidators))
+		for vi, v := range exitingValidators {
+			options[vi] = fmt.Sprintf("ID: %d - Index: %d - Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
+		}
+		selected, _ := prompt.Select("Please select a validator to notify the final balance:", options)
+
+		// Get validators
+		return uint64(exitingValidators[selected].ValidatorId), uint64(exitingValidators[selected].ValidatorIndex), true, nil
+
+	} else {
+		fmt.Println("No validators at the state where the full withdrawal can be proved")
+		return 0, 0, false, nil
+	}
+}
+
+func notifyFinalBalance(validatorId, validatorIndex, slot uint64, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -32,48 +69,7 @@ func notifyFinalBalance(c *cli.Context) error {
 		return fmt.Errorf("Error loading configuration: %w", err)
 	}
 
-	var validatorId uint64
-	var validatorIndex uint64
-
-	if c.IsSet("validator-id") {
-		validatorId = c.Uint64("validator-id")
-	} else {
-		// Get Megapool status
-		status, err := rp.MegapoolStatus(true)
-		if err != nil {
-			return err
-		}
-
-		exitingValidators := []api.MegapoolValidatorDetails{}
-
-		for _, validator := range status.Megapool.Validators {
-			if validator.Exiting && validator.BeaconStatus.Status == beacon.ValidatorState_WithdrawalDone {
-				exitingValidators = append(exitingValidators, validator)
-			}
-		}
-		if len(exitingValidators) > 0 {
-			sort.Sort(ByIndex(exitingValidators))
-			options := make([]string, len(exitingValidators))
-			for vi, v := range exitingValidators {
-				options[vi] = fmt.Sprintf("ID: %d - Index: %d - Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
-			}
-			selected, _ := prompt.Select("Please select a validator to notify the final balance:", options)
-
-			// Get validators
-			validatorId = uint64(exitingValidators[selected].ValidatorId)
-			validatorIndex = uint64(exitingValidators[selected].ValidatorIndex)
-
-		} else {
-			fmt.Println("No validators at the state where the full withdrawal can be proved")
-			return nil
-		}
-	}
-	slot := uint64(0)
-
-	if c.IsSet("slot") {
-		fmt.Println("Using withdrawal slot: ", c.Uint64("slot"))
-		slot = c.Uint64("slot")
-	} else {
+	if slot == 0 {
 		fmt.Println("The Smart Node needs to find the slot containing the validator withdrawal. This may take a while. You can speed up the final balance proof generation by submitting the withdrawal slot for your validator.")
 		fmt.Println()
 
@@ -103,13 +99,13 @@ func notifyFinalBalance(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(response.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(response.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to notify the final balance for validator id %d exit?", validatorId)) {
+	if !(yes || prompt.Confirm("Are you sure you want to notify the final balance for validator id %d exit?", validatorId)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
