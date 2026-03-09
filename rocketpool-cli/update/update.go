@@ -11,6 +11,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/update/assets"
 	"github.com/rocket-pool/smartnode/shared"
+	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/urfave/cli"
@@ -67,6 +68,24 @@ func forkCommand(binaryPath string, yes bool, args ...string) *exec.Cmd {
 }
 
 func Update(c *cli.Context) error {
+	// Get RP client
+	rp := rocketpool.NewClientFromCtx(c)
+	defer rp.Close()
+
+	// Get the config
+	cfg, _, err := rp.LoadConfig()
+	if err != nil {
+		return fmt.Errorf("Error loading configuration: %w", err)
+	}
+
+	if cfg.IsNativeMode {
+		fmt.Println("You are using Native Mode.")
+		fmt.Println("The Smart Node cannot update the cli for you (yet), you'll have to do it manually.")
+		fmt.Println("Please follow the instructions at https://docs.rocketpool.net/node-staking/updates#updating-the-smartnode-stack")
+		fmt.Println()
+		return fmt.Errorf("native mode not supported yet")
+	}
+
 	oldBinaryPath, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("error getting path of current executable: %w", err)
