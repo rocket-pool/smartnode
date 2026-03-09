@@ -11,10 +11,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	"github.com/urfave/cli"
 )
 
-func getActiveDAOProposals(c *cli.Context) error {
+func getActiveDAOProposals() error {
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {

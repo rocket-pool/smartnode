@@ -7,14 +7,14 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
 const (
 	signallingAddressLink string = "https://docs.rocketpool.net/pdao/participate#setting-your-snapshot-signalling-address"
 )
 
-func generateRewardsTree(c *cli.Context) error {
+// indexFlag is -1 if not set, else the index to generate the tree for
+func generateRewardsTree(indexFlag int64, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -46,8 +46,8 @@ func generateRewardsTree(c *cli.Context) error {
 
 	// Get the index
 	var index uint64
-	if c.IsSet("index") {
-		index = c.Uint64("index")
+	if indexFlag > -1 {
+		index = uint64(indexFlag)
 	} else {
 		indexString := prompt.Prompt("Which interval would you like to generate the Merkle rewards tree for?", "^\\d+$", "Invalid interval. Please provide a number.")
 		index, err = strconv.ParseUint(indexString, 0, 64)
@@ -67,7 +67,7 @@ func generateRewardsTree(c *cli.Context) error {
 
 	// Confirm file overwrite
 	if canResponse.TreeFileExists {
-		if c.Bool("yes") {
+		if yes {
 			fmt.Println("Overwriting existing rewards file.")
 		} else if !prompt.Confirm("You already have a rewards file for this interval. Would you like to overwrite it?") {
 			fmt.Println("Cancelled.")
@@ -84,7 +84,7 @@ func generateRewardsTree(c *cli.Context) error {
 	fmt.Printf("Your request to generate the rewards tree for interval %d has been applied, and your `watchtower` container will begin the process during its next duty check (typically 5 minutes).\n", index)
 	fmt.Println("You can follow its progress with", color.Green("`rocketpool service logs watchtower`."))
 
-	if c.Bool("yes") || prompt.Confirm("Would you like to restart the watchtower container now, so it starts generating the file immediately?") {
+	if yes || prompt.Confirm("Would you like to restart the watchtower container now, so it starts generating the file immediately?") {
 		container := fmt.Sprintf("%s_watchtower", cfg.Smartnode.ProjectName.Value.(string))
 		response, err := rp.RestartContainer(container)
 		if err != nil {
