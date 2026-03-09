@@ -7,7 +7,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -16,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func voteOnProposal(c *cli.Context) error {
+func voteOnProposal(proposal, voteDirectionFlag string, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -53,12 +52,12 @@ func voteOnProposal(c *cli.Context) error {
 
 	// Get selected proposal
 	var selectedProposal api.PDAOProposalWithNodeVoteDirection
-	if c.String("proposal") != "" {
+	if proposal != "" {
 
 		// Get selected proposal ID
-		selectedId, err := strconv.ParseUint(c.String("proposal"), 10, 64)
+		selectedId, err := strconv.ParseUint(proposal, 10, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid proposal ID '%s': %w", c.String("proposal"), err)
+			return fmt.Errorf("Invalid proposal ID '%s': %w", proposal, err)
 		}
 
 		// Get matching proposal
@@ -112,10 +111,10 @@ func voteOnProposal(c *cli.Context) error {
 	// Get support status
 	var voteDirection types.VoteDirection
 	var voteDirectionLabel string
-	if c.String("vote-direction") != "" {
+	if voteDirectionFlag != "" {
 		// Parse vote direction
 		var err error
-		voteDirection, err = cliutils.ValidateVoteDirection("vote-direction", c.String("vote-direction"))
+		voteDirection, err = cliutils.ValidateVoteDirection("vote-direction", voteDirectionFlag)
 		if err != nil {
 			return err
 		}
@@ -166,13 +165,13 @@ func voteOnProposal(c *cli.Context) error {
 	fmt.Printf("\n\nYour voting power on this proposal: %.10f\n\n", eth.WeiToEth(canVote.VotingPower))
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to %s with a vote for '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID)) {
+	if !(yes || prompt.Confirm("Are you sure you want to %s with a vote for '%s' on proposal %d? Your vote cannot be changed later.", actionString, voteDirectionLabel, selectedProposal.ID)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

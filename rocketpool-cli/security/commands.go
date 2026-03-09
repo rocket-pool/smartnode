@@ -403,7 +403,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
