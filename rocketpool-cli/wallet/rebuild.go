@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
-func rebuildWallet(c *cli.Context) error {
+func rebuildWallet() error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()

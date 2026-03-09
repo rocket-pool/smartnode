@@ -3,14 +3,12 @@ package wallet
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func purge(c *cli.Context) error {
+func purge(composeFiles []string) error {
 
 	// Get RP client
 	rp := rocketpool.NewClient()
@@ -27,7 +25,6 @@ func purge(c *cli.Context) error {
 	}
 
 	// Purge
-	composeFiles := c.Parent().StringSlice("compose-file")
 	err := rp.PurgeAllKeys(composeFiles)
 	if err != nil {
 		return fmt.Errorf("%w\n"+color.Red("THERE WAS AN ERROR DELETING YOUR KEYS. They most likely have not been deleted. Proceed with caution."), err)

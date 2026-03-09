@@ -7,10 +7,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func endMasquerade(c *cli.Context) error {
+func endMasquerade(yes bool) error {
 	// Get RP client
 	rp := rocketpool.NewClient()
 	defer rp.Close()
@@ -38,7 +37,7 @@ func endMasquerade(c *cli.Context) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to end masquerade mode?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to end masquerade mode?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

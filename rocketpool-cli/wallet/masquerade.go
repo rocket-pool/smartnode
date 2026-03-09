@@ -7,10 +7,9 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func masquerade(c *cli.Context) error {
+func masquerade(addressFlag string, yes bool) error {
 	// Get RP client
 	rp := rocketpool.NewClient()
 	defer rp.Close()
@@ -19,18 +18,17 @@ func masquerade(c *cli.Context) error {
 	fmt.Println()
 
 	// Get address
-	addressString := c.String("address")
-	if addressString == "" {
-		addressString = prompt.Prompt("Please enter an address to masquerade as:", "^0x[0-9a-fA-F]{40}$", "Invalid address")
+	if addressFlag == "" {
+		addressFlag = prompt.Prompt("Please enter an address to masquerade as:", "^0x[0-9a-fA-F]{40}$", "Invalid address")
 	}
 
-	address, err := cliutils.ValidateAddress("address", addressString)
+	address, err := cliutils.ValidateAddress("address", addressFlag)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to masquerade as %s?", color.LightBlue(addressString))) {
+	if !(yes || prompt.Confirm("Are you sure you want to masquerade as %s?", color.LightBlue(address.Hex()))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -41,7 +39,7 @@ func masquerade(c *cli.Context) error {
 		return fmt.Errorf("error running masquerade: %w", err)
 	}
 
-	fmt.Printf("Your node is now masquerading as address %s.\n", color.LightBlue(addressString))
+	fmt.Printf("Your node is now masquerading as address %s.\n", color.LightBlue(address.Hex()))
 
 	return nil
 }
