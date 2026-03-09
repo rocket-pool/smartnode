@@ -9,7 +9,6 @@ import (
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -21,7 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func closeMinipools(c *cli.Context) error {
+func closeMinipools(minipool string, confirmSlashing, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -42,7 +41,7 @@ func closeMinipools(c *cli.Context) error {
 			fmt.Println("Cancelled.")
 			return nil
 		}
-		if c.Bool("yes") || prompt.ConfirmYellow("Would you like to provision express queue tickets for the node?") {
+		if yes || prompt.ConfirmYellow("Would you like to provision express queue tickets for the node?") {
 			// Check if the node can provision express tickets
 			canProvision, err := rp.CanProvisionExpressTickets()
 			if err != nil {
@@ -150,7 +149,7 @@ func closeMinipools(c *cli.Context) error {
 
 	// Get selected minipools
 	var selectedMinipools []api.MinipoolCloseDetails
-	if c.String("minipool") == "" {
+	if minipool == "" {
 
 		// Prompt for minipool selection
 		options := make([]string, len(closableMinipools)+1)
@@ -174,10 +173,10 @@ func closeMinipools(c *cli.Context) error {
 	} else {
 
 		// Get matching minipools
-		if c.String("minipool") == "all" {
+		if minipool == "all" {
 			selectedMinipools = closableMinipools
 		} else {
-			selectedAddress := common.HexToAddress(c.String("minipool"))
+			selectedAddress := common.HexToAddress(minipool)
 			for _, minipool := range closableMinipools {
 				if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
 					selectedMinipools = []api.MinipoolCloseDetails{minipool}
@@ -213,7 +212,7 @@ func closeMinipools(c *cli.Context) error {
 			// Less than the user deposit balance, ETH + RPL will be slashed
 			color.RedPrintf("WARNING: Minipool %s has a distributable balance of %.6f ETH which is lower than the amount borrowed from the staking pool (%.6f ETH).\n", minipool.Address.Hex(), math.RoundDown(eth.WeiToEth(distributableBalance), 6), math.RoundDown(eth.WeiToEth(minipool.UserDepositBalance), 6))
 			color.RedPrintln("Please visit the Rocket Pool Discord's #support channel (https://discord.gg/rocketpool) if you are not expecting this.")
-			if !c.Bool("confirm-slashing") {
+			if !confirmSlashing {
 				fmt.Println()
 				color.RedPrintln("If you are *sure* you want to close the minipool anyway, rerun this command with the `--confirm-slashing` flag. Doing so WILL RESULT in both your ETH bond and your RPL collateral being slashed.")
 				return nil
@@ -258,13 +257,13 @@ func closeMinipools(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to close %d minipools?", len(selectedMinipools))) {
+	if !(yes || prompt.Confirm("Are you sure you want to close %d minipools?", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

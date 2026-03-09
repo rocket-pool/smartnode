@@ -18,8 +18,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-const TimeFormat = "2006-01-02, 15:04 -0700 MST"
-
 func nodeWithdrawRpl(c *cli.Context) error {
 
 	// Get RP client
@@ -72,7 +70,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 	// Print unstaking RPL details
 	if !cooldownPassed && hasUnstakingRPL {
-		fmt.Printf("You have %.6f RPL currently unstaking until %s (%s from now).\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat), timeUntilUnstakingPeriodEnd.String())
+		fmt.Printf("You have %.6f RPL currently unstaking until %s (%s from now).\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(cliutils.TimeFormat), timeUntilUnstakingPeriodEnd.String())
 	} else {
 		fmt.Printf("You have %.6f RPL unstaked and ready to be withdrawn to your RPL withdrawal address.\n", eth.WeiToEth(status.UnstakingRPL))
 	}
@@ -139,7 +137,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		}
 		// Inform users that the unstaking period will reset if they make another unstaking request
 		if !cooldownPassed && hasUnstakingRPL {
-			fmt.Printf("You have %.6f RPL currently unstaking until %s (%s from now).\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat), timeUntilUnstakingPeriodEnd.String())
+			fmt.Printf("You have %.6f RPL currently unstaking until %s (%s from now).\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(cliutils.TimeFormat), timeUntilUnstakingPeriodEnd.String())
 			color.YellowPrintln("Requesting to unstake additional RPL will reset the unstaking period.")
 			color.YellowPrintf("The unstaking period is %s.\n", unstakingDurationString)
 

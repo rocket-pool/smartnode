@@ -14,10 +14,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-const (
-	TimeFormat = "2006-01-02, 15:04 -0700 MST"
-)
-
 func getStatus() error {
 
 	// Get RP client

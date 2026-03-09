@@ -12,14 +12,13 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func findVanitySalt(c *cli.Context) error {
+func findVanitySalt(prefix string, saltFlag string, threads int, nodeAddressFlag string, amountFlag string) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -29,7 +28,6 @@ func findVanitySalt(c *cli.Context) error {
 	defer rp.Close()
 
 	// Get the target prefix
-	prefix := c.String("prefix")
 	if prefix == "" {
 		prefix = prompt.Prompt("Please specify the address prefix you would like to search for (must start with 0x):", "^0x[0-9a-fA-F]+$", "Invalid hex string")
 	}
@@ -42,19 +40,17 @@ func findVanitySalt(c *cli.Context) error {
 	}
 
 	// Get the starting salt
-	saltString := c.String("salt")
 	var salt *big.Int
-	if saltString == "" {
+	if saltFlag == "" {
 		salt = big.NewInt(0)
 	} else {
-		salt, success = big.NewInt(0).SetString(saltString, 0)
+		salt, success = big.NewInt(0).SetString(saltFlag, 0)
 		if !success {
 			return fmt.Errorf("Invalid starting salt: %s", salt)
 		}
 	}
 
 	// Get the core count
-	threads := c.Int("threads")
 	if threads == 0 {
 		threads = runtime.GOMAXPROCS(0)
 	} else if threads < 0 {
@@ -64,16 +60,15 @@ func findVanitySalt(c *cli.Context) error {
 	}
 
 	// Get the node address
-	nodeAddressStr := c.String("node-address")
-	if nodeAddressStr == "" {
-		nodeAddressStr = "0"
+	if nodeAddressFlag == "" {
+		nodeAddressFlag = "0"
 	}
 
 	// Get deposit amount
 	var amount float64
-	if c.String("amount") != "" {
+	if amountFlag != "" {
 		// Parse amount
-		if amount, err = cliutils.ValidatePositiveEthAmount("deposit", c.String("amount")); err != nil {
+		if amount, err = cliutils.ValidatePositiveEthAmount("deposit", amountFlag); err != nil {
 			return err
 		}
 	} else {
@@ -95,7 +90,7 @@ func findVanitySalt(c *cli.Context) error {
 	amountWei := eth.EthToWei(amount)
 
 	// Get the vanity generation artifacts
-	vanityArtifacts, err := rp.GetVanityArtifacts(amountWei, nodeAddressStr)
+	vanityArtifacts, err := rp.GetVanityArtifacts(amountWei, nodeAddressFlag)
 	if err != nil {
 		return err
 	}

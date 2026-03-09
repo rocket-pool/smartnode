@@ -40,7 +40,7 @@ func getDissolvableValidator() (uint64, bool, error) {
 
 	options := make([]string, len(validatorsInPrestake))
 	for vi, v := range validatorsInPrestake {
-		options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+		options[vi] = fmt.Sprintf("ID: %d - Pubkey: 0x%s (Last ETH assignment: %s)", v.ValidatorId, v.PubKey.String(), v.LastAssignmentTime.Format(cliutils.TimeFormat))
 	}
 	selected, _ := prompt.Select("Please select a validator to DISSOLVE:", options)
 

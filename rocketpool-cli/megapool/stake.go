@@ -38,7 +38,7 @@ func getStakableValidator() (uint64, bool, error) {
 	if len(validatorsDepositPending) > 0 {
 		fmt.Println("The following validators have a pending deposit. Please wait until the deposit is processed before trying again:")
 		for _, v := range validatorsDepositPending {
-			fmt.Printf(" - Pubkey: 0x%s (Last ETH assignment: %s)\n", v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+			fmt.Printf(" - Pubkey: 0x%s (Last ETH assignment: %s)\n", v.PubKey.String(), v.LastAssignmentTime.Format(cliutils.TimeFormat))
 		}
 		fmt.Println()
 	}
@@ -46,7 +46,7 @@ func getStakableValidator() (uint64, bool, error) {
 		fmt.Println("The following validators are ready to be staked:")
 		options := make([]string, len(validatorsReadyToStake))
 		for vi, v := range validatorsReadyToStake {
-			options[vi] = fmt.Sprintf("Pubkey: 0x%s (Last ETH assignment: %s)", v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
+			options[vi] = fmt.Sprintf("Pubkey: 0x%s (Last ETH assignment: %s)", v.PubKey.String(), v.LastAssignmentTime.Format(cliutils.TimeFormat))
 		}
 		selected, _ := prompt.Select("Please select a validator to stake:", options)
 

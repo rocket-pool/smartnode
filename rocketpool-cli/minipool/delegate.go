@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
 
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -14,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func delegateUpgradeMinipools(c *cli.Context) error {
+func delegateUpgradeMinipools(minipool string, includeFinalized, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -33,8 +32,6 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 		return err
 	}
 
-	includeFinalized := c.Bool("include-finalized")
-
 	minipools := []api.MinipoolDetails{}
 	for _, mp := range status.Minipools {
 		if mp.Delegate != latestDelegateResponse.Address && !mp.UseLatestDelegate {
@@ -52,11 +49,11 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 	// Get selected minipools
 	var selectedMinipools []common.Address
 
-	if c.String("minipool") != "" && c.String("minipool") != "all" {
-		selectedAddress := common.HexToAddress(c.String("minipool"))
+	if minipool != "" && minipool != "all" {
+		selectedAddress := common.HexToAddress(minipool)
 		selectedMinipools = []common.Address{selectedAddress}
 	} else {
-		if c.String("minipool") == "" {
+		if minipool == "" {
 			// Prompt for minipool selection
 			options := make([]string, len(minipools)+1)
 			options[0] = "All available minipools"
@@ -103,13 +100,13 @@ func delegateUpgradeMinipools(c *cli.Context) error {
 	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Get max fees
-	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to upgrade %d minipools?", len(selectedMinipools))) {
+	if !(yes || prompt.Confirm("Are you sure you want to upgrade %d minipools?", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

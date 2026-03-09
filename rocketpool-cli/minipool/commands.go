@@ -33,7 +33,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getStatus(c)
+					return getStatus(c.Bool("include-finalized"))
 
 				},
 			},
@@ -64,7 +64,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return stakeMinipools(c)
+					return stakeMinipools(c.String("minipool"), c.Bool("yes"))
 
 				},
 			},
@@ -92,7 +92,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return setWithdrawalCreds(c, address)
+					return setWithdrawalCreds(c.String("mnemonic"), address)
 
 				},
 			},
@@ -127,7 +127,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return importKey(c, address)
+					return importKey(c.String("mnemonic"), c.Bool("no-restart"), c.Bool("yes"), address)
 
 				},
 			},
@@ -157,7 +157,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return promoteMinipools(c)
+					return promoteMinipools(c.String("minipool"), c.Bool("yes"))
 
 				},
 			},
@@ -188,7 +188,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return refundMinipools(c)
+					return refundMinipools(c.String("minipool"), c.Bool("yes"))
 
 				},
 			},
@@ -227,44 +227,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return distributeBalance(c)
+					return distributeBalance(c.String("minipool"), c.Float64("threshold"), c.Bool("yes"))
 
 				},
 			},
-
-			/*
-			   REMOVED UNTIL BEACON WITHDRAWALS
-			   cli.Command{
-			       Name:      "dissolve",
-			       Aliases:   []string{"d"},
-			       Usage:     "Dissolve initialized or prelaunch minipools",
-			       UsageText: "rocketpool minipool dissolve [options]",
-			       Flags: []cli.Flag{
-			           cli.BoolFlag{
-			               Name:  "yes, y",
-			               Usage: "Automatically confirm dissolving minipool/s",
-			           },
-			           cli.StringFlag{
-			               Name:  "minipool, m",
-			               Usage: "The minipool/s to dissolve (address or 'all')",
-			           },
-			       },
-			       Action: func(c *cli.Context) error {
-
-			           // Validate args
-			           if err := cliutils.ValidateArgCount(c, 0); err != nil { return err }
-
-			           // Validate flags
-			           if c.String("minipool") != "" && c.String("minipool") != "all" {
-			               if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil { return err }
-			           }
-
-			           // Run
-			           return dissolveMinipools(c)
-
-			       },
-			   },
-			*/
 			{
 				Name:      "exit",
 				Aliases:   []string{"e"},
@@ -295,7 +261,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return exitMinipools(c)
+					return exitMinipools(c.String("minipool"), c.Bool("yes"))
 
 				},
 			},
@@ -330,7 +296,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return closeMinipools(c)
+					return closeMinipools(c.String("minipool"), c.Bool("confirm-slashing"), c.Bool("yes"))
 
 				},
 			},
@@ -365,7 +331,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return delegateUpgradeMinipools(c)
+					return delegateUpgradeMinipools(c.String("minipool"), c.Bool("include-finalized"), c.Bool("yes"))
 
 				},
 			},
@@ -407,7 +373,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					// Validate flags
 
 					// Run
-					return findVanitySalt(c)
+					return findVanitySalt(c.String("prefix"), c.String("salt"), c.Int("threads"), c.String("node-address"), c.String("amount"))
 
 				},
 			},
@@ -446,7 +412,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return rescueDissolved(c)
+					return rescueDissolved(c.String("minipool"), c.String("amount"), c.Bool("no-send"), c.Bool("yes"))
 
 				},
 			},

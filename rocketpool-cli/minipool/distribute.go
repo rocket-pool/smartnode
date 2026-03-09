@@ -10,7 +10,6 @@ import (
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -25,7 +24,7 @@ const (
 	finalizationThreshold float64 = 8
 )
 
-func distributeBalance(c *cli.Context) error {
+func distributeBalance(minipool string, threshold float64, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -99,7 +98,6 @@ func distributeBalance(c *cli.Context) error {
 	}
 
 	// Filter on the threshold if applicable
-	threshold := c.Float64("threshold")
 	if threshold != 0 {
 		filteredMps := []api.MinipoolBalanceDistributionDetails{}
 
@@ -148,7 +146,7 @@ func distributeBalance(c *cli.Context) error {
 
 	// Get selected minipools
 	var selectedMinipools []api.MinipoolBalanceDistributionDetails
-	if c.String("minipool") == "" {
+	if minipool == "" {
 
 		// Get total rewards
 		totalEthAvailable := big.NewInt(0)
@@ -188,10 +186,10 @@ func distributeBalance(c *cli.Context) error {
 	} else {
 
 		// Get matching minipools
-		if c.String("minipool") == "all" {
+		if minipool == "all" {
 			selectedMinipools = eligibleMinipools
 		} else {
-			selectedAddress := common.HexToAddress(c.String("minipool"))
+			selectedAddress := common.HexToAddress(minipool)
 			for _, minipool := range eligibleMinipools {
 				if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
 					selectedMinipools = []api.MinipoolBalanceDistributionDetails{minipool}
@@ -218,13 +216,13 @@ func distributeBalance(c *cli.Context) error {
 	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(gasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to distribute the ETH balance of %d minipools?", len(selectedMinipools))) {
+	if !(yes || prompt.Confirm("Are you sure you want to distribute the ETH balance of %d minipools?", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

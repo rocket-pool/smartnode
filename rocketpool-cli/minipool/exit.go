@@ -6,15 +6,15 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
+	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func exitMinipools(c *cli.Context) error {
+func exitMinipools(minipool string, yes bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -45,16 +45,16 @@ func exitMinipools(c *cli.Context) error {
 
 	// Get selected minipools
 	var selectedMinipools []api.MinipoolDetails
-	if c.String("minipool") == "" {
+	if minipool == "" {
 
 		// Prompt for minipool selection
 		options := make([]string, len(activeMinipools)+1)
 		options[0] = "All available minipools"
 		for mi, minipool := range activeMinipools {
 			if minipool.Status.Status == types.Staking {
-				options[mi+1] = fmt.Sprintf("%s (staking since %s)", minipool.Address.Hex(), minipool.Status.StatusTime.Format(TimeFormat))
+				options[mi+1] = fmt.Sprintf("%s (staking since %s)", minipool.Address.Hex(), minipool.Status.StatusTime.Format(cliutils.TimeFormat))
 			} else {
-				options[mi+1] = fmt.Sprintf("%s (dissolved since %s)", minipool.Address.Hex(), minipool.Status.StatusTime.Format(TimeFormat))
+				options[mi+1] = fmt.Sprintf("%s (dissolved since %s)", minipool.Address.Hex(), minipool.Status.StatusTime.Format(cliutils.TimeFormat))
 			}
 		}
 		selected, _ := prompt.Select("Please select a minipool to exit:", options)
@@ -69,10 +69,10 @@ func exitMinipools(c *cli.Context) error {
 	} else {
 
 		// Get matching minipools
-		if c.String("minipool") == "all" {
+		if minipool == "all" {
 			selectedMinipools = activeMinipools
 		} else {
-			selectedAddress := common.HexToAddress(c.String("minipool"))
+			selectedAddress := common.HexToAddress(minipool)
 			for _, minipool := range activeMinipools {
 				if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
 					selectedMinipools = []api.MinipoolDetails{minipool}
@@ -96,7 +96,7 @@ func exitMinipools(c *cli.Context) error {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.ConfirmWithIAgree("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools))) {
+	if !(yes || prompt.ConfirmWithIAgree("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
