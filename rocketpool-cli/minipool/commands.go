@@ -337,48 +337,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "find-vanity-address",
-				Aliases:   []string{"v"},
-				Usage:     "Search for a custom vanity minipool address",
-				UsageText: "rocketpool minipool find-vanity-address [options]",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "prefix, p",
-						Usage: "The prefix of the address to search for (must start with 0x)",
-					},
-					cli.StringFlag{
-						Name:  "salt, s",
-						Usage: "The salt to start searching from (must start with 0x)",
-					},
-					cli.IntFlag{
-						Name:  "threads, t",
-						Usage: "The number of threads to use for searching (defaults to your CPU thread count)",
-					},
-					cli.StringFlag{
-						Name:  "node-address, n",
-						Usage: "The node address to search for (leave blank to use the local node)",
-					},
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The bond amount to be used for the minipool, in ETH (impacts vanity address generation)",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Validate flags
-
-					// Run
-					return findVanitySalt(c.String("prefix"), c.String("salt"), c.Int("threads"), c.String("node-address"), c.String("amount"))
-
-				},
-			},
-
-			{
 				Name:      "rescue-dissolved",
 				Aliases:   []string{"rd"},
 				Usage:     "Manually deposit ETH into the Beacon deposit contract for a dissolved minipool, activating it on the Beacon Chain so it can be exited.",
