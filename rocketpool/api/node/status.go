@@ -523,13 +523,14 @@ func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, no
 				return fmt.Errorf("error getting node deposit for minipool %s: %w", address.Hex(), err)
 			}
 			nodeDeposits[i] = nodeDeposit
+			pendingNodeDeposits[i] = nodeDeposit
 
 			userDeposit, err := mp.GetUserDepositBalance(nil)
 			if err != nil {
 				return fmt.Errorf("error getting user deposit for minipool %s: %w", address.Hex(), err)
 			}
 			userDeposits[i] = userDeposit
-
+			pendingUserDeposits[i] = userDeposit
 			return nil
 		})
 	}
