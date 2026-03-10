@@ -168,10 +168,6 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	reduceBonds, err := newReduceBonds(c, log.NewColorLogger(ReduceBondAmountColor))
-	if err != nil {
-		return err
-	}
 	defendPdaoProps, err := newDefendPdaoProps(c, log.NewColorLogger(DefendPdaoPropsColor))
 	if err != nil {
 		return err
@@ -329,12 +325,6 @@ func run(c *cli.Context) error {
 
 			// Run the balance distribution check
 			if err := distributeMinipools.run(state); err != nil {
-				errorLog.Println(err)
-			}
-			time.Sleep(taskCooldown)
-
-			// Run the reduce bond check
-			if err := reduceBonds.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			time.Sleep(taskCooldown)

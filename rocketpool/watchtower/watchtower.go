@@ -171,10 +171,6 @@ func run(c *cli.Context) error {
 	if err != nil {
 		return fmt.Errorf("error during manual tree generation check: %w", err)
 	}
-	cancelBondReductions, err := newCancelBondReductions(c, log.NewColorLogger(CancelBondsColor), errorLog, bondReductionCollector)
-	if err != nil {
-		return fmt.Errorf("error during bond reduction cancel check: %w", err)
-	}
 	checkSoloMigrations, err := newCheckSoloMigrations(c, log.NewColorLogger(CheckSoloMigrationsColor), errorLog, soloMigrationCollector)
 	if err != nil {
 		return fmt.Errorf("error during solo migration check: %w", err)
@@ -315,12 +311,6 @@ func run(c *cli.Context) error {
 
 				// Run the minipool scrub check
 				if err := submitScrubMinipools.run(state); err != nil {
-					errorLog.Println(err)
-				}
-				time.Sleep(taskCooldown)
-
-				// Run the bond cancel check
-				if err := cancelBondReductions.run(state); err != nil {
 					errorLog.Println(err)
 				}
 				time.Sleep(taskCooldown)
