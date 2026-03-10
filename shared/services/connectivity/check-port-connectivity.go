@@ -181,7 +181,11 @@ func getPublicIP() (string, error) {
 // isPortReachableNATReflection attempts a TCP connection to host:port and returns true if
 // the connection succeeds within portCheckTimeout.
 func isPortReachableNATReflection(host string, port uint16) bool {
+<<<<<<< HEAD
 	address := net.JoinHostPort(host, strconv.FormatUint(uint64(port), 10))
+=======
+	address := net.JoinHostPort(host, fmt.Sprintf("%d", port))
+>>>>>>> 892137d9a (Use JoinHostPort)
 	conn, err := net.DialTimeout("tcp", address, portCheckTimeout)
 	if err != nil {
 		return false
