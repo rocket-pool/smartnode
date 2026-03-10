@@ -35,7 +35,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getStatus(c)
+					return getStatus()
 
 				},
 			},
@@ -53,7 +53,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getMembers(c)
+					return getMembers()
 
 				},
 			},
@@ -88,7 +88,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeLeave(c)
+									return proposeLeave(c.Bool("yes"))
 
 								},
 							},
@@ -129,7 +129,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionIsCreateLotEnabled(c, value)
+											return proposeSettingAuctionIsCreateLotEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -157,7 +157,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionIsBidOnLotEnabled(c, value)
+											return proposeSettingAuctionIsBidOnLotEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -193,7 +193,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositIsDepositingEnabled(c, value)
+											return proposeSettingDepositIsDepositingEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -221,7 +221,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositAreDepositAssignmentsEnabled(c, value)
+											return proposeSettingDepositAreDepositAssignmentsEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -257,7 +257,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolIsSubmitWithdrawableEnabled(c, value)
+											return proposeSettingMinipoolIsSubmitWithdrawableEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -285,7 +285,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolIsBondReductionEnabled(c, value)
+											return proposeSettingMinipoolIsBondReductionEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -321,7 +321,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkIsSubmitBalancesEnabled(c, value)
+											return proposeSettingNetworkIsSubmitBalancesEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -349,7 +349,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkIsSubmitPricesEnabled(c, value)
+											return proposeSettingNetworkIsSubmitPricesEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -377,7 +377,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkIsSubmitRewardsEnabled(c, value)
+											return proposeSettingNetworkIsSubmitRewardsEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -403,13 +403,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNodeComissionShareSecurityCouncilAdder(c, value)
+											return proposeSettingNodeComissionShareSecurityCouncilAdder(value, c.Bool("yes"))
 
 										},
 									},
@@ -445,7 +445,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeIsRegistrationEnabled(c, value)
+											return proposeSettingNodeIsRegistrationEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -473,7 +473,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeIsSmoothingPoolRegistrationEnabled(c, value)
+											return proposeSettingNodeIsSmoothingPoolRegistrationEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -501,7 +501,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeIsDepositingEnabled(c, value)
+											return proposeSettingNodeIsDepositingEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -529,7 +529,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeAreVacantMinipoolsEnabled(c, value)
+											return proposeSettingNodeAreVacantMinipoolsEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -566,7 +566,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return getProposals(c, c.String("states"))
+							return getProposals(c.String("states"))
 
 						},
 					},
@@ -589,7 +589,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return getProposal(c, id)
+							return getProposal(id)
 
 						},
 					},
@@ -620,7 +620,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return cancelProposal(c)
+							return cancelProposal(c.String("proposal"), c.Bool("yes"))
 
 						},
 					},
@@ -664,7 +664,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return voteOnProposal(c)
+							return voteOnProposal(c.String("proposal"), c.String("support"), c.Bool("yes"))
 
 						},
 					},
@@ -695,7 +695,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return executeProposal(c)
+							return executeProposal(c.String("proposal"), c.Bool("yes"))
 
 						},
 					},
@@ -721,7 +721,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return join(c)
+					return join(c.Bool("yes"))
 
 				},
 			},
@@ -745,7 +745,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return leave(c)
+					return leave(c.Bool("yes"))
 
 				},
 			},

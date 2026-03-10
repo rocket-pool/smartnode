@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -12,10 +11,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func leave(c *cli.Context) error {
+func leave(refundAddress string, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -23,7 +22,7 @@ func leave(c *cli.Context) error {
 
 	// Get the RPL bond refund address
 	var bondRefundAddress common.Address
-	if c.String("refund-address") == "node" {
+	if refundAddress == "node" {
 
 		// Set bond refund address to node address
 		wallet, err := rp.WalletStatus()
@@ -32,10 +31,10 @@ func leave(c *cli.Context) error {
 		}
 		bondRefundAddress = wallet.AccountAddress
 
-	} else if c.String("refund-address") != "" {
+	} else if refundAddress != "" {
 
 		// Parse bond refund address
-		bondRefundAddress = common.HexToAddress(c.String("refund-address"))
+		bondRefundAddress = common.HexToAddress(refundAddress)
 
 	} else {
 
@@ -46,7 +45,7 @@ func leave(c *cli.Context) error {
 		}
 
 		// Prompt for node address
-		if prompt.Confirm(fmt.Sprintf("Would you like to refund your RPL bond to your node account (%s)?", wallet.AccountAddress.Hex())) {
+		if prompt.Confirm("Would you like to refund your RPL bond to your node account (%s)?", wallet.AccountAddress.Hex()) {
 			bondRefundAddress = wallet.AccountAddress
 		} else {
 
@@ -75,13 +74,13 @@ func leave(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canLeave.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canLeave.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to leave the oracle DAO and refund your RPL bond to %s? This action cannot be undone!", bondRefundAddress.Hex()))) {
+	if !(yes || prompt.Confirm("Are you sure you want to leave the oracle DAO and refund your RPL bond to %s? This action cannot be undone!", bondRefundAddress.Hex())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

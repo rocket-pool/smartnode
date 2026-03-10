@@ -7,69 +7,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func delegateUpgradeMegapool(c *cli.Context) error {
-
+func setUseLatestDelegateMegapool(setting bool, yes bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
-	if err != nil {
-		return err
-	}
-	defer rp.Close()
-
-	// Get megapool status
-	status, err := rp.MegapoolStatus(false)
-	if err != nil {
-		return err
-	}
-
-	if status.Megapool.DelegateAddress == status.LatestDelegate || status.Megapool.UseLatestDelegate {
-		fmt.Printf("The node's megapool: %s is already using the latest delegate\n", status.Megapool.Address.Hex())
-		return nil
-	}
-
-	// Get the gas estimate
-	canResponse, err := rp.CanDelegateUpgradeMegapool(status.Megapool.Address)
-	if err != nil {
-		return fmt.Errorf("error checking if megapool %s can upgrade: %w", status.Megapool.Address.Hex(), err)
-	}
-
-	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
-	if err != nil {
-		return err
-	}
-
-	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to upgrade your megapool to the latest delegate?")) {
-		fmt.Println("Cancelled.")
-		return nil
-	}
-
-	// Upgrade megapool
-	response, err := rp.DelegateUpgradeMegapool(status.Megapool.Address)
-	if err != nil {
-		fmt.Printf("Could not upgrade megapool %s: %s. \n", status.Megapool.Address.Hex(), err)
-		return nil
-	}
-
-	// Log and wait for the auto-upgrade setting update
-	fmt.Printf("Upgrading megapool %s...\n", status.Megapool.Address.Hex())
-	cliutils.PrintTransactionHash(rp, response.TxHash)
-	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-		return err
-	}
-
-	// Return
-	fmt.Printf("Successfully upgraded megapool %s.\n", status.Megapool.Address.Hex())
-	return nil
-}
-
-func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
-	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -89,6 +31,13 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 
 	megapoolAddress := status.Megapool.Address
 
+	// Print message we're updating the setting
+	if setting == true {
+		fmt.Printf("Updating the use-latest-delegate setting for megapool %s to enabled...\n", megapoolAddress.Hex())
+	} else {
+		fmt.Printf("Updating the use-latest-delegate setting for megapool %s to disabled...\n", megapoolAddress.Hex())
+	}
+
 	// Get the gas estimate
 	canResponse, err := rp.CanSetUseLatestDelegateMegapool(megapoolAddress, setting)
 	if err != nil {
@@ -104,13 +53,13 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to change the auto-upgrade setting for your megapool?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to change the use-latest-delegate setting for your megapool?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -122,15 +71,15 @@ func setUseLatestDelegateMegapool(c *cli.Context, setting bool) error {
 		return nil
 	}
 
-	// Log and wait for the auto-upgrade setting update
-	fmt.Printf("Updating the auto-upgrade setting for megapool %s...\n", megapoolAddress.Hex())
+	// Log and wait for the use-latest-delegate setting update
+	fmt.Printf("Updating the use-latest-delegate setting for megapool %s...\n", megapoolAddress.Hex())
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return err
 	}
 
 	// Return
-	fmt.Printf("Successfully updated the auto-upgrade setting for megapool %s.\n", megapoolAddress.Hex())
+	fmt.Printf("Successfully updated the use-latest-delegate setting for megapool %s.\n", megapoolAddress.Hex())
 	return nil
 
 }

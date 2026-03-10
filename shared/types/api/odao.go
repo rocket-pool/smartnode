@@ -152,6 +152,21 @@ type ExecuteTNDAOProposalResponse struct {
 	TxHash common.Hash `json:"txHash"`
 }
 
+type CanExecuteTNDAOUpgradeResponse struct {
+	Status             string             `json:"status"`
+	Error              string             `json:"error"`
+	CanExecute         bool               `json:"canExecute"`
+	InvalidTrustedNode bool               `json:"invalidTrustedNode"`
+	DoesNotExist       bool               `json:"doesNotExist"`
+	InvalidState       bool               `json:"invalidState"`
+	GasInfo            rocketpool.GasInfo `json:"gasInfo"`
+}
+type ExecuteTNDAOUpgradeResponse struct {
+	Status string      `json:"status"`
+	Error  string      `json:"error"`
+	TxHash common.Hash `json:"txHash"`
+}
+
 type CanJoinTNDAOResponse struct {
 	Status                 string             `json:"status"`
 	Error                  string             `json:"error"`

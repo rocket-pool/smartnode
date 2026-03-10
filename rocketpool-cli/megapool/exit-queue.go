@@ -11,14 +11,13 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
 // Exit the megapool queue
-func exitQueue(c *cli.Context) error {
+func exitQueue(validatorId string, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -27,8 +26,7 @@ func exitQueue(c *cli.Context) error {
 	var selectedValidators []api.MegapoolValidatorDetails
 
 	// Check if the validator id flag is set
-	if c.String("validator-id") != "" {
-		flagValue := c.String("validator-id")
+	if validatorId != "" {
 
 		// Get Megapool status to resolve validator details
 		status, err := rp.MegapoolStatus(false)
@@ -43,7 +41,7 @@ func exitQueue(c *cli.Context) error {
 			}
 		}
 
-		if strings.ToLower(flagValue) == "all" {
+		if strings.ToLower(validatorId) == "all" {
 			if len(validatorsInQueue) == 0 {
 				fmt.Println("No validators can exit the queue at the moment")
 				return nil
@@ -51,7 +49,7 @@ func exitQueue(c *cli.Context) error {
 			selectedValidators = validatorsInQueue
 		} else {
 			// Parse comma-separated validator IDs
-			ids := strings.Split(flagValue, ",")
+			ids := strings.Split(validatorId, ",")
 			for _, idStr := range ids {
 				idStr = strings.TrimSpace(idStr)
 				validatorId, err := strconv.ParseUint(idStr, 10, 64)
@@ -158,18 +156,18 @@ func exitQueue(c *cli.Context) error {
 	}
 
 	// If a custom nonce is set and there are multiple transactions, warn the user
-	if c.GlobalUint64("nonce") != 0 && len(canExitResponses) > 1 {
+	if rocketpool.Defaults.CustomNonce != nil && len(canExitResponses) > 1 {
 		cliutils.PrintMultiTransactionNonceWarning()
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(totalGasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(totalGasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Ask for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to exit %d validator(s) from the megapool queue?", len(canExitResponses)))) {
+	if !(yes || prompt.Confirm("Are you sure you want to exit %d validator(s) from the megapool queue?", len(canExitResponses))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -196,7 +194,7 @@ func exitQueue(c *cli.Context) error {
 		}
 
 		// If a custom nonce is set, increment it for the next transaction
-		if c.GlobalUint64("nonce") != 0 {
+		if rocketpool.Defaults.CustomNonce != nil {
 			rp.IncrementCustomNonce()
 		}
 	}

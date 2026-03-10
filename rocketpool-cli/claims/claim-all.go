@@ -15,17 +15,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-	"github.com/urfave/cli"
-)
-
-const (
-	colorReset  string = "\033[0m"
-	colorRed    string = "\033[31m"
-	colorGreen  string = "\033[32m"
-	colorYellow string = "\033[33m"
-	colorBlue   string = "\033[36m"
 )
 
 // pendingClaim represents a single category of rewards that can be claimed.
@@ -56,16 +48,14 @@ func (c pendingClaim) valueString() string {
 	}
 }
 
-func claimAll(c *cli.Context, statusOnly bool) error {
+func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	autoConfirm := c.Bool("yes")
 
 	// Track totals
 	totalEthWei := new(big.Int)
@@ -81,25 +71,27 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	var periodicIntervalIndices []uint64
 	periodicRestakeResolved := false
 
-	fmt.Printf("%s============================================================%s\n", colorGreen, colorReset)
-	fmt.Printf("%s              Available Rewards Summary                      %s\n", colorGreen, colorReset)
-	fmt.Printf("%s============================================================%s\n\n", colorGreen, colorReset)
+	color.GreenPrintln("============================================================")
+	color.GreenPrintln("              Available Rewards Summary                     ")
+	color.GreenPrintln("============================================================")
+	fmt.Println()
 
 	// ================================================================
 	// 1. Megapool EL Rewards (distribute)
 	// ================================================================
 	sectionID++
 	id := sectionID
-	fmt.Printf("%s--- [%d] Megapool Execution Layer Rewards ---%s\n", colorGreen, id, colorReset)
+	color.GreenPrintf("--- [%d] Megapool Execution Layer Rewards ---\n", id)
 
 	canDistribute, err := rp.CanDistributeMegapool()
 	if err != nil {
-		fmt.Printf("  %sCould not check megapool: %s%s\n\n", colorYellow, err, colorReset)
+		color.YellowPrintf("  Could not check megapool: %s\n", err)
+		fmt.Println()
 	} else if !canDistribute.CanDistribute {
 		if canDistribute.MegapoolNotDeployed {
-			fmt.Printf("  No megapool deployed.\n\n")
+			fmt.Println("  No megapool deployed.")
 		} else if canDistribute.LastDistributionTime == 0 {
-			fmt.Printf("  No staking validators in the megapool.\n\n")
+			fmt.Println("  No staking validators in the megapool.")
 		} else {
 			reasons := []string{}
 			if canDistribute.ExitingValidatorCount > 0 {
@@ -109,26 +101,27 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 				reasons = append(reasons, fmt.Sprintf("%d validator(s) locked", canDistribute.LockedValidatorCount))
 			}
 			if len(reasons) > 0 {
-				fmt.Printf("  Cannot distribute: %s\n\n", strings.Join(reasons, ", "))
+				fmt.Printf("  Cannot distribute: %s\n", strings.Join(reasons, ", "))
 			} else {
-				fmt.Printf("  Cannot distribute at this time.\n\n")
+				fmt.Println("  Cannot distribute at this time.")
 			}
 		}
+		fmt.Println()
 	} else {
 		// Get the pending rewards breakdown
 		pendingRewards, err := rp.CalculatePendingRewards()
 		if err != nil {
-			fmt.Printf("  %sCould not calculate pending rewards: %s%s\n\n", colorYellow, err, colorReset)
+			color.YellowPrintf("  Could not calculate pending rewards: %s\n", err)
+			fmt.Println()
 		} else {
 			megapoolTotal := new(big.Int).Add(pendingRewards.RewardSplit.NodeRewards, pendingRewards.RefundValue)
 			if megapoolTotal.Cmp(big.NewInt(0)) > 0 {
 				fmt.Printf("  Node share:    %.6f ETH\n", math.RoundDown(eth.WeiToEth(pendingRewards.RewardSplit.NodeRewards), 6))
 				if pendingRewards.RefundValue.Cmp(big.NewInt(0)) > 0 {
 					fmt.Printf("  Refund value:  %.6f ETH\n", math.RoundDown(eth.WeiToEth(pendingRewards.RefundValue), 6))
-					fmt.Printf("  Total:         %.6f ETH\n\n", math.RoundDown(eth.WeiToEth(megapoolTotal), 6))
-				} else {
-					fmt.Println()
+					fmt.Printf("  Total:         %.6f ETH\n", math.RoundDown(eth.WeiToEth(megapoolTotal), 6))
 				}
+				fmt.Println()
 
 				totalEthWei.Add(totalEthWei, megapoolTotal)
 
@@ -139,22 +132,23 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					ethValue: megapoolTotal,
 					gasInfo:  gasInfo,
 					execute: func() error {
-						fmt.Printf("  Submitting transaction...\n")
+						fmt.Println("  Submitting transaction...")
 						response, err := rp.DistributeMegapool()
 						if err != nil {
 							return fmt.Errorf("transaction could not be submitted: %w", err)
 						}
-						fmt.Printf("  Distributing megapool rewards...\n")
+						fmt.Println("  Distributing megapool rewards...")
 						cliutils.PrintTransactionHash(rp, response.TxHash)
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 							return fmt.Errorf("transaction was submitted but failed onchain: %w", err)
 						}
-						fmt.Printf("  %sSuccessfully distributed megapool rewards.%s\n", colorGreen, colorReset)
+						color.GreenPrintln("Successfully distributed megapool rewards.")
 						return nil
 					},
 				})
 			} else {
-				fmt.Printf("  No pending rewards to distribute.\n\n")
+				fmt.Println("  No pending rewards to distribute.")
+				fmt.Println()
 			}
 		}
 	}
@@ -164,26 +158,31 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	// ================================================================
 	sectionID++
 	feeDistID := sectionID
-	fmt.Printf("%s--- [%d] Fee Distributor ---%s\n", colorGreen, feeDistID, colorReset)
+	color.GreenPrintf("--- [%d] Fee Distributor ---\n", feeDistID)
 
 	isInitResponse, err := rp.IsFeeDistributorInitialized()
 	if err != nil {
-		fmt.Printf("  %sCould not check fee distributor: %s%s\n\n", colorYellow, err, colorReset)
+		color.YellowPrintf("  Could not check fee distributor: %s\n", err)
+		fmt.Println()
 	} else if !isInitResponse.IsInitialized {
-		fmt.Printf("  Fee distributor not initialized. Run 'rocketpool node initialize-fee-distributor' first.\n\n")
+		fmt.Println("  Fee distributor not initialized. Run 'rocketpool node initialize-fee-distributor' first.")
+		fmt.Println()
 	} else {
 		canDistResp, err := rp.CanDistribute()
 		if err != nil {
-			fmt.Printf("  %sCould not check fee distributor balance: %s%s\n\n", colorYellow, err, colorReset)
+			color.YellowPrintf("  Could not check fee distributor balance: %s\n", err)
+			fmt.Println()
 		} else {
 			balance := eth.WeiToEth(canDistResp.Balance)
 			if balance == 0 {
-				fmt.Printf("  No balance in fee distributor.\n\n")
+				fmt.Println("  No balance in fee distributor.")
+				fmt.Println()
 			} else {
 				rEthShare := balance - canDistResp.NodeShare
 				fmt.Printf("  Distributor balance: %.6f ETH\n", math.RoundDown(balance, 6))
 				fmt.Printf("  Your share:          %.6f ETH\n", math.RoundDown(canDistResp.NodeShare, 6))
-				fmt.Printf("  rETH stakers share:  %.6f ETH\n\n", math.RoundDown(rEthShare, 6))
+				fmt.Printf("  rETH stakers share:  %.6f ETH\n", math.RoundDown(rEthShare, 6))
+				fmt.Println()
 
 				nodeShareWei := eth.EthToWei(canDistResp.NodeShare)
 				totalEthWei.Add(totalEthWei, nodeShareWei)
@@ -195,17 +194,17 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					ethValue: nodeShareWei,
 					gasInfo:  gasInfo,
 					execute: func() error {
-						fmt.Printf("  Submitting transaction...\n")
+						fmt.Println("  Submitting transaction...")
 						response, err := rp.Distribute()
 						if err != nil {
 							return fmt.Errorf("transaction could not be submitted: %w", err)
 						}
-						fmt.Printf("  Distributing fee distributor balance...\n")
+						fmt.Println("  Distributing fee distributor balance...")
 						cliutils.PrintTransactionHash(rp, response.TxHash)
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 						}
-						fmt.Printf("  %sSuccessfully distributed fee distributor balance.%s\n", colorGreen, colorReset)
+						color.GreenPrintln("Successfully distributed fee distributor balance.")
 						return nil
 					},
 				})
@@ -218,11 +217,12 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	// ================================================================
 	sectionID++
 	minipoolID := sectionID
-	fmt.Printf("%s--- [%d] Minipool Balance Distribution ---%s\n", colorGreen, minipoolID, colorReset)
+	color.GreenPrintf("--- [%d] Minipool Balance Distribution ---\n", minipoolID)
 
 	minipoolDetails, err := rp.GetDistributeBalanceDetails()
 	if err != nil {
-		fmt.Printf("  %sCould not check minipool balances: %s%s\n\n", colorYellow, err, colorReset)
+		color.YellowPrintf("  Could not check minipool balances: %s\n", err)
+		fmt.Println()
 	} else {
 		eligibleMinipools := []api.MinipoolBalanceDistributionDetails{}
 		for _, mp := range minipoolDetails.Details {
@@ -232,7 +232,8 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 		}
 
 		if len(eligibleMinipools) == 0 {
-			fmt.Printf("  No minipools eligible for balance distribution.\n\n")
+			fmt.Println("  No minipools eligible for balance distribution.")
+			fmt.Println()
 		} else {
 			// Sort by balance (highest first)
 			sort.Slice(eligibleMinipools, func(i, j int) bool {
@@ -266,7 +267,8 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					mpTotalEth.Add(mpTotalEth, nodeAmount)
 				}
 			}
-			fmt.Printf("  Total from %d minipool(s): %.6f ETH\n\n", len(eligibleMinipools), math.RoundDown(eth.WeiToEth(mpTotalEth), 6))
+			fmt.Printf("  Total from %d minipool(s): %.6f ETH\n", len(eligibleMinipools), math.RoundDown(eth.WeiToEth(mpTotalEth), 6))
+			fmt.Println()
 			totalEthWei.Add(totalEthWei, mpTotalEth)
 
 			// Accumulate gas
@@ -293,17 +295,17 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 						fmt.Printf("  Submitting transaction for minipool %s...\n", mp.Address.Hex())
 						response, err := rp.DistributeBalance(mp.Address)
 						if err != nil {
-							fmt.Printf("  %sFailed to distribute minipool %s: %s%s\n", colorRed, mp.Address.Hex(), err, colorReset)
+							color.RedPrintf("  Failed to distribute minipool %s: %s\n", mp.Address.Hex(), err)
 							failCount++
 							continue
 						}
 						fmt.Printf("  Distributing balance of minipool %s...\n", mp.Address.Hex())
 						cliutils.PrintTransactionHash(rp, response.TxHash)
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-							fmt.Printf("  %sTransaction failed for minipool %s: %s%s\n", colorRed, mp.Address.Hex(), err, colorReset)
+							color.RedPrintf("  Transaction failed for minipool %s: %s\n", mp.Address.Hex(), err)
 							failCount++
 						} else {
-							fmt.Printf("  %sSuccessfully distributed balance of minipool %s.%s\n", colorGreen, mp.Address.Hex(), colorReset)
+							color.GreenPrintf("Successfully distributed balance of minipool %s.\n", mp.Address.Hex())
 						}
 					}
 					if failCount > 0 {
@@ -320,13 +322,15 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	// ================================================================
 	sectionID++
 	periodicID := sectionID
-	fmt.Printf("%s--- [%d] Periodic Rewards (RPL + ETH) ---%s\n", colorGreen, periodicID, colorReset)
+	color.GreenPrintf("--- [%d] Periodic Rewards (RPL + ETH) ---\n", periodicID)
 
 	rewardsInfo, err := rp.GetRewardsInfo()
 	if err != nil {
-		fmt.Printf("  %sCould not check periodic rewards: %s%s\n\n", colorYellow, err, colorReset)
+		color.YellowPrintf("  Could not check periodic rewards: %s\n", err)
+		fmt.Println()
 	} else if !rewardsInfo.Registered {
-		fmt.Printf("  Node is not registered.\n\n")
+		fmt.Println("  Node is not registered.")
+		fmt.Println()
 	} else {
 		// Handle missing/invalid merkle trees
 		missingIntervals := []int{}
@@ -336,11 +340,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			}
 		}
 		if len(missingIntervals) > 0 && !statusOnly {
-			fmt.Printf("  %sMissing or invalid Merkle tree files for intervals: %v%s\n", colorYellow, missingIntervals, colorReset)
-			if autoConfirm || prompt.Confirm("  Would you like to download the missing rewards tree files?") {
+			color.YellowPrintf("  Missing or invalid Merkle tree files for intervals: %v\n", missingIntervals)
+			if yes || prompt.Confirm("  Would you like to download the missing rewards tree files?") {
 				cfg, _, err := rp.LoadConfig()
 				if err != nil {
-					fmt.Printf("  %sCould not load config for tree download: %s%s\n", colorYellow, err, colorReset)
+					color.YellowPrintf("  Could not load config for tree download: %s\n", err)
 				} else {
 					for _, interval := range rewardsInfo.InvalidIntervals {
 						if !interval.TreeFileExists || !interval.MerkleRootValid {
@@ -356,7 +360,8 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					// Reload rewards info
 					rewardsInfo, err = rp.GetRewardsInfo()
 					if err != nil {
-						fmt.Printf("  %sCould not reload rewards info: %s%s\n\n", colorYellow, err, colorReset)
+						color.YellowPrintf("  Could not reload rewards info: %s\n", err)
+						fmt.Println()
 					}
 				}
 			}
@@ -394,12 +399,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			// Parse restake flag (interactive prompt deferred until after claim selection)
 			periodicClaimRpl = prTotalRpl
 			periodicIntervalIndices = intervalIndices
-			restakeAmountFlag := c.String("restake-amount")
-			if restakeAmountFlag == "all" {
+			if restakeAmount == "all" {
 				periodicRestakeAmount = prTotalRpl
 				periodicRestakeResolved = true
-			} else if restakeAmountFlag != "" {
-				stakeAmt, parseErr := strconv.ParseFloat(restakeAmountFlag, 64)
+			} else if restakeAmount != "" {
+				stakeAmt, parseErr := strconv.ParseFloat(restakeAmount, 64)
 				if parseErr == nil && stakeAmt > 0 {
 					periodicRestakeAmount = eth.EthToWei(stakeAmt)
 					if periodicRestakeAmount.Cmp(prTotalRpl) > 0 {
@@ -407,7 +411,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					}
 				}
 				periodicRestakeResolved = true
-			} else if autoConfirm {
+			} else if yes {
 				// Ignore restaking if -y is specified but restake-amount isn't
 				periodicRestakeAmount = nil
 				periodicRestakeResolved = true
@@ -417,7 +421,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			var gasInfo rocketpoolapi.GasInfo
 			canClaim, canErr := rp.CanNodeClaimRewards(intervalIndices)
 			if canErr != nil {
-				fmt.Printf("  %sWarning: could not estimate gas for periodic rewards: %s%s\n", colorYellow, canErr, colorReset)
+				color.YellowPrintf("  Warning: could not estimate gas for periodic rewards: %s\n", canErr)
 			} else {
 				gasInfo = canClaim.GasInfo
 			}
@@ -429,7 +433,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 				rplValue: prTotalRpl,
 				gasInfo:  gasInfo,
 				execute: func() error {
-					fmt.Printf("  Submitting transaction...\n")
+					fmt.Println("  Submitting transaction...")
 					var txHash common.Hash
 					if periodicRestakeAmount == nil {
 						response, err := rp.NodeClaimRewards(periodicIntervalIndices)
@@ -444,15 +448,15 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 						}
 						txHash = response.TxHash
 					}
-					fmt.Printf("  Claiming periodic rewards...\n")
+					fmt.Println("  Claiming periodic rewards...")
 					cliutils.PrintTransactionHash(rp, txHash)
 					if _, err := rp.WaitForTransaction(txHash); err != nil {
 						return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 					}
 					if periodicRestakeAmount != nil {
-						fmt.Printf("  %sSuccessfully claimed rewards and restaked %.6f RPL.%s\n", colorGreen, eth.WeiToEth(periodicRestakeAmount), colorReset)
+						color.GreenPrintf("Successfully claimed rewards and restaked %.6f RPL.\n", eth.WeiToEth(periodicRestakeAmount))
 					} else {
-						fmt.Printf("  %sSuccessfully claimed periodic rewards.%s\n", colorGreen, colorReset)
+						color.GreenPrintln("Successfully claimed periodic rewards.")
 					}
 					return nil
 				},
@@ -468,25 +472,30 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	nodeStatus, err := rp.NodeStatus()
 	if err != nil {
 		sectionID++
-		fmt.Printf("%s--- [%d] Unclaimed Rewards ---%s\n", colorGreen, sectionID, colorReset)
-		fmt.Printf("  %sCould not check node status: %s%s\n\n", colorYellow, err, colorReset)
+		color.GreenPrintf("--- [%d] Unclaimed Rewards ---\n", sectionID)
+		color.YellowPrintf("  Could not check node status: %s\n", err)
+		fmt.Println()
 		sectionID++
-		fmt.Printf("%s--- [%d] Credit Balance Withdrawal ---%s\n", colorGreen, sectionID, colorReset)
-		fmt.Printf("  %sCould not check node status: %s%s\n\n", colorYellow, err, colorReset)
+		color.GreenPrintf("--- [%d] Credit Balance Withdrawal ---\n", sectionID)
+		color.YellowPrintf("  Could not check node status: %s\n", err)
+		fmt.Println()
 		sectionID++
-		fmt.Printf("%s--- [%d] Staked ETH on Behalf Withdrawal ---%s\n", colorGreen, sectionID, colorReset)
-		fmt.Printf("  %sCould not check node status: %s%s\n\n", colorYellow, err, colorReset)
+		color.GreenPrintf("--- [%d] Staked ETH on Behalf Withdrawal ---\n", sectionID)
+		color.YellowPrintf("  Could not check node status: %s\n", err)
+		fmt.Println()
 	} else {
 		// --- Unclaimed Rewards ---
 		sectionID++
 		unclaimedID := sectionID
-		fmt.Printf("%s--- [%d] Unclaimed Rewards ---%s\n", colorGreen, unclaimedID, colorReset)
+		color.GreenPrintf("--- [%d] Unclaimed Rewards ---\n", unclaimedID)
 
 		if nodeStatus.UnclaimedRewards == nil || nodeStatus.UnclaimedRewards.Cmp(big.NewInt(0)) <= 0 {
-			fmt.Printf("  No unclaimed rewards.\n\n")
+			fmt.Println("  No unclaimed rewards.")
+			fmt.Println()
 		} else {
 			fmt.Printf("  Unclaimed rewards: %.6f ETH\n", math.RoundDown(eth.WeiToEth(nodeStatus.UnclaimedRewards), 6))
-			fmt.Printf("  (Rewards distributed previously but not yet sent to withdrawal address)\n\n")
+			fmt.Println("  (Rewards distributed previously but not yet sent to withdrawal address)")
+			fmt.Println()
 			totalEthWei.Add(totalEthWei, nodeStatus.UnclaimedRewards)
 
 			nodeAddr := nodeStatus.AccountAddress
@@ -494,9 +503,9 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			var gasInfo rocketpoolapi.GasInfo
 			canClaimOk := false
 			if canErr != nil {
-				fmt.Printf("  %sWarning: could not estimate gas: %s%s\n", colorYellow, canErr, colorReset)
+				color.YellowPrintf("  Warning: could not estimate gas: %s\n", canErr)
 			} else if !canClaim.CanClaim {
-				fmt.Printf("  %sCannot claim unclaimed rewards at this time.%s\n", colorYellow, colorReset)
+				color.YellowPrintln("  Cannot claim unclaimed rewards at this time.")
 			} else {
 				gasInfo = canClaim.GasInfo
 				canClaimOk = true
@@ -509,17 +518,17 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					ethValue: nodeStatus.UnclaimedRewards,
 					gasInfo:  gasInfo,
 					execute: func() error {
-						fmt.Printf("  Submitting transaction...\n")
+						fmt.Println("  Submitting transaction...")
 						response, err := rp.ClaimUnclaimedRewards(nodeAddr)
 						if err != nil {
 							return fmt.Errorf("transaction could not be submitted: %w", err)
 						}
-						fmt.Printf("  Claiming unclaimed rewards...\n")
+						fmt.Println("  Claiming unclaimed rewards...")
 						cliutils.PrintTransactionHash(rp, response.TxHash)
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 						}
-						fmt.Printf("  %sSuccessfully claimed unclaimed rewards.%s\n", colorGreen, colorReset)
+						color.GreenPrintln("Successfully claimed unclaimed rewards.")
 						return nil
 					},
 				})
@@ -529,13 +538,14 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 		// ---  Credit Balance Withdrawal ---
 		sectionID++
 		creditID := sectionID
-		fmt.Printf("%s--- [%d] Credit Balance Withdrawal ---%s\n", colorGreen, creditID, colorReset)
+		color.GreenPrintf("--- [%d] Credit Balance Withdrawal ---\n", creditID)
 
 		if nodeStatus.CreditBalance == nil || nodeStatus.CreditBalance.Cmp(big.NewInt(0)) <= 0 {
-			fmt.Printf("  No credit balance available.\n\n")
+			fmt.Println("  No credit balance available.")
+			fmt.Println()
 		} else {
 			creditBalance := nodeStatus.CreditBalance
-			fmt.Printf("  Credit balance: %.6f ETH (the equivalent amount in rETH will be transferred to %s)\n\n",
+			fmt.Printf("  Credit balance: %.6f ETH (the equivalent amount in rETH will be transferred to %s)\n",
 				math.RoundDown(eth.WeiToEth(creditBalance), 6), nodeStatus.PrimaryWithdrawalAddress)
 			totalEthWei.Add(totalEthWei, creditBalance)
 
@@ -543,12 +553,12 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			var gasInfo rocketpoolapi.GasInfo
 			canWithdrawOk := false
 			if canErr != nil {
-				fmt.Printf("  %sWarning: could not estimate gas: %s%s\n", colorYellow, canErr, colorReset)
+				color.YellowPrintf("  Warning: could not estimate gas: %s\n", canErr)
 			} else if !canWithdraw.CanWithdraw {
 				if canWithdraw.InsufficientBalance {
-					fmt.Printf("  %sInsufficient credit balance.%s\n", colorYellow, colorReset)
+					color.YellowPrintln("  Insufficient credit balance.")
 				} else {
-					fmt.Printf("  %sCannot withdraw credit at this time.%s\n", colorYellow, colorReset)
+					color.YellowPrintln("  Cannot withdraw credit at this time.")
 				}
 			} else {
 				gasInfo = canWithdraw.GasInfo
@@ -563,17 +573,17 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					ethValue: withdrawAmount,
 					gasInfo:  gasInfo,
 					execute: func() error {
-						fmt.Printf("  Submitting transaction...\n")
+						fmt.Println("  Submitting transaction...")
 						response, err := rp.NodeWithdrawCredit(withdrawAmount)
 						if err != nil {
 							return fmt.Errorf("transaction could not be submitted: %w", err)
 						}
-						fmt.Printf("  Withdrawing credit balance...\n")
+						fmt.Println("  Withdrawing credit balance...")
 						cliutils.PrintTransactionHash(rp, response.TxHash)
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 						}
-						fmt.Printf("  %sSuccessfully withdrew %.6f credit as rETH.%s\n", colorGreen, math.RoundDown(eth.WeiToEth(withdrawAmount), 6), colorReset)
+						color.GreenPrintf("Successfully withdrew %.6f credit as rETH.\n", math.RoundDown(eth.WeiToEth(withdrawAmount), 6))
 						return nil
 					},
 				})
@@ -583,27 +593,29 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 		// --- Staked ETH on Behalf Withdrawal ---
 		sectionID++
 		ethOnBehalfID := sectionID
-		fmt.Printf("%s--- [%d] Staked ETH on Behalf Withdrawal ---%s\n", colorGreen, ethOnBehalfID, colorReset)
+		color.GreenPrintf("--- [%d] Staked ETH on Behalf Withdrawal ---\n", ethOnBehalfID)
 
 		if nodeStatus.EthOnBehalfBalance == nil || nodeStatus.EthOnBehalfBalance.Cmp(big.NewInt(0)) <= 0 {
-			fmt.Printf("  No ETH staked on behalf of the node.\n\n")
+			fmt.Println("  No ETH staked on behalf of the node.")
+			fmt.Println()
 		} else {
 			ethOnBehalf := nodeStatus.EthOnBehalfBalance
-			fmt.Printf("  Staked ETH on behalf: %.6f ETH\n\n", math.RoundDown(eth.WeiToEth(ethOnBehalf), 6))
+			fmt.Printf("  Staked ETH on behalf: %.6f ETH\n", math.RoundDown(eth.WeiToEth(ethOnBehalf), 6))
+			fmt.Println()
 			totalEthWei.Add(totalEthWei, ethOnBehalf)
 
 			canWithdraw, canErr := rp.CanNodeWithdrawEth(ethOnBehalf)
 			var gasInfo rocketpoolapi.GasInfo
 			canWithdrawOk := false
 			if canErr != nil {
-				fmt.Printf("  %sWarning: could not estimate gas: %s%s\n", colorYellow, canErr, colorReset)
+				color.YellowPrintf("  Warning: could not estimate gas: %s\n", canErr)
 			} else if !canWithdraw.CanWithdraw {
 				if canWithdraw.InsufficientBalance {
-					fmt.Printf("  %sInsufficient staked ETH balance.%s\n", colorYellow, colorReset)
+					color.YellowPrintln("  Insufficient staked ETH balance.")
 				} else if canWithdraw.HasDifferentWithdrawalAddress {
-					fmt.Printf("  %sCannot withdraw: primary withdrawal address is set and differs from the node address.%s\n", colorYellow, colorReset)
+					color.YellowPrintln("  Cannot withdraw: primary withdrawal address is set and differs from the node address.")
 				} else {
-					fmt.Printf("  %sCannot withdraw staked ETH at this time.%s\n", colorYellow, colorReset)
+					color.YellowPrintln("  Cannot withdraw staked ETH at this time.")
 				}
 			} else {
 				gasInfo = canWithdraw.GasInfo
@@ -618,17 +630,17 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					ethValue: withdrawAmount,
 					gasInfo:  gasInfo,
 					execute: func() error {
-						fmt.Printf("  Submitting transaction...\n")
+						fmt.Println("  Submitting transaction...")
 						response, err := rp.NodeWithdrawEth(withdrawAmount)
 						if err != nil {
 							return fmt.Errorf("transaction could not be submitted: %w", err)
 						}
-						fmt.Printf("  Withdrawing staked ETH...\n")
+						fmt.Println("  Withdrawing staked ETH...")
 						cliutils.PrintTransactionHash(rp, response.TxHash)
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 							return fmt.Errorf("transaction was submitted but failed on-chain: %w", err)
 						}
-						fmt.Printf("  %sSuccessfully withdrew %.6f staked ETH.%s\n", colorGreen, math.RoundDown(eth.WeiToEth(withdrawAmount), 6), colorReset)
+						color.GreenPrintf("Successfully withdrew %.6f staked ETH.\n", math.RoundDown(eth.WeiToEth(withdrawAmount), 6))
 						return nil
 					},
 				})
@@ -641,13 +653,15 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	// ================================================================
 	sectionID++
 	pdaoID := sectionID
-	fmt.Printf("%s--- [%d] PDAO Bond Claims ---%s\n", colorGreen, pdaoID, colorReset)
+	color.GreenPrintf("--- [%d] PDAO Bond Claims ---\n", pdaoID)
 
 	bondsResponse, err := rp.PDAOGetClaimableBonds()
 	if err != nil {
-		fmt.Printf("  %sCould not check PDAO bonds: %s%s\n\n", colorYellow, err, colorReset)
+		color.YellowPrintf("  Could not check PDAO bonds: %s\n", err)
+		fmt.Println()
 	} else if len(bondsResponse.ClaimableBonds) == 0 {
-		fmt.Printf("  No claimable bonds or rewards.\n\n")
+		fmt.Println("  No claimable bonds or rewards.")
+		fmt.Println()
 	} else {
 		pdaoRplTotal := new(big.Int)
 		for _, bond := range bondsResponse.ClaimableBonds {
@@ -670,7 +684,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			indices := getClaimIndicesForBond(bond)
 			canResponse, canErr := rp.PDAOCanClaimBonds(bond.ProposalID, indices)
 			if canErr != nil {
-				fmt.Printf("  %sWarning: could not estimate gas for proposal %d: %s%s\n", colorYellow, bond.ProposalID, canErr, colorReset)
+				color.YellowPrintf("  Warning: could not estimate gas for proposal %d: %s\n", bond.ProposalID, canErr)
 				allCanClaim = false
 				break
 			}
@@ -695,17 +709,17 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 						fmt.Printf("  Submitting transaction for proposal %d...\n", bond.ProposalID)
 						response, err := rp.PDAOClaimBonds(bond.IsProposer, bond.ProposalID, indices)
 						if err != nil {
-							fmt.Printf("  %sFailed to claim bonds from proposal %d: %s%s\n", colorRed, bond.ProposalID, err, colorReset)
+							color.RedPrintf("  Failed to claim bonds from proposal %d: %s\n", bond.ProposalID, err)
 							failCount++
 							continue
 						}
 						fmt.Printf("  Claiming bonds from proposal %d...\n", bond.ProposalID)
 						cliutils.PrintTransactionHash(rp, response.TxHash)
 						if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
-							fmt.Printf("  %sTransaction failed for proposal %d: %s%s\n", colorRed, bond.ProposalID, err, colorReset)
+							color.RedPrintf("  Transaction failed for proposal %d: %s\n", bond.ProposalID, err)
 							failCount++
 						} else {
-							fmt.Printf("  %sSuccessfully claimed bonds from proposal %d.%s\n", colorGreen, bond.ProposalID, colorReset)
+							color.GreenPrintf("Successfully claimed bonds from proposal %d.\n", bond.ProposalID)
 						}
 					}
 					if failCount > 0 {
@@ -720,9 +734,9 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	// ================================================================
 	// Summary
 	// ================================================================
-	fmt.Printf("%s============================================================%s\n", colorGreen, colorReset)
-	fmt.Printf("%s                       Totals                               %s\n", colorGreen, colorReset)
-	fmt.Printf("%s============================================================%s\n", colorGreen, colorReset)
+	color.GreenPrintf("============================================================\n")
+	color.GreenPrintf("                       Totals                               \n")
+	color.GreenPrintf("============================================================\n")
 	fmt.Printf("  ETH: %.6f\n", math.RoundDown(eth.WeiToEth(totalEthWei), 6))
 	fmt.Printf("  RPL: %.6f\n\n", math.RoundDown(eth.WeiToEth(totalRplWei), 6))
 
@@ -751,7 +765,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 
 	// Select which claims to execute
 	var selectedClaims []pendingClaim
-	if autoConfirm {
+	if yes {
 		selectedClaims = claims
 	} else {
 		indexSelection := prompt.Prompt(
@@ -786,7 +800,8 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 		return nil
 	}
 
-	fmt.Printf("\n%d claim(s) selected:\n", len(selectedClaims))
+	fmt.Println()
+	fmt.Printf("%d claim(s) selected:\n", len(selectedClaims))
 	for i, claim := range selectedClaims {
 		if v := claim.valueString(); v != "" {
 			fmt.Printf("  %d. %s: %s\n", i+1, claim.name, v)
@@ -839,6 +854,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			}
 		}
 	}
+	fmt.Println()
 
 	// Accumulate total gas for fee estimation
 	var totalGasEst, totalGasSafe uint64
@@ -852,37 +868,39 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	lastGasInfo.SafeGasLimit = totalGasSafe
 
 	// Get gas fee settings (single prompt for all transactions)
-	g, err := gas.GetMaxFeeAndLimit(lastGasInfo, rp, autoConfirm)
+	g, err := gas.GetMaxFeeAndLimit(lastGasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// If a custom nonce is set and there are multiple transactions, warn the user
-	customNonceSet := c.GlobalUint64("nonce") != 0
+	customNonceSet := rocketpool.Defaults.CustomNonce != nil
 	if customNonceSet && len(selectedClaims) > 1 {
 		cliutils.PrintMultiTransactionNonceWarning()
 	}
 
 	// Execute selected claims
-	fmt.Printf("\n%sExecuting %d claim(s)...%s\n", colorBlue, len(selectedClaims), colorReset)
+	color.LightBluePrintf("Executing %d claim(s)...\n", len(selectedClaims))
 	successCount := 0
 	failCount := 0
 	skippedCount := 0
 	for i, claim := range selectedClaims {
-		fmt.Printf("\n%s[%d/%d] %s%s\n", colorBlue, i+1, len(selectedClaims), claim.name, colorReset)
+		fmt.Println()
+		color.LightBluePrintf("[%d/%d] %s\n", i+1, len(selectedClaims), claim.name)
 		g.Assign(rp)
 		err := claim.execute()
 		if err != nil {
 			failCount++
-			fmt.Printf("\n  %sERROR: %s%s\n", colorRed, err, colorReset)
+			fmt.Println()
+			color.RedPrintf("  ERROR: %s\n", err)
 
 			// If there are more claims and we're not auto-confirming, ask whether to continue
 			remaining := len(selectedClaims) - i - 1
 			if remaining > 0 {
-				if autoConfirm {
-					fmt.Printf("  %sContinuing with remaining %d claim(s)...%s\n", colorYellow, remaining, colorReset)
+				if yes {
+					color.YellowPrintf("  Continuing with remaining %d claim(s)...\n", remaining)
 				} else {
-					if !prompt.Confirm(fmt.Sprintf("  The above claim failed. Continue with the remaining %d claim(s)?", remaining)) {
+					if !prompt.Confirm("  The above claim failed. Continue with the remaining %d claim(s)?", remaining) {
 						skippedCount = remaining
 						fmt.Println("  Aborting remaining claims.")
 						break
@@ -901,24 +919,24 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 
 	// Final summary
 	fmt.Println()
-	fmt.Printf("============================================================\n")
+	fmt.Println("============================================================")
 	if failCount == 0 && skippedCount == 0 {
-		fmt.Printf("%sAll %d claim(s) completed successfully.%s\n", colorGreen, successCount, colorReset)
+		color.GreenPrintf("All %d claim(s) completed successfully.\n", successCount)
 	} else if successCount == 0 {
-		fmt.Printf("%sAll %d claim(s) failed.%s\n", colorRed, failCount, colorReset)
+		color.RedPrintf("All %d claim(s) failed.\n", failCount)
 		if skippedCount > 0 {
-			fmt.Printf("%s%d claim(s) were skipped.%s\n", colorYellow, skippedCount, colorReset)
+			color.YellowPrintf("%d claim(s) were skipped.\n", skippedCount)
 		}
 	} else {
-		fmt.Printf("%s%d claim(s) succeeded%s, %s%d failed%s",
-			colorGreen, successCount, colorReset,
-			colorRed, failCount, colorReset)
+		color.GreenPrintf("%d claim(s) succeeded", successCount)
+		fmt.Printf(", ")
+		color.RedPrintf("%d claim(s) failed", failCount)
 		if skippedCount > 0 {
-			fmt.Printf(", %s%d skipped%s", colorYellow, skippedCount, colorReset)
+			color.YellowPrintf("%d claim(s) were skipped", skippedCount)
 		}
 		fmt.Println(".")
 	}
-	fmt.Printf("============================================================\n")
+	fmt.Println("============================================================")
 
 	if failCount > 0 {
 		return fmt.Errorf("%d of %d claim(s) failed", failCount, failCount+successCount)

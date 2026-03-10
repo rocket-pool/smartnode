@@ -83,7 +83,7 @@ func (t *challengeValidatorsExiting) run(state *state.NetworkState) error {
 	return nil
 }
 
-// Get megapool validators that can be dissolved due to using invalid credentials
+// Get megapool validators that can be challenged for exiting without a notification
 func (t *challengeValidatorsExiting) challengeValidatorsExiting(state *state.NetworkState) error {
 
 	// Calculate the current epoch based on state.BeaconSlotNumber

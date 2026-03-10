@@ -228,8 +228,14 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 	}
 	count := len(addresses)
 	minimumStakes := make([]*big.Int, count)
+	// Initialize the effective stakes to 0
+	for i := range minimumStakes {
+		minimumStakes[i] = big.NewInt(0)
+	}
 	effectiveStakes := make([]*big.Int, count)
-
+	for i := range effectiveStakes {
+		effectiveStakes[i] = big.NewInt(0)
+	}
 	// Sync
 	var wg errgroup.Group
 	wg.SetLimit(threadLimit)

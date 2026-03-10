@@ -1518,7 +1518,7 @@ func (cfg *RocketPoolConfig) ConfirmUpdateSuggestedSettings() {
 			cfg.ConsensusCommon.SuggestedBlockGasLimit.Value = ""
 		}
 		if blockGasLimit < coreDevsSuggestedGasLimit {
-			if prompt.Confirm(fmt.Sprintf("Your consensus block gas limit setting is currently '%d' . The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?", blockGasLimit)) {
+			if prompt.Confirm("Your consensus block gas limit setting is currently '%d' . The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?", blockGasLimit) {
 				cfg.ConsensusCommon.SuggestedBlockGasLimit.Value = ""
 			}
 		}
@@ -1531,7 +1531,7 @@ func (cfg *RocketPoolConfig) ConfirmUpdateSuggestedSettings() {
 			cfg.ExecutionCommon.SuggestedBlockGasLimit.Value = ""
 		}
 		if blockGasLimit < coreDevsSuggestedGasLimit {
-			if prompt.Confirm(fmt.Sprintf("Your execution block gas limit setting is currently '%d' . The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?", blockGasLimit)) {
+			if prompt.Confirm("Your execution block gas limit setting is currently '%d' . The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?", blockGasLimit) {
 				cfg.ExecutionCommon.SuggestedBlockGasLimit.Value = ""
 			}
 		}

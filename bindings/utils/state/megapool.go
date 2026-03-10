@@ -219,6 +219,15 @@ func GetBulkMegapoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 				return err
 			}
 			for j := i; j < max; j++ {
+				megapoolDetails[j].UserCapital = big.NewInt(0)
+				megapoolDetails[j].NodeQueuedBond = big.NewInt(0)
+				megapoolDetails[j].NodeBond = big.NewInt(0)
+				megapoolDetails[j].AssignedValue = big.NewInt(0)
+				megapoolDetails[j].PendingRewards = big.NewInt(0)
+				megapoolDetails[j].RefundValue = big.NewInt(0)
+				megapoolDetails[j].NodeDebt = big.NewInt(0)
+				megapoolDetails[j].BondRequirement = big.NewInt(0)
+				megapoolDetails[j].EthBalance = big.NewInt(0)
 				addMegapoolDetailsCalls(mc, megaContracts[j], &megapoolDetails[j], &lastDistributionTimes[j])
 			}
 			_, err = mc.FlexibleCall(true, opts)

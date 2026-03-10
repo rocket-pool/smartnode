@@ -5,8 +5,6 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -14,9 +12,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func assignDeposits(c *cli.Context) error {
+func assignDeposits(yes bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -88,13 +86,13 @@ func assignDeposits(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canAssign.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canAssign.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to assign %d validators?", maxValidators))) {
+	if !(yes || prompt.Confirm("Are you sure you want to assign %d validators?", maxValidators)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

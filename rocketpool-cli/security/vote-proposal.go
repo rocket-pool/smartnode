@@ -7,7 +7,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -15,10 +14,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func voteOnProposal(c *cli.Context) error {
+func voteOnProposal(proposal string, supportFlag string, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -52,12 +51,12 @@ func voteOnProposal(c *cli.Context) error {
 
 	// Get selected proposal
 	var selectedProposal dao.ProposalDetails
-	if c.String("proposal") != "" {
+	if proposal != "" {
 
 		// Get selected proposal ID
-		selectedId, err := strconv.ParseUint(c.String("proposal"), 10, 64)
+		selectedId, err := strconv.ParseUint(proposal, 10, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid proposal ID '%s': %w", c.String("proposal"), err)
+			return fmt.Errorf("Invalid proposal ID '%s': %w", proposal, err)
 		}
 
 		// Get matching proposal
@@ -104,11 +103,11 @@ func voteOnProposal(c *cli.Context) error {
 	// Get support status
 	var support bool
 	var supportLabel string
-	if c.String("support") != "" {
+	if supportFlag != "" {
 
 		// Parse support status
 		var err error
-		support, err = cliutils.ValidateBool("support", c.String("support"))
+		support, err = cliutils.ValidateBool("support", supportFlag)
 		if err != nil {
 			return err
 		}
@@ -139,13 +138,13 @@ func voteOnProposal(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canVote.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID))) {
+	if !(yes || prompt.Confirm("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

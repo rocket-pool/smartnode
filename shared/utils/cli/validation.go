@@ -384,9 +384,9 @@ func ValidateVoteDirection(name, value string) (types.VoteDirection, error) {
 
 // Validate a float
 // isFraction should be true for percentage inputs or false for unbounded percentage inputs
-func ValidateFloat(c *cli.Context, name string, value string, isFraction bool) (*big.Int, error) {
+func ValidateFloat(rawEnabled bool, name string, value string, isFraction bool, yes bool) (*big.Int, error) {
 	var floatValue float64
-	if c.Bool("raw") {
+	if rawEnabled {
 		val, err := ValidatePositiveWeiAmount(name, value)
 		if err != nil {
 			return nil, err
@@ -407,8 +407,11 @@ func ValidateFloat(c *cli.Context, name string, value string, isFraction bool) (
 	}
 
 	trueVal := eth.EthToWei(floatValue)
-	fmt.Printf("Your value will be multiplied by 10^18 to be used in the contracts, which results in:\n\n\t[%s]\n\n", trueVal.String())
-	if !(c.Bool("yes") || prompt.Confirm("Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?")) {
+	fmt.Println("Your value will be multiplied by 10^18 to be used in the contracts, which results in:")
+	fmt.Println()
+	fmt.Printf("\t[%s]\n", trueVal.String())
+	fmt.Println()
+	if !(yes || prompt.Confirm("Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?")) {
 		value = prompt.Prompt("Please enter the wei amount:", "^[0-9]+$", "Invalid amount")
 		val, err := ValidatePositiveWeiAmount(name, value)
 		if err != nil {

@@ -5,18 +5,18 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func nodeSend(c *cli.Context, amountRaw float64, sendAll bool, token string, toAddressOrENS string) error {
+func nodeSend(amountRaw float64, sendAll bool, token string, toAddressOrENS string, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func nodeSend(c *cli.Context, amountRaw float64, sendAll bool, token string, toA
 
 	// Handle "send all" mode
 	if sendAll {
-		return nodeSendAll(c, rp, token, toAddress, toAddressString)
+		return nodeSendAll(rp, token, toAddress, toAddressString, yes)
 	}
 
 	// Check tokens can be sent
@@ -70,22 +70,23 @@ func nodeSend(c *cli.Context, amountRaw float64, sendAll bool, token string, toA
 		fmt.Printf("Token name:      %s\n", canSend.TokenName)
 		fmt.Printf("Token symbol:    %s\n", canSend.TokenSymbol)
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, canSend.TokenSymbol)
-		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
+		color.YellowPrintln("WARNING: Please confirm that the above token is the one you intend to send before confirming below!")
+		fmt.Println()
 
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString))) {
+		if !(yes || prompt.Confirm("Are you sure you want to send %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	} else {
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, token)
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString))) {
+		if !(yes || prompt.Confirm("Are you sure you want to send %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -118,7 +119,7 @@ func nodeSend(c *cli.Context, amountRaw float64, sendAll bool, token string, toA
 
 // nodeSendAll sends the entire balance of the specified token to the recipient.
 // For ETH, it reserves enough to cover the estimated maximum gas cost.
-func nodeSendAll(c *cli.Context, rp *rocketpool.Client, token string, toAddress common.Address, toAddressString string) error {
+func nodeSendAll(rp *rocketpool.Client, token string, toAddress common.Address, toAddressString string, yes bool) error {
 
 	// Query balance and gas info using a zero amount
 	canSend, err := rp.CanNodeSend(0, token, toAddress)
@@ -143,7 +144,7 @@ func nodeSendAll(c *cli.Context, rp *rocketpool.Client, token string, toAddress 
 		fmt.Printf("For sending all ETH, we need to estimate the gas costs first.\n")
 		// For ETH, determine gas settings first so we can subtract the gas cost from the balance.
 		// This may prompt the user to select a gas price.
-		g, err := gas.GetMaxFeeAndLimit(canSend.GasInfo, rp, c.Bool("yes"))
+		g, err := gas.GetMaxFeeAndLimit(canSend.GasInfo, rp, yes)
 		if err != nil {
 			return err
 		}
@@ -160,7 +161,7 @@ func nodeSendAll(c *cli.Context, rp *rocketpool.Client, token string, toAddress 
 		fmt.Printf("Gas reserve:     %.8f ETH\n", gasCost)
 		fmt.Printf("Send amount:     %.8f ETH\n\n", amountRaw)
 
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send %.8f ETH to %s? This action cannot be undone!", amountRaw, toAddressString))) {
+		if !(yes || prompt.Confirm("Are you sure you want to send %.8f ETH to %s? This action cannot be undone!", amountRaw, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -188,22 +189,23 @@ func nodeSendAll(c *cli.Context, rp *rocketpool.Client, token string, toAddress 
 		fmt.Printf("Token name:      %s\n", canSend.TokenName)
 		fmt.Printf("Token symbol:    %s\n", canSend.TokenSymbol)
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, canSend.TokenSymbol)
-		fmt.Printf("%sWARNING: Please confirm that the above token is the one you intend to send before confirming below!%s\n\n", colorYellow, colorReset)
+		color.YellowPrintln("WARNING: Please confirm that the above token is the one you intend to send before confirming below!")
+		fmt.Println()
 
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send all %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString))) {
+		if !(yes || prompt.Confirm("Are you sure you want to send all %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	} else {
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, token)
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to send all %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString))) {
+		if !(yes || prompt.Confirm("Are you sure you want to send all %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}

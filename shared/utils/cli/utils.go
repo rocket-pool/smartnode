@@ -8,13 +8,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
-const colorReset string = "\033[0m"
-const colorRed string = "\033[31m"
-const colorGreen string = "\033[32m"
-const colorYellow string = "\033[33m"
-const colorLightBlue string = "\033[36m"
+const TimeFormat = "2006-01-02, 15:04 -0700 MST"
 
 // Print a TX's details to the console.
 func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {
@@ -35,11 +32,10 @@ func PrintTransactionHashNoCancel(rp *rocketpool.Client, hash common.Hash) {
 // Print a warning to the console if the user set a custom nonce, but this operation involves multiple transactions
 func PrintMultiTransactionNonceWarning() {
 
-	fmt.Printf("%sNOTE: You have specified the `nonce` flag to indicate a custom nonce for this transaction.\n"+
-		"However, this operation requires multiple transactions.\n"+
-		"Rocket Pool will use your custom value as a basis, and increment it for each additional transaction.\n"+
-		"If you have multiple pending transactions, this MAY OVERRIDE more than the one that you specified.%s\n\n", colorYellow, colorReset)
-
+	color.YellowPrintln("NOTE: You have specified the `nonce` flag to indicate a custom nonce for this transaction.")
+	color.YellowPrintln("However, this operation requires multiple transactions.")
+	color.YellowPrintln("Rocket Pool will use your custom value as a basis, and increment it for each additional transaction.")
+	color.YellowPrintln("If you have multiple pending transactions, this MAY OVERRIDE more than the one that you specified.")
 }
 
 // Implementation of PrintTransactionHash and PrintTransactionHashNoCancel
@@ -113,19 +109,19 @@ func PrettyPrintError(err error) {
 
 // Prints an error message when the Beacon client is not using the deposit contract address that Rocket Pool expects
 func PrintDepositMismatchError(rpNetwork, beaconNetwork uint64, rpDepositAddress, beaconDepositAddress common.Address) {
-	fmt.Printf("%s***ALERT***\n", colorRed)
-	fmt.Println("YOUR ETH2 CLIENT IS NOT CONNECTED TO THE SAME NETWORK THAT ROCKET POOL IS USING!")
-	fmt.Println("This is likely because your ETH2 client is using the wrong configuration.")
-	fmt.Println("For the safety of your funds, Rocket Pool will not let you deposit your ETH until this is resolved.")
-	fmt.Println()
-	fmt.Println("To fix it if you are in Docker mode:")
-	fmt.Println("\t1. Run 'rocketpool service install -d' to get the latest configuration")
-	fmt.Println("\t2. Run 'rocketpool service stop' and 'rocketpool service start' to apply the configuration.")
-	fmt.Println("If you are using Hybrid or Native mode, please correct the network flags in your ETH2 launch script.")
-	fmt.Println()
-	fmt.Println("Details:")
-	fmt.Printf("\tRocket Pool expects deposit contract %s on chain %d.\n", rpDepositAddress.Hex(), rpNetwork)
-	fmt.Printf("\tYour Beacon client is using deposit contract %s on chain %d.%s\n", beaconDepositAddress.Hex(), beaconNetwork, colorReset)
+	color.RedPrintln("***ALERT***")
+	color.RedPrintln("YOUR ETH2 CLIENT IS NOT CONNECTED TO THE SAME NETWORK THAT ROCKET POOL IS USING!")
+	color.RedPrintln("This is likely because your ETH2 client is using the wrong configuration.")
+	color.RedPrintln("For the safety of your funds, Rocket Pool will not let you deposit your ETH until this is resolved.")
+	color.RedPrintln()
+	color.RedPrintln("To fix it if you are in Docker mode:")
+	color.RedPrintln("\t1. Run 'rocketpool service install -d' to get the latest configuration")
+	color.RedPrintln("\t2. Run 'rocketpool service stop' and 'rocketpool service start' to apply the configuration.")
+	color.RedPrintln("If you are using Hybrid or Native mode, please correct the network flags in your ETH2 launch script.")
+	color.RedPrintln()
+	color.RedPrintln("Details:")
+	color.RedPrintf("\tRocket Pool expects deposit contract %s on chain %d.\n", rpDepositAddress.Hex(), rpNetwork)
+	color.RedPrintf("\tYour Beacon client is using deposit contract %s on chain %d.\n", beaconDepositAddress.Hex(), beaconNetwork)
 }
 
 // Prints what network you're currently on
@@ -134,16 +130,23 @@ func PrintNetwork(currentNetwork cfgtypes.Network, isNew bool) error {
 		return fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node.")
 	}
 
+	var networkName string
+
 	switch currentNetwork {
 	case cfgtypes.Network_Mainnet:
-		fmt.Printf("Your Smart Node is currently using the %sEthereum Mainnet.%s\n\n", colorGreen, colorReset)
+		networkName = color.Green("Ethereum Mainnet")
 	case cfgtypes.Network_Devnet:
-		fmt.Printf("Your Smart Node is currently using the %sDevelopment Network.%s\n\n", colorYellow, colorReset)
+		networkName = color.Yellow("Development Network")
 	case cfgtypes.Network_Testnet:
-		fmt.Printf("Your Smart Node is currently using the %sHoodi Test Network.%s\n\n", colorYellow, colorReset)
+		networkName = color.Yellow("Hoodi Test Network")
 	default:
-		fmt.Printf("%sYou are on an unexpected network [%v].%s\n\n", colorYellow, currentNetwork, colorReset)
+		color.YellowPrintf("You are on an unexpected network [%v].\n", currentNetwork)
+		fmt.Println()
+		return nil
 	}
+
+	fmt.Printf("Your Smart Node is currently using the %s.\n", networkName)
+	fmt.Println()
 
 	return nil
 }

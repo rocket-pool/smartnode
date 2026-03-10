@@ -7,7 +7,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -17,10 +16,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func refundMinipools(c *cli.Context) error {
+func refundMinipools(minipool string, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -48,7 +47,7 @@ func refundMinipools(c *cli.Context) error {
 
 	// Get selected minipools
 	var selectedMinipools []api.MinipoolDetails
-	if c.String("minipool") == "" {
+	if minipool == "" {
 
 		// Prompt for minipool selection
 		options := make([]string, len(refundableMinipools)+1)
@@ -68,10 +67,10 @@ func refundMinipools(c *cli.Context) error {
 	} else {
 
 		// Get matching minipools
-		if c.String("minipool") == "all" {
+		if minipool == "all" {
 			selectedMinipools = refundableMinipools
 		} else {
-			selectedAddress := common.HexToAddress(c.String("minipool"))
+			selectedAddress := common.HexToAddress(minipool)
 			for _, minipool := range refundableMinipools {
 				if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
 					selectedMinipools = []api.MinipoolDetails{minipool}
@@ -104,13 +103,13 @@ func refundMinipools(c *cli.Context) error {
 	gasInfo.SafeGasLimit = totalSafeGas
 
 	// Get max fees
-	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, c.Bool("yes"))
+	g, err := gas.GetMaxFeeAndLimit(gasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to refund %d minipools?", len(selectedMinipools)))) {
+	if !(yes || prompt.Confirm("Are you sure you want to refund %d minipools?", len(selectedMinipools))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

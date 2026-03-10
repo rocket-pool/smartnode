@@ -10,13 +10,12 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-	"github.com/urfave/cli"
 )
 
-func reduceBond(c *cli.Context) error {
+func reduceBond(yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -37,7 +36,7 @@ func reduceBond(c *cli.Context) error {
 	if megapoolDetails.Megapool.NodeBond.Cmp(megapoolDetails.Megapool.BondRequirement) > 0 {
 		maxAmountInEth := eth.WeiToEth(megapoolDetails.Megapool.NodeBond.Sub(megapoolDetails.Megapool.NodeBond, megapoolDetails.Megapool.BondRequirement))
 		fmt.Printf("You have %.6f of excess bond.\n", maxAmountInEth)
-		if prompt.Confirm(fmt.Sprintf("Do you want to reduce %.6f ETH of your node bond?", maxAmountInEth)) {
+		if prompt.Confirm("Do you want to reduce %.6f ETH of your node bond?", maxAmountInEth) {
 			// Convert maxAmountInEth to string
 			amount = maxAmountInEth
 		} else {
@@ -68,13 +67,13 @@ func reduceBond(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canReduceBond.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canReduceBond.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to reduce %.6f of the megapool bond?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(yes || prompt.Confirm("Are you sure you want to reduce %.6f of the megapool bond?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -121,8 +121,8 @@ type SmartnodeConfig struct {
 	// The URL to provide the user so they can follow pending transactions
 	txWatchUrl map[config.Network]string `yaml:"-"`
 
-	// The URL to use for staking rETH
-	stakeUrl map[config.Network]string `yaml:"-"`
+	// The URL to use for the node management interface
+	nodeManagerUrl map[config.Network]string `yaml:"-"`
 
 	// The map of networks to execution chain IDs
 	chainID map[config.Network]uint `yaml:"-"`
@@ -419,10 +419,10 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Testnet: "https://hoodi.etherscan.io/tx",
 		},
 
-		stakeUrl: map[config.Network]string{
-			config.Network_Mainnet: "https://stake.rocketpool.net",
-			config.Network_Devnet:  "https://devnet.rocketpool.net",
-			config.Network_Testnet: "https://testnet.rocketpool.net",
+		nodeManagerUrl: map[config.Network]string{
+			config.Network_Mainnet: "https://node.rocketpool.net",
+			config.Network_Devnet:  "https://devnet.node.rocketpool.net",
+			config.Network_Testnet: "https://testnet.node.rocketpool.net",
 		},
 
 		chainID: map[config.Network]uint{
@@ -651,8 +651,8 @@ func (cfg *SmartnodeConfig) GetTxWatchUrl() string {
 	return cfg.txWatchUrl[cfg.Network.Value.(config.Network)]
 }
 
-func (cfg *SmartnodeConfig) GetStakeUrl() string {
-	return cfg.stakeUrl[cfg.Network.Value.(config.Network)]
+func (cfg *SmartnodeConfig) GetNodeManagerUrl() string {
+	return cfg.nodeManagerUrl[cfg.Network.Value.(config.Network)]
 }
 
 func (cfg *SmartnodeConfig) GetChainID() uint {

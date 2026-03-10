@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func exportWallet(c *cli.Context) error {
+func exportWallet(secureSession bool) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get & check wallet status
@@ -26,7 +24,7 @@ func exportWallet(c *cli.Context) error {
 		return nil
 	}
 
-	if !c.GlobalBool("secure-session") {
+	if !secureSession {
 		// Check if stdout is interactive
 		stat, err := os.Stdout.Stat()
 		if err != nil {

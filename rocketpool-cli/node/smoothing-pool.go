@@ -3,18 +3,17 @@ package node
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func joinSmoothingPool(c *cli.Context) error {
+func joinSmoothingPool(yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -51,15 +50,17 @@ func joinSmoothingPool(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
-	fmt.Printf("%sNOTE: This process will restart your node's validator client.\nYou may miss an attestation if you are currently scheduled to produce one.%s\n\n", colorYellow, colorReset)
+	color.YellowPrintln("NOTE: This process will restart your node's validator client.")
+	color.YellowPrintln("You may miss an attestation if you are currently scheduled to produce one.")
+	fmt.Println()
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to join the Smoothing Pool?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to join the Smoothing Pool?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -82,10 +83,10 @@ func joinSmoothingPool(c *cli.Context) error {
 
 }
 
-func leaveSmoothingPool(c *cli.Context) error {
+func leaveSmoothingPool(yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -122,13 +123,13 @@ func leaveSmoothingPool(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to leave the Smoothing Pool?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to leave the Smoothing Pool?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -147,7 +148,9 @@ func leaveSmoothingPool(c *cli.Context) error {
 
 	// Log & return
 	fmt.Println("Successfully left the Smoothing Pool.")
-	fmt.Printf("%sNOTE: Your validator client will restart to change its fee recipient back to your node's distributor once the next Epoch has been finalized.\nYou may miss an attestation when this happens (or multiple if you have Doppelganger Protection enabled); this is normal.%s\n", colorYellow, colorReset)
+	color.YellowPrintln("NOTE: Your validator client will restart to change its fee recipient back to your node's distributor once the next Epoch has been finalized.")
+	color.YellowPrintln("You may miss an attestation when this happens (or multiple if you have Doppelganger Protection enabled); this is normal.")
+	fmt.Println()
 	return nil
 
 }

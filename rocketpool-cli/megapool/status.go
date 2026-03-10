@@ -10,19 +10,14 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-	"github.com/urfave/cli"
 )
 
-const (
-	TimeFormat        = "2006-01-02, 15:04 -0700 MST"
-	colorBlue  string = "\033[36m"
-)
-
-func getStatus(c *cli.Context) error {
+func getStatus() error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -59,10 +54,10 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Address, express tickets, validator count
-	fmt.Printf("%s=== Megapool ===%s\n", colorGreen, colorReset)
-	fmt.Printf("The node has a megapool deployed at %s%s%s\n", colorBlue, status.Megapool.Address, colorReset)
+	color.GreenPrintln("=== Megapool ===")
+	fmt.Printf("The node has a megapool deployed at %s\n", color.LightBlue(status.Megapool.Address.String()))
 	if status.Megapool.DelegateExpired {
-		fmt.Printf("%sThe megapool delegate is expired.%s\n", colorRed, colorReset)
+		color.RedPrintln("The megapool delegate is expired.")
 		fmt.Println("Upgrade your megapool delegate using 'rocketpool megapool delegate-upgrade' to view the express ticket and validator count.")
 	} else {
 		fmt.Printf("The node has %d express ticket(s).\n", status.Megapool.NodeExpressTicketCount)
@@ -71,19 +66,19 @@ func getStatus(c *cli.Context) error {
 	fmt.Println()
 
 	// Delegate addresses
-	fmt.Printf("%s=== Megapool Delegate ===%s\n", colorGreen, colorReset)
+	color.GreenPrintln("=== Megapool Delegate ===")
 	if status.Megapool.DelegateExpired {
-		fmt.Printf("%sThe megapool delegate is expired.%s\n", colorRed, colorReset)
-		fmt.Printf("The megapool is using an expired delegate at %s%s%s\n", colorBlue, status.Megapool.DelegateAddress, colorReset)
-		fmt.Printf("The megapool can be upgraded to delegate %s%s%s using 'rocketpool megapool delegate-upgrade'.\n", colorBlue, status.LatestDelegate, colorReset)
+		color.RedPrintln("The megapool delegate is expired.")
+		fmt.Printf("The megapool is using an expired delegate at %s\n", color.LightBlue(status.Megapool.DelegateAddress.String()))
+		fmt.Printf("The megapool can be upgraded to delegate %s using 'rocketpool megapool delegate-upgrade'.\n", color.LightBlue(status.LatestDelegate.String()))
 	} else {
 		if status.Megapool.EffectiveDelegateAddress == status.LatestDelegate {
 			fmt.Println("The megapool is using the latest delegate.")
 		} else {
-			fmt.Printf("The megapool is using an outdated delegate at %s%s%s\n", colorBlue, status.Megapool.DelegateAddress, colorReset)
-			fmt.Printf("The megapool can be upgraded to delegate %s%s%s using 'rocketpool megapool delegate-upgrade'.\n", colorBlue, status.LatestDelegate, colorReset)
+			fmt.Printf("The megapool is using an outdated delegate at %s\n", color.LightBlue(status.Megapool.DelegateAddress.String()))
+			fmt.Printf("The megapool can be upgraded to delegate %s using 'rocketpool megapool delegate-upgrade'.\n", color.LightBlue(status.LatestDelegate.String()))
 		}
-		fmt.Printf("The megapool's effective delegate address is %s%s%s\n", colorBlue, status.Megapool.EffectiveDelegateAddress, colorReset)
+		fmt.Printf("The megapool's effective delegate address is %s\n", color.LightBlue(status.Megapool.EffectiveDelegateAddress.String()))
 	}
 
 	if status.Megapool.UseLatestDelegate {
@@ -91,13 +86,13 @@ func getStatus(c *cli.Context) error {
 	} else {
 		fmt.Println("The megapool has automatic delegate upgrades disabled. You can toggle this setting using 'rocketpool megapool set-use-latest-delegate'.")
 		if status.Megapool.DelegateExpiry > 0 {
-			fmt.Printf("Your current megapool delegate expires at %sblock %d%s.\n", colorBlue, status.Megapool.DelegateExpiry, colorReset)
+			fmt.Printf("Your current megapool delegate expires at %s.\n", color.LightBlueSprintf("block %d", status.Megapool.DelegateExpiry))
 		}
 	}
 	fmt.Println()
 
 	// Balance and network commission
-	fmt.Printf("%s=== Megapool Balance ===%s\n", colorGreen, colorReset)
+	color.GreenPrintln("=== Megapool Balance ===")
 	if !status.Megapool.DelegateExpired {
 		totalBond := new(big.Int).Mul(status.Megapool.NodeBond, big.NewInt(8))
 		rpBond := new(big.Int).Sub(totalBond, status.Megapool.NodeBond)
@@ -138,9 +133,9 @@ func getStatus(c *cli.Context) error {
 
 }
 
-func getValidatorStatus(c *cli.Context) error {
+func getValidatorStatus() error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -172,7 +167,7 @@ func getValidatorStatus(c *cli.Context) error {
 
 	// Return if delegate is expired
 	if status.Megapool.DelegateExpired {
-		fmt.Printf("%sThe megapool delegate is expired.%s\n", colorRed, colorReset)
+		color.RedPrintln("The megapool delegate is expired.")
 		fmt.Println("Upgrade your megapool delegate using 'rocketpool megapool delegate-upgrade' to view the validator info.")
 		return nil
 	}

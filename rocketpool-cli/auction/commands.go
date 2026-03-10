@@ -27,7 +27,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getStatus(c)
+					return getStatus()
 
 				},
 			},
@@ -45,7 +45,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getLots(c)
+					return getLots()
 
 				},
 			},
@@ -63,7 +63,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return createLot(c)
+					return createLot(c.Bool("yes"))
 
 				},
 			},
@@ -107,7 +107,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return bidOnLot(c)
+					return bidOnLot(c.String("lot"), c.String("amount"), c.Bool("yes"))
 
 				},
 			},
@@ -138,7 +138,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return claimFromLot(c)
+					return claimFromLot(c.String("lot"), c.Bool("yes"))
 
 				},
 			},
@@ -169,7 +169,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return recoverRplFromLot(c)
+					return recoverRplFromLot(c.String("lot"), c.Bool("yes"))
 
 				},
 			},

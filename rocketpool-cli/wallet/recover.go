@@ -6,16 +6,16 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func recoverWallet(c *cli.Context) error {
+func recoverWallet(password, mnemonic, addressFlag string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) error {
 
 	// Get RP client
-	rp, ready, err := rocketpool.NewClientFromCtx(c).WithStatus()
+	rp, ready, err := rocketpool.NewClient().WithStatus()
 	if err != nil {
 		return err
 	}
@@ -38,14 +38,14 @@ func recoverWallet(c *cli.Context) error {
 	}
 
 	// Prompt a notice about test recovery
-	fmt.Printf("%sNOTE:\nThis command will fully regenerate your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools.\nIf you just want to test recovery to ensure it works without actually regenerating the files, please use `rocketpool wallet test-recovery` instead.%s\n\n", colorYellow, colorReset)
+	color.YellowPrintln("NOTE:")
+	color.YellowPrintln("This command will fully regenerate your node wallet's private key and (unless explicitly disabled) the validator keys for your minipools.")
+	color.YellowPrintln("If you just want to test recovery to ensure it works without actually regenerating the files, please use `rocketpool wallet test-recovery` instead.")
+	fmt.Println()
 
 	// Set password if not set
 	if !status.PasswordSet {
-		var password string
-		if c.String("password") != "" {
-			password = c.String("password")
-		} else {
+		if password == "" {
 			password = promptPassword()
 		}
 		if _, err := rp.SetPassword(password); err != nil {
@@ -54,9 +54,8 @@ func recoverWallet(c *cli.Context) error {
 	}
 
 	// Handle validator key recovery skipping
-	skipValidatorKeyRecovery := c.Bool("skip-validator-key-recovery")
 	if !skipValidatorKeyRecovery && !ready {
-		fmt.Printf("%sEth Clients are not available.%s Validator keys cannot be recovered until they are synced and ready.\n", colorYellow, colorReset)
+		fmt.Println(color.Yellow("Eth Clients are not available.") + " Validator keys cannot be recovered until they are synced and ready.")
 		fmt.Println("You can recover them later with 'rocketpool wallet rebuild'")
 		if !promptcli.Confirm("Would you like to skip recovering the validator keys, and recover the node wallet only?") {
 			fmt.Println("Cancelled.")
@@ -66,10 +65,7 @@ func recoverWallet(c *cli.Context) error {
 	}
 
 	// Prompt for mnemonic
-	var mnemonic string
-	if c.String("mnemonic") != "" {
-		mnemonic = c.String("mnemonic")
-	} else {
+	if mnemonic == "" {
 		mnemonic = PromptMnemonic()
 	}
 	mnemonic = strings.TrimSpace(mnemonic)
@@ -97,11 +93,9 @@ func recoverWallet(c *cli.Context) error {
 	}
 
 	// Check for a search-by-address operation
-	addressString := c.String("address")
-	if addressString != "" {
-
+	if addressFlag != "" {
 		// Get the address to search for
-		address := common.HexToAddress(addressString)
+		address := common.HexToAddress(addressFlag)
 		fmt.Printf("Searching for the derivation path and index for wallet %s...\nNOTE: this may take several minutes depending on how large your wallet's index is.\n", address.Hex())
 
 		if !skipValidatorKeyRecovery {
@@ -135,13 +129,11 @@ func recoverWallet(c *cli.Context) error {
 	} else {
 
 		// Get the derivation path
-		derivationPath := c.String("derivation-path")
 		if derivationPath != "" {
 			fmt.Printf("Using a custom derivation path (%s).\n", derivationPath)
 		}
 
 		// Get the wallet index
-		walletIndex := c.Uint("wallet-index")
 		if walletIndex != 0 {
 			fmt.Printf("Using a custom wallet index (%d).\n", walletIndex)
 		}

@@ -21,7 +21,6 @@ const (
 	ProposalDetailsBatchSize  = 10
 )
 
-// Proposal details
 type ProposalDetails struct {
 	ID              uint64                `json:"id"`
 	DAO             string                `json:"dao"`
@@ -41,6 +40,17 @@ type ProposalDetails struct {
 	Payload         []byte                `json:"payload"`
 	PayloadStr      string                `json:"payloadStr"`
 	State           rptypes.ProposalState `json:"state"`
+}
+
+// Upgrade proposal details
+type UpgradeProposalDetails struct {
+	ID             uint64                       `json:"id"`
+	State          rptypes.UpgradeProposalState `json:"state"`
+	EndTime        uint64                       `json:"endTime"`
+	Name           string                       `json:"name"`
+	Type           []byte                       `json:"type"`
+	UpgradeAddress common.Address               `json:"upgradeAddress"`
+	UpgradeAbi     string                       `json:"upgradeAbi"`
 }
 
 // Get all proposal details

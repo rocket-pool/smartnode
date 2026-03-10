@@ -17,7 +17,6 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/goccy/go-json"
-	"github.com/urfave/cli"
 	"golang.org/x/crypto/ssh"
 
 	"github.com/alessio/shellescape"
@@ -29,6 +28,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/template"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	clicolor "github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -57,6 +57,8 @@ const (
 	DebugColor = color.FgYellow
 )
 
+var Defaults Globals
+
 // When printing sync percents, we should avoid printing 100%.
 // This function is only called if we're still syncing,
 // and the `%0.2f` token will round up if we're above 99.99%.
@@ -64,19 +66,23 @@ func SyncRatioToPercent(in float64) float64 {
 	return math.Min(99.99, in*100)
 }
 
+type Globals struct {
+	ConfigPath  string
+	DaemonPath  string
+	MaxFee      float64
+	MaxPrioFee  float64
+	GasLimit    uint64
+	DebugPrint  bool
+	CustomNonce *big.Int
+}
+
 // Rocket Pool client
 type Client struct {
-	configPath         string
-	daemonPath         string
-	maxFee             float64
-	maxPrioFee         float64
-	gasLimit           uint64
-	customNonce        *big.Int
+	globals            Globals
 	client             *ssh.Client
 	originalMaxFee     float64
 	originalMaxPrioFee float64
 	originalGasLimit   uint64
-	debugPrint         bool
 	ignoreSyncCheck    bool
 	forceFallbacks     bool
 }
@@ -122,7 +128,10 @@ func checkClientStatus(rp *Client) (bool, error) {
 
 		// Fallback EC and CC are good
 		if ecMgrStatus.FallbackClientStatus.IsSynced && bcMgrStatus.FallbackClientStatus.IsSynced {
-			fmt.Printf("%sNOTE: primary clients are not ready, using fallback clients...\n\tPrimary EC status: %s\n\tPrimary CC status: %s%s\n\n", colorYellow, primaryEcStatus, primaryBcStatus, colorReset)
+			clicolor.YellowPrintln("NOTE: primary clients are not ready, using fallback clients...")
+			clicolor.YellowPrintf("\tPrimary EC status: %s\n", primaryEcStatus)
+			clicolor.YellowPrintf("\tPrimary CC status: %s\n", primaryBcStatus)
+			fmt.Println()
 			rp.SetClientStatusFlags(true, true)
 			return true, nil
 		}
@@ -137,28 +146,23 @@ func checkClientStatus(rp *Client) (bool, error) {
 	return false, nil
 }
 
+func SetDefaults(g Globals) {
+	Defaults = g
+}
+
 // Create new Rocket Pool client from CLI context without checking for sync status
 // Only use this function from commands that may work if the Daemon service doesn't exist
-// Most users should call NewClientFromCtx(c).WithStatus() or NewClientFromCtx(c).WithReady()
-func NewClientFromCtx(c *cli.Context) *Client {
+// Most users should call NewClient().WithStatus() or NewClient().WithReady()
+func NewClient() *Client {
 
 	// Return client
 	client := &Client{
-		configPath:         os.ExpandEnv(c.GlobalString("config-path")),
-		daemonPath:         os.ExpandEnv(c.GlobalString("daemon-path")),
-		maxFee:             c.GlobalFloat64("maxFee"),
-		maxPrioFee:         c.GlobalFloat64("maxPrioFee"),
-		gasLimit:           c.GlobalUint64("gasLimit"),
-		originalMaxFee:     c.GlobalFloat64("maxFee"),
-		originalMaxPrioFee: c.GlobalFloat64("maxPrioFee"),
-		originalGasLimit:   c.GlobalUint64("gasLimit"),
-		debugPrint:         c.GlobalBool("debug"),
+		globals:            Defaults,
+		originalMaxFee:     Defaults.MaxFee,
+		originalMaxPrioFee: Defaults.MaxPrioFee,
+		originalGasLimit:   Defaults.GasLimit,
 		forceFallbacks:     false,
 		ignoreSyncCheck:    false,
-	}
-
-	if nonce, ok := c.App.Metadata["nonce"]; ok {
-		client.customNonce = nonce.(*big.Int)
 	}
 
 	return client
@@ -206,13 +210,13 @@ func (c *Client) Close() {
 }
 
 func (c *Client) ConfigPath() string {
-	return c.configPath
+	return c.globals.ConfigPath
 }
 
 // Load the config
 // Returns the RocketPoolConfig and whether or not it was newly generated
 func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
-	settingsFilePath := filepath.Join(c.configPath, SettingsFile)
+	settingsFilePath := filepath.Join(c.ConfigPath(), SettingsFile)
 	expandedPath, err := homedir.Expand(settingsFilePath)
 	if err != nil {
 		return nil, false, fmt.Errorf("error expanding settings file path: %w", err)
@@ -229,12 +233,12 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	}
 
 	// Config wasn't loaded, but there was no error- we should create one.
-	return config.NewRocketPoolConfig(c.configPath, c.daemonPath != ""), true, nil
+	return config.NewRocketPoolConfig(c.ConfigPath(), c.globals.DaemonPath != ""), true, nil
 }
 
 // Load the backup config
 func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
-	settingsFilePath := filepath.Join(c.configPath, BackupSettingsFile)
+	settingsFilePath := filepath.Join(c.ConfigPath(), BackupSettingsFile)
 	expandedPath, err := homedir.Expand(settingsFilePath)
 	if err != nil {
 		return nil, fmt.Errorf("error expanding backup settings file path: %w", err)
@@ -245,7 +249,7 @@ func (c *Client) LoadBackupConfig() (*config.RocketPoolConfig, error) {
 
 // Save the config
 func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
-	settingsFileDirectoryPath, err := homedir.Expand(c.configPath)
+	settingsFileDirectoryPath, err := homedir.Expand(c.ConfigPath())
 	if err != nil {
 		return err
 	}
@@ -254,7 +258,7 @@ func (c *Client) SaveConfig(cfg *config.RocketPoolConfig) error {
 
 // Remove the upgrade flag file
 func (c *Client) RemoveUpgradeFlagFile() error {
-	expandedPath, err := homedir.Expand(c.configPath)
+	expandedPath, err := homedir.Expand(c.ConfigPath())
 	if err != nil {
 		return err
 	}
@@ -263,7 +267,7 @@ func (c *Client) RemoveUpgradeFlagFile() error {
 
 // Returns whether or not this is the first run of the configurator since a previous installation
 func (c *Client) IsFirstRun() (bool, error) {
-	expandedPath, err := homedir.Expand(c.configPath)
+	expandedPath, err := homedir.Expand(c.ConfigPath())
 	if err != nil {
 		return false, fmt.Errorf("error expanding settings file path: %w", err)
 	}
@@ -272,12 +276,12 @@ func (c *Client) IsFirstRun() (bool, error) {
 
 // Load the Prometheus template, do a template variable substitution, and save it
 func (c *Client) UpdatePrometheusConfiguration(config *config.RocketPoolConfig) error {
-	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusConfigTemplate))
+	prometheusTemplatePath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.ConfigPath(), PrometheusConfigTemplate))
 	if err != nil {
 		return fmt.Errorf("Error expanding Prometheus template path: %w", err)
 	}
 
-	prometheusConfigPath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.configPath, PrometheusFile))
+	prometheusConfigPath, err := homedir.Expand(fmt.Sprintf("%s/%s", c.ConfigPath(), PrometheusFile))
 	if err != nil {
 		return fmt.Errorf("Error expanding Prometheus config file path: %w", err)
 	}
@@ -537,14 +541,14 @@ func (c *Client) GetServiceVersion() (string, error) {
 
 	// Get service container version output
 	var cmd string
-	if c.daemonPath == "" {
+	if c.globals.DaemonPath == "" {
 		containerName, err := c.getAPIContainerName()
 		if err != nil {
 			return "", err
 		}
 		cmd = fmt.Sprintf("docker exec %s %s --version", shellescape.Quote(containerName), shellescape.Quote(APIBinPath))
 	} else {
-		cmd = fmt.Sprintf("%s --version", shellescape.Quote(c.daemonPath))
+		cmd = fmt.Sprintf("%s --version", shellescape.Quote(c.globals.DaemonPath))
 	}
 	versionBytes, err := c.readOutput(cmd)
 	if err != nil {
@@ -573,7 +577,7 @@ func (c *Client) GetServiceVersion() (string, error) {
 // Increments the custom nonce parameter.
 // This is used for calls that involve multiple transactions, so they don't all have the same nonce.
 func (c *Client) IncrementCustomNonce() {
-	c.customNonce.Add(c.customNonce, big.NewInt(1))
+	c.globals.CustomNonce.Add(c.globals.CustomNonce, big.NewInt(1))
 }
 
 // Get the current Docker image used by the given container
@@ -1015,14 +1019,14 @@ func (c *Client) PurgeAllKeys(composeFiles []string) error {
 
 // Get the gas settings
 func (c *Client) GetGasSettings() (float64, float64, uint64) {
-	return c.maxFee, c.maxPrioFee, c.gasLimit
+	return c.globals.MaxFee, c.globals.MaxPrioFee, c.globals.GasLimit
 }
 
 // Get the gas fees
 func (c *Client) AssignGasSettings(maxFee float64, maxPrioFee float64, gasLimit uint64) {
-	c.maxFee = maxFee
-	c.maxPrioFee = maxPrioFee
-	c.gasLimit = gasLimit
+	c.globals.MaxFee = maxFee
+	c.globals.MaxPrioFee = maxPrioFee
+	c.globals.GasLimit = gasLimit
 }
 
 // Set the flags for ignoring EC and CC sync checks and forcing fallbacks to prevent unnecessary duplication of effort by the API during CLI commands
@@ -1057,12 +1061,12 @@ func (c *Client) checkIfCommandExists(command string) (bool, error) {
 func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	// Cancel if running in non-docker mode
-	if c.daemonPath != "" {
+	if c.globals.DaemonPath != "" {
 		return "", errors.New("command unavailable in Native Mode (with '--daemon-path' option specified)")
 	}
 
 	// Get the expanded config path
-	expandedConfigPath, err := homedir.Expand(c.configPath)
+	expandedConfigPath, err := homedir.Expand(c.ConfigPath())
 	if err != nil {
 		return "", err
 	}
@@ -1208,23 +1212,23 @@ func (c *Client) deployTemplates(cfg *config.RocketPoolConfig, rocketpoolDir str
 	// Create the custom keys dir
 	customKeyDir, err := homedir.Expand(filepath.Join(cfg.Smartnode.DataPath.Value.(string), "custom-keys"))
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
+		clicolor.YellowPrintf("WARNING: Couldn't expand the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder manually.\n", err.Error())
 		return deployedContainers, nil
 	}
 	err = os.MkdirAll(customKeyDir, 0775)
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), customKeyDir, colorReset)
+		clicolor.YellowPrintf("WARNING: Couldn't create the custom validator key directory (%s). You will not be able to recover any minipool keys you created outside of the Smart Node until you create the folder [%s] manually.\n", err.Error(), customKeyDir)
 	}
 
 	// Create the rewards file dir
 	rewardsFileDir, err := homedir.Expand(cfg.Smartnode.GetRewardsTreeDirectory(false))
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't expand the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder manually.%s\n", colorYellow, err.Error(), colorReset)
+		clicolor.YellowPrintf("WARNING: Couldn't expand the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder manually.\n", err.Error())
 		return deployedContainers, nil
 	}
 	err = os.MkdirAll(rewardsFileDir, 0775)
 	if err != nil {
-		fmt.Printf("%sWARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.%s\n", colorYellow, err.Error(), rewardsFileDir, colorReset)
+		clicolor.YellowPrintf("WARNING: Couldn't create the rewards tree file directory (%s). You will not be able to view or claim your rewards until you create the folder [%s] manually.\n", err.Error(), rewardsFileDir)
 	}
 
 	return c.composeAddons(cfg, rocketpoolDir, deployedContainers)
@@ -1267,7 +1271,7 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 
 	// Create the command to run
 	var cmd string
-	if c.daemonPath == "" {
+	if c.globals.DaemonPath == "" {
 		containerName, err := c.getAPIContainerName()
 		if err != nil {
 			return []byte{}, err
@@ -1275,8 +1279,8 @@ func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
 		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
 	} else {
 		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
-			c.daemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
+			c.globals.DaemonPath,
+			shellescape.Quote(fmt.Sprintf("%s/%s", c.ConfigPath(), SettingsFile)),
 			ignoreSyncCheckFlag,
 			forceFallbackECFlag,
 			c.getGasOpts(),
@@ -1295,7 +1299,7 @@ func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, othe
 
 	// Create the command to run
 	var cmd string
-	if c.daemonPath == "" {
+	if c.globals.DaemonPath == "" {
 		envArgs := ""
 		for key, value := range envVars {
 			os.Setenv(key, shellescape.Quote(value))
@@ -1313,8 +1317,8 @@ func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, othe
 		}
 		cmd = fmt.Sprintf("%s %s --settings %s %s %s %s %s api %s",
 			envArgs,
-			c.daemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.configPath, SettingsFile)),
+			c.globals.DaemonPath,
+			shellescape.Quote(fmt.Sprintf("%s/%s", c.ConfigPath(), SettingsFile)),
 			ignoreSyncCheckFlag,
 			forceFallbackECFlag,
 			c.getGasOpts(),
@@ -1354,14 +1358,14 @@ func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, strin
 }
 
 func (c *Client) runApiCall(cmd string) ([]byte, error) {
-	if c.debugPrint {
+	if c.globals.DebugPrint {
 		fmt.Println("To API:")
 		fmt.Println(cmd)
 	}
 
 	output, err := c.readOutput(cmd)
 
-	if c.debugPrint {
+	if c.globals.DebugPrint {
 		if output != nil {
 			fmt.Println("API Out:")
 			fmt.Println(string(output))
@@ -1373,9 +1377,9 @@ func (c *Client) runApiCall(cmd string) ([]byte, error) {
 	}
 
 	// Reset the gas settings after the call
-	c.maxFee = c.originalMaxFee
-	c.maxPrioFee = c.originalMaxPrioFee
-	c.gasLimit = c.originalGasLimit
+	c.globals.MaxFee = c.originalMaxFee
+	c.globals.MaxPrioFee = c.originalMaxPrioFee
+	c.globals.GasLimit = c.originalGasLimit
 
 	return output, err
 }
@@ -1395,17 +1399,17 @@ func (c *Client) getAPIContainerName() (string, error) {
 // Get gas price & limit flags
 func (c *Client) getGasOpts() string {
 	var opts string
-	opts += fmt.Sprintf("--maxFee %f ", c.maxFee)
-	opts += fmt.Sprintf("--maxPrioFee %f ", c.maxPrioFee)
-	opts += fmt.Sprintf("--gasLimit %d ", c.gasLimit)
+	opts += fmt.Sprintf("--maxFee %f ", c.globals.MaxFee)
+	opts += fmt.Sprintf("--maxPrioFee %f ", c.globals.MaxPrioFee)
+	opts += fmt.Sprintf("--gasLimit %d ", c.globals.GasLimit)
 	return opts
 }
 
 func (c *Client) getCustomNonce() string {
 	// Set the custom nonce
 	nonce := ""
-	if c.customNonce != nil {
-		nonce = fmt.Sprintf("--nonce %s", c.customNonce.String())
+	if c.globals.CustomNonce != nil {
+		nonce = fmt.Sprintf("--nonce %s", c.globals.CustomNonce.String())
 	}
 	return nonce
 }

@@ -6,18 +6,18 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) error {
+func setPrimaryWithdrawalAddress(withdrawalAddressOrENS string, yes, force bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -41,21 +41,20 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 	}
 
 	// Print the "pending" disclaimer
-	colorReset := "\033[0m"
-	colorRed := "\033[31m"
-	colorYellow := "\033[33m"
 	var confirm bool
 	fmt.Println("You are about to change your primary withdrawal address. All future ETH rewards/refunds will be sent there.\nIf you haven't set your RPL withdrawal address, RPL rewards will be sent there as well.")
-	if !c.Bool("force") {
+	if !force {
 		confirm = false
 		fmt.Println("By default, this will put your new primary withdrawal address into a \"pending\" state.")
 		fmt.Println("Rocket Pool will continue to use your old primary withdrawal address until you confirm that you own the new address via the Rocket Pool website.")
 		fmt.Println("You will need to use a web3-compatible wallet (such as MetaMask) with your new address to confirm it.")
-		fmt.Printf("%sIf you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.\n\n%s", colorYellow, colorReset)
+		color.YellowPrintln("If you cannot use such a wallet, or if you want to bypass this step and force Rocket Pool to use the new address immediately, please re-run this command with the \"--force\" flag.")
+		fmt.Println()
 	} else {
 		confirm = true
-		fmt.Printf("%sYou have specified the \"--force\" option, so your new address will take effect immediately.\n", colorRed)
-		fmt.Printf("Please ensure that you have the correct address - if you do not control the new address, you will not be able to change this once set!%s\n\n", colorReset)
+		color.RedPrintln("You have specified the \"--force\" option, so your new address will take effect immediately.")
+		color.RedPrintln("Please ensure that you have the correct address - if you do not control the new address, you will not be able to change this once set!")
+		fmt.Println()
 	}
 
 	// Check if the withdrawal address can be set
@@ -78,12 +77,12 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 			}
 
 			// Assign max fees
-			err = gas.AssignMaxFeeAndLimit(canSendResponse.GasInfo, rp, c.Bool("yes"))
+			err = gas.AssignMaxFeeAndLimit(canSendResponse.GasInfo, rp, yes)
 			if err != nil {
 				return err
 			}
 
-			if !prompt.Confirm(fmt.Sprintf("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString)) {
+			if !prompt.Confirm("Please confirm you want to send %f ETH to %s.", testAmount, withdrawalAddressString) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -104,13 +103,13 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString))) {
+	if !(yes || prompt.Confirm("Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -128,15 +127,15 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 	}
 
 	// Log & return
-	if !c.Bool("force") {
-		stakeUrl := ""
+	if !force {
+		nodeManagerUrl := ""
 		config, _, err := rp.LoadConfig()
 		if err == nil {
-			stakeUrl = config.Smartnode.GetStakeUrl()
+			nodeManagerUrl = config.Smartnode.GetNodeManagerUrl() + "/primary-withdrawal-address"
 		}
-		if stakeUrl != "" {
+		if nodeManagerUrl != "" {
 			fmt.Printf("The node's primary withdrawal address update to %s is now pending.\n"+
-				"To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddressString, stakeUrl)
+				"To confirm it, please visit the Rocket Pool website (%s).", withdrawalAddressString, nodeManagerUrl)
 		} else {
 			fmt.Printf("The node's primary withdrawal address update to %s is now pending.\n"+
 				"To confirm it, please visit the Rocket Pool website.", withdrawalAddressString)
@@ -148,10 +147,10 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddressOrENS string) 
 
 }
 
-func confirmPrimaryWithdrawalAddress(c *cli.Context) error {
+func confirmPrimaryWithdrawalAddress(yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -164,13 +163,13 @@ func confirmPrimaryWithdrawalAddress(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to confirm your node's address as the new primary withdrawal address?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to confirm your node's address as the new primary withdrawal address?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

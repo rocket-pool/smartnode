@@ -1,11 +1,10 @@
 package wallet
 
 import (
-	"fmt"
-
 	"github.com/urfave/cli"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 // Register commands
@@ -29,7 +28,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getStatus(c)
+					return getStatus()
 
 				},
 			},
@@ -68,7 +67,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return initWallet(c)
+					return initWallet(c.String("password"), c.Bool("confirm-mnemonic"), c.String("derivation-path"), c.GlobalBool("secure-session"))
 
 				},
 			},
@@ -125,7 +124,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return recoverWallet(c)
+					return recoverWallet(
+						c.String("password"),
+						c.String("mnemonic"),
+						c.String("address"),
+						c.Bool("skip-validator-key-recovery"),
+						c.String("derivation-path"),
+						c.Uint("wallet-index"),
+					)
 
 				},
 			},
@@ -143,7 +149,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return rebuildWallet(c)
+					return rebuildWallet()
 
 				},
 			},
@@ -191,7 +197,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return testRecovery(c)
+					return testRecovery(
+						c.String("mnemonic"),
+						c.String("address"),
+						c.Bool("skip-validator-key-recovery"),
+						c.String("derivation-path"),
+						c.Uint("wallet-index"),
+					)
 
 				},
 			},
@@ -209,7 +221,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return exportWallet(c)
+					return exportWallet(c.GlobalBool("secure-session"))
 
 				},
 			},
@@ -226,14 +238,14 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return setEnsName(c, c.Args().Get(0))
+					return setEnsName(c.Args().Get(0), c.Bool("yes"))
 
 				},
 			},
 
 			{
 				Name:      "purge",
-				Usage:     fmt.Sprintf("%sDeletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!%s", colorRed, colorReset),
+				Usage:     color.Red("Deletes your node wallet, your validator keys, and restarts your Validator Client while preserving your chain data. WARNING: Only use this if you want to stop validating with this machine!"),
 				UsageText: "rocketpool wallet purge",
 				Action: func(c *cli.Context) error {
 
@@ -243,7 +255,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return purge(c)
+					return purge(c.Parent().StringSlice("compose-file"))
 
 				},
 			},
@@ -273,7 +285,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return masquerade(c)
+					return masquerade(c.String("address"), c.Bool("yes"))
 
 				},
 			},
@@ -298,7 +310,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return endMasquerade(c)
+					return endMasquerade(c.Bool("yes"))
 
 				},
 			},

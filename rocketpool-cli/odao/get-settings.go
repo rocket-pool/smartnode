@@ -4,16 +4,14 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
-func getMemberSettings(c *cli.Context) error {
+func getMemberSettings() error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -36,10 +34,10 @@ func getMemberSettings(c *cli.Context) error {
 
 }
 
-func getProposalSettings(c *cli.Context) error {
+func getProposalSettings() error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -61,10 +59,10 @@ func getProposalSettings(c *cli.Context) error {
 
 }
 
-func getMinipoolSettings(c *cli.Context) error {
+func getMinipoolSettings() error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

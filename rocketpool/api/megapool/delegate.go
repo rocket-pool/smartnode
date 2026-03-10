@@ -128,8 +128,7 @@ func getUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*api.
 
 }
 
-func canSetUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolCanSetUseLatestDelegateResponse, error) {
-	setting := true
+func canSetUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, setting bool) (*api.MegapoolCanSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -179,8 +178,7 @@ func canSetUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*a
 
 }
 
-func setUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolSetUseLatestDelegateResponse, error) {
-	setting := true
+func setUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, setting bool) (*api.MegapoolSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err

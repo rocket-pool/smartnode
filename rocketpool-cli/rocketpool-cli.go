@@ -18,16 +18,16 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool-cli/queue"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/security"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/service"
+	"github.com/rocket-pool/smartnode/rocketpool-cli/update"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/wallet"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 const (
-	colorReset    string = "\033[0m"
-	colorYellow   string = "\033[33m"
-	maxAlertItems int    = 3
+	maxAlertItems int = 3
 )
 
 // Run
@@ -110,12 +110,48 @@ A special thanks to the Rocket Pool community for all their contributions.
 	service.RegisterCommands(app, "service", []string{"s"})
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
+	// Add a command that updates the smart node cli.
+	app.Commands = append(app.Commands, cli.Command{
+		Name:  "update",
+		Usage: "Update the cli binary",
+		Flags: []cli.Flag{
+			cli.BoolFlag{
+				Name:  "yes, y",
+				Usage: "Automatically confirm the update",
+			},
+			cli.BoolFlag{
+				Name:  "force, f",
+				Usage: "Force the update even if the current version is the latest",
+			},
+			cli.BoolFlag{
+				Name:  "skip-signature-verification, s",
+				Usage: "Don't verify the singature of the release",
+			},
+		},
+		Action: func(c *cli.Context) error {
+			return update.Update(
+				c.Bool("yes"),
+				c.Bool("skip-signature-verification"),
+				c.Bool("force"),
+			)
+		},
+	})
+
 	app.Before = func(c *cli.Context) error {
 		// Check user ID
 		if os.Getuid() == 0 && !c.GlobalBool("allow-root") {
 			fmt.Fprintln(os.Stderr, "rocketpool should not be run as root. Please try again without 'sudo'.")
 			fmt.Fprintln(os.Stderr, "If you want to run rocketpool as root anyway, use the '--allow-root' option to override this warning.")
 			os.Exit(1)
+		}
+
+		Defaults := rocketpool.Globals{
+			ConfigPath: os.ExpandEnv(c.GlobalString("config-path")),
+			DaemonPath: os.ExpandEnv(c.GlobalString("daemon-path")),
+			MaxFee:     c.GlobalFloat64("maxFee"),
+			MaxPrioFee: c.GlobalFloat64("maxPrioFee"),
+			GasLimit:   c.GlobalUint64("gasLimit"),
+			DebugPrint: c.GlobalBool("debug"),
 		}
 
 		// If set, validate custom nonce
@@ -127,9 +163,10 @@ A special thanks to the Rocket Pool community for all their contributions.
 				os.Exit(1)
 			}
 
-			// Save the parsed value on Metadata so we don't need to reparse it later
-			c.App.Metadata["nonce"] = nonce
+			Defaults.CustomNonce = nonce
 		}
+
+		rocketpool.SetDefaults(Defaults)
 
 		return nil
 	}
@@ -140,7 +177,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 			return nil
 		}
 
-		rp := rocketpool.NewClientFromCtx(c)
+		rp := rocketpool.NewClient()
 		defer rp.Close()
 
 		// Check if the user has enabled the "show alerts after every command" setting.
@@ -159,7 +196,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 		}
 
 		if len(response.Alerts) > 0 {
-			fmt.Printf("\n%s=== Alerts ===%s\n", colorYellow, colorReset)
+			color.YellowPrintln("=== Alerts ===")
 			for i, alert := range response.Alerts {
 				fmt.Println(alert.ColorString())
 				if i == maxAlertItems-1 {

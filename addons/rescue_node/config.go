@@ -10,7 +10,7 @@ type RescueNodeConfig struct {
 	Enabled config.Parameter `yaml:"enabled,omitempty"`
 
 	Username config.Parameter `yaml:"username,omitempty"`
-	Password config.Parameter `yaml:"username,omitempty"`
+	Password config.Parameter `yaml:"password,omitempty"`
 }
 
 // Creates a new configuration instance

@@ -7,23 +7,19 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-const colorReset string = "\033[0m"
-const colorRed string = "\033[31m"
-const colorYellow string = "\033[33m"
-
-func getStatus(c *cli.Context) error {
+func getStatus(includeFinalized bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -74,7 +70,7 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Return if all minipools are finalized and they are hidden
-	if len(status.Minipools) == len(finalisedMinipools) && !c.Bool("include-finalized") {
+	if len(status.Minipools) == len(finalisedMinipools) && !includeFinalized {
 		fmt.Println("All of this node's minipools have been finalized.\nTo show finalized minipools, re-run this command with the `-f` flag.")
 		return nil
 	}
@@ -94,7 +90,7 @@ func getStatus(c *cli.Context) error {
 
 		// Minipools
 		for _, minipool := range minipools {
-			if !minipool.Finalised || c.Bool("include-finalized") {
+			if !minipool.Finalised || includeFinalized {
 				printMinipoolDetails(minipool, status.LatestDelegate)
 			}
 		}
@@ -103,7 +99,7 @@ func getStatus(c *cli.Context) error {
 	}
 
 	// Handle finalized minipools
-	if c.Bool("include-finalized") {
+	if includeFinalized {
 		fmt.Printf("%d finalized minipool(s):\n", len(finalisedMinipools))
 		fmt.Println("")
 
@@ -135,7 +131,7 @@ func getStatus(c *cli.Context) error {
 	}
 
 	if len(minipoolsPastDissolveNotificationThreshold) > 0 {
-		fmt.Printf("%sAttention! %d minipool(s) are close to being dissolved:\n%s", colorRed, len(minipoolsPastDissolveNotificationThreshold), colorReset)
+		color.RedPrintf("Attention! %d minipool(s) are close to being dissolved:\n", len(minipoolsPastDissolveNotificationThreshold))
 		for _, minipool := range minipoolsPastDissolveNotificationThreshold {
 			fmt.Printf("- %s (%s until dissolve)\n", minipool.Address.Hex(), minipool.TimeUntilDissolve)
 		}
@@ -157,12 +153,12 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	if minipool.Penalties == 0 {
 		fmt.Println("Penalties:             0")
 	} else if minipool.Penalties < 3 {
-		fmt.Printf("%sStrikes:               %d%s\n", colorYellow, minipool.Penalties, colorReset)
+		color.YellowPrintf("Strikes:               %d\n", minipool.Penalties)
 	} else {
-		fmt.Printf("%sInfractions:           %d%s\n", colorRed, minipool.Penalties, colorReset)
+		color.RedPrintf("Infractions:           %d\n", minipool.Penalties)
 	}
 	fmt.Printf("Status:                %s\n", minipool.Status.Status.String())
-	fmt.Printf("Status updated:        %s\n", minipool.Status.StatusTime.Format(TimeFormat))
+	fmt.Printf("Status updated:        %s\n", minipool.Status.StatusTime.Format(cliutils.TimeFormat))
 	fmt.Printf("Node fee:              %f%%\n", minipool.Node.Fee*100)
 	fmt.Printf("Node deposit:          %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.Node.DepositBalance), 6))
 
@@ -175,7 +171,7 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	if minipool.Status.Status == types.Prelaunch || minipool.Status.Status == types.Staking {
 		totalRewards := big.NewInt(0).Add(minipool.NodeShareOfETHBalance, minipool.Node.RefundBalance)
 		if minipool.User.DepositAssigned {
-			fmt.Printf("RP ETH assigned:       %s\n", minipool.User.DepositAssignedTime.Format(TimeFormat))
+			fmt.Printf("RP ETH assigned:       %s\n", minipool.User.DepositAssignedTime.Format(cliutils.TimeFormat))
 			fmt.Printf("RP deposit:            %.6f ETH\n", math.RoundDown(eth.WeiToEth(minipool.User.DepositBalance), 6))
 		} else {
 			fmt.Printf("RP ETH assigned:       no\n")
@@ -220,7 +216,7 @@ func printMinipoolDetails(minipool api.MinipoolDetails, latestDelegate common.Ad
 	fmt.Printf("Effective delegate:    %s\n", cliutils.GetPrettyAddress(minipool.EffectiveDelegate))
 
 	if minipool.EffectiveDelegate != latestDelegate {
-		fmt.Printf("%s*Minipool can be upgraded to delegate %s!%s\n", colorYellow, latestDelegate.Hex(), colorReset)
+		color.YellowPrintf("*Minipool can be upgraded to delegate %s!\n", latestDelegate.Hex())
 	}
 
 	fmt.Printf("\n")

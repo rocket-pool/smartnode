@@ -124,9 +124,3 @@ type GetLatestDelegateResponse struct {
 	Error   string         `json:"error"`
 	Address common.Address `json:"address"`
 }
-
-type IsSaturnDeployedResponse struct {
-	Status           string `json:"status"`
-	Error            string `json:"error"`
-	IsSaturnDeployed bool   `json:"isSaturnDeployed"`
-}

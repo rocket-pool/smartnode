@@ -11,6 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -79,7 +80,6 @@ type NodeStatusResponse struct {
 		ProposalVotes           []SnapshotProposalVote `json:"proposalVotes"`
 		ActiveSnapshotProposals []SnapshotProposal     `json:"activeSnapshotProposals"`
 	} `json:"snapshotResponse"`
-	Alerts                       []NodeAlert       `json:"alerts"`
 	SignallingAddress            common.Address    `json:"signallingAddress"`
 	SignallingAddressFormatted   string            `json:"signallingAddressFormatted"`
 	Minipools                    []MinipoolDetails `json:"minipools"`
@@ -116,7 +116,7 @@ func (n NodeAlert) IsSuppressed() bool {
 }
 
 func (n NodeAlert) Name() string {
-	value, ok := n.Annotations["alertname"]
+	value, ok := n.Labels["alertname"]
 	if !ok {
 		return ""
 	}
@@ -148,20 +148,16 @@ func (n NodeAlert) Severity() string {
 }
 
 func (n NodeAlert) ColorString() string {
-	const (
-		colorReset  string = "\033[0m"
-		colorRed    string = "\033[31m"
-		colorYellow string = "\033[33m"
-	)
 	suppressed := ""
 	if n.IsSuppressed() {
 		suppressed = " (suppressed)"
 	}
-	alertColor := colorYellow
+	alertColor := color.Yellow
 	if n.Severity() == "critical" {
-		alertColor = colorRed
+		alertColor = color.Red
 	}
-	return fmt.Sprintf("%s%s%s%s %s: %s", alertColor, n.Severity(), suppressed, colorReset, n.Summary(), n.Description())
+	header := alertColor(fmt.Sprintf("%s%s", n.Severity(), suppressed))
+	return fmt.Sprintf("%s %s: %s", header, n.Summary(), n.Description())
 }
 
 type CanRegisterNodeResponse struct {

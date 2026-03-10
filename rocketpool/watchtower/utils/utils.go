@@ -48,7 +48,7 @@ func FindLastBlockWithExecutionPayload(bc beacon.Client, slotNumber uint64) (bea
 	return beaconBlock, nil
 }
 
-func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2Config, bc beacon.Client, ec rocketpool.ExecutionClient, lastSubmissionBlock uint64, referenceTimestamp int64, submissionIntervalInSeconds int64) (uint64, time.Time, *types.Header, error) {
+func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2Config, bc beacon.Client, ec rocketpool.ExecutionClient, lastSubmissionBlock uint64, referenceTimestamp int64, submissionIntervalInSeconds int64) (uint64, time.Time, *types.Header, bool, error) {
 	lastSubmissionSlotTimestamp := referenceTimestamp
 
 	genesisTime := time.Unix(int64(eth2Config.GenesisTime), 0)
@@ -56,12 +56,12 @@ func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2C
 	if lastSubmissionBlock > 0 {
 		lastSubmissionBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), big.NewInt(int64(lastSubmissionBlock)))
 		if err != nil {
-			return 0, time.Time{}, nil, fmt.Errorf("can't get the latest submission block header: %w", err)
+			return 0, time.Time{}, nil, false, fmt.Errorf("can't get the latest submission block header: %w", err)
 		}
 
 		lastSubmissionParent, _, err := bc.GetBeaconBlock(lastSubmissionBlockHeader.ParentBeaconRoot.Hex())
 		if err != nil {
-			return 0, time.Time{}, nil, fmt.Errorf("can't get the parent block: %w", err)
+			return 0, time.Time{}, nil, false, fmt.Errorf("can't get the parent block: %w", err)
 		}
 
 		lastSubmissionSlot := lastSubmissionParent.Slot + 1
@@ -70,7 +70,7 @@ func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2C
 
 	beaconHead, err := bc.GetBeaconHead()
 	if err != nil {
-		return 0, time.Time{}, nil, err
+		return 0, time.Time{}, nil, false, err
 	}
 	finalizedEpoch := beaconHead.FinalizedEpoch
 
@@ -96,22 +96,25 @@ func FindNextSubmissionTarget(rp *rocketpool.RocketPool, eth2Config beacon.Eth2C
 	// Search for the last existing EL block, going back up to 32 slots if the block is not found.
 	targetBlock, err := FindLastBlockWithExecutionPayload(bc, slotNumber)
 	if err != nil {
-		return 0, time.Time{}, nil, err
+		return 0, time.Time{}, nil, false, err
 	}
 
 	targetBlockNumber := targetBlock.ExecutionBlockNumber
-	if targetBlockNumber <= lastSubmissionBlock {
-		return 0, time.Time{}, nil, fmt.Errorf("target block number is the same as the last submission block")
-	}
 
 	targetBlockHeader, err := ec.HeaderByNumber(context.Background(), big.NewInt(int64(targetBlockNumber)))
 	if err != nil {
-		return 0, time.Time{}, nil, err
+		return 0, time.Time{}, nil, false, err
 	}
 
 	targetSlot := targetBlock.Slot
 
 	targetSlotTime := eth2Config.GetSlotTime(targetSlot)
 
-	return targetSlot, targetSlotTime, targetBlockHeader, nil
+	// Don't submit if targetBlockNumber <= lastSubmissionBlock, but pass the
+	// targetSlot, targetSlotTime, targetBlockHeader so caller can handle logging
+	if targetBlockNumber <= lastSubmissionBlock {
+		return targetSlot, targetSlotTime, targetBlockHeader, false, nil
+	}
+
+	return targetSlot, targetSlotTime, targetBlockHeader, true, nil
 }

@@ -673,13 +673,29 @@ func (s *NetworkState) GetMinipoolEligibleBorrowedEth(node *rpstate.NativeNodeDe
 
 func (s *NetworkState) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
 	eligibleBorrowedEth := big.NewInt(0)
+	requestedValueSum := big.NewInt(0)
 
 	if node.MegapoolDeployed {
-		megapool := s.MegapoolDetails[node.MegapoolAddress]
-		if megapool.UserCapital != nil {
-			eligibleBorrowedEth.Add(eligibleBorrowedEth, megapool.UserCapital)
+		megapool, exists := s.MegapoolDetails[node.MegapoolAddress]
+		if !exists {
+			return eligibleBorrowedEth
+		}
+		eligibleBorrowedEth.Add(eligibleBorrowedEth, megapool.UserCapital)
+		// Get the megapool validators
+		validators := s.MegapoolToPubkeysMap[node.MegapoolAddress]
+
+		// Iterate over the validators
+		for _, validator := range validators {
+
+			// Grab the validator details from pubkeys
+			megapoolValidatorInfo := s.MegapoolValidatorInfo[validator]
+			// Pre-stake
+			if megapoolValidatorInfo.ValidatorInfo.InPrestake {
+				requestedValueSum.Add(requestedValueSum, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
+				requestedValueSum.Sub(requestedValueSum, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)))
+			}
 		}
 	}
 
-	return eligibleBorrowedEth
+	return eligibleBorrowedEth.Sub(eligibleBorrowedEth, requestedValueSum)
 }

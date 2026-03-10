@@ -27,7 +27,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getStatus(c)
+					return getStatus()
 
 				},
 			},
@@ -45,7 +45,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getMembers(c)
+					return getMembers()
 
 				},
 			},
@@ -58,7 +58,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Run
-					return getMemberSettings(c)
+					return getMemberSettings()
 
 				},
 			},
@@ -71,7 +71,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Run
-					return getProposalSettings(c)
+					return getProposalSettings()
 
 				},
 			},
@@ -84,7 +84,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Run
-					return getMinipoolSettings(c)
+					return getMinipoolSettings()
 
 				},
 			},
@@ -118,7 +118,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return penaliseMegapool(c, megapoolAddress, block)
+					return penaliseMegapool(megapoolAddress, block, c.Bool("yes"))
 
 				},
 			},
@@ -156,7 +156,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeInvite(c, memberAddress, memberId, c.Args().Get(2))
+									return proposeInvite(memberAddress, memberId, c.Args().Get(2), c.Bool("yes"))
 
 								},
 							},
@@ -174,7 +174,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeLeave(c)
+									return proposeLeave(c.Bool("yes"))
 
 								},
 							},
@@ -214,7 +214,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeKick(c)
+									return proposeKick(c.String("member"), c.String("fine"), c.Bool("yes"))
 
 								},
 							},
@@ -244,7 +244,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingMembersQuorum(c, quorumPercent)
+									return proposeSettingMembersQuorum(quorumPercent, c.Bool("yes"))
 
 								},
 							},
@@ -265,7 +265,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingMembersRplBond(c, bondAmountEth)
+									return proposeSettingMembersRplBond(bondAmountEth, c.Bool("yes"))
 
 								},
 							},
@@ -286,7 +286,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingMinipoolUnbondedMax(c, unbondedMinipoolMax)
+									return proposeSettingMinipoolUnbondedMax(unbondedMinipoolMax, c.Bool("yes"))
 
 								},
 							},
@@ -303,7 +303,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingProposalCooldown(c, c.Args().Get(0))
+									return proposeSettingProposalCooldown(c.Args().Get(0), c.Bool("yes"))
 
 								},
 							},
@@ -320,7 +320,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingProposalVoteTimespan(c, c.Args().Get(0))
+									return proposeSettingProposalVoteTimespan(c.Args().Get(0), c.Bool("yes"))
 
 								},
 							},
@@ -337,7 +337,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingProposalVoteDelayTimespan(c, c.Args().Get(0))
+									return proposeSettingProposalVoteDelayTimespan(c.Args().Get(0), c.Bool("yes"))
 
 								},
 							},
@@ -354,7 +354,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingProposalExecuteTimespan(c, c.Args().Get(0))
+									return proposeSettingProposalExecuteTimespan(c.Args().Get(0), c.Bool("yes"))
 
 								},
 							},
@@ -371,7 +371,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingProposalActionTimespan(c, c.Args().Get(0))
+									return proposeSettingProposalActionTimespan(c.Args().Get(0), c.Bool("yes"))
 
 								},
 							},
@@ -388,7 +388,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingScrubPeriod(c, c.Args().Get(0))
+									return proposeSettingScrubPeriod(c.Args().Get(0), c.Bool("yes"))
 
 								},
 							},
@@ -405,7 +405,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingPromotionScrubPeriod(c, c.Args().Get(0))
+									return proposeSettingPromotionScrubPeriod(c.Args().Get(0), c.Bool("yes"))
 
 								},
 							},
@@ -426,7 +426,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingScrubPenaltyEnabled(c, enabled)
+									return proposeSettingScrubPenaltyEnabled(enabled, c.Bool("yes"))
 
 								},
 							},
@@ -443,7 +443,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingBondReductionWindowStart(c, c.Args().Get(0))
+									return proposeSettingBondReductionWindowStart(c.Args().Get(0), c.Bool("yes"))
 
 								},
 							},
@@ -460,7 +460,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSettingBondReductionWindowLength(c, c.Args().Get(0))
+									return proposeSettingBondReductionWindowLength(c.Args().Get(0), c.Bool("yes"))
 
 								},
 							},
@@ -495,7 +495,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return getProposals(c, c.String("states"))
+							return getProposals(c.String("states"))
 
 						},
 					},
@@ -518,7 +518,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return getProposal(c, id)
+							return getProposal(id)
 
 						},
 					},
@@ -549,7 +549,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return cancelProposal(c)
+							return cancelProposal(c.String("proposal"), c.Bool("yes"))
 
 						},
 					},
@@ -593,7 +593,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return voteOnProposal(c)
+							return voteOnProposal(c.String("proposal"), c.String("support"), c.Bool("yes"))
 
 						},
 					},
@@ -624,7 +624,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return executeProposal(c)
+							return executeProposal(c.String("proposal"), c.Bool("yes"))
 
 						},
 					},
@@ -654,7 +654,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return join(c)
+					return join(c.Bool("yes"), c.Bool("swap"))
 
 				},
 			},
@@ -689,8 +689,34 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return leave(c)
+					return leave(c.String("refund-address"), c.Bool("yes"))
 
+				},
+			},
+			{
+				Name:    "upgrade",
+				Aliases: []string{"u"},
+				Usage:   "Upgrade Proposals",
+				Subcommands: []cli.Command{
+
+					{
+						Name:      "get-upgrade-proposals",
+						Aliases:   []string{"g"},
+						Usage:     "Get the upgrade proposals",
+						UsageText: "rocketpool odao upgrade get-upgrade-proposals",
+						Action: func(c *cli.Context) error {
+							return getUpgradeProposals()
+						},
+					},
+					{
+						Name:      "execute-upgrade",
+						Aliases:   []string{"eu"},
+						Usage:     "Execute an upgrade",
+						UsageText: "rocketpool odao upgrade execute-upgrade upgrade-proposal-id",
+						Action: func(c *cli.Context) error {
+							return executeUpgrade(c.String("proposal"), c.Bool("yes"))
+						},
+					},
 				},
 			},
 		},

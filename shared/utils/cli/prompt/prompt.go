@@ -9,13 +9,9 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
-)
 
-const colorReset string = "\033[0m"
-const colorRed string = "\033[31m"
-const colorGreen string = "\033[32m"
-const colorYellow string = "\033[33m"
-const colorLightBlue string = "\033[36m"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
+)
 
 // Prompt for user input
 func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt string) string {
@@ -37,13 +33,29 @@ func Prompt(initialPrompt string, expectedFormat string, incorrectFormatPrompt s
 }
 
 // Prompt for confirmation
-func Confirm(initialPrompt string) bool {
+func Confirm(fmtStr string, args ...any) bool {
+	initialPrompt := fmt.Sprintf(fmtStr, args...)
 	response := Prompt(fmt.Sprintf("%s [y/n]", initialPrompt), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
 	return (strings.ToLower(response[:1]) == "y")
 }
 
+func confirmColor(colorFunc func(string) string, fmtStr string, args ...any) bool {
+	initialPrompt := fmt.Sprintf(fmtStr, args...)
+	response := Prompt(fmt.Sprintf("%s [y/n]", colorFunc(initialPrompt)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")
+	return (strings.ToLower(response[:1]) == "y")
+}
+
+func ConfirmRed(fmtStr string, args ...any) bool {
+	return confirmColor(color.Red, fmtStr, args...)
+}
+
+func ConfirmYellow(fmtStr string, args ...any) bool {
+	return confirmColor(color.Yellow, fmtStr, args...)
+}
+
 // Prompt for 'I agree' confirmation (used on important questions to avoid a quick 'y' response from the user)
-func ConfirmWithIAgree(initialPrompt string) bool {
+func ConfirmWithIAgree(fmtStr string, args ...any) bool {
+	initialPrompt := fmt.Sprintf(fmtStr, args...)
 	response := Prompt(fmt.Sprintf("%s [Type 'I agree' or 'n']", initialPrompt), "(?i)^(i agree|n|no)$", "Please answer 'I agree' or 'n'")
 	return (len(response) == 7 && strings.ToLower(response[:7]) == "i agree")
 }
@@ -79,7 +91,7 @@ func Select(initialPrompt string, options []string) (int, string) {
 
 // Prompts the user to verify that there is nobody looking over their shoulder before printing sensitive information.
 func ConfirmSecureSession(warning string) bool {
-	if !Confirm(fmt.Sprintf("%s%s%s\nAre you sure you want to continue?", colorYellow, warning, colorReset)) {
+	if !Confirm("%s\nAre you sure you want to continue?", color.Yellow(warning)) {
 		fmt.Println("Cancelled.")
 		return false
 	}

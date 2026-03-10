@@ -3,15 +3,13 @@ package pdao
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
-func getSettings(c *cli.Context) error {
+func getSettings() error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -43,10 +41,8 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tMax Total Assigns Per Deposit:      %d\n", response.Deposit.MaximumAssignmentsPerDeposit)
 	fmt.Printf("\tMax Socialized Assigns Per Deposit: %d\n", response.Deposit.MaximumSocialisedAssignmentsPerDeposit)
 	fmt.Printf("\tDeposit Fee:                        %.2f%%\n", eth.WeiToEth(response.Deposit.DepositFee)*100)
-	if response.SaturnDeployed {
-		fmt.Printf("\tExpress Queue Rate:                 %d\n", response.Deposit.ExpressQueueRate)
-		fmt.Printf("\tExpress Queue Tickets Provision:    %d\n", response.Deposit.ExpressQueueTicketsBaseProvision)
-	}
+	fmt.Printf("\tExpress Queue Rate:                 %d\n", response.Deposit.ExpressQueueRate)
+	fmt.Printf("\tExpress Queue Tickets Provision:    %d\n", response.Deposit.ExpressQueueTicketsBaseProvision)
 	fmt.Println()
 
 	// Inflation
@@ -83,15 +79,13 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tCommission Demand Range:                      %.6f ETH\n", eth.WeiToEth(response.Network.NodeFeeDemandRange))
 	fmt.Printf("\trETH Collateral Target:                       %.2f%%\n", eth.WeiToEth(response.Network.TargetRethCollateralRate)*100)
 	fmt.Printf("\tRewards Submission Enabled:                   %t\n", response.Network.IsSubmitRewardsEnabled)
-	if response.SaturnDeployed {
-		fmt.Printf("\tNode Commission Share:                        %.2f%%\n", eth.WeiToEth(response.Network.NodeCommissionShare)*100)
-		fmt.Printf("\tNode Commission Share Security Council Adder: %.2f%%\n", eth.WeiToEth(response.Network.NodeCommissionShareSecurityCouncilAdder)*100)
-		fmt.Printf("\tVoter Share:                                  %.2f%%\n", eth.WeiToEth(response.Network.VoterShare)*100)
-		fmt.Printf("\tProtocol DAO Share:                           %.2f%%\n", eth.WeiToEth(response.Network.ProtocolDAOShare)*100)
-		fmt.Printf("\tMax Commission Share Security Council Adder:  %.2f%%\n", eth.WeiToEth(response.Network.MaxNodeShareSecurityCouncilAdder)*100)
-		fmt.Printf("\tMax rETH balance delta:                       %.2f%%\n", eth.WeiToEth(response.Network.MaxRethBalanceDelta)*100)
-		fmt.Printf("\tAllow listed controllers:                     %v\n", response.Network.AllowListedControllers)
-	}
+	fmt.Printf("\tNode Commission Share:                        %.2f%%\n", eth.WeiToEth(response.Network.NodeCommissionShare)*100)
+	fmt.Printf("\tNode Commission Share Security Council Adder: %.2f%%\n", eth.WeiToEth(response.Network.NodeCommissionShareSecurityCouncilAdder)*100)
+	fmt.Printf("\tVoter Share:                                  %.2f%%\n", eth.WeiToEth(response.Network.VoterShare)*100)
+	fmt.Printf("\tProtocol DAO Share:                           %.2f%%\n", eth.WeiToEth(response.Network.ProtocolDAOShare)*100)
+	fmt.Printf("\tMax Commission Share Security Council Adder:  %.2f%%\n", eth.WeiToEth(response.Network.MaxNodeShareSecurityCouncilAdder)*100)
+	fmt.Printf("\tMax rETH balance delta:                       %.2f%%\n", eth.WeiToEth(response.Network.MaxRethBalanceDelta)*100)
+	fmt.Printf("\tAllow listed controllers:                     %v\n", response.Network.AllowListedControllers)
 	fmt.Println()
 
 	// Node
@@ -100,15 +94,9 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tSmoothing Pool Opt-In Enabled: %t\n", response.Node.IsSmoothingPoolRegistrationEnabled)
 	fmt.Printf("\tNode Deposits Enabled:         %t\n", response.Node.IsDepositingEnabled)
 	fmt.Printf("\tVacant Minipools Enabled:      %t\n", response.Node.AreVacantMinipoolsEnabled)
-	if !response.SaturnDeployed {
-		fmt.Printf("\tMin Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MinimumPerMinipoolStake)*100)
-		fmt.Printf("\tMax Stake per Minipool:        %.2f%%\n", eth.WeiToEth(response.Node.MaximumPerMinipoolStake)*100)
-	}
-	if response.SaturnDeployed {
-		fmt.Printf("\tReduced Bond:                  %.6f ETH\n", response.Node.ReducedBond)
-		fmt.Printf("\tNode Unstaking Period:         %s\n", response.Node.NodeUnstakingPeriod)
-		fmt.Printf("\tMin Legacy RPL Stake:          %s\n", response.Node.MinimumLegacyRplStake)
-	}
+	fmt.Printf("\tReduced Bond:                  %.6f ETH\n", response.Node.ReducedBond)
+	fmt.Printf("\tNode Unstaking Period:         %s\n", response.Node.NodeUnstakingPeriod)
+	fmt.Printf("\tMin Legacy RPL Stake:          %s\n", response.Node.MinimumLegacyRplStake)
 	fmt.Println()
 
 	// Proposals
@@ -139,18 +127,16 @@ func getSettings(c *cli.Context) error {
 	fmt.Printf("\tProposal Action Time:  %s\n", response.Security.ProposalActionTime)
 	fmt.Println()
 
-	if response.SaturnDeployed {
-		// Megapool
-		fmt.Println("== Megapool Settings ==")
-		fmt.Printf("\tTime Before Dissolve:                   %s\n", response.Megapool.TimeBeforeDissolve)
-		fmt.Printf("\tDissolve Penalty:                       %.6f ETH\n", eth.WeiToEth(response.Megapool.DissolvePenalty))
-		fmt.Printf("\tMax ETH penalty:                        %.6f ETH\n", eth.WeiToEth(response.Megapool.MaximumEthPenalty))
-		fmt.Printf("\tNotify Threshold:                       %d Epochs\n", response.Megapool.NotifyThreshold)
-		fmt.Printf("\tLate Notify Fine:                       %.6f ETH\n", eth.WeiToEth(response.Megapool.LateNotifyFine))
-		fmt.Printf("\tUser Distribute Delay:                  %d Epochs\n", response.Megapool.UserDistributeDelay)
-		fmt.Printf("\tUser Distribute Delay with Shortfall:   %d Epochs\n", response.Megapool.UserDistributeDelayWithShortfall)
-		fmt.Printf("\tPenalty Threshold:                      %.2f%%\n", eth.WeiToEth(response.Megapool.PenaltyThreshold)*100)
-	}
+	// Megapool
+	fmt.Println("== Megapool Settings ==")
+	fmt.Printf("\tTime Before Dissolve:                   %s\n", response.Megapool.TimeBeforeDissolve)
+	fmt.Printf("\tDissolve Penalty:                       %.6f ETH\n", eth.WeiToEth(response.Megapool.DissolvePenalty))
+	fmt.Printf("\tMax ETH penalty:                        %.6f ETH\n", eth.WeiToEth(response.Megapool.MaximumEthPenalty))
+	fmt.Printf("\tNotify Threshold:                       %d Epochs\n", response.Megapool.NotifyThreshold)
+	fmt.Printf("\tLate Notify Fine:                       %.6f ETH\n", eth.WeiToEth(response.Megapool.LateNotifyFine))
+	fmt.Printf("\tUser Distribute Delay:                  %d Epochs\n", response.Megapool.UserDistributeDelay)
+	fmt.Printf("\tUser Distribute Delay with Shortfall:   %d Epochs\n", response.Megapool.UserDistributeDelayWithShortfall)
+	fmt.Printf("\tPenalty Threshold:                      %.2f%%\n", eth.WeiToEth(response.Megapool.PenaltyThreshold)*100)
 
 	return nil
 }

@@ -262,11 +262,6 @@ func getMinipoolDetails(rp *rocketpool.RocketPool, minipoolAddress common.Addres
 		details.Queue, err = minipool.GetQueueDetails(rp, mp.GetAddress(), nil)
 		return err
 	})
-	wg.Go(func() error {
-		var err error
-		details.ReduceBondTime, err = minipool.GetReduceBondTime(rp, minipoolAddress, nil)
-		return err
-	})
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {

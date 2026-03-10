@@ -8,21 +8,19 @@ import (
 	"time"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-const TimeFormat = "2006-01-02, 15:04 -0700 MST"
-
-func nodeWithdrawRpl(c *cli.Context) error {
+func nodeWithdrawRpl(amount string, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -49,7 +47,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 	fmt.Println()
 	fmt.Print("1. Request to unstake a certain RPL amount;")
 	fmt.Println()
-	fmt.Printf("2. Wait for the unstaking period to end (currently %s%s%s), and then withdraw the RPL.", colorYellow, unstakingDurationString, colorReset)
+	fmt.Printf("2. Wait for the unstaking period to end (currently %s), and then withdraw the RPL.", color.Yellow(unstakingDurationString))
 	fmt.Println()
 
 	fmt.Println()
@@ -57,7 +55,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 	fmt.Println()
 	fmt.Printf("Your node currently has %.6f RPL locked on pDAO proposals.", math.RoundDown(eth.WeiToEth(status.NodeRPLLocked), 6))
 	fmt.Println()
-	fmt.Printf("Your node's RPL withdrawal address is %s%s%s.\n", colorBlue, status.RPLWithdrawalAddress.String(), colorReset)
+	fmt.Printf("Your node's RPL withdrawal address is %s.\n", color.LightBlue(status.RPLWithdrawalAddress.String()))
 	fmt.Println()
 
 	// Check if the node has unstaking RPL and if the unstaking period passed considering the last unstake time
@@ -71,7 +69,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 	// Print unstaking RPL details
 	if !cooldownPassed && hasUnstakingRPL {
-		fmt.Printf("You have %.6f RPL currently unstaking until %s (%s from now).\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat), timeUntilUnstakingPeriodEnd.String())
+		fmt.Printf("You have %.6f RPL currently unstaking until %s (%s from now).\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(cliutils.TimeFormat), timeUntilUnstakingPeriodEnd.String())
 	} else {
 		fmt.Printf("You have %.6f RPL unstaked and ready to be withdrawn to your RPL withdrawal address.\n", eth.WeiToEth(status.UnstakingRPL))
 	}
@@ -102,13 +100,13 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		}
 
 		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, c.Bool("yes"))
+		err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, yes)
 		if err != nil {
 			return err
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6)))) {
+		if !(yes || prompt.Confirm("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -138,9 +136,9 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		}
 		// Inform users that the unstaking period will reset if they make another unstaking request
 		if !cooldownPassed && hasUnstakingRPL {
-			fmt.Printf("You have %.6f RPL currently unstaking until %s (%s from now).\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat), timeUntilUnstakingPeriodEnd.String())
-			fmt.Printf("%sRequesting to unstake additional RPL will reset the unstaking period.\n%s", colorYellow, colorReset)
-			fmt.Printf("%sThe unstaking period is %s.\n%s", colorYellow, unstakingDurationString, colorReset)
+			fmt.Printf("You have %.6f RPL currently unstaking until %s (%s from now).\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(cliutils.TimeFormat), timeUntilUnstakingPeriodEnd.String())
+			color.YellowPrintln("Requesting to unstake additional RPL will reset the unstaking period.")
+			color.YellowPrintf("The unstaking period is %s.\n", unstakingDurationString)
 
 			if !prompt.Confirm("Are you sure you would like to continue?") {
 				os.Exit(0)
@@ -205,13 +203,13 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		}
 
 		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, c.Bool("yes"))
+		err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, yes)
 		if err != nil {
 			return err
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to unstake %.6f RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+		if !(yes || prompt.Confirm("Are you sure you want to unstake %.6f RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -240,7 +238,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 			return nil
 		}
 		fmt.Println("Unstaking legacy RPL follows the same 2-step process as unstaking megapool staked RPL.")
-		fmt.Printf("Unstaked legacy RPL can be withdrawn after an unstaking period of %s%s%s.\n", colorYellow, unstakingDurationString, colorReset)
+		fmt.Printf("Unstaked legacy RPL can be withdrawn after an unstaking period of %s.\n", color.Yellow(unstakingDurationString))
 		fmt.Println()
 
 		// Get the maximum withdrawable amount based on constraints
@@ -261,7 +259,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 			fmt.Printf("You have %.6f legacy RPL and can request to unstake up to %.6f RPL.\n", math.RoundDown(eth.WeiToEth(status.RplStakeLegacy), 6), math.RoundDown(eth.WeiToEth(&maxAmount), 6))
 			// Prompt for maximum amount
-			if prompt.Confirm(fmt.Sprintf("Would you like to unstake the maximum amount of legacy RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
+			if prompt.Confirm("Would you like to unstake the maximum amount of legacy RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6)) {
 				amountWei = &maxAmount
 			} else {
 				// Prompt for custom amount
@@ -301,13 +299,13 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		}
 
 		// Assign max fees
-		err = gas.AssignMaxFeeAndLimit(canUnstakeLegacyRpl.GasInfo, rp, c.Bool("yes"))
+		err = gas.AssignMaxFeeAndLimit(canUnstakeLegacyRpl.GasInfo, rp, yes)
 		if err != nil {
 			return err
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to unstake %.6f legacy RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+		if !(yes || prompt.Confirm("Are you sure you want to unstake %.6f legacy RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -334,7 +332,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 
 	// Get withdrawal mount
 	var amountWei *big.Int
-	if c.String("amount") == "max" {
+	if amount == "max" {
 
 		// Set amount to maximum withdrawable amount
 		var maxAmount big.Int
@@ -343,12 +341,12 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		}
 		amountWei = &maxAmount
 
-	} else if c.String("amount") != "" {
+	} else if amount != "" {
 
 		// Parse amount
-		withdrawalAmount, err := strconv.ParseFloat(c.String("amount"), 64)
+		withdrawalAmount, err := strconv.ParseFloat(amount, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid withdrawal amount '%s': %w", c.String("amount"), err)
+			return fmt.Errorf("Invalid withdrawal amount '%s': %w", amount, err)
 		}
 		amountWei = eth.EthToWei(withdrawalAmount)
 
@@ -366,7 +364,7 @@ func nodeWithdrawRpl(c *cli.Context) error {
 		maxAmount.Sub(&maxAmount, status.NodeRPLLocked)
 		if maxAmount.Sign() == 1 {
 			// Prompt for maximum amount
-			if prompt.Confirm(fmt.Sprintf("Would you like to withdraw the maximum amount of staked RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6))) {
+			if prompt.Confirm("Would you like to withdraw the maximum amount of staked RPL (%.6f RPL)?", math.RoundDown(eth.WeiToEth(&maxAmount), 6)) {
 				amountWei = &maxAmount
 			} else {
 
@@ -412,13 +410,13 @@ func nodeWithdrawRpl(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canWithdraw.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6)))) {
+	if !(yes || prompt.Confirm("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

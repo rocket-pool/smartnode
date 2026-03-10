@@ -40,7 +40,7 @@ func getNodeVotingPower(s *state.NetworkState, nodeIdx int) *big.Int {
 	// Get provided ETH (32 * minipoolCount - matched)
 	ethProvided := big.NewInt(activeMinipoolCount * 32)
 	ethProvided.Mul(ethProvided, oneEth)
-	ethProvided.Sub(ethProvided, node.EthBorrowed)
+	ethProvided.Sub(ethProvided, node.MinipoolETHBorrowed)
 
 	// Add megapool provided ETH
 	if node.MegapoolDeployed {

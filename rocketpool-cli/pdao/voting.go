@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -13,9 +12,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func pdaoSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
+func pdaoSetVotingDelegate(nameOrAddress string, yes bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -45,13 +44,13 @@ func pdaoSetVotingDelegate(c *cli.Context, nameOrAddress string) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(gasEstimate.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(gasEstimate.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm(fmt.Sprintf("Are you sure you want %s to represent your node in Rocket Pool on-chain governance proposals?", addressString))) {
+	if !(yes || prompt.Confirm("Are you sure you want %s to represent your node in Rocket Pool on-chain governance proposals?", addressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

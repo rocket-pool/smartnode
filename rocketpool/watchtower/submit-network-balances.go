@@ -160,22 +160,25 @@ func (t *submitNetworkBalances) run(state *state.NetworkState) error {
 
 	// Log
 	t.log.Println("Checking for network balance checkpoint...")
-	slotNumber, targetSlotTime, targetBlockHeader, err := utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
+	slotNumber, targetSlotTime, targetBlockHeader, validTarget, err := utils.FindNextSubmissionTarget(t.rp, eth2Config, t.bc, t.ec, lastSubmissionBlock, referenceTimestamp, submissionIntervalInSeconds)
 	if err != nil {
 		return err
 	}
 	targetBlockNumber := targetBlockHeader.Number.Uint64()
-
-	if targetBlockNumber > state.ElBlockNumber || targetBlockNumber == lastSubmissionBlock {
-		if targetBlockNumber > state.ElBlockNumber {
-			// No submission needed: Target block in the future
-			t.log.Println("not enough time has passed for the next price/balances submission")
-			return nil
-		}
+	if !validTarget {
 		if targetBlockNumber == lastSubmissionBlock {
 			// No submission needed: Already submitted for this block
-			t.log.Println("balances have already been submitted for this block")
+			t.log.Println("Balances have already been submitted for this block")
 		}
+		if targetBlockNumber < lastSubmissionBlock {
+			t.log.Printlnf("Target block %d is behind last submission block %d", targetBlockNumber, lastSubmissionBlock)
+		}
+		return nil
+	}
+
+	if targetBlockNumber > state.ElBlockNumber {
+		// No submission needed: Target block in the future
+		t.log.Println("Not enough time has passed for the next balances submission")
 		return nil
 	}
 
@@ -533,11 +536,11 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 				// Convert the validator index to a uint64
 				validatorIndex, err := strconv.ParseUint(megapoolValidatorDetails.Index, 10, 64)
 				if err != nil {
-					fmt.Printf("An error occurred while converting the validator index to a uint64: %s\n", err)
+					return megapoolBalanceDetails, fmt.Errorf("error converting validator index %s to uint64: %w", megapoolValidatorDetails.Index, err)
 				}
 				_, _, _, withdrawal, _, err := services.FindWithdrawalBlockAndArrayPosition(searchWithdrawSlot, validatorIndex, t.bc)
 				if err != nil {
-					fmt.Printf("An error occurred while searching for the withdrawn balance: %s\n", err)
+					return megapoolBalanceDetails, fmt.Errorf("error finding withdrawal for validator %d: %w", validatorIndex, err)
 				}
 				// Track the withdrawn balance so we can discount it from the pending rewards on the contract
 				totalWithdrawnBalance.Add(totalWithdrawnBalance, eth.GweiToWei(float64(withdrawal.Amount)))
