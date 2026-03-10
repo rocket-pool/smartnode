@@ -10,7 +10,7 @@ import (
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -18,7 +18,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeWithdrawRpl(c *cli.Context) (*api.CanNodeWithdrawRplResponse, error) {
+func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -129,7 +129,7 @@ func canNodeWithdrawRpl(c *cli.Context) (*api.CanNodeWithdrawRplResponse, error)
 
 }
 
-func nodeWithdrawRpl(c *cli.Context) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawRpl(c *cli.Command) (*api.NodeWithdrawRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -172,7 +172,7 @@ func nodeWithdrawRpl(c *cli.Context) (*api.NodeWithdrawRplResponse, error) {
 }
 
 // Used if saturn is not deployed (v1.3.1)
-func canNodeWithdrawRplv1_3_1(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdrawRplv1_3_1Response, error) {
+func canNodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdrawRplv1_3_1Response, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -310,7 +310,7 @@ func canNodeWithdrawRplv1_3_1(c *cli.Context, amountWei *big.Int) (*api.CanNodeW
 }
 
 // Used if saturn is not deployed (v1.3.1)
-func nodeWithdrawRplv1_3_1(c *cli.Context, amountWei *big.Int) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int) (*api.NodeWithdrawRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

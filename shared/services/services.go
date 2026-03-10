@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpSettings "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -64,11 +64,11 @@ var (
 // Service providers
 //
 
-func GetConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
+func GetConfig(c *cli.Command) (*config.RocketPoolConfig, error) {
 	return getConfig(c)
 }
 
-func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
+func GetPasswordManager(c *cli.Command) (*passwords.PasswordManager, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func GetPasswordManager(c *cli.Context) (*passwords.PasswordManager, error) {
 	return getPasswordManager(cfg), nil
 }
 
-func GetWallet(c *cli.Context) (wallet.Wallet, error) {
+func GetWallet(c *cli.Command) (wallet.Wallet, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -86,7 +86,7 @@ func GetWallet(c *cli.Context) (wallet.Wallet, error) {
 	return getWallet(c, cfg, pm, am, false)
 }
 
-func GetHdWallet(c *cli.Context) (wallet.Wallet, error) {
+func GetHdWallet(c *cli.Command) (wallet.Wallet, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func GetHdWallet(c *cli.Context) (wallet.Wallet, error) {
 	return getWallet(c, cfg, pm, am, true)
 }
 
-func GetEthClient(c *cli.Context) (*ExecutionClientManager, error) {
+func GetEthClient(c *cli.Command) (*ExecutionClientManager, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -116,13 +116,13 @@ func dialProtectedEthClient(url string) (*ethClient, error) {
 	return &ethClient{ec}, nil
 }
 
-func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
+func GetRocketPool(c *cli.Command) (*rocketpool.RocketPool, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
 	}
 	var ec rocketpool.ExecutionClient
-	if c.GlobalBool("use-protected-api") {
+	if c.Root().Bool("use-protected-api") {
 		url := cfg.Smartnode.GetFlashbotsProtectUrl()
 		ec, err = dialProtectedEthClient(url)
 	} else {
@@ -135,7 +135,7 @@ func GetRocketPool(c *cli.Context) (*rocketpool.RocketPool, error) {
 	return getRocketPool(cfg, ec)
 }
 
-func GetRocketSignerRegistry(c *cli.Context) (*contracts.RocketSignerRegistry, error) {
+func GetRocketSignerRegistry(c *cli.Command) (*contracts.RocketSignerRegistry, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -147,7 +147,7 @@ func GetRocketSignerRegistry(c *cli.Context) (*contracts.RocketSignerRegistry, e
 	return getRocketSignerRegistry(cfg, ec)
 }
 
-func GetBeaconClient(c *cli.Context) (*BeaconClientManager, error) {
+func GetBeaconClient(c *cli.Command) (*BeaconClientManager, error) {
 	cfg, err := getConfig(c)
 	if err != nil {
 		return nil, err
@@ -155,7 +155,7 @@ func GetBeaconClient(c *cli.Context) (*BeaconClientManager, error) {
 	return getBeaconClient(c, cfg)
 }
 
-func GetDocker(c *cli.Context) (*client.Client, error) {
+func GetDocker(c *cli.Command) (*client.Client, error) {
 	var err error
 	initDocker.Do(func() {
 		docker, err = client.NewClientWithOpts(client.WithVersion(dockerAPIVersion))
@@ -200,12 +200,12 @@ func GetBeaconState(bc beacon.Client) (eth2.BeaconState, error) {
 // Service instance getters
 //
 
-func getConfig(c *cli.Context) (*config.RocketPoolConfig, error) {
+func getConfig(c *cli.Command) (*config.RocketPoolConfig, error) {
 	var err error
 	initCfg.Do(func() {
-		settingsFile := c.GlobalString("settings")
+		settingsFile := c.Root().String("settings")
 		if settingsFile == "" {
-			configDir := c.GlobalString("config-path")
+			configDir := c.Root().String("config-path")
 			if configDir != "" {
 				settingsFile = filepath.Join(configDir, rpSettings.SettingsFile)
 			}
@@ -233,11 +233,11 @@ func getAddressManager(cfg *config.RocketPoolConfig) *wallet.AddressManager {
 	return addressManager
 }
 
-func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager, am *wallet.AddressManager, ignoreMasquerade bool) (wallet.Wallet, error) {
+func getWallet(c *cli.Command, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager, am *wallet.AddressManager, ignoreMasquerade bool) (wallet.Wallet, error) {
 	var err error
 	initNodeWallet.Do(func() {
 		var maxFee *big.Int
-		maxFeeFloat := c.GlobalFloat64("maxFee")
+		maxFeeFloat := c.Root().Float64("maxFee")
 		if maxFeeFloat == 0 {
 			maxFeeFloat = cfg.Smartnode.ManualMaxFee.Value.(float64)
 		}
@@ -246,7 +246,7 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 		}
 
 		var maxPriorityFee *big.Int
-		maxPriorityFeeFloat := c.GlobalFloat64("maxPrioFee")
+		maxPriorityFeeFloat := c.Root().Float64("maxPrioFee")
 		if maxPriorityFeeFloat == 0 {
 			maxPriorityFeeFloat = cfg.Smartnode.PriorityFee.Value.(float64)
 		}
@@ -280,17 +280,17 @@ func getWallet(c *cli.Context, cfg *config.RocketPoolConfig, pm *passwords.Passw
 	return nodeWallet, err
 }
 
-func getEthClient(c *cli.Context, cfg *config.RocketPoolConfig) (*ExecutionClientManager, error) {
+func getEthClient(c *cli.Command, cfg *config.RocketPoolConfig) (*ExecutionClientManager, error) {
 	var err error
 	initECManager.Do(func() {
 		// Create a new client manager
 		ecManager, err = NewExecutionClientManager(cfg)
 		if err == nil {
 			// Check if the manager should ignore sync checks and/or default to using the fallback (used by the API container when driven by the CLI)
-			if c.GlobalBool("ignore-sync-check") {
+			if c.Root().Bool("ignore-sync-check") {
 				ecManager.ignoreSyncCheck = true
 			}
-			if c.GlobalBool("force-fallbacks") {
+			if c.Root().Bool("force-fallbacks") {
 				ecManager.primaryReady = false
 			}
 		}
@@ -317,17 +317,17 @@ func getRocketSignerRegistry(cfg *config.RocketPoolConfig, client rocketpool.Exe
 	return rocketSignerRegistry, err
 }
 
-func getBeaconClient(c *cli.Context, cfg *config.RocketPoolConfig) (*BeaconClientManager, error) {
+func getBeaconClient(c *cli.Command, cfg *config.RocketPoolConfig) (*BeaconClientManager, error) {
 	var err error
 	initBCManager.Do(func() {
 		// Create a new client manager
 		bcManager, err = NewBeaconClientManager(cfg)
 		if err == nil {
 			// Check if the manager should ignore sync checks and/or default to using the fallback (used by the API container when driven by the CLI)
-			if c.GlobalBool("ignore-sync-check") {
+			if c.Root().Bool("ignore-sync-check") {
 				bcManager.ignoreSyncCheck = true
 			}
-			if c.GlobalBool("force-fallbacks") {
+			if c.Root().Bool("force-fallbacks") {
 				bcManager.primaryReady = false
 			}
 		}

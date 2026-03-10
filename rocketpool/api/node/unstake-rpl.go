@@ -6,7 +6,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/node"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeUnstakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeUnstakeRplResponse, error) {
+func canNodeUnstakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUnstakeRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -104,7 +104,7 @@ func canNodeUnstakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeUnstakeR
 
 }
 
-func nodeUnstakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeUnstakeRplResponse, error) {
+func nodeUnstakeRpl(c *cli.Command, amountWei *big.Int) (*api.NodeUnstakeRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

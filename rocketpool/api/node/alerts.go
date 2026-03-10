@@ -1,14 +1,14 @@
 package node
 
 import (
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getAlerts(c *cli.Context) (*api.NodeAlertsResponse, error) {
+func getAlerts(c *cli.Command) (*api.NodeAlertsResponse, error) {
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err

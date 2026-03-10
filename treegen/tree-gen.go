@@ -27,7 +27,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 const (
@@ -104,7 +104,7 @@ type treeGenerator struct {
 }
 
 // Generates a new rewards tree based on the command line flags
-func GenerateTree(c *cli.Context) error {
+func GenerateTree(c *cli.Command) error {
 	// Configure
 	configureHTTP()
 

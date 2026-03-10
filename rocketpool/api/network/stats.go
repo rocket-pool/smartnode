@@ -12,14 +12,14 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStats(c *cli.Context) (*api.NetworkStatsResponse, error) {
+func getStats(c *cli.Command) (*api.NetworkStatsResponse, error) {
 
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {

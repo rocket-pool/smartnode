@@ -6,11 +6,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
-func canExitValidator(c *cli.Context, validatorId uint32) (*api.CanExitValidatorResponse, error) {
+func canExitValidator(c *cli.Command, validatorId uint32) (*api.CanExitValidatorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -62,7 +62,7 @@ func canExitValidator(c *cli.Context, validatorId uint32) (*api.CanExitValidator
 
 }
 
-func exitValidator(c *cli.Context, validatorId uint32) (*api.ExitValidatorResponse, error) {
+func exitValidator(c *cli.Command, validatorId uint32) (*api.ExitValidatorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

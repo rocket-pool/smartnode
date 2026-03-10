@@ -8,7 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -17,7 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
-func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanStakeMinipoolResponse, error) {
+func canStakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanStakeMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -149,7 +149,7 @@ func canStakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanS
 
 }
 
-func stakeMinipool(c *cli.Context, minipoolAddress common.Address) (*api.StakeMinipoolResponse, error) {
+func stakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.StakeMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

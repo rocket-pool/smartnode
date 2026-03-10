@@ -3,11 +3,11 @@ package network
 import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 // Get the latest delegate contract address
-func getLatestDelegate(c *cli.Context) (*api.GetLatestDelegateResponse, error) {
+func getLatestDelegate(c *cli.Command) (*api.GetLatestDelegateResponse, error) {
 
 	// Get services
 	rp, err := services.GetRocketPool(c)

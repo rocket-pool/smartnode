@@ -2,13 +2,13 @@ package security
 
 import (
 	"github.com/rocket-pool/smartnode/bindings/dao"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getProposals(c *cli.Context) (*api.SecurityProposalsResponse, error) {
+func getProposals(c *cli.Command) (*api.SecurityProposalsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -48,7 +48,7 @@ func getProposals(c *cli.Context) (*api.SecurityProposalsResponse, error) {
 
 }
 
-func getProposal(c *cli.Context, id uint64) (*api.SecurityProposalResponse, error) {
+func getProposal(c *cli.Command, id uint64) (*api.SecurityProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

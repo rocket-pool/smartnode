@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
@@ -25,7 +25,7 @@ import (
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
-func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
+func getRewardsInfo(c *cli.Command) (*api.NodeGetRewardsInfoResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -192,7 +192,7 @@ func getRewardsInfo(c *cli.Context) (*api.NodeGetRewardsInfoResponse, error) {
 	return &response, nil
 }
 
-func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRewardsResponse, error) {
+func canClaimRewards(c *cli.Command, indicesString string) (*api.CanNodeClaimRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -240,7 +240,7 @@ func canClaimRewards(c *cli.Context, indicesString string) (*api.CanNodeClaimRew
 	return &response, nil
 }
 
-func claimRewards(c *cli.Context, indicesString string) (*api.NodeClaimRewardsResponse, error) {
+func claimRewards(c *cli.Command, indicesString string) (*api.NodeClaimRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -296,7 +296,7 @@ func claimRewards(c *cli.Context, indicesString string) (*api.NodeClaimRewardsRe
 
 }
 
-func canClaimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big.Int) (*api.CanNodeClaimAndStakeRewardsResponse, error) {
+func canClaimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *big.Int) (*api.CanNodeClaimAndStakeRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -345,7 +345,7 @@ func canClaimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *
 
 }
 
-func claimAndStakeRewards(c *cli.Context, indicesString string, stakeAmount *big.Int) (*api.NodeClaimAndStakeRewardsResponse, error) {
+func claimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *big.Int) (*api.NodeClaimAndStakeRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

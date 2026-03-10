@@ -4,7 +4,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
-func canExitMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanExitMinipoolResponse, error) {
+func canExitMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanExitMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -58,7 +58,7 @@ func canExitMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanEx
 
 }
 
-func exitMinipool(c *cli.Context, minipoolAddress common.Address) (*api.ExitMinipoolResponse, error) {
+func exitMinipool(c *cli.Command, minipoolAddress common.Address) (*api.ExitMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

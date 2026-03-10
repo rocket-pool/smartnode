@@ -10,14 +10,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeSend(c *cli.Context, amountRaw float64, token string, to common.Address) (*api.CanNodeSendResponse, error) {
+func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Address) (*api.CanNodeSendResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -203,7 +203,7 @@ func canNodeSend(c *cli.Context, amountRaw float64, token string, to common.Addr
 
 }
 
-func nodeSend(c *cli.Context, amountRaw float64, token string, to common.Address) (*api.NodeSendResponse, error) {
+func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address) (*api.NodeSendResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -317,7 +317,7 @@ func nodeSend(c *cli.Context, amountRaw float64, token string, to common.Address
 // the recipient, using the exact *big.Int balance to avoid float64 rounding
 // errors that would cause "transfer amount exceeds balance" failures.
 // ETH is not supported here; use nodeSend with a pre-computed amount instead.
-func nodeSendAllTokens(c *cli.Context, token string, to common.Address) (*api.NodeSendResponse, error) {
+func nodeSendAllTokens(c *cli.Command, token string, to common.Address) (*api.NodeSendResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

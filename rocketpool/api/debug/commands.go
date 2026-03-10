@@ -1,27 +1,28 @@
 package debug
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
-	command.Subcommands = append(command.Subcommands, cli.Command{
+	command.Commands = append(command.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Debugging and troubleshooting commands",
-		Subcommands: []cli.Command{
+		Commands: []*cli.Command{
 
 			{
 				Name:      "export-validators",
 				Aliases:   []string{"x"},
 				Usage:     "Exports a TSV file of validators",
 				UsageText: "rocketpool api debug export-validators",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -41,7 +42,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"b"},
 				Usage:     "Returns the beacon state for a given slot number",
 				UsageText: "rocketpool api debug get-beacon-state slot-number validator-index",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -70,7 +71,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"w"},
 				Usage:     "Returns a withdrawal proof for a given validator index and given slot, for the withdrawal most recent to that slot",
 				UsageText: "rocketpool api debug get-withdrawal-proof slot-number validator-index",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {

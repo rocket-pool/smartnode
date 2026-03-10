@@ -9,10 +9,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canDissolveWithProof(c *cli.Context, validatorId uint32) (*api.CanDissolveWithProofResponse, error) {
+func canDissolveWithProof(c *cli.Command, validatorId uint32) (*api.CanDissolveWithProofResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -110,7 +110,7 @@ func canDissolveWithProof(c *cli.Context, validatorId uint32) (*api.CanDissolveW
 
 }
 
-func dissolveWithProof(c *cli.Context, validatorId uint32) (*api.DissolveWithProofResponse, error) {
+func dissolveWithProof(c *cli.Command, validatorId uint32) (*api.DissolveWithProofResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

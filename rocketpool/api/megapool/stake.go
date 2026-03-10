@@ -6,14 +6,14 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error) {
+func canStake(c *cli.Command, validatorId uint64) (*api.CanStakeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -115,7 +115,7 @@ func canStake(c *cli.Context, validatorId uint64) (*api.CanStakeResponse, error)
 
 }
 
-func stake(c *cli.Context, validatorId uint64) (*api.StakeResponse, error) {
+func stake(c *cli.Command, validatorId uint64) (*api.StakeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

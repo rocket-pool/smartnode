@@ -5,14 +5,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/storage"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canSetPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodePrimaryWithdrawalAddressResponse, error) {
+func canSetPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -54,7 +54,7 @@ func canSetPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddress common.Add
 	return &response, nil
 }
 
-func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.SetNodePrimaryWithdrawalAddressResponse, error) {
+func setPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool) (*api.SetNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -112,7 +112,7 @@ func setPrimaryWithdrawalAddress(c *cli.Context, withdrawalAddress common.Addres
 
 }
 
-func canConfirmPrimaryWithdrawalAddress(c *cli.Context) (*api.CanConfirmNodePrimaryWithdrawalAddressResponse, error) {
+func canConfirmPrimaryWithdrawalAddress(c *cli.Command) (*api.CanConfirmNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -160,7 +160,7 @@ func canConfirmPrimaryWithdrawalAddress(c *cli.Context) (*api.CanConfirmNodePrim
 	return &response, nil
 }
 
-func confirmPrimaryWithdrawalAddress(c *cli.Context) (*api.ConfirmNodePrimaryWithdrawalAddressResponse, error) {
+func confirmPrimaryWithdrawalAddress(c *cli.Command) (*api.ConfirmNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

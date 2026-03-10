@@ -9,7 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -25,7 +25,7 @@ import (
 
 // Stake megapool validator task
 type stakeMegapoolValidator struct {
-	c              *cli.Context
+	c              *cli.Command
 	log            log.ColorLogger
 	cfg            *config.RocketPoolConfig
 	w              wallet.Wallet
@@ -39,7 +39,7 @@ type stakeMegapoolValidator struct {
 }
 
 // Create stake megapool validator task
-func newStakeMegapoolValidator(c *cli.Context, logger log.ColorLogger) (*stakeMegapoolValidator, error) {
+func newStakeMegapoolValidator(c *cli.Command, logger log.ColorLogger) (*stakeMegapoolValidator, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

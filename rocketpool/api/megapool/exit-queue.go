@@ -7,10 +7,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canExitQueue(c *cli.Context, validatorIndex uint32) (*api.CanExitQueueResponse, error) {
+func canExitQueue(c *cli.Command, validatorIndex uint32) (*api.CanExitQueueResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -76,7 +76,7 @@ func canExitQueue(c *cli.Context, validatorIndex uint32) (*api.CanExitQueueRespo
 
 }
 
-func exitQueue(c *cli.Context, validatorIndex uint32) (*api.ExitQueueResponse, error) {
+func exitQueue(c *cli.Command, validatorIndex uint32) (*api.ExitQueueResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

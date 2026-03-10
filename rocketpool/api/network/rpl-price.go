@@ -4,14 +4,14 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/network"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getRplPrice(c *cli.Context) (*api.RplPriceResponse, error) {
+func getRplPrice(c *cli.Command) (*api.RplPriceResponse, error) {
 
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {

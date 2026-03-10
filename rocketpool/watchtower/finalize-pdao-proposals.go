@@ -7,7 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -20,7 +20,7 @@ import (
 
 // Finalize PDAO proposals task
 type finalizePdaoProposals struct {
-	c   *cli.Context
+	c   *cli.Command
 	log log.ColorLogger
 	cfg *config.RocketPoolConfig
 	w   wallet.Wallet
@@ -29,7 +29,7 @@ type finalizePdaoProposals struct {
 }
 
 // Create finalize PDAO proposals task
-func newFinalizePdaoProposals(c *cli.Context, logger log.ColorLogger) (*finalizePdaoProposals, error) {
+func newFinalizePdaoProposals(c *cli.Command, logger log.ColorLogger) (*finalizePdaoProposals, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

@@ -9,14 +9,14 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplResponse, error) {
+func canNodeStakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeStakeRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -64,7 +64,7 @@ func canNodeStakeRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeStakeRplRe
 
 }
 
-func getStakeApprovalGas(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveGasResponse, error) {
+func getStakeApprovalGas(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplApproveGasResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func getStakeApprovalGas(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplA
 	return &response, nil
 }
 
-func allowanceRpl(c *cli.Context) (*api.NodeStakeRplAllowanceResponse, error) {
+func allowanceRpl(c *cli.Command) (*api.NodeStakeRplAllowanceResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -144,7 +144,7 @@ func allowanceRpl(c *cli.Context) (*api.NodeStakeRplAllowanceResponse, error) {
 	return &response, nil
 }
 
-func approveRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveResponse, error) {
+func approveRpl(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplApproveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -189,7 +189,7 @@ func approveRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplApproveRes
 
 }
 
-func waitForApprovalAndStakeRpl(c *cli.Context, amountWei *big.Int, hash common.Hash) (*api.NodeStakeRplStakeResponse, error) {
+func waitForApprovalAndStakeRpl(c *cli.Command, amountWei *big.Int, hash common.Hash) (*api.NodeStakeRplStakeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -211,7 +211,7 @@ func waitForApprovalAndStakeRpl(c *cli.Context, amountWei *big.Int, hash common.
 
 }
 
-func stakeRpl(c *cli.Context, amountWei *big.Int) (*api.NodeStakeRplStakeResponse, error) {
+func stakeRpl(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplStakeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

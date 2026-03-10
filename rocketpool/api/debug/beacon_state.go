@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -19,7 +19,7 @@ const MAX_WITHDRAWAL_SLOT_DISTANCE = 432000 // 60 days.
 const capellaSlotMainnet uint64 = 6209536
 const capellaSlotHoodi uint64 = 0
 
-func getBeaconStateForSlot(c *cli.Context, slot uint64, validatorIndex uint64) error {
+func getBeaconStateForSlot(c *cli.Command, slot uint64, validatorIndex uint64) error {
 	// Create a new response
 	response := api.BeaconStateResponse{}
 
@@ -64,7 +64,7 @@ func getBeaconStateForSlot(c *cli.Context, slot uint64, validatorIndex uint64) e
 	return nil
 }
 
-func getWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint64) error {
+func getWithdrawalProofForSlot(c *cli.Command, slot uint64, validatorIndex uint64) error {
 	// Create a new response
 	response := api.WithdrawalProofResponse{}
 	response.ValidatorIndex = validatorIndex

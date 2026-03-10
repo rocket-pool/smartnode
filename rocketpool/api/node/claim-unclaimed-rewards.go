@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canClaimUnclaimedRewards(c *cli.Context, nodeAddress common.Address) (*api.CanClaimUnclaimedRewardsResponse, error) {
+func canClaimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.CanClaimUnclaimedRewardsResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func canClaimUnclaimedRewards(c *cli.Context, nodeAddress common.Address) (*api.
 
 }
 
-func claimUnclaimedRewards(c *cli.Context, nodeAddress common.Address) (*api.ClaimUnclaimedRewardsResponse, error) {
+func claimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.ClaimUnclaimedRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

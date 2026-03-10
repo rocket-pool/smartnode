@@ -5,7 +5,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canRegisterNode(c *cli.Context, timezoneLocation string) (*api.CanRegisterNodeResponse, error) {
+func canRegisterNode(c *cli.Command, timezoneLocation string) (*api.CanRegisterNodeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -84,7 +84,7 @@ func canRegisterNode(c *cli.Context, timezoneLocation string) (*api.CanRegisterN
 
 }
 
-func registerNode(c *cli.Context, timezoneLocation string) (*api.RegisterNodeResponse, error) {
+func registerNode(c *cli.Command, timezoneLocation string) (*api.RegisterNodeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

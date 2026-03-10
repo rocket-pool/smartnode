@@ -12,10 +12,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func getSmoothingPoolRegistrationStatus(c *cli.Context) (*api.GetSmoothingPoolRegistrationStatusResponse, error) {
+func getSmoothingPoolRegistrationStatus(c *cli.Command) (*api.GetSmoothingPoolRegistrationStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -77,7 +77,7 @@ func getSmoothingPoolRegistrationStatus(c *cli.Context) (*api.GetSmoothingPoolRe
 
 }
 
-func canSetSmoothingPoolStatus(c *cli.Context, status bool) (*api.CanSetSmoothingPoolRegistrationStatusResponse, error) {
+func canSetSmoothingPoolStatus(c *cli.Command, status bool) (*api.CanSetSmoothingPoolRegistrationStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -112,7 +112,7 @@ func canSetSmoothingPoolStatus(c *cli.Context, status bool) (*api.CanSetSmoothin
 
 }
 
-func setSmoothingPoolStatus(c *cli.Context, status bool) (*api.SetSmoothingPoolRegistrationStatusResponse, error) {
+func setSmoothingPoolStatus(c *cli.Command, status bool) (*api.SetSmoothingPoolRegistrationStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

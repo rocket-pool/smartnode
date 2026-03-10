@@ -15,12 +15,12 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 // Dissolve timed out minipools task
 type dissolveInvalidCredentials struct {
-	c   *cli.Context
+	c   *cli.Command
 	log log.ColorLogger
 	cfg *config.RocketPoolConfig
 	w   wallet.Wallet
@@ -32,7 +32,7 @@ type dissolveInvalidCredentials struct {
 const FarFutureEpoch uint64 = 0xffffffffffffffff
 
 // Create dissolve timed out megapool validators task
-func newDissolveInvalidCredentials(c *cli.Context, logger log.ColorLogger) (*dissolveInvalidCredentials, error) {
+func newDissolveInvalidCredentials(c *cli.Command, logger log.ColorLogger) (*dissolveInvalidCredentials, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

@@ -5,14 +5,14 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canClaimRefund(c *cli.Context) (*api.CanClaimRefundResponse, error) {
+func canClaimRefund(c *cli.Command) (*api.CanClaimRefundResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -83,7 +83,7 @@ func canClaimRefund(c *cli.Context) (*api.CanClaimRefundResponse, error) {
 
 }
 
-func claimRefund(c *cli.Context) (*api.ClaimRefundResponse, error) {
+func claimRefund(c *cli.Command) (*api.ClaimRefundResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

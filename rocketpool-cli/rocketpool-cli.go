@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"os"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool-cli/auction"
 	"github.com/rocket-pool/smartnode/rocketpool-cli/claims"
@@ -33,64 +34,66 @@ const (
 // Run
 func main() {
 
-	// Add logo to application help template
-	cli.AppHelpTemplate = fmt.Sprintf(`
-%s
-
-Authored by the Rocket Pool Core Team
-A special thanks to the Rocket Pool community for all their contributions.
-
-%s`, shared.Logo(), cli.AppHelpTemplate)
-
-	// Initialise application
-	app := cli.NewApp()
-
-	// Set application info
-	app.Name = "rocketpool"
-	app.Usage = "Rocket Pool CLI"
-	app.Version = shared.RocketPoolVersion()
-	app.Copyright = "(c) 2026 Rocket Pool Pty Ltd"
+	app := &cli.Command{
+		Name:                  "rocketpool",
+		Usage:                 "Rocket Pool CLI",
+		Version:               shared.RocketPoolVersion(),
+		EnableShellCompletion: true,
+		Copyright:             "(c) 2026 Rocket Pool Pty Ltd",
+		CustomRootCommandHelpTemplate: fmt.Sprintf(`%s
+		Authored by the Rocket Pool Core Team
+		A special thanks to the Rocket Pool community for all their contributions.
+		%s`, shared.Logo(), cli.RootCommandHelpTemplate),
+	}
 
 	// Initialize app metadata
 	app.Metadata = make(map[string]interface{})
 
 	// Set application flags
 	app.Flags = []cli.Flag{
-		cli.BoolFlag{
-			Name:  "allow-root, r",
-			Usage: "Allow rocketpool to be run as the root user",
+		&cli.BoolFlag{
+			Name:    "allow-root",
+			Aliases: []string{"r"},
+			Usage:   "Allow rocketpool to be run as the root user",
 		},
-		cli.StringFlag{
-			Name:  "config-path, c",
-			Usage: "Rocket Pool config asset `path`",
-			Value: "~/.rocketpool",
+		&cli.StringFlag{
+			Name:    "config-path",
+			Aliases: []string{"c"},
+			Usage:   "Rocket Pool config asset `path`",
+			Value:   "~/.rocketpool",
 		},
-		cli.StringFlag{
-			Name:  "daemon-path, d",
-			Usage: "Interact with a Rocket Pool service daemon at a `path` on the host OS, running outside of docker",
+		&cli.StringFlag{
+			Name:    "daemon-path",
+			Aliases: []string{"d"},
+			Usage:   "Interact with a Rocket Pool service daemon at a `path` on the host OS, running outside of docker",
 		},
-		cli.Float64Flag{
-			Name:  "maxFee, f",
-			Usage: "The max fee (including the priority fee) you want a transaction to cost, in gwei",
+		&cli.Float64Flag{
+			Name:    "maxFee",
+			Aliases: []string{"f"},
+			Usage:   "The max fee (including the priority fee) you want a transaction to cost, in gwei",
 		},
-		cli.Float64Flag{
-			Name:  "maxPrioFee, i",
-			Usage: "The max priority fee you want a transaction to use, in gwei",
+		&cli.Float64Flag{
+			Name:    "maxPrioFee",
+			Aliases: []string{"i"},
+			Usage:   "The max priority fee you want a transaction to use, in gwei",
 		},
-		cli.Uint64Flag{
-			Name:  "gasLimit, l",
-			Usage: "[DEPRECATED] Desired gas limit",
+		&cli.Uint64Flag{
+			Name:    "gasLimit",
+			Aliases: []string{"l"},
+			Usage:   "[DEPRECATED] Desired gas limit",
 		},
-		cli.StringFlag{
-			Name:  "nonce",
-			Usage: "Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction",
+		&cli.StringFlag{
+			Name:    "nonce",
+			Aliases: []string{"n"},
+			Usage:   "Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  "debug",
 			Usage: "Enable debug printing of API commands",
 		},
-		cli.BoolFlag{
-			Name: "secure-session, s",
+		&cli.BoolFlag{
+			Name:    "secure-session",
+			Aliases: []string{"s"},
 			Usage: "Some commands may print sensitive information to your terminal. " +
 				"Use this flag when nobody can see your screen to allow sensitive data to be printed without prompting",
 		},
@@ -111,24 +114,27 @@ A special thanks to the Rocket Pool community for all their contributions.
 	wallet.RegisterCommands(app, "wallet", []string{"w"})
 
 	// Add a command that updates the smart node cli.
-	app.Commands = append(app.Commands, cli.Command{
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:  "update",
 		Usage: "Update the cli binary",
 		Flags: []cli.Flag{
-			cli.BoolFlag{
-				Name:  "yes, y",
-				Usage: "Automatically confirm the update",
+			&cli.BoolFlag{
+				Name:    "yes",
+				Aliases: []string{"y"},
+				Usage:   "Automatically confirm the update",
 			},
-			cli.BoolFlag{
-				Name:  "force, f",
-				Usage: "Force the update even if the current version is the latest",
+			&cli.BoolFlag{
+				Name:    "force",
+				Aliases: []string{"f"},
+				Usage:   "Force the update even if the current version is the latest",
 			},
-			cli.BoolFlag{
-				Name:  "skip-signature-verification, s",
-				Usage: "Don't verify the singature of the release",
+			&cli.BoolFlag{
+				Name:    "skip-signature-verification",
+				Aliases: []string{"s"},
+				Usage:   "Don't verify the singature of the release",
 			},
 		},
-		Action: func(c *cli.Context) error {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			return update.Update(
 				c.Bool("yes"),
 				c.Bool("skip-signature-verification"),
@@ -137,25 +143,25 @@ A special thanks to the Rocket Pool community for all their contributions.
 		},
 	})
 
-	app.Before = func(c *cli.Context) error {
+	app.Before = func(ctx context.Context, c *cli.Command) (context.Context, error) {
 		// Check user ID
-		if os.Getuid() == 0 && !c.GlobalBool("allow-root") {
+		if os.Getuid() == 0 && !c.Root().Bool("allow-root") {
 			fmt.Fprintln(os.Stderr, "rocketpool should not be run as root. Please try again without 'sudo'.")
 			fmt.Fprintln(os.Stderr, "If you want to run rocketpool as root anyway, use the '--allow-root' option to override this warning.")
 			os.Exit(1)
 		}
 
 		Defaults := rocketpool.Globals{
-			ConfigPath: os.ExpandEnv(c.GlobalString("config-path")),
-			DaemonPath: os.ExpandEnv(c.GlobalString("daemon-path")),
-			MaxFee:     c.GlobalFloat64("maxFee"),
-			MaxPrioFee: c.GlobalFloat64("maxPrioFee"),
-			GasLimit:   c.GlobalUint64("gasLimit"),
-			DebugPrint: c.GlobalBool("debug"),
+			ConfigPath: os.ExpandEnv(c.Root().String("config-path")),
+			DaemonPath: os.ExpandEnv(c.Root().String("daemon-path")),
+			MaxFee:     c.Root().Float64("maxFee"),
+			MaxPrioFee: c.Root().Float64("maxPrioFee"),
+			GasLimit:   c.Root().Uint64("gasLimit"),
+			DebugPrint: c.Root().Bool("debug"),
 		}
 
 		// If set, validate custom nonce
-		customNonce := c.GlobalString("nonce")
+		customNonce := c.Root().String("nonce")
 		if customNonce != "" {
 			nonce, ok := big.NewInt(0).SetString(customNonce, 0)
 			if !ok {
@@ -168,10 +174,10 @@ A special thanks to the Rocket Pool community for all their contributions.
 
 		rocketpool.SetDefaults(Defaults)
 
-		return nil
+		return ctx, nil
 	}
 
-	app.After = func(c *cli.Context) error {
+	app.After = func(ctx context.Context, c *cli.Command) error {
 		// Skip alert display when no subcommand was actually invoked (e.g. --help, --version).
 		if !c.Args().Present() {
 			return nil
@@ -213,7 +219,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 
 	// Run application
 	fmt.Println("")
-	if err := app.Run(os.Args); err != nil {
+	if err := app.Run(context.Background(), os.Args); err != nil {
 		cliutils.PrettyPrintError(err)
 	}
 

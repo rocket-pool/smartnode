@@ -3,13 +3,13 @@ package minipool
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStatus(c *cli.Context) (*api.MinipoolStatusResponse, error) {
+func getStatus(c *cli.Command) (*api.MinipoolStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

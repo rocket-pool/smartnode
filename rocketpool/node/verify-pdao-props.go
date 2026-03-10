@@ -20,7 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 type challenge struct {
@@ -36,7 +36,7 @@ type defeat struct {
 }
 
 type verifyPdaoProps struct {
-	c                   *cli.Context
+	c                   *cli.Command
 	log                 *log.ColorLogger
 	cfg                 *config.RocketPoolConfig
 	w                   wallet.Wallet
@@ -56,7 +56,7 @@ type verifyPdaoProps struct {
 	intervalSize *big.Int
 }
 
-func newVerifyPdaoProps(c *cli.Context, logger log.ColorLogger) (*verifyPdaoProps, error) {
+func newVerifyPdaoProps(c *cli.Command, logger log.ColorLogger) (*verifyPdaoProps, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {

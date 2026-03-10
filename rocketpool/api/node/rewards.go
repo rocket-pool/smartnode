@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -25,7 +25,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 )
 
-func getRewards(c *cli.Context) (*api.NodeRewardsResponse, error) {
+func getRewards(c *cli.Command) (*api.NodeRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

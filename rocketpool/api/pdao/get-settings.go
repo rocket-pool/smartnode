@@ -4,14 +4,14 @@ import (
 	"time"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getSettings(c *cli.Context) (*api.GetPDAOSettingsResponse, error) {
+func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 	// Get services
 	rp, err := services.GetRocketPool(c)

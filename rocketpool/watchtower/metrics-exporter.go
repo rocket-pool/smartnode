@@ -11,10 +11,10 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func runMetricsServer(c *cli.Context, logger log.ColorLogger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector) error {
+func runMetricsServer(c *cli.Command, logger log.ColorLogger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector) error {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -39,8 +39,8 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, scrubCollector *co
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
 
 	// Start the HTTP server
-	metricsAddress := c.GlobalString("metricsAddress")
-	metricsPort := c.GlobalUint("metricsPort")
+	metricsAddress := c.Root().String("metricsAddress")
+	metricsPort := c.Root().Uint("metricsPort")
 	if metricsPort == 0 {
 		metricsPort = uint(cfg.WatchtowerMetricsPort.Value.(uint16))
 	}

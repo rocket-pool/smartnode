@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -26,7 +26,7 @@ const MinipoolStatusBatchSize = 20
 
 // Dissolve timed out minipools task
 type dissolveTimedOutMinipools struct {
-	c   *cli.Context
+	c   *cli.Command
 	log log.ColorLogger
 	cfg *config.RocketPoolConfig
 	w   wallet.Wallet
@@ -35,7 +35,7 @@ type dissolveTimedOutMinipools struct {
 }
 
 // Create dissolve timed out minipools task
-func newDissolveTimedOutMinipools(c *cli.Context, logger log.ColorLogger) (*dissolveTimedOutMinipools, error) {
+func newDissolveTimedOutMinipools(c *cli.Command, logger log.ColorLogger) (*dissolveTimedOutMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

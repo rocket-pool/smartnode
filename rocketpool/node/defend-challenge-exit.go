@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -24,7 +24,7 @@ import (
 
 // Stake megapool validator task
 type defendChallengeExit struct {
-	c              *cli.Context
+	c              *cli.Command
 	log            log.ColorLogger
 	cfg            *config.RocketPoolConfig
 	w              wallet.Wallet
@@ -38,7 +38,7 @@ type defendChallengeExit struct {
 }
 
 // Create stake megapool validator task
-func newDefendChallengeExit(c *cli.Context, logger log.ColorLogger) (*defendChallengeExit, error) {
+func newDefendChallengeExit(c *cli.Command, logger log.ColorLogger) (*defendChallengeExit, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

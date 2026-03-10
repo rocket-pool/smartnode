@@ -34,7 +34,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
 )
@@ -58,7 +58,7 @@ type WithdrawalProofResponse struct {
 	Witnesses      []common.Hash `json:"witnesses"`
 }
 
-func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey, beaconState eth2.BeaconState) (megapool.ValidatorProof, uint64, megapool.SlotProof, error) {
+func GetValidatorProof(c *cli.Command, slot uint64, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey, beaconState eth2.BeaconState) (megapool.ValidatorProof, uint64, megapool.SlotProof, error) {
 
 	bc, err := GetBeaconClient(c)
 	if err != nil {
@@ -131,7 +131,7 @@ func GetValidatorProof(c *cli.Context, slot uint64, wallet wallet.Wallet, eth2Co
 	return proof, slotTimestamp, slotProof, err
 }
 
-func GetWithdrawableEpochProof(c *cli.Context, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (api.ValidatorWithdrawableEpochProof, error) {
+func GetWithdrawableEpochProof(c *cli.Command, wallet *wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey) (api.ValidatorWithdrawableEpochProof, error) {
 	bc, err := GetBeaconClient(c)
 	if err != nil {
 		return api.ValidatorWithdrawableEpochProof{}, err
@@ -667,7 +667,7 @@ func calculatePositionInQueue(rp *rocketpool.RocketPool, queueDetails api.QueueD
 	return new(big.Int).SetUint64(overallPosition), err
 }
 
-func GetWithdrawalProofForSlotFromAPI(c *cli.Context, finalizedSlot uint64, withdrawalSlot uint64, validatorIndex uint64, network cfgtypes.Network) (megapool.FinalBalanceProof, uint64, error) {
+func GetWithdrawalProofForSlotFromAPI(c *cli.Command, finalizedSlot uint64, withdrawalSlot uint64, validatorIndex uint64, network cfgtypes.Network) (megapool.FinalBalanceProof, uint64, error) {
 
 	/*  API calls follow this format:
 	    https://api.rocketpool.net/<network>/withdrawals/proofs/<finalized_slot>/<withdrawal_slot>/<validator_index>
@@ -709,7 +709,7 @@ func GetWithdrawalProofForSlotFromAPI(c *cli.Context, finalizedSlot uint64, with
 	}, withdrawalProofResponse.Slot, nil
 }
 
-func GetWithdrawalProofForSlot(c *cli.Context, slot uint64, validatorIndex uint64) (megapool.FinalBalanceProof, uint64, eth2.BeaconState, error) {
+func GetWithdrawalProofForSlot(c *cli.Command, slot uint64, validatorIndex uint64) (megapool.FinalBalanceProof, uint64, eth2.BeaconState, error) {
 	// Create a new response
 	response := megapool.FinalBalanceProof{}
 	response.ValidatorIndex = validatorIndex
@@ -909,7 +909,7 @@ func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc 
 	return 0, nil, 0, nil, nil, fmt.Errorf("no withdrawal found for validator index %d within %d slots of slot %d", validatorIndex, MAX_WITHDRAWAL_SLOT_DISTANCE, slot)
 }
 
-func GetChildBlockTimestampForSlot(c *cli.Context, slot uint64) (uint64, error) {
+func GetChildBlockTimestampForSlot(c *cli.Command, slot uint64) (uint64, error) {
 	bc, err := GetBeaconClient(c)
 	if err != nil {
 		return 0, err

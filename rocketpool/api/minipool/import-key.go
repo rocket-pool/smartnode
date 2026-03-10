@@ -7,7 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
-func importKey(c *cli.Context, minipoolAddress common.Address, mnemonic string) (*api.ImportKeyResponse, error) {
+func importKey(c *cli.Command, minipoolAddress common.Address, mnemonic string) (*api.ImportKeyResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

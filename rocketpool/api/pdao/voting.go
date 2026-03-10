@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func estimateSetVotingDelegateGas(c *cli.Context, address common.Address) (*api.PDAOCanSetVotingDelegateResponse, error) {
+func estimateSetVotingDelegateGas(c *cli.Command, address common.Address) (*api.PDAOCanSetVotingDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -48,7 +48,7 @@ func estimateSetVotingDelegateGas(c *cli.Context, address common.Address) (*api.
 
 }
 
-func setVotingDelegate(c *cli.Context, address common.Address) (*api.PDAOSetVotingDelegateResponse, error) {
+func setVotingDelegate(c *cli.Command, address common.Address) (*api.PDAOSetVotingDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -90,7 +90,7 @@ func setVotingDelegate(c *cli.Context, address common.Address) (*api.PDAOSetVoti
 
 }
 
-func getCurrentVotingDelegate(c *cli.Context) (*api.PDAOCurrentVotingDelegateResponse, error) {
+func getCurrentVotingDelegate(c *cli.Command) (*api.PDAOCurrentVotingDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

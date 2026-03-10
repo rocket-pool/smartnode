@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -23,7 +23,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
-func getMinipoolRescueDissolvedDetailsForNode(c *cli.Context) (*api.GetMinipoolRescueDissolvedDetailsForNodeResponse, error) {
+func getMinipoolRescueDissolvedDetailsForNode(c *cli.Command) (*api.GetMinipoolRescueDissolvedDetailsForNodeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -281,7 +281,7 @@ func getDepositTx(rp *rocketpool.RocketPool, w wallet.Wallet, bc beacon.Client, 
 
 }
 
-func rescueDissolvedMinipool(c *cli.Context, minipoolAddress common.Address, amount *big.Int, submit bool) (*api.RescueDissolvedMinipoolResponse, error) {
+func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amount *big.Int, submit bool) (*api.RescueDissolvedMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

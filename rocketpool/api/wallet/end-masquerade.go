@@ -5,10 +5,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func endMasquerade(c *cli.Context) (*api.EndMasqueradeResponse, error) {
+func endMasquerade(c *cli.Command) (*api.EndMasqueradeResponse, error) {
 
 	// Get services
 	w, err := services.GetWallet(c)

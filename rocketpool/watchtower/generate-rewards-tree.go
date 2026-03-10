@@ -22,12 +22,12 @@ import (
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 // Generate rewards Merkle Tree task
 type generateRewardsTree struct {
-	c         *cli.Context
+	c         *cli.Command
 	log       log.ColorLogger
 	errLog    log.ColorLogger
 	cfg       *config.RocketPoolConfig
@@ -39,7 +39,7 @@ type generateRewardsTree struct {
 }
 
 // Create generate rewards Merkle Tree task
-func newGenerateRewardsTree(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*generateRewardsTree, error) {
+func newGenerateRewardsTree(c *cli.Command, logger log.ColorLogger, errorLogger log.ColorLogger) (*generateRewardsTree, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

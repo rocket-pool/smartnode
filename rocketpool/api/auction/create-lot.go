@@ -5,7 +5,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canCreateLot(c *cli.Context) (*api.CanCreateLotResponse, error) {
+func canCreateLot(c *cli.Command) (*api.CanCreateLotResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -79,7 +79,7 @@ func canCreateLot(c *cli.Context) (*api.CanCreateLotResponse, error) {
 
 }
 
-func createLot(c *cli.Context) (*api.CreateLotResponse, error) {
+func createLot(c *cli.Command) (*api.CreateLotResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

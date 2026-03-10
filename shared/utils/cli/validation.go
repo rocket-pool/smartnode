@@ -11,7 +11,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/tyler-smith/go-bip39"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -30,9 +30,9 @@ const (
 //
 
 // Validate command argument count
-func ValidateArgCount(c *cli.Context, count int) error {
-	if len(c.Args()) != count {
-		return fmt.Errorf("Incorrect argument count; usage: %s", c.Command.UsageText)
+func ValidateArgCount(c *cli.Command, count int) error {
+	if c.Args().Len() != count {
+		return fmt.Errorf("Incorrect argument count; usage: %s", c.UsageText)
 	}
 	return nil
 }

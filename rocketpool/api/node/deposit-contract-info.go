@@ -3,13 +3,13 @@ package node
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getDepositContractInfo(c *cli.Context) (*api.DepositContractInfoResponse, error) {
+func getDepositContractInfo(c *cli.Command) (*api.DepositContractInfoResponse, error) {
 
 	// Get services
 	if err := services.RequireRocketStorage(c); err != nil {

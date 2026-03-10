@@ -9,10 +9,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canProposeKickFromSecurityCouncil(c *cli.Context, address common.Address) (*api.PDAOCanProposeKickFromSecurityCouncilResponse, error) {
+func canProposeKickFromSecurityCouncil(c *cli.Command, address common.Address) (*api.PDAOCanProposeKickFromSecurityCouncilResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -81,7 +81,7 @@ func canProposeKickFromSecurityCouncil(c *cli.Context, address common.Address) (
 	return &response, nil
 }
 
-func proposeKickFromSecurityCouncil(c *cli.Context, address common.Address, blockNumber uint32) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
+func proposeKickFromSecurityCouncil(c *cli.Command, address common.Address, blockNumber uint32) (*api.PDAOProposeKickFromSecurityCouncilResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {

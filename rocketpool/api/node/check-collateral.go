@@ -6,10 +6,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func checkCollateral(c *cli.Context) (*api.CheckCollateralResponse, error) {
+func checkCollateral(c *cli.Command) (*api.CheckCollateralResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err

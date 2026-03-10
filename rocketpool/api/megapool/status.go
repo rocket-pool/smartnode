@@ -10,10 +10,10 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func getStatus(c *cli.Context, finalizedState bool) (*api.MegapoolStatusResponse, error) {
+func getStatus(c *cli.Command, finalizedState bool) (*api.MegapoolStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -76,7 +76,7 @@ func getStatus(c *cli.Context, finalizedState bool) (*api.MegapoolStatusResponse
 	return &response, nil
 }
 
-func calculateRewards(c *cli.Context, amount *big.Int) (*api.MegapoolRewardSplitResponse, error) {
+func calculateRewards(c *cli.Command, amount *big.Int) (*api.MegapoolRewardSplitResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -114,7 +114,7 @@ func calculateRewards(c *cli.Context, amount *big.Int) (*api.MegapoolRewardSplit
 	return &response, nil
 }
 
-func calculatePendingRewards(c *cli.Context) (*api.MegapoolRewardSplitResponse, error) {
+func calculatePendingRewards(c *cli.Command) (*api.MegapoolRewardSplitResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -172,7 +172,7 @@ func calculatePendingRewards(c *cli.Context) (*api.MegapoolRewardSplitResponse, 
 }
 
 // Get a map of the node's validator states, the total beacon balance, and the node share of beacon balance
-func getValidatorMapAndBalances(c *cli.Context) (*api.MegapoolValidatorMapAndRewardsResponse, error) {
+func getValidatorMapAndBalances(c *cli.Command) (*api.MegapoolValidatorMapAndRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

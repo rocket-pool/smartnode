@@ -3,13 +3,13 @@ package wallet
 import (
 	"encoding/hex"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func exportWallet(c *cli.Context) (*api.ExportWalletResponse, error) {
+func exportWallet(c *cli.Command) (*api.ExportWalletResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

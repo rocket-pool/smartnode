@@ -7,7 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canCancelProposal(c *cli.Context, proposalId uint64) (*api.SecurityCanCancelProposalResponse, error) {
+func canCancelProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanCancelProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeSecurityMember(c); err != nil {
@@ -91,7 +91,7 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.SecurityCanCance
 
 }
 
-func cancelProposal(c *cli.Context, proposalId uint64) (*api.SecurityCancelProposalResponse, error) {
+func cancelProposal(c *cli.Command, proposalId uint64) (*api.SecurityCancelProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeSecurityMember(c); err != nil {

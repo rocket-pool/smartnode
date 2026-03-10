@@ -6,7 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canClaimBonds(c *cli.Context, proposalId uint64, indices []uint64) (*api.PDAOCanClaimBondsResponse, error) {
+func canClaimBonds(c *cli.Command, proposalId uint64, indices []uint64) (*api.PDAOCanClaimBondsResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func canClaimBonds(c *cli.Context, proposalId uint64, indices []uint64) (*api.PD
 	return &response, nil
 }
 
-func claimBonds(c *cli.Context, isProposer bool, proposalId uint64, indices []uint64) (*api.PDAOClaimBondsResponse, error) {
+func claimBonds(c *cli.Command, isProposer bool, proposalId uint64, indices []uint64) (*api.PDAOClaimBondsResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err

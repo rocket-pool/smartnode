@@ -3,13 +3,13 @@ package wallet
 import (
 	"errors"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func setPassword(c *cli.Context, password string) (*api.SetPasswordResponse, error) {
+func setPassword(c *cli.Command, password string) (*api.SetPasswordResponse, error) {
 
 	// Get services
 	pm, err := services.GetPasswordManager(c)

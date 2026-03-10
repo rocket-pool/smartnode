@@ -5,7 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) (*api.CanProposeTNDAOInviteResponse, error) {
+func canProposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string) (*api.CanProposeTNDAOInviteResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -81,7 +81,7 @@ func canProposeInvite(c *cli.Context, memberAddress common.Address, memberId, me
 
 }
 
-func proposeInvite(c *cli.Context, memberAddress common.Address, memberId, memberUrl string) (*api.ProposeTNDAOInviteResponse, error) {
+func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string) (*api.ProposeTNDAOInviteResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {

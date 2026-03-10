@@ -5,14 +5,14 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canReduceBond(c *cli.Context, amount *big.Int) (*api.CanReduceBondResponse, error) {
+func canReduceBond(c *cli.Command, amount *big.Int) (*api.CanReduceBondResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -90,7 +90,7 @@ func canReduceBond(c *cli.Context, amount *big.Int) (*api.CanReduceBondResponse,
 
 }
 
-func reduceBond(c *cli.Context, amount *big.Int) (*api.ReduceBondResponse, error) {
+func reduceBond(c *cli.Command, amount *big.Int) (*api.ReduceBondResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

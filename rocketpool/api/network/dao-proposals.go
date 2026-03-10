@@ -13,12 +13,12 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"github.com/wealdtech/go-ens/v3"
 	"golang.org/x/sync/errgroup"
 )
 
-func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, error) {
+func getActiveDAOProposals(c *cli.Command) (*api.NetworkDAOProposalsResponse, error) {
 
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
@@ -157,7 +157,7 @@ func getActiveDAOProposals(c *cli.Context) (*api.NetworkDAOProposalsResponse, er
 
 }
 
-func formatResolvedAddress(c *cli.Context, address common.Address) string {
+func formatResolvedAddress(c *cli.Command, address common.Address) string {
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return address.Hex()

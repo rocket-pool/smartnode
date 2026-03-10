@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) {
+func canProposeLeave(c *cli.Command) (*api.CanProposeTNDAOLeaveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -92,7 +92,7 @@ func canProposeLeave(c *cli.Context) (*api.CanProposeTNDAOLeaveResponse, error) 
 
 }
 
-func proposeLeave(c *cli.Context) (*api.ProposeTNDAOLeaveResponse, error) {
+func proposeLeave(c *cli.Command) (*api.ProposeTNDAOLeaveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {

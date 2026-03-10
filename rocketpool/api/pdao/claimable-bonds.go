@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 type challengeInfo struct {
@@ -28,7 +28,7 @@ type proposalInfo struct {
 	Challenges map[uint64]*challengeInfo
 }
 
-func getClaimableBonds(c *cli.Context) (*api.PDAOGetClaimableBondsResponse, error) {
+func getClaimableBonds(c *cli.Command) (*api.PDAOGetClaimableBondsResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {

@@ -6,7 +6,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
@@ -22,7 +22,7 @@ import (
 
 // Manage fee recipient task
 type manageFeeRecipient struct {
-	c   *cli.Context
+	c   *cli.Command
 	log log.ColorLogger
 	cfg *config.RocketPoolConfig
 	w   wallet.Wallet
@@ -32,7 +32,7 @@ type manageFeeRecipient struct {
 }
 
 // Create manage fee recipient task
-func newManageFeeRecipient(c *cli.Context, logger log.ColorLogger) (*manageFeeRecipient, error) {
+func newManageFeeRecipient(c *cli.Command, logger log.ColorLogger) (*manageFeeRecipient, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

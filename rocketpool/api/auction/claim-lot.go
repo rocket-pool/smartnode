@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/auction"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canClaimFromLot(c *cli.Context, lotIndex uint64) (*api.CanClaimFromLotResponse, error) {
+func canClaimFromLot(c *cli.Command, lotIndex uint64) (*api.CanClaimFromLotResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -92,7 +92,7 @@ func canClaimFromLot(c *cli.Context, lotIndex uint64) (*api.CanClaimFromLotRespo
 
 }
 
-func claimFromLot(c *cli.Context, lotIndex uint64) (*api.ClaimFromLotResponse, error) {
+func claimFromLot(c *cli.Command, lotIndex uint64) (*api.ClaimFromLotResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

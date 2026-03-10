@@ -8,10 +8,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canDelegateUpgrade(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolCanDelegateUpgradeResponse, error) {
+func canDelegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolCanDelegateUpgradeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -49,7 +49,7 @@ func canDelegateUpgrade(c *cli.Context, megapoolAddress common.Address) (*api.Me
 	return &response, nil
 }
 
-func delegateUpgrade(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolDelegateUpgradeResponse, error) {
+func delegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolDelegateUpgradeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -96,7 +96,7 @@ func delegateUpgrade(c *cli.Context, megapoolAddress common.Address) (*api.Megap
 	return &response, nil
 }
 
-func getUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolGetUseLatestDelegateResponse, error) {
+func getUseLatestDelegate(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolGetUseLatestDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -128,7 +128,7 @@ func getUseLatestDelegate(c *cli.Context, megapoolAddress common.Address) (*api.
 
 }
 
-func canSetUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, setting bool) (*api.MegapoolCanSetUseLatestDelegateResponse, error) {
+func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, setting bool) (*api.MegapoolCanSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func canSetUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, set
 
 }
 
-func setUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, setting bool) (*api.MegapoolSetUseLatestDelegateResponse, error) {
+func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, setting bool) (*api.MegapoolSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -225,7 +225,7 @@ func setUseLatestDelegate(c *cli.Context, megapoolAddress common.Address, settin
 
 }
 
-func getDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolGetDelegateResponse, error) {
+func getDelegate(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolGetDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -257,7 +257,7 @@ func getDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolG
 
 }
 
-func getEffectiveDelegate(c *cli.Context, megapoolAddress common.Address) (*api.MegapoolGetEffectiveDelegateResponse, error) {
+func getEffectiveDelegate(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolGetEffectiveDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

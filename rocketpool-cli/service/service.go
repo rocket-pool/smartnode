@@ -10,7 +10,7 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/rivo/tview"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v2"
 
 	"github.com/dustin/go-humanize"
@@ -221,7 +221,7 @@ func configureServicePrecheck() (isNew bool, cfg, oldCfg *config.RocketPoolConfi
 // This function is the exception to the rule-
 // we pass cli.Context here and here only because
 // otherwise it's very difficult to set config values by CLI flag.
-func configureServiceHeadless(c *cli.Context) error {
+func configureServiceHeadless(c *cli.Command) error {
 	// Get RP client
 	rp := rocketpool.NewClient()
 	defer rp.Close()
@@ -373,7 +373,7 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 }
 
 // Updates a config parameter from a CLI flag
-func updateConfigParamFromCliArg(c *cli.Context, sectionName string, param *cfgtypes.Parameter, cfg *config.RocketPoolConfig) error {
+func updateConfigParamFromCliArg(c *cli.Command, sectionName string, param *cfgtypes.Parameter, cfg *config.RocketPoolConfig) error {
 
 	var paramName string
 	if sectionName == "" {

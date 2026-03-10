@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -14,7 +14,7 @@ const dataFolder string = "/.rocketpool/data"
 
 // Deletes the contents of the data folder including the wallet file, password file, and all validator keys.
 // Don't use this unless you have a very good reason to do it (such as switching from a Testnet to Mainnet).
-func terminateDataFolder(c *cli.Context) (*api.TerminateDataFolderResponse, error) {
+func terminateDataFolder(c *cli.Command) (*api.TerminateDataFolderResponse, error) {
 
 	// Response
 	response := api.TerminateDataFolderResponse{}

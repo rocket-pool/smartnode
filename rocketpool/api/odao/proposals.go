@@ -2,13 +2,13 @@ package odao
 
 import (
 	"github.com/rocket-pool/smartnode/bindings/dao"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
+func getProposals(c *cli.Command) (*api.TNDAOProposalsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -48,7 +48,7 @@ func getProposals(c *cli.Context) (*api.TNDAOProposalsResponse, error) {
 
 }
 
-func getProposal(c *cli.Context, id uint64) (*api.TNDAOProposalResponse, error) {
+func getProposal(c *cli.Command, id uint64) (*api.TNDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

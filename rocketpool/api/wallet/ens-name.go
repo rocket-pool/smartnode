@@ -6,7 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	ens "github.com/wealdtech/go-ens/v3"
 )
 
@@ -16,7 +16,7 @@ const (
 )
 
 // Set a name to the node wallet's ENS reverse record.
-func setEnsName(c *cli.Context, name string, onlyEstimateGas bool) (*api.SetEnsNameResponse, error) {
+func setEnsName(c *cli.Command, name string, onlyEstimateGas bool) (*api.SetEnsNameResponse, error) {
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err

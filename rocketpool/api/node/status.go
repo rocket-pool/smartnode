@@ -19,7 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	mp "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
@@ -31,7 +31,7 @@ import (
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
-func getStatus(c *cli.Context) (*api.NodeStatusResponse, error) {
+func getStatus(c *cli.Command) (*api.NodeStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

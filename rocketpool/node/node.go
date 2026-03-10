@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"math/big"
@@ -12,7 +13,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
@@ -57,19 +58,19 @@ const (
 )
 
 // Register node command
-func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
+func RegisterCommands(app *cli.Command, name string, aliases []string) {
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Run Rocket Pool node activity daemon",
-		Action: func(c *cli.Context) error {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			return run(c)
 		},
 	})
 }
 
 // Run daemon
-func run(c *cli.Context) error {
+func run(c *cli.Command) error {
 	// Handle the initial fee recipient file deployment
 	err := deployDefaultFeeRecipientFile(c)
 	if err != nil {
@@ -369,7 +370,7 @@ func configureHTTP() {
 }
 
 // Copy the default fee recipient file into the proper location
-func deployDefaultFeeRecipientFile(c *cli.Context) error {
+func deployDefaultFeeRecipientFile(c *cli.Command) error {
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return err
@@ -406,7 +407,7 @@ func deployDefaultFeeRecipientFile(c *cli.Context) error {
 }
 
 // Remove the old fee recipient files that were created in v1.5.0
-func removeLegacyFeeRecipientFiles(c *cli.Context) error {
+func removeLegacyFeeRecipientFiles(c *cli.Command) error {
 	legacyFeeRecipientFile := "rp-fee-recipient.txt"
 
 	cfg, err := services.GetConfig(c)

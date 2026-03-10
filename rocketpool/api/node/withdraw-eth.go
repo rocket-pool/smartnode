@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeWithdrawEth(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdrawEthResponse, error) {
+func canNodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdrawEthResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -84,7 +84,7 @@ func canNodeWithdrawEth(c *cli.Context, amountWei *big.Int) (*api.CanNodeWithdra
 
 }
 
-func nodeWithdrawEth(c *cli.Context, amountWei *big.Int) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.NodeWithdrawRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

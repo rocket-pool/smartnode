@@ -7,10 +7,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func getExpressTicketCount(c *cli.Context) (*api.GetExpressTicketCountResponse, error) {
+func getExpressTicketCount(c *cli.Command) (*api.GetExpressTicketCountResponse, error) {
 
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
@@ -38,7 +38,7 @@ func getExpressTicketCount(c *cli.Context) (*api.GetExpressTicketCountResponse, 
 	return &response, nil
 }
 
-func getExpressTicketsProvisioned(c *cli.Context) (*api.GetExpressTicketsProvisionedResponse, error) {
+func getExpressTicketsProvisioned(c *cli.Command) (*api.GetExpressTicketsProvisionedResponse, error) {
 
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
@@ -66,7 +66,7 @@ func getExpressTicketsProvisioned(c *cli.Context) (*api.GetExpressTicketsProvisi
 	return &response, nil
 }
 
-func canProvisionExpressTickets(c *cli.Context) (*api.CanProvisionExpressTicketsResponse, error) {
+func canProvisionExpressTickets(c *cli.Command) (*api.CanProvisionExpressTicketsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -116,7 +116,7 @@ func canProvisionExpressTickets(c *cli.Context) (*api.CanProvisionExpressTickets
 
 }
 
-func provisionExpressTickets(c *cli.Context) (*api.ProvisionExpressTicketsResponse, error) {
+func provisionExpressTickets(c *cli.Command) (*api.ProvisionExpressTicketsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

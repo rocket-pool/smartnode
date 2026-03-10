@@ -6,7 +6,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canAssignDeposits(c *cli.Context, max int64) (*api.CanAssignDepositsResponse, error) {
+func canAssignDeposits(c *cli.Command, max int64) (*api.CanAssignDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -70,7 +70,7 @@ func canAssignDeposits(c *cli.Context, max int64) (*api.CanAssignDepositsRespons
 
 }
 
-func assignDeposits(c *cli.Context, max int64) (*api.AssignDepositsResponse, error) {
+func assignDeposits(c *cli.Command, max int64) (*api.AssignDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
