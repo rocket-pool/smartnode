@@ -3,18 +3,16 @@ package node
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func setRPLLockingAllowed(c *cli.Context, allowedToLock bool) error {
+func setRPLLockingAllowed(yes, allowedToLock bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -27,7 +25,7 @@ func setRPLLockingAllowed(c *cli.Context, allowedToLock bool) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
@@ -38,7 +36,7 @@ func setRPLLockingAllowed(c *cli.Context, allowedToLock bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("%s", allowString)) {
+	if !(yes || prompt.Confirm("%s", allowString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

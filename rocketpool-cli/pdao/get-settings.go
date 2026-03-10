@@ -3,15 +3,13 @@ package pdao
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 )
 
-func getSettings(c *cli.Context) error {
+func getSettings() error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

@@ -6,7 +6,6 @@ import (
 	"strconv"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -23,10 +22,10 @@ const (
 	maxCount uint64 = 35
 )
 
-func nodeMegapoolDeposit(c *cli.Context) error {
+func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -86,8 +85,6 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 		return err
 	}
 
-	count := c.Uint64("count")
-
 	// If the count was not provided, prompt the user for the number of deposits
 	for count == 0 || count > maxCount {
 		countStr := prompt.Prompt(fmt.Sprintf("How many validators would you like to create? (max: %d)", maxCount), "^\\d+$", "Invalid number.")
@@ -135,7 +132,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	fmt.Printf("The total bond requirement is %.2f ETH.\n", totalBondRequirementEth)
 	fmt.Println()
 
-	if !(c.Bool("yes") || prompt.Confirm("%s%s",
+	if !(yes || prompt.Confirm("%s%s",
 		color.YellowSprintf("NOTE: You are about to create %d new megapool validator(s), requiring a total of: %.2f ETH).\n", count, totalBondRequirementEth),
 		"Would you like to continue?",
 	)) {
@@ -163,7 +160,6 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	}
 	fmt.Println()
 
-	expressTickets := c.Int64("express-tickets")
 	if expressTickets >= 0 {
 		if expressTicketCount < uint64(expressTickets) {
 			expressTickets = int64(expressTicketCount)
@@ -236,7 +232,7 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 			fmt.Println()
 		}
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm("Would you like to continue?")) {
+		if !(yes || prompt.Confirm("Would you like to continue?")) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -265,14 +261,14 @@ func nodeMegapoolDeposit(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canDeposit.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canDeposit.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
 
-	if !(c.Bool("yes") || prompt.Confirm("You are about to deposit %.6f ETH to create %d new megapool validator(s).\n%s",
+	if !(yes || prompt.Confirm("You are about to deposit %.6f ETH to create %d new megapool validator(s).\n%s",
 		math.RoundDown(eth.WeiToEth(totalBondRequirement), 6),
 		count,
 		color.Yellow("ARE YOU SURE YOU WANT TO DO THIS?"),

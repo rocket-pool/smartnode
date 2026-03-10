@@ -22,7 +22,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
-					return claimAll(c, true)
+					return claimAll(c.String("restake-amount"), true, c.Bool("yes"))
 				},
 			},
 			{
@@ -44,7 +44,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
-					return claimAll(c, false)
+					return claimAll(c.String("restake-amount"), false, c.Bool("yes"))
 				},
 			},
 		},

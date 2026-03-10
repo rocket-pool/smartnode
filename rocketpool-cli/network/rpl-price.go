@@ -4,16 +4,15 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func getRplPrice(c *cli.Context) error {
+func getRplPrice() error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

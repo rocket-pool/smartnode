@@ -8,70 +8,70 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func stake(c *cli.Context) error {
+func getStakableValidator() (uint64, bool, error) {
+	// Get RP client
+	rp, err := rocketpool.NewClient().WithReady()
+	if err != nil {
+		return 0, false, err
+	}
+	defer rp.Close()
+	// Get Megapool status
+	status, err := rp.MegapoolStatus(false)
+	if err != nil {
+		return 0, false, err
+	}
+
+	validatorsReadyToStake := []api.MegapoolValidatorDetails{}
+	validatorsDepositPending := []api.MegapoolValidatorDetails{}
+
+	for _, validator := range status.Megapool.Validators {
+		if validator.InPrestake {
+			if validator.BeaconStatus.Index != "" {
+				validatorsReadyToStake = append(validatorsReadyToStake, validator)
+			} else {
+				validatorsDepositPending = append(validatorsDepositPending, validator)
+			}
+		}
+	}
+	if len(validatorsDepositPending) > 0 {
+		fmt.Println("The following validators have a pending deposit. Please wait until the deposit is processed before trying again:")
+		for _, v := range validatorsDepositPending {
+			fmt.Printf(" - Pubkey: 0x%s (Last ETH assignment: %s)\n", v.PubKey.String(), v.LastAssignmentTime.Format(cliutils.TimeFormat))
+		}
+		fmt.Println()
+	}
+	if len(validatorsReadyToStake) > 0 {
+		fmt.Println("The following validators are ready to be staked:")
+		options := make([]string, len(validatorsReadyToStake))
+		for vi, v := range validatorsReadyToStake {
+			options[vi] = fmt.Sprintf("Pubkey: 0x%s (Last ETH assignment: %s)", v.PubKey.String(), v.LastAssignmentTime.Format(cliutils.TimeFormat))
+		}
+		selected, _ := prompt.Select("Please select a validator to stake:", options)
+
+		// Get validators
+		return uint64(validatorsReadyToStake[selected].ValidatorId), true, nil
+
+	}
+
+	fmt.Println("No validators can be staked at the moment")
+	return 0, false, nil
+}
+
+func stake(validatorId uint64, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
 
-	validatorId := uint64(0)
-
-	// check if the validator-id flag was used
-	if c.IsSet("validator-id") {
-		validatorId = c.Uint64("validator-id")
-	} else {
-		// Get Megapool status
-		status, err := rp.MegapoolStatus(false)
-		if err != nil {
-			return err
-		}
-
-		validatorsReadyToStake := []api.MegapoolValidatorDetails{}
-		validatorsDepositPending := []api.MegapoolValidatorDetails{}
-
-		for _, validator := range status.Megapool.Validators {
-			if validator.InPrestake {
-				if validator.BeaconStatus.Index != "" {
-					validatorsReadyToStake = append(validatorsReadyToStake, validator)
-				} else {
-					validatorsDepositPending = append(validatorsDepositPending, validator)
-				}
-			}
-		}
-		if len(validatorsDepositPending) > 0 {
-			fmt.Println("The following validators have a pending deposit. Please wait until the deposit is processed before trying again:")
-			for _, v := range validatorsDepositPending {
-				fmt.Printf(" - Pubkey: 0x%s (Last ETH assignment: %s)\n", v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
-			}
-			fmt.Println()
-		}
-		if len(validatorsReadyToStake) > 0 {
-			fmt.Println("The following validators are ready to be staked:")
-			options := make([]string, len(validatorsReadyToStake))
-			for vi, v := range validatorsReadyToStake {
-				options[vi] = fmt.Sprintf("Pubkey: 0x%s (Last ETH assignment: %s)", v.PubKey.String(), v.LastAssignmentTime.Format(TimeFormat))
-			}
-			selected, _ := prompt.Select("Please select a validator to stake:", options)
-
-			// Get validators
-			validatorId = uint64(validatorsReadyToStake[selected].ValidatorId)
-
-		} else {
-			fmt.Println("No validators can be staked at the moment")
-			return nil
-		}
-
-		// Warning reg the time necessary to build the proof
-		if !(c.Bool("yes") || prompt.Confirm("The stake operation will construct a beacon state proof that the deposit for validator ID %d was correct. This will take several seconds to finish.\nDo you want to continue?", validatorId)) {
-			fmt.Println("Cancelled.")
-			return nil
-		}
+	// Warning reg the time necessary to build the proof
+	if !(yes || prompt.Confirm("The stake operation will construct a beacon state proof that the deposit for validator ID %d was correct. This will take several seconds to finish.\nDo you want to continue?", validatorId)) {
+		fmt.Println("Cancelled.")
+		return nil
 	}
 
 	// Check megapool validator can be staked
@@ -90,13 +90,13 @@ func stake(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canStake.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canStake.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to stake validator id %d", validatorId)) {
+	if !(yes || prompt.Confirm("Are you sure you want to stake validator id %d", validatorId)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -8,13 +8,12 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func setEnsName(c *cli.Context, name string) error {
+func setEnsName(name string, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -33,7 +32,7 @@ func setEnsName(c *cli.Context, name string) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(estimateGasSetName.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(estimateGasSetName.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}

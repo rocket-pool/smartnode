@@ -9,12 +9,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func proposeSecurityCouncilReplace(c *cli.Context) error {
+func proposeSecurityCouncilReplace(existingAddressString string, newID string, newAddressString string, yes bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -29,8 +28,7 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	// Get the address of the member to replace
 	var oldID string
 	var oldAddress common.Address
-	oldAddressString := c.String("existing-address")
-	if oldAddressString == "" {
+	if existingAddressString == "" {
 		options := make([]string, len(membersResponse.Members))
 		for i, member := range membersResponse.Members {
 			options[i] = fmt.Sprintf("%d: %s (%s), joined %s\n", i+1, member.ID, member.Address, time.Unix(int64(member.JoinedTime), 0))
@@ -40,7 +38,7 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 		oldID = member.ID
 		oldAddress = member.Address
 	} else {
-		oldAddress, err = cliutils.ValidateAddress("address", oldAddressString)
+		oldAddress, err = cliutils.ValidateAddress("address", existingAddressString)
 		if err != nil {
 			return err
 		}
@@ -58,7 +56,6 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	}
 
 	// Get the new ID
-	newID := c.String("new-id")
 	if newID == "" {
 		newID = prompt.Prompt("Please enter an ID for the member you'd like to invite: (no spaces)", "^\\S+$", "Invalid ID")
 	}
@@ -68,7 +65,6 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	}
 
 	// Get the new address
-	newAddressString := c.String("new-address")
 	if newAddressString == "" {
 		newAddressString = prompt.Prompt("Please enter the member's address:", "^0x[0-9a-fA-F]{40}$", "Invalid member address")
 	}
@@ -91,13 +87,13 @@ func proposeSecurityCouncilReplace(c *cli.Context) error {
 	}
 
 	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex())) {
+	if !(yes || prompt.Confirm("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

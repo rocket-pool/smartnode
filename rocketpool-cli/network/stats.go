@@ -3,16 +3,14 @@ package network
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
-func getStats(c *cli.Context) error {
+func getStats() error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

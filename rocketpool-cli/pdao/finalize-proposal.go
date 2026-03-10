@@ -3,17 +3,15 @@ package pdao
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func finalizeProposal(c *cli.Context, proposalID uint64) error {
+func finalizeProposal(proposalID uint64, yes bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -39,13 +37,13 @@ func finalizeProposal(c *cli.Context, proposalID uint64) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to finalize proposal %d?", proposalID)) {
+	if !(yes || prompt.Confirm("Are you sure you want to finalize proposal %d?", proposalID)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

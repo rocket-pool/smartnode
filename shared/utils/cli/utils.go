@@ -11,6 +11,8 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
+const TimeFormat = "2006-01-02, 15:04 -0700 MST"
+
 // Print a TX's details to the console.
 func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {
 

@@ -10,7 +10,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -24,10 +23,10 @@ const (
 	signallingAddressLink string = "https://docs.rocketpool.net/pdao/participate#setting-your-snapshot-signalling-address"
 )
 
-func getStatus(c *cli.Context) error {
+func getStatus() error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the config
@@ -336,7 +335,7 @@ func getStatus(c *cli.Context) error {
 			// Check if unstaking period passed considering the last unstake time
 			unstakingPeriodEnd = status.LastRPLUnstakeTime.Add(status.UnstakingPeriodDuration)
 			if unstakingPeriodEnd.After(status.LatestBlockTime) {
-				fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(TimeFormat))
+				fmt.Printf("Your node has %.6f RPL unstaking. That amount will be withdrawable on %s.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6), unstakingPeriodEnd.Format(cliutils.TimeFormat))
 			} else {
 				fmt.Printf("Your node has %.6f RPL unstaked. That amount is currently withdrawable.\n", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))
 			}

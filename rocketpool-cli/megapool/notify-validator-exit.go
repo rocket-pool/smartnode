@@ -9,55 +9,56 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
 const FarFutureEpoch uint64 = 0xffffffffffffffff
 
-func notifyValidatorExit(c *cli.Context) error {
+func getExitedValidator() (uint64, bool, error) {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
+	if err != nil {
+		return 0, false, err
+	}
+	defer rp.Close()
+	// Get Megapool status
+	status, err := rp.MegapoolStatus(true)
+	if err != nil {
+		return 0, false, err
+	}
+
+	activeValidators := []api.MegapoolValidatorDetails{}
+
+	for _, validator := range status.Megapool.Validators {
+		if validator.Activated && !validator.Exiting && !validator.Exited && validator.BeaconStatus.WithdrawableEpoch != FarFutureEpoch {
+			activeValidators = append(activeValidators, validator)
+		}
+	}
+	if len(activeValidators) > 0 {
+		sort.Sort(ByIndex(activeValidators))
+		options := make([]string, len(activeValidators))
+		for vi, v := range activeValidators {
+			options[vi] = fmt.Sprintf("ID: %d - Index: %d - Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
+		}
+		selected, _ := prompt.Select("Please select a validator to notify the exit:", options)
+
+		// Get validators
+		return uint64(activeValidators[selected].ValidatorId), true, nil
+
+	} else {
+		fmt.Println("Can't notify the exit of any validators")
+		return 0, false, nil
+	}
+}
+
+func notifyValidatorExit(validatorId uint64, yes bool) error {
+
+	// Get RP client
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	// List the validators that can be exited
-	var validatorId uint64
-
-	if c.IsSet("validator-id") {
-		validatorId = c.Uint64("validator-id")
-	} else {
-		// Get Megapool status
-		status, err := rp.MegapoolStatus(true)
-		if err != nil {
-			return err
-		}
-
-		activeValidators := []api.MegapoolValidatorDetails{}
-
-		for _, validator := range status.Megapool.Validators {
-			if validator.Activated && !validator.Exiting && !validator.Exited && validator.BeaconStatus.WithdrawableEpoch != FarFutureEpoch {
-				activeValidators = append(activeValidators, validator)
-			}
-		}
-		if len(activeValidators) > 0 {
-			sort.Sort(ByIndex(activeValidators))
-			options := make([]string, len(activeValidators))
-			for vi, v := range activeValidators {
-				options[vi] = fmt.Sprintf("ID: %d - Index: %d - Pubkey: 0x%s", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
-			}
-			selected, _ := prompt.Select("Please select a validator to notify the exit:", options)
-
-			// Get validators
-			validatorId = uint64(activeValidators[selected].ValidatorId)
-
-		} else {
-			fmt.Println("Can't notify the exit of any validators")
-			return nil
-		}
-	}
 
 	response, err := rp.CanNotifyValidatorExit(validatorId)
 	if err != nil {
@@ -69,13 +70,13 @@ func notifyValidatorExit(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(response.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(response.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to notify about the validator id %d exit?", validatorId)) {
+	if !(yes || prompt.Confirm("Are you sure you want to notify about the validator id %d exit?", validatorId)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

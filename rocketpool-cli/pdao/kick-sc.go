@@ -11,12 +11,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func proposeSecurityCouncilKick(c *cli.Context) error {
+func proposeSecurityCouncilKick(addressesFlag string, yes bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -30,8 +29,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 
 	// Get the address
 	var addresses []common.Address
-	addressesString := c.String("addresses")
-	if addressesString == "" {
+	if addressesFlag == "" {
 		// Print the members
 		if len(membersResponse.Members) == 0 {
 			fmt.Printf("There are no security council members.")
@@ -77,7 +75,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 			}
 		}
 	} else {
-		addresses, err = cliutils.ValidateAddresses("addresses", addressesString)
+		addresses, err = cliutils.ValidateAddresses("addresses", addressesFlag)
 		if err != nil {
 			return err
 		}
@@ -112,13 +110,13 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Assign max fee
-		err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+		err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 		if err != nil {
 			return err
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex())) {
+		if !(yes || prompt.Confirm("Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex())) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -153,7 +151,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Assign max fee
-		err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+		err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 		if err != nil {
 			return err
 		}
@@ -165,7 +163,7 @@ func proposeSecurityCouncilKick(c *cli.Context) error {
 		}
 
 		// Prompt for confirmation
-		if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose kicking these members from the security council?\n%s", kickString)) {
+		if !(yes || prompt.Confirm("Are you sure you want to propose kicking these members from the security council?\n%s", kickString)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

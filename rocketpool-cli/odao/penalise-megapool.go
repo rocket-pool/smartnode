@@ -12,12 +12,11 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-	"github.com/urfave/cli"
 )
 
-func penaliseMegapool(c *cli.Context, megapoolAddress common.Address, block *big.Int) error {
+func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -43,13 +42,13 @@ func penaliseMegapool(c *cli.Context, megapoolAddress common.Address, block *big
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPenalise.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canPenalise.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(eth.WeiToEth(amountWei), 6), megapoolAddress, block)) {
+	if !(yes || prompt.Confirm("Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(eth.WeiToEth(amountWei), 6), megapoolAddress, block)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -39,7 +39,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Run
-					return getStatus(c)
+					return getStatus()
 
 				},
 			},
@@ -52,7 +52,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Run
-					return getSettings(c)
+					return getSettings()
 
 				},
 			},
@@ -65,7 +65,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Run
-					return getRewardsPercentages(c)
+					return getRewardsPercentages()
 
 				},
 			},
@@ -96,7 +96,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return setSignallingAddress(c, snapshotAddress, signature)
+					return setSignallingAddress(snapshotAddress, signature, c.Bool("yes"))
 
 				},
 			},
@@ -120,7 +120,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return clearSignallingAddress(c)
+					return clearSignallingAddress(c.Bool("yes"))
 
 				},
 			},
@@ -144,7 +144,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 					delegate := c.Args().Get(0)
 					// Run
-					return pdaoSetVotingDelegate(c, delegate)
+					return pdaoSetVotingDelegate(delegate, c.Bool("yes"))
 
 				},
 			},
@@ -172,7 +172,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return claimBonds(c)
+					return claimBonds(c.String("proposal"), c.Bool("yes"))
 
 				},
 			},
@@ -218,7 +218,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return proposeRewardsPercentages(c)
+							return proposeRewardsPercentages(c.Bool("raw"), c.String("node"), c.String("odao"), c.String("pdao"), c.Bool("yes"))
 
 						},
 					},
@@ -262,7 +262,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return proposeOneTimeSpend(c)
+							return proposeOneTimeSpend(c.String("invoice-id"), c.String("recipient"), c.String("amount"), c.String("custom-message"), c.Bool("raw"), c.Bool("yes"))
 
 						},
 					},
@@ -318,7 +318,15 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return proposeRecurringSpend(c)
+							return proposeRecurringSpend(
+								c.Bool("raw"),
+								c.String("contract-name"),
+								c.String("recipient"),
+								c.String("amount-per-period"),
+								c.Uint64("start-time"),
+								c.String("period-length"),
+								c.Uint64("number-of-periods"),
+								c.String("custom-message"), c.Bool("yes"))
 
 						},
 					},
@@ -370,8 +378,16 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return proposeRecurringSpendUpdate(c)
-
+							return proposeRecurringSpendUpdate(
+								c.Bool("raw"),
+								c.String("contract-name"),
+								c.String("recipient"),
+								c.String("amount-per-period"),
+								c.String("period-length"),
+								c.Uint64("number-of-periods"),
+								c.String("custom-message"),
+								c.Bool("yes"),
+							)
 						},
 					},
 
@@ -408,7 +424,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSecurityCouncilInvite(c)
+									return proposeSecurityCouncilInvite(c.String("id"), c.String("address"), c.Bool("yes"))
 
 								},
 							},
@@ -436,7 +452,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSecurityCouncilKick(c)
+									return proposeSecurityCouncilKick(c.String("addresses"), c.Bool("yes"))
 
 								},
 							},
@@ -472,7 +488,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 									}
 
 									// Run
-									return proposeSecurityCouncilReplace(c)
+									return proposeSecurityCouncilReplace(c.String("existing-address"), c.String("new-id"), c.String("new-address"), c.Bool("yes"))
 
 								},
 							},
@@ -514,7 +530,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionIsCreateLotEnabled(c, value)
+											return proposeSettingAuctionIsCreateLotEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -542,7 +558,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionIsBidOnLotEnabled(c, value)
+											return proposeSettingAuctionIsBidOnLotEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -568,13 +584,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingAuctionLotMinimumEthValue(c, value)
+											return proposeSettingAuctionLotMinimumEthValue(value, c.Bool("yes"))
 
 										},
 									},
@@ -600,13 +616,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingAuctionLotMaximumEthValue(c, value)
+											return proposeSettingAuctionLotMaximumEthValue(value, c.Bool("yes"))
 
 										},
 									},
@@ -634,7 +650,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingAuctionLotDuration(c, value)
+											return proposeSettingAuctionLotDuration(value, c.Bool("yes"))
 
 										},
 									},
@@ -660,13 +676,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingAuctionLotStartingPriceRatio(c, value)
+											return proposeSettingAuctionLotStartingPriceRatio(value, c.Bool("yes"))
 
 										},
 									},
@@ -692,13 +708,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingAuctionLotReservePriceRatio(c, value)
+											return proposeSettingAuctionLotReservePriceRatio(value, c.Bool("yes"))
 
 										},
 									},
@@ -734,7 +750,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositIsDepositingEnabled(c, value)
+											return proposeSettingDepositIsDepositingEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -762,7 +778,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositAreDepositAssignmentsEnabled(c, value)
+											return proposeSettingDepositAreDepositAssignmentsEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -788,13 +804,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingDepositMinimumDeposit(c, value)
+											return proposeSettingDepositMinimumDeposit(value, c.Bool("yes"))
 
 										},
 									},
@@ -820,13 +836,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingDepositMaximumDepositPoolSize(c, value)
+											return proposeSettingDepositMaximumDepositPoolSize(value, c.Bool("yes"))
 
 										},
 									},
@@ -854,7 +870,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositMaximumAssignmentsPerDeposit(c, value)
+											return proposeSettingDepositMaximumAssignmentsPerDeposit(value, c.Bool("yes"))
 
 										},
 									},
@@ -882,7 +898,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositMaximumSocialisedAssignmentsPerDeposit(c, value)
+											return proposeSettingDepositMaximumSocialisedAssignmentsPerDeposit(value, c.Bool("yes"))
 
 										},
 									},
@@ -908,13 +924,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingDepositDepositFee(c, value)
+											return proposeSettingDepositDepositFee(value, c.Bool("yes"))
 
 										},
 									},
@@ -941,7 +957,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositExpressQueueRate(c, value)
+											return proposeSettingDepositExpressQueueRate(value, c.Bool("yes"))
 
 										},
 									},
@@ -968,7 +984,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingDepositExpressQueueTicketsBaseProvision(c, value)
+											return proposeSettingDepositExpressQueueTicketsBaseProvision(value, c.Bool("yes"))
 
 										},
 									},
@@ -1004,7 +1020,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolIsSubmitWithdrawableEnabled(c, value)
+											return proposeSettingMinipoolIsSubmitWithdrawableEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -1032,7 +1048,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolLaunchTimeout(c, value)
+											return proposeSettingMinipoolLaunchTimeout(value, c.Bool("yes"))
 
 										},
 									},
@@ -1060,7 +1076,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolIsBondReductionEnabled(c, value)
+											return proposeSettingMinipoolIsBondReductionEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -1088,7 +1104,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolMaximumCount(c, value)
+											return proposeSettingMinipoolMaximumCount(value, c.Bool("yes"))
 
 										},
 									},
@@ -1116,7 +1132,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolUserDistributeWindowStart(c, value)
+											return proposeSettingMinipoolUserDistributeWindowStart(value, c.Bool("yes"))
 
 										},
 									},
@@ -1144,7 +1160,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMinipoolUserDistributeWindowLength(c, value)
+											return proposeSettingMinipoolUserDistributeWindowLength(value, c.Bool("yes"))
 
 										},
 									},
@@ -1178,13 +1194,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNetworkOracleDaoConsensusThreshold(c, value)
+											return proposeSettingNetworkOracleDaoConsensusThreshold(value, c.Bool("yes"))
 
 										},
 									},
@@ -1210,13 +1226,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNetworkNodePenaltyThreshold(c, value)
+											return proposeSettingNetworkNodePenaltyThreshold(value, c.Bool("yes"))
 
 										},
 									},
@@ -1242,13 +1258,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNetworkPerPenaltyRate(c, value)
+											return proposeSettingNetworkPerPenaltyRate(value, c.Bool("yes"))
 
 										},
 									},
@@ -1276,7 +1292,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkIsSubmitBalancesEnabled(c, value)
+											return proposeSettingNetworkIsSubmitBalancesEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -1304,7 +1320,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkSubmitBalancesFrequency(c, value)
+											return proposeSettingNetworkSubmitBalancesFrequency(value, c.Bool("yes"))
 
 										},
 									},
@@ -1332,7 +1348,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkIsSubmitPricesEnabled(c, value)
+											return proposeSettingNetworkIsSubmitPricesEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -1360,7 +1376,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkSubmitPricesFrequency(c, value)
+											return proposeSettingNetworkSubmitPricesFrequency(value, c.Bool("yes"))
 
 										},
 									},
@@ -1386,13 +1402,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNetworkMinimumNodeFee(c, value)
+											return proposeSettingNetworkMinimumNodeFee(value, c.Bool("yes"))
 
 										},
 									},
@@ -1418,13 +1434,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNetworkTargetNodeFee(c, value)
+											return proposeSettingNetworkTargetNodeFee(value, c.Bool("yes"))
 
 										},
 									},
@@ -1450,13 +1466,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNetworkMaximumNodeFee(c, value)
+											return proposeSettingNetworkMaximumNodeFee(value, c.Bool("yes"))
 
 										},
 									},
@@ -1482,13 +1498,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNetworkNodeFeeDemandRange(c, value)
+											return proposeSettingNetworkNodeFeeDemandRange(value, c.Bool("yes"))
 
 										},
 									},
@@ -1514,13 +1530,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNetworkTargetRethCollateralRate(c, value)
+											return proposeSettingNetworkTargetRethCollateralRate(value, c.Bool("yes"))
 
 										},
 									},
@@ -1548,7 +1564,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNetworkIsSubmitRewardsEnabled(c, value)
+											return proposeSettingNetworkIsSubmitRewardsEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -1575,7 +1591,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 												return err
 											}
 											// Run
-											return setAllowListedControllers(c)
+											return setAllowListedControllers(c.String("addressList"), c.Bool("yes"))
 
 										},
 									},
@@ -1601,13 +1617,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNodeCommissionShare(c, value)
+											return proposeSettingNodeCommissionShare(value, c.Bool("yes"))
 
 										},
 									},
@@ -1633,13 +1649,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNodeCommissionShareSecurityCouncilAdder(c, value)
+											return proposeSettingNodeCommissionShareSecurityCouncilAdder(value, c.Bool("yes"))
 
 										},
 									},
@@ -1665,13 +1681,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingVoterShare(c, value)
+											return proposeSettingVoterShare(value, c.Bool("yes"))
 
 										},
 									},
@@ -1697,13 +1713,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingPDAOShare(c, value)
+											return proposeSettingPDAOShare(value, c.Bool("yes"))
 
 										},
 									},
@@ -1729,13 +1745,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeMaxNodeShareSecurityCouncilAdder(c, value)
+											return proposeMaxNodeShareSecurityCouncilAdder(value, c.Bool("yes"))
 
 										},
 									},
@@ -1761,13 +1777,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeMaxRethBalanceDelta(c, value)
+											return proposeMaxRethBalanceDelta(value, c.Bool("yes"))
 
 										},
 									},
@@ -1803,7 +1819,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeIsRegistrationEnabled(c, value)
+											return proposeSettingNodeIsRegistrationEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -1831,7 +1847,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeIsSmoothingPoolRegistrationEnabled(c, value)
+											return proposeSettingNodeIsSmoothingPoolRegistrationEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -1859,7 +1875,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeIsDepositingEnabled(c, value)
+											return proposeSettingNodeIsDepositingEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -1887,7 +1903,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeAreVacantMinipoolsEnabled(c, value)
+											return proposeSettingNodeAreVacantMinipoolsEnabled(value, c.Bool("yes"))
 
 										},
 									},
@@ -1913,13 +1929,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNodeMinimumPerMinipoolStake(c, value)
+											return proposeSettingNodeMinimumPerMinipoolStake(value, c.Bool("yes"))
 
 										},
 									},
@@ -1945,13 +1961,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNodeMaximumPerMinipoolStake(c, value)
+											return proposeSettingNodeMaximumPerMinipoolStake(value, c.Bool("yes"))
 
 										},
 									},
@@ -1977,13 +1993,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingNodeMinimumLegacyRplStake(c, value)
+											return proposeSettingNodeMinimumLegacyRplStake(value, c.Bool("yes"))
 
 										},
 									},
@@ -2009,13 +2025,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingReducedBond(c, value)
+											return proposeSettingReducedBond(value, c.Bool("yes"))
 
 										},
 									},
@@ -2043,7 +2059,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingNodeUnstakingPeriod(c, value)
+											return proposeSettingNodeUnstakingPeriod(value, c.Bool("yes"))
 
 										},
 									},
@@ -2079,7 +2095,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsVotePhase1Time(c, value)
+											return proposeSettingProposalsVotePhase1Time(value, c.Bool("yes"))
 
 										},
 									},
@@ -2107,7 +2123,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsVotePhase2Time(c, value)
+											return proposeSettingProposalsVotePhase2Time(value, c.Bool("yes"))
 
 										},
 									},
@@ -2135,7 +2151,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsVoteDelayTime(c, value)
+											return proposeSettingProposalsVoteDelayTime(value, c.Bool("yes"))
 
 										},
 									},
@@ -2163,7 +2179,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsExecuteTime(c, value)
+											return proposeSettingProposalsExecuteTime(value, c.Bool("yes"))
 
 										},
 									},
@@ -2189,13 +2205,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingProposalsProposalBond(c, value)
+											return proposeSettingProposalsProposalBond(value, c.Bool("yes"))
 
 										},
 									},
@@ -2221,13 +2237,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingProposalsChallengeBond(c, value)
+											return proposeSettingProposalsChallengeBond(value, c.Bool("yes"))
 
 										},
 									},
@@ -2255,7 +2271,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsChallengePeriod(c, value)
+											return proposeSettingProposalsChallengePeriod(value, c.Bool("yes"))
 
 										},
 									},
@@ -2281,13 +2297,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingProposalsQuorum(c, value)
+											return proposeSettingProposalsQuorum(value, c.Bool("yes"))
 
 										},
 									},
@@ -2313,13 +2329,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingProposalsVetoQuorum(c, value)
+											return proposeSettingProposalsVetoQuorum(value, c.Bool("yes"))
 
 										},
 									},
@@ -2347,7 +2363,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingProposalsMaxBlockAge(c, value)
+											return proposeSettingProposalsMaxBlockAge(value, c.Bool("yes"))
 
 										},
 									},
@@ -2383,7 +2399,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingRewardsIntervalPeriods(c, value)
+											return proposeSettingRewardsIntervalPeriods(value, c.Bool("yes"))
 
 										},
 									},
@@ -2417,13 +2433,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingSecurityMembersQuorum(c, value)
+											return proposeSettingSecurityMembersQuorum(value, c.Bool("yes"))
 
 										},
 									},
@@ -2451,7 +2467,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityMembersLeaveTime(c, value)
+											return proposeSettingSecurityMembersLeaveTime(value, c.Bool("yes"))
 
 										},
 									},
@@ -2479,7 +2495,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityProposalVoteTime(c, value)
+											return proposeSettingSecurityProposalVoteTime(value, c.Bool("yes"))
 
 										},
 									},
@@ -2507,7 +2523,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityProposalExecuteTime(c, value)
+											return proposeSettingSecurityProposalExecuteTime(value, c.Bool("yes"))
 
 										},
 									},
@@ -2535,7 +2551,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingSecurityProposalActionTime(c, value)
+											return proposeSettingSecurityProposalActionTime(value, c.Bool("yes"))
 
 										},
 									},
@@ -2571,7 +2587,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolTimeBeforeDissolve(c, value)
+											return proposeSettingMegapoolTimeBeforeDissolve(value, c.Bool("yes"))
 
 										},
 									},
@@ -2597,13 +2613,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingMaximumMegapoolEthPenalty(c, value)
+											return proposeSettingMaximumMegapoolEthPenalty(value, c.Bool("yes"))
 
 										},
 									},
@@ -2631,7 +2647,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolNotifyThreshold(c, value)
+											return proposeSettingMegapoolNotifyThreshold(value, c.Bool("yes"))
 
 										},
 									},
@@ -2657,13 +2673,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingMegapoolLateNotifyFine(c, value)
+											return proposeSettingMegapoolLateNotifyFine(value, c.Bool("yes"))
 
 										},
 									},
@@ -2685,13 +2701,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), false)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), false, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingMegapoolDissolvePenalty(c, value)
+											return proposeSettingMegapoolDissolvePenalty(value, c.Bool("yes"))
 
 										},
 									},
@@ -2718,7 +2734,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolUserDistributeDelay(c, value)
+											return proposeSettingMegapoolUserDistributeDelay(value, c.Bool("yes"))
 
 										},
 									},
@@ -2745,7 +2761,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											}
 
 											// Run
-											return proposeSettingMegapoolUserDistributeDelayWithShortfall(c, value)
+											return proposeSettingMegapoolUserDistributeDelayWithShortfall(value, c.Bool("yes"))
 
 										},
 									},
@@ -2771,13 +2787,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 											if err := cliutils.ValidateArgCount(c, 1); err != nil {
 												return err
 											}
-											value, err := cliutils.ValidateFloat(c, "value", c.Args().Get(0), true)
+											value, err := cliutils.ValidateFloat(c.Bool("raw"), "value", c.Args().Get(0), true, c.Bool("yes"))
 											if err != nil {
 												return err
 											}
 
 											// Run
-											return proposeSettingProposalsVetoQuorum(c, value)
+											return proposeSettingPenaltyThreshold(value, c.Bool("yes"))
 
 										},
 									},
@@ -2814,7 +2830,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return getProposals(c, c.String("states"))
+							return getProposals(c.String("states"))
 
 						},
 					},
@@ -2837,7 +2853,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return getProposal(c, id)
+							return getProposal(id)
 
 						},
 					},
@@ -2869,7 +2885,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return voteOnProposal(c)
+							return voteOnProposal(c.String("proposal"), c.String("vote-direction"), c.Bool("yes"))
 
 						},
 					},
@@ -2903,7 +2919,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return executeProposal(c)
+							return executeProposal(c.String("proposal"), c.Bool("yes"))
 
 						},
 					},
@@ -2935,7 +2951,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return defeatProposal(c, proposalId, index)
+							return defeatProposal(proposalId, index, c.Bool("yes"))
 
 						},
 					},
@@ -2963,7 +2979,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 							}
 
 							// Run
-							return finalizeProposal(c, proposalId)
+							return finalizeProposal(proposalId, c.Bool("yes"))
 
 						},
 					},

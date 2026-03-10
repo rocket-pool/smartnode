@@ -128,7 +128,13 @@ A special thanks to the Rocket Pool community for all their contributions.
 				Usage: "Don't verify the singature of the release",
 			},
 		},
-		Action: update.Update,
+		Action: func(c *cli.Context) error {
+			return update.Update(
+				c.Bool("yes"),
+				c.Bool("skip-signature-verification"),
+				c.Bool("force"),
+			)
+		},
 	})
 
 	app.Before = func(c *cli.Context) error {
@@ -137,6 +143,15 @@ A special thanks to the Rocket Pool community for all their contributions.
 			fmt.Fprintln(os.Stderr, "rocketpool should not be run as root. Please try again without 'sudo'.")
 			fmt.Fprintln(os.Stderr, "If you want to run rocketpool as root anyway, use the '--allow-root' option to override this warning.")
 			os.Exit(1)
+		}
+
+		Defaults := rocketpool.Globals{
+			ConfigPath: os.ExpandEnv(c.GlobalString("config-path")),
+			DaemonPath: os.ExpandEnv(c.GlobalString("daemon-path")),
+			MaxFee:     c.GlobalFloat64("maxFee"),
+			MaxPrioFee: c.GlobalFloat64("maxPrioFee"),
+			GasLimit:   c.GlobalUint64("gasLimit"),
+			DebugPrint: c.GlobalBool("debug"),
 		}
 
 		// If set, validate custom nonce
@@ -148,9 +163,10 @@ A special thanks to the Rocket Pool community for all their contributions.
 				os.Exit(1)
 			}
 
-			// Save the parsed value on Metadata so we don't need to reparse it later
-			c.App.Metadata["nonce"] = nonce
+			Defaults.CustomNonce = nonce
 		}
+
+		rocketpool.SetDefaults(Defaults)
 
 		return nil
 	}
@@ -161,7 +177,7 @@ A special thanks to the Rocket Pool community for all their contributions.
 			return nil
 		}
 
-		rp := rocketpool.NewClientFromCtx(c)
+		rp := rocketpool.NewClient()
 		defer rp.Close()
 
 		// Check if the user has enabled the "show alerts after every command" setting.

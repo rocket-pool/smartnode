@@ -9,13 +9,12 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func sendMessage(c *cli.Context, toAddressOrENS string, message []byte) error {
+func sendMessage(toAddressOrENS string, message []byte, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -46,13 +45,13 @@ func sendMessage(c *cli.Context, toAddressOrENS string, message []byte) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canSend.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to send a message to %s?", toAddressString)) {
+	if !(yes || prompt.Confirm("Are you sure you want to send a message to %s?", toAddressString)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

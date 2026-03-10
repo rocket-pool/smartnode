@@ -6,7 +6,6 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -23,10 +22,10 @@ const (
 	challengeLink         string = "https://docs.rocketpool.net/pdao#challenge-process"
 )
 
-func getStatus(c *cli.Context) error {
+func getStatus() error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get wallet status

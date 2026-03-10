@@ -14,7 +14,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
 const (
@@ -67,9 +66,9 @@ func forkCommand(binaryPath string, yes bool, args ...string) *exec.Cmd {
 	return cmd
 }
 
-func Update(c *cli.Context) error {
+func Update(yes bool, skipSignatureVerification bool, force bool) error {
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get the config
@@ -100,7 +99,7 @@ func Update(c *cli.Context) error {
 	fmt.Printf("Your detected os/architecture is %s/%s.\n", color.Green(runtime.GOOS), color.Green(runtime.GOARCH))
 	fmt.Println()
 
-	if !c.Bool("yes") {
+	if !yes {
 		ok := prompt.Confirm("The cli at %s will be replaced. Continue?", color.Yellow(oldBinaryPath))
 		if !ok {
 			return nil
@@ -134,7 +133,7 @@ func Update(c *cli.Context) error {
 		return fmt.Errorf("error downloading new binary: %s", response.Status)
 	}
 	defer response.Body.Close()
-	if !c.Bool("skip-signature-verification") {
+	if !skipSignatureVerification {
 		// Download the signature file
 		fmt.Println("Verifying the binary signature")
 		signatureUrl := fmt.Sprintf("%s.sig", downloadUrl)
@@ -174,7 +173,7 @@ func Update(c *cli.Context) error {
 	newVersion := strings.TrimSpace(string(output))
 	newVersion = strings.TrimPrefix(newVersion, "rocketpool version ")
 
-	if strings.EqualFold(shared.RocketPoolVersion(), newVersion) && !c.Bool("force") {
+	if strings.EqualFold(shared.RocketPoolVersion(), newVersion) && !force {
 		color.GreenPrintf("You are already on the latest version of smartnode: %s.", newVersion)
 		return nil
 	}
@@ -191,7 +190,7 @@ func Update(c *cli.Context) error {
 	color.GreenPrintln("The cli has been updated.")
 	fmt.Println()
 
-	if !c.Bool("yes") {
+	if !yes {
 		if !prompt.Confirm("Would you like to automatically stop, upgrade, and restart the service to complete the update?") {
 			printPartialSuccessNextSteps()
 			return nil
@@ -202,7 +201,7 @@ func Update(c *cli.Context) error {
 	fmt.Println("========= Stopping service... ===========")
 	fmt.Println("=========================================")
 	stopCmd := []string{"service", "stop"}
-	cmd = forkCommand(oldBinaryPath, c.Bool("yes"), stopCmd...)
+	cmd = forkCommand(oldBinaryPath, yes, stopCmd...)
 	err = cmd.Run()
 	if err != nil {
 		errorPartialSuccess(err)
@@ -212,7 +211,7 @@ func Update(c *cli.Context) error {
 	fmt.Println("=========================================")
 	fmt.Println("========= Upgrading service... ==========")
 	fmt.Println("=========================================")
-	cmd = forkCommand(oldBinaryPath, c.Bool("yes"), "service", "install", "-d")
+	cmd = forkCommand(oldBinaryPath, yes, "service", "install", "-d")
 	err = cmd.Run()
 	if err != nil {
 		errorPartialSuccess(err)
@@ -222,7 +221,7 @@ func Update(c *cli.Context) error {
 	fmt.Println("=========================================")
 	fmt.Println("========= Starting service... ===========")
 	fmt.Println("=========================================")
-	cmd = forkCommand(oldBinaryPath, c.Bool("yes"), "service", "start")
+	cmd = forkCommand(oldBinaryPath, yes, "service", "start")
 	err = cmd.Run()
 	if err != nil {
 		errorPartialSuccess(err)

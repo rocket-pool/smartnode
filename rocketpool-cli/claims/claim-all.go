@@ -18,7 +18,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-	"github.com/urfave/cli"
 )
 
 // pendingClaim represents a single category of rewards that can be claimed.
@@ -49,16 +48,14 @@ func (c pendingClaim) valueString() string {
 	}
 }
 
-func claimAll(c *cli.Context, statusOnly bool) error {
+func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
-
-	autoConfirm := c.Bool("yes")
 
 	// Track totals
 	totalEthWei := new(big.Int)
@@ -344,7 +341,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 		}
 		if len(missingIntervals) > 0 && !statusOnly {
 			color.YellowPrintf("  Missing or invalid Merkle tree files for intervals: %v\n", missingIntervals)
-			if autoConfirm || prompt.Confirm("  Would you like to download the missing rewards tree files?") {
+			if yes || prompt.Confirm("  Would you like to download the missing rewards tree files?") {
 				cfg, _, err := rp.LoadConfig()
 				if err != nil {
 					color.YellowPrintf("  Could not load config for tree download: %s\n", err)
@@ -402,12 +399,11 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			// Parse restake flag (interactive prompt deferred until after claim selection)
 			periodicClaimRpl = prTotalRpl
 			periodicIntervalIndices = intervalIndices
-			restakeAmountFlag := c.String("restake-amount")
-			if restakeAmountFlag == "all" {
+			if restakeAmount == "all" {
 				periodicRestakeAmount = prTotalRpl
 				periodicRestakeResolved = true
-			} else if restakeAmountFlag != "" {
-				stakeAmt, parseErr := strconv.ParseFloat(restakeAmountFlag, 64)
+			} else if restakeAmount != "" {
+				stakeAmt, parseErr := strconv.ParseFloat(restakeAmount, 64)
 				if parseErr == nil && stakeAmt > 0 {
 					periodicRestakeAmount = eth.EthToWei(stakeAmt)
 					if periodicRestakeAmount.Cmp(prTotalRpl) > 0 {
@@ -415,7 +411,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 					}
 				}
 				periodicRestakeResolved = true
-			} else if autoConfirm {
+			} else if yes {
 				// Ignore restaking if -y is specified but restake-amount isn't
 				periodicRestakeAmount = nil
 				periodicRestakeResolved = true
@@ -769,7 +765,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 
 	// Select which claims to execute
 	var selectedClaims []pendingClaim
-	if autoConfirm {
+	if yes {
 		selectedClaims = claims
 	} else {
 		indexSelection := prompt.Prompt(
@@ -872,13 +868,13 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 	lastGasInfo.SafeGasLimit = totalGasSafe
 
 	// Get gas fee settings (single prompt for all transactions)
-	g, err := gas.GetMaxFeeAndLimit(lastGasInfo, rp, autoConfirm)
+	g, err := gas.GetMaxFeeAndLimit(lastGasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// If a custom nonce is set and there are multiple transactions, warn the user
-	customNonceSet := c.GlobalUint64("nonce") != 0
+	customNonceSet := rocketpool.Defaults.CustomNonce != nil
 	if customNonceSet && len(selectedClaims) > 1 {
 		cliutils.PrintMultiTransactionNonceWarning()
 	}
@@ -901,7 +897,7 @@ func claimAll(c *cli.Context, statusOnly bool) error {
 			// If there are more claims and we're not auto-confirming, ask whether to continue
 			remaining := len(selectedClaims) - i - 1
 			if remaining > 0 {
-				if autoConfirm {
+				if yes {
 					color.YellowPrintf("  Continuing with remaining %d claim(s)...\n", remaining)
 				} else {
 					if !prompt.Confirm("  The above claim failed. Continue with the remaining %d claim(s)?", remaining) {

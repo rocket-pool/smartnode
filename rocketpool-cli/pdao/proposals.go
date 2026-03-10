@@ -12,8 +12,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	utilsStrings "github.com/rocket-pool/smartnode/bindings/utils/strings"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	utilsMath "github.com/rocket-pool/smartnode/shared/utils/math"
@@ -30,10 +28,10 @@ func filterProposalState(state string, stateFilter string) bool {
 	return !slices.Contains(filterStates, state)
 }
 
-func getProposals(c *cli.Context, stateFilter string) error {
+func getProposals(stateFilter string) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -96,9 +94,9 @@ func getProposals(c *cli.Context, stateFilter string) error {
 
 }
 
-func getProposal(c *cli.Context, id uint64) error {
+func getProposal(id uint64) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}

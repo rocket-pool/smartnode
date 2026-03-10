@@ -8,13 +8,12 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func setSignallingAddress(c *cli.Context, signallingAddress common.Address, signature string) error {
+func setSignallingAddress(signallingAddress common.Address, signature string, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -32,13 +31,13 @@ func setSignallingAddress(c *cli.Context, signallingAddress common.Address, sign
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to set the signalling address?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to set the signalling address?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -60,10 +59,10 @@ func setSignallingAddress(c *cli.Context, signallingAddress common.Address, sign
 	return nil
 }
 
-func clearSignallingAddress(c *cli.Context) error {
+func clearSignallingAddress(yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -81,13 +80,13 @@ func clearSignallingAddress(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(resp.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to clear the signalling address?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to clear the signalling address?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

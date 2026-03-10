@@ -8,12 +8,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/urfave/cli"
 )
 
-func getRewardsPercentages(c *cli.Context) error {
+func getRewardsPercentages() error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -32,19 +31,16 @@ func getRewardsPercentages(c *cli.Context) error {
 	return nil
 }
 
-func proposeRewardsPercentages(c *cli.Context) error {
+func proposeRewardsPercentages(rawEnabled bool, nodeFlag string, odaoFlag string, pdaoFlag string, yes bool) error {
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
 	defer rp.Close()
 
-	// Check for the raw flag
-	rawEnabled := c.Bool("raw")
-
 	// Get the node op percent
-	nodeString := c.String("node")
+	nodeString := nodeFlag
 	if nodeString == "" {
 		if rawEnabled {
 			nodeString = prompt.Prompt("Please enter the new rewards allocation for node operators (as an 18-decimal-fixed-point-integer (wei) value):", "^\\d+$", "Invalid amount")
@@ -52,13 +48,13 @@ func proposeRewardsPercentages(c *cli.Context) error {
 			nodeString = prompt.Prompt("Please enter the new rewards allocation for node operators as a percentage from 0 to 1:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		}
 	}
-	nodePercent, err := cliutils.ValidateFloat(c, "node-percent", nodeString, true)
+	nodePercent, err := cliutils.ValidateFloat(rawEnabled, "node-percent", nodeString, true, yes)
 	if err != nil {
 		return err
 	}
 
 	// Get the oDAO percent
-	odaoString := c.String("odao")
+	odaoString := odaoFlag
 	if odaoString == "" {
 		if rawEnabled {
 			odaoString = prompt.Prompt("Please enter the new rewards allocation for the Oracle DAO (as an 18-decimal-fixed-point-integer (wei) value):", "^\\d+$", "Invalid amount")
@@ -66,13 +62,13 @@ func proposeRewardsPercentages(c *cli.Context) error {
 			odaoString = prompt.Prompt("Please enter the new rewards allocation for the Oracle DAO as a percentage from 0 to 1:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		}
 	}
-	odaoPercent, err := cliutils.ValidateFloat(c, "odao-percent", odaoString, true)
+	odaoPercent, err := cliutils.ValidateFloat(rawEnabled, "odao-percent", odaoString, true, yes)
 	if err != nil {
 		return err
 	}
 
 	// Get the pDAO percent
-	pdaoString := c.String("pdao")
+	pdaoString := pdaoFlag
 	if pdaoString == "" {
 		if rawEnabled {
 			pdaoString = prompt.Prompt("Please enter the new rewards allocation for the Protocol DAO treasury (as an 18-decimal-fixed-point-integer (wei) value):", "^\\d+$", "Invalid amount")
@@ -80,7 +76,7 @@ func proposeRewardsPercentages(c *cli.Context) error {
 			pdaoString = prompt.Prompt("Please enter the new rewards allocation for the Protocol DAO treasury as a percentage from 0 to 1:", "^\\d+(\\.\\d+)?$", "Invalid amount")
 		}
 	}
-	pdaoPercent, err := cliutils.ValidateFloat(c, "pdao-percent", pdaoString, true)
+	pdaoPercent, err := cliutils.ValidateFloat(rawEnabled, "pdao-percent", pdaoString, true, yes)
 	if err != nil {
 		return err
 	}
@@ -99,13 +95,13 @@ func proposeRewardsPercentages(c *cli.Context) error {
 	}
 
 	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canResponse.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to propose new rewards allocations?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to propose new rewards allocations?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

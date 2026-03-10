@@ -5,7 +5,6 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
@@ -20,10 +19,10 @@ type PersonalSignature struct {
 	Version   string         `json:"version"` // beaconcha.in expects a string
 }
 
-func signMessage(c *cli.Context) error {
+func signMessage(message string) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get & check wallet status
@@ -37,7 +36,6 @@ func signMessage(c *cli.Context) error {
 		return nil
 	}
 
-	message := c.String("message")
 	for message == "" {
 		message = prompt.Prompt("Please enter the message you want to sign: (EIP-191 personal_sign)", "^.+$", "Please enter the message you want to sign: (EIP-191 personal_sign)")
 	}

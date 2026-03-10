@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -21,10 +20,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func rescueDissolved(c *cli.Context) error {
+func rescueDissolved(minipool string, amount string, noSend bool, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -42,10 +41,10 @@ func rescueDissolved(c *cli.Context) error {
 
 	// Validate the amount
 	var depositAmount *big.Int
-	if c.String("amount") != "" {
-		depositAmountEth, err := strconv.ParseFloat(c.String("amount"), 64)
+	if amount != "" {
+		depositAmountEth, err := strconv.ParseFloat(amount, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid deposit amount '%s': %w", c.String("amount"), err)
+			return fmt.Errorf("Invalid deposit amount '%s': %w", amount, err)
 		}
 		if depositAmountEth < 1 {
 			return fmt.Errorf("The minimum amount you can deposit to the Beacon deposit contract is 1 ETH.")
@@ -128,7 +127,7 @@ func rescueDissolved(c *cli.Context) error {
 	var selectedMinipool *api.MinipoolRescueDissolvedDetails
 	var rescueAmount *big.Int
 	var rescueAmountFloat float64
-	if c.String("minipool") == "" {
+	if minipool == "" {
 
 		// Prompt for minipool selection
 		options := make([]string, len(rescuableMinipools))
@@ -152,7 +151,7 @@ func rescueDissolved(c *cli.Context) error {
 	} else {
 
 		// Get matching minipool
-		selectedAddress := common.HexToAddress(c.String("minipool"))
+		selectedAddress := common.HexToAddress(minipool)
 		for i, minipool := range rescuableMinipools {
 			if bytes.Equal(minipool.Address.Bytes(), selectedAddress.Bytes()) {
 				selectedMinipool = &rescuableMinipools[i]
@@ -172,7 +171,7 @@ func rescueDissolved(c *cli.Context) error {
 
 	// Get the amount to deposit
 	var depositAmountFloat float64
-	if c.String("amount") == "" {
+	if amount == "" {
 
 		// Prompt for amount selection
 		options := []string{
@@ -208,18 +207,18 @@ func rescueDissolved(c *cli.Context) error {
 	}
 
 	// Assign max fee
-	err = gas.AssignMaxFeeAndLimit(selectedMinipool.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(selectedMinipool.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex())) {
+	if !(yes || prompt.Confirm("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
 
-	submit := !c.Bool("no-send")
+	submit := !noSend
 
 	// Refund minipool
 	response, err := rp.RescueDissolvedMinipool(selectedMinipool.Address, depositAmount, submit)

@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -18,10 +17,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func proposeKick(c *cli.Context) error {
+func proposeKick(member, fine string, yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -35,10 +34,10 @@ func proposeKick(c *cli.Context) error {
 
 	// Get member to propose kicking
 	var selectedMember trustednode.MemberDetails
-	if c.String("member") != "" {
+	if member != "" {
 
 		// Get matching member
-		selectedAddress := common.HexToAddress(c.String("member"))
+		selectedAddress := common.HexToAddress(member)
 		for _, member := range members.Members {
 			if bytes.Equal(member.Address.Bytes(), selectedAddress.Bytes()) {
 				selectedMember = member
@@ -63,17 +62,17 @@ func proposeKick(c *cli.Context) error {
 
 	// Get fine amount
 	var fineAmountWei *big.Int
-	if c.String("fine") == "max" {
+	if fine == "max" {
 
 		// Set fine amount to member's entire RPL bond
 		fineAmountWei = selectedMember.RPLBondAmount
 
-	} else if c.String("fine") != "" {
+	} else if fine != "" {
 
 		// Parse amount
-		fineAmount, err := strconv.ParseFloat(c.String("fine"), 64)
+		fineAmount, err := strconv.ParseFloat(fine, 64)
 		if err != nil {
-			return fmt.Errorf("Invalid fine amount '%s': %w", c.String("fine"), err)
+			return fmt.Errorf("Invalid fine amount '%s': %w", fine, err)
 		}
 		fineAmountWei = eth.EthToWei(fineAmount)
 
@@ -106,13 +105,13 @@ func proposeKick(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canPropose.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

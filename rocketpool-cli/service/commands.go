@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mitchellh/go-homedir"
 	"github.com/urfave/cli"
 
 	"github.com/rocket-pool/smartnode/shared"
@@ -13,6 +14,11 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
+
+// Get the compose file paths for a CLI context
+func getComposeFiles(c *cli.Context) []string {
+	return c.Parent().StringSlice("compose-file")
+}
 
 // Creates CLI argument flags from the parameters of the configuration struct
 func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Parameter, configFlags []cli.Flag, network cfgtypes.Network) []cli.Flag {
@@ -148,7 +154,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return installService(c)
+					return installService(c.Bool("yes"), c.Bool("verbose"), c.Bool("no-deps"), c.String("path"))
 
 				},
 			},
@@ -165,9 +171,34 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
 						return err
 					}
+					configPath := c.GlobalString("config-path")
+					path, err := homedir.Expand(configPath)
+					if err != nil {
+						return fmt.Errorf("error expanding config path [%s]: %w", configPath, err)
+					}
+
+					_, err = os.Stat(path)
+					if os.IsNotExist(err) {
+						color.YellowPrintf("Your configured Rocket Pool directory of [%s] does not exist.\n", path)
+						color.YellowPrintln("Please follow the instructions at https://docs.rocketpool.net/node-staking/docker to install the Smart Node.")
+					}
+					if err != nil {
+						return fmt.Errorf("error checking if config path exists: %w", err)
+					}
+
+					isHeadless := c.NumFlags() > 0
+
+					if isHeadless {
+						return configureServiceHeadless(c)
+					}
 
 					// Run command
-					return configureService(c)
+					return configureService(
+						c.GlobalString("config-path"),
+						/*isNative=*/ c.GlobalIsSet("daemon-path"),
+						c.Bool("yes"),
+						getComposeFiles(c),
+					)
 
 				},
 			},
@@ -185,7 +216,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return serviceStatus(c)
+					return serviceStatus(getComposeFiles(c))
 
 				},
 			},
@@ -213,39 +244,20 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return startService(c, false)
+					return startService(startServiceParams{
+						yes:                    c.Bool("yes"),
+						ignoreSlashTimer:       c.Bool("ignore-slash-timer"),
+						ignoreConfigSuggestion: false,
+						composeFiles:           getComposeFiles(c),
+					})
 
 				},
 			},
 
-			{
-				Name:      "pause",
-				Aliases:   []string{"p"},
-				Usage:     "Pause the Rocket Pool service",
-				UsageText: "rocketpool service pause [options]",
-				Flags: []cli.Flag{
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm service suspension",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Run command
-					_, err := pauseService(c)
-					return err
-
-				},
-			},
 			{
 				Name:      "stop",
-				Aliases:   []string{"o"},
-				Usage:     "Pause the Rocket Pool service (alias of 'rocketpool service pause')",
+				Aliases:   []string{"pause", "p", "o"},
+				Usage:     "Pause the Rocket Pool service",
 				UsageText: "rocketpool service stop [options]",
 				Flags: []cli.Flag{
 					cli.BoolFlag{
@@ -261,7 +273,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					_, err := pauseService(c)
+					_, err := pauseService(c.Bool("yes"), getComposeFiles(c))
 					return err
 
 				},
@@ -289,7 +301,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return resetDocker(c)
+					return resetDocker(c.Bool("yes"), c.Bool("all"), getComposeFiles(c))
 				},
 			},
 
@@ -312,7 +324,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return pruneDocker(c)
+					return pruneDocker(c.Bool("all"), getComposeFiles(c))
 				},
 			},
 
@@ -331,7 +343,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Action: func(c *cli.Context) error {
 
 					// Run command
-					return serviceLogs(c, c.Args()...)
+					return serviceLogs(c.String("tail"), getComposeFiles(c), c.Args()...)
 
 				},
 			},
@@ -348,7 +360,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return serviceCompose(c)
+					return serviceCompose(getComposeFiles(c))
 
 				},
 			},
@@ -366,7 +378,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return serviceVersion(c)
+					return serviceVersion()
 
 				},
 			},
@@ -384,7 +396,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return pruneExecutionClient(c)
+					return pruneExecutionClient(c.Bool("yes"))
 
 				},
 			},
@@ -417,7 +429,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return installUpdateTracker(c)
+					return installUpdateTracker(c.Bool("yes"), c.Bool("verbose"))
 
 				},
 			},
@@ -434,7 +446,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return getConfigYaml(c)
+					return getConfigYaml()
 
 				},
 			},
@@ -451,7 +463,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return resyncEth1(c)
+					return resyncEth1(c.Bool("yes"), getComposeFiles(c))
 
 				},
 			},
@@ -468,7 +480,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return resyncEth2(c)
+					return resyncEth2(c.Bool("yes"), getComposeFiles(c))
 
 				},
 			},
@@ -492,7 +504,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run command
-					return terminateService(c)
+					return terminateService(c.Bool("yes"), getComposeFiles(c), c.GlobalString("config-path"))
 
 				},
 			},

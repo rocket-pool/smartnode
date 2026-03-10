@@ -10,13 +10,12 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/math"
-	"github.com/urfave/cli"
 )
 
-func claim(c *cli.Context) error {
+func claim(yes bool) error {
 
 	// Get RP client
-	rp, err := rocketpool.NewClientFromCtx(c).WithReady()
+	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
 	}
@@ -37,7 +36,7 @@ func claim(c *cli.Context) error {
 		return nil
 	}
 
-	if !(c.Bool("yes") || prompt.Confirm("You are about to claim your node refund. Would you like to continue?")) {
+	if !(yes || prompt.Confirm("You are about to claim your node refund. Would you like to continue?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -53,13 +52,13 @@ func claim(c *cli.Context) error {
 	}
 
 	// Assign max fees
-	err = gas.AssignMaxFeeAndLimit(canRepay.GasInfo, rp, c.Bool("yes"))
+	err = gas.AssignMaxFeeAndLimit(canRepay.GasInfo, rp, yes)
 	if err != nil {
 		return err
 	}
 
 	// Prompt for confirmation
-	if !(c.Bool("yes") || prompt.Confirm("Are you sure you want to claim your megapool refund?")) {
+	if !(yes || prompt.Confirm("Are you sure you want to claim your megapool refund?")) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -31,7 +31,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getStatus(c)
+					return getStatus()
 
 				},
 			},
@@ -49,7 +49,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getSyncProgress(c)
+					return getSyncProgress()
 
 				},
 			},
@@ -80,7 +80,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return registerNode(c)
+					return registerNode(c.String("timezone"), c.Bool("yes"))
 
 				},
 			},
@@ -98,7 +98,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getRewards(c)
+					return getRewards(c.Bool("yes"))
 
 				},
 			},
@@ -127,7 +127,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					withdrawalAddress := c.Args().Get(0)
 
 					// Run
-					return setPrimaryWithdrawalAddress(c, withdrawalAddress)
+					return setPrimaryWithdrawalAddress(withdrawalAddress, c.Bool("yes"), c.Bool("force"))
 
 				},
 			},
@@ -151,7 +151,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return confirmPrimaryWithdrawalAddress(c)
+					return confirmPrimaryWithdrawalAddress(c.Bool("yes"))
 
 				},
 			},
@@ -180,7 +180,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					withdrawalAddress := c.Args().Get(0)
 
 					// Run
-					return setRPLWithdrawalAddress(c, withdrawalAddress)
+					return setRPLWithdrawalAddress(withdrawalAddress, c.Bool("yes"), c.Bool("force"))
 
 				},
 			},
@@ -204,7 +204,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return confirmRPLWithdrawalAddress(c)
+					return confirmRPLWithdrawalAddress(c.Bool("yes"))
 
 				},
 			},
@@ -226,7 +226,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 					// Run
-					return setRPLLockingAllowed(c, true)
+					return setRPLLockingAllowed(c.Bool("yes"), true)
 
 				},
 			},
@@ -248,7 +248,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 					// Run
-					return setRPLLockingAllowed(c, false)
+					return setRPLLockingAllowed(c.Bool("yes"), false)
 
 				},
 			},
@@ -278,7 +278,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return setTimezoneLocation(c)
+					return setTimezoneLocation(c.String("timezone"), c.Bool("yes"))
 
 				},
 			},
@@ -309,7 +309,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeSwapRpl(c)
+					return nodeSwapRpl(c.String("amount"), c.Bool("yes"))
 
 				},
 			},
@@ -359,7 +359,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeStakeRpl(c)
+					return nodeStakeRpl(c.String("amount"), c.Bool("swap"), c.Bool("yes"))
 
 				},
 			},
@@ -379,7 +379,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					addressOrENS := c.Args().Get(0)
 
 					// Run
-					return addAddressToStakeRplWhitelist(c, addressOrENS)
+					return addAddressToStakeRplWhitelist(addressOrENS, c.Bool("yes"))
 
 				},
 			},
@@ -399,7 +399,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					addressOrENS := c.Args().Get(0)
 
 					// Run
-					return removeAddressFromStakeRplWhitelist(c, addressOrENS)
+					return removeAddressFromStakeRplWhitelist(addressOrENS, c.Bool("yes"))
 
 				},
 			},
@@ -427,7 +427,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeClaimRewards(c)
+					return nodeClaimRewards(c.String("restake-amount"), c.Bool("yes"))
 
 				},
 			},
@@ -462,7 +462,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeWithdrawRpl(c)
+					return nodeWithdrawRpl(c.String("amount"), c.Bool("yes"))
 
 				},
 			},
@@ -496,7 +496,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeWithdrawEth(c)
+					return nodeWithdrawEth(c.String("amount"), c.Bool("yes"))
 
 				},
 			},
@@ -531,7 +531,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeWithdrawCredit(c)
+					return nodeWithdrawCredit(c.String("amount"), c.Bool("yes"))
 
 				},
 			},
@@ -571,7 +571,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return nodeSend(c, amount, sendAll, token, c.Args().Get(2))
+					return nodeSend(amount, sendAll, token, c.Args().Get(2), c.Bool("yes"))
 
 				},
 			},
@@ -595,7 +595,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return initializeFeeDistributor(c)
+					return initializeFeeDistributor(c.Bool("yes"))
 
 				},
 			},
@@ -619,7 +619,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return distribute(c)
+					return distribute(c.Bool("yes"))
 
 				},
 			},
@@ -643,7 +643,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return joinSmoothingPool(c)
+					return joinSmoothingPool(c.Bool("yes"))
 
 				},
 			},
@@ -667,7 +667,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return leaveSmoothingPool(c)
+					return leaveSmoothingPool(c.Bool("yes"))
 
 				},
 			},
@@ -685,7 +685,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				},
 				Action: func(c *cli.Context) error {
 					// Run
-					return signMessage(c)
+					return signMessage(c.String("message"))
 				},
 			},
 
@@ -711,7 +711,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return sendMessage(c, c.Args().Get(0), message)
+					return sendMessage(c.Args().Get(0), message, c.Bool("yes"))
 
 				},
 			},
@@ -728,7 +728,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 					// Run
-					return claimUnclaimedRewards(c)
+					return claimUnclaimedRewards(c.Bool("yes"))
 
 				},
 			},
@@ -746,7 +746,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return provisionExpressTickets(c)
+					return provisionExpressTickets()
 				},
 				Flags: []cli.Flag{
 					cli.BoolFlag{

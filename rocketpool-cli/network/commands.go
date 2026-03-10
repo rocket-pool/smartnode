@@ -27,7 +27,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getStats(c)
+					return getStats()
 
 				},
 			},
@@ -45,7 +45,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getTimezones(c)
+					return getTimezones()
 
 				},
 			},
@@ -63,7 +63,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getNodeFee(c)
+					return getNodeFee()
 
 				},
 			},
@@ -81,7 +81,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getRplPrice(c)
+					return getRplPrice()
 
 				},
 			},
@@ -112,9 +112,10 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 						return err
 					}
 
-					// Run
-					return generateRewardsTree(c)
-
+					if c.IsSet("index") {
+						return generateRewardsTree(c.Int64("index"), c.Bool("yes"))
+					}
+					return generateRewardsTree(-1, c.Bool("yes"))
 				},
 			},
 
@@ -131,7 +132,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 					}
 
 					// Run
-					return getActiveDAOProposals(c)
+					return getActiveDAOProposals()
 
 				},
 			},

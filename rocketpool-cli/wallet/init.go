@@ -3,17 +3,15 @@ package wallet
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
-
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	promptcli "github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 	"github.com/rocket-pool/smartnode/shared/utils/term"
 )
 
-func initWallet(c *cli.Context) error {
+func initWallet(password string, confirmMnemonicFlag bool, derivationPath string, secureSession bool) error {
 
 	// Get RP client
-	rp := rocketpool.NewClientFromCtx(c)
+	rp := rocketpool.NewClient()
 	defer rp.Close()
 
 	// Get & check wallet status
@@ -27,17 +25,14 @@ func initWallet(c *cli.Context) error {
 	}
 
 	// Prompt for user confirmation before printing sensitive information
-	if !(c.GlobalBool("secure-session") ||
+	if !(secureSession ||
 		promptcli.ConfirmSecureSession("Creating a wallet will print sensitive information to your screen.")) {
 		return nil
 	}
 
 	// Set password if not set
 	if !status.PasswordSet {
-		var password string
-		if c.String("password") != "" {
-			password = c.String("password")
-		} else {
+		if password == "" {
 			password = promptPassword()
 		}
 		if _, err := rp.SetPassword(password); err != nil {
@@ -46,7 +41,6 @@ func initWallet(c *cli.Context) error {
 	}
 
 	// Get the derivation path
-	derivationPath := c.String("derivation-path")
 	if derivationPath != "" {
 		fmt.Printf("Using a custom derivation path (%s).\n\n", derivationPath)
 	}
@@ -68,7 +62,7 @@ func initWallet(c *cli.Context) error {
 	fmt.Println("")
 
 	// Confirm mnemonic
-	if !c.Bool("confirm-mnemonic") {
+	if !confirmMnemonicFlag {
 		confirmMnemonic(response.Mnemonic)
 	}
 
