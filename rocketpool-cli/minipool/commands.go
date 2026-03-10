@@ -194,37 +194,6 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 			},
 
 			{
-				Name:      "reduce-bond",
-				Aliases:   []string{"rb"},
-				Usage:     "Manually completes the ETH bond reduction process for a minipool from 16 ETH down to 8 ETH once it is eligible. Note that `begin-bond-reduction` has been removed after Saturn 1.",
-				UsageText: "rocketpool minipool reduce-bond [options]",
-				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "minipool, m",
-						Usage: "The minipool/s to reduce the bond for (address or 'all')",
-					},
-				},
-				Action: func(c *cli.Context) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
-					}
-
-					// Run
-					return reduceBondAmount(c)
-
-				},
-			},
-
-			{
 				Name:      "distribute-balance",
 				Aliases:   []string{"d"},
 				Usage:     "Distribute a minipool's ETH balance between your withdrawal address and the rETH holders.",

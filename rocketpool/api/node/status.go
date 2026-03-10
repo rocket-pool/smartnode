@@ -16,7 +16,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	tnsettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -497,39 +496,8 @@ func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, no
 	userDeposits := make([]*big.Int, len(mpDetails))
 	pendingNodeDeposits := make([]*big.Int, len(mpDetails))
 	pendingUserDeposits := make([]*big.Int, len(mpDetails))
-
-	latestBlockHeader, err := rp.Client.HeaderByNumber(context.Background(), nil)
-	if err != nil {
-		return nil, nil, nil, nil, fmt.Errorf("error getting latest block header: %w", err)
-	}
-	blockTime := time.Unix(int64(latestBlockHeader.Time), 0)
-	var reductionWindowStart uint64
-	var reductionWindowLength uint64
-
-	// Data
-	var wg1 errgroup.Group
-
-	wg1.Go(func() error {
-		var err error
-		reductionWindowStart, err = tnsettings.GetBondReductionWindowStart(rp, nil)
-		return err
-	})
-	wg1.Go(func() error {
-		var err error
-		reductionWindowLength, err = tnsettings.GetBondReductionWindowLength(rp, nil)
-		return err
-	})
-
-	// Wait for data
-	if err = wg1.Wait(); err != nil {
-		return nil, nil, nil, nil, err
-	}
-
-	reductionWindowEnd := time.Duration(reductionWindowStart+reductionWindowLength) * time.Second
-
 	// Data
 	var wg errgroup.Group
-	zeroTime := time.Unix(0, 0)
 
 	for i, mpd := range mpDetails {
 		if !mpd.Exists {
@@ -562,36 +530,6 @@ func getTrueBorrowAndBondAmounts(rp *rocketpool.RocketPool, bc beacon.Client, no
 			}
 			userDeposits[i] = userDeposit
 
-			reduceBondTime, err := minipool.GetReduceBondTime(rp, address, nil)
-			if err != nil {
-				return fmt.Errorf("error getting bond reduction time for minipool %s: %w", address.Hex(), err)
-			}
-
-			reduceBondCancelled, err := minipool.GetReduceBondCancelled(rp, address, nil)
-			if err != nil {
-				return fmt.Errorf("error getting bond reduction cancel status for minipool %s: %w", address.Hex(), err)
-			}
-
-			// Ignore minipools that don't have a bond reduction pending
-			timeSinceReductionStart := blockTime.Sub(reduceBondTime)
-			if reduceBondTime == zeroTime ||
-				reduceBondCancelled ||
-				timeSinceReductionStart > reductionWindowEnd {
-				pendingNodeDeposits[i] = nodeDeposit
-				pendingUserDeposits[i] = userDeposit
-				return nil
-			}
-
-			// Get the new (pending) bond
-			newBond, err := minipool.GetReduceBondValue(rp, address, nil)
-			if err != nil {
-				return fmt.Errorf("error getting pending bond reduced balance for minipool %s: %w", address.Hex(), err)
-			}
-			pendingNodeDeposits[i] = newBond
-
-			// New user deposit = old + delta
-			pendingUserDeposits[i] = big.NewInt(0).Sub(nodeDeposit, newBond)
-			pendingUserDeposits[i].Add(pendingUserDeposits[i], userDeposit)
 			return nil
 		})
 	}

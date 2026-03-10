@@ -43,8 +43,6 @@ type MinipoolDetails struct {
 	TimeUntilDissolve     time.Duration          `json:"timeUntilDissolve"`
 	DissolveTimeout       time.Duration          `json:"dissolveTimeout"`
 	Penalties             uint64                 `json:"penalties"`
-	ReduceBondTime        time.Time              `json:"reduceBondTime"`
-	ReduceBondCancelled   bool                   `json:"reduceBondCancelled"`
 }
 type ValidatorDetails struct {
 	Exists      bool     `json:"exists"`
