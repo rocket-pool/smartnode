@@ -9,10 +9,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canProposeAllowListedControllers(c *cli.Context, addressList []common.Address) (*api.PDAOACanProposeAllowListedControllersResponse, error) {
+func canProposeAllowListedControllers(c *cli.Command, addressList []common.Address) (*api.PDAOACanProposeAllowListedControllersResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -80,7 +80,7 @@ func canProposeAllowListedControllers(c *cli.Context, addressList []common.Addre
 	return &response, nil
 }
 
-func proposeAllowListedControllers(c *cli.Context, addressList []common.Address, blockNumber uint32) (*api.PDAOProposeAllowListedControllersResponse, error) {
+func proposeAllowListedControllers(c *cli.Command, addressList []common.Address, blockNumber uint32) (*api.PDAOProposeAllowListedControllersResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {

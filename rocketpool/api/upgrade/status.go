@@ -2,14 +2,14 @@ package upgrade
 
 import (
 	"github.com/rocket-pool/smartnode/bindings/dao/upgrades"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getStatus(c *cli.Context) (*api.TNDAOUpgradeStatusResponse, error) {
+func getStatus(c *cli.Command) (*api.TNDAOUpgradeStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

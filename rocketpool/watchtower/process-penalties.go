@@ -23,7 +23,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rpgas "github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/state"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"gopkg.in/yaml.v2"
 
 	fee "github.com/rocket-pool/smartnode/rocketpool/node"
@@ -38,7 +38,7 @@ const NewPenaltyScanBuffer = 400000
 
 // Process withdrawals task
 type processPenalties struct {
-	c              *cli.Context
+	c              *cli.Command
 	log            log.ColorLogger
 	errLog         log.ColorLogger
 	cfg            *config.RocketPoolConfig
@@ -61,7 +61,7 @@ type penaltyState struct {
 }
 
 // Create process penalties task
-func newProcessPenalties(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*processPenalties, error) {
+func newProcessPenalties(c *cli.Command, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*processPenalties, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {

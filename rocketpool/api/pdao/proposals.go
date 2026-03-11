@@ -7,7 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -16,7 +16,7 @@ const (
 	ProposalDetailsBatchSize = 10
 )
 
-func getProposals(c *cli.Context) (*api.PDAOProposalsResponse, error) {
+func getProposals(c *cli.Command) (*api.PDAOProposalsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -101,7 +101,7 @@ func getProposalsWithNodeVoteDirection(rp *rocketpool.RocketPool, nodeAddress co
 	return details, nil
 }
 
-func getProposal(c *cli.Context, id uint64) (*api.PDAOProposalResponse, error) {
+func getProposal(c *cli.Command, id uint64) (*api.PDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

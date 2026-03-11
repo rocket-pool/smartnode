@@ -6,7 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -19,7 +19,7 @@ import (
 
 // Respond to challenges task
 type respondChallenges struct {
-	c   *cli.Context
+	c   *cli.Command
 	log log.ColorLogger
 	cfg *config.RocketPoolConfig
 	w   wallet.Wallet
@@ -28,7 +28,7 @@ type respondChallenges struct {
 }
 
 // Create respond to challenges task
-func newRespondChallenges(c *cli.Context, logger log.ColorLogger, m *state.NetworkStateManager) (*respondChallenges, error) {
+func newRespondChallenges(c *cli.Command, logger log.ColorLogger, m *state.NetworkStateManager) (*respondChallenges, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

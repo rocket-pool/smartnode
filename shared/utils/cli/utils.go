@@ -9,9 +9,18 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
+	"github.com/urfave/cli/v3"
 )
 
 const TimeFormat = "2006-01-02, 15:04 -0700 MST"
+
+func Parent(c *cli.Command) *cli.Command {
+	lineage := c.Lineage()
+	if len(lineage) < 2 {
+		return nil
+	}
+	return lineage[1]
+}
 
 // Print a TX's details to the console.
 func PrintTransactionHash(rp *rocketpool.Client, hash common.Hash) {

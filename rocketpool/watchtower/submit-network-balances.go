@@ -18,7 +18,7 @@ import (
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -40,7 +40,7 @@ const (
 
 // Submit network balances task
 type submitNetworkBalances struct {
-	c         *cli.Context
+	c         *cli.Command
 	log       *log.ColorLogger
 	errLog    *log.ColorLogger
 	cfg       *config.RocketPoolConfig
@@ -86,7 +86,7 @@ type megapoolBalanceDetail struct {
 }
 
 // Create submit network balances task
-func newSubmitNetworkBalances(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitNetworkBalances, error) {
+func newSubmitNetworkBalances(c *cli.Command, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitNetworkBalances, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

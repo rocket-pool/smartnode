@@ -5,7 +5,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canLeave(c *cli.Context) (*api.CanLeaveTNDAOResponse, error) {
+func canLeave(c *cli.Command) (*api.CanLeaveTNDAOResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -80,7 +80,7 @@ func canLeave(c *cli.Context) (*api.CanLeaveTNDAOResponse, error) {
 
 }
 
-func leave(c *cli.Context, bondRefundAddress common.Address) (*api.LeaveTNDAOResponse, error) {
+func leave(c *cli.Command, bondRefundAddress common.Address) (*api.LeaveTNDAOResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {

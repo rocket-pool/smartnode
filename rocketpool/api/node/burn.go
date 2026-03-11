@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/rocket-pool/smartnode/bindings/tokens"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNodeBurnResponse, error) {
+func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNodeBurnResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -103,7 +103,7 @@ func canNodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.CanNode
 
 }
 
-func nodeBurn(c *cli.Context, amountWei *big.Int, token string) (*api.NodeBurnResponse, error) {
+func nodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.NodeBurnResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

@@ -7,7 +7,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOProposalResponse, error) {
+func canCancelProposal(c *cli.Command, proposalId uint64) (*api.CanCancelTNDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -91,7 +91,7 @@ func canCancelProposal(c *cli.Context, proposalId uint64) (*api.CanCancelTNDAOPr
 
 }
 
-func cancelProposal(c *cli.Context, proposalId uint64) (*api.CancelTNDAOProposalResponse, error) {
+func cancelProposal(c *cli.Command, proposalId uint64) (*api.CancelTNDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"runtime"
@@ -8,7 +9,7 @@ import (
 
 	"github.com/felixge/fgprof"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
-	"github.com/urfave/cli/v2"
+	"github.com/urfave/cli/v3"
 )
 
 const (
@@ -18,24 +19,12 @@ const (
 func main() {
 
 	// Initialise application
-	app := cli.NewApp()
-
-	// Set application info
-	app.Name = "treegen"
-	app.Usage = "This application can be used to generate past Merkle rewards trees for the Rocket Pool network, or preview / test generation of the tree for the current interval."
-	app.Version = version
-	app.Authors = []*cli.Author{
-		{
-			Name:  "Joe Clapis",
-			Email: "joe@rocketpool.net",
-		},
-		{
-			Name:  "Jacob Shufro",
-			Email: "jacob@shuf.ro",
-		},
+	app := &cli.Command{
+		Name:      "treegen",
+		Usage:     "This application can be used to generate past Merkle rewards trees for the Rocket Pool network, or preview / test generation of the tree for the current interval.",
+		Version:   version,
+		Copyright: "(c) 2026 Rocket Pool Pty Ltd",
 	}
-	app.Copyright = "(c) 2023 Rocket Pool Pty Ltd"
-
 	// Set application flags
 	app.Flags = []cli.Flag{
 		&cli.Int64Flag{
@@ -118,7 +107,7 @@ func main() {
 		},
 	}
 
-	app.Action = func(c *cli.Context) error {
+	app.Action = func(ctx context.Context, c *cli.Command) error {
 		cpuprofile := c.String("cpuprofile")
 		if cpuprofile != "" {
 			f, err := os.Create(cpuprofile)
@@ -171,7 +160,7 @@ func main() {
 
 	// Run application
 	fmt.Println("")
-	err := app.Run(os.Args)
+	err := app.Run(context.Background(), os.Args)
 	if err != nil {
 		color.RedPrintf("Error generating tree: %s\n", err.Error())
 		os.Exit(1)

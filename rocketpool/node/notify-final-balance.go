@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -24,7 +24,7 @@ import (
 
 // Notify final balance task
 type notifyFinalBalance struct {
-	c              *cli.Context
+	c              *cli.Command
 	log            log.ColorLogger
 	cfg            *config.RocketPoolConfig
 	w              wallet.Wallet
@@ -38,7 +38,7 @@ type notifyFinalBalance struct {
 }
 
 // Create notify final balance task
-func newNotifyFinalBalance(c *cli.Context, logger log.ColorLogger) (*notifyFinalBalance, error) {
+func newNotifyFinalBalance(c *cli.Command, logger log.ColorLogger) (*notifyFinalBalance, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

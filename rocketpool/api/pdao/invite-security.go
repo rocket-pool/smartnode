@@ -10,11 +10,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
 
-func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address) (*api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
+func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address) (*api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -97,7 +97,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Context, id string, address common
 	return &response, nil
 }
 
-func proposeInviteToSecurityCouncil(c *cli.Context, id string, address common.Address, blockNumber uint32) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
+func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address, blockNumber uint32) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {

@@ -10,10 +10,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int, customMessage string) (*api.PDAOCanProposeOneTimeSpendResponse, error) {
+func canProposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Address, amount *big.Int, customMessage string) (*api.PDAOCanProposeOneTimeSpendResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -81,7 +81,7 @@ func canProposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.A
 	return &response, nil
 }
 
-func proposeOneTimeSpend(c *cli.Context, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, customMessage string) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeOneTimeSpend(c *cli.Command, invoiceID string, recipient common.Address, amount *big.Int, blockNumber uint32, customMessage string) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {

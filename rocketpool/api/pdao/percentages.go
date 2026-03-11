@@ -11,10 +11,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func getRewardsPercentages(c *cli.Context) (*api.PDAOGetRewardsPercentagesResponse, error) {
+func getRewardsPercentages(c *cli.Command) (*api.PDAOGetRewardsPercentagesResponse, error) {
 	// Get services
 	if err := services.RequireEthClientSynced(c); err != nil {
 		return nil, err
@@ -40,7 +40,7 @@ func getRewardsPercentages(c *cli.Context) (*api.PDAOGetRewardsPercentagesRespon
 	return &response, nil
 }
 
-func canProposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pdao *big.Int) (*api.PDAOCanProposeRewardsPercentagesResponse, error) {
+func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int) (*api.PDAOCanProposeRewardsPercentagesResponse, error) {
 	// Validate sum of percentages == 100%
 	one := eth.EthToWei(1)
 	sum := big.NewInt(0).Set(node)
@@ -125,7 +125,7 @@ func canProposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, 
 	return &response, nil
 }
 
-func proposeRewardsPercentages(c *cli.Context, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32) (*api.PDAOProposeRewardsPercentagesResponse, error) {
+func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32) (*api.PDAOProposeRewardsPercentagesResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err

@@ -1,7 +1,9 @@
 package security
 
 import (
-	"github.com/urfave/cli"
+	"context"
+
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -9,18 +11,18 @@ import (
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
-	command.Subcommands = append(command.Subcommands, cli.Command{
+	command.Commands = append(command.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage the Rocket Pool security council",
-		Subcommands: []cli.Command{
+		Commands: []*cli.Command{
 
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get security council status",
 				UsageText: "rocketpool api security status",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -38,7 +40,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"m"},
 				Usage:     "Get the security council members",
 				UsageText: "rocketpool api security members",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -57,7 +59,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"p"},
 				Usage:     "Get the security council proposals",
 				UsageText: "rocketpool api security proposals",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -76,7 +78,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"d"},
 				Usage:     "Get details of a proposal",
 				UsageText: "rocketpool api security proposal-details proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					var err error
@@ -98,7 +100,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-leave",
 				Usage:     "Check whether the node can propose leaving the security council",
 				UsageText: "rocketpool api security can-propose-leave",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -116,7 +118,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"l"},
 				Usage:     "Propose leaving the security council",
 				UsageText: "rocketpool api security propose-leave",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -133,7 +135,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-leave",
 				Usage:     "Check whether the node can leave the security council",
 				UsageText: "rocketpool api security can-leave",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -151,7 +153,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"l"},
 				Usage:     "Leave the security council",
 				UsageText: "rocketpool api security propose-leave",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -168,7 +170,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-cancel-proposal",
 				Usage:     "Check whether the node can cancel a proposal",
 				UsageText: "rocketpool api security can-cancel-proposal proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -190,7 +192,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"c"},
 				Usage:     "Cancel a proposal made by the node",
 				UsageText: "rocketpool api security cancel-proposal proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -212,7 +214,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-vote-proposal",
 				Usage:     "Check whether the node can vote on a proposal",
 				UsageText: "rocketpool api security can-vote-proposal proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -234,7 +236,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"v"},
 				Usage:     "Vote on a proposal",
 				UsageText: "rocketpool api security vote-proposal proposal-id support",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -260,7 +262,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-execute-proposal",
 				Usage:     "Check whether the node can execute a proposal",
 				UsageText: "rocketpool api security can-execute-proposal proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -282,7 +284,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"x"},
 				Usage:     "Execute a proposal",
 				UsageText: "rocketpool api security execute-proposal proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -304,7 +306,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-join",
 				Usage:     "Check whether the node can join the security council",
 				UsageText: "rocketpool api security can-join",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -322,7 +324,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"j"},
 				Usage:     "Join the security council (requires an executed invite proposal)",
 				UsageText: "rocketpool api security join",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -340,7 +342,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-leave",
 				Usage:     "Check whether the node can leave the security council",
 				UsageText: "rocketpool api security can-leave",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -358,7 +360,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"e"},
 				Usage:     "Leave the security council (requires an executed leave proposal)",
 				UsageText: "rocketpool api security leave",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -376,7 +378,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-setting",
 				Usage:     "Check whether the node can propose a PDAO setting",
 				UsageText: "rocketpool api security can-propose-setting contract-name setting-name value",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
@@ -396,7 +398,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-setting",
 				Usage:     "Propose updating a PDAO setting",
 				UsageText: "rocketpool api security propose-setting contract-name setting-name value",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {

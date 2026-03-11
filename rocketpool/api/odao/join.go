@@ -9,7 +9,7 @@ import (
 	tnsettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -17,7 +17,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
+func canJoin(c *cli.Command) (*api.CanJoinTNDAOResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -118,7 +118,7 @@ func canJoin(c *cli.Context) (*api.CanJoinTNDAOResponse, error) {
 
 }
 
-func approveRpl(c *cli.Context) (*api.JoinTNDAOApproveResponse, error) {
+func approveRpl(c *cli.Command) (*api.JoinTNDAOApproveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -181,7 +181,7 @@ func approveRpl(c *cli.Context) (*api.JoinTNDAOApproveResponse, error) {
 
 }
 
-func waitForApprovalAndJoin(c *cli.Context, hash common.Hash) (*api.JoinTNDAOJoinResponse, error) {
+func waitForApprovalAndJoin(c *cli.Command, hash common.Hash) (*api.JoinTNDAOJoinResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

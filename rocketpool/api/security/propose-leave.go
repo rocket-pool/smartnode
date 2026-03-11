@@ -4,14 +4,14 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProposeLeave(c *cli.Context) (*api.SecurityCanProposeLeaveResponse, error) {
+func canProposeLeave(c *cli.Command) (*api.SecurityCanProposeLeaveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeSecurityMember(c); err != nil {
@@ -64,7 +64,7 @@ func canProposeLeave(c *cli.Context) (*api.SecurityCanProposeLeaveResponse, erro
 
 }
 
-func proposeLeave(c *cli.Context) (*api.SecurityProposeLeaveResponse, error) {
+func proposeLeave(c *cli.Command) (*api.SecurityProposeLeaveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeSecurityMember(c); err != nil {

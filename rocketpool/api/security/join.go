@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canJoin(c *cli.Context) (*api.SecurityCanJoinResponse, error) {
+func canJoin(c *cli.Command) (*api.SecurityCanJoinResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -80,7 +80,7 @@ func canJoin(c *cli.Context) (*api.SecurityCanJoinResponse, error) {
 
 }
 
-func join(c *cli.Context) (*api.SecurityJoinResponse, error) {
+func join(c *cli.Command) (*api.SecurityJoinResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

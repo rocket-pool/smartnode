@@ -6,14 +6,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canRefundMinipool(c *cli.Context, minipoolAddress common.Address) (*api.CanRefundMinipoolResponse, error) {
+func canRefundMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanRefundMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -69,7 +69,7 @@ func canRefundMinipool(c *cli.Context, minipoolAddress common.Address) (*api.Can
 
 }
 
-func refundMinipool(c *cli.Context, minipoolAddress common.Address) (*api.RefundMinipoolResponse, error) {
+func refundMinipool(c *cli.Command, minipoolAddress common.Address) (*api.RefundMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

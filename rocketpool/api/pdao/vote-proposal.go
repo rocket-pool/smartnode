@@ -6,7 +6,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -15,7 +15,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.CanVoteOnPDAOProposalResponse, error) {
+func canVoteOnProposal(c *cli.Command, proposalId uint64, voteDirection types.VoteDirection) (*api.CanVoteOnPDAOProposalResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -120,7 +120,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.Vo
 	return &response, nil
 }
 
-func voteOnProposal(c *cli.Context, proposalId uint64, voteDirection types.VoteDirection) (*api.VoteOnPDAOProposalResponse, error) {
+func voteOnProposal(c *cli.Command, proposalId uint64, voteDirection types.VoteDirection) (*api.VoteOnPDAOProposalResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {

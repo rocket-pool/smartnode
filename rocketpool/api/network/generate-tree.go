@@ -8,7 +8,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	ErrorColor   = color.FgRed
 )
 
-func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenerateRewardsTreeResponse, error) {
+func canGenerateRewardsTree(c *cli.Command, index uint64) (*api.CanNetworkGenerateRewardsTreeResponse, error) {
 
 	// Get services
 	rp, err := services.GetRocketPool(c)
@@ -51,7 +51,7 @@ func canGenerateRewardsTree(c *cli.Context, index uint64) (*api.CanNetworkGenera
 
 }
 
-func generateRewardsTree(c *cli.Context, index uint64) (*api.NetworkGenerateRewardsTreeResponse, error) {
+func generateRewardsTree(c *cli.Command, index uint64) (*api.NetworkGenerateRewardsTreeResponse, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

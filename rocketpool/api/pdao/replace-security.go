@@ -10,10 +10,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canProposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address) (*api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse, error) {
+func canProposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address) (*api.PDAOCanProposeReplaceMemberOfSecurityCouncilResponse, error) {
 	// Get services
 	w, err := services.GetWallet(c)
 	if err != nil {
@@ -88,7 +88,7 @@ func canProposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddr
 	return &response, nil
 }
 
-func proposeReplaceMemberOfSecurityCouncil(c *cli.Context, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
+func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {

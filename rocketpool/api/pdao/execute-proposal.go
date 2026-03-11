@@ -5,7 +5,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canExecuteProposal(c *cli.Context, proposalId uint64) (*api.CanExecutePDAOProposalResponse, error) {
+func canExecuteProposal(c *cli.Command, proposalId uint64) (*api.CanExecutePDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -79,7 +79,7 @@ func canExecuteProposal(c *cli.Context, proposalId uint64) (*api.CanExecutePDAOP
 
 }
 
-func executeProposal(c *cli.Context, proposalId uint64) (*api.ExecutePDAOProposalResponse, error) {
+func executeProposal(c *cli.Command, proposalId uint64) (*api.ExecutePDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

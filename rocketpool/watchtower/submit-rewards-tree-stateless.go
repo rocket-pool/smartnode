@@ -32,12 +32,12 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 // Submit rewards Merkle Tree task
 type submitRewardsTree_Stateless struct {
-	c                *cli.Context
+	c                *cli.Command
 	log              *log.ColorLogger
 	errLog           *log.ColorLogger
 	cfg              *config.RocketPoolConfig
@@ -52,7 +52,7 @@ type submitRewardsTree_Stateless struct {
 }
 
 // Create submit rewards Merkle Tree task
-func newSubmitRewardsTree_Stateless(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*submitRewardsTree_Stateless, error) {
+func newSubmitRewardsTree_Stateless(c *cli.Command, logger log.ColorLogger, errorLogger log.ColorLogger, m *state.NetworkStateManager) (*submitRewardsTree_Stateless, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

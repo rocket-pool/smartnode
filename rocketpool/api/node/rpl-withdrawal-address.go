@@ -8,14 +8,14 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canSetRPLWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodeRPLWithdrawalAddressResponse, error) {
+func canSetRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodeRPLWithdrawalAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -103,7 +103,7 @@ func canSetRPLWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address
 	return &response, nil
 }
 
-func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, confirm bool) (*api.SetNodeRPLWithdrawalAddressResponse, error) {
+func setRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool) (*api.SetNodeRPLWithdrawalAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -149,7 +149,7 @@ func setRPLWithdrawalAddress(c *cli.Context, withdrawalAddress common.Address, c
 	return &response, nil
 }
 
-func canConfirmRPLWithdrawalAddress(c *cli.Context) (*api.CanConfirmNodeRPLWithdrawalAddressResponse, error) {
+func canConfirmRPLWithdrawalAddress(c *cli.Command) (*api.CanConfirmNodeRPLWithdrawalAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -200,7 +200,7 @@ func canConfirmRPLWithdrawalAddress(c *cli.Context) (*api.CanConfirmNodeRPLWithd
 	return &response, nil
 }
 
-func confirmRPLWithdrawalAddress(c *cli.Context) (*api.ConfirmNodeRPLWithdrawalAddressResponse, error) {
+func confirmRPLWithdrawalAddress(c *cli.Command) (*api.ConfirmNodeRPLWithdrawalAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err

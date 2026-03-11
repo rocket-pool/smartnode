@@ -11,7 +11,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -25,7 +25,7 @@ import (
 
 // Distribute minipools task
 type setUseLatestDelegate struct {
-	c              *cli.Context
+	c              *cli.Command
 	log            log.ColorLogger
 	cfg            *config.RocketPoolConfig
 	w              wallet.Wallet
@@ -39,7 +39,7 @@ type setUseLatestDelegate struct {
 }
 
 // Create distribute minipools task
-func newSetUseLatestDelegate(c *cli.Context, logger log.ColorLogger) (*setUseLatestDelegate, error) {
+func newSetUseLatestDelegate(c *cli.Command, logger log.ColorLogger) (*setUseLatestDelegate, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

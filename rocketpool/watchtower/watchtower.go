@@ -1,6 +1,7 @@
 package watchtower
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"math/rand"
@@ -12,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/fatih/color"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -53,19 +54,19 @@ const (
 )
 
 // Register watchtower command
-func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
+func RegisterCommands(app *cli.Command, name string, aliases []string) {
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Run Rocket Pool watchtower activity daemon",
-		Action: func(c *cli.Context) error {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			return run(c)
 		},
 	})
 }
 
 // Run daemon
-func run(c *cli.Context) error {
+func run(c *cli.Command) error {
 
 	// Configure
 	configureHTTP()

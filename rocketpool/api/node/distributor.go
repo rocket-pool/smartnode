@@ -6,7 +6,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func isFeeDistributorInitialized(c *cli.Context) (*api.NodeIsFeeDistributorInitializedResponse, error) {
+func isFeeDistributorInitialized(c *cli.Command) (*api.NodeIsFeeDistributorInitializedResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func isFeeDistributorInitialized(c *cli.Context) (*api.NodeIsFeeDistributorIniti
 	return &response, nil
 }
 
-func getInitializeFeeDistributorGas(c *cli.Context) (*api.NodeInitializeFeeDistributorGasResponse, error) {
+func getInitializeFeeDistributorGas(c *cli.Command) (*api.NodeInitializeFeeDistributorGasResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -96,7 +96,7 @@ func getInitializeFeeDistributorGas(c *cli.Context) (*api.NodeInitializeFeeDistr
 
 }
 
-func initializeFeeDistributor(c *cli.Context) (*api.NodeInitializeFeeDistributorResponse, error) {
+func initializeFeeDistributor(c *cli.Command) (*api.NodeInitializeFeeDistributorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -137,7 +137,7 @@ func initializeFeeDistributor(c *cli.Context) (*api.NodeInitializeFeeDistributor
 
 }
 
-func canDistribute(c *cli.Context) (*api.NodeCanDistributeResponse, error) {
+func canDistribute(c *cli.Command) (*api.NodeCanDistributeResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -215,7 +215,7 @@ func canDistribute(c *cli.Context) (*api.NodeCanDistributeResponse, error) {
 
 }
 
-func distribute(c *cli.Context) (*api.NodeDistributeResponse, error) {
+func distribute(c *cli.Command) (*api.NodeDistributeResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err

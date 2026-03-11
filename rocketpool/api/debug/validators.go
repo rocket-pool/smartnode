@@ -16,14 +16,14 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
 
 const MinipoolBalanceDetailsBatchSize = 20
 
 // Get all minipool balance details
-func ExportValidators(c *cli.Context) error {
+func ExportValidators(c *cli.Command) error {
 
 	opts := &bind.CallOpts{}
 

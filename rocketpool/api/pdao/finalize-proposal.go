@@ -5,7 +5,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canFinalizeProposal(c *cli.Context, proposalId uint64) (*api.PDAOCanFinalizeProposalResponse, error) {
+func canFinalizeProposal(c *cli.Command, proposalId uint64) (*api.PDAOCanFinalizeProposalResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func canFinalizeProposal(c *cli.Context, proposalId uint64) (*api.PDAOCanFinaliz
 	return &response, nil
 }
 
-func finalizeProposal(c *cli.Context, proposalId uint64) (*api.PDAOFinalizeProposalResponse, error) {
+func finalizeProposal(c *cli.Command, proposalId uint64) (*api.PDAOFinalizeProposalResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err

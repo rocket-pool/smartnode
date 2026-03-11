@@ -1,7 +1,9 @@
 package auction
 
 import (
-	"github.com/urfave/cli"
+	"context"
+
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -9,18 +11,18 @@ import (
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
-	command.Subcommands = append(command.Subcommands, cli.Command{
+	command.Commands = append(command.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage Rocket Pool RPL auctions",
-		Subcommands: []cli.Command{
+		Commands: []*cli.Command{
 
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get RPL auction status",
 				UsageText: "rocketpool api auction status",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -39,7 +41,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"l"},
 				Usage:     "Get RPL lots for auction",
 				UsageText: "rocketpool api auction lots",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -57,7 +59,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-create-lot",
 				Usage:     "Check whether the node can create a new lot",
 				UsageText: "rocketpool api auction can-create-lot",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -75,7 +77,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"t"},
 				Usage:     "Create a new lot",
 				UsageText: "rocketpool api auction create-lot",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -93,7 +95,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-bid-lot",
 				Usage:     "Check whether the node can bid on a lot",
 				UsageText: "rocketpool api auction can-bid-lot lot-id amount",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -119,7 +121,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"b"},
 				Usage:     "Bid on a lot",
 				UsageText: "rocketpool api auction bid-lot lot-id amount",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -145,7 +147,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-claim-lot",
 				Usage:     "Check whether the node can claim RPL from a lot",
 				UsageText: "rocketpool api auction can-claim-lot lot-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -167,7 +169,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"c"},
 				Usage:     "Claim RPL from a lot",
 				UsageText: "rocketpool api auction claim-lot lot-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -189,7 +191,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-recover-lot",
 				Usage:     "Check whether the node can recover unclaimed RPL from a lot",
 				UsageText: "rocketpool api auction can-recover-lot lot-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -211,7 +213,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"r"},
 				Usage:     "Recover unclaimed RPL from a lot (returning it to the auction contract)",
 				UsageText: "rocketpool api auction recover-lot lot-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	cfg "github.com/rocket-pool/smartnode/shared/services/config"
@@ -37,7 +37,7 @@ var publicIPResolvers = []struct {
 
 // Check port connectivity task
 type CheckPortConnectivity struct {
-	c   *cli.Context
+	c   *cli.Command
 	log log.ColorLogger
 	cfg *cfg.RocketPoolConfig
 
@@ -54,7 +54,7 @@ type CheckPortConnectivity struct {
 }
 
 // Create check port connectivity task
-func NewCheckPortConnectivity(c *cli.Context, config *cfg.RocketPoolConfig, logger log.ColorLogger) (*CheckPortConnectivity, error) {
+func NewCheckPortConnectivity(c *cli.Command, config *cfg.RocketPoolConfig, logger log.ColorLogger) (*CheckPortConnectivity, error) {
 	return &CheckPortConnectivity{
 		c:   c,
 		log: logger,

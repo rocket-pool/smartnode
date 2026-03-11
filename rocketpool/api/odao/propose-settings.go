@@ -6,7 +6,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canProposeSetting(c *cli.Context, w wallet.Wallet, rp *rocketpool.RocketPool) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSetting(c *cli.Command, w wallet.Wallet, rp *rocketpool.RocketPool) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Response
 	response := api.CanProposeTNDAOSettingResponse{}
@@ -38,7 +38,7 @@ func canProposeSetting(c *cli.Context, w wallet.Wallet, rp *rocketpool.RocketPoo
 
 }
 
-func canProposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingMembersQuorum(c *cli.Command, quorum float64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -73,7 +73,7 @@ func canProposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.CanPro
 
 }
 
-func proposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.ProposeTNDAOSettingMembersQuorumResponse, error) {
+func proposeSettingMembersQuorum(c *cli.Command, quorum float64) (*api.ProposeTNDAOSettingMembersQuorumResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -116,7 +116,7 @@ func proposeSettingMembersQuorum(c *cli.Context, quorum float64) (*api.ProposeTN
 
 }
 
-func canProposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingMembersRplBond(c *cli.Command, bondAmountWei *big.Int) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -151,7 +151,7 @@ func canProposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*a
 
 }
 
-func proposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.ProposeTNDAOSettingMembersRplBondResponse, error) {
+func proposeSettingMembersRplBond(c *cli.Command, bondAmountWei *big.Int) (*api.ProposeTNDAOSettingMembersRplBondResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -194,7 +194,7 @@ func proposeSettingMembersRplBond(c *cli.Context, bondAmountWei *big.Int) (*api.
 
 }
 
-func canProposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingMinipoolUnbondedMax(c *cli.Command, unbondedMinipoolMax uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -229,7 +229,7 @@ func canProposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax ui
 
 }
 
-func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint64) (*api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse, error) {
+func proposeSettingMinipoolUnbondedMax(c *cli.Command, unbondedMinipoolMax uint64) (*api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -272,7 +272,7 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Context, unbondedMinipoolMax uint6
 
 }
 
-func canProposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalCooldown(c *cli.Command, proposalCooldownTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -307,7 +307,7 @@ func canProposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan 
 
 }
 
-func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan uint64) (*api.ProposeTNDAOSettingProposalCooldownResponse, error) {
+func proposeSettingProposalCooldown(c *cli.Command, proposalCooldownTimespan uint64) (*api.ProposeTNDAOSettingProposalCooldownResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -350,7 +350,7 @@ func proposeSettingProposalCooldown(c *cli.Context, proposalCooldownTimespan uin
 
 }
 
-func canProposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalVoteTimespan(c *cli.Command, proposalVoteTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -385,7 +385,7 @@ func canProposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan 
 
 }
 
-func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan uint64) (*api.ProposeTNDAOSettingProposalVoteTimespanResponse, error) {
+func proposeSettingProposalVoteTimespan(c *cli.Command, proposalVoteTimespan uint64) (*api.ProposeTNDAOSettingProposalVoteTimespanResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -428,7 +428,7 @@ func proposeSettingProposalVoteTimespan(c *cli.Context, proposalVoteTimespan uin
 
 }
 
-func canProposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalVoteDelayTimespan(c *cli.Command, proposalDelayTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -463,7 +463,7 @@ func canProposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTim
 
 }
 
-func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimespan uint64) (*api.ProposeTNDAOSettingProposalVoteDelayTimespanResponse, error) {
+func proposeSettingProposalVoteDelayTimespan(c *cli.Command, proposalDelayTimespan uint64) (*api.ProposeTNDAOSettingProposalVoteDelayTimespanResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -506,7 +506,7 @@ func proposeSettingProposalVoteDelayTimespan(c *cli.Context, proposalDelayTimesp
 
 }
 
-func canProposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalExecuteTimespan(c *cli.Command, proposalExecuteTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -541,7 +541,7 @@ func canProposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTim
 
 }
 
-func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimespan uint64) (*api.ProposeTNDAOSettingProposalExecuteTimespanResponse, error) {
+func proposeSettingProposalExecuteTimespan(c *cli.Command, proposalExecuteTimespan uint64) (*api.ProposeTNDAOSettingProposalExecuteTimespanResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -584,7 +584,7 @@ func proposeSettingProposalExecuteTimespan(c *cli.Context, proposalExecuteTimesp
 
 }
 
-func canProposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingProposalActionTimespan(c *cli.Command, proposalActionTimespan uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -619,7 +619,7 @@ func canProposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimes
 
 }
 
-func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan uint64) (*api.ProposeTNDAOSettingProposalActionTimespanResponse, error) {
+func proposeSettingProposalActionTimespan(c *cli.Command, proposalActionTimespan uint64) (*api.ProposeTNDAOSettingProposalActionTimespanResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -662,7 +662,7 @@ func proposeSettingProposalActionTimespan(c *cli.Context, proposalActionTimespan
 
 }
 
-func canProposeSettingScrubPeriod(c *cli.Context, scrubPeriod uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingScrubPeriod(c *cli.Command, scrubPeriod uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -697,7 +697,7 @@ func canProposeSettingScrubPeriod(c *cli.Context, scrubPeriod uint64) (*api.CanP
 
 }
 
-func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod uint64) (*api.ProposeTNDAOSettingScrubPeriodResponse, error) {
+func proposeSettingScrubPeriod(c *cli.Command, scrubPeriod uint64) (*api.ProposeTNDAOSettingScrubPeriodResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -740,7 +740,7 @@ func proposeSettingScrubPeriod(c *cli.Context, scrubPeriod uint64) (*api.Propose
 
 }
 
-func canProposeSettingPromotionScrubPeriod(c *cli.Context, promotionScrubPeriod uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingPromotionScrubPeriod(c *cli.Command, promotionScrubPeriod uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -775,7 +775,7 @@ func canProposeSettingPromotionScrubPeriod(c *cli.Context, promotionScrubPeriod 
 
 }
 
-func proposeSettingPromotionScrubPeriod(c *cli.Context, promotionScrubPeriod uint64) (*api.ProposeTNDAOSettingPromotionScrubPeriodResponse, error) {
+func proposeSettingPromotionScrubPeriod(c *cli.Command, promotionScrubPeriod uint64) (*api.ProposeTNDAOSettingPromotionScrubPeriodResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -818,7 +818,7 @@ func proposeSettingPromotionScrubPeriod(c *cli.Context, promotionScrubPeriod uin
 
 }
 
-func canProposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingScrubPenaltyEnabled(c *cli.Command, enabled bool) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -853,7 +853,7 @@ func canProposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) (*api.Ca
 
 }
 
-func proposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) (*api.ProposeTNDAOSettingScrubPeriodResponse, error) {
+func proposeSettingScrubPenaltyEnabled(c *cli.Command, enabled bool) (*api.ProposeTNDAOSettingScrubPeriodResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -896,7 +896,7 @@ func proposeSettingScrubPenaltyEnabled(c *cli.Context, enabled bool) (*api.Propo
 
 }
 
-func canProposeSettingBondReductionWindowStart(c *cli.Context, bondReductionWindowStart uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingBondReductionWindowStart(c *cli.Command, bondReductionWindowStart uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -931,7 +931,7 @@ func canProposeSettingBondReductionWindowStart(c *cli.Context, bondReductionWind
 
 }
 
-func proposeSettingBondReductionWindowStart(c *cli.Context, bondReductionWindowStart uint64) (*api.ProposeTNDAOSettingScrubPeriodResponse, error) {
+func proposeSettingBondReductionWindowStart(c *cli.Command, bondReductionWindowStart uint64) (*api.ProposeTNDAOSettingScrubPeriodResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -974,7 +974,7 @@ func proposeSettingBondReductionWindowStart(c *cli.Context, bondReductionWindowS
 
 }
 
-func canProposeSettingBondReductionWindowLength(c *cli.Context, bondReductionWindowLength uint64) (*api.CanProposeTNDAOSettingResponse, error) {
+func canProposeSettingBondReductionWindowLength(c *cli.Command, bondReductionWindowLength uint64) (*api.CanProposeTNDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -1009,7 +1009,7 @@ func canProposeSettingBondReductionWindowLength(c *cli.Context, bondReductionWin
 
 }
 
-func proposeSettingBondReductionWindowLength(c *cli.Context, bondReductionWindowLength uint64) (*api.ProposeTNDAOSettingScrubPeriodResponse, error) {
+func proposeSettingBondReductionWindowLength(c *cli.Command, bondReductionWindowLength uint64) (*api.ProposeTNDAOSettingScrubPeriodResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {

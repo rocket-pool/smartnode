@@ -9,10 +9,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canSendMessage(c *cli.Context, address common.Address, message []byte) (*api.CanNodeSendMessageResponse, error) {
+func canSendMessage(c *cli.Command, address common.Address, message []byte) (*api.CanNodeSendMessageResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -47,7 +47,7 @@ func canSendMessage(c *cli.Context, address common.Address, message []byte) (*ap
 
 }
 
-func sendMessage(c *cli.Context, address common.Address, message []byte) (*api.NodeSendMessageResponse, error) {
+func sendMessage(c *cli.Command, address common.Address, message []byte) (*api.NodeSendMessageResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

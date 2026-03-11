@@ -6,11 +6,11 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	ens "github.com/wealdtech/go-ens/v3"
 )
 
-func resolveEnsName(c *cli.Context, name string) (*api.ResolveEnsNameResponse, error) {
+func resolveEnsName(c *cli.Command, name string) (*api.ResolveEnsNameResponse, error) {
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func resolveEnsName(c *cli.Context, name string) (*api.ResolveEnsNameResponse, e
 	return &response, nil
 }
 
-func reverseResolveEnsName(c *cli.Context, address common.Address) (*api.ResolveEnsNameResponse, error) {
+func reverseResolveEnsName(c *cli.Command, address common.Address) (*api.ResolveEnsNameResponse, error) {
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -44,7 +44,7 @@ func reverseResolveEnsName(c *cli.Context, address common.Address) (*api.Resolve
 	return &response, nil
 }
 
-func formatResolvedAddress(c *cli.Context, address common.Address) string {
+func formatResolvedAddress(c *cli.Command, address common.Address) string {
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return address.Hex()

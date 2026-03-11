@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -9,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
 	"github.com/rocket-pool/smartnode/rocketpool/api/security"
 	"github.com/rocket-pool/smartnode/rocketpool/api/upgrade"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/rocketpool/api/auction"
@@ -31,7 +32,7 @@ const (
 )
 
 // Waits for an auction transaction
-func waitForTransaction(c *cli.Context, hash common.Hash) (*apitypes.APIResponse, error) {
+func waitForTransaction(c *cli.Command, hash common.Hash) (*apitypes.APIResponse, error) {
 
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
@@ -51,18 +52,18 @@ func waitForTransaction(c *cli.Context, hash common.Hash) (*apitypes.APIResponse
 }
 
 // Register commands
-func RegisterCommands(app *cli.App, name string, aliases []string) {
+func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
 	// CLI command
 	command := cli.Command{
-		Name:        name,
-		Aliases:     aliases,
-		Usage:       "Run Rocket Pool API commands",
-		Subcommands: []cli.Command{},
+		Name:     name,
+		Aliases:  aliases,
+		Usage:    "Run Rocket Pool API commands",
+		Commands: []*cli.Command{},
 	}
 
 	// Don't show help message for api errors because of JSON serialisation
-	command.OnUsageError = func(context *cli.Context, err error, isSubcommand bool) error {
+	command.OnUsageError = func(ctx context.Context, c *cli.Command, err error, isSubcommand bool) error {
 		return err
 	}
 
@@ -83,12 +84,12 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	debug.RegisterSubcommands(&command, "debug", []string{"d"})
 
 	// Append a general wait-for-transaction command to support async operations
-	command.Subcommands = append(command.Subcommands, cli.Command{
+	command.Commands = append(command.Commands, &cli.Command{
 		Name:      "wait",
 		Aliases:   []string{"t"},
 		Usage:     "Wait for a transaction to complete",
 		UsageText: "rocketpool api wait tx-hash",
-		Action: func(c *cli.Context) error {
+		Action: func(ctx context.Context, c *cli.Command) error {
 			// Validate args
 			if err := cliutils.ValidateArgCount(c, 1); err != nil {
 				return err
@@ -105,7 +106,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 	})
 
 	// Register CLI command
-	app.Commands = append(app.Commands, command)
+	app.Commands = append(app.Commands, &command)
 
 	// The daemon makes a large number of concurrent RPC requests to the Eth1 client
 	// The HTTP transport is set to cache connections for future re-use equal to the maximum expected number of concurrent requests

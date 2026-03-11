@@ -14,11 +14,11 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
 
-func canProposeSetting(c *cli.Context, contractName string, settingName string, value string) (*api.CanProposePDAOSettingResponse, error) {
+func canProposeSetting(c *cli.Command, contractName string, settingName string, value string) (*api.CanProposePDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -939,7 +939,7 @@ func canProposeSetting(c *cli.Context, contractName string, settingName string, 
 
 }
 
-func proposeSetting(c *cli.Context, contractName string, settingName string, value string, blockNumber uint32) (*api.ProposePDAOSettingResponse, error) {
+func proposeSetting(c *cli.Command, contractName string, settingName string, value string, blockNumber uint32) (*api.ProposePDAOSettingResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

@@ -19,7 +19,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 	"gopkg.in/yaml.v2"
@@ -30,7 +30,7 @@ const (
 	bucketLimit uint = 2000
 )
 
-func RecoverNodeKeys(c *cli.Context, rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, w wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
+func RecoverNodeKeys(c *cli.Command, rp *rocketpool.RocketPool, bc beacon.Client, nodeAddress common.Address, w wallet.Wallet, testOnly bool) ([]types.ValidatorPubkey, error) {
 	cfg, err := services.GetConfig(c)
 	if err != nil {
 		return nil, err

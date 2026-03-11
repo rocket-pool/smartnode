@@ -11,13 +11,13 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 // Sets the nonce of the provided transaction options to the latest nonce if requested
-func CheckForNonceOverride(c *cli.Context, opts *bind.TransactOpts) error {
+func CheckForNonceOverride(c *cli.Command, opts *bind.TransactOpts) error {
 
-	customNonceString := c.GlobalString("nonce")
+	customNonceString := c.Root().String("nonce")
 	if customNonceString != "" {
 		customNonce, success := big.NewInt(0).SetString(customNonceString, 0)
 		if !success {

@@ -1,25 +1,27 @@
 package auction
 
 import (
-	"github.com/urfave/cli"
+	"context"
+
+	"github.com/urfave/cli/v3"
 
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 )
 
 // Register commands
-func RegisterCommands(app *cli.App, name string, aliases []string) {
-	app.Commands = append(app.Commands, cli.Command{
+func RegisterCommands(app *cli.Command, name string, aliases []string) {
+	app.Commands = append(app.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage Rocket Pool RPL auctions",
-		Subcommands: []cli.Command{
+		Commands: []*cli.Command{
 
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get RPL auction status",
 				UsageText: "rocketpool auction status",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -37,7 +39,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases:   []string{"l"},
 				Usage:     "Get RPL lots for auction",
 				UsageText: "rocketpool auction lots",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -55,7 +57,7 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Aliases:   []string{"t"},
 				Usage:     "Create a new lot",
 				UsageText: "rocketpool auction create-lot",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -74,20 +76,23 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Bid on a lot",
 				UsageText: "rocketpool auction bid-lot [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "lot, l",
-						Usage: "The ID of the lot to bid on",
+					&cli.StringFlag{
+						Name:    "lot",
+						Aliases: []string{"l"},
+						Usage:   "The ID of the lot to bid on",
 					},
-					cli.StringFlag{
-						Name:  "amount, a",
-						Usage: "The amount of ETH to bid (or 'max')",
+					&cli.StringFlag{
+						Name:    "amount",
+						Aliases: []string{"a"},
+						Usage:   "The amount of ETH to bid (or 'max')",
 					},
-					cli.BoolFlag{
-						Name:  "yes, y",
-						Usage: "Automatically confirm bid",
+					&cli.BoolFlag{
+						Name:    "yes",
+						Aliases: []string{"y"},
+						Usage:   "Automatically confirm bid",
 					},
 				},
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -118,12 +123,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Claim RPL from a lot",
 				UsageText: "rocketpool auction claim-lot [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "lot, l",
-						Usage: "The lot to claim RPL from (lot ID or 'all')",
+					&cli.StringFlag{
+						Name:    "lot",
+						Aliases: []string{"l"},
+						Usage:   "The lot to claim RPL from (lot ID or 'all')",
 					},
 				},
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -149,12 +155,13 @@ func RegisterCommands(app *cli.App, name string, aliases []string) {
 				Usage:     "Recover unclaimed RPL from a lot (returning it to the auction contract)",
 				UsageText: "rocketpool auction recover-lot [options]",
 				Flags: []cli.Flag{
-					cli.StringFlag{
-						Name:  "lot, l",
-						Usage: "The lot to recover unclaimed RPL from (lot ID or 'all')",
+					&cli.StringFlag{
+						Name:    "lot",
+						Aliases: []string{"l"},
+						Usage:   "The lot to recover unclaimed RPL from (lot ID or 'all')",
 					},
 				},
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {

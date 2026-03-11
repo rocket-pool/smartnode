@@ -15,10 +15,10 @@ import (
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canSetSignallingAddress(c *cli.Context, signallingAddress common.Address, signature string) (*api.PDAOCanSetSignallingAddressResponse, error) {
+func canSetSignallingAddress(c *cli.Command, signallingAddress common.Address, signature string) (*api.PDAOCanSetSignallingAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -107,7 +107,7 @@ func canSetSignallingAddress(c *cli.Context, signallingAddress common.Address, s
 	return &response, nil
 }
 
-func setSignallingAddress(c *cli.Context, signallingAddress common.Address, signature string) (*api.PDAOSetSignallingAddressResponse, error) {
+func setSignallingAddress(c *cli.Command, signallingAddress common.Address, signature string) (*api.PDAOSetSignallingAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -161,7 +161,7 @@ func setSignallingAddress(c *cli.Context, signallingAddress common.Address, sign
 	return &response, nil
 }
 
-func canClearSignallingAddress(c *cli.Context) (*api.PDAOCanClearSignallingAddressResponse, error) {
+func canClearSignallingAddress(c *cli.Command) (*api.PDAOCanClearSignallingAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -243,7 +243,7 @@ func canClearSignallingAddress(c *cli.Context) (*api.PDAOCanClearSignallingAddre
 	return &response, nil
 }
 
-func clearSignallingAddress(c *cli.Context) (*api.PDAOClearSignallingAddressResponse, error) {
+func clearSignallingAddress(c *cli.Command) (*api.PDAOClearSignallingAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err

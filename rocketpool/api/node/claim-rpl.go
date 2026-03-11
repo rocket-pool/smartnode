@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/legacy/v1.0.0/rewards"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeClaimRpl(c *cli.Context) (*api.CanNodeClaimRplResponse, error) {
+func canNodeClaimRpl(c *cli.Command) (*api.CanNodeClaimRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -75,7 +75,7 @@ func canNodeClaimRpl(c *cli.Context) (*api.CanNodeClaimRplResponse, error) {
 	return &response, nil
 }
 
-func nodeClaimRpl(c *cli.Context) (*api.NodeClaimRplResponse, error) {
+func nodeClaimRpl(c *cli.Command) (*api.NodeClaimRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

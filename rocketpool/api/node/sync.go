@@ -1,13 +1,13 @@
 package node
 
 import (
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func getSyncProgress(c *cli.Context) (*api.NodeSyncProgressResponse, error) {
+func getSyncProgress(c *cli.Command) (*api.NodeSyncProgressResponse, error) {
 
 	// Response
 	response := api.NodeSyncProgressResponse{}

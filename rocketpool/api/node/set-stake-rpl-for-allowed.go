@@ -5,14 +5,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/node"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canSetStakeRplForAllowed(c *cli.Context, caller common.Address, allowed bool) (*api.CanSetStakeRplForAllowedResponse, error) {
+func canSetStakeRplForAllowed(c *cli.Command, caller common.Address, allowed bool) (*api.CanSetStakeRplForAllowedResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -47,7 +47,7 @@ func canSetStakeRplForAllowed(c *cli.Context, caller common.Address, allowed boo
 
 }
 
-func setStakeRplForAllowed(c *cli.Context, caller common.Address, allowed bool) (*api.SetStakeRplForAllowedResponse, error) {
+func setStakeRplForAllowed(c *cli.Command, caller common.Address, allowed bool) (*api.SetStakeRplForAllowedResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

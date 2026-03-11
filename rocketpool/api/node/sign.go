@@ -5,14 +5,14 @@ import (
 	"fmt"
 	_ "time/tzdata"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
 
-func sign(c *cli.Context, serializedTx string) (*api.NodeSignResponse, error) {
+func sign(c *cli.Command, serializedTx string) (*api.NodeSignResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

@@ -6,10 +6,10 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func getNodeEthBalance(c *cli.Context) (*api.NodeEthBalanceResponse, error) {
+func getNodeEthBalance(c *cli.Command) (*api.NodeEthBalanceResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err

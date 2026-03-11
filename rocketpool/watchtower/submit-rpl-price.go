@@ -20,7 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -242,7 +242,7 @@ type poolObserveResponse struct {
 
 // Submit RPL price task
 type submitRplPrice struct {
-	c         *cli.Context
+	c         *cli.Command
 	log       *log.ColorLogger
 	errLog    *log.ColorLogger
 	cfg       *config.RocketPoolConfig
@@ -255,7 +255,7 @@ type submitRplPrice struct {
 }
 
 // Create submit RPL price task
-func newSubmitRplPrice(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitRplPrice, error) {
+func newSubmitRplPrice(c *cli.Command, logger log.ColorLogger, errorLogger log.ColorLogger) (*submitRplPrice, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

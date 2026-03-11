@@ -7,10 +7,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canDistributeMegapool(c *cli.Context) (*api.CanDistributeMegapoolResponse, error) {
+func canDistributeMegapool(c *cli.Command) (*api.CanDistributeMegapoolResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func canDistributeMegapool(c *cli.Context) (*api.CanDistributeMegapoolResponse, 
 	return &response, nil
 }
 
-func distributeMegapool(c *cli.Context) (*api.DistributeMegapoolResponse, error) {
+func distributeMegapool(c *cli.Command) (*api.DistributeMegapoolResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err

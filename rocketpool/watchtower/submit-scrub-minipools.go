@@ -17,7 +17,7 @@ import (
 	rputils "github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
@@ -40,7 +40,7 @@ const MinScrubSafetyTime = time.Duration(0) * time.Hour
 
 // Submit scrub minipools task
 type submitScrubMinipools struct {
-	c         *cli.Context
+	c         *cli.Command
 	log       log.ColorLogger
 	errLog    log.ColorLogger
 	cfg       *config.RocketPoolConfig
@@ -83,7 +83,7 @@ type minipoolDetails struct {
 }
 
 // Create submit scrub minipools task
-func newSubmitScrubMinipools(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.ScrubCollector) (*submitScrubMinipools, error) {
+func newSubmitScrubMinipools(c *cli.Command, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.ScrubCollector) (*submitScrubMinipools, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

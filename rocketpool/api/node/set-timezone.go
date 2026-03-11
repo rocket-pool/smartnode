@@ -5,14 +5,14 @@ import (
 	_ "time/tzdata"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canSetTimezoneLocation(c *cli.Context, timezoneLocation string) (*api.CanSetNodeTimezoneResponse, error) {
+func canSetTimezoneLocation(c *cli.Command, timezoneLocation string) (*api.CanSetNodeTimezoneResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -45,7 +45,7 @@ func canSetTimezoneLocation(c *cli.Context, timezoneLocation string) (*api.CanSe
 
 }
 
-func setTimezoneLocation(c *cli.Context, timezoneLocation string) (*api.SetNodeTimezoneResponse, error) {
+func setTimezoneLocation(c *cli.Command, timezoneLocation string) (*api.SetNodeTimezoneResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

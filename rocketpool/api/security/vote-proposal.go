@@ -6,7 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.SecurityCanVoteOnProposalResponse, error) {
+func canVoteOnProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanVoteOnProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeSecurityMember(c); err != nil {
@@ -111,7 +111,7 @@ func canVoteOnProposal(c *cli.Context, proposalId uint64) (*api.SecurityCanVoteO
 
 }
 
-func voteOnProposal(c *cli.Context, proposalId uint64, support bool) (*api.SecurityVoteOnProposalResponse, error) {
+func voteOnProposal(c *cli.Command, proposalId uint64, support bool) (*api.SecurityVoteOnProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeSecurityMember(c); err != nil {

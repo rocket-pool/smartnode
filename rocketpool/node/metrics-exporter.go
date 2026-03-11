@@ -13,10 +13,10 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/node/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
+func runMetricsServer(c *cli.Command, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -98,8 +98,8 @@ func runMetricsServer(c *cli.Context, logger log.ColorLogger, stateLocker *colle
 
 	// Start the HTTP server
 	handler := promhttp.HandlerFor(registry, promhttp.HandlerOpts{})
-	metricsAddress := c.GlobalString("metricsAddress")
-	metricsPort := c.GlobalUint("metricsPort")
+	metricsAddress := c.Root().String("metricsAddress")
+	metricsPort := c.Root().Uint("metricsPort")
 	if metricsPort == 0 {
 		metricsPort = uint(cfg.NodeMetricsPort.Value.(uint16))
 	}

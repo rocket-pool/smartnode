@@ -6,7 +6,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/dao/upgrades"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canExecuteUpgrade(c *cli.Context, upgradeProposalId uint64) (*api.CanExecuteTNDAOUpgradeResponse, error) {
+func canExecuteUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.CanExecuteTNDAOUpgradeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -94,7 +94,7 @@ func canExecuteUpgrade(c *cli.Context, upgradeProposalId uint64) (*api.CanExecut
 
 }
 
-func executeUpgrade(c *cli.Context, upgradeProposalId uint64) (*api.ExecuteTNDAOUpgradeResponse, error) {
+func executeUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.ExecuteTNDAOUpgradeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

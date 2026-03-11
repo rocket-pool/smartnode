@@ -21,7 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 const (
@@ -32,7 +32,7 @@ const (
 )
 
 type checkSoloMigrations struct {
-	c                *cli.Context
+	c                *cli.Command
 	log              log.ColorLogger
 	errLog           log.ColorLogger
 	cfg              *config.RocketPoolConfig
@@ -47,7 +47,7 @@ type checkSoloMigrations struct {
 }
 
 // Create check solo migrations task
-func newCheckSoloMigrations(c *cli.Context, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.SoloMigrationCollector) (*checkSoloMigrations, error) {
+func newCheckSoloMigrations(c *cli.Command, logger log.ColorLogger, errorLogger log.ColorLogger, coll *collectors.SoloMigrationCollector) (*checkSoloMigrations, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

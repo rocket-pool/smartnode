@@ -1,7 +1,9 @@
 package minipool
 
 import (
-	"github.com/urfave/cli"
+	"context"
+
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -9,18 +11,18 @@ import (
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
-	command.Subcommands = append(command.Subcommands, cli.Command{
+	command.Commands = append(command.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage the node's minipools",
-		Subcommands: []cli.Command{
+		Commands: []*cli.Command{
 
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get a list of the node's minipools",
 				UsageText: "rocketpool api minipool status",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -38,7 +40,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-stake",
 				Usage:     "Check whether the minipool is ready to be staked, moving from prelaunch to staking status",
 				UsageText: "rocketpool api minipool can-stake minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -60,7 +62,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"t"},
 				Usage:     "Stake the minipool, moving it from prelaunch to staking status",
 				UsageText: "rocketpool api minipool stake minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -82,7 +84,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-promote",
 				Usage:     "Check whether a vacant minipool is ready to be promoted",
 				UsageText: "rocketpool api minipool can-promote minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -103,7 +105,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "promote",
 				Usage:     "Promote a vacant minipool",
 				UsageText: "rocketpool api minipool promote minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -125,7 +127,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-refund",
 				Usage:     "Check whether the node can refund ETH from the minipool",
 				UsageText: "rocketpool api minipool can-refund minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -147,7 +149,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"r"},
 				Usage:     "Refund ETH belonging to the node from a minipool",
 				UsageText: "rocketpool api minipool refund minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -169,7 +171,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-dissolve",
 				Usage:     "Check whether the minipool can be dissolved",
 				UsageText: "rocketpool api minipool can-dissolve minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -191,7 +193,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"d"},
 				Usage:     "Dissolve an initialized or prelaunch minipool",
 				UsageText: "rocketpool api minipool dissolve minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -213,7 +215,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-exit",
 				Usage:     "Check whether the minipool can be exited from the beacon chain",
 				UsageText: "rocketpool api minipool can-exit minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -235,7 +237,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"e"},
 				Usage:     "Exit a staking minipool from the beacon chain",
 				UsageText: "rocketpool api minipool exit minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -257,7 +259,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-minipool-close-details-for-node",
 				Usage:     "Check all of the node's minipools for closure eligibility, and return the details of the closeable ones",
 				UsageText: "rocketpool api minipool get-minipool-close-details-for-node",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -275,7 +277,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"c"},
 				Usage:     "Withdraw balance from a dissolved minipool and close it",
 				UsageText: "rocketpool api minipool close minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -297,7 +299,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-delegate-upgrade",
 				Usage:     "Check whether the minipool delegate can be upgraded",
 				UsageText: "rocketpool api minipool can-delegate-upgrade minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -318,7 +320,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "delegate-upgrade",
 				Usage:     "Upgrade this minipool to the latest network delegate contract",
 				UsageText: "rocketpool api minipool delegate-upgrade minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -340,7 +342,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-use-latest-delegate",
 				Usage:     "Gets the current setting of the 'always use latest delegate' toggle",
 				UsageText: "rocketpool api minipool get-use-latest-delegate minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -362,7 +364,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-delegate",
 				Usage:     "Gets the address of the current delegate contract used by the minipool",
 				UsageText: "rocketpool api minipool get-delegate minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -384,7 +386,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-effective-delegate",
 				Usage:     "Gets the address of the effective delegate contract used by the minipool, which takes the UseLatestDelegate setting into account",
 				UsageText: "rocketpool api minipool get-effective-delegate minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -407,7 +409,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"v"},
 				Usage:     "Gets the data necessary to search for vanity minipool addresses",
 				UsageText: "rocketpool api minipool get-vanity-artifacts deposit node-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -430,7 +432,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-distribute-balance-details",
 				Usage:     "Get the balance distribution details for all of the node's minipools",
 				UsageText: "rocketpool api minipool get-distribute-balance-details",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -447,7 +449,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "distribute-balance",
 				Usage:     "Distribute a minipool's ETH balance",
 				UsageText: "rocketpool api minipool distribute-balance minipool-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -469,7 +471,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "import-key",
 				Usage:     "Import a validator private key for a vacant minipool",
 				UsageText: "rocketpool api minipool import-key minipool-address mnemonic",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -495,7 +497,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-change-withdrawal-creds",
 				Usage:     "Check whether a solo validator's withdrawal credentials can be changed to a minipool address",
 				UsageText: "rocketpool api minipool can-change-withdrawal-creds minipool-address mnemonic",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -520,7 +522,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "change-withdrawal-creds",
 				Usage:     "Change a solo validator's withdrawal credentials to a minipool address",
 				UsageText: "rocketpool api minipool change-withdrawal-creds minipool-address mnemonic",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -546,7 +548,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-rescue-dissolved-details-for-node",
 				Usage:     "Check all of the node's minipools for rescue eligibility, and return the details of the rescuable ones",
 				UsageText: "rocketpool api minipool get-rescue-dissolved-details-for-node",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -564,7 +566,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "rescue-dissolved",
 				Usage:     "Rescue a dissolved minipool by depositing ETH for it to the Beacon deposit contract",
 				UsageText: "rocketpool api minipool rescue-dissolved minipool-address deposit-amount submit",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {

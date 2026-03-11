@@ -7,7 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -19,7 +19,7 @@ const (
 	rocketMinipoolBaseName string = "rocketMinipoolBase"
 )
 
-func getVanityArtifacts(c *cli.Context, depositAmount *big.Int, nodeAddressStr string) (*api.GetVanityArtifactsResponse, error) {
+func getVanityArtifacts(c *cli.Command, depositAmount *big.Int, nodeAddressStr string) (*api.GetVanityArtifactsResponse, error) {
 
 	// Get services
 	w, err := services.GetWallet(c)

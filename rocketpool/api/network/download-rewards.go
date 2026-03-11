@@ -6,10 +6,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func downloadRewardsFile(c *cli.Context, interval uint64) (*api.DownloadRewardsFileResponse, error) {
+func downloadRewardsFile(c *cli.Command, interval uint64) (*api.DownloadRewardsFileResponse, error) {
 
 	// Get services
 	w, err := services.GetWallet(c)

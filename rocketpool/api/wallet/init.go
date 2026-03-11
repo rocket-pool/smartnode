@@ -3,14 +3,14 @@ package wallet
 import (
 	"errors"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func initWallet(c *cli.Context) (*api.InitWalletResponse, error) {
+func initWallet(c *cli.Command) (*api.InitWalletResponse, error) {
 
 	// Get services
 	w, err := services.GetWallet(c)

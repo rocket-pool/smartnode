@@ -1,14 +1,14 @@
 package wallet
 
 import (
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	walletutils "github.com/rocket-pool/smartnode/shared/utils/wallet"
 )
 
-func rebuildWallet(c *cli.Context) (*api.RebuildWalletResponse, error) {
+func rebuildWallet(c *cli.Command) (*api.RebuildWalletResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {

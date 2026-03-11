@@ -1,7 +1,9 @@
 package queue
 
 import (
-	"github.com/urfave/cli"
+	"context"
+
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -9,18 +11,18 @@ import (
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
-	command.Subcommands = append(command.Subcommands, cli.Command{
+	command.Commands = append(command.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage the Rocket Pool deposit queue",
-		Subcommands: []cli.Command{
+		Commands: []*cli.Command{
 
 			{
 				Name:      "status",
 				Aliases:   []string{"s"},
 				Usage:     "Get the deposit pool and minipool queue status",
 				UsageText: "rocketpool api queue status",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -38,7 +40,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-process",
 				Usage:     "Check whether the deposit pool can be processed",
 				UsageText: "rocketpool api queue can-process max-validators",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -61,7 +63,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"p"},
 				Usage:     "Process the deposit pool",
 				UsageText: "rocketpool api queue process max-validators",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -83,7 +85,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-queue-details",
 				Usage:     "Gets queue details.",
 				UsageText: "rocketpool api queue get-queue-details",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -101,7 +103,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-assign-deposits",
 				Usage:     "Check whether deposits can be assigned",
 				UsageText: "rocketpool api queue can-assign-deposits max",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -124,7 +126,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"ad"},
 				Usage:     "Assign deposits to queued validators",
 				UsageText: "rocketpool api queue assign-deposits max",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {

@@ -1,11 +1,12 @@
 package pdao
 
 import (
+	"context"
 	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -13,18 +14,18 @@ import (
 
 // Register subcommands
 func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
-	command.Subcommands = append(command.Subcommands, cli.Command{
+	command.Commands = append(command.Commands, &cli.Command{
 		Name:    name,
 		Aliases: aliases,
 		Usage:   "Manage the Rocket Pool protocol DAO",
-		Subcommands: []cli.Command{
+		Commands: []*cli.Command{
 
 			{
 				Name:      "proposals",
 				Aliases:   []string{"p"},
 				Usage:     "Get the protocol DAO proposals",
 				UsageText: "rocketpool api pdao proposals",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -43,7 +44,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"d"},
 				Usage:     "Get details of a proposal",
 				UsageText: "rocketpool api pdao proposal-details proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					var err error
@@ -66,7 +67,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-vote-proposal",
 				Usage:     "Check whether the node can vote on a proposal",
 				UsageText: "rocketpool api pdao can-vote-proposal proposal-id vote-direction",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -92,7 +93,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"v"},
 				Usage:     "Vote on a proposal",
 				UsageText: "rocketpool api pdao vote-proposal proposal-id vote-direction",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -118,7 +119,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-override-vote",
 				Usage:     "Check whether the node can override their delegate's vote on a proposal",
 				UsageText: "rocketpool api pdao can-override-vote proposal-id vote-direction",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -143,7 +144,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "override-vote",
 				Usage:     "Override the vote of the node's delegate on a proposal",
 				UsageText: "rocketpool api pdao override-vote proposal-id vote-direction",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -169,7 +170,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-execute-proposal",
 				Usage:     "Check whether the node can execute a proposal",
 				UsageText: "rocketpool api pdao can-execute-proposal proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -191,7 +192,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Aliases:   []string{"x"},
 				Usage:     "Execute a proposal",
 				UsageText: "rocketpool api pdao execute-proposal proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -213,7 +214,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-settings",
 				Usage:     "Get the Protocol DAO settings",
 				UsageText: "rocketpool api pdao get-member-settings",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Run
 					api.PrintResponse(getSettings(c))
@@ -226,7 +227,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-setting",
 				Usage:     "Check whether the node can propose a PDAO setting",
 				UsageText: "rocketpool api pdao can-propose-setting contract-name setting-name value",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
@@ -246,7 +247,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-setting",
 				Usage:     "Propose updating a PDAO setting (use can-propose-setting to get the pollard)",
 				UsageText: "rocketpool api pdao propose-setting contract-name setting-name value block-number",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 4); err != nil {
@@ -271,7 +272,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-rewards-percentages",
 				Usage:     "Get the allocation percentages of RPL rewards for the Oracle DAO, the Protocol DAO, and the node operators",
 				UsageText: "rocketpool api pdao get-rewards-percentages",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -288,7 +289,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-rewards-percentages",
 				Usage:     "Check whether the node can propose new RPL rewards allocation percentages for the Oracle DAO, the Protocol DAO, and the node operators",
 				UsageText: "rocketpool api pdao can-propose-rewards-percentages node odao pdao",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
@@ -317,7 +318,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-rewards-percentages",
 				Usage:     "Propose new RPL rewards allocation percentages for the Oracle DAO, the Protocol DAO, and the node operators",
 				UsageText: "rocketpool api pdao propose-rewards-percentages node odao pdao block-number",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 4); err != nil {
@@ -351,7 +352,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-one-time-spend",
 				Usage:     "Check whether the node can propose a one-time spend of the Protocol DAO's treasury",
 				UsageText: "rocketpool api pdao can-propose-one-time-spend invoice-id recipient amount custom-message",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 4); err != nil {
@@ -377,7 +378,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-one-time-spend",
 				Usage:     "Propose a one-time spend of the Protocol DAO's treasury",
 				UsageText: "rocketpool api pdao propose-one-time-spend invoice-id recipient amount block-number custom-message",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 5); err != nil {
@@ -408,7 +409,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-recurring-spend",
 				Usage:     "Check whether the node can propose a recurring spend of the Protocol DAO's treasury",
 				UsageText: "rocketpool api pdao can-propose-recurring-spend contract-name recipient amount-per-period period-length start-time number-of-periods custom-message",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 7); err != nil {
@@ -446,7 +447,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-recurring-spend",
 				Usage:     "Propose a recurring spend of the Protocol DAO's treasury",
 				UsageText: "rocketpool api pdao propose-recurring-spend contract-name recipient amount-per-period period-length start-time number-of-periods block-number custom-message",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 8); err != nil {
@@ -488,7 +489,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-recurring-spend-update",
 				Usage:     "Check whether the node can propose an update to an existing recurring spend plan",
 				UsageText: "rocketpool api pdao can-propose-recurring-spend-update contract-name recipient amount-per-period period-length number-of-periods custom-message",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 6); err != nil {
@@ -522,7 +523,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-recurring-spend-update",
 				Usage:     "Propose an update to an existing recurring spend plan",
 				UsageText: "rocketpool api pdao propose-recurring-spend-update contract-name recipient amount-per-period period-length number-of-periods block-number custom-message",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 7); err != nil {
@@ -561,7 +562,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-invite-to-security-council",
 				Usage:     "Check whether the node can invite someone to the security council",
 				UsageText: "rocketpool api pdao can-propose-invite-to-security-council id address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -583,7 +584,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-invite-to-security-council",
 				Usage:     "Propose inviting someone to the security council",
 				UsageText: "rocketpool api pdao propose-invite-to-security-council id address block-number",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
@@ -610,7 +611,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-kick-from-security-council",
 				Usage:     "Check whether the node can kick someone from the security council",
 				UsageText: "rocketpool api pdao can-propose-kick-from-security-council address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -631,7 +632,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-kick-from-security-council",
 				Usage:     "Propose kicking someone from the security council",
 				UsageText: "rocketpool api pdao propose-kick-from-security-council address block-number",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -657,7 +658,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-kick-multi-from-security-council",
 				Usage:     "Check whether the node can kick multiple members from the security council",
 				UsageText: "rocketpool api pdao can-propose-kick-multi-from-security-council addresses",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -678,7 +679,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-kick-multi-from-security-council",
 				Usage:     "Propose kicking multiple members from the security council",
 				UsageText: "rocketpool api pdao propose-kick-multi-from-security-council addresses block-number",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -704,7 +705,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-replace-member-of-security-council",
 				Usage:     "Check whether the node can propose replacing someone on the security council with another member",
 				UsageText: "rocketpool api pdao can-propose-replace-member-of-security-council existing-address new-id new-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
@@ -730,7 +731,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-replace-member-of-security-council",
 				Usage:     "Propose replacing someone on the security council with another member",
 				UsageText: "rocketpool api pdao propose-replace-member-of-security-council existing-address new-id new-address block-number",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 4); err != nil {
@@ -761,7 +762,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-claimable-bonds",
 				Usage:     "Get the list of proposals with claimable / rewardable bonds, and the relevant indices for each one",
 				UsageText: "rocketpool api pdao get-claimable-bonds",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -779,7 +780,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-claim-bonds",
 				Usage:     "Check whether the node can claim the bonds and/or rewards from a proposal",
 				UsageText: "rocketpool api pdao can-claim-bonds proposal-id tree-node-indices",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -804,7 +805,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "claim-bonds",
 				Usage:     "Claim the bonds and/or rewards from a proposal",
 				UsageText: "rocketpool api pdao claim-bonds is-proposer proposal-id tree-node-indice",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 3); err != nil {
@@ -834,7 +835,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-defeat-proposal",
 				Usage:     "Check whether a proposal can be defeated with the provided tree index",
 				UsageText: "rocketpool api pdao can-defeat-proposal proposal-id challenged-index",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -859,7 +860,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "defeat-proposal",
 				Usage:     "Defeat a proposal if it still has a challenge after voting has started",
 				UsageText: "rocketpool api pdao defeat-proposal proposal-id challenged-index",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -885,7 +886,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-finalize-proposal",
 				Usage:     "Check whether a proposal can be finalized after being vetoed",
 				UsageText: "rocketpool api pdao can-finalize-proposal proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -906,7 +907,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "finalize-proposal",
 				Usage:     "Finalize a proposal if it's been vetoed by burning the proposer's bond",
 				UsageText: "rocketpool api pdao finalize-proposal proposal-id",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -927,7 +928,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "estimate-set-voting-delegate-gas",
 				Usage:     "Estimate the gas required to set an on-chain voting delegate",
 				UsageText: "rocketpool api pdao estimate-set-voting-delegate-gas address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -949,7 +950,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "set-voting-delegate",
 				Usage:     "Set an on-chain voting delegate for the node",
 				UsageText: "rocketpool api pdao set-voting-delegate address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
@@ -971,7 +972,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "get-current-voting-delegate",
 				Usage:     "Get the current on-chain voting delegate for the node",
 				UsageText: "rocketpool api pdao get-current-voting-delegate",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -988,7 +989,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "status",
 				Usage:     "Get the pdao status",
 				UsageText: "rocketpool api pdao status",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -1005,7 +1006,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-set-signalling-address",
 				Usage:     "Checks if signalling address can be set.",
 				UsageText: "rocketpool api pdao can-set-signalling-address signalling-address signature",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -1030,7 +1031,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "set-signalling-address",
 				Usage:     "Set the signalling address for the node",
 				UsageText: "rocketpool api pdao set-signalling-address signalling-address signature",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 2); err != nil {
@@ -1055,7 +1056,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-clear-signalling-address",
 				Usage:     "Checks if the signalling address can be cleared.",
 				UsageText: "rocketpool api pdao can-clear-signalling-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -1071,7 +1072,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "clear-signalling-address",
 				Usage:     "Clear the signalling delegate address for the node",
 				UsageText: "rocketpool api pdao clear-signalling-address",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if err := cliutils.ValidateArgCount(c, 0); err != nil {
@@ -1087,7 +1088,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "can-propose-allow-listed-controllers",
 				Usage:     "Check whether the node can propose a list of addresses that can update commission share parameters",
 				UsageText: "rocketpool api pdao can-propose-allow-listed-controllers addresses",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if c.NArg() > 2 {
@@ -1112,7 +1113,7 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 				Name:      "propose-allow-listed-controllers",
 				Usage:     "Propose a list of addresses that can update commission share parameters",
 				UsageText: "rocketpool api pdao propose-allow-listed-controllers addresses block-number",
-				Action: func(c *cli.Context) error {
+				Action: func(ctx context.Context, c *cli.Command) error {
 
 					// Validate args
 					if c.NArg() > 3 || c.NArg() < 1 {

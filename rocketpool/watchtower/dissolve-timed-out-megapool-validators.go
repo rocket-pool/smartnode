@@ -15,12 +15,12 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
 // Dissolve timed out megapool validators task
 type dissolveTimedOutMegapoolValidators struct {
-	c   *cli.Context
+	c   *cli.Command
 	log log.ColorLogger
 	cfg *config.RocketPoolConfig
 	w   wallet.Wallet
@@ -29,7 +29,7 @@ type dissolveTimedOutMegapoolValidators struct {
 }
 
 // Create dissolve timed out megapool validators task
-func newDissolveTimedOutMegapoolValidators(c *cli.Context, logger log.ColorLogger) (*dissolveTimedOutMegapoolValidators, error) {
+func newDissolveTimedOutMegapoolValidators(c *cli.Command, logger log.ColorLogger) (*dissolveTimedOutMegapoolValidators, error) {
 
 	// Get services
 	cfg, err := services.GetConfig(c)

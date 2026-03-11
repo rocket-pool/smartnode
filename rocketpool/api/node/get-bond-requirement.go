@@ -6,10 +6,10 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func getBondRequirement(c *cli.Context, numValidators uint64) (*api.GetBondRequirementResponse, error) {
+func getBondRequirement(c *cli.Command, numValidators uint64) (*api.GetBondRequirementResponse, error) {
 
 	rp, err := services.GetRocketPool(c)
 	if err != nil {

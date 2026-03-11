@@ -7,10 +7,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canDissolveValidator(c *cli.Context, validatorId uint32) (*api.CanDissolveValidatorResponse, error) {
+func canDissolveValidator(c *cli.Command, validatorId uint32) (*api.CanDissolveValidatorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -83,7 +83,7 @@ func canDissolveValidator(c *cli.Context, validatorId uint32) (*api.CanDissolveV
 
 }
 
-func dissolveValidator(c *cli.Context, validatorId uint32) (*api.DissolveValidatorResponse, error) {
+func dissolveValidator(c *cli.Command, validatorId uint32) (*api.DissolveValidatorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

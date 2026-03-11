@@ -10,10 +10,10 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 )
 
-func canNotifyFinalBalance(c *cli.Context, validatorId uint32, withdrawalSlot uint64) (*api.CanNotifyFinalBalanceResponse, error) {
+func canNotifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint64) (*api.CanNotifyFinalBalanceResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -138,7 +138,7 @@ func canNotifyFinalBalance(c *cli.Context, validatorId uint32, withdrawalSlot ui
 
 }
 
-func notifyFinalBalance(c *cli.Context, validatorId uint32, withdrawalSlot uint64) (*api.NotifyValidatorExitResponse, error) {
+func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint64) (*api.NotifyValidatorExitResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

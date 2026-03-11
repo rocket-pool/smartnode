@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -12,7 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canLeave(c *cli.Context) (*api.SecurityCanLeaveResponse, error) {
+func canLeave(c *cli.Command) (*api.SecurityCanLeaveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeSecurityMember(c); err != nil {
@@ -70,7 +70,7 @@ func canLeave(c *cli.Context) (*api.SecurityCanLeaveResponse, error) {
 
 }
 
-func leave(c *cli.Context) (*api.SecurityLeaveResponse, error) {
+func leave(c *cli.Command) (*api.SecurityLeaveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeSecurityMember(c); err != nil {

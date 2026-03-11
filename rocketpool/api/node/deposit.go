@@ -14,7 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
 	prdeposit "github.com/prysmaticlabs/prysm/v5/contracts/deposit"
@@ -33,7 +33,7 @@ const (
 	ValidatorEth          float64 = 32.0
 )
 
-func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, expressTicketsRequested int64) (*api.CanNodeDepositsResponse, error) {
+func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, expressTicketsRequested int64) (*api.CanNodeDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -292,7 +292,7 @@ func canNodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFe
 
 }
 
-func nodeDeposits(c *cli.Context, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, expressTicketsRequested int64, submit bool) (*api.NodeDepositsResponse, error) {
+func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, expressTicketsRequested int64, submit bool) (*api.NodeDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {

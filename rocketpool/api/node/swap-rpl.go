@@ -7,14 +7,14 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
-func canNodeSwapRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeSwapRplResponse, error) {
+func canNodeSwapRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeSwapRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -65,7 +65,7 @@ func canNodeSwapRpl(c *cli.Context, amountWei *big.Int) (*api.CanNodeSwapRplResp
 
 }
 
-func allowanceFsRpl(c *cli.Context) (*api.NodeSwapRplAllowanceResponse, error) {
+func allowanceFsRpl(c *cli.Command) (*api.NodeSwapRplAllowanceResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -106,7 +106,7 @@ func allowanceFsRpl(c *cli.Context) (*api.NodeSwapRplAllowanceResponse, error) {
 	return &response, nil
 }
 
-func getSwapApprovalGas(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplApproveGasResponse, error) {
+func getSwapApprovalGas(c *cli.Command, amountWei *big.Int) (*api.NodeSwapRplApproveGasResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func getSwapApprovalGas(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplApp
 	return &response, nil
 }
 
-func approveFsRpl(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplApproveResponse, error) {
+func approveFsRpl(c *cli.Command, amountWei *big.Int) (*api.NodeSwapRplApproveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -192,7 +192,7 @@ func approveFsRpl(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplApproveRe
 
 }
 
-func waitForApprovalAndSwapFsRpl(c *cli.Context, amountWei *big.Int, hash common.Hash) (*api.NodeSwapRplSwapResponse, error) {
+func waitForApprovalAndSwapFsRpl(c *cli.Command, amountWei *big.Int, hash common.Hash) (*api.NodeSwapRplSwapResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -216,7 +216,7 @@ func waitForApprovalAndSwapFsRpl(c *cli.Context, amountWei *big.Int, hash common
 
 }
 
-func swapRpl(c *cli.Context, amountWei *big.Int) (*api.NodeSwapRplSwapResponse, error) {
+func swapRpl(c *cli.Command, amountWei *big.Int) (*api.NodeSwapRplSwapResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
