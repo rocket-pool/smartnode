@@ -120,38 +120,6 @@ func (c *Client) StakeMinipool(address common.Address) (api.StakeMinipoolRespons
 	return response, nil
 }
 
-// Check whether a minipool is eligible for promotion
-func (c *Client) CanPromoteMinipool(address common.Address) (api.CanPromoteMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-promote %s", address.Hex()))
-	if err != nil {
-		return api.CanPromoteMinipoolResponse{}, fmt.Errorf("Could not get can promote minipool status: %w", err)
-	}
-	var response api.CanPromoteMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanPromoteMinipoolResponse{}, fmt.Errorf("Could not decode can promote minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanPromoteMinipoolResponse{}, fmt.Errorf("Could not get can promote minipool status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Promote a minipool
-func (c *Client) PromoteMinipool(address common.Address) (api.PromoteMinipoolResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool promote %s", address.Hex()))
-	if err != nil {
-		return api.PromoteMinipoolResponse{}, fmt.Errorf("Could not promote minipool: %w", err)
-	}
-	var response api.PromoteMinipoolResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.PromoteMinipoolResponse{}, fmt.Errorf("Could not decode promote minipool response: %w", err)
-	}
-	if response.Error != "" {
-		return api.PromoteMinipoolResponse{}, fmt.Errorf("Could not promote minipool: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Check whether a minipool can be dissolved
 func (c *Client) CanDissolveMinipool(address common.Address) (api.CanDissolveMinipoolResponse, error) {
 	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-dissolve %s", address.Hex()))
@@ -328,70 +296,6 @@ func (c *Client) GetVanityArtifacts(depositAmount *big.Int, nodeAddress string) 
 	return response, nil
 }
 
-// Check whether the minipool can begin the bond reduction process
-func (c *Client) CanBeginReduceBondAmount(address common.Address, newBondAmountWei *big.Int) (api.CanBeginReduceBondAmountResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-begin-reduce-bond-amount %s %s", address.Hex(), newBondAmountWei.String()))
-	if err != nil {
-		return api.CanBeginReduceBondAmountResponse{}, fmt.Errorf("Could not get can begin reduce bond amount status: %w", err)
-	}
-	var response api.CanBeginReduceBondAmountResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanBeginReduceBondAmountResponse{}, fmt.Errorf("Could not decode can begin reduce bond status amount response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanBeginReduceBondAmountResponse{}, fmt.Errorf("Could not get can begin reduce bond amount status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Begin the bond reduction process for a minipool
-func (c *Client) BeginReduceBondAmount(address common.Address, newBondAmountWei *big.Int) (api.BeginReduceBondAmountResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool begin-reduce-bond-amount %s %s", address.Hex(), newBondAmountWei.String()))
-	if err != nil {
-		return api.BeginReduceBondAmountResponse{}, fmt.Errorf("Could not begin reduce bond amount: %w", err)
-	}
-	var response api.BeginReduceBondAmountResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.BeginReduceBondAmountResponse{}, fmt.Errorf("Could not decode begin reduce bond amount response: %w", err)
-	}
-	if response.Error != "" {
-		return api.BeginReduceBondAmountResponse{}, fmt.Errorf("Could not begin reduce bond amount: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Check if a minipool's bond can be reduced
-func (c *Client) CanReduceBondAmount(address common.Address) (api.CanReduceBondAmountResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool can-reduce-bond-amount %s", address.Hex()))
-	if err != nil {
-		return api.CanReduceBondAmountResponse{}, fmt.Errorf("Could not get can reduce bond amount status: %w", err)
-	}
-	var response api.CanReduceBondAmountResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.CanReduceBondAmountResponse{}, fmt.Errorf("Could not decode can reduce bond amount response: %w", err)
-	}
-	if response.Error != "" {
-		return api.CanReduceBondAmountResponse{}, fmt.Errorf("Could not get can reduce bond amount status: %s", response.Error)
-	}
-	return response, nil
-}
-
-// Reduce a minipool's bond
-func (c *Client) ReduceBondAmount(address common.Address) (api.ReduceBondAmountResponse, error) {
-	responseBytes, err := c.callAPI(fmt.Sprintf("minipool reduce-bond-amount %s", address.Hex()))
-	if err != nil {
-		return api.ReduceBondAmountResponse{}, fmt.Errorf("Could not reduce bond amount: %w", err)
-	}
-	var response api.ReduceBondAmountResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.ReduceBondAmountResponse{}, fmt.Errorf("Could not decode reduce bond amount response: %w", err)
-	}
-	if response.Error != "" {
-		return api.ReduceBondAmountResponse{}, fmt.Errorf("Could not reduce bond amount: %s", response.Error)
-	}
-	return response, nil
-}
-
 // Get the balance distribution details for all of the node's minipools
 func (c *Client) GetDistributeBalanceDetails() (api.GetDistributeBalanceDetailsResponse, error) {
 	responseBytes, err := c.callAPI("minipool get-distribute-balance-details")
@@ -500,21 +404,6 @@ func (c *Client) RescueDissolvedMinipool(address common.Address, amount *big.Int
 	}
 	if response.Error != "" {
 		return api.RescueDissolvedMinipoolResponse{}, fmt.Errorf("Could not rescue dissolved minipool: %s", response.Error)
-	}
-	return response, nil
-}
-
-func (c *Client) GetBondReductionEnabled() (api.GetBondReductionEnabledResponse, error) {
-	responseBytes, err := c.callAPI("minipool get-bond-reduction-enabled")
-	if err != nil {
-		return api.GetBondReductionEnabledResponse{}, fmt.Errorf("Could not get bond reduction enabled status: %w", err)
-	}
-	var response api.GetBondReductionEnabledResponse
-	if err := json.Unmarshal(responseBytes, &response); err != nil {
-		return api.GetBondReductionEnabledResponse{}, fmt.Errorf("Could not decode bond reduction enabled response: %w", err)
-	}
-	if response.Error != "" {
-		return api.GetBondReductionEnabledResponse{}, fmt.Errorf("Could not get bond reduction enabled status: %s", response.Error)
 	}
 	return response, nil
 }

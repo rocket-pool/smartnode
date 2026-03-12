@@ -139,37 +139,6 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
 				},
 			},
-			{
-				Name:      "promote",
-				Aliases:   []string{"p"},
-				Usage:     "Promote a vacant minipool after the scrub check, completing a solo validator migration.",
-				UsageText: "rocketpool minipool promote [options]",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "minipool",
-						Aliases: []string{"m"},
-						Usage:   "The minipool/s to promote (address or 'all')",
-					},
-				},
-				Action: func(ctx context.Context, c *cli.Command) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 0); err != nil {
-						return err
-					}
-
-					// Validate flags
-					if c.String("minipool") != "" && c.String("minipool") != "all" {
-						if _, err := cliutils.ValidateAddress("minipool address", c.String("minipool")); err != nil {
-							return err
-						}
-					}
-
-					// Run
-					return promoteMinipools(c.String("minipool"), c.Bool("yes"))
-
-				},
-			},
 
 			{
 				Name:      "refund",
