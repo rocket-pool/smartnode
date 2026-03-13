@@ -283,6 +283,7 @@ func GetNodeMegapoolDetails(rp *rocketpool.RocketPool, bc beacon.Client, nodeAcc
 	}
 
 	if !details.Deployed {
+		details.NodeBond = big.NewInt(0)
 		return details, nil
 	}
 
