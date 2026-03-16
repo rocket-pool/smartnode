@@ -1,7 +1,16 @@
 package api
 
-import "github.com/ethereum/go-ethereum/common"
+import (
+	"math/big"
 
+	"github.com/ethereum/go-ethereum/common"
+)
+
+type GasPriceFromLatestBlockResponse struct {
+	Status   string   `json:"status"`
+	Error    string   `json:"error"`
+	GasPrice *big.Int `json:"gasPrice"`
+}
 type TerminateDataFolderResponse struct {
 	Status        string `json:"status"`
 	Error         string `json:"error"`

@@ -17,6 +17,20 @@ func RegisterSubcommands(command *cli.Command, name string, aliases []string) {
 		Usage:   "Manage the Rocket Pool deposit queue",
 		Commands: []*cli.Command{
 			{
+				Name:      "get-gas-price-from-latest-block",
+				Aliases:   []string{"g"},
+				Usage:     "Get the gas price from the latest block",
+				UsageText: "rocketpool api gas get-gas-price-from-latest-block",
+				Action: func(ctx context.Context, c *cli.Command) error {
+
+					// Run
+					api.PrintResponse(getGasPriceFromLatestBlock(c))
+					return nil
+
+				},
+			},
+
+			{
 				Name:      "terminate-data-folder",
 				Aliases:   []string{"t"},
 				Usage:     "Deletes the data folder including the wallet file, password file, and all validator keys - don't use this unless you have a very good reason to do it (such as switching from a Testnet to Mainnet)",

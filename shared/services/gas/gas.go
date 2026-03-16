@@ -103,12 +103,21 @@ func GetMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless bo
 			maxFeeGwei = eth.WeiToGwei(maxFeeWei)
 		} else {
 			// Try to get the latest gas prices from Etherscan
-			etherscanData, err := etherscan.GetGasPrices()
-			if err == nil {
-				// Print the Etherchain data and ask for an amount
-				maxFeeGwei = handleEtherscanGasPrices(etherscanData, gasInfo, maxPriorityFeeGwei, gasLimit)
-
+			gasData, err := etherscan.GetGasPrices()
+			if err != nil || cfg.Smartnode.GetChainID() != 1 {
+				gasPrice, err := rp.GetGasPriceFromLatestBlock()
+				if err != nil {
+					return Gas{}, err
+				}
+				gasData = etherscan.GasFeeSuggestion{
+					SlowGwei:     eth.WeiToGwei(gasPrice.GasPrice),
+					StandardGwei: eth.WeiToGwei(gasPrice.GasPrice) * 1.1,
+					FastGwei:     eth.WeiToGwei(gasPrice.GasPrice) * 1.2,
+				}
 			}
+
+			// Print the gas data and ask for an amount
+			maxFeeGwei = handleEtherscanGasPrices(gasData, gasInfo, maxPriorityFeeGwei, gasLimit)
 		}
 		color.LightBluePrintf("Using a max fee of %.3f gwei and a priority fee of %.3f gwei.\n", maxFeeGwei, maxPriorityFeeGwei)
 	}
