@@ -40,7 +40,6 @@ const (
 	DownloadRewardsTreesColor      = color.FgGreen
 	MetricsColor                   = color.FgHiYellow
 	ManageFeeRecipientColor        = color.FgHiCyan
-	ReduceBondAmountColor          = color.FgHiBlue
 	DefendPdaoPropsColor           = color.FgYellow
 	VerifyPdaoPropsColor           = color.FgYellow
 	DistributeMinipoolsColor       = color.FgHiGreen

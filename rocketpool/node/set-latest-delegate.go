@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 	"math/big"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -11,6 +12,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
+	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -36,6 +38,7 @@ type setUseLatestDelegate struct {
 	maxFee         *big.Int
 	maxPriorityFee *big.Int
 	gasLimit       uint64
+	startTime      time.Time
 }
 
 // Create distribute minipools task
@@ -84,6 +87,8 @@ func newSetUseLatestDelegate(c *cli.Command, logger log.ColorLogger) (*setUseLat
 
 	gasThreshold := cfg.Smartnode.AutoTxGasThreshold.Value.(float64)
 
+	startTime := time.Now()
+
 	// Return task
 	return &setUseLatestDelegate{
 		c:              c,
@@ -97,6 +102,7 @@ func newSetUseLatestDelegate(c *cli.Command, logger log.ColorLogger) (*setUseLat
 		maxFee:         maxFee,
 		maxPriorityFee: priorityFee,
 		gasLimit:       0,
+		startTime:      startTime,
 	}, nil
 
 }
@@ -128,6 +134,13 @@ func (t *setUseLatestDelegate) run(state *state.NetworkState) error {
 
 	// Log
 	t.log.Printlnf("%d minipool(s) can have their use latest delegate set...", len(minipools))
+
+	// If the node has been running for less than 24 hours, alert the user. After that, set the flag for the minipools.
+	if time.Since(t.startTime) < 24*time.Hour {
+		t.log.Println("Alerting user they have minipools that can have the 'use latest delegate' flag set...")
+		alerting.AlertMinipoolUseLatestDelegateSet(t.cfg)
+		return nil
+	}
 
 	// Set use latest delegate for minipools
 	successCount := 0

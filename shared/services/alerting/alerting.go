@@ -192,6 +192,19 @@ func getAlertSettingsForEvent(succeeded bool) (strfmt.DateTime, Severity, string
 	return endsAt, severity, succeededOrFailedText
 }
 
+// Sends an alert when the node has minipools that can have their use latest delegate set.
+func AlertMinipoolUseLatestDelegateSet(cfg *config.RocketPoolConfig) error {
+	alert := createAlert(
+		"MinipoolUseLatestDelegateSet",
+		"Minipools can have the 'use latest delegate' flag set",
+		"Starting with v1.19.1, the Smart Node includes an automatic task that will set all legacy minipools to use the latest delegate contract. For Megapools, node operators continue to have 120 days to choose when to upgrade after a new delegate is released. If you do not wish to opt into using the latest delegate contract on your minipools, you should rollback to v1.19.0.",
+		SeverityWarning,
+		strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo)),
+		nil,
+	)
+	return sendAlert(alert, cfg)
+}
+
 // Sends an alert when the execution client's P2P port is not accessible from the internet.
 func AlertEth1P2PPortNotOpen(cfg *config.RocketPoolConfig, port uint16) error {
 	alert := createAlert(
