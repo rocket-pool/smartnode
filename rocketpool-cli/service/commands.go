@@ -193,7 +193,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						return fmt.Errorf("error checking if config path exists: %w", err)
 					}
 
-					isHeadless := c.NumFlags() > 0
+					isHeadless := c.NumFlags() > c.Root().NumFlags()
 
 					if isHeadless {
 						return configureServiceHeadless(c)
