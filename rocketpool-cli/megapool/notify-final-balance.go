@@ -73,9 +73,11 @@ func notifyFinalBalance(validatorId, validatorIndex, slot uint64, yes bool) erro
 		fmt.Println("The Smart Node needs to find the slot containing the validator withdrawal. This may take a while. You can speed up the final balance proof generation by submitting the withdrawal slot for your validator.")
 		fmt.Println()
 
-		beaconChainUrl := getBeaconChainURL(validatorIndex, cfg)
-		fmt.Printf("The withdrawal slot for validator ID: %d can be found under the 'Consensus Layer' tab on this page: %s\n", validatorId, beaconChainUrl)
-		fmt.Println()
+		if validatorIndex != 0 {
+			beaconChainUrl := getBeaconChainURL(validatorIndex, cfg)
+			fmt.Printf("The withdrawal slot for validator ID: %d can be found under the 'Consensus Layer' tab on this page: %s\n", validatorId, beaconChainUrl)
+			fmt.Println()
+		}
 
 		if prompt.Confirm("Would you like to manually input the withdrawal slot?") {
 			slotString := prompt.Prompt("Please enter the withdrawal slot:", "^\\d+$", "Invalid slot. Please provide a slot number.")
