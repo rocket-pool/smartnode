@@ -6,13 +6,13 @@ import (
 	"net/http"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 // RegisterRoutes registers the minipool module's HTTP routes onto mux.
-func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
+func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/minipool/status", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getStatus(c)
 		apiutils.WriteResponse(w, resp, err)
@@ -225,58 +225,6 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
 		apiutils.WriteResponse(w, resp, err)
 	})
 
-	mux.HandleFunc("/api/minipool/can-begin-reduce-bond-amount", func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
-			return
-		}
-		amountStr := r.URL.Query().Get("newBondAmountWei")
-		amount, ok := new(big.Int).SetString(amountStr, 10)
-		if !ok {
-			apiutils.WriteErrorResponse(w, fmt.Errorf("invalid newBondAmountWei: %s", amountStr))
-			return
-		}
-		resp, err := canBeginReduceBondAmount(c, addr, amount)
-		apiutils.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/minipool/begin-reduce-bond-amount", func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
-			return
-		}
-		amountStr := r.FormValue("newBondAmountWei")
-		amount, ok := new(big.Int).SetString(amountStr, 10)
-		if !ok {
-			apiutils.WriteErrorResponse(w, fmt.Errorf("invalid newBondAmountWei: %s", amountStr))
-			return
-		}
-		resp, err := beginReduceBondAmount(c, addr, amount)
-		apiutils.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/minipool/can-reduce-bond-amount", func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := canReduceBondAmount(c, addr)
-		apiutils.WriteResponse(w, resp, err)
-	})
-
-	mux.HandleFunc("/api/minipool/reduce-bond-amount", func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
-			return
-		}
-		resp, err := reduceBondAmount(c, addr)
-		apiutils.WriteResponse(w, resp, err)
-	})
-
 	mux.HandleFunc("/api/minipool/get-distribute-balance-details", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getDistributeBalanceDetails(c)
 		apiutils.WriteResponse(w, resp, err)
@@ -347,10 +295,6 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
 		apiutils.WriteResponse(w, resp, err)
 	})
 
-	mux.HandleFunc("/api/minipool/get-bond-reduction-enabled", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := getBondReductionEnabled(c)
-		apiutils.WriteResponse(w, resp, err)
-	})
 }
 
 func parseAddress(r *http.Request, name string) (common.Address, error) {

@@ -22,7 +22,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/goccy/go-json"
-	"golang.org/x/crypto/ssh"
+
 
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
@@ -80,13 +80,7 @@ type Globals struct {
 
 // Rocket Pool client
 type Client struct {
-	globals            Globals
-	client             *ssh.Client
-	originalMaxFee     float64
-	originalMaxPrioFee float64
-	originalGasLimit   uint64
-	ignoreSyncCheck    bool
-	forceFallbacks     bool
+	globals Globals
 
 	// apiURL is the base URL for the node's HTTP API server.
 	// It is derived lazily from config on first use.
@@ -138,7 +132,6 @@ func checkClientStatus(rp *Client) (bool, error) {
 			clicolor.YellowPrintf("\tPrimary EC status: %s\n", primaryEcStatus)
 			clicolor.YellowPrintf("\tPrimary CC status: %s\n", primaryBcStatus)
 			fmt.Println()
-			rp.SetClientStatusFlags(true, true)
 			return true, nil
 		}
 
@@ -163,12 +156,7 @@ func NewClient() *Client {
 
 	// Return client
 	client := &Client{
-		globals:            Defaults,
-		originalMaxFee:     Defaults.MaxFee,
-		originalMaxPrioFee: Defaults.MaxPrioFee,
-		originalGasLimit:   Defaults.GasLimit,
-		forceFallbacks:     false,
-		ignoreSyncCheck:    false,
+		globals: Defaults,
 	}
 
 	return client
@@ -202,18 +190,8 @@ func (c *Client) WithReady() (*Client, error) {
 	return c, nil
 }
 
-// Close client remote connection
-func (c *Client) Close() {
-	if c == nil {
-		return
-	}
-
-	if c.client == nil {
-		return
-	}
-
-	_ = c.client.Close()
-}
+// Close is a no-op retained for interface compatibility.
+func (c *Client) Close() {}
 
 func (c *Client) ConfigPath() string {
 	return c.globals.ConfigPath
@@ -1275,7 +1253,7 @@ func (c *Client) getAPIURL() string {
 // path is the URL path, e.g. "/api/node/status".
 // params are appended as query string parameters for GET or as a form body for POST.
 // The response body is returned as-is; callers unmarshal it the same way
-// they currently unmarshal the output of callAPI.
+// The response body is returned as-is; callers unmarshal it.
 func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -1338,156 +1316,6 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 	}
 
 	return responseBytes, nil
-}
-
-// Call the Rocket Pool API
-func (c *Client) callAPI(args string, otherArgs ...string) ([]byte, error) {
-	// Sanitize and parse the args
-	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
-
-	// Create the command to run
-	var cmd string
-	if c.globals.DaemonPath == "" {
-		containerName, err := c.getAPIContainerName()
-		if err != nil {
-			return []byte{}, err
-		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s api %s", shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
-	} else {
-		cmd = fmt.Sprintf("%s --settings %s %s %s %s %s api %s",
-			c.globals.DaemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.ConfigPath(), SettingsFile)),
-			ignoreSyncCheckFlag,
-			forceFallbackECFlag,
-			c.getGasOpts(),
-			c.getCustomNonce(),
-			args)
-	}
-
-	// Run the command
-	return c.runApiCall(cmd)
-}
-
-// Call the Rocket Pool API with some custom environment variables
-func (c *Client) callAPIWithEnvVars(envVars map[string]string, args string, otherArgs ...string) ([]byte, error) {
-	// Sanitize and parse the args
-	ignoreSyncCheckFlag, forceFallbackECFlag, args := c.getApiCallArgs(args, otherArgs...)
-
-	// Create the command to run
-	var cmd string
-	if c.globals.DaemonPath == "" {
-		envArgs := ""
-		for key, value := range envVars {
-			os.Setenv(key, shellescape.Quote(value))
-			envArgs += fmt.Sprintf("-e %s ", key)
-		}
-		containerName, err := c.getAPIContainerName()
-		if err != nil {
-			return []byte{}, err
-		}
-		cmd = fmt.Sprintf("docker exec %s %s %s %s %s %s %s api %s", envArgs, shellescape.Quote(containerName), shellescape.Quote(APIBinPath), ignoreSyncCheckFlag, forceFallbackECFlag, c.getGasOpts(), c.getCustomNonce(), args)
-	} else {
-		envArgs := ""
-		for key, value := range envVars {
-			envArgs += fmt.Sprintf("%s=%s ", key, shellescape.Quote(value))
-		}
-		cmd = fmt.Sprintf("%s %s --settings %s %s %s %s %s api %s",
-			envArgs,
-			c.globals.DaemonPath,
-			shellescape.Quote(fmt.Sprintf("%s/%s", c.ConfigPath(), SettingsFile)),
-			ignoreSyncCheckFlag,
-			forceFallbackECFlag,
-			c.getGasOpts(),
-			c.getCustomNonce(),
-			args)
-	}
-
-	// Run the command
-	return c.runApiCall(cmd)
-}
-
-func (c *Client) getApiCallArgs(args string, otherArgs ...string) (string, string, string) {
-	// Sanitize arguments
-	var sanitizedArgs []string
-	for arg := range strings.FieldsSeq(args) {
-		sanitizedArg := shellescape.Quote(arg)
-		sanitizedArgs = append(sanitizedArgs, sanitizedArg)
-	}
-	args = strings.Join(sanitizedArgs, " ")
-	if len(otherArgs) > 0 {
-		for _, arg := range otherArgs {
-			sanitizedArg := shellescape.Quote(arg)
-			args += fmt.Sprintf(" %s", sanitizedArg)
-		}
-	}
-
-	ignoreSyncCheckFlag := ""
-	if c.ignoreSyncCheck {
-		ignoreSyncCheckFlag = "--ignore-sync-check"
-	}
-	forceFallbacksFlag := ""
-	if c.forceFallbacks {
-		forceFallbacksFlag = "--force-fallbacks"
-	}
-
-	return ignoreSyncCheckFlag, forceFallbacksFlag, args
-}
-
-func (c *Client) runApiCall(cmd string) ([]byte, error) {
-	if c.globals.DebugPrint {
-		fmt.Println("To API:")
-		fmt.Println(cmd)
-	}
-
-	output, err := c.readOutput(cmd)
-
-	if c.globals.DebugPrint {
-		if output != nil {
-			fmt.Println("API Out:")
-			fmt.Println(string(output))
-		}
-		if err != nil {
-			fmt.Println("API Err:")
-			fmt.Println(err.Error())
-		}
-	}
-
-	// Reset the gas settings after the call
-	c.globals.MaxFee = c.originalMaxFee
-	c.globals.MaxPrioFee = c.originalMaxPrioFee
-	c.globals.GasLimit = c.originalGasLimit
-
-	return output, err
-}
-
-// Get the API container name
-func (c *Client) getAPIContainerName() (string, error) {
-	cfg, _, err := c.LoadConfig()
-	if err != nil {
-		return "", err
-	}
-	if cfg.Smartnode.ProjectName.Value == "" {
-		return "", errors.New("Rocket Pool docker project name not set")
-	}
-	return cfg.Smartnode.ProjectName.Value.(string) + APIContainerSuffix, nil
-}
-
-// Get gas price & limit flags
-func (c *Client) getGasOpts() string {
-	var opts string
-	opts += fmt.Sprintf("--maxFee %f ", c.globals.MaxFee)
-	opts += fmt.Sprintf("--maxPrioFee %f ", c.globals.MaxPrioFee)
-	opts += fmt.Sprintf("--gasLimit %d ", c.globals.GasLimit)
-	return opts
-}
-
-func (c *Client) getCustomNonce() string {
-	// Set the custom nonce
-	nonce := ""
-	if c.globals.CustomNonce != nil {
-		nonce = fmt.Sprintf("--nonce %s", c.globals.CustomNonce.String())
-	}
-	return nonce
 }
 
 // Run a command and print its output

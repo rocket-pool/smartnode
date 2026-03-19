@@ -3,7 +3,7 @@ package routes
 import (
 	"net/http"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	apiroutes "github.com/rocket-pool/smartnode/rocketpool/api"
 	auctionroutes "github.com/rocket-pool/smartnode/rocketpool/api/auction"
@@ -16,12 +16,13 @@ import (
 	queueroutes "github.com/rocket-pool/smartnode/rocketpool/api/queue"
 	securityroutes "github.com/rocket-pool/smartnode/rocketpool/api/security"
 	serviceroutes "github.com/rocket-pool/smartnode/rocketpool/api/service"
+	upgraderoutes "github.com/rocket-pool/smartnode/rocketpool/api/upgrade"
 	walletroutes "github.com/rocket-pool/smartnode/rocketpool/api/wallet"
 )
 
 // RegisterRoutes registers all HTTP API routes onto mux.
 // Each migration branch adds additional module registrations here.
-func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
+func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	})
@@ -38,5 +39,6 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
 	queueroutes.RegisterRoutes(mux, c)
 	securityroutes.RegisterRoutes(mux, c)
 	serviceroutes.RegisterRoutes(mux, c)
+	upgraderoutes.RegisterRoutes(mux, c)
 	walletroutes.RegisterRoutes(mux, c)
 }

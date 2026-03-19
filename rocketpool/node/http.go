@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/node/routes"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -20,7 +20,7 @@ type httpServer struct {
 
 // startHTTP starts the node's HTTP API server and returns immediately.
 // The server runs in the background for the lifetime of the process.
-func startHTTP(ctx context.Context, c *cli.Context, cfg *config.RocketPoolConfig) {
+func startHTTP(ctx context.Context, c *cli.Command, cfg *config.RocketPoolConfig) {
 	port, ok := cfg.Smartnode.APIPort.Value.(uint16)
 	if !ok || port == 0 {
 		log.Println("Warning: APIPort not configured, HTTP API server will not start.")

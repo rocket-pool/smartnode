@@ -17,7 +17,7 @@ func (rp *Client) PrintMultiTxWarning() {
 
 // Get the gas price from the latest block
 func (c *Client) GetGasPriceFromLatestBlock() (api.GasPriceFromLatestBlockResponse, error) {
-	responseBytes, err := c.callAPI("service get-gas-price-from-latest-block")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/service/get-gas-price-from-latest-block", nil)
 	if err != nil {
 		return api.GasPriceFromLatestBlockResponse{}, fmt.Errorf("Could not get gas price from latest block: %w", err)
 	}
