@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 // RegisterRoutes registers the queue module's HTTP routes onto mux.
-func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
+func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/queue/status", func(w http.ResponseWriter, r *http.Request) {
 		resp, err := getStatus(c)
 		apiutils.WriteResponse(w, resp, err)

@@ -7,13 +7,13 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v3"
 
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 // RegisterRoutes registers the megapool module's HTTP routes onto mux.
-func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
+func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/megapool/status", func(w http.ResponseWriter, r *http.Request) {
 		finalizedState := r.URL.Query().Get("finalizedState") == "true"
 		resp, err := getStatus(c, finalizedState)
@@ -275,13 +275,15 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Context) {
 
 	mux.HandleFunc("/api/megapool/can-set-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
 		address := common.HexToAddress(r.URL.Query().Get("address"))
-		resp, err := canSetUseLatestDelegate(c, address)
+		setting := r.URL.Query().Get("setting") == "true"
+		resp, err := canSetUseLatestDelegate(c, address, setting)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/megapool/set-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
 		address := common.HexToAddress(r.FormValue("address"))
-		resp, err := setUseLatestDelegate(c, address)
+		setting := r.FormValue("setting") == "true"
+		resp, err := setUseLatestDelegate(c, address, setting)
 		apiutils.WriteResponse(w, resp, err)
 	})
 

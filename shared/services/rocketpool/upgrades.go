@@ -2,6 +2,7 @@ package rocketpool
 
 import (
 	"fmt"
+	"net/url"
 	"strconv"
 
 	"github.com/goccy/go-json"
@@ -10,7 +11,7 @@ import (
 
 // Get upgrade proposals
 func (c *Client) TNDAOUpgradeProposals() (api.TNDAOGetUpgradeProposalsResponse, error) {
-	responseBytes, err := c.callAPI("upgrade get-upgrade-proposals")
+	responseBytes, err := c.callHTTPAPI("GET", "/api/upgrade/get-upgrade-proposals", nil)
 	if err != nil {
 		return api.TNDAOGetUpgradeProposalsResponse{}, fmt.Errorf("Could not get upgrade proposals: %w", err)
 	}
@@ -26,7 +27,7 @@ func (c *Client) TNDAOUpgradeProposals() (api.TNDAOGetUpgradeProposalsResponse, 
 
 // Check whether the node can execute a proposal
 func (c *Client) CanExecuteUpgradeProposal(proposalId uint64) (api.CanExecuteUpgradeProposalResponse, error) {
-	responseBytes, err := c.callAPI("upgrade can-execute-upgrade", strconv.FormatUint(proposalId, 10))
+	responseBytes, err := c.callHTTPAPI("GET", "/api/upgrade/can-execute-upgrade", url.Values{"id": {strconv.FormatUint(proposalId, 10)}})
 	if err != nil {
 		return api.CanExecuteUpgradeProposalResponse{}, fmt.Errorf("Could not check whether the node can execute upgrade proposal: %w", err)
 	}
@@ -42,7 +43,7 @@ func (c *Client) CanExecuteUpgradeProposal(proposalId uint64) (api.CanExecuteUpg
 
 // Execute a proposal
 func (c *Client) ExecuteUpgradeProposal(proposalId uint64) (api.ExecuteUpgradeProposalResponse, error) {
-	responseBytes, err := c.callAPI("upgrade execute-upgrade", strconv.FormatUint(proposalId, 10))
+	responseBytes, err := c.callHTTPAPI("POST", "/api/upgrade/execute-upgrade", url.Values{"id": {strconv.FormatUint(proposalId, 10)}})
 	if err != nil {
 		return api.ExecuteUpgradeProposalResponse{}, fmt.Errorf("Could not execute upgrade proposal: %w", err)
 	}

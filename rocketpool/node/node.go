@@ -87,16 +87,35 @@ func run(c *cli.Command) error {
 	// Configure
 	configureHTTP()
 
+	// Load config early so we can start the HTTP API server before blocking
+	// on wallet/service readiness.
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return err
+	}
+
+	// Print the current mode
+	if cfg.IsNativeMode {
+		fmt.Println("Starting node daemon in Native Mode.")
+	} else {
+		fmt.Println("Starting node daemon in Docker Mode.")
+	}
+
+	// Create a context that is cancelled on SIGINT/SIGTERM so the HTTP server
+	// and other background goroutines can shut down gracefully.
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	// Start the HTTP API server immediately so the CLI can reach it while
+	// the daemon waits for the wallet and services to become ready.
+	startHTTP(ctx, c, cfg)
+
 	// Wait until the node wallet stored on disk is registered
 	if err := services.WaitNodeRegistered(c, true); err != nil {
 		return err
 	}
 
 	// Get services
-	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return err
-	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return err
@@ -117,13 +136,6 @@ func run(c *cli.Command) error {
 
 	fmt.Printf("Protocol version: %s\n", protocolVersion)
 
-	// Print the current mode
-	if cfg.IsNativeMode {
-		fmt.Println("Starting node daemon in Native Mode.")
-	} else {
-		fmt.Println("Starting node daemon in Docker Mode.")
-	}
-
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return fmt.Errorf("error getting node account: %w", err)
@@ -132,15 +144,6 @@ func run(c *cli.Command) error {
 	// Initialize loggers
 	errorLog := log.NewColorLogger(ErrorColor)
 	updateLog := log.NewColorLogger(UpdateColor)
-
-	// Create a context that is cancelled on SIGINT/SIGTERM so the HTTP server
-	// and other background goroutines can shut down gracefully.
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
-
-	// Start the HTTP API server.  It runs in the background for the lifetime
-	// of the daemon and serves all migrated API endpoints.
-	startHTTP(ctx, c, cfg)
 
 	// Create the state manager
 	m := state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bc, &updateLog)
