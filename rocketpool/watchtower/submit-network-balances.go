@@ -38,6 +38,11 @@ const (
 	networkBalanceSubmissionKey string = "network.balances.submitted.node"
 )
 
+// storageGetter is an interface that allows us to inject a stub storage getter
+type storageGetter interface {
+	GetBool(opts *bind.CallOpts, _key [32]byte) (bool, error)
+}
+
 // Submit network balances task
 type submitNetworkBalances struct {
 	c         *cli.Command
@@ -48,6 +53,7 @@ type submitNetworkBalances struct {
 	ec        rocketpool.ExecutionClient
 	rp        *rocketpool.RocketPool
 	bc        beacon.Client
+	storage   storageGetter
 	lock      *sync.Mutex
 	isRunning bool
 }
@@ -121,6 +127,7 @@ func newSubmitNetworkBalances(c *cli.Command, logger log.ColorLogger, errorLogge
 		ec:        ec,
 		rp:        rp,
 		bc:        bc,
+		storage:   rp.RocketStorage,
 		lock:      lock,
 		isRunning: false,
 	}, nil
@@ -317,18 +324,13 @@ func (t *submitNetworkBalances) handleError(err error) {
 	t.lock.Unlock()
 }
 
-// Check whether balances for a block has already been submitted by the node
-func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Address, blockNumber uint64) (bool, error) {
-
+func blockBalancesKey(nodeAddress common.Address, blockNumber uint64) [32]byte {
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf))
-
+	return crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf)
 }
 
-// Check whether specific balances for a block has already been submitted by the node
-func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, balances networkBalances) (bool, error) {
-
+func specificBlockBalancesKey(nodeAddress common.Address, blockNumber uint64, balances networkBalances) [32]byte {
 	blockNumberBuf := make([]byte, 32)
 	big.NewInt(int64(blockNumber)).FillBytes(blockNumberBuf)
 
@@ -344,7 +346,20 @@ func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress co
 	rethSupplyBuf := make([]byte, 32)
 	balances.RETHSupply.FillBytes(rethSupplyBuf)
 
-	return t.rp.RocketStorage.GetBool(nil, crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf, slotTimestampBuf, totalEthBuf, stakingBuf, rethSupplyBuf))
+	return crypto.Keccak256Hash([]byte(networkBalanceSubmissionKey), nodeAddress.Bytes(), blockNumberBuf, slotTimestampBuf, totalEthBuf, stakingBuf, rethSupplyBuf)
+}
+
+// Check whether balances for a block has already been submitted by the node
+func (t *submitNetworkBalances) hasSubmittedBlockBalances(nodeAddress common.Address, blockNumber uint64) (bool, error) {
+
+	return t.storage.GetBool(nil, blockBalancesKey(nodeAddress, blockNumber))
+
+}
+
+// Check whether specific balances for a block has already been submitted by the node
+func (t *submitNetworkBalances) hasSubmittedSpecificBlockBalances(nodeAddress common.Address, blockNumber uint64, balances networkBalances) (bool, error) {
+
+	return t.storage.GetBool(nil, specificBlockBalancesKey(nodeAddress, blockNumber, balances))
 
 }
 

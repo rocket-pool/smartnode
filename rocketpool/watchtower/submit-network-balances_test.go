@@ -2,12 +2,14 @@ package watchtower
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"strconv"
 	"testing"
 	"time"
 
 	"github.com/ethereum/go-ethereum"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -769,5 +771,213 @@ func TestFindNextSubmissionTarget_AlreadySubmittedForBlock(t *testing.T) {
 	}
 	if valid {
 		t.Error("expected valid=false when targetBlockNumber <= lastSubmissionBlock")
+	}
+}
+
+// ============================================================
+// hasSubmittedBlockBalances / hasSubmittedSpecificBlockBalances
+// ============================================================
+
+// stubStorage is an in-memory storageGetter used by tests.
+type stubStorage struct {
+	values map[[32]byte]bool
+	err    error
+}
+
+func (s *stubStorage) GetBool(_ *bind.CallOpts, key [32]byte) (bool, error) {
+	if s.err != nil {
+		return false, s.err
+	}
+	return s.values[key], nil
+}
+
+func TestHasSubmittedBlockBalances_NotSubmitted(t *testing.T) {
+	storage := &stubStorage{values: map[[32]byte]bool{}}
+	task := &submitNetworkBalances{storage: storage}
+
+	got, err := task.hasSubmittedBlockBalances(common.HexToAddress("0x1234"), 12345)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got {
+		t.Error("expected false when the block has not been submitted")
+	}
+}
+
+func TestHasSubmittedBlockBalances_Submitted(t *testing.T) {
+	nodeAddr := common.HexToAddress("0x1234")
+	blockNumber := uint64(12345)
+	key := blockBalancesKey(nodeAddr, blockNumber)
+
+	storage := &stubStorage{values: map[[32]byte]bool{key: true}}
+	task := &submitNetworkBalances{storage: storage}
+
+	got, err := task.hasSubmittedBlockBalances(nodeAddr, blockNumber)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !got {
+		t.Error("expected true when the block has been submitted")
+	}
+}
+
+func TestHasSubmittedBlockBalances_DifferentNodeOrBlock(t *testing.T) {
+	nodeAddr := common.HexToAddress("0xAAAA")
+	blockNumber := uint64(500)
+	key := blockBalancesKey(nodeAddr, blockNumber)
+
+	storage := &stubStorage{values: map[[32]byte]bool{key: true}}
+	task := &submitNetworkBalances{storage: storage}
+
+	// Same block, different node → should not match
+	gotOtherNode, err := task.hasSubmittedBlockBalances(common.HexToAddress("0xBBBB"), blockNumber)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotOtherNode {
+		t.Error("expected false for a different node address")
+	}
+
+	// Same node, different block → should not match
+	gotOtherBlock, err := task.hasSubmittedBlockBalances(nodeAddr, blockNumber+1)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if gotOtherBlock {
+		t.Error("expected false for a different block number")
+	}
+}
+
+func TestHasSubmittedBlockBalances_PropagatesError(t *testing.T) {
+	storage := &stubStorage{err: fmt.Errorf("storage unavailable")}
+	task := &submitNetworkBalances{storage: storage}
+
+	_, err := task.hasSubmittedBlockBalances(common.HexToAddress("0x1"), 1)
+	if err == nil {
+		t.Error("expected error to be propagated from storage")
+	}
+}
+
+func TestHasSubmittedSpecificBlockBalances_NotSubmitted(t *testing.T) {
+	storage := &stubStorage{values: map[[32]byte]bool{}}
+	task := &submitNetworkBalances{storage: storage}
+
+	b := newNetworkBalances()
+	b.ClampedTotalBalanceWei = ethToWei(500)
+	b.TotalStaking = ethToWei(300)
+	b.SlotTimestamp = 1_234_567_890
+
+	got, err := task.hasSubmittedSpecificBlockBalances(common.HexToAddress("0xabcd"), 99, b)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got {
+		t.Error("expected false when specific balances have not been submitted")
+	}
+}
+
+func TestHasSubmittedSpecificBlockBalances_Submitted(t *testing.T) {
+	nodeAddr := common.HexToAddress("0xabcd")
+	blockNumber := uint64(99)
+
+	b := newNetworkBalances()
+	b.ClampedTotalBalanceWei = ethToWei(500)
+	b.TotalStaking = ethToWei(300)
+	b.SlotTimestamp = 1_234_567_890
+
+	key := specificBlockBalancesKey(nodeAddr, blockNumber, b)
+	storage := &stubStorage{values: map[[32]byte]bool{key: true}}
+	task := &submitNetworkBalances{storage: storage}
+
+	got, err := task.hasSubmittedSpecificBlockBalances(nodeAddr, blockNumber, b)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !got {
+		t.Error("expected true when the exact same balances were previously submitted")
+	}
+}
+
+func TestHasSubmittedSpecificBlockBalances_DifferentValues(t *testing.T) {
+	nodeAddr := common.HexToAddress("0xabcd")
+	blockNumber := uint64(99)
+
+	submitted := newNetworkBalances()
+	submitted.ClampedTotalBalanceWei = ethToWei(500)
+	submitted.TotalStaking = ethToWei(300)
+	submitted.RETHSupply = ethToWei(400)
+	submitted.SlotTimestamp = 1_000
+
+	// Store the specific key for the original submitted values.
+	submittedKey := specificBlockBalancesKey(nodeAddr, blockNumber, submitted)
+	storage := &stubStorage{values: map[[32]byte]bool{submittedKey: true}}
+	task := &submitNetworkBalances{storage: storage}
+
+	// Confirm the original values return true (sanity check).
+	gotOriginal, err := task.hasSubmittedSpecificBlockBalances(nodeAddr, blockNumber, submitted)
+	if err != nil {
+		t.Fatalf("unexpected error on original: %v", err)
+	}
+	if !gotOriginal {
+		t.Fatal("sanity check failed: expected true for the originally submitted values")
+	}
+
+	// Change TotalStaking → key no longer matches.
+	altered := submitted
+	altered.TotalStaking = new(big.Int).Set(ethToWei(301))
+
+	got, err := task.hasSubmittedSpecificBlockBalances(nodeAddr, blockNumber, altered)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if got {
+		t.Error("expected false when TotalStaking differs from what was submitted")
+	}
+}
+
+// TestHasSubmittedSpecificVsBlock verifies that the two functions use distinct
+// storage keys: setting the block-level key does not satisfy the specific check.
+func TestHasSubmittedSpecificVsBlock(t *testing.T) {
+	nodeAddr := common.HexToAddress("0x5678")
+	blockNumber := uint64(42)
+
+	b := newNetworkBalances()
+	b.ClampedTotalBalanceWei = ethToWei(100)
+	b.TotalStaking = ethToWei(50)
+	b.SlotTimestamp = 9999
+
+	// Only set the block-level key.
+	blockKey := blockBalancesKey(nodeAddr, blockNumber)
+	storage := &stubStorage{values: map[[32]byte]bool{blockKey: true}}
+	task := &submitNetworkBalances{storage: storage}
+
+	hasBlock, err := task.hasSubmittedBlockBalances(nodeAddr, blockNumber)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	hasSpecific, err := task.hasSubmittedSpecificBlockBalances(nodeAddr, blockNumber, b)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !hasBlock {
+		t.Error("expected hasSubmittedBlockBalances=true")
+	}
+	if hasSpecific {
+		t.Error("expected hasSubmittedSpecificBlockBalances=false (key is different from block-level key)")
+	}
+}
+
+func TestHasSubmittedSpecificBlockBalances_PropagatesError(t *testing.T) {
+	storage := &stubStorage{err: fmt.Errorf("storage unavailable")}
+	task := &submitNetworkBalances{storage: storage}
+
+	b := newNetworkBalances()
+	b.ClampedTotalBalanceWei = big.NewInt(1)
+	b.TotalStaking = big.NewInt(0)
+
+	_, err := task.hasSubmittedSpecificBlockBalances(common.HexToAddress("0x1"), 1, b)
+	if err == nil {
+		t.Error("expected error to be propagated from storage")
 	}
 }
