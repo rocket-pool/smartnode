@@ -99,6 +99,10 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         CMD="$CMD --monitoring-endpoint $BITFLY_NODE_METRICS_ENDPOINT?apikey=$BITFLY_NODE_METRICS_SECRET&machine=$BITFLY_NODE_METRICS_MACHINE_NAME"
     fi
 
+    if [ "$ENABLE_IPV6" = "true" ]; then
+        CMD="$CMD --listen-address :: --port6 $BN_P2P_PORT --enr-udp6-port $BN_P2P_PORT --quic-port6 ${BN_P2P_QUIC_PORT:-8001}"
+    fi
+
     exec ${CMD}
 
 fi
@@ -140,7 +144,11 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         else
             CMD="$CMD --enr.ip $EXTERNAL_IP --nat"
         fi
-    fi	
+    fi
+
+    if [ "$ENABLE_IPV6" = "true" ]; then
+        CMD="$CMD --listenAddress6 :: --port6 $BN_P2P_PORT"
+    fi
 
     if [ ! -z "$CHECKPOINT_SYNC_URL" ]; then
         CMD="$CMD --checkpointSyncUrl $CHECKPOINT_SYNC_URL"
@@ -309,6 +317,15 @@ if [ "$CC_CLIENT" = "teku" ]; then
 
     if [ "$ENABLE_BITFLY_NODE_METRICS" = "true" ]; then
         CMD="$CMD --metrics-publish-endpoint=$BITFLY_NODE_METRICS_ENDPOINT?apikey=$BITFLY_NODE_METRICS_SECRET&machine=$BITFLY_NODE_METRICS_MACHINE_NAME"
+    fi
+
+    if [ "$ENABLE_IPV6" = "true" ]; then
+        CMD="$CMD --p2p-interface=0.0.0.0,:: --p2p-port-ipv6=$BN_IPV6_P2P_PORT"
+        if [ ! -z "$EXTERNAL_IP" ]; then
+            if expr "$EXTERNAL_IP" : '.*:' >/dev/null; then
+                CMD="$CMD --p2p-advertised-ip=$EXTERNAL_IP"
+            fi
+        fi
     fi
 
     if [ "$TEKU_JVM_HEAP_SIZE" -gt "0" ]; then
