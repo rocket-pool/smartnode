@@ -1680,8 +1680,12 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.MevBoost.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Prometheus.Port, errors)
 	portMap, errors = addAndCheckForDuplicate(portMap, cfg.Alertmanager.Port, errors)
-	_, errors = addAndCheckForDuplicate(portMap, cfg.Lighthouse.P2pQuicPort, errors)
-	_, errors = addAndCheckForDuplicate(portMap, cfg.Lodestar.P2pQuicPort, errors)
+	if cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Lighthouse {
+		_, errors = addAndCheckForDuplicate(portMap, cfg.Lighthouse.P2pQuicPort, errors)
+	}
+	if cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Lodestar {
+		_, errors = addAndCheckForDuplicate(portMap, cfg.Lodestar.P2pQuicPort, errors)
+	}
 
 	return errors
 }
