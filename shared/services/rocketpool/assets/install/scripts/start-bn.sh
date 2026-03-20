@@ -111,6 +111,8 @@ if [ "$CC_CLIENT" = "lodestar" ]; then
         --dataDir /ethclient/lodestar \
         --serveHistoricalState \
         --port $BN_P2P_PORT \
+        --quic \
+        --quicPort ${BN_P2P_QUIC_PORT:-8001} \
         --execution.urls $EC_ENGINE_ENDPOINT \
         --rest \
         --rest.address 0.0.0.0 \
