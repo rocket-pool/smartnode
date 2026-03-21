@@ -7,7 +7,6 @@ import (
 	"math"
 	"math/big"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -220,12 +219,13 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 		}
 
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, "", big.NewInt(int64(intervalsPassed)))
+		submitted, err := t.submitRewardsSnapshot(currentIndexBig, snapshotBeaconBlock, elBlockIndex, proofWrapper, "", big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
-
-		t.log.Printlnf("Successfully submitted rewards snapshot for interval %d.", currentIndex)
+		if submitted {
+			t.log.Printlnf("Successfully submitted rewards snapshot for interval %d.", currentIndex)
+		}
 		return nil
 	}
 
@@ -351,12 +351,13 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 
 	if nodeTrusted {
 		// Submit to the contracts
-		err = t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile, "", big.NewInt(int64(intervalsPassed)))
+		submitted, err := t.submitRewardsSnapshot(big.NewInt(int64(currentIndex)), snapshotBeaconBlock, elBlockIndex, rewardsFile, "", big.NewInt(int64(intervalsPassed)))
 		if err != nil {
 			return fmt.Errorf("Error submitting rewards snapshot: %w", err)
 		}
-
-		t.printMessage(fmt.Sprintf("Successfully submitted rewards snapshot for interval %d.", currentIndex))
+		if submitted {
+			t.printMessage(fmt.Sprintf("Successfully submitted rewards snapshot for interval %d.", currentIndex))
+		}
 	} else {
 		t.printMessage(fmt.Sprintf("Successfully generated rewards snapshot for interval %d.", currentIndex))
 	}
@@ -366,11 +367,11 @@ func (t *submitRewardsTree_Stateless) generateTreeImpl(rp *rocketpool.RocketPool
 }
 
 // Submit rewards info to the contracts
-func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFile rprewards.IRewardsFile, cid string, intervalsPassed *big.Int) error {
+func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, consensusBlock uint64, executionBlock uint64, rewardsFile rprewards.IRewardsFile, cid string, intervalsPassed *big.Int) (bool, error) {
 
 	treeRootBytes, err := hex.DecodeString(hexutil.RemovePrefix(rewardsFile.GetMerkleRoot()))
 	if err != nil {
-		return fmt.Errorf("Error decoding merkle root: %w", err)
+		return false, fmt.Errorf("Error decoding merkle root: %w", err)
 	}
 	treeRoot := common.BytesToHash(treeRootBytes)
 
@@ -390,7 +391,7 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	var gasInfo rocketpool.GasInfo
@@ -411,25 +412,27 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 		UserETH:          rewardsFile.GetTotalPoolStakerSmoothingPoolEth(),
 		SmoothingPoolETH: rewardsFile.GetTotalSmoothingPoolBalance(),
 	}
+
+	// Skip submission if the period has already reached consensus.
+	currentRewardIndex, err := t.rp.GetRewardIndex(nil)
+	if err != nil {
+		t.log.Printlnf("Could not get current reward index: %s.", err.Error())
+		t.log.Printlnf("Proceeding with submission.")
+	} else if index.Cmp(currentRewardIndex) < 0 {
+		t.log.Printlnf("Rewards period %s has already reached consensus (current index is %s), skipping submission.", index.String(), currentRewardIndex.String())
+		return false, nil
+	}
+
 	// Get the gas limit
 	gasInfo, err = rewards.EstimateSubmitRewardSnapshotGas(t.rp, submission, opts)
 	if err != nil {
-		if enableSubmissionAfterConsensus_RewardsTree && strings.Contains(err.Error(), "Can only submit snapshot for next period") {
-			// Set a gas limit which will intentionally be too low and revert
-			gasInfo = rocketpool.GasInfo{
-				EstGasLimit:  utils.RewardsSubmissionForcedGas,
-				SafeGasLimit: utils.RewardsSubmissionForcedGas,
-			}
-			t.log.Println("Rewards period consensus has already been reached but submitting anyway for the health check.")
-		} else {
-			return fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
-		}
+		return false, fmt.Errorf("Could not estimate the gas required to submit the rewards tree: %w", err)
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, t.log, maxFee, 0) {
-		return nil
+		return false, nil
 	}
 
 	opts.GasFeeCap = maxFee
@@ -440,17 +443,16 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	// Submit rewards snapshot
 	hash, err = rewards.SubmitRewardSnapshot(t.rp, submission, opts)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, hash, t.rp.Client, t.log)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	// Return
-	return nil
+	return true, nil
 }
 
 // Get the first finalized, successful consensus block that occurred after the given target time
