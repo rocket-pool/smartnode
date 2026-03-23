@@ -64,7 +64,7 @@ func (m *NetworkStateManager) GetHeadState() (*NetworkState, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
 	}
-	return m.createNetworkState(targetSlot)
+	return m.createNetworkState(targetSlot, nil)
 }
 
 // Get the state of the network for a single node using the latest Execution layer block, along with the total effective RPL stake for the network
@@ -73,12 +73,12 @@ func (m *NetworkStateManager) GetHeadStateForNode(nodeAddress common.Address) (*
 	if err != nil {
 		return nil, fmt.Errorf("error getting latest Beacon slot: %w", err)
 	}
-	return m.createNetworkStateForNode(targetSlot, nodeAddress)
+	return m.createNetworkState(targetSlot, []common.Address{nodeAddress})
 }
 
 // Get the state of the network at the provided Beacon slot
 func (m *NetworkStateManager) GetStateForSlot(slotNumber uint64) (*NetworkState, error) {
-	return m.createNetworkState(slotNumber)
+	return m.createNetworkState(slotNumber, nil)
 }
 
 // Gets the latest valid block
