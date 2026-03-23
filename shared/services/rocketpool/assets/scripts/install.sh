@@ -47,7 +47,7 @@ fi
 
 
 # The total number of steps in the installation process
-TOTAL_STEPS="8"
+TOTAL_STEPS="9"
 # The Rocket Pool user data path
 RP_PATH="$HOME/.rocketpool"
 # The default network to run Rocket Pool on
@@ -422,6 +422,44 @@ progress 7 "Copying package files to Rocket Pool user data directory..."
 # Clean up unnecessary files from old installations
 progress 8 "Cleaning up obsolete files from previous installs..."
 { rm -rf "$DATA_PATH/fr-default" || echo "NOTE: Could not remove '$DATA_PATH/fr-default' which is no longer needed."; } >&2
+
+# Install shell completion for rocketpool CLI 
+progress 9 "Installing shell completion for rocketpool CLI..."
+
+if command -v rocketpool >/dev/null 2>&1; then
+    COMPLETION_SCRIPT=$(rocketpool completion bash 2>/dev/null)
+    if [ -n "$COMPLETION_SCRIPT" ]; then
+        mkdir -p ~/.bash_completion.d 2>/dev/null || true
+        echo "$COMPLETION_SCRIPT" > ~/.bash_completion.d/rocketpool
+        chmod 644 ~/.bash_completion.d/rocketpool
+        
+        # Automatically add sourcing to ~/.bashrc if not already present
+        BASHRC="$HOME/.bashrc"
+        COMPLETION_SOURCE='[[ -r ~/.bash_completion.d/rocketpool ]] && source ~/.bash_completion.d/rocketpool'
+        
+        if [ -f "$BASHRC" ]; then
+            if ! grep -q "bash_completion.d/rocketpool" "$BASHRC"; then
+                echo "" >> "$BASHRC"
+                echo "# Rocket Pool CLI shell completion" >> "$BASHRC"
+                echo "$COMPLETION_SOURCE" >> "$BASHRC"
+                echo "Added shell completion sourcing to $BASHRC"
+            else
+                echo "Shell completion already configured in $BASHRC"
+            fi
+        else
+            # Create .bashrc if it doesn't exist
+            echo "# Rocket Pool CLI shell completion" > "$BASHRC"
+            echo "$COMPLETION_SOURCE" >> "$BASHRC"
+            echo "Created $BASHRC with shell completion"
+        fi
+        
+        echo "Shell completion installed and configured. Restart your shell or run: source ~/.bash_completion.d/rocketpool"
+    else
+        echo "NOTE: Could not generate completion script." >&2
+    fi
+else
+    echo "NOTE: rocketpool command not found in PATH, skipping shell completion install." >&2
+fi
 GRAFFITI_OWNER=$(stat -c "%U" $RP_PATH/addons/gww/graffiti.txt)
 if [ "$GRAFFITI_OWNER" = "$USER" ]; then
     { rm -f "$RP_PATH/addons/gww/graffiti.txt" || echo -e "${COLOR_YELLOW}WARNING: Could not remove '$RP_PATH/addons/gww/graffiti.txt' which was used by the Graffiti Wall Writer addon. You will need to remove this file manually if you intend to use the Graffiti Wall Writer.${COLOR_RESET}"; } >&2
