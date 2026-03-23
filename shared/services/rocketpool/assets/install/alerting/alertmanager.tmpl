@@ -48,6 +48,20 @@ receivers:
         priority: {{ `'{{ if eq .CommonLabels.severity "critical" }}2{{ else if eq .CommonLabels.severity "warning" }}1{{ else }}0{{ end }}'` }}
     {{- end }}
 
+    {{- if and .EnableEmailAlerts.Value .EmailToAddress.Value .EmailSmarthost.Value }}
+    email_configs:
+      - to: "{{ .EmailToAddress.Value }}"
+        from: "{{ if .EmailFromAddress.Value }}{{ .EmailFromAddress.Value }}{{ else }}{{ .EmailToAddress.Value }}{{ end }}"
+        smarthost: "{{ .EmailSmarthost.Value }}"
+        {{- if .EmailAuthUser.Value }}
+        auth_username: "{{ .EmailAuthUser.Value }}"
+        {{- end }}
+        {{- if .EmailAuthPass.Value }}
+        auth_password: "{{ .EmailAuthPass.Value }}"
+        {{- end }}
+        require_tls: true
+    {{- end }}
+
   - name: "node_operator_no_resolved"
     {{- if .DiscordWebhookURL.Value }}
     discord_configs:

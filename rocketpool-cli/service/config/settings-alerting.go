@@ -7,12 +7,21 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
+var emailDetailParameters = map[string]interface{}{
+	"emailToAddress":  nil,
+	"emailFromAddress": nil,
+	"emailSmarthost":  nil,
+	"emailAuthUser":   nil,
+	"emailAuthPass":   nil,
+}
+
 var alertingParametersNativeMode map[string]interface{} = map[string]interface{}{
 	"enableAlerting":                           nil,
 	"showAlertsOnCLI":                          nil,
 	"nativeModeHost":                           nil,
 	"nativeModePort":                           nil,
 	"discordWebhookURL":                        nil,
+	"enableEmailAlerts":                        nil,
 	"pushoverToken":                            nil,
 	"pushoverUserKey":                          nil,
 	"alertEnabled_FeeRecipientChanged":         nil,
@@ -34,6 +43,7 @@ var alertingParametersDockerMode map[string]interface{} = map[string]interface{}
 	"openPort":                                 nil,
 	"containerTag":                             nil,
 	"discordWebhookURL":                        nil,
+	"enableEmailAlerts":                        nil,
 	"pushoverToken":                            nil,
 	"pushoverUserKey":                          nil,
 	"alertEnabled_ClientSyncStatusBeacon":      nil,
@@ -60,13 +70,15 @@ var alertingParametersDockerMode map[string]interface{} = map[string]interface{}
 
 // The page wrapper for the alerting config
 type AlertingConfigPage struct {
-	mainDisplay         *mainDisplay
-	homePage            *page
-	page                *page
-	layout              *standardLayout
-	masterConfig        *config.RocketPoolConfig
-	alertingEnabledItem parameterizedFormItem
-	otherItems          []*parameterizedFormItem
+	mainDisplay          *mainDisplay
+	homePage             *page
+	page                 *page
+	layout               *standardLayout
+	masterConfig         *config.RocketPoolConfig
+	alertingEnabledItem  parameterizedFormItem
+	emailEnabledItem     *parameterizedFormItem
+	emailDetailItems     []*parameterizedFormItem
+	otherItems           []*parameterizedFormItem
 }
 
 func NewAlertingConfigPage(home *settingsHome) *AlertingConfigPage {
@@ -125,11 +137,21 @@ func (configPage *AlertingConfigPage) createContent() {
 	// Map the config parameters to the UI form items:
 	configPage.layout.mapParameterizedFormItems(allItems...)
 
-	var enableAlertingBox *tview.Checkbox = nil
+	var enableAlertingBox *tview.Checkbox
+	var enableEmailBox *tview.Checkbox
 	for _, item := range allItems {
 		if item.parameter.ID == "enableAlerting" {
 			configPage.alertingEnabledItem = *item
 			enableAlertingBox = item.item.(*tview.Checkbox)
+			continue
+		}
+		if item.parameter.ID == "enableEmailAlerts" {
+			configPage.emailEnabledItem = item
+			enableEmailBox = item.item.(*tview.Checkbox)
+			continue
+		}
+		if _, isEmailDetail := emailDetailParameters[item.parameter.ID]; isEmailDetail {
+			configPage.emailDetailItems = append(configPage.emailDetailItems, item)
 			continue
 		}
 		_, isNativeParameter := alertingParametersNativeMode[item.parameter.ID]
@@ -151,16 +173,31 @@ func (configPage *AlertingConfigPage) createContent() {
 		fmt.Println("Error: enableAlerting checkbox not found in alertmanagerItems")
 	}
 
+	if enableEmailBox != nil {
+		enableEmailBox.SetChangedFunc(func(checked bool) {
+			if configPage.masterConfig.Alertmanager.EnableEmailAlerts.Value == checked {
+				return
+			}
+			configPage.masterConfig.Alertmanager.EnableEmailAlerts.Value = checked
+			configPage.handleLayoutChanged()
+		})
+	}
+
 	// Do the initial draw
 	configPage.handleLayoutChanged()
 }
 
-// Handle all of the form changes when the Enable Metrics box has changed
 func (configPage *AlertingConfigPage) handleLayoutChanged() {
 	configPage.layout.form.Clear(true)
 	configPage.layout.addFormItems([]*parameterizedFormItem{&configPage.alertingEnabledItem})
 	if configPage.masterConfig.Alertmanager.EnableAlerting.Value == true {
 		configPage.layout.addFormItems(configPage.otherItems)
+		if configPage.emailEnabledItem != nil {
+			configPage.layout.addFormItems([]*parameterizedFormItem{configPage.emailEnabledItem})
+			if configPage.masterConfig.Alertmanager.EnableEmailAlerts.Value == true {
+				configPage.layout.addFormItems(configPage.emailDetailItems)
+			}
+		}
 	}
 	configPage.layout.refresh()
 }

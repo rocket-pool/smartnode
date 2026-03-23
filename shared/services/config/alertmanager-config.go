@@ -57,6 +57,14 @@ type AlertmanagerConfig struct {
 	// The Discord webhook URL for alert notifications
 	DiscordWebhookURL config.Parameter `yaml:"discordWebhookURL,omitempty"`
 
+	// Email alert settings
+	EnableEmailAlerts config.Parameter `yaml:"enableEmailAlerts,omitempty"`
+	EmailToAddress    config.Parameter `yaml:"emailToAddress,omitempty"`
+	EmailFromAddress  config.Parameter `yaml:"emailFromAddress,omitempty"`
+	EmailSmarthost    config.Parameter `yaml:"emailSmarthost,omitempty"`
+	EmailAuthUser     config.Parameter `yaml:"emailAuthUser,omitempty"`
+	EmailAuthPass     config.Parameter `yaml:"emailAuthPass,omitempty"`
+
 	// The Pushover Token for alert notifications
 	PushoverToken config.Parameter `yaml:"pushoverToken,omitempty"`
 	// The Pushover User Key for alert notifications
@@ -176,6 +184,72 @@ func NewAlertmanagerConfig(cfg *RocketPoolConfig) *AlertmanagerConfig {
 			ID:                 "discordWebhookURL",
 			Name:               "Alertmanager Discord Webhook URL",
 			Description:        "Discord notifications are sent via the Discord webhook API. See Discord's 'Intro to Webhooks' article to learn how to configure a webhook integration for a channel at https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		EnableEmailAlerts: config.Parameter{
+			ID:                 "enableEmailAlerts",
+			Name:               "Send Email Alerts",
+			Description:        "Enable sending alert notifications via email. Requires an SMTP server and a recipient address.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
+		EmailToAddress: config.Parameter{
+			ID:                 "emailToAddress",
+			Name:               "Email Recipient Address",
+			Description:        "The email address that alert notifications will be sent to.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		EmailFromAddress: config.Parameter{
+			ID:                 "emailFromAddress",
+			Name:               "Email Sender Address",
+			Description:        "The email address that alert notifications will be sent from. Defaults to the recipient address if left blank.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		EmailSmarthost: config.Parameter{
+			ID:                 "emailSmarthost",
+			Name:               "SMTP Server (host:port)",
+			Description:        "The SMTP server to use for sending email alerts, in host:port format (e.g. smtp.gmail.com:587).",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		EmailAuthUser: config.Parameter{
+			ID:                 "emailAuthUser",
+			Name:               "SMTP Auth Username",
+			Description:        "The username for SMTP authentication. Leave blank if your SMTP server does not require authentication.",
+			Type:               config.ParameterType_String,
+			Default:            map[config.Network]interface{}{config.Network_All: ""},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
+			CanBeBlank:         true,
+			OverwriteOnUpgrade: false,
+		},
+
+		EmailAuthPass: config.Parameter{
+			ID:                 "emailAuthPass",
+			Name:               "SMTP Auth Password",
+			Description:        "The password for SMTP authentication. Leave blank if your SMTP server does not require authentication.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: ""},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Alertmanager},
@@ -322,6 +396,12 @@ func (cfg *AlertmanagerConfig) GetParameters() []*config.Parameter {
 		&cfg.NativeModeHost,
 		&cfg.NativeModePort,
 		&cfg.DiscordWebhookURL,
+		&cfg.EnableEmailAlerts,
+		&cfg.EmailToAddress,
+		&cfg.EmailFromAddress,
+		&cfg.EmailSmarthost,
+		&cfg.EmailAuthUser,
+		&cfg.EmailAuthPass,
 		&cfg.PushoverToken,
 		&cfg.PushoverUserKey,
 		&cfg.ContainerTag,
