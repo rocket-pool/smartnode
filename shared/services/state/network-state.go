@@ -169,7 +169,7 @@ func (ns *NetworkState) UnmarshalJSON(data []byte) error {
 // Creates a snapshot of the Rocket Pool network state, on both the Execution and Consensus layers.
 // If nodeAddresses is nil, all nodes are queried. Otherwise, only the specified nodes are included.
 func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresses []common.Address) (*NetworkState, error) {
-	allNodes := nodeAddresses == nil
+	allNodes := len(nodeAddresses) == 0
 	steps := 9
 	currentStep := 0
 
