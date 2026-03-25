@@ -157,7 +157,7 @@ func (c *Client) ProposeLeaveTNDAO() (api.ProposeTNDAOLeaveResponse, error) {
 // Check whether the node can propose kicking a member
 func (c *Client) CanProposeKickFromTNDAO(memberAddress common.Address, fineAmountWei *big.Int) (api.CanProposeTNDAOKickResponse, error) {
 	responseBytes, err := c.callHTTPAPI("GET", "/api/odao/can-propose-kick", url.Values{
-		"address":      {memberAddress.Hex()},
+		"address":       {memberAddress.Hex()},
 		"fineAmountWei": {fineAmountWei.String()},
 	})
 	if err != nil {
@@ -176,7 +176,7 @@ func (c *Client) CanProposeKickFromTNDAO(memberAddress common.Address, fineAmoun
 // Propose kicking a member
 func (c *Client) ProposeKickFromTNDAO(memberAddress common.Address, fineAmountWei *big.Int) (api.ProposeTNDAOKickResponse, error) {
 	responseBytes, err := c.callHTTPAPI("POST", "/api/odao/propose-kick", url.Values{
-		"address":      {memberAddress.Hex()},
+		"address":       {memberAddress.Hex()},
 		"fineAmountWei": {fineAmountWei.String()},
 	})
 	if err != nil {

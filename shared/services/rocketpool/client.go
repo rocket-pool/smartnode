@@ -23,7 +23,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/goccy/go-json"
 
-
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
 	"github.com/mitchellh/go-homedir"
