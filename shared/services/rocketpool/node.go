@@ -70,6 +70,22 @@ func (c *Client) NodeAlerts() (api.NodeAlertsResponse, error) {
 	return response, nil
 }
 
+// Send a test alert through Alertmanager
+func (c *Client) NodeSendTestAlert() (api.NodeSendTestAlertResponse, error) {
+	responseBytes, err := c.callAPI("service send-test-alert")
+	if err != nil {
+		return api.NodeSendTestAlertResponse{}, fmt.Errorf("could not send test alert: %w", err)
+	}
+	var response api.NodeSendTestAlertResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.NodeSendTestAlertResponse{}, fmt.Errorf("could not decode send test alert response: %w", err)
+	}
+	if response.Error != "" {
+		return api.NodeSendTestAlertResponse{}, fmt.Errorf("could not send test alert: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Check whether the node can be registered
 func (c *Client) CanRegisterNode(timezoneLocation string) (api.CanRegisterNodeResponse, error) {
 	responseBytes, err := c.callAPI("node can-register", timezoneLocation)

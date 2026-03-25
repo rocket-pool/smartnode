@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/go-openapi/strfmt"
+	"github.com/google/uuid"
 	apiclient "github.com/rocket-pool/smartnode/shared/services/alerting/alertmanager/client"
 	apialert "github.com/rocket-pool/smartnode/shared/services/alerting/alertmanager/client/alert"
 	"github.com/rocket-pool/smartnode/shared/services/alerting/alertmanager/models"
@@ -229,6 +230,40 @@ func AlertBeaconP2PPortNotOpen(cfg *config.RocketPoolConfig, port uint16) error 
 		map[string]string{"port": fmt.Sprintf("%d", port)},
 	)
 	return sendAlert(alert, cfg)
+}
+
+// SendTestAlert posts a test alert to Alertmanager.
+func SendTestAlert(cfg *config.RocketPoolConfig, hostOverride string) error {
+	if !isAlertingEnabled(cfg) {
+		return fmt.Errorf("alerting is not enabled")
+	}
+	// randomize the alert name to avoid duplicates
+	alertName := fmt.Sprintf("TestAlert-%s", uuid.New().String())
+	alert := createAlert(
+		alertName,
+		alertName,
+		"This is a test alert from the Smartnode CLI to verify that your notification channels are working.",
+		SeverityInfo,
+		strfmt.DateTime(time.Now().Add(DefaultEndsAtDurationForSeverityInfo)),
+		nil,
+	)
+
+	//logMessage("sending alert for %s: %s", alert.Labels["alertname"], alert.Annotations["summary"])
+	params := apialert.NewPostAlertsParams().WithDefaults().WithAlerts(models.PostableAlerts{alert})
+
+	var client *apiclient.Alertmanager
+	if hostOverride != "" {
+		transport := apiclient.DefaultTransportConfig().WithHost(hostOverride)
+		client = apiclient.NewHTTPClientWithConfig(strfmt.Default, transport)
+	} else {
+		client = createClient(cfg)
+	}
+
+	_, err := client.Alert.PostAlerts(params)
+	if err != nil {
+		return fmt.Errorf("error posting alert: %s", err.Error())
+	}
+	return nil
 }
 
 func AlertExecutionClientSyncComplete(cfg *config.RocketPoolConfig) error {

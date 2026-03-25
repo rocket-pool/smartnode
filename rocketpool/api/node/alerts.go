@@ -35,3 +35,18 @@ func getAlerts(c *cli.Command) (*api.NodeAlertsResponse, error) {
 
 	return &response, nil
 }
+
+func sendTestAlert(c *cli.Command) (*api.NodeSendTestAlertResponse, error) {
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
+
+	response := api.NodeSendTestAlertResponse{}
+	err = alerting.SendTestAlert(cfg, "")
+	if err != nil {
+		return nil, err
+	}
+
+	return &response, nil
+}

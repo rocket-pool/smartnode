@@ -501,6 +501,21 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 			},
 
 			{
+				Name:      "send-test-alert",
+				Usage:     "Send a test alert to verify your notification channels are working",
+				UsageText: "rocketpool service send-test-alert",
+				Action: func(ctx context.Context, c *cli.Command) error {
+
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					return sendTestAlert()
+
+				},
+			},
+
+			{
 				Name:      "terminate",
 				Aliases:   []string{"t"},
 				Usage:     color.Red("Deletes all of the Rocket Pool Docker containers and volumes, including your ETH1 and ETH2 chain data and your Prometheus database (if metrics are enabled). Also removes your entire `.rocketpool` configuration folder, including your wallet, password, and validator keys. Only use this if you are cleaning up the Smart Node and want to start over!"),

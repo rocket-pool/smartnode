@@ -731,6 +731,11 @@ type NodeAlertsResponse struct {
 	Alerts []NodeAlert `json:"alerts"`
 }
 
+type NodeSendTestAlertResponse struct {
+	Status string `json:"status"`
+	Error  string `json:"error"`
+}
+
 type GetExpressTicketCountResponse struct {
 	Status string `json:"status"`
 	Error  string `json:"error"`
