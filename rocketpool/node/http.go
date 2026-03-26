@@ -27,18 +27,16 @@ func startHTTP(ctx context.Context, c *cli.Command, cfg *config.RocketPoolConfig
 		return
 	}
 
-	// In Docker mode the server must bind to 0.0.0.0 so the port mapping in
-	// node.tmpl makes it accessible from the host.  In native mode we respect
-	// the OpenAPIPort setting: Closed → 127.0.0.1, OpenLocalhost → 0.0.0.0.
 	var host string
 	if !cfg.IsNativeMode {
+		// In Docker mode the server must bind to 0.0.0.0, so other containers can reach it.
 		host = "0.0.0.0"
 	} else {
 		portMode, _ := cfg.Smartnode.OpenAPIPort.Value.(cfgtypes.RPCMode)
 		if portMode == cfgtypes.RPC_OpenLocalhost {
-			host = "0.0.0.0"
-		} else {
 			host = "127.0.0.1"
+		} else {
+			host = "0.0.0.0"
 		}
 	}
 

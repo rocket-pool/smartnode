@@ -50,7 +50,7 @@ func WriteResponse(w http.ResponseWriter, response interface{}, responseError er
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write(responseBytes)
+	_, _ = w.Write(append(responseBytes, '\n'))
 }
 
 // WriteErrorResponse writes a generic error response to w.
