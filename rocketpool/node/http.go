@@ -10,7 +10,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/rocketpool/node/routes"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 type httpServer struct {
@@ -32,12 +31,7 @@ func startHTTP(ctx context.Context, c *cli.Command, cfg *config.RocketPoolConfig
 		// In Docker mode the server must bind to 0.0.0.0, so other containers can reach it.
 		host = "0.0.0.0"
 	} else {
-		portMode, _ := cfg.Smartnode.OpenAPIPort.Value.(cfgtypes.RPCMode)
-		if portMode == cfgtypes.RPC_OpenLocalhost {
-			host = "127.0.0.1"
-		} else {
-			host = "0.0.0.0"
-		}
+		host = "127.0.0.1"
 	}
 
 	mux := http.NewServeMux()

@@ -117,9 +117,6 @@ type SmartnodeConfig struct {
 	// Port for the node's HTTP API webserver
 	APIPort config.Parameter `yaml:"apiPort,omitempty"`
 
-	// Whether to expose the node's API port to the local network
-	OpenAPIPort config.Parameter `yaml:"openAPIPort,omitempty"`
-
 	///////////////////////////
 	// Non-editable settings //
 	///////////////////////////
@@ -430,18 +427,6 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			OverwriteOnUpgrade: false,
 		},
 
-		OpenAPIPort: config.Parameter{
-			ID:                 "openAPIPort",
-			Name:               "Expose API Port",
-			Description:        "Expose the API port to other processes on your machine. For security reasons, this port can only be exposed to localhost. It is recommended to keep this setting on Closed unless you have a specific reason to expose it.",
-			Type:               config.ParameterType_Choice,
-			Default:            map[config.Network]interface{}{config.Network_All: config.RPC_Closed},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Node},
-			CanBeBlank:         false,
-			OverwriteOnUpgrade: false,
-			Options:            config.RestrictedPortModes(),
-		},
-
 		txWatchUrl: map[config.Network]string{
 			config.Network_Mainnet: "https://etherscan.io/tx",
 			config.Network_Devnet:  "https://hoodi.etherscan.io/tx",
@@ -672,7 +657,6 @@ func (cfg *SmartnodeConfig) GetParameters() []*config.Parameter {
 		&cfg.WatchtowerMaxFeeOverride,
 		&cfg.WatchtowerPrioFeeOverride,
 		&cfg.APIPort,
-		&cfg.OpenAPIPort,
 	}
 }
 

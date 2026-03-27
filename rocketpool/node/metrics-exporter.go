@@ -1,6 +1,7 @@
 package node
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,7 +17,7 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
-func runMetricsServer(c *cli.Command, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
+func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogger, stateLocker *collectors.StateLocker) error {
 
 	// Get services
 	cfg, err := services.GetConfig(c)
@@ -105,8 +106,9 @@ func runMetricsServer(c *cli.Command, logger log.ColorLogger, stateLocker *colle
 	}
 	logger.Printlnf("Starting metrics exporter on %s:%d.", metricsAddress, metricsPort)
 	metricsPath := "/metrics"
-	http.Handle(metricsPath, handler)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	mux := http.NewServeMux()
+	mux.Handle(metricsPath, handler)
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`<html>
             <head><title>Rocket Pool Metrics Exporter</title></head>
             <body>
@@ -116,8 +118,17 @@ func runMetricsServer(c *cli.Command, logger log.ColorLogger, stateLocker *colle
             </html>`,
 		))
 	})
-	err = http.ListenAndServe(fmt.Sprintf("%s:%d", metricsAddress, metricsPort), nil)
-	if err != nil {
+	srv := &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", metricsAddress, metricsPort),
+		Handler: mux,
+	}
+
+	go func() {
+		<-ctx.Done()
+		_ = srv.Shutdown(context.Background())
+	}()
+
+	if err = srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		return fmt.Errorf("Error running HTTP server: %w", err)
 	}
 
