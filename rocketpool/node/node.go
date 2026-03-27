@@ -217,16 +217,26 @@ func run(c *cli.Command) error {
 
 	// Run task loop
 	go func() {
+		defer wg.Done()
 		// we assume clients are synced on startup so that we don't send unnecessary alerts
 		wasExecutionClientSynced := true
 		wasBeaconClientSynced := true
 		for {
+			// Exit if the process received SIGINT/SIGTERM
+			select {
+			case <-ctx.Done():
+				return
+			default:
+			}
+
 			// Check the EC status
 			err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
 			if err != nil {
 				wasExecutionClientSynced = false
 				errorLog.Printlnf("Execution client not synced: %s. Waiting for sync...", err.Error())
-				time.Sleep(taskCooldown)
+				if !sleepWithContext(ctx, taskCooldown) {
+					return
+				}
 				continue
 			}
 
@@ -242,7 +252,9 @@ func run(c *cli.Command) error {
 				// NOTE: if not synced, it returns an error - so there isn't necessarily an underlying issue
 				wasBeaconClientSynced = false
 				errorLog.Printlnf("Beacon client not synced: %s. Waiting for sync...", err.Error())
-				time.Sleep(taskCooldown)
+				if !sleepWithContext(ctx, taskCooldown) {
+					return
+				}
 				continue
 			}
 
@@ -256,7 +268,9 @@ func run(c *cli.Command) error {
 			newProtocolVersion, err := utils.GetCurrentVersion(rp, nil)
 			if err != nil {
 				errorLog.Println(err)
-				time.Sleep(taskCooldown)
+				if !sleepWithContext(ctx, taskCooldown) {
+					return
+				}
 				continue
 			}
 			if newProtocolVersion.Compare(protocolVersion) != 0 {
@@ -269,7 +283,9 @@ func run(c *cli.Command) error {
 			state, err := updateNetworkState(m, &updateLog, nodeAccount.Address)
 			if err != nil {
 				errorLog.Println(err)
-				time.Sleep(taskCooldown)
+				if !sleepWithContext(ctx, taskCooldown) {
+					return
+				}
 				continue
 			}
 			stateLocker.UpdateState(state)
@@ -278,7 +294,9 @@ func run(c *cli.Command) error {
 			if err := manageFeeRecipient.run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
 			// Run the defend challenge exit task
 			if err := defendChallengeExit.run(state); err != nil {
@@ -289,20 +307,26 @@ func run(c *cli.Command) error {
 			if err := downloadRewardsTrees.run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
 			// Run the pDAO proposal defender
 			if err := defendPdaoProps.run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
 			// Run the pDAO proposal verifier
 			if verifyPdaoProps != nil {
 				if err := verifyPdaoProps.run(state); err != nil {
 					errorLog.Println(err)
 				}
-				time.Sleep(taskCooldown)
+				if !sleepWithContext(ctx, taskCooldown) {
+					return
+				}
 			}
 
 			// Run the megapool prestake check
@@ -310,68 +334,94 @@ func run(c *cli.Command) error {
 				if err := prestakeMegapoolValidator.run(state); err != nil {
 					errorLog.Println(err)
 				}
-				time.Sleep(taskCooldown)
+				if !sleepWithContext(ctx, taskCooldown) {
+					return
+				}
 			}
 
 			// Run the megapool stake check
 			if err := stakeMegapoolValidators.run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
 			// Run the megapool notify validator exit check
 			if err := notifyValidatorExit.run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
 			// Run the megapool notify final balance check
 			if err := notifyFinalBalance.run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
 			// Run the megapool provision express ticket check
 			if err := provisionExpressTickets.run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
 			// Run the balance distribution check
 			if err := distributeMinipools.run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
 			// Run the set use latest delegate check
 			if err := setUseLatestDelegate.run(state); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
 			// Run the port connectivity check
 			if err := checkPorts.Run(); err != nil {
 				errorLog.Println(err)
 			}
-			time.Sleep(taskCooldown)
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
 
-			time.Sleep(tasksInterval)
+			if !sleepWithContext(ctx, tasksInterval) {
+				return
+			}
 		}
-		wg.Done()
 	}()
 
 	// Run metrics loop
 	go func() {
-		err := runMetricsServer(c, log.NewColorLogger(MetricsColor), stateLocker)
-		if err != nil {
+		defer wg.Done()
+		if err := runMetricsServer(ctx, c, log.NewColorLogger(MetricsColor), stateLocker); err != nil {
 			errorLog.Println(err)
 		}
-		wg.Done()
 	}()
 
 	// Wait for both threads to stop
 	wg.Wait()
 	return nil
+}
+
+// sleepWithContext sleeps for d or until ctx is cancelled, returning false if cancelled.
+func sleepWithContext(ctx context.Context, d time.Duration) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	case <-time.After(d):
+		return true
+	}
 }
 
 // Configure HTTP transport settings
