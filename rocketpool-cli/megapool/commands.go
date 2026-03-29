@@ -236,7 +236,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.StringFlag{
+					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id to exit",
 					},
@@ -277,7 +277,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.StringFlag{
+					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id to exit",
 					},
@@ -318,7 +318,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.StringFlag{
+					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id for which the exit is being notified",
 					},
@@ -359,7 +359,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.StringFlag{
+					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id for which the final balance is being notified",
 					},
