@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/url"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -250,8 +251,9 @@ func (c *Client) DelegateUpgradeMinipool(address common.Address) (api.DelegateUp
 }
 
 // Check whether a minipool can have its auto-upgrade setting changed
-func (c *Client) CanSetUseLatestDelegateMinipool(address common.Address) (api.CanSetUseLatestDelegateResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/can-set-use-latest-delegate", url.Values{"address": {address.Hex()}})
+func (c *Client) CanSetUseLatestDelegateMinipool(address common.Address, setLatest bool) (api.CanSetUseLatestDelegateResponse, error) {
+	// pass setLatest as well
+	responseBytes, err := c.callHTTPAPI("GET", "/api/minipool/can-set-use-latest-delegate", url.Values{"address": {address.Hex()}, "setLatest": {strconv.FormatBool(setLatest)}})
 	if err != nil {
 		return api.CanSetUseLatestDelegateResponse{}, fmt.Errorf("Could not get can set use latest delegate for minipool status: %w", err)
 	}

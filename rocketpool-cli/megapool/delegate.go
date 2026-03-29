@@ -43,7 +43,7 @@ func setUseLatestDelegateMegapool(setting bool, yes bool) error {
 	if err != nil {
 		return fmt.Errorf("error checking if megapool %s could have its use-latest-delegate flag changed: %w", megapoolAddress.Hex(), err)
 	}
-	if canResponse.MatchesCurrentSetting == true {
+	if canResponse.MatchesCurrentSetting {
 		if setting == true {
 			fmt.Printf("Could not enable use-latest-delegate on the node's megapool, the setting is already enabled.")
 		} else {

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/url"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
@@ -421,8 +422,8 @@ func (c *Client) GetUseLatestDelegate(address common.Address) (api.MegapoolGetUs
 }
 
 // Check whether a megapool can have its use-latest-delegate setting changed
-func (c *Client) CanSetUseLatestDelegateMegapool(address common.Address, setting bool) (api.MegapoolCanSetUseLatestDelegateResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/megapool/can-set-use-latest-delegate", url.Values{"address": {address.Hex()}})
+func (c *Client) CanSetUseLatestDelegateMegapool(address common.Address, useLatest bool) (api.MegapoolCanSetUseLatestDelegateResponse, error) {
+	responseBytes, err := c.callHTTPAPI("GET", "/api/megapool/can-set-use-latest-delegate", url.Values{"address": {address.Hex()}, "setLatest": {strconv.FormatBool(useLatest)}})
 	if err != nil {
 		return api.MegapoolCanSetUseLatestDelegateResponse{}, fmt.Errorf("Could not get can set use latest delegate for megapool status: %w", err)
 	}

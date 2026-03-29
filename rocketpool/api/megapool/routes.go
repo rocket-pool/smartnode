@@ -275,8 +275,8 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/megapool/can-set-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
 		address := common.HexToAddress(r.URL.Query().Get("address"))
-		setting := r.URL.Query().Get("setting") == "true"
-		resp, err := canSetUseLatestDelegate(c, address, setting)
+		setLatest := r.URL.Query().Get("setLatest") == "true"
+		resp, err := canSetUseLatestDelegate(c, address, setLatest)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
