@@ -128,7 +128,7 @@ func getUseLatestDelegate(c *cli.Command, megapoolAddress common.Address) (*api.
 
 }
 
-func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, setting bool) (*api.MegapoolCanSetUseLatestDelegateResponse, error) {
+func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, useLatest bool) (*api.MegapoolCanSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -156,7 +156,7 @@ func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, set
 	if err != nil {
 		return nil, err
 	}
-	if currentSetting == setting {
+	if currentSetting == useLatest {
 		response.MatchesCurrentSetting = true
 		return &response, nil
 	}
@@ -168,7 +168,7 @@ func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, set
 		return nil, err
 	}
 
-	gasInfo, err := mega.EstimateSetUseLatestDelegateGas(setting, opts)
+	gasInfo, err := mega.EstimateSetUseLatestDelegateGas(useLatest, opts)
 	if err == nil {
 		response.GasInfo = gasInfo
 	}
@@ -178,7 +178,7 @@ func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, set
 
 }
 
-func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, setting bool) (*api.MegapoolSetUseLatestDelegateResponse, error) {
+func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, useLatest bool) (*api.MegapoolSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -214,7 +214,7 @@ func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, settin
 	}
 
 	// Set the new setting
-	hash, err := mega.SetUseLatestDelegate(setting, opts)
+	hash, err := mega.SetUseLatestDelegate(useLatest, opts)
 	if err != nil {
 		return nil, err
 	}
