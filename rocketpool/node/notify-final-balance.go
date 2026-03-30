@@ -142,7 +142,7 @@ func (t *notifyFinalBalance) run(state *state.NetworkState) error {
 			if infoExists && !info.ValidatorInfo.Staked {
 				continue
 			}
-			t.log.Printlnf("Validator %s not found in the megapool validator details", pubkey.String())
+			t.log.Printlnf("Validator %s not found in the megapool validator details map", pubkey.String())
 			continue
 		}
 
