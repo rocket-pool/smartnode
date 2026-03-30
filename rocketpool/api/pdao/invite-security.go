@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
@@ -97,13 +98,9 @@ func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common
 	return &response, nil
 }
 
-func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address, blockNumber uint32) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
+func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeInviteToSecurityCouncilResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}
@@ -120,11 +117,6 @@ func proposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Ad
 	response := api.PDAOProposeInviteToSecurityCouncilResponse{}
 
 	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {

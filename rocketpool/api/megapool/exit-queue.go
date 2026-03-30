@@ -3,6 +3,7 @@ package megapool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -76,7 +77,7 @@ func canExitQueue(c *cli.Command, validatorIndex uint32) (*api.CanExitQueueRespo
 
 }
 
-func exitQueue(c *cli.Command, validatorIndex uint32) (*api.ExitQueueResponse, error) {
+func exitQueue(c *cli.Command, validatorIndex uint32, opts *bind.TransactOpts) (*api.ExitQueueResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -101,12 +102,6 @@ func exitQueue(c *cli.Command, validatorIndex uint32) (*api.ExitQueueResponse, e
 
 	// Response
 	response := api.ExitQueueResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

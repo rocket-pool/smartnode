@@ -3,6 +3,7 @@ package odao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/urfave/cli/v3"
@@ -80,14 +81,10 @@ func canLeave(c *cli.Command) (*api.CanLeaveTNDAOResponse, error) {
 
 }
 
-func leave(c *cli.Command, bondRefundAddress common.Address) (*api.LeaveTNDAOResponse, error) {
+func leave(c *cli.Command, bondRefundAddress common.Address, opts *bind.TransactOpts) (*api.LeaveTNDAOResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -97,12 +94,6 @@ func leave(c *cli.Command, bondRefundAddress common.Address) (*api.LeaveTNDAORes
 
 	// Response
 	response := api.LeaveTNDAOResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

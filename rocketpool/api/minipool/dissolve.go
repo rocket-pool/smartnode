@@ -3,6 +3,7 @@ package minipool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -69,14 +70,10 @@ func canDissolveMinipool(c *cli.Command, minipoolAddress common.Address) (*api.C
 
 }
 
-func dissolveMinipool(c *cli.Command, minipoolAddress common.Address) (*api.DissolveMinipoolResponse, error) {
+func dissolveMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.DissolveMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -89,12 +86,6 @@ func dissolveMinipool(c *cli.Command, minipoolAddress common.Address) (*api.Diss
 
 	// Create minipool
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

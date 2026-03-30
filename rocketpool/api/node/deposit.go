@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
 	"github.com/rocket-pool/smartnode/bindings/deposit"
@@ -292,7 +293,7 @@ func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFe
 
 }
 
-func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, expressTicketsRequested int64, submit bool) (*api.NodeDepositsResponse, error) {
+func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee float64, salt *big.Int, useCreditBalance bool, expressTicketsRequested int64, submit bool, opts *bind.TransactOpts) (*api.NodeDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -365,12 +366,6 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 
 	// Get the node's credit and ETH staked on behalf balance
 	creditBalanceWei, err := node.GetNodeCreditAndBalance(rp, nodeAccount.Address, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

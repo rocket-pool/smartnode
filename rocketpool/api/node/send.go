@@ -7,6 +7,7 @@ import (
 	"math/big"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -203,7 +204,7 @@ func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Addr
 
 }
 
-func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address) (*api.NodeSendResponse, error) {
+func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address, opts *bind.TransactOpts) (*api.NodeSendResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -224,12 +225,6 @@ func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address
 
 	// Response
 	response := api.NodeSendResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
@@ -317,7 +312,7 @@ func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address
 // the recipient, using the exact *big.Int balance to avoid float64 rounding
 // errors that would cause "transfer amount exceeds balance" failures.
 // ETH is not supported here; use nodeSend with a pre-computed amount instead.
-func nodeSendAllTokens(c *cli.Command, token string, to common.Address) (*api.NodeSendResponse, error) {
+func nodeSendAllTokens(c *cli.Command, token string, to common.Address, opts *bind.TransactOpts) (*api.NodeSendResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -341,12 +336,6 @@ func nodeSendAllTokens(c *cli.Command, token string, to common.Address) (*api.No
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

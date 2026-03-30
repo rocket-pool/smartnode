@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/node"
@@ -82,13 +83,9 @@ func canProposeRecurringSpend(c *cli.Command, contractName string, recipient com
 	return &response, nil
 }
 
-func proposeRecurringSpend(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32, customMessage string) (*api.PDAOProposeOneTimeSpendResponse, error) {
+func proposeRecurringSpend(c *cli.Command, contractName string, recipient common.Address, amountPerPeriod *big.Int, periodLength time.Duration, startTime time.Time, numberOfPeriods uint64, blockNumber uint32, customMessage string, opts *bind.TransactOpts) (*api.PDAOProposeOneTimeSpendResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}
@@ -105,11 +102,6 @@ func proposeRecurringSpend(c *cli.Command, contractName string, recipient common
 	response := api.PDAOProposeOneTimeSpendResponse{}
 
 	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {

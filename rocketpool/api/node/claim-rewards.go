@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -240,7 +241,7 @@ func canClaimRewards(c *cli.Command, indicesString string) (*api.CanNodeClaimRew
 	return &response, nil
 }
 
-func claimRewards(c *cli.Command, indicesString string) (*api.NodeClaimRewardsResponse, error) {
+func claimRewards(c *cli.Command, indicesString string, opts *bind.TransactOpts) (*api.NodeClaimRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -264,12 +265,6 @@ func claimRewards(c *cli.Command, indicesString string) (*api.NodeClaimRewardsRe
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
@@ -345,7 +340,7 @@ func canClaimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *
 
 }
 
-func claimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *big.Int) (*api.NodeClaimAndStakeRewardsResponse, error) {
+func claimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *big.Int, opts *bind.TransactOpts) (*api.NodeClaimAndStakeRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -369,12 +364,6 @@ func claimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *big
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

@@ -3,6 +3,8 @@ package odao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -92,7 +94,7 @@ func canProposeLeave(c *cli.Command) (*api.CanProposeTNDAOLeaveResponse, error) 
 
 }
 
-func proposeLeave(c *cli.Command) (*api.ProposeTNDAOLeaveResponse, error) {
+func proposeLeave(c *cli.Command, opts *bind.TransactOpts) (*api.ProposeTNDAOLeaveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
@@ -135,12 +137,6 @@ func proposeLeave(c *cli.Command) (*api.ProposeTNDAOLeaveResponse, error) {
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
 		return nil, err
 	}
 

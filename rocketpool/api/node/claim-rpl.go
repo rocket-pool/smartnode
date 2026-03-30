@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/legacy/v1.0.0/rewards"
@@ -75,17 +77,13 @@ func canNodeClaimRpl(c *cli.Command) (*api.CanNodeClaimRplResponse, error) {
 	return &response, nil
 }
 
-func nodeClaimRpl(c *cli.Command) (*api.NodeClaimRplResponse, error) {
+func nodeClaimRpl(c *cli.Command, opts *bind.TransactOpts) (*api.NodeClaimRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
 	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -99,12 +97,6 @@ func nodeClaimRpl(c *cli.Command) (*api.NodeClaimRplResponse, error) {
 
 	// Response
 	response := api.NodeClaimRplResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

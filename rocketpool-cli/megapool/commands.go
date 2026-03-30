@@ -409,36 +409,36 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					return distribute(c.Bool("yes"))
 				},
 			},
-		// Add set-use-latest-delegate command
-		{
-			Name:      "set-use-latest-delegate",
-			Aliases:   []string{"l"},
-			Usage:     "Set the megapool to always use the latest delegate",
-			UsageText: "rocketpool megapool set-use-latest-delegate [true|false]",
-			Arguments: []cli.Argument{
-				&cli.StringArgs{
-					Name: "use-latest-delegate",
-					Min:  1,
-					Max:  1,
+			// Add set-use-latest-delegate command
+			{
+				Name:      "set-use-latest-delegate",
+				Aliases:   []string{"l"},
+				Usage:     "Set the megapool to always use the latest delegate",
+				UsageText: "rocketpool megapool set-use-latest-delegate [true|false]",
+				Arguments: []cli.Argument{
+					&cli.StringArgs{
+						Name: "use-latest-delegate",
+						Min:  1,
+						Max:  1,
+					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+
+					vals := c.StringArgs("use-latest-delegate")
+					useLatest, err := cliutils.ValidateBool("use-latest-delegate", vals[0])
+					if err != nil {
+						return err
+					}
+
+					return setUseLatestDelegateMegapool(useLatest, c.Bool("yes"))
+				},
+				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "yes",
+						Usage: "Automatically confirm the action",
+					},
 				},
 			},
-			Action: func(ctx context.Context, c *cli.Command) error {
-
-				vals := c.StringArgs("use-latest-delegate")
-				useLatest, err := cliutils.ValidateBool("use-latest-delegate", vals[0])
-				if err != nil {
-					return err
-				}
-
-				return setUseLatestDelegateMegapool(useLatest, c.Bool("yes"))
-			},
-			Flags: []cli.Flag{
-				&cli.BoolFlag{
-					Name:  "yes",
-					Usage: "Automatically confirm the action",
-				},
-			},
-		},
 		},
 	})
 }

@@ -3,6 +3,7 @@ package megapool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -49,14 +50,10 @@ func canDelegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.Me
 	return &response, nil
 }
 
-func delegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolDelegateUpgradeResponse, error) {
+func delegateUpgrade(c *cli.Command, megapoolAddress common.Address, opts *bind.TransactOpts) (*api.MegapoolDelegateUpgradeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -69,12 +66,6 @@ func delegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.Megap
 
 	// Create megapool
 	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}
@@ -178,13 +169,9 @@ func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, use
 
 }
 
-func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, useLatest bool) (*api.MegapoolSetUseLatestDelegateResponse, error) {
+func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, useLatest bool, opts *bind.TransactOpts) (*api.MegapoolSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -197,12 +184,6 @@ func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, useLat
 
 	// Create megapool
 	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

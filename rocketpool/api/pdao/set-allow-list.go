@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -80,13 +81,9 @@ func canProposeAllowListedControllers(c *cli.Command, addressList []common.Addre
 	return &response, nil
 }
 
-func proposeAllowListedControllers(c *cli.Command, addressList []common.Address, blockNumber uint32) (*api.PDAOProposeAllowListedControllersResponse, error) {
+func proposeAllowListedControllers(c *cli.Command, addressList []common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeAllowListedControllersResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}
@@ -103,11 +100,6 @@ func proposeAllowListedControllers(c *cli.Command, addressList []common.Address,
 	response := api.PDAOProposeAllowListedControllersResponse{}
 
 	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {

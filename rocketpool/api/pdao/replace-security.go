@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
@@ -88,13 +89,9 @@ func canProposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddr
 	return &response, nil
 }
 
-func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
+func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress common.Address, newMemberID string, newMemberAddress common.Address, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeReplaceMemberOfSecurityCouncilResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}
@@ -111,11 +108,6 @@ func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress
 	response := api.PDAOProposeReplaceMemberOfSecurityCouncilResponse{}
 
 	// Get node account
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	// Get the existing member
 	existingID, err := security.GetMemberID(rp, existingMemberAddress, nil)
 	if err != nil {

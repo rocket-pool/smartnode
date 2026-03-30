@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/urfave/cli/v3"
@@ -54,7 +55,7 @@ func canSetPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Add
 	return &response, nil
 }
 
-func setPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool) (*api.SetNodePrimaryWithdrawalAddressResponse, error) {
+func setPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (*api.SetNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -71,12 +72,6 @@ func setPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Addres
 
 	// Response
 	response := api.SetNodePrimaryWithdrawalAddressResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
@@ -160,7 +155,7 @@ func canConfirmPrimaryWithdrawalAddress(c *cli.Command) (*api.CanConfirmNodePrim
 	return &response, nil
 }
 
-func confirmPrimaryWithdrawalAddress(c *cli.Command) (*api.ConfirmNodePrimaryWithdrawalAddressResponse, error) {
+func confirmPrimaryWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*api.ConfirmNodePrimaryWithdrawalAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -177,12 +172,6 @@ func confirmPrimaryWithdrawalAddress(c *cli.Command) (*api.ConfirmNodePrimaryWit
 
 	// Response
 	response := api.ConfirmNodePrimaryWithdrawalAddressResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

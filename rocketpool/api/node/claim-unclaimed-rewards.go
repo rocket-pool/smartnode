@@ -3,6 +3,7 @@ package node
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
@@ -53,14 +54,10 @@ func canClaimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.
 
 }
 
-func claimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.ClaimUnclaimedRewardsResponse, error) {
+func claimUnclaimedRewards(c *cli.Command, nodeAddress common.Address, opts *bind.TransactOpts) (*api.ClaimUnclaimedRewardsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -70,12 +67,6 @@ func claimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.Cla
 
 	// Response
 	response := api.ClaimUnclaimedRewardsResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

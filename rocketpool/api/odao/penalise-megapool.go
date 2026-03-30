@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/urfave/cli/v3"
@@ -46,6 +47,7 @@ func canPenaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *
 	if err != nil {
 		return nil, err
 	}
+
 	gasInfo, err := megapool.EstimatePenaliseGas(rp, megapoolAddress, block, amount, opts)
 	if err != nil {
 		return nil, err
@@ -57,14 +59,10 @@ func canPenaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *
 
 }
 
-func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big.Int, amount *big.Int) (*api.PenaliseMegapoolResponse, error) {
+func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big.Int, amount *big.Int, opts *bind.TransactOpts) (*api.PenaliseMegapoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -74,12 +72,6 @@ func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big
 
 	// Response
 	response := api.PenaliseMegapoolResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

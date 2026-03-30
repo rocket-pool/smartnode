@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -153,7 +155,7 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 
 }
 
-func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CreateVacantMinipoolResponse, error) {
+func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey, opts *bind.TransactOpts) (*api.CreateVacantMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -219,12 +221,6 @@ func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64
 	}
 	scrubPeriod := time.Duration(scrubPeriodUnix) * time.Second
 	response.ScrubPeriod = scrubPeriod
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Get the next minipool address and withdrawal credentials
 	minipoolAddress, err := minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)

@@ -8,6 +8,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
@@ -29,7 +30,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/auction/create-lot", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := createLot(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := createLot(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -49,7 +55,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := bidOnLot(c, lotIndex, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := bidOnLot(c, lotIndex, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -69,7 +80,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := claimFromLot(c, lotIndex)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := claimFromLot(c, lotIndex, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -89,7 +105,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := recoverRplFromLot(c, lotIndex)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := recoverRplFromLot(c, lotIndex, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 }

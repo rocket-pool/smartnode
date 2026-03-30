@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -84,7 +86,7 @@ func canNodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdra
 
 }
 
-func nodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawEth(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeWithdrawRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -101,12 +103,6 @@ func nodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.NodeWithdrawRplRe
 
 	// Response
 	response := api.NodeWithdrawRplResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()

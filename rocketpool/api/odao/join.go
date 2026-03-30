@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	tndao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	tnsettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
@@ -118,14 +119,10 @@ func canJoin(c *cli.Command) (*api.CanJoinTNDAOResponse, error) {
 
 }
 
-func approveRpl(c *cli.Command) (*api.JoinTNDAOApproveResponse, error) {
+func approveRpl(c *cli.Command, opts *bind.TransactOpts) (*api.JoinTNDAOApproveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -161,10 +158,6 @@ func approveRpl(c *cli.Command) (*api.JoinTNDAOApproveResponse, error) {
 	}
 
 	// Approve RPL allowance
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
@@ -181,14 +174,10 @@ func approveRpl(c *cli.Command) (*api.JoinTNDAOApproveResponse, error) {
 
 }
 
-func waitForApprovalAndJoin(c *cli.Command, hash common.Hash) (*api.JoinTNDAOJoinResponse, error) {
+func waitForApprovalAndJoin(c *cli.Command, hash common.Hash, opts *bind.TransactOpts) (*api.JoinTNDAOJoinResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -206,10 +195,6 @@ func waitForApprovalAndJoin(c *cli.Command, hash common.Hash) (*api.JoinTNDAOJoi
 	response := api.JoinTNDAOJoinResponse{}
 
 	// Join
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {
 		return nil, fmt.Errorf("Error checking for nonce override: %w", err)

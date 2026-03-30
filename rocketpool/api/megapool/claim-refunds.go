@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/urfave/cli/v3"
 
@@ -83,7 +84,7 @@ func canClaimRefund(c *cli.Command) (*api.CanClaimRefundResponse, error) {
 
 }
 
-func claimRefund(c *cli.Command) (*api.ClaimRefundResponse, error) {
+func claimRefund(c *cli.Command, opts *bind.TransactOpts) (*api.ClaimRefundResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -115,12 +116,6 @@ func claimRefund(c *cli.Command) (*api.ClaimRefundResponse, error) {
 
 	// Load the megapool
 	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

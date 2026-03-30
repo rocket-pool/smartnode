@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/storage"
@@ -103,7 +104,7 @@ func canSetRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address
 	return &response, nil
 }
 
-func setRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool) (*api.SetNodeRPLWithdrawalAddressResponse, error) {
+func setRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool, opts *bind.TransactOpts) (*api.SetNodeRPLWithdrawalAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -119,12 +120,6 @@ func setRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, c
 
 	// Response
 	response := api.SetNodeRPLWithdrawalAddressResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
@@ -200,7 +195,7 @@ func canConfirmRPLWithdrawalAddress(c *cli.Command) (*api.CanConfirmNodeRPLWithd
 	return &response, nil
 }
 
-func confirmRPLWithdrawalAddress(c *cli.Command) (*api.ConfirmNodeRPLWithdrawalAddressResponse, error) {
+func confirmRPLWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*api.ConfirmNodeRPLWithdrawalAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -216,12 +211,6 @@ func confirmRPLWithdrawalAddress(c *cli.Command) (*api.ConfirmNodeRPLWithdrawalA
 
 	// Response
 	response := api.ConfirmNodeRPLWithdrawalAddressResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

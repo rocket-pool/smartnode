@@ -7,6 +7,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
@@ -92,13 +93,23 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		if name == "" {
 			name = r.FormValue("name")
 		}
-		resp, err := setEnsName(c, name, true)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setEnsName(c, name, true, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/wallet/set-ens-name", func(w http.ResponseWriter, r *http.Request) {
 		name := r.FormValue("name")
-		resp, err := setEnsName(c, name, false)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setEnsName(c, name, false, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 }

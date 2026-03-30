@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli/v3"
@@ -96,14 +98,10 @@ func getInitializeFeeDistributorGas(c *cli.Command) (*api.NodeInitializeFeeDistr
 
 }
 
-func initializeFeeDistributor(c *cli.Command) (*api.NodeInitializeFeeDistributorResponse, error) {
+func initializeFeeDistributor(c *cli.Command, opts *bind.TransactOpts) (*api.NodeInitializeFeeDistributorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -113,12 +111,6 @@ func initializeFeeDistributor(c *cli.Command) (*api.NodeInitializeFeeDistributor
 
 	// Response
 	response := api.NodeInitializeFeeDistributorResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {
@@ -215,7 +207,7 @@ func canDistribute(c *cli.Command) (*api.NodeCanDistributeResponse, error) {
 
 }
 
-func distribute(c *cli.Command) (*api.NodeDistributeResponse, error) {
+func distribute(c *cli.Command, opts *bind.TransactOpts) (*api.NodeDistributeResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -254,11 +246,6 @@ func distribute(c *cli.Command) (*api.NodeDistributeResponse, error) {
 	}
 
 	// Get gas estimates
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
 	if err != nil {

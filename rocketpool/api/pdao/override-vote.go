@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/network"
@@ -106,12 +107,8 @@ func canOverrideVote(c *cli.Command, proposalId uint64, voteDirection types.Vote
 	return &response, nil
 }
 
-func overrideVote(c *cli.Command, proposalId uint64, voteDirection types.VoteDirection) (*api.VoteOnPDAOProposalResponse, error) {
+func overrideVote(c *cli.Command, proposalId uint64, voteDirection types.VoteDirection, opts *bind.TransactOpts) (*api.VoteOnPDAOProposalResponse, error) {
 	// Get services
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -119,12 +116,6 @@ func overrideVote(c *cli.Command, proposalId uint64, voteDirection types.VoteDir
 
 	// Response
 	response := api.VoteOnPDAOProposalResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)
