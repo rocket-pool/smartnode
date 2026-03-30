@@ -148,7 +148,11 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 	for _, pubkey := range pubkeys {
 		validatorDetails, exists := state.MegapoolValidatorDetails[pubkey]
 		if !exists {
-			// Log
+			// Skip validators that haven't been staked
+			info, infoExists := state.MegapoolValidatorInfo[pubkey]
+			if infoExists && !info.ValidatorInfo.Staked {
+				continue
+			}
 			t.log.Printlnf("Validator %s not found in the megapool validator details map", pubkey.String())
 			continue
 		}
