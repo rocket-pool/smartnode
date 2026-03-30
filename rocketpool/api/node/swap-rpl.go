@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeSwapRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeSwapRplResponse, error) {
@@ -170,10 +168,6 @@ func approveFsRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (
 	}
 
 	// Approve fixed-supply RPL allowance
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	if hash, err := tokens.ApproveFixedSupplyRPL(rp, *rocketTokenRPLAddress, amountWei, opts); err != nil {
 		return nil, err
 	} else {
@@ -224,10 +218,6 @@ func swapRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.
 	response := api.NodeSwapRplSwapResponse{}
 
 	// Swap fixed-supply RPL for RPL
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	if hash, err := tokens.SwapFixedSupplyRPLForRPL(rp, amountWei, opts); err != nil {
 		return nil, err
 	} else {

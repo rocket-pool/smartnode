@@ -1,7 +1,6 @@
 package minipool
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canRefundMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanRefundMinipoolResponse, error) {
@@ -88,12 +86,6 @@ func refundMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.T
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Refund

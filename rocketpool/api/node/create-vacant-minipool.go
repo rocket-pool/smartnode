@@ -18,7 +18,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
@@ -251,12 +250,6 @@ func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64
 	// Convert the existing balance from gwei to wei
 	balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
 	balanceWei.Mul(balanceWei, big.NewInt(1e9))
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Create the minipool
 	tx, err := node.CreateVacantMinipool(rp, amountWei, minNodeFee, pubkey, salt, minipoolAddress, balanceWei, opts)

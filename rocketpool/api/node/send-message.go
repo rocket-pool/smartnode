@@ -9,7 +9,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 )
 
@@ -65,12 +64,6 @@ func sendMessage(c *cli.Command, address common.Address, message []byte, opts *b
 
 	// Response
 	response := api.NodeSendMessageResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Send the message
 	hash, err := eth.SendTransaction(ec, address, w.GetChainID(), message, true, opts)

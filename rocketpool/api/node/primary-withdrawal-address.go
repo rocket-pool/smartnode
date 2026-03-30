@@ -10,7 +10,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canSetPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodePrimaryWithdrawalAddressResponse, error) {
@@ -72,12 +71,6 @@ func setPrimaryWithdrawalAddress(c *cli.Command, withdrawalAddress common.Addres
 
 	// Response
 	response := api.SetNodePrimaryWithdrawalAddressResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Get the node's account
 	nodeAccount, err := w.GetNodeAccount()
@@ -172,12 +165,6 @@ func confirmPrimaryWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*
 
 	// Response
 	response := api.ConfirmNodePrimaryWithdrawalAddressResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Get the node's account
 	nodeAccount, err := w.GetNodeAccount()

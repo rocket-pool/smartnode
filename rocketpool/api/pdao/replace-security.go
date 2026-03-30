@@ -10,7 +10,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 )
 
@@ -112,12 +111,6 @@ func proposeReplaceMemberOfSecurityCouncil(c *cli.Command, existingMemberAddress
 	existingID, err := security.GetMemberID(rp, existingMemberAddress, nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting ID of existing member: %w", err)
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Propose

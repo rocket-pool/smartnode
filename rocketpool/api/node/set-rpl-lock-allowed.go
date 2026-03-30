@@ -1,8 +1,6 @@
 package node
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
@@ -10,7 +8,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canSetRplLockAllowed(c *cli.Command, allowed bool) (*api.CanSetRplLockingAllowedResponse, error) {
@@ -89,10 +86,6 @@ func setRplLockAllowed(c *cli.Command, allowed bool, opts *bind.TransactOpts) (*
 	response := api.SetRplLockingAllowedResponse{}
 
 	// Stake RPL
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	hash, err := node.SetRPLLockingAllowed(rp, account.Address, allowed, opts)
 	if err != nil {
 		return nil, err

@@ -11,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canProposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string) (*api.CanProposeTNDAOInviteResponse, error) {
@@ -95,12 +94,6 @@ func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, membe
 
 	// Response
 	response := api.ProposeTNDAOInviteResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Submit proposal
 	message := fmt.Sprintf("invite %s (%s)", memberId, memberUrl)

@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
@@ -16,7 +15,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error) {
@@ -144,11 +142,6 @@ func nodeWithdrawRpl(c *cli.Command, opts *bind.TransactOpts) (*api.NodeWithdraw
 	// Response
 	response := api.NodeWithdrawRplResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	var hash common.Hash
 	// Withdraw RPL
 	hash, err = node.WithdrawRPL(rp, opts)
@@ -325,11 +318,6 @@ func nodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int, opts *bind.Transa
 	// Response
 	response := api.NodeWithdrawRplResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	var hash common.Hash
 	// Withdraw RPL
 	hash, err = node131.WithdrawRPL(rp, nodeAccount.Address, amountWei, opts)

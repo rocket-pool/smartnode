@@ -1,8 +1,6 @@
 package upgrade
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
@@ -13,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canExecuteUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.CanExecuteTNDAOUpgradeResponse, error) {
@@ -112,12 +109,6 @@ func executeUpgrade(c *cli.Command, upgradeProposalId uint64, opts *bind.Transac
 
 	// Response
 	response := api.ExecuteTNDAOUpgradeResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Execute upgrade
 	hash, err := upgrades.ExecuteUpgrade(rp, upgradeProposalId, opts)

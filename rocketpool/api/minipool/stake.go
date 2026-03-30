@@ -14,7 +14,6 @@ import (
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
@@ -176,12 +175,6 @@ func stakeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.Tr
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Get eth2 config

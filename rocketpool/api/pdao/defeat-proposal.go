@@ -1,7 +1,6 @@
 package pdao
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,7 +12,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canDefeatProposal(c *cli.Command, proposalId uint64, index uint64) (*api.PDAOCanDefeatProposalResponse, error) {
@@ -125,12 +123,6 @@ func defeatProposal(c *cli.Command, proposalId uint64, index uint64, opts *bind.
 
 	// Response
 	response := api.PDAODefeatProposalResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Execute proposal
 	hash, err := protocol.DefeatProposal(rp, proposalId, index, opts)

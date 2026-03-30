@@ -8,7 +8,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 )
 
@@ -68,12 +67,6 @@ func delegateUpgrade(c *cli.Command, megapoolAddress common.Address, opts *bind.
 	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Upgrade
@@ -186,12 +179,6 @@ func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, useLat
 	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Set the new setting

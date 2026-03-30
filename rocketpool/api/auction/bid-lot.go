@@ -1,7 +1,6 @@
 package auction
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canBidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int) (*api.CanBidOnLotResponse, error) {
@@ -118,12 +116,6 @@ func bidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int, opts *bind.Tr
 	response := api.BidOnLotResponse{}
 
 	opts.Value = amountWei
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Bid on lot
 	hash, err := auction.PlaceBid(rp, lotIndex, opts)

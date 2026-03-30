@@ -119,6 +119,11 @@ func GetNodeAccountTransactorFromRequest(c *cli.Command, r *http.Request) (*bind
 			opts.GasLimit = gasLimit
 		}
 	}
+	if nonceStr := r.FormValue("nonce"); nonceStr != "" {
+		if nonce, ok := new(big.Int).SetString(nonceStr, 0); ok {
+			opts.Nonce = nonce
+		}
+	}
 	return opts, nil
 }
 

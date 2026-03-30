@@ -1,14 +1,11 @@
 package pdao
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 )
 
@@ -74,13 +71,6 @@ func proposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Addr
 
 	// Response
 	response := api.PDAOProposeKickMultiFromSecurityCouncilResponse{}
-
-	// Get node account
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Propose
 	message := "kick multiple members from the security council"

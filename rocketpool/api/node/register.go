@@ -1,8 +1,6 @@
 package node
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
@@ -12,7 +10,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canRegisterNode(c *cli.Command, timezoneLocation string) (*api.CanRegisterNodeResponse, error) {
@@ -102,12 +99,6 @@ func registerNode(c *cli.Command, timezoneLocation string, opts *bind.TransactOp
 
 	// Response
 	response := api.RegisterNodeResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Register node
 	hash, err := node.RegisterNode(rp, timezoneLocation, opts)

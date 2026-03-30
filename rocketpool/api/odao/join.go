@@ -1,7 +1,6 @@
 package odao
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -15,7 +14,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canJoin(c *cli.Command) (*api.CanJoinTNDAOResponse, error) {
@@ -158,10 +156,6 @@ func approveRpl(c *cli.Command, opts *bind.TransactOpts) (*api.JoinTNDAOApproveR
 	}
 
 	// Approve RPL allowance
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	hash, err := tokens.ApproveRPL(rp, *rocketDAONodeTrustedActionsAddress, rplBondAmount, opts)
 	if err != nil {
 		return nil, err
@@ -195,10 +189,6 @@ func waitForApprovalAndJoin(c *cli.Command, hash common.Hash, opts *bind.Transac
 	response := api.JoinTNDAOJoinResponse{}
 
 	// Join
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	joinHash, err := tndao.Join(rp, opts)
 	if err != nil {
 		return nil, err

@@ -18,7 +18,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func getMinipoolCloseDetailsForNode(c *cli.Command) (*api.GetMinipoolCloseDetailsForNodeResponse, error) {
@@ -331,12 +330,6 @@ func closeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.Tr
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
 		return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mp.GetVersion())
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Get some details

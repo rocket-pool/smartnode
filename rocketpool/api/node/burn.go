@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNodeBurnResponse, error) {
@@ -121,12 +119,6 @@ func nodeBurn(c *cli.Command, amountWei *big.Int, token string, opts *bind.Trans
 
 	// Response
 	response := api.NodeBurnResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Handle token type
 	switch token {

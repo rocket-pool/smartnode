@@ -24,7 +24,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
@@ -467,12 +466,6 @@ func nodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFee f
 
 		response.ValidatorPubkeys[i] = pubKey
 		expressTicketsRequested--
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Do not send transaction unless requested

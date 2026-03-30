@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	_ "time/tzdata"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canSetTimezoneLocation(c *cli.Command, timezoneLocation string) (*api.CanSetNodeTimezoneResponse, error) {
@@ -60,12 +58,6 @@ func setTimezoneLocation(c *cli.Command, timezoneLocation string, opts *bind.Tra
 
 	// Response
 	response := api.SetNodeTimezoneResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Set timezone location
 	hash, err := node.SetTimezoneLocation(rp, timezoneLocation, opts)

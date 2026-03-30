@@ -1,8 +1,6 @@
 package security
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
@@ -11,7 +9,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canJoin(c *cli.Command) (*api.SecurityCanJoinResponse, error) {
@@ -97,10 +94,6 @@ func join(c *cli.Command, opts *bind.TransactOpts) (*api.SecurityJoinResponse, e
 	response := api.SecurityJoinResponse{}
 
 	// Join
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	hash, err := security.Join(rp, opts)
 	if err != nil {
 		return nil, err
