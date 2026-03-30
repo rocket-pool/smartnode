@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -138,7 +139,7 @@ func canNotifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot ui
 
 }
 
-func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint64) (*api.NotifyValidatorExitResponse, error) {
+func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint64, opts *bind.TransactOpts) (*api.NotifyValidatorExitResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -191,12 +192,6 @@ func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint6
 
 	// Get the validator pubkey
 	validatorInfo, err := mp.GetValidatorInfoAndPubkey(validatorId, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

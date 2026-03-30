@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -120,7 +121,7 @@ func canVoteOnProposal(c *cli.Command, proposalId uint64, voteDirection types.Vo
 	return &response, nil
 }
 
-func voteOnProposal(c *cli.Command, proposalId uint64, voteDirection types.VoteDirection) (*api.VoteOnPDAOProposalResponse, error) {
+func voteOnProposal(c *cli.Command, proposalId uint64, voteDirection types.VoteDirection, opts *bind.TransactOpts) (*api.VoteOnPDAOProposalResponse, error) {
 	// Get services
 	cfg, err := services.GetConfig(c)
 	if err != nil {
@@ -144,12 +145,6 @@ func voteOnProposal(c *cli.Command, proposalId uint64, voteDirection types.VoteD
 
 	// Get node account
 	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

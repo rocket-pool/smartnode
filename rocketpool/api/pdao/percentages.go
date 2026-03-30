@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	rpnode "github.com/rocket-pool/smartnode/bindings/node"
 	psettings "github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -125,7 +127,7 @@ func canProposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, 
 	return &response, nil
 }
 
-func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32) (*api.PDAOProposeRewardsPercentagesResponse, error) {
+func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pdao *big.Int, blockNumber uint32, opts *bind.TransactOpts) (*api.PDAOProposeRewardsPercentagesResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -134,10 +136,6 @@ func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pda
 		return nil, err
 	}
 	cfg, err := services.GetConfig(c)
-	if err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}
@@ -154,11 +152,6 @@ func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pda
 	response := api.PDAOProposeRewardsPercentagesResponse{}
 
 	// Get the account transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	// Decode the pollard
 	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {

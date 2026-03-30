@@ -16,6 +16,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -1279,6 +1280,19 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 		}
 		req, err = http.NewRequestWithContext(ctx, http.MethodGet, target, nil)
 	case http.MethodPost:
+		if params == nil {
+			params = url.Values{}
+		}
+		// Propagate the gas settings
+		if c.globals.MaxFee > 0 {
+			params.Set("maxFee", strconv.FormatFloat(c.globals.MaxFee, 'f', -1, 64))
+		}
+		if c.globals.MaxPrioFee > 0 {
+			params.Set("maxPrioFee", strconv.FormatFloat(c.globals.MaxPrioFee, 'f', -1, 64))
+		}
+		if c.globals.GasLimit > 0 {
+			params.Set("gasLimit", strconv.FormatFloat(float64(c.globals.GasLimit), 'f', 0, 64))
+		}
 		body := []byte(params.Encode())
 		req, err = http.NewRequestWithContext(ctx, http.MethodPost, target, bytes.NewReader(body))
 		if err == nil {

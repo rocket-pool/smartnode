@@ -6,6 +6,7 @@ import (
 
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
@@ -42,7 +43,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/security/propose-leave", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := proposeLeave(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeLeave(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -58,7 +64,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		contractName := r.FormValue("contractName")
 		settingName := r.FormValue("settingName")
 		value := r.FormValue("value")
-		resp, err := proposeSetting(c, contractName, settingName, value)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSetting(c, contractName, settingName, value, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -78,7 +89,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := cancelProposal(c, id)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := cancelProposal(c, id, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -99,7 +115,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			return
 		}
 		support := r.FormValue("support") == "true"
-		resp, err := voteOnProposal(c, id, support)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := voteOnProposal(c, id, support, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -119,7 +140,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := executeProposal(c, id)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := executeProposal(c, id, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -129,7 +155,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/security/join", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := join(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := join(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -139,7 +170,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/security/leave", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := leave(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := leave(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 }

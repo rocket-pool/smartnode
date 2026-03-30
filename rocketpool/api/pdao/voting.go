@@ -3,6 +3,7 @@ package pdao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
@@ -48,7 +49,7 @@ func estimateSetVotingDelegateGas(c *cli.Command, address common.Address) (*api.
 
 }
 
-func setVotingDelegate(c *cli.Command, address common.Address) (*api.PDAOSetVotingDelegateResponse, error) {
+func setVotingDelegate(c *cli.Command, address common.Address, opts *bind.TransactOpts) (*api.PDAOSetVotingDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -58,19 +59,8 @@ func setVotingDelegate(c *cli.Command, address common.Address) (*api.PDAOSetVoti
 	if err != nil {
 		return nil, err
 	}
-	w, err := services.GetWallet(c)
-	if err != nil {
-		return nil, err
-	}
-
 	// Response
 	response := api.PDAOSetVotingDelegateResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

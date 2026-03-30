@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -74,14 +76,10 @@ func canNodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.CanNodeWith
 
 }
 
-func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.NodeWithdrawCreditResponse, error) {
+func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeWithdrawCreditResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -91,12 +89,6 @@ func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.NodeWithdrawCr
 
 	// Response
 	response := api.NodeWithdrawCreditResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

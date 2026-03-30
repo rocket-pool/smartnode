@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
@@ -34,7 +35,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := refundMinipool(c, addr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := refundMinipool(c, addr, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -54,7 +60,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := stakeMinipool(c, addr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := stakeMinipool(c, addr, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -74,7 +85,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := promoteMinipool(c, addr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := promoteMinipool(c, addr, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -94,7 +110,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := dissolveMinipool(c, addr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := dissolveMinipool(c, addr, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -129,7 +150,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := closeMinipool(c, addr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := closeMinipool(c, addr, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -149,7 +175,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := delegateUpgrade(c, addr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := delegateUpgrade(c, addr, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -169,7 +200,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := setUseLatestDelegate(c, addr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setUseLatestDelegate(c, addr, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -236,7 +272,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := distributeBalance(c, addr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := distributeBalance(c, addr, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -291,7 +332,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			return
 		}
 		submit := r.FormValue("submit") == "true"
-		resp, err := rescueDissolvedMinipool(c, addr, amount, submit)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := rescueDissolvedMinipool(c, addr, amount, submit, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 

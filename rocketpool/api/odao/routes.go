@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
@@ -55,7 +56,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeInvite(c, addr, memberId, memberUrl)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeInvite(c, addr, memberId, memberUrl, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -65,7 +71,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/odao/propose-leave", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := proposeLeave(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeLeave(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -85,7 +96,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeKick(c, addr, fine)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeKick(c, addr, fine, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -105,7 +121,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := cancelProposal(c, id)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := cancelProposal(c, id, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -127,7 +148,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		supportStr := r.FormValue("support")
 		support := supportStr == "true"
-		resp, err := voteOnProposal(c, id, support)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := voteOnProposal(c, id, support, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -147,7 +173,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := executeProposal(c, id)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := executeProposal(c, id, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -157,7 +188,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/odao/join-approve-rpl", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := approveRpl(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := approveRpl(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -168,7 +204,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			return
 		}
 		hash := common.HexToHash(hashStr)
-		resp, err := waitForApprovalAndJoin(c, hash)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := waitForApprovalAndJoin(c, hash, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -183,7 +224,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, fmt.Errorf("missing required parameter: bondRefundAddress"))
 			return
 		}
-		resp, err := leave(c, common.HexToAddress(bondRefundStr))
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := leave(c, common.HexToAddress(bondRefundStr), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -218,7 +264,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := penaliseMegapool(c, megapool, block, amount)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := penaliseMegapool(c, megapool, block, amount, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -239,7 +290,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingMembersQuorum(c, quorum)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingMembersQuorum(c, quorum, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -259,7 +315,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingMembersRplBond(c, bond)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingMembersRplBond(c, bond, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -279,7 +340,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingMinipoolUnbondedMax(c, max)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingMinipoolUnbondedMax(c, max, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -299,7 +365,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingProposalCooldown(c, val)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalCooldown(c, val, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -319,7 +390,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingProposalVoteTimespan(c, val)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalVoteTimespan(c, val, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -339,7 +415,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingProposalVoteDelayTimespan(c, val)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalVoteDelayTimespan(c, val, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -359,7 +440,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingProposalExecuteTimespan(c, val)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalExecuteTimespan(c, val, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -379,7 +465,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingProposalActionTimespan(c, val)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingProposalActionTimespan(c, val, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -399,7 +490,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingScrubPeriod(c, val)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingScrubPeriod(c, val, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -419,7 +515,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingPromotionScrubPeriod(c, val)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingPromotionScrubPeriod(c, val, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -431,7 +532,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/odao/propose-scrub-penalty-enabled", func(w http.ResponseWriter, r *http.Request) {
 		enabledStr := r.FormValue("enabled")
-		resp, err := proposeSettingScrubPenaltyEnabled(c, enabledStr == "true")
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingScrubPenaltyEnabled(c, enabledStr == "true", opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -451,7 +557,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingBondReductionWindowStart(c, val)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingBondReductionWindowStart(c, val, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -471,7 +582,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingBondReductionWindowLength(c, val)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := proposeSettingBondReductionWindowLength(c, val, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 }

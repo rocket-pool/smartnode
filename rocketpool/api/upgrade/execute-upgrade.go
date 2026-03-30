@@ -3,6 +3,8 @@ package upgrade
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/dao/upgrades"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
@@ -94,17 +96,13 @@ func canExecuteUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.CanExecut
 
 }
 
-func executeUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.ExecuteTNDAOUpgradeResponse, error) {
+func executeUpgrade(c *cli.Command, upgradeProposalId uint64, opts *bind.TransactOpts) (*api.ExecuteTNDAOUpgradeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
 	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -114,12 +112,6 @@ func executeUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.ExecuteTNDAO
 
 	// Response
 	response := api.ExecuteTNDAOUpgradeResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

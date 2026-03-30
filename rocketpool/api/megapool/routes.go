@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
@@ -31,7 +32,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/megapool/claim-refund", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := claimRefund(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := claimRefund(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -51,7 +57,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := repayDebt(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := repayDebt(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -71,7 +82,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := reduceBond(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := reduceBond(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -91,7 +107,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := stake(c, validatorId)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := stake(c, validatorId, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -111,7 +132,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := dissolveValidator(c, validatorId)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := dissolveValidator(c, validatorId, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -131,7 +157,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := dissolveWithProof(c, validatorId)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := dissolveWithProof(c, validatorId, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -171,7 +202,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := notifyValidatorExit(c, validatorId)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := notifyValidatorExit(c, validatorId, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -201,7 +237,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := notifyFinalBalance(c, validatorId, slot)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := notifyFinalBalance(c, validatorId, slot, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -221,7 +262,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := exitQueue(c, validatorIndex)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := exitQueue(c, validatorIndex, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -231,7 +277,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/megapool/distribute", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := distributeMegapool(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := distributeMegapool(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -269,7 +320,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/megapool/delegate-upgrade", func(w http.ResponseWriter, r *http.Request) {
 		address := common.HexToAddress(r.FormValue("address"))
-		resp, err := delegateUpgrade(c, address)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := delegateUpgrade(c, address, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -283,7 +339,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/megapool/set-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
 		address := common.HexToAddress(r.FormValue("address"))
 		setting := r.FormValue("setting") == "true"
-		resp, err := setUseLatestDelegate(c, address, setting)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setUseLatestDelegate(c, address, setting, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 

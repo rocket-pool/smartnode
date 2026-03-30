@@ -3,6 +3,7 @@ package wallet
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -16,7 +17,7 @@ const (
 )
 
 // Set a name to the node wallet's ENS reverse record.
-func setEnsName(c *cli.Command, name string, onlyEstimateGas bool) (*api.SetEnsNameResponse, error) {
+func setEnsName(c *cli.Command, name string, onlyEstimateGas bool, opts *bind.TransactOpts) (*api.SetEnsNameResponse, error) {
 	rp, err := services.GetRocketPool(c)
 	if err != nil {
 		return nil, err
@@ -52,12 +53,6 @@ func setEnsName(c *cli.Command, name string, onlyEstimateGas bool) (*api.SetEnsN
 		return nil, fmt.Errorf("error reverse resolving %s to an ENS name: %w", account.Address.Hex(), err)
 	} else if resolvedName == name {
 		return nil, fmt.Errorf("error: the ENS record already points to the name '%s'", name)
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
 	}
 
 	// If onlyEstimateGas is set, then don't send the tx, only simulates and returns the gas estimate

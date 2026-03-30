@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli/v3"
@@ -115,7 +116,7 @@ func canStake(c *cli.Command, validatorId uint64) (*api.CanStakeResponse, error)
 
 }
 
-func stake(c *cli.Command, validatorId uint64) (*api.StakeResponse, error) {
+func stake(c *cli.Command, validatorId uint64, opts *bind.TransactOpts) (*api.StakeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -166,12 +167,6 @@ func stake(c *cli.Command, validatorId uint64) (*api.StakeResponse, error) {
 	}
 
 	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

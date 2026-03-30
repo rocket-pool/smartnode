@@ -3,6 +3,7 @@ package megapool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -93,7 +94,7 @@ func canDistributeMegapool(c *cli.Command) (*api.CanDistributeMegapoolResponse, 
 	return &response, nil
 }
 
-func distributeMegapool(c *cli.Command) (*api.DistributeMegapoolResponse, error) {
+func distributeMegapool(c *cli.Command, opts *bind.TransactOpts) (*api.DistributeMegapoolResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -111,12 +112,6 @@ func distributeMegapool(c *cli.Command) (*api.DistributeMegapoolResponse, error)
 
 	// Get the node account
 	nodeAccount, err := w.GetNodeAccount()
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

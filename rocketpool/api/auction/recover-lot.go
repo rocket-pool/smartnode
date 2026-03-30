@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
@@ -97,17 +98,13 @@ func canRecoverRplFromLot(c *cli.Command, lotIndex uint64) (*api.CanRecoverRPLFr
 
 }
 
-func recoverRplFromLot(c *cli.Command, lotIndex uint64) (*api.RecoverRPLFromLotResponse, error) {
+func recoverRplFromLot(c *cli.Command, lotIndex uint64, opts *bind.TransactOpts) (*api.RecoverRPLFromLotResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
 	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -117,12 +114,6 @@ func recoverRplFromLot(c *cli.Command, lotIndex uint64) (*api.RecoverRPLFromLotR
 
 	// Response
 	response := api.RecoverRPLFromLotResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

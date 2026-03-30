@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/urfave/cli/v3"
 
@@ -90,7 +91,7 @@ func canReduceBond(c *cli.Command, amount *big.Int) (*api.CanReduceBondResponse,
 
 }
 
-func reduceBond(c *cli.Command, amount *big.Int) (*api.ReduceBondResponse, error) {
+func reduceBond(c *cli.Command, amount *big.Int, opts *bind.TransactOpts) (*api.ReduceBondResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -122,12 +123,6 @@ func reduceBond(c *cli.Command, amount *big.Int) (*api.ReduceBondResponse, error
 
 	// Load the megapool
 	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

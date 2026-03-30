@@ -307,14 +307,10 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 
 }
 
-func closeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CloseMinipoolResponse, error) {
+func closeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.CloseMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -335,12 +331,6 @@ func closeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CloseMi
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
 		return nil, fmt.Errorf("cannot create v3 binding for minipool %s, version %d", minipoolAddress.Hex(), mp.GetVersion())
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
 	}
 
 	// Override the provided pending TX if requested

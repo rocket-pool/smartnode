@@ -4,6 +4,8 @@ import (
 	"fmt"
 	_ "time/tzdata"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/urfave/cli/v3"
 
@@ -45,14 +47,10 @@ func canSetTimezoneLocation(c *cli.Command, timezoneLocation string) (*api.CanSe
 
 }
 
-func setTimezoneLocation(c *cli.Command, timezoneLocation string) (*api.SetNodeTimezoneResponse, error) {
+func setTimezoneLocation(c *cli.Command, timezoneLocation string, opts *bind.TransactOpts) (*api.SetNodeTimezoneResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -62,12 +60,6 @@ func setTimezoneLocation(c *cli.Command, timezoneLocation string) (*api.SetNodeT
 
 	// Response
 	response := api.SetNodeTimezoneResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

@@ -3,6 +3,7 @@ package megapool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -83,7 +84,7 @@ func canDissolveValidator(c *cli.Command, validatorId uint32) (*api.CanDissolveV
 
 }
 
-func dissolveValidator(c *cli.Command, validatorId uint32) (*api.DissolveValidatorResponse, error) {
+func dissolveValidator(c *cli.Command, validatorId uint32, opts *bind.TransactOpts) (*api.DissolveValidatorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -115,12 +116,6 @@ func dissolveValidator(c *cli.Command, validatorId uint32) (*api.DissolveValidat
 
 	// Load the megapool
 	mp, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

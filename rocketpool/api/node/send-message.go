@@ -5,6 +5,7 @@ import (
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -47,7 +48,7 @@ func canSendMessage(c *cli.Command, address common.Address, message []byte) (*ap
 
 }
 
-func sendMessage(c *cli.Command, address common.Address, message []byte) (*api.NodeSendMessageResponse, error) {
+func sendMessage(c *cli.Command, address common.Address, message []byte, opts *bind.TransactOpts) (*api.NodeSendMessageResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -64,12 +65,6 @@ func sendMessage(c *cli.Command, address common.Address, message []byte) (*api.N
 
 	// Response
 	response := api.NodeSendMessageResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

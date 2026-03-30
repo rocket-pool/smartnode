@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -112,7 +114,7 @@ func canSetSmoothingPoolStatus(c *cli.Command, status bool) (*api.CanSetSmoothin
 
 }
 
-func setSmoothingPoolStatus(c *cli.Command, status bool) (*api.SetSmoothingPoolRegistrationStatusResponse, error) {
+func setSmoothingPoolStatus(c *cli.Command, status bool, opts *bind.TransactOpts) (*api.SetSmoothingPoolRegistrationStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -144,12 +146,6 @@ func setSmoothingPoolStatus(c *cli.Command, status bool) (*api.SetSmoothingPoolR
 
 	// Response
 	response := api.SetSmoothingPoolRegistrationStatusResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 
 	// Override the provided pending TX if requested
 	err = eth1.CheckForNonceOverride(c, opts)

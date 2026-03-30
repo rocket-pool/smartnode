@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/urfave/cli/v3"
@@ -99,17 +100,13 @@ func canBidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int) (*api.CanB
 
 }
 
-func bidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int) (*api.BidOnLotResponse, error) {
+func bidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int, opts *bind.TransactOpts) (*api.BidOnLotResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
 	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -120,11 +117,6 @@ func bidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int) (*api.BidOnLo
 	// Response
 	response := api.BidOnLotResponse{}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 	opts.Value = amountWei
 
 	// Override the provided pending TX if requested

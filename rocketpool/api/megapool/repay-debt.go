@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/urfave/cli/v3"
 
@@ -103,7 +104,7 @@ func canRepayDebt(c *cli.Command, amount *big.Int) (*api.CanRepayDebtResponse, e
 
 }
 
-func repayDebt(c *cli.Command, amount *big.Int) (*api.RepayDebtResponse, error) {
+func repayDebt(c *cli.Command, amount *big.Int, opts *bind.TransactOpts) (*api.RepayDebtResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -147,12 +148,6 @@ func repayDebt(c *cli.Command, amount *big.Int) (*api.RepayDebtResponse, error) 
 
 	if debt.Cmp(big.NewInt(0)) == 0 {
 		return nil, fmt.Errorf("no debt to repay")
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
 	}
 
 	opts.Value = amount

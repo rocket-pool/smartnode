@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
@@ -149,7 +150,7 @@ func canStakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanS
 
 }
 
-func stakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.StakeMinipoolResponse, error) {
+func stakeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.StakeMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -173,12 +174,6 @@ func stakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.StakeMi
 
 	// Create minipool
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
 	if err != nil {
 		return nil, err
 	}

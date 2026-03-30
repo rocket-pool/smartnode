@@ -39,6 +39,9 @@ func EthToWei(eth float64) *big.Int {
 
 // Convert wei to gigawei
 func WeiToGwei(wei *big.Int) float64 {
+	if wei == nil {
+		return 0
+	}
 	var weiFloat big.Float
 	var gwei big.Float
 	weiFloat.SetInt(wei)

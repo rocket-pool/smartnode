@@ -11,6 +11,7 @@ import (
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli/v3"
 
+	"github.com/rocket-pool/smartnode/shared/services"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
@@ -61,7 +62,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/node/register", func(w http.ResponseWriter, r *http.Request) {
 		tz := r.FormValue("timezoneLocation")
-		resp, err := registerNode(c, tz)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := registerNode(c, tz, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -75,7 +81,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/node/set-timezone", func(w http.ResponseWriter, r *http.Request) {
 		tz := r.FormValue("timezoneLocation")
-		resp, err := setTimezoneLocation(c, tz)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setTimezoneLocation(c, tz, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -91,7 +102,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/node/set-primary-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
 		addr := common.HexToAddress(r.FormValue("address"))
 		confirm := r.FormValue("confirm") == "true"
-		resp, err := setPrimaryWithdrawalAddress(c, addr, confirm)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setPrimaryWithdrawalAddress(c, addr, confirm, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -101,7 +117,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/node/confirm-primary-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := confirmPrimaryWithdrawalAddress(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := confirmPrimaryWithdrawalAddress(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -117,7 +138,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/node/set-rpl-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
 		addr := common.HexToAddress(r.FormValue("address"))
 		confirm := r.FormValue("confirm") == "true"
-		resp, err := setRPLWithdrawalAddress(c, addr, confirm)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setRPLWithdrawalAddress(c, addr, confirm, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -127,7 +153,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/node/confirm-rpl-withdrawal-address", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := confirmRPLWithdrawalAddress(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := confirmRPLWithdrawalAddress(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -164,7 +195,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := approveFsRpl(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := approveFsRpl(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -175,7 +211,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			return
 		}
 		hash := common.HexToHash(r.FormValue("approvalTxHash"))
-		resp, err := waitForApprovalAndSwapFsRpl(c, amountWei, hash)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := waitForApprovalAndSwapFsRpl(c, amountWei, hash, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -185,7 +226,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := swapRpl(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := swapRpl(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -222,7 +268,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := approveRpl(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := approveRpl(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -233,7 +284,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			return
 		}
 		hash := common.HexToHash(r.FormValue("approvalTxHash"))
-		resp, err := waitForApprovalAndStakeRpl(c, amountWei, hash)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := waitForApprovalAndStakeRpl(c, amountWei, hash, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -243,7 +299,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := stakeRpl(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := stakeRpl(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -257,7 +318,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/node/set-rpl-locking-allowed", func(w http.ResponseWriter, r *http.Request) {
 		allowed := r.FormValue("allowed") == "true"
-		resp, err := setRplLockAllowed(c, allowed)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setRplLockAllowed(c, allowed, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -273,7 +339,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	mux.HandleFunc("/api/node/set-stake-rpl-for-allowed", func(w http.ResponseWriter, r *http.Request) {
 		caller := common.HexToAddress(r.FormValue("caller"))
 		allowed := r.FormValue("allowed") == "true"
-		resp, err := setStakeRplForAllowed(c, caller, allowed)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setStakeRplForAllowed(c, caller, allowed, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -285,7 +356,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/node/withdraw-rpl", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := nodeWithdrawRpl(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeWithdrawRpl(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -305,7 +381,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := nodeUnstakeLegacyRpl(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeUnstakeLegacyRpl(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -325,7 +406,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := nodeWithdrawRplv1_3_1(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeWithdrawRplv1_3_1(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -345,7 +431,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := nodeUnstakeRpl(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeUnstakeRpl(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -367,7 +458,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := nodeWithdrawEth(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeWithdrawEth(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -387,7 +483,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := nodeWithdrawCredit(c, amountWei)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeWithdrawCredit(c, amountWei, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -409,7 +510,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := nodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.useCreditBalance, params.expressTickets, params.submit)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeDeposits(c, params.count, params.amountWei, params.minFee, params.salt, params.useCreditBalance, params.expressTickets, params.submit, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -435,14 +541,24 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		}
 		token := r.FormValue("token")
 		to := common.HexToAddress(r.FormValue("to"))
-		resp, err := nodeSend(c, amountRaw, token, to)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeSend(c, amountRaw, token, to, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/node/send-all", func(w http.ResponseWriter, r *http.Request) {
 		token := r.FormValue("token")
 		to := common.HexToAddress(r.FormValue("to"))
-		resp, err := nodeSendAllTokens(c, token, to)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeSendAllTokens(c, token, to, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -464,7 +580,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			return
 		}
 		token := r.FormValue("token")
-		resp, err := nodeBurn(c, amountWei, token)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeBurn(c, amountWei, token, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -476,7 +597,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/node/claim-rpl-rewards", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := nodeClaimRpl(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := nodeClaimRpl(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -493,7 +619,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/node/initialize-fee-distributor", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := initializeFeeDistributor(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := initializeFeeDistributor(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -503,7 +634,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/node/distribute", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := distribute(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := distribute(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -522,7 +658,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/node/claim-rewards", func(w http.ResponseWriter, r *http.Request) {
 		indices := r.FormValue("indices")
-		resp, err := claimRewards(c, indices)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := claimRewards(c, indices, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -544,7 +685,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := claimAndStakeRewards(c, indices, stakeAmount)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := claimAndStakeRewards(c, indices, stakeAmount, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -563,7 +709,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/node/set-smoothing-pool-status", func(w http.ResponseWriter, r *http.Request) {
 		status := r.FormValue("status") == "true"
-		resp, err := setSmoothingPoolStatus(c, status)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := setSmoothingPoolStatus(c, status, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -613,7 +764,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := createVacantMinipool(c, params.amountWei, params.minFee, params.salt, params.pubkey)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := createVacantMinipool(c, params.amountWei, params.minFee, params.salt, params.pubkey, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -637,7 +793,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, fmt.Errorf("invalid message hex: %w", err))
 			return
 		}
-		resp, err := sendMessage(c, addr, msgBytes)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := sendMessage(c, addr, msgBytes, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -659,7 +820,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/node/provision-express-tickets", func(w http.ResponseWriter, r *http.Request) {
-		resp, err := provisionExpressTickets(c)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := provisionExpressTickets(c, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -673,7 +839,12 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/node/claim-unclaimed-rewards", func(w http.ResponseWriter, r *http.Request) {
 		nodeAddr := common.HexToAddress(r.FormValue("nodeAddress"))
-		resp, err := claimUnclaimedRewards(c, nodeAddr)
+		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := claimUnclaimedRewards(c, nodeAddr, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
