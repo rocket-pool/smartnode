@@ -23,7 +23,7 @@ func RegisterWaitRoute(mux *http.ServeMux, c *cli.Command) {
 			return
 		}
 		response := apitypes.APIResponse{}
-		_, err = utils.WaitForTransaction(rp.Client, hash)
+		_, err = utils.WaitForTransactionWithContext(r.Context(), rp.Client, hash)
 		apiutils.WriteResponse(w, &response, err)
 	})
 }

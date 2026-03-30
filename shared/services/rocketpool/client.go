@@ -1253,7 +1253,6 @@ func (c *Client) getAPIURL() string {
 // path is the URL path, e.g. "/api/node/status".
 // params are appended as query string parameters for GET or as a form body for POST.
 // The response body is returned as-is; callers unmarshal it the same way
-// The response body is returned as-is; callers unmarshal it.
 func (c *Client) callHTTPAPI(method, path string, params url.Values) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

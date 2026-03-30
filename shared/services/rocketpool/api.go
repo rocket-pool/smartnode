@@ -1,6 +1,7 @@
 package rocketpool
 
 import (
+	"context"
 	"fmt"
 	"net/url"
 
@@ -9,9 +10,9 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-// Wait for a transaction
+// Wait for a transaction — no timeout; blocks until the tx is included or the caller cancels.
 func (c *Client) WaitForTransaction(txHash common.Hash) (api.APIResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/wait", url.Values{"txHash": {txHash.Hex()}})
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "GET", "/api/wait", url.Values{"txHash": {txHash.Hex()}})
 	if err != nil {
 		return api.APIResponse{}, fmt.Errorf("Error waiting for tx: %w", err)
 	}
