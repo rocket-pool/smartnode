@@ -1,8 +1,6 @@
 package pdao
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
@@ -12,7 +10,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canFinalizeProposal(c *cli.Command, proposalId uint64) (*api.PDAOCanFinalizeProposalResponse, error) {
@@ -104,12 +101,6 @@ func finalizeProposal(c *cli.Command, proposalId uint64, opts *bind.TransactOpts
 
 	// Response
 	response := api.PDAOFinalizeProposalResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Execute proposal
 	hash, err := protocol.Finalize(rp, proposalId, opts)

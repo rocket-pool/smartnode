@@ -1293,6 +1293,9 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 		if c.globals.GasLimit > 0 {
 			params.Set("gasLimit", strconv.FormatFloat(float64(c.globals.GasLimit), 'f', 0, 64))
 		}
+		if c.globals.CustomNonce != nil {
+			params.Set("nonce", c.globals.CustomNonce.String())
+		}
 		body := []byte(params.Encode())
 		req, err = http.NewRequestWithContext(ctx, http.MethodPost, target, bytes.NewReader(body))
 		if err == nil {

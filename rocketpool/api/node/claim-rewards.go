@@ -22,7 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	rprewards "github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
 )
 
@@ -269,12 +268,6 @@ func claimRewards(c *cli.Command, indicesString string, opts *bind.TransactOpts)
 		return nil, err
 	}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Get the rewards
 	claims, err := getRewardsForIntervals(rp, cfg, nodeAccount.Address, indicesString)
 	if err != nil {
@@ -366,12 +359,6 @@ func claimAndStakeRewards(c *cli.Command, indicesString string, stakeAmount *big
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Get the rewards

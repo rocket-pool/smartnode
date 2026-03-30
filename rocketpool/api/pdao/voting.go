@@ -1,8 +1,6 @@
 package pdao
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
@@ -10,7 +8,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func estimateSetVotingDelegateGas(c *cli.Command, address common.Address) (*api.PDAOCanSetVotingDelegateResponse, error) {
@@ -61,12 +58,6 @@ func setVotingDelegate(c *cli.Command, address common.Address, opts *bind.Transa
 	}
 	// Response
 	response := api.PDAOSetVotingDelegateResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Set the delegate
 	tx, err := network.SetVotingDelegate(rp, address, opts)

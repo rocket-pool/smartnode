@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -14,7 +13,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeStakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeStakeRplResponse, error) {
@@ -166,10 +164,6 @@ func approveRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*a
 	}
 
 	// Approve RPL allowance
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	hash, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts)
 	if err != nil {
 		return nil, err
@@ -219,10 +213,6 @@ func stakeRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api
 	response := api.NodeStakeRplStakeResponse{}
 
 	// Stake RPL
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	hash, err := node.StakeRPL(rp, amountWei, opts)
 	if err != nil {
 		return nil, err

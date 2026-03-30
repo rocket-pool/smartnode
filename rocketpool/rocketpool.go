@@ -52,10 +52,6 @@ func main() {
 			Usage:   "Desired gas limit",
 		},
 		&cli.StringFlag{
-			Name:  "nonce",
-			Usage: "Use this flag to explicitly specify the nonce that this transaction should use, so it can override an existing 'stuck' transaction",
-		},
-		&cli.StringFlag{
 			Name:    "metricsAddress",
 			Aliases: []string{"m"},
 			Usage:   "Address to serve metrics on if enabled",

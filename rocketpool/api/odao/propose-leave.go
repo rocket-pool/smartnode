@@ -11,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canProposeLeave(c *cli.Command) (*api.CanProposeTNDAOLeaveResponse, error) {
@@ -138,12 +137,6 @@ func proposeLeave(c *cli.Command, opts *bind.TransactOpts) (*api.ProposeTNDAOLea
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Submit proposal

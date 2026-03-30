@@ -1,8 +1,6 @@
 package auction
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/auction"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -11,7 +9,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canCreateLot(c *cli.Command) (*api.CanCreateLotResponse, error) {
@@ -96,12 +93,6 @@ func createLot(c *cli.Command, opts *bind.TransactOpts) (*api.CreateLotResponse,
 
 	// Response
 	response := api.CreateLotResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Create lot
 	lotIndex, hash, err := auction.CreateLot(rp, opts)

@@ -13,7 +13,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canPromoteMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanPromoteMinipoolResponse, error) {
@@ -134,12 +133,6 @@ func promoteMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
 		return nil, fmt.Errorf("cannot promte minipool %s because its delegate version is too low (v%d); please update the delegate to promote it", mp.GetAddress().Hex(), mp.GetVersion())
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Promote

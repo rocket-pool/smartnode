@@ -1,7 +1,6 @@
 package odao
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -11,7 +10,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canPenaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big.Int, amount *big.Int) (*api.CanPenaliseMegapoolResponse, error) {
@@ -72,12 +70,6 @@ func penaliseMegapool(c *cli.Command, megapoolAddress common.Address, block *big
 
 	// Response
 	response := api.PenaliseMegapoolResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Repay debt
 	hash, err := megapool.Penalise(rp, megapoolAddress, block, amount, opts)

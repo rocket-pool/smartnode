@@ -15,7 +15,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeSend(c *cli.Command, amountRaw float64, token string, to common.Address) (*api.CanNodeSendResponse, error) {
@@ -226,12 +225,6 @@ func nodeSend(c *cli.Command, amountRaw float64, token string, to common.Address
 	// Response
 	response := api.NodeSendResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Handle explicit token addresses
 	if strings.HasPrefix(token, "0x") {
 		tokenAddress := common.HexToAddress(token)
@@ -338,12 +331,6 @@ func nodeSendAllTokens(c *cli.Command, token string, to common.Address, opts *bi
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Handle explicit token addresses

@@ -12,7 +12,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 )
 
@@ -156,12 +155,6 @@ func proposeRewardsPercentages(c *cli.Command, node *big.Int, odao *big.Int, pda
 	pollard, err := getPollard(rp, cfg, bc, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("error regenerating pollard: %w", err)
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Submit the proposal

@@ -1,7 +1,6 @@
 package node
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,7 +12,6 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canSetRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, confirm bool) (*api.CanSetNodeRPLWithdrawalAddressResponse, error) {
@@ -121,12 +119,6 @@ func setRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address, c
 	// Response
 	response := api.SetNodeRPLWithdrawalAddressResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Get the node's account
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
@@ -211,12 +203,6 @@ func confirmRPLWithdrawalAddress(c *cli.Command, opts *bind.TransactOpts) (*api.
 
 	// Response
 	response := api.ConfirmNodeRPLWithdrawalAddressResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Get the node's account
 	nodeAccount, err := w.GetNodeAccount()

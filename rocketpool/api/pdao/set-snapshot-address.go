@@ -13,7 +13,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 
 	"github.com/urfave/cli/v3"
 )
@@ -134,12 +133,6 @@ func setSignallingAddress(c *cli.Command, signallingAddress common.Address, sign
 		fmt.Println("Error parsing signature", err)
 	}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Call SetSigner on RocketSignerRegistry
 	tx, err := reg.SetSigner(opts, signallingAddress, sig.V, sig.R, sig.S)
 	if err != nil {
@@ -251,12 +244,6 @@ func clearSignallingAddress(c *cli.Command, opts *bind.TransactOpts) (*api.PDAOC
 	}
 
 	response := api.PDAOClearSignallingAddressResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Clear the signalling address
 	tx, err := reg.ClearSigner(opts)

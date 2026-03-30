@@ -1,7 +1,6 @@
 package odao
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -13,7 +12,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canProposeSetting(c *cli.Command, w wallet.Wallet, rp *rocketpool.RocketPool) (*api.CanProposeTNDAOSettingResponse, error) {
@@ -90,12 +88,6 @@ func proposeSettingMembersQuorum(c *cli.Command, quorum float64, opts *bind.Tran
 	// Response
 	response := api.ProposeTNDAOSettingMembersQuorumResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeQuorum(rp, quorum, opts)
 	if err != nil {
@@ -158,12 +150,6 @@ func proposeSettingMembersRplBond(c *cli.Command, bondAmountWei *big.Int, opts *
 
 	// Response
 	response := api.ProposeTNDAOSettingMembersRplBondResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeRPLBond(rp, bondAmountWei, opts)
@@ -228,12 +214,6 @@ func proposeSettingMinipoolUnbondedMax(c *cli.Command, unbondedMinipoolMax uint6
 	// Response
 	response := api.ProposeTNDAOSettingMinipoolUnbondedMaxResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeMinipoolUnbondedMax(rp, unbondedMinipoolMax, opts)
 	if err != nil {
@@ -296,12 +276,6 @@ func proposeSettingProposalCooldown(c *cli.Command, proposalCooldownTimespan uin
 
 	// Response
 	response := api.ProposeTNDAOSettingProposalCooldownResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeProposalCooldownTime(rp, proposalCooldownTimespan, opts)
@@ -366,12 +340,6 @@ func proposeSettingProposalVoteTimespan(c *cli.Command, proposalVoteTimespan uin
 	// Response
 	response := api.ProposeTNDAOSettingProposalVoteTimespanResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeProposalVoteTime(rp, proposalVoteTimespan, opts)
 	if err != nil {
@@ -434,12 +402,6 @@ func proposeSettingProposalVoteDelayTimespan(c *cli.Command, proposalDelayTimesp
 
 	// Response
 	response := api.ProposeTNDAOSettingProposalVoteDelayTimespanResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeProposalVoteDelayTime(rp, proposalDelayTimespan, opts)
@@ -504,12 +466,6 @@ func proposeSettingProposalExecuteTimespan(c *cli.Command, proposalExecuteTimesp
 	// Response
 	response := api.ProposeTNDAOSettingProposalExecuteTimespanResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeProposalExecuteTime(rp, proposalExecuteTimespan, opts)
 	if err != nil {
@@ -572,12 +528,6 @@ func proposeSettingProposalActionTimespan(c *cli.Command, proposalActionTimespan
 
 	// Response
 	response := api.ProposeTNDAOSettingProposalActionTimespanResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeProposalActionTime(rp, proposalActionTimespan, opts)
@@ -642,12 +592,6 @@ func proposeSettingScrubPeriod(c *cli.Command, scrubPeriod uint64, opts *bind.Tr
 	// Response
 	response := api.ProposeTNDAOSettingScrubPeriodResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeScrubPeriod(rp, scrubPeriod, opts)
 	if err != nil {
@@ -710,12 +654,6 @@ func proposeSettingPromotionScrubPeriod(c *cli.Command, promotionScrubPeriod uin
 
 	// Response
 	response := api.ProposeTNDAOSettingPromotionScrubPeriodResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposePromotionScrubPeriod(rp, promotionScrubPeriod, opts)
@@ -780,12 +718,6 @@ func proposeSettingScrubPenaltyEnabled(c *cli.Command, enabled bool, opts *bind.
 	// Response
 	response := api.ProposeTNDAOSettingScrubPeriodResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeScrubPenaltyEnabled(rp, enabled, opts)
 	if err != nil {
@@ -849,12 +781,6 @@ func proposeSettingBondReductionWindowStart(c *cli.Command, bondReductionWindowS
 	// Response
 	response := api.ProposeTNDAOSettingScrubPeriodResponse{}
 
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeBondReductionWindowStart(rp, bondReductionWindowStart, opts)
 	if err != nil {
@@ -917,12 +843,6 @@ func proposeSettingBondReductionWindowLength(c *cli.Command, bondReductionWindow
 
 	// Response
 	response := api.ProposeTNDAOSettingScrubPeriodResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Submit proposal
 	proposalId, hash, err := trustednode.ProposeBondReductionWindowLength(rp, bondReductionWindowLength, opts)

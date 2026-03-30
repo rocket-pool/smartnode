@@ -11,7 +11,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/legacy/v1.0.0/rewards"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeClaimRpl(c *cli.Command) (*api.CanNodeClaimRplResponse, error) {
@@ -97,12 +96,6 @@ func nodeClaimRpl(c *cli.Command, opts *bind.TransactOpts) (*api.NodeClaimRplRes
 
 	// Response
 	response := api.NodeClaimRplResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Claim rewards
 	legacyClaimNodeAddress := cfg.Smartnode.GetV100ClaimNodeAddress()

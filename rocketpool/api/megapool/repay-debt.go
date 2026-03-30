@@ -11,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canRepayDebt(c *cli.Command, amount *big.Int) (*api.CanRepayDebtResponse, error) {
@@ -151,12 +150,6 @@ func repayDebt(c *cli.Command, amount *big.Int, opts *bind.TransactOpts) (*api.R
 	}
 
 	opts.Value = amount
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Repay debt
 	hash, err := mp.RepayDebt(opts)

@@ -1,8 +1,6 @@
 package node
 
 import (
-	"fmt"
-
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
@@ -10,7 +8,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canClaimUnclaimedRewards(c *cli.Command, nodeAddress common.Address) (*api.CanClaimUnclaimedRewardsResponse, error) {
@@ -67,12 +64,6 @@ func claimUnclaimedRewards(c *cli.Command, nodeAddress common.Address, opts *bin
 
 	// Response
 	response := api.ClaimUnclaimedRewardsResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Claim unclaimed rewards
 	hash, err := node.ClaimUnclaimedRewards(rp, nodeAddress, opts)

@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"fmt"
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -12,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canProcessQueue(c *cli.Command, max int64) (*api.CanProcessQueueResponse, error) {
@@ -88,12 +86,6 @@ func processQueue(c *cli.Command, max int64, opts *bind.TransactOpts) (*api.Proc
 
 	// Response
 	response := api.ProcessQueueResponse{}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Process queue
 	hash, err := deposit.AssignDeposits(rp, big.NewInt(max), opts)

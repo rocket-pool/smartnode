@@ -13,7 +13,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func isFeeDistributorInitialized(c *cli.Command) (*api.NodeIsFeeDistributorInitializedResponse, error) {
@@ -111,11 +110,6 @@ func initializeFeeDistributor(c *cli.Command, opts *bind.TransactOpts) (*api.Nod
 
 	// Response
 	response := api.NodeInitializeFeeDistributorResponse{}
-
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Initialize the fee distributor
 	hash, err := node.InitializeFeeDistributor(rp, opts)
@@ -243,13 +237,6 @@ func distribute(c *cli.Command, opts *bind.TransactOpts) (*api.NodeDistributeRes
 	distributor, err := node.NewDistributor(rp, distributorAddress, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Get gas estimates
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	hash, err := distributor.Distribute(opts)
