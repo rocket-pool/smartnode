@@ -91,10 +91,12 @@ func getRewards(yes bool) error {
 	if err != nil {
 		return err
 	}
-	megapoolUnskimmedRewards := new(big.Int).Sub(beaconBalances.NodeBond, beaconBalances.NodeShareOfCLBalance)
-	megapoolUnskimmedRewardsFloat := eth.WeiToEth(megapoolUnskimmedRewards)
-	// Add the megapool unskimmed beacon rewards
-	rewards.BeaconRewards = rewards.BeaconRewards + megapoolUnskimmedRewardsFloat
+	// Add the megapool unskimmed beacon rewards, if available.
+	// NodeBond and NodeShareOfCLBalance are nil for nodes without a megapool (legacy minipools only).
+	if beaconBalances.NodeBond != nil && beaconBalances.NodeShareOfCLBalance != nil {
+		megapoolUnskimmedRewards := new(big.Int).Sub(beaconBalances.NodeBond, beaconBalances.NodeShareOfCLBalance)
+		rewards.BeaconRewards = rewards.BeaconRewards + eth.WeiToEth(megapoolUnskimmedRewards)
+	}
 
 	fmt.Println("=== ETH ===")
 	fmt.Printf("Your share of unskimmed Beacon Chain (CL) rewards is currently %.6f ETH.\n", rewards.BeaconRewards)
