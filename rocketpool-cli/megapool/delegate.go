@@ -9,7 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func setUseLatestDelegateMegapool(setting bool, yes bool) error {
+func setUseLatestDelegateMegapool(setting *bool, yes bool) error {
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
@@ -29,26 +29,49 @@ func setUseLatestDelegateMegapool(setting bool, yes bool) error {
 		return nil
 	}
 
+	// If no flag was provided, prompt the user based on the current setting
+	if setting == nil {
+		currentSetting := status.Megapool.UseLatestDelegate
+		var desired bool
+		if currentSetting {
+			fmt.Println("Your megapool currently has automatic delegate upgrades enabled.")
+			if !prompt.Confirm("Would you like to disable automatic delegate upgrades?") {
+				fmt.Println("No changes made.")
+				return nil
+			}
+			desired = false
+		} else {
+			fmt.Println("Your megapool currently has automatic delegate upgrades disabled.")
+			if !prompt.Confirm("Would you like to enable automatic delegate upgrades?") {
+				fmt.Println("No changes made.")
+				return nil
+			}
+			desired = true
+		}
+		setting = &desired
+	}
+
 	megapoolAddress := status.Megapool.Address
 
 	// Print message we're updating the setting
-	if setting == true {
+	if *setting {
 		fmt.Printf("Updating the use-latest-delegate setting for megapool %s to enabled...\n", megapoolAddress.Hex())
 	} else {
 		fmt.Printf("Updating the use-latest-delegate setting for megapool %s to disabled...\n", megapoolAddress.Hex())
 	}
 
 	// Get the gas estimate
-	canResponse, err := rp.CanSetUseLatestDelegateMegapool(megapoolAddress, setting)
+	canResponse, err := rp.CanSetUseLatestDelegateMegapool(megapoolAddress, *setting)
 	if err != nil {
 		return fmt.Errorf("error checking if megapool %s could have its use-latest-delegate flag changed: %w", megapoolAddress.Hex(), err)
 	}
 	if canResponse.MatchesCurrentSetting {
-		if setting == true {
+		if *setting {
 			fmt.Printf("Could not enable use-latest-delegate on the node's megapool, the setting is already enabled.")
 		} else {
 			fmt.Printf("Could not disable use-latest-delegate on the node's megapool, the setting is already disabled.")
 		}
+		fmt.Println()
 		return nil
 	}
 
@@ -65,7 +88,7 @@ func setUseLatestDelegateMegapool(setting bool, yes bool) error {
 	}
 
 	// Update flag
-	response, err := rp.SetUseLatestDelegateMegapool(megapoolAddress, setting)
+	response, err := rp.SetUseLatestDelegateMegapool(megapoolAddress, *setting)
 	if err != nil {
 		fmt.Printf("Could not set use latest delegate for megapool %s: %s. \n", megapoolAddress.Hex(), err)
 		return nil
