@@ -311,7 +311,7 @@ func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon
 // In order to avoid thrashing the bn, when opts.Slot is provided,
 // we will preflight the balance query with a sync query, and ensure that the
 // bn has not entered optimistic sync due to being unable to provide forkchoice updates,
-// and that the current head is a recent slot.
+// and that the current head is at a recent slot.
 func (c *StandardHttpClient) GetValidatorBalancesSafe(indices []string, opts *beacon.ValidatorStatusOptions) (map[string]*big.Int, error) {
 	// Filter out empty indices
 	indices = slices.DeleteFunc(indices, func(index string) bool {
