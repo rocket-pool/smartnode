@@ -18,6 +18,7 @@ import (
 	serviceroutes "github.com/rocket-pool/smartnode/rocketpool/api/service"
 	upgraderoutes "github.com/rocket-pool/smartnode/rocketpool/api/upgrade"
 	walletroutes "github.com/rocket-pool/smartnode/rocketpool/api/wallet"
+	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
 )
 
 // RegisterRoutes registers all HTTP API routes onto mux.
@@ -41,4 +42,10 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	serviceroutes.RegisterRoutes(mux, c)
 	upgraderoutes.RegisterRoutes(mux, c)
 	walletroutes.RegisterRoutes(mux, c)
+
+	// Catch-all: any path not matched by a specific route gets a JSON 404.
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		apiutils.WriteErrorResponse(w, &apiutils.NotFoundError{Path: r.URL.Path})
+	})
+
 }

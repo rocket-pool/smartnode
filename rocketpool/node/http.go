@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/urfave/cli/v3"
 
@@ -15,6 +16,33 @@ import (
 type httpServer struct {
 	server *http.Server
 	mux    *http.ServeMux
+}
+
+// statusRecorder wraps http.ResponseWriter to capture the written status code.
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (r *statusRecorder) WriteHeader(code int) {
+	r.status = code
+	r.ResponseWriter.WriteHeader(code)
+}
+
+// Write implements the ResponseWriter interface so we don't lose the original
+// Write behavior when wrapping.
+func (r *statusRecorder) Write(b []byte) (int, error) {
+	return r.ResponseWriter.Write(b)
+}
+
+// loggingMiddleware logs method, path, status code, and elapsed time for every request.
+func loggingMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+		next.ServeHTTP(rec, r)
+		log.Printf("%s %s %d %s", r.Method, r.URL.Path, rec.status, time.Since(start))
+	})
 }
 
 // startHTTP starts the node's HTTP API server and returns immediately.
@@ -39,7 +67,7 @@ func startHTTP(ctx context.Context, c *cli.Command, cfg *config.RocketPoolConfig
 
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", host, port),
-		Handler: mux,
+		Handler: loggingMiddleware(mux),
 	}
 
 	go func() {
