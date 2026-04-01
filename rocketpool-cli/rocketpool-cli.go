@@ -62,6 +62,11 @@ func main() {
 			Usage:   "Rocket Pool config asset `path`",
 			Value:   "~/.rocketpool",
 		},
+		&cli.StringFlag{
+			Name:    "daemon-path",
+			Aliases: []string{"d"},
+			Usage:   "Interact with a Rocket Pool service daemon at a `path` on the host OS, running outside of docker",
+		},
 		&cli.Float64Flag{
 			Name:    "maxFee",
 			Aliases: []string{"f"},
@@ -148,6 +153,7 @@ func main() {
 
 		Defaults := rocketpool.Globals{
 			ConfigPath: os.ExpandEnv(c.Root().String("config-path")),
+			DaemonPath: os.ExpandEnv(c.Root().String("daemon-path")),
 			MaxFee:     c.Root().Float64("maxFee"),
 			MaxPrioFee: c.Root().Float64("maxPrioFee"),
 			GasLimit:   c.Root().Uint64("gasLimit"),
