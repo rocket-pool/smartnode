@@ -70,6 +70,7 @@ func SyncRatioToPercent(in float64) float64 {
 
 type Globals struct {
 	ConfigPath  string
+	DaemonPath  string
 	MaxFee      float64
 	MaxPrioFee  float64
 	GasLimit    uint64
@@ -216,7 +217,7 @@ func (c *Client) LoadConfig() (*config.RocketPoolConfig, bool, error) {
 	}
 
 	// Config wasn't loaded, but there was no error- we should create one.
-	return config.NewRocketPoolConfig(c.ConfigPath(), false), true, nil
+	return config.NewRocketPoolConfig(c.ConfigPath(), c.globals.DaemonPath != ""), true, nil
 }
 
 // Load the backup config
@@ -1027,6 +1028,11 @@ func (c *Client) checkIfCommandExists(command string) (bool, error) {
 // Build a docker compose command
 func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
+	// Cancel if running in non-docker mode
+	if c.globals.DaemonPath != "" {
+		return "", errors.New("command unavailable in Native Mode (with '--daemon-path' option specified)")
+	}
+
 	// Get the expanded config path
 	expandedConfigPath, err := homedir.Expand(c.ConfigPath())
 	if err != nil {
@@ -1041,11 +1047,6 @@ func (c *Client) compose(composeFiles []string, args string) (string, error) {
 
 	if isNew {
 		return "", fmt.Errorf("Settings file not found. Please run `rocketpool service config` to set up your Smart Node before starting it.")
-	}
-
-	// Cancel if running in native mode
-	if cfg.IsNativeMode {
-		return "", errors.New("command unavailable in Native Mode")
 	}
 
 	// Check config

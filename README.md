@@ -186,6 +186,7 @@ The following commands are available via the Smart Node client:
 
 - `rocketpool --allow-root, -r` - Allow rocketpool to be run as the root user
 - `rocketpool --config-path path, -c path` - Rocket Pool config asset path (default: "~/.rocketpool")
+- `rocketpool --daemon-path path, -d path` - Interact with a Rocket Pool service daemon at a path on the host OS, running outside of docker
 - `rocketpool --maxFee value, -f value` - The max fee (including the priority fee) you want a transaction to cost, in gwei (default: 0)
 - `rocketpool --maxPrioFee value, -i value` - The max priority fee you want a transaction to use, in gwei (default: 0)
 - `rocketpool --gasLimit value, -l value` - [DEPRECATED] Desired gas limit (default: 0)
