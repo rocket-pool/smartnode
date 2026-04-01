@@ -2,6 +2,7 @@ package node
 
 import (
 	"math/big"
+	"strconv"
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -200,6 +201,20 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaco
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
 		return err
+	}
+
+	// Check if the validator is included in the finalized beacon state before attempting proof generation
+	validatorIndexStr, err := t.bc.GetValidatorIndex(validatorPubkey)
+	if err != nil {
+		return err
+	}
+	validatorIndex, err := strconv.ParseUint(validatorIndexStr, 10, 64)
+	if err != nil {
+		return err
+	}
+	if validatorIndex >= uint64(len(beaconState.GetValidators())) {
+		t.log.Printlnf("Validator id %d (beacon index %d) is not yet included in the finalized beacon state. Will retry on next cycle.", validatorId, validatorIndex)
+		return nil
 	}
 
 	t.log.Printlnf("Crafting a proof that the correct credentials were used on the first beacon chain deposit. This process can take several seconds and is CPU and memory intensive.")
