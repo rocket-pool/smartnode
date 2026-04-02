@@ -7,6 +7,7 @@ import (
 
 	apiroutes "github.com/rocket-pool/smartnode/rocketpool/api"
 	auctionroutes "github.com/rocket-pool/smartnode/rocketpool/api/auction"
+	debugroutes "github.com/rocket-pool/smartnode/rocketpool/api/debug"
 	megapoolroutes "github.com/rocket-pool/smartnode/rocketpool/api/megapool"
 	minipoolroutes "github.com/rocket-pool/smartnode/rocketpool/api/minipool"
 	networkroutes "github.com/rocket-pool/smartnode/rocketpool/api/network"
@@ -31,6 +32,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	apiroutes.RegisterVersionRoute(mux)
 	apiroutes.RegisterWaitRoute(mux, c)
 	auctionroutes.RegisterRoutes(mux, c)
+	debugroutes.RegisterRoutes(mux, c)
 	megapoolroutes.RegisterRoutes(mux, c)
 	minipoolroutes.RegisterRoutes(mux, c)
 	networkroutes.RegisterRoutes(mux, c)
