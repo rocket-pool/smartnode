@@ -101,7 +101,7 @@ func IsTransactionDue(rp *rocketpool.RocketPool, startTime time.Time) (bool, tim
 
 }
 
-//  Expects a 129 byte 0x-prefixed EIP-712 signature and returns v/r/s as v uint8 and r, s [32]byte
+// Expects a 129 byte 0x-prefixed EIP-712 signature and returns v/r/s as v uint8 and r, s [32]byte
 
 func ParseEIP712(signature string) (*EIP712Components, error) {
 	if len(signature) != 132 || signature[:2] != "0x" {
