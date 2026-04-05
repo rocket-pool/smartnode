@@ -227,8 +227,14 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 		return nil
 	}
 
+	maxFee, maxPrioFee, userGasLimit := rp.GetGasSettings()
+
 	// Distribute minipool balances
 	for _, minipool := range selectedMinipools {
+		// to avoid a second eth_estimateGas
+		if userGasLimit == 0 {
+			rp.AssignGasSettings(maxFee, maxPrioFee, minipool.GasInfo.SafeGasLimit)
+		}
 
 		response, err := rp.DistributeBalance(minipool.Address)
 		if err != nil {
