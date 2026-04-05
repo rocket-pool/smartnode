@@ -461,8 +461,8 @@ func (c *Client) SetUseLatestDelegateMegapool(address common.Address, setting bo
 }
 
 // Get the megapool's delegate address
-func (c *Client) GetDelegate(address common.Address) (api.MegapoolGetDelegateResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/megapool/get-delegate", url.Values{"address": {address.Hex()}})
+func (c *Client) GetDelegate() (api.MegapoolGetDelegateResponse, error) {
+	responseBytes, err := c.callHTTPAPI("GET", "/api/megapool/get-delegate", nil)
 	if err != nil {
 		return api.MegapoolGetDelegateResponse{}, fmt.Errorf("Could get delegate for megapool: %w", err)
 	}

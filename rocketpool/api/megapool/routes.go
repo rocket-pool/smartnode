@@ -307,8 +307,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/megapool/get-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
-		address := common.HexToAddress(r.URL.Query().Get("address"))
-		resp, err := getUseLatestDelegate(c, address)
+		resp, err := getUseLatestDelegate(c)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -330,33 +329,37 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/megapool/can-set-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
-		address := common.HexToAddress(r.URL.Query().Get("address"))
-		setLatest := r.URL.Query().Get("setLatest") == "true"
-		resp, err := canSetUseLatestDelegate(c, address, setLatest)
+		setLatest, err := parseBool(r, "setLatest")
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := canSetUseLatestDelegate(c, setLatest)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/megapool/set-use-latest-delegate", func(w http.ResponseWriter, r *http.Request) {
-		address := common.HexToAddress(r.FormValue("address"))
-		setting := r.FormValue("setting") == "true"
+		setting, err := parseBool(r, "setting")
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
 		opts, err := services.GetNodeAccountTransactorFromRequest(c, r)
 		if err != nil {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := setUseLatestDelegate(c, address, setting, opts)
+		resp, err := setUseLatestDelegate(c, setting, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/megapool/get-delegate", func(w http.ResponseWriter, r *http.Request) {
-		address := common.HexToAddress(r.URL.Query().Get("address"))
-		resp, err := getDelegate(c, address)
+		resp, err := getDelegate(c)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/megapool/get-effective-delegate", func(w http.ResponseWriter, r *http.Request) {
-		address := common.HexToAddress(r.URL.Query().Get("address"))
-		resp, err := getEffectiveDelegate(c, address)
+		resp, err := getEffectiveDelegate(c)
 		apiutils.WriteResponse(w, resp, err)
 	})
 }
@@ -378,14 +381,46 @@ func parseUint32(r *http.Request, name string) (uint32, error) {
 	return uint32(v), err
 }
 
+func parseAddress(r *http.Request, name string) (common.Address, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		raw = r.FormValue(name)
+	}
+	if raw == "" {
+		return common.Address{}, &apiutils.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
+	}
+	if !common.IsHexAddress(raw) {
+		return common.Address{}, &apiutils.BadRequestError{Err: fmt.Errorf("invalid %s: %s", name, raw)}
+	}
+	return common.HexToAddress(raw), nil
+}
+
+func parseBool(r *http.Request, name string) (bool, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		raw = r.FormValue(name)
+	}
+	if raw == "" {
+		return false, &apiutils.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
+	}
+	v, err := strconv.ParseBool(raw)
+	if err != nil {
+		return false, &apiutils.BadRequestError{Err: fmt.Errorf("invalid %s: %s", name, raw)}
+	}
+	return v, nil
+}
+
 func parseBigInt(r *http.Request, name string) (*big.Int, error) {
 	raw := r.URL.Query().Get(name)
 	if raw == "" {
 		raw = r.FormValue(name)
 	}
+	if raw == "" {
+		return nil, &apiutils.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
+	}
 	v, ok := new(big.Int).SetString(raw, 10)
 	if !ok {
-		return nil, fmt.Errorf("invalid %s: %s", name, raw)
+		return nil, &apiutils.BadRequestError{Err: fmt.Errorf("invalid %s: %s", name, raw)}
 	}
 	return v, nil
 }
