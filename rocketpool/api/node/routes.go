@@ -702,6 +702,10 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/node/can-set-smoothing-pool-status", func(w http.ResponseWriter, r *http.Request) {
+		if !r.URL.Query().Has("status") {
+			apiutils.WriteErrorResponse(w, fmt.Errorf("missing required parameter 'status'"))
+			return
+		}
 		status := r.URL.Query().Get("status") == "true"
 		resp, err := canSetSmoothingPoolStatus(c, status)
 		apiutils.WriteResponse(w, resp, err)
