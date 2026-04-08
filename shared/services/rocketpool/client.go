@@ -1327,6 +1327,13 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		var apiErr struct {
+			Error string `json:"error"`
+		}
+		if jerr := json.Unmarshal(responseBytes, &apiErr); jerr == nil && apiErr.Error != "" {
+			return nil, errors.New(apiErr.Error)
+		}
+
 		return nil, fmt.Errorf("HTTP API %s %s returned status %d: %s", method, path, resp.StatusCode, string(responseBytes))
 	}
 
