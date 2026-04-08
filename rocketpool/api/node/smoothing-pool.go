@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 	"github.com/urfave/cli/v3"
 )
@@ -112,7 +113,7 @@ func canSetSmoothingPoolStatus(c *cli.Command, status bool) (*api.CanSetSmoothin
 
 }
 
-func setSmoothingPoolStatus(c *cli.Command, status bool) (*api.SetSmoothingPoolRegistrationStatusResponse, error) {
+func setSmoothingPoolStatus(c *cli.Command, status bool, opts *bind.TransactOpts) (*api.SetSmoothingPoolRegistrationStatusResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -144,18 +145,6 @@ func setSmoothingPoolStatus(c *cli.Command, status bool) (*api.SetSmoothingPoolR
 
 	// Response
 	response := api.SetSmoothingPoolRegistrationStatusResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Get node account and distributor address
 	nodeAccount, err := w.GetNodeAccount()

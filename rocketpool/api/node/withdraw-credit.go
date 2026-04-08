@@ -1,8 +1,9 @@
 package node
 
 import (
-	"fmt"
 	"math/big"
+
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/urfave/cli/v3"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdrawCreditResponse, error) {
@@ -74,14 +74,10 @@ func canNodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.CanNodeWith
 
 }
 
-func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.NodeWithdrawCreditResponse, error) {
+func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeWithdrawCreditResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -91,18 +87,6 @@ func nodeWithdrawCredit(c *cli.Command, amountWei *big.Int) (*api.NodeWithdrawCr
 
 	// Response
 	response := api.NodeWithdrawCreditResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Withdraw credit
 	tx, err := node.WithdrawCredit(rp, amountWei, opts)

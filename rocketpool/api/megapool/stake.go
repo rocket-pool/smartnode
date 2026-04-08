@@ -1,16 +1,15 @@
 package megapool
 
 import (
-	"fmt"
 	"strings"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canStake(c *cli.Command, validatorId uint64) (*api.CanStakeResponse, error) {
@@ -115,7 +114,7 @@ func canStake(c *cli.Command, validatorId uint64) (*api.CanStakeResponse, error)
 
 }
 
-func stake(c *cli.Command, validatorId uint64) (*api.StakeResponse, error) {
+func stake(c *cli.Command, validatorId uint64, opts *bind.TransactOpts) (*api.StakeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -168,18 +167,6 @@ func stake(c *cli.Command, validatorId uint64) (*api.StakeResponse, error) {
 	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, 0, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Stake

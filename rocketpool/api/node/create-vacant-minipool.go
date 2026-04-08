@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -16,7 +18,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 )
@@ -153,7 +154,7 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 
 }
 
-func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CreateVacantMinipoolResponse, error) {
+func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey, opts *bind.TransactOpts) (*api.CreateVacantMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -220,12 +221,6 @@ func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64
 	scrubPeriod := time.Duration(scrubPeriodUnix) * time.Second
 	response.ScrubPeriod = scrubPeriod
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	// Get the next minipool address and withdrawal credentials
 	minipoolAddress, err := minipool.GetExpectedAddress(rp, nodeAccount.Address, salt, nil)
 	if err != nil {
@@ -255,12 +250,6 @@ func createVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64
 	// Convert the existing balance from gwei to wei
 	balanceWei := big.NewInt(0).SetUint64(validatorStatus.Balance)
 	balanceWei.Mul(balanceWei, big.NewInt(1e9))
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Create the minipool
 	tx, err := node.CreateVacantMinipool(rp, amountWei, minNodeFee, pubkey, salt, minipoolAddress, balanceWei, opts)

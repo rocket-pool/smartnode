@@ -1,7 +1,7 @@
 package security
 
 import (
-	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canExecuteProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanExecuteProposalResponse, error) {
@@ -80,17 +79,13 @@ func canExecuteProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanExec
 
 }
 
-func executeProposal(c *cli.Command, proposalId uint64) (*api.SecurityExecuteProposalResponse, error) {
+func executeProposal(c *cli.Command, proposalId uint64, opts *bind.TransactOpts) (*api.SecurityExecuteProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
 	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -100,18 +95,6 @@ func executeProposal(c *cli.Command, proposalId uint64) (*api.SecurityExecutePro
 
 	// Response
 	response := api.SecurityExecuteProposalResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Cancel proposal
 	hash, err := security.ExecuteProposal(rp, proposalId, opts)

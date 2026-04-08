@@ -1,12 +1,11 @@
 package node
 
 import (
-	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 )
 
@@ -116,7 +115,7 @@ func canProvisionExpressTickets(c *cli.Command) (*api.CanProvisionExpressTickets
 
 }
 
-func provisionExpressTickets(c *cli.Command) (*api.ProvisionExpressTicketsResponse, error) {
+func provisionExpressTickets(c *cli.Command, opts *bind.TransactOpts) (*api.ProvisionExpressTicketsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -142,18 +141,6 @@ func provisionExpressTickets(c *cli.Command) (*api.ProvisionExpressTicketsRespon
 
 	// Response
 	response := api.ProvisionExpressTicketsResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("error checking for nonce override: %w", err)
-	}
 
 	// Provision express tickets
 	hash, err := node.ProvisionExpressTickets(rp, nodeAccount.Address, opts)

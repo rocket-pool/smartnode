@@ -1,7 +1,7 @@
 package pdao
 
 import (
-	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canClaimBonds(c *cli.Command, proposalId uint64, indices []uint64) (*api.PDAOCanClaimBondsResponse, error) {
@@ -104,16 +103,12 @@ func canClaimBonds(c *cli.Command, proposalId uint64, indices []uint64) (*api.PD
 	return &response, nil
 }
 
-func claimBonds(c *cli.Command, isProposer bool, proposalId uint64, indices []uint64) (*api.PDAOClaimBondsResponse, error) {
+func claimBonds(c *cli.Command, isProposer bool, proposalId uint64, indices []uint64, opts *bind.TransactOpts) (*api.PDAOClaimBondsResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
 	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -123,18 +118,6 @@ func claimBonds(c *cli.Command, isProposer bool, proposalId uint64, indices []ui
 
 	// Response
 	response := api.PDAOClaimBondsResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Claim bonds
 	if isProposer {

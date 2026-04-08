@@ -3,6 +3,7 @@ package minipool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canDelegateUpgrade(c *cli.Command, minipoolAddress common.Address) (*api.CanDelegateUpgradeResponse, error) {
@@ -60,14 +60,10 @@ func canDelegateUpgrade(c *cli.Command, minipoolAddress common.Address) (*api.Ca
 
 }
 
-func delegateUpgrade(c *cli.Command, minipoolAddress common.Address) (*api.DelegateUpgradeResponse, error) {
+func delegateUpgrade(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.DelegateUpgradeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -82,18 +78,6 @@ func delegateUpgrade(c *cli.Command, minipoolAddress common.Address) (*api.Deleg
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Upgrade
@@ -174,15 +158,11 @@ func canSetUseLatestDelegate(c *cli.Command, minipoolAddress common.Address) (*a
 
 }
 
-func setUseLatestDelegate(c *cli.Command, minipoolAddress common.Address) (*api.SetUseLatestDelegateResponse, error) {
+func setUseLatestDelegate(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.SetUseLatestDelegateResponse, error) {
 	setting := true
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -223,18 +203,6 @@ func setUseLatestDelegate(c *cli.Command, minipoolAddress common.Address) (*api.
 				return nil, fmt.Errorf("you cannot unset 'use-latest-delegate' for minipool %s after reducing your ETH bond, as this would revert to the Redstone delegate and render your minipool unable to distribute its balance; please upgrade your minipool's delegate first before unsetting this flag", minipoolAddress.Hex())
 			}
 		}
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Set the new setting

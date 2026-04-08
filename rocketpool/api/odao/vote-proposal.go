@@ -1,7 +1,7 @@
 package odao
 
 import (
-	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canVoteOnProposal(c *cli.Command, proposalId uint64) (*api.CanVoteOnTNDAOProposalResponse, error) {
@@ -111,14 +110,10 @@ func canVoteOnProposal(c *cli.Command, proposalId uint64) (*api.CanVoteOnTNDAOPr
 
 }
 
-func voteOnProposal(c *cli.Command, proposalId uint64, support bool) (*api.VoteOnTNDAOProposalResponse, error) {
+func voteOnProposal(c *cli.Command, proposalId uint64, support bool, opts *bind.TransactOpts) (*api.VoteOnTNDAOProposalResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -128,18 +123,6 @@ func voteOnProposal(c *cli.Command, proposalId uint64, support bool) (*api.VoteO
 
 	// Response
 	response := api.VoteOnTNDAOProposalResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Vote on proposal
 	hash, err := trustednode.VoteOnProposal(rp, proposalId, support, opts)

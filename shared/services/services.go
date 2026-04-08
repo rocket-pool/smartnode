@@ -3,11 +3,14 @@ package services
 import (
 	"fmt"
 	"math/big"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strconv"
 	"sync"
 
 	"github.com/docker/docker/client"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -84,6 +87,44 @@ func GetWallet(c *cli.Command) (wallet.Wallet, error) {
 	pm := getPasswordManager(cfg)
 	am := getAddressManager(cfg)
 	return getWallet(c, cfg, pm, am, false)
+}
+
+// GetNodeAccountTransactorFromRequest returns a transactor for the node
+// account, with gas settings overridden by values sent in the HTTP request
+// body (maxFee, maxPrioFee, gasLimit fields in Gwei / uint64).  This ensures
+// the fee cap and tip cap the user selected interactively in the CLI are
+// honoured by the daemon, which otherwise only knows about the values in the
+// config file.
+func GetNodeAccountTransactorFromRequest(c *cli.Command, r *http.Request) (*bind.TransactOpts, error) {
+	w, err := GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+	opts, err := w.GetNodeAccountTransactor()
+	if err != nil {
+		return nil, err
+	}
+	if maxFeeStr := r.FormValue("maxFee"); maxFeeStr != "" {
+		if maxFeeGwei, parseErr := strconv.ParseFloat(maxFeeStr, 64); parseErr == nil && maxFeeGwei > 0 {
+			opts.GasFeeCap = eth.GweiToWei(maxFeeGwei)
+		}
+	}
+	if maxPrioFeeStr := r.FormValue("maxPrioFee"); maxPrioFeeStr != "" {
+		if maxPrioFeeGwei, parseErr := strconv.ParseFloat(maxPrioFeeStr, 64); parseErr == nil && maxPrioFeeGwei > 0 {
+			opts.GasTipCap = eth.GweiToWei(maxPrioFeeGwei)
+		}
+	}
+	if gasLimitStr := r.FormValue("gasLimit"); gasLimitStr != "" {
+		if gasLimit, parseErr := strconv.ParseUint(gasLimitStr, 10, 64); parseErr == nil {
+			opts.GasLimit = gasLimit
+		}
+	}
+	if nonceStr := r.FormValue("nonce"); nonceStr != "" {
+		if nonce, ok := new(big.Int).SetString(nonceStr, 0); ok {
+			opts.Nonce = nonce
+		}
+	}
+	return opts, nil
 }
 
 func GetHdWallet(c *cli.Command) (wallet.Wallet, error) {

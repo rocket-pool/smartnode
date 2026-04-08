@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canPromoteMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanPromoteMinipoolResponse, error) {
@@ -111,14 +111,10 @@ func canPromoteMinipool(c *cli.Command, minipoolAddress common.Address) (*api.Ca
 
 }
 
-func promoteMinipool(c *cli.Command, minipoolAddress common.Address) (*api.StakeMinipoolResponse, error) {
+func promoteMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.StakeMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -137,18 +133,6 @@ func promoteMinipool(c *cli.Command, minipoolAddress common.Address) (*api.Stake
 	mpv3, success := minipool.GetMinipoolAsV3(mp)
 	if !success {
 		return nil, fmt.Errorf("cannot promte minipool %s because its delegate version is too low (v%d); please update the delegate to promote it", mp.GetAddress().Hex(), mp.GetVersion())
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Promote

@@ -3,128 +3,44 @@ package rocketpool
 import (
 	"io"
 	"os/exec"
-
-	"golang.org/x/crypto/ssh"
 )
 
-// A command to be executed either locally or remotely
+// A command to be executed locally
 type command struct {
 	cmd     *exec.Cmd
-	session *ssh.Session
 	cmdText string
 }
 
-// Create a command to be run by the Rocket Pool client
 func (c *Client) newCommand(cmdText string) (*command, error) {
-	if c.client == nil {
-		return &command{
-			cmd:     exec.Command("sh", "-c", cmdText),
-			cmdText: cmdText,
-		}, nil
-	}
-
-	session, err := c.client.NewSession()
-	if err != nil {
-		return nil, err
-	}
 	return &command{
-		session: session,
+		cmd:     exec.Command("sh", "-c", cmdText),
 		cmdText: cmdText,
 	}, nil
 }
 
-// Close the command session
-func (c *command) Close() error {
-	if c.session != nil {
-		return c.session.Close()
-	}
-	return nil
-}
+func (c *command) Close() error { return nil }
 
-// Run the command
-func (c *command) Run() error {
-	if c.cmd != nil {
-		return c.cmd.Run()
-	}
+func (c *command) Run() error { return c.cmd.Run() }
 
-	return c.session.Run(c.cmdText)
-}
+func (c *command) Start() error { return c.cmd.Start() }
 
-// Start executes the command. Don't forget to call Wait
-func (c *command) Start() error {
-	if c.cmd != nil {
-		return c.cmd.Start()
-	}
+func (c *command) Wait() error { return c.cmd.Wait() }
 
-	return c.session.Start(c.cmdText)
-}
+func (c *command) SetStdin(r io.Reader)  { c.cmd.Stdin = r }
+func (c *command) SetStdout(w io.Writer) { c.cmd.Stdout = w }
+func (c *command) SetStderr(w io.Writer) { c.cmd.Stderr = w }
 
-// Wait for the command to exit
-func (c *command) Wait() error {
-	if c.cmd != nil {
-		return c.cmd.Wait()
-	}
+func (c *command) Output() ([]byte, error) { return c.cmd.Output() }
 
-	return c.session.Wait()
-}
+func (c *command) StdoutPipe() (io.Reader, error) { return c.cmd.StdoutPipe() }
 
-func (c *command) SetStdin(r io.Reader) {
-	if c.cmd != nil {
-		c.cmd.Stdin = r
-	} else {
-		c.session.Stdin = r
-	}
-}
+func (c *command) StderrPipe() (io.Reader, error) { return c.cmd.StderrPipe() }
 
-func (c *command) SetStdout(w io.Writer) {
-	if c.cmd != nil {
-		c.cmd.Stdout = w
-	} else {
-		c.session.Stdout = w
-	}
-}
-
-func (c *command) SetStderr(w io.Writer) {
-	if c.cmd != nil {
-		c.cmd.Stderr = w
-	} else {
-		c.session.Stderr = w
-	}
-}
-
-// Run the command and return its output
-func (c *command) Output() ([]byte, error) {
-	if c.cmd != nil {
-		return c.cmd.Output()
-	}
-
-	return c.session.Output(c.cmdText)
-}
-
-// Get a pipe to the command's stdout
-func (c *command) StdoutPipe() (io.Reader, error) {
-	if c.cmd != nil {
-		return c.cmd.StdoutPipe()
-	}
-	return c.session.StdoutPipe()
-}
-
-// Get a pipe to the command's stderr
-func (c *command) StderrPipe() (io.Reader, error) {
-	if c.cmd != nil {
-		return c.cmd.StderrPipe()
-	}
-
-	return c.session.StderrPipe()
-}
-
-// OutputPipes pipes for stdout and stderr
 func (c *command) OutputPipes() (io.Reader, io.Reader, error) {
 	cmdOut, err := c.StdoutPipe()
 	if err != nil {
 		return nil, nil, err
 	}
 	cmdErr, err := c.StderrPipe()
-
 	return cmdOut, cmdErr, err
 }

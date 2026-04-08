@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/settings/trustednode"
@@ -13,7 +14,6 @@ import (
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
@@ -149,7 +149,7 @@ func canStakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.CanS
 
 }
 
-func stakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.StakeMinipoolResponse, error) {
+func stakeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.StakeMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -175,18 +175,6 @@ func stakeMinipool(c *cli.Command, minipoolAddress common.Address) (*api.StakeMi
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Get eth2 config

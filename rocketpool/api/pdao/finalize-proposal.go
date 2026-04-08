@@ -1,7 +1,7 @@
 package pdao
 
 import (
-	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -10,7 +10,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canFinalizeProposal(c *cli.Command, proposalId uint64) (*api.PDAOCanFinalizeProposalResponse, error) {
@@ -87,16 +86,12 @@ func canFinalizeProposal(c *cli.Command, proposalId uint64) (*api.PDAOCanFinaliz
 	return &response, nil
 }
 
-func finalizeProposal(c *cli.Command, proposalId uint64) (*api.PDAOFinalizeProposalResponse, error) {
+func finalizeProposal(c *cli.Command, proposalId uint64, opts *bind.TransactOpts) (*api.PDAOFinalizeProposalResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
 	}
 	if err := services.RequireRocketStorage(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -106,18 +101,6 @@ func finalizeProposal(c *cli.Command, proposalId uint64) (*api.PDAOFinalizePropo
 
 	// Response
 	response := api.PDAOFinalizeProposalResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Execute proposal
 	hash, err := protocol.Finalize(rp, proposalId, opts)

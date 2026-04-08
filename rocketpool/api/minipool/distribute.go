@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -14,7 +15,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetailsResponse, error) {
@@ -191,14 +191,10 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 
 }
 
-func distributeBalance(c *cli.Command, minipoolAddress common.Address) (*api.CloseMinipoolResponse, error) {
+func distributeBalance(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.CloseMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -213,18 +209,6 @@ func distributeBalance(c *cli.Command, minipoolAddress common.Address) (*api.Clo
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Distribute the minipool's balance

@@ -236,7 +236,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.StringFlag{
+					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id to exit",
 					},
@@ -277,7 +277,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.StringFlag{
+					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id to exit",
 					},
@@ -318,7 +318,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.StringFlag{
+					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id for which the exit is being notified",
 					},
@@ -359,7 +359,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
-					&cli.StringFlag{
+					&cli.Uint64Flag{
 						Name:  "validator-id",
 						Usage: "The validator id for which the final balance is being notified",
 					},
@@ -409,32 +409,34 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					return distribute(c.Bool("yes"))
 				},
 			},
-			// Add set-use-latest-delegate command
 			{
 				Name:      "set-use-latest-delegate",
 				Aliases:   []string{"l"},
 				Usage:     "Set the megapool to always use the latest delegate",
-				UsageText: "rocketpool megapool set-use-latest-delegate use-latest-delegate",
-
-				Action: func(ctx context.Context, c *cli.Command) error {
-
-					// Validate args
-					if err := cliutils.ValidateArgCount(c, 1); err != nil {
-						return err
-					}
-
-					useLatest, err := cliutils.ValidateBool("use-latest-delegate", c.Args().Get(0))
-					if err != nil {
-						return err
-					}
-
-					return setUseLatestDelegateMegapool(useLatest, c.Bool("yes"))
-				},
+				UsageText: "rocketpool megapool set-use-latest-delegate",
 				Flags: []cli.Flag{
+					&cli.BoolFlag{
+						Name:  "use-latest-delegate",
+						Usage: "Enable (true) or disable (false) automatic using the latest delegate; omit to be prompted based on the current setting",
+					},
 					&cli.BoolFlag{
 						Name:  "yes",
 						Usage: "Automatically confirm the action",
 					},
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+
+					if err := cliutils.ValidateArgCount(c, 0); err != nil {
+						return err
+					}
+
+					var useLatest *bool
+					if c.IsSet("use-latest-delegate") {
+						val := c.Bool("use-latest-delegate")
+						useLatest = &val
+					}
+
+					return setUseLatestDelegateMegapool(useLatest, c.Bool("yes"))
 				},
 			},
 		},

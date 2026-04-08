@@ -1,9 +1,9 @@
 package node
 
 import (
-	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
@@ -13,7 +13,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeStakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeStakeRplResponse, error) {
@@ -144,14 +143,10 @@ func allowanceRpl(c *cli.Command) (*api.NodeStakeRplAllowanceResponse, error) {
 	return &response, nil
 }
 
-func approveRpl(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplApproveResponse, error) {
+func approveRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeStakeRplApproveResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -169,14 +164,6 @@ func approveRpl(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplApproveRes
 	}
 
 	// Approve RPL allowance
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	hash, err := tokens.ApproveRPL(rp, *rocketNodeStakingAddress, amountWei, opts)
 	if err != nil {
 		return nil, err
@@ -189,7 +176,7 @@ func approveRpl(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplApproveRes
 
 }
 
-func waitForApprovalAndStakeRpl(c *cli.Command, amountWei *big.Int, hash common.Hash) (*api.NodeStakeRplStakeResponse, error) {
+func waitForApprovalAndStakeRpl(c *cli.Command, amountWei *big.Int, hash common.Hash, opts *bind.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -207,18 +194,14 @@ func waitForApprovalAndStakeRpl(c *cli.Command, amountWei *big.Int, hash common.
 	}
 
 	// Perform the stake
-	return stakeRpl(c, amountWei)
+	return stakeRpl(c, amountWei, opts)
 
 }
 
-func stakeRpl(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplStakeResponse, error) {
+func stakeRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeStakeRplStakeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -230,14 +213,6 @@ func stakeRpl(c *cli.Command, amountWei *big.Int) (*api.NodeStakeRplStakeRespons
 	response := api.NodeStakeRplStakeResponse{}
 
 	// Stake RPL
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	hash, err := node.StakeRPL(rp, amountWei, opts)
 	if err != nil {
 		return nil, err

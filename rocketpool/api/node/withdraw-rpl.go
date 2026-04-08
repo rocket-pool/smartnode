@@ -2,10 +2,10 @@ package node
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 	"time"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	node131 "github.com/rocket-pool/smartnode/bindings/legacy/v1.3.1/node"
 	"github.com/rocket-pool/smartnode/bindings/node"
@@ -15,7 +15,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error) {
@@ -129,14 +128,10 @@ func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error)
 
 }
 
-func nodeWithdrawRpl(c *cli.Command) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawRpl(c *cli.Command, opts *bind.TransactOpts) (*api.NodeWithdrawRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -147,17 +142,6 @@ func nodeWithdrawRpl(c *cli.Command) (*api.NodeWithdrawRplResponse, error) {
 	// Response
 	response := api.NodeWithdrawRplResponse{}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	var hash common.Hash
 	// Withdraw RPL
 	hash, err = node.WithdrawRPL(rp, opts)
@@ -310,7 +294,7 @@ func canNodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int) (*api.CanNodeW
 }
 
 // Used if saturn is not deployed (v1.3.1)
-func nodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int) (*api.NodeWithdrawRplResponse, error) {
+func nodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeWithdrawRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -334,17 +318,6 @@ func nodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int) (*api.NodeWithdra
 	// Response
 	response := api.NodeWithdrawRplResponse{}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	var hash common.Hash
 	// Withdraw RPL
 	hash, err = node131.WithdrawRPL(rp, nodeAccount.Address, amountWei, opts)

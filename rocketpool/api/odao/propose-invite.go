@@ -3,6 +3,7 @@ package odao
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/urfave/cli/v3"
@@ -10,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canProposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string) (*api.CanProposeTNDAOInviteResponse, error) {
@@ -81,14 +81,10 @@ func canProposeInvite(c *cli.Command, memberAddress common.Address, memberId, me
 
 }
 
-func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string) (*api.ProposeTNDAOInviteResponse, error) {
+func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, memberUrl string, opts *bind.TransactOpts) (*api.ProposeTNDAOInviteResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeTrusted(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -98,18 +94,6 @@ func proposeInvite(c *cli.Command, memberAddress common.Address, memberId, membe
 
 	// Response
 	response := api.ProposeTNDAOInviteResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Submit proposal
 	message := fmt.Sprintf("invite %s (%s)", memberId, memberUrl)

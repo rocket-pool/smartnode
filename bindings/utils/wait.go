@@ -3,7 +3,6 @@ package utils
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -12,32 +11,30 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
-// Wait for a transaction to get mined
-func WaitForTransaction(client rocketpool.ExecutionClient, hash common.Hash) (*types.Receipt, error) {
-
+// Wait for a transaction to get included, respecting the provided context for cancellation.
+// The transaction lookup retries indefinitely (with 1-second pauses) until found or ctx is done.
+func WaitForTransactionWithContext(ctx context.Context, client rocketpool.ExecutionClient, hash common.Hash) (*types.Receipt, error) {
 	var tx *types.Transaction
-	var err error
 
-	// Get the transaction from its hash, retrying for 30 sec if it wasn't found
-	for i := 0; i < 30; i++ {
-		if i == 29 {
-			return nil, fmt.Errorf("Transaction not found after 30 seconds.")
-		}
-
-		tx, _, err = client.TransactionByHash(context.Background(), hash)
-		if err != nil {
-			if err.Error() == "not found" {
-				time.Sleep(1 * time.Second)
-				continue
-			}
-			return nil, err
-		} else {
+	// Get the transaction from its hash, retrying until found or ctx is cancelled.
+	for {
+		var err error
+		tx, _, err = client.TransactionByHash(ctx, hash)
+		if err == nil {
 			break
+		}
+		if err.Error() != "not found" {
+			return nil, err
+		}
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(1 * time.Second):
 		}
 	}
 
 	// Wait for transaction to be mined
-	txReceipt, err := bind.WaitMined(context.Background(), client, tx)
+	txReceipt, err := bind.WaitMined(ctx, client, tx)
 	if err != nil {
 		return nil, err
 	}
@@ -47,6 +44,10 @@ func WaitForTransaction(client rocketpool.ExecutionClient, hash common.Hash) (*t
 		return txReceipt, errors.New("Transaction failed with status 0")
 	}
 
-	// Return
 	return txReceipt, nil
+}
+
+// Wait for a transaction to get mined
+func WaitForTransaction(client rocketpool.ExecutionClient, hash common.Hash) (*types.Receipt, error) {
+	return WaitForTransactionWithContext(context.Background(), client, hash)
 }

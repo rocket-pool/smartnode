@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canRepayDebt(c *cli.Command, amount *big.Int) (*api.CanRepayDebtResponse, error) {
@@ -103,7 +103,7 @@ func canRepayDebt(c *cli.Command, amount *big.Int) (*api.CanRepayDebtResponse, e
 
 }
 
-func repayDebt(c *cli.Command, amount *big.Int) (*api.RepayDebtResponse, error) {
+func repayDebt(c *cli.Command, amount *big.Int, opts *bind.TransactOpts) (*api.RepayDebtResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -149,19 +149,7 @@ func repayDebt(c *cli.Command, amount *big.Int) (*api.RepayDebtResponse, error) 
 		return nil, fmt.Errorf("no debt to repay")
 	}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	opts.Value = amount
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Repay debt
 	hash, err := mp.RepayDebt(opts)
