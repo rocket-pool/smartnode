@@ -202,6 +202,7 @@ func main() {
 		}
 
 		if len(response.Alerts) > 0 {
+			fmt.Println()
 			color.YellowPrintln("=== Alerts ===")
 			for i, alert := range response.Alerts {
 				fmt.Println(alert.ColorString())

@@ -1,14 +1,13 @@
 package node
 
 import (
-	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canSetRplLockAllowed(c *cli.Command, allowed bool) (*api.CanSetRplLockingAllowedResponse, error) {
@@ -63,7 +62,7 @@ func canSetRplLockAllowed(c *cli.Command, allowed bool) (*api.CanSetRplLockingAl
 
 }
 
-func setRplLockAllowed(c *cli.Command, allowed bool) (*api.SetRplLockingAllowedResponse, error) {
+func setRplLockAllowed(c *cli.Command, allowed bool, opts *bind.TransactOpts) (*api.SetRplLockingAllowedResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -87,14 +86,6 @@ func setRplLockAllowed(c *cli.Command, allowed bool) (*api.SetRplLockingAllowedR
 	response := api.SetRplLockingAllowedResponse{}
 
 	// Stake RPL
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	hash, err := node.SetRPLLockingAllowed(rp, account.Address, allowed, opts)
 	if err != nil {
 		return nil, err

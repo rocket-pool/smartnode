@@ -180,7 +180,7 @@ func GetHeadlessMaxFeeWeiWithLatestBlock(cfg *config.RocketPoolConfig, rp *rocke
 func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo rocketpool.GasInfo, priorityFee float64, gasLimit uint64) float64 {
 
 	fastGwei := gasSuggestion.FastGwei + priorityFee
-	fastEth := gasSuggestion.FastGwei / eth.WeiPerGwei
+	fastEth := fastGwei / eth.WeiPerGwei
 
 	var fastLowLimit float64
 	var fastHighLimit float64
@@ -193,7 +193,7 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 	}
 
 	standardGwei := gasSuggestion.StandardGwei + priorityFee
-	standardEth := gasSuggestion.StandardGwei / eth.WeiPerGwei
+	standardEth := standardGwei / eth.WeiPerGwei
 
 	var standardLowLimit float64
 	var standardHighLimit float64
@@ -206,7 +206,7 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 	}
 
 	slowGwei := gasSuggestion.SlowGwei + priorityFee
-	slowEth := gasSuggestion.SlowGwei / eth.WeiPerGwei
+	slowEth := slowGwei / eth.WeiPerGwei
 
 	var slowLowLimit float64
 	var slowHighLimit float64
@@ -229,7 +229,7 @@ func handleEtherscanGasPrices(gasSuggestion etherscan.GasFeeSuggestion, gasInfo 
 	color.LightBluePrintln("+====================================================+")
 	fmt.Println()
 
-	fmt.Printf("These prices include a maximum priority fee of %.3f gwei.\n", priorityFee)
+	fmt.Printf("These prices include a maximum priority fee of %.4f gwei.\n", priorityFee)
 
 	for {
 		desiredPrice := prompt.Prompt(

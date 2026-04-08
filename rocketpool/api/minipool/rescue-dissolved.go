@@ -19,7 +19,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
 )
 
@@ -281,7 +280,7 @@ func getDepositTx(rp *rocketpool.RocketPool, w wallet.Wallet, bc beacon.Client, 
 
 }
 
-func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amount *big.Int, submit bool) (*api.RescueDissolvedMinipoolResponse, error) {
+func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amount *big.Int, submit bool, opts *bind.TransactOpts) (*api.RescueDissolvedMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -303,18 +302,7 @@ func rescueDissolvedMinipool(c *cli.Command, minipoolAddress common.Address, amo
 	// Response
 	response := api.RescueDissolvedMinipoolResponse{}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
 	opts.Value = amount
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	opts.NoSend = !submit
 

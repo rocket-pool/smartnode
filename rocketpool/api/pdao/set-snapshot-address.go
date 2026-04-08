@@ -13,7 +13,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 
 	"github.com/urfave/cli/v3"
 )
@@ -107,14 +106,10 @@ func canSetSignallingAddress(c *cli.Command, signallingAddress common.Address, s
 	return &response, nil
 }
 
-func setSignallingAddress(c *cli.Command, signallingAddress common.Address, signature string) (*api.PDAOSetSignallingAddressResponse, error) {
+func setSignallingAddress(c *cli.Command, signallingAddress common.Address, signature string, opts *bind.TransactOpts) (*api.PDAOSetSignallingAddressResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	cfg, err := services.GetConfig(c)
@@ -136,18 +131,6 @@ func setSignallingAddress(c *cli.Command, signallingAddress common.Address, sign
 	sig, err := apiutils.ParseEIP712(signature)
 	if err != nil {
 		fmt.Println("Error parsing signature", err)
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Call SetSigner on RocketSignerRegistry
@@ -243,13 +226,9 @@ func canClearSignallingAddress(c *cli.Command) (*api.PDAOCanClearSignallingAddre
 	return &response, nil
 }
 
-func clearSignallingAddress(c *cli.Command) (*api.PDAOClearSignallingAddressResponse, error) {
+func clearSignallingAddress(c *cli.Command, opts *bind.TransactOpts) (*api.PDAOClearSignallingAddressResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	cfg, err := services.GetConfig(c)
@@ -265,18 +244,6 @@ func clearSignallingAddress(c *cli.Command) (*api.PDAOClearSignallingAddressResp
 	}
 
 	response := api.PDAOClearSignallingAddressResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Clear the signalling address
 	tx, err := reg.ClearSigner(opts)

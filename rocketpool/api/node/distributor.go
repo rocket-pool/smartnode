@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli/v3"
@@ -11,7 +13,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func isFeeDistributorInitialized(c *cli.Command) (*api.NodeIsFeeDistributorInitializedResponse, error) {
@@ -96,14 +97,10 @@ func getInitializeFeeDistributorGas(c *cli.Command) (*api.NodeInitializeFeeDistr
 
 }
 
-func initializeFeeDistributor(c *cli.Command) (*api.NodeInitializeFeeDistributorResponse, error) {
+func initializeFeeDistributor(c *cli.Command, opts *bind.TransactOpts) (*api.NodeInitializeFeeDistributorResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -113,17 +110,6 @@ func initializeFeeDistributor(c *cli.Command) (*api.NodeInitializeFeeDistributor
 
 	// Response
 	response := api.NodeInitializeFeeDistributorResponse{}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 
 	// Initialize the fee distributor
 	hash, err := node.InitializeFeeDistributor(rp, opts)
@@ -215,7 +201,7 @@ func canDistribute(c *cli.Command) (*api.NodeCanDistributeResponse, error) {
 
 }
 
-func distribute(c *cli.Command) (*api.NodeDistributeResponse, error) {
+func distribute(c *cli.Command, opts *bind.TransactOpts) (*api.NodeDistributeResponse, error) {
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
 		return nil, err
@@ -251,18 +237,6 @@ func distribute(c *cli.Command) (*api.NodeDistributeResponse, error) {
 	distributor, err := node.NewDistributor(rp, distributorAddress, nil)
 	if err != nil {
 		return nil, err
-	}
-
-	// Get gas estimates
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	hash, err := distributor.Distribute(opts)

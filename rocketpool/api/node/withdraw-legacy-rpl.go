@@ -1,9 +1,9 @@
 package node
 
 import (
-	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/urfave/cli/v3"
@@ -11,7 +11,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUnstakeLegacyRplResponse, error) {
@@ -113,14 +112,10 @@ func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUn
 
 }
 
-func nodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.NodeUnstakeLegacyRplResponse, error) {
+func nodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.NodeUnstakeLegacyRplResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -131,17 +126,6 @@ func nodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.NodeUnstakeL
 	// Response
 	response := api.NodeUnstakeLegacyRplResponse{}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	var hash common.Hash
 	// Unstake legacy RPL
 	hash, err = node.UnstakeLegacyRPL(rp, amountWei, opts)

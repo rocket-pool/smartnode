@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 )
 
@@ -138,7 +138,7 @@ func canNotifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot ui
 
 }
 
-func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint64) (*api.NotifyValidatorExitResponse, error) {
+func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint64, opts *bind.TransactOpts) (*api.NotifyValidatorExitResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -195,12 +195,6 @@ func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint6
 		return nil, err
 	}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
 	validatorStatus, err := bc.GetValidatorStatus(types.ValidatorPubkey(validatorInfo.Pubkey), nil)
 	if err != nil {
 		return nil, fmt.Errorf("Error getting validator status from beacon chain: %w", err)
@@ -253,12 +247,6 @@ func notifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint6
 	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(c, proofSlot, w, eth2Config, megapoolAddress, types.ValidatorPubkey(validatorInfo.Pubkey), stateUsed)
 	if err != nil {
 		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
 	}
 
 	// Notify the validator exit

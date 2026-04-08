@@ -3,11 +3,11 @@ package megapool
 import (
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	"github.com/urfave/cli/v3"
 )
 
@@ -49,14 +49,10 @@ func canDelegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.Me
 	return &response, nil
 }
 
-func delegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolDelegateUpgradeResponse, error) {
+func delegateUpgrade(c *cli.Command, megapoolAddress common.Address, opts *bind.TransactOpts) (*api.MegapoolDelegateUpgradeResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -73,18 +69,6 @@ func delegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.Megap
 		return nil, err
 	}
 
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
 	// Upgrade
 	hash, err := mega.DelegateUpgrade(opts)
 	if err != nil {
@@ -96,7 +80,7 @@ func delegateUpgrade(c *cli.Command, megapoolAddress common.Address) (*api.Megap
 	return &response, nil
 }
 
-func getUseLatestDelegate(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolGetUseLatestDelegateResponse, error) {
+func getUseLatestDelegate(c *cli.Command) (*api.MegapoolGetUseLatestDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -106,9 +90,23 @@ func getUseLatestDelegate(c *cli.Command, megapoolAddress common.Address) (*api.
 	if err != nil {
 		return nil, err
 	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
 
 	// Response
 	response := api.MegapoolGetUseLatestDelegateResponse{}
+
+	// Get node account and derive the megapool address
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create megapool
 	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
@@ -128,7 +126,7 @@ func getUseLatestDelegate(c *cli.Command, megapoolAddress common.Address) (*api.
 
 }
 
-func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, setting bool) (*api.MegapoolCanSetUseLatestDelegateResponse, error) {
+func canSetUseLatestDelegate(c *cli.Command, useLatest bool) (*api.MegapoolCanSetUseLatestDelegateResponse, error) {
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -138,6 +136,15 @@ func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, set
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +163,7 @@ func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, set
 	if err != nil {
 		return nil, err
 	}
-	if currentSetting == setting {
+	if currentSetting == useLatest {
 		response.MatchesCurrentSetting = true
 		return &response, nil
 	}
@@ -168,7 +175,7 @@ func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, set
 		return nil, err
 	}
 
-	gasInfo, err := mega.EstimateSetUseLatestDelegateGas(setting, opts)
+	gasInfo, err := mega.EstimateSetUseLatestDelegateGas(useLatest, opts)
 	if err == nil {
 		response.GasInfo = gasInfo
 	}
@@ -178,7 +185,53 @@ func canSetUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, set
 
 }
 
-func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, setting bool) (*api.MegapoolSetUseLatestDelegateResponse, error) {
+func setUseLatestDelegate(c *cli.Command, useLatest bool, opts *bind.TransactOpts) (*api.MegapoolSetUseLatestDelegateResponse, error) {
+	// Get services
+	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	rp, err := services.GetRocketPool(c)
+	if err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get node account and derive the megapool address
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Response
+	response := api.MegapoolSetUseLatestDelegateResponse{}
+
+	// Create megapool
+	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set the new setting
+	hash, err := mega.SetUseLatestDelegate(useLatest, opts)
+	if err != nil {
+		return nil, err
+	}
+	response.TxHash = hash
+
+	// Return response
+	return &response, nil
+
+}
+
+func getDelegate(c *cli.Command) (*api.MegapoolGetDelegateResponse, error) {
+
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
 		return nil, err
@@ -193,51 +246,17 @@ func setUseLatestDelegate(c *cli.Command, megapoolAddress common.Address, settin
 	}
 
 	// Response
-	response := api.MegapoolSetUseLatestDelegateResponse{}
-
-	// Create megapool
-	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
-	if err != nil {
-		return nil, err
-	}
-
-	// Get transactor
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-
-	// Override the provided pending TX if requested
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
-
-	// Set the new setting
-	hash, err := mega.SetUseLatestDelegate(setting, opts)
-	if err != nil {
-		return nil, err
-	}
-	response.TxHash = hash
-
-	// Return response
-	return &response, nil
-
-}
-
-func getDelegate(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolGetDelegateResponse, error) {
-
-	// Get services
-	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	rp, err := services.GetRocketPool(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// Response
 	response := api.MegapoolGetDelegateResponse{}
+
+	// Get node account and derive the megapool address
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create megapool
 	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)
@@ -257,10 +276,14 @@ func getDelegate(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolG
 
 }
 
-func getEffectiveDelegate(c *cli.Command, megapoolAddress common.Address) (*api.MegapoolGetEffectiveDelegateResponse, error) {
+func getEffectiveDelegate(c *cli.Command) (*api.MegapoolGetEffectiveDelegateResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
+		return nil, err
+	}
+	w, err := services.GetWallet(c)
+	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -270,6 +293,16 @@ func getEffectiveDelegate(c *cli.Command, megapoolAddress common.Address) (*api.
 
 	// Response
 	response := api.MegapoolGetEffectiveDelegateResponse{}
+
+	// Get node account and derive the megapool address
+	nodeAccount, err := w.GetNodeAccount()
+	if err != nil {
+		return nil, err
+	}
+	megapoolAddress, err := megapool.GetMegapoolExpectedAddress(rp, nodeAccount.Address, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create Megapool
 	mega, err := megapool.NewMegaPoolV1(rp, megapoolAddress, nil)

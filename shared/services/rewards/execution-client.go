@@ -65,8 +65,8 @@ func (client *defaultRewardsExecutionClient) GetRewardsEvent(index uint64, rocke
 		TrustedNodeRPL:    eventHouston.TrustedNodeRPL,
 		SubmissionTime:    eventHouston.SubmissionTime,
 		NodeRPL:           eventHouston.NodeRPL,
-		NodeETH:           rewardsEvent.NodeETH,
-		UserETH:           rewardsEvent.UserETH,
+		NodeETH:           eventHouston.NodeETH,
+		UserETH:           eventHouston.UserETH,
 	}
 	return found, event, nil
 

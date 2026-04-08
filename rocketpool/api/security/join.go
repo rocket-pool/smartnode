@@ -1,7 +1,7 @@
 package security
 
 import (
-	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/urfave/cli/v3"
@@ -9,7 +9,6 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 )
 
 func canJoin(c *cli.Command) (*api.SecurityCanJoinResponse, error) {
@@ -80,14 +79,10 @@ func canJoin(c *cli.Command) (*api.SecurityCanJoinResponse, error) {
 
 }
 
-func join(c *cli.Command) (*api.SecurityJoinResponse, error) {
+func join(c *cli.Command, opts *bind.TransactOpts) (*api.SecurityJoinResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
-		return nil, err
-	}
-	w, err := services.GetWallet(c)
-	if err != nil {
 		return nil, err
 	}
 	rp, err := services.GetRocketPool(c)
@@ -99,14 +94,6 @@ func join(c *cli.Command) (*api.SecurityJoinResponse, error) {
 	response := api.SecurityJoinResponse{}
 
 	// Join
-	opts, err := w.GetNodeAccountTransactor()
-	if err != nil {
-		return nil, err
-	}
-	err = eth1.CheckForNonceOverride(c, opts)
-	if err != nil {
-		return nil, fmt.Errorf("Error checking for nonce override: %w", err)
-	}
 	hash, err := security.Join(rp, opts)
 	if err != nil {
 		return nil, err
