@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	lodestarTagTest         string = "chainsafe/lodestar:v1.41.0"
-	lodestarTagProd         string = "chainsafe/lodestar:v1.41.0"
+	lodestarTagTest         string = "chainsafe/lodestar:v1.40.0"
+	lodestarTagProd         string = "chainsafe/lodestar:v1.40.0"
 	defaultLodestarMaxPeers uint16 = 200
 )
 
@@ -22,9 +22,6 @@ type LodestarConfig struct {
 
 	// The Docker Hub tag for Lighthouse
 	ContainerTag config.Parameter `yaml:"containerTag,omitempty"`
-
-	// The port to use for gossip traffic using the QUIC protocol
-	P2pQuicPort config.Parameter `yaml:"p2pQuicPort,omitempty"`
 
 	// Custom command line flags for the BN
 	AdditionalBnFlags config.Parameter `yaml:"additionalBnFlags,omitempty"`
@@ -47,17 +44,6 @@ func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 			Description:        "The maximum number of peers your client should try to maintain. You can try lowering this if you have a low-resource system or a constrained network.",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultLodestarMaxPeers},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
-			CanBeBlank:         false,
-			OverwriteOnUpgrade: false,
-		},
-
-		P2pQuicPort: config.Parameter{
-			ID:                 P2pQuicPortID,
-			Name:               "P2P QUIC Port",
-			Description:        "The port to use for P2P (blockchain) traffic using the QUIC protocol.",
-			Type:               config.ParameterType_Uint16,
-			Default:            map[config.Network]interface{}{config.Network_All: defaultP2pQuicPort},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
@@ -106,7 +92,6 @@ func NewLodestarConfig(cfg *RocketPoolConfig) *LodestarConfig {
 func (cfg *LodestarConfig) GetParameters() []*config.Parameter {
 	return []*config.Parameter{
 		&cfg.MaxPeers,
-		&cfg.P2pQuicPort,
 		&cfg.ContainerTag,
 		&cfg.AdditionalBnFlags,
 		&cfg.AdditionalVcFlags,

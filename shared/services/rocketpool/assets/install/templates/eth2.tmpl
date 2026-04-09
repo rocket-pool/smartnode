@@ -35,8 +35,6 @@ services:
       - "{{.Lighthouse.P2pQuicPort}}:{{.Lighthouse.P2pQuicPort}}/udp"
       {{- else if eq .ConsensusClient.String "prysm"}}
       - "{{.Prysm.P2pQuicPort}}:{{.Prysm.P2pQuicPort}}/udp"
-      {{- else if eq .ConsensusClient.String "lodestar"}}
-      - "{{.Lodestar.P2pQuicPort}}:{{.Lodestar.P2pQuicPort}}/udp"
       {{- end}}
       {{- range $entry := .GetBnOpenPorts}}
       - "{{$entry}}"
@@ -89,8 +87,6 @@ services:
       - NIMBUS_PRUNING_MODE={{.Nimbus.PruningMode}}
       {{- else if eq .ConsensusClient.String "lighthouse"}}
       - BN_P2P_QUIC_PORT={{.Lighthouse.P2pQuicPort}}
-      {{- else if eq .ConsensusClient.String "lodestar"}}
-      - BN_P2P_QUIC_PORT={{.Lodestar.P2pQuicPort}}
       {{- end}}
     command: "/setup/start-bn.sh"
     cap_drop:
