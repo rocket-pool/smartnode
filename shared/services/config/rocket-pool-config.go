@@ -1688,6 +1688,10 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	if cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Lighthouse {
 		_, errors = addAndCheckForDuplicate(portMap, cfg.Lighthouse.P2pQuicPort, errors)
 	}
+	if cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Lodestar {
+		_, errors = addAndCheckForDuplicate(portMap, cfg.Lodestar.P2pQuicPort, errors)
+	}
+
 	return errors
 }
 
