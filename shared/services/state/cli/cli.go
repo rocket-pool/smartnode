@@ -28,6 +28,42 @@ var prettyFlag = flag.Bool("p", false, "Pretty print the output")
 var inputFlag = flag.Bool("i", false, "Parse a network state from stdin instead of retrieving it from the network")
 var criticalDutiesSlotsFlag = flag.Bool("critical-duties-slots", false, "If passed, output a list of critical duties slots for the given state as if it were the final state in a 6300 epoch interval. This is outputted instead of the state json.")
 var criticalDutiesEpochCountFlag = flag.Uint64("critical-duties-epoch-count", 6300, "The number of epochs to consider when calculating critical duties")
+var minimalFlag = flag.Bool("minimal", false, "Truncate every list/map to at most one entry (useful for producing a small inspection file)")
+
+// truncateNetworkState reduces every slice and map field to at most one element.
+func truncateNetworkState(ns *state.NetworkState) {
+	if len(ns.NodeDetails) > 1 {
+		ns.NodeDetails = ns.NodeDetails[:1]
+	}
+	if len(ns.MinipoolDetails) > 1 {
+		ns.MinipoolDetails = ns.MinipoolDetails[:1]
+	}
+	if len(ns.MegapoolValidatorGlobalIndex) > 1 {
+		ns.MegapoolValidatorGlobalIndex = ns.MegapoolValidatorGlobalIndex[:1]
+	}
+	if len(ns.OracleDaoMemberDetails) > 1 {
+		ns.OracleDaoMemberDetails = ns.OracleDaoMemberDetails[:1]
+	}
+	if len(ns.ProtocolDaoProposalDetails) > 1 {
+		ns.ProtocolDaoProposalDetails = ns.ProtocolDaoProposalDetails[:1]
+	}
+	if len(ns.MinipoolValidatorDetails) > 1 {
+		for k := range ns.MinipoolValidatorDetails {
+			delete(ns.MinipoolValidatorDetails, k)
+			if len(ns.MinipoolValidatorDetails) == 1 {
+				break
+			}
+		}
+	}
+	if len(ns.MegapoolValidatorDetails) > 1 {
+		for k := range ns.MegapoolValidatorDetails {
+			delete(ns.MegapoolValidatorDetails, k)
+			if len(ns.MegapoolValidatorDetails) == 1 {
+				break
+			}
+		}
+	}
+}
 
 func main() {
 	flag.Parse()
@@ -83,6 +119,10 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error getting network state: %v\n", err)
 		os.Exit(1)
+	}
+
+	if *minimalFlag {
+		truncateNetworkState(networkState)
 	}
 
 	if *criticalDutiesSlotsFlag {
