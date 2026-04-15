@@ -35,6 +35,31 @@ type defeat struct {
 	challengedIndex uint64
 }
 
+// proposalNodeGetter retrieves the on-chain voting tree node submitted with a proposal.
+type proposalNodeGetter interface {
+	GetNode(proposalID uint64, index uint64) (types.VotingTreeNode, error)
+}
+
+// networkTreeProvider builds or loads the local voting tree for a target block.
+type networkTreeProvider interface {
+	GetNetworkTree(blockNumber uint32) (*proposals.NetworkVotingTree, error)
+}
+
+// challengeStateGetter checks the on-chain challenge state for a proposal index.
+type challengeStateGetter interface {
+	GetChallengeState(proposalID uint64, index uint64) (types.ChallengeState, error)
+}
+
+// rootSubmissionEventProvider fetches RootSubmitted events from the chain.
+type rootSubmissionEventProvider interface {
+	GetRootSubmittedEvents(proposalIDs []uint64, startBlock *big.Int, endBlock *big.Int) ([]protocol.RootSubmitted, error)
+}
+
+// challengeArtifactChecker checks a RootSubmitted event for challengeable artifacts.
+type challengeArtifactChecker interface {
+	CheckForChallengeableArtifacts(event protocol.RootSubmitted) (uint64, types.VotingTreeNode, []types.VotingTreeNode, error)
+}
+
 type verifyPdaoProps struct {
 	c                   *cli.Command
 	log                 *log.ColorLogger
@@ -130,6 +155,56 @@ func newVerifyPdaoProps(c *cli.Command, logger log.ColorLogger) (*verifyPdaoProp
 	}, nil
 }
 
+// liveProposalNodeGetter uses on-chain calls to fetch proposal tree nodes.
+type liveProposalNodeGetter struct {
+	rp   *rocketpool.RocketPool
+	opts *bind.CallOpts
+}
+
+func (g *liveProposalNodeGetter) GetNode(proposalID uint64, index uint64) (types.VotingTreeNode, error) {
+	return protocol.GetNode(g.rp, proposalID, index, g.opts)
+}
+
+// liveNetworkTreeProvider delegates to the ProposalManager.
+type liveNetworkTreeProvider struct {
+	propMgr *proposals.ProposalManager
+}
+
+func (p *liveNetworkTreeProvider) GetNetworkTree(blockNumber uint32) (*proposals.NetworkVotingTree, error) {
+	return p.propMgr.GetNetworkTree(blockNumber, nil)
+}
+
+// liveChallengeStateGetter reads challenge state from the chain.
+type liveChallengeStateGetter struct {
+	rp   *rocketpool.RocketPool
+	opts *bind.CallOpts
+}
+
+func (g *liveChallengeStateGetter) GetChallengeState(proposalID uint64, index uint64) (types.ChallengeState, error) {
+	return protocol.GetChallengeState(g.rp, proposalID, index, g.opts)
+}
+
+// liveRootSubmissionEventProvider fetches RootSubmitted events from the chain.
+type liveRootSubmissionEventProvider struct {
+	rp                *rocketpool.RocketPool
+	intervalSize      *big.Int
+	verifierAddresses []common.Address
+	opts              *bind.CallOpts
+}
+
+func (p *liveRootSubmissionEventProvider) GetRootSubmittedEvents(proposalIDs []uint64, startBlock *big.Int, endBlock *big.Int) ([]protocol.RootSubmitted, error) {
+	return protocol.GetRootSubmittedEvents(p.rp, proposalIDs, p.intervalSize, startBlock, endBlock, p.verifierAddresses, p.opts)
+}
+
+// liveChallengeArtifactChecker delegates to the ProposalManager.
+type liveChallengeArtifactChecker struct {
+	propMgr *proposals.ProposalManager
+}
+
+func (c *liveChallengeArtifactChecker) CheckForChallengeableArtifacts(event protocol.RootSubmitted) (uint64, types.VotingTreeNode, []types.VotingTreeNode, error) {
+	return c.propMgr.CheckForChallengeableArtifacts(event)
+}
+
 // Verify pDAO proposals
 func (t *verifyPdaoProps) run(state *state.NetworkState) error {
 	// Log
@@ -166,17 +241,47 @@ func (t *verifyPdaoProps) run(state *state.NetworkState) error {
 	return nil
 }
 
-func (t *verifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opts *bind.CallOpts) ([]challenge, []defeat, error) {
-	// Get proposals *not* made by this node that are still in the challenge phase (Pending)
+func (t *verifyPdaoProps) getChallengesandDefeats(ns *state.NetworkState, opts *bind.CallOpts) ([]challenge, []defeat, error) {
+	nodeGetter := &liveProposalNodeGetter{rp: t.rp, opts: opts}
+	treeProvider := &liveNetworkTreeProvider{propMgr: t.propMgr}
+	stateGetter := &liveChallengeStateGetter{rp: t.rp, opts: opts}
+	verifierAddresses := t.cfg.Smartnode.GetPreviousRocketDAOProtocolVerifierAddresses()
+	eventProvider := &liveRootSubmissionEventProvider{rp: t.rp, intervalSize: t.intervalSize, verifierAddresses: verifierAddresses, opts: opts}
+	artifactChecker := &liveChallengeArtifactChecker{propMgr: t.propMgr}
+
+	return getChallengesFromState(
+		ns, t.nodeAddress, t.log, t.bc,
+		nodeGetter, treeProvider, stateGetter, eventProvider, artifactChecker,
+		t.validPropCache, t.rootSubmissionCache, t.lastScannedBlock,
+	)
+}
+
+// getChallengesFromState computes which proposals need to be challenged or defeated.
+// All chain dependencies are injected via interfaces so this can be tested with
+// static network state and stub implementations.
+func getChallengesFromState(
+	ns *state.NetworkState,
+	nodeAddress common.Address,
+	log *log.ColorLogger,
+	bc beacon.Client,
+	nodeGetter proposalNodeGetter,
+	treeProvider networkTreeProvider,
+	stateGetter challengeStateGetter,
+	eventProvider rootSubmissionEventProvider,
+	artifactChecker challengeArtifactChecker,
+	validPropCache map[uint64]bool,
+	rootSubmissionCache map[uint64]map[uint64]*protocol.RootSubmitted,
+	lastScannedBlock *big.Int,
+) ([]challenge, []defeat, error) {
 	eligibleProps := []protocol.ProtocolDaoProposalDetails{}
-	for _, prop := range state.ProtocolDaoProposalDetails {
+	for _, prop := range ns.ProtocolDaoProposalDetails {
 		if prop.State == types.ProtocolDaoProposalState_Pending &&
-			prop.ProposerAddress != t.nodeAddress {
+			prop.ProposerAddress != nodeAddress {
 			eligibleProps = append(eligibleProps, prop)
 		} else {
 			// Remove old proposals from the caches once they're out of scope
-			delete(t.validPropCache, prop.ID)
-			delete(t.rootSubmissionCache, prop.ID)
+			delete(validPropCache, prop.ID)
+			delete(rootSubmissionCache, prop.ID)
 		}
 	}
 	if len(eligibleProps) == 0 {
@@ -186,33 +291,33 @@ func (t *verifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 	// Check which ones have a root hash mismatch and need to be processed further
 	mismatchingProps := []protocol.ProtocolDaoProposalDetails{}
 	for _, prop := range eligibleProps {
-		if t.validPropCache[prop.ID] {
-			// Ignore proposals that have already been cleared
+		// Ignore proposals that have already been cleared
+		if validPropCache[prop.ID] {
 			continue
 		}
 
 		// Get the proposal's network tree root
-		propRoot, err := protocol.GetNode(t.rp, prop.ID, 1, opts)
+		propRoot, err := nodeGetter.GetNode(prop.ID, 1)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error getting root node for proposal %d: %w", prop.ID, err)
 		}
 
 		// Get the local tree
-		networkTree, err := t.propMgr.GetNetworkTree(prop.TargetBlock, nil)
+		networkTree, err := treeProvider.GetNetworkTree(prop.TargetBlock)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error getting network tree for proposal %d: %w", prop.ID, err)
 		}
 		localRoot := networkTree.Nodes[0]
-
 		// Compare
 		if propRoot.Sum.Cmp(localRoot.Sum) == 0 && propRoot.Hash == localRoot.Hash {
-			t.log.Printlnf("Proposal %d matches the local tree artifacts, so it does not need to be challenged.", prop.ID)
-			t.validPropCache[prop.ID] = true
+			log.Printlnf("Proposal %d matches the local tree artifacts, so it does not need to be challenged.", prop.ID)
+			validPropCache[prop.ID] = true
 			continue
 		}
 
 		// This proposal has a mismatch and must be challenged
-		t.log.Printlnf("Proposal %d does not match the local tree artifacts and must be challenged.", prop.ID)
+
+		log.Printlnf("Proposal %d does not match the local tree artifacts and must be challenged.", prop.ID)
 		mismatchingProps = append(mismatchingProps, prop)
 	}
 	if len(mismatchingProps) == 0 {
@@ -221,16 +326,15 @@ func (t *verifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 
 	// Get the window of blocks to scan from
 	var startBlock *big.Int
-	endBlock := big.NewInt(int64(state.ElBlockNumber))
-	if t.lastScannedBlock == nil {
-		// Get the slot number the first proposal was created on
+	endBlock := big.NewInt(int64(ns.ElBlockNumber))
+	if lastScannedBlock == nil {
 		startTime := mismatchingProps[0].CreatedTime
-		genesisTime := time.Unix(int64(state.BeaconConfig.GenesisTime), 0)
-		secondsPerSlot := time.Second * time.Duration(state.BeaconConfig.SecondsPerSlot)
+		genesisTime := time.Unix(int64(ns.BeaconConfig.GenesisTime), 0)
+		secondsPerSlot := time.Second * time.Duration(ns.BeaconConfig.SecondsPerSlot)
 		startSlot := uint64(startTime.Sub(genesisTime) / secondsPerSlot)
 
 		// Get the Beacon block for the slot
-		block, exists, err := t.bc.GetBeaconBlock(fmt.Sprint(startSlot))
+		block, exists, err := bc.GetBeaconBlock(fmt.Sprint(startSlot))
 		if err != nil {
 			return nil, nil, fmt.Errorf("error getting Beacon block at slot %d: %w", startSlot, err)
 		}
@@ -241,22 +345,16 @@ func (t *verifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 		// Get the EL block for this slot
 		startBlock = big.NewInt(int64(block.ExecutionBlockNumber))
 	} else {
-		startBlock = big.NewInt(0).Add(t.lastScannedBlock, common.Big1)
+		startBlock = big.NewInt(0).Add(lastScannedBlock, common.Big1)
 	}
 
 	// Make containers for mismatching IDs
 	ids := make([]uint64, len(mismatchingProps))
-	propMap := map[uint64]*protocol.ProtocolDaoProposalDetails{}
 	for i, prop := range mismatchingProps {
 		ids[i] = prop.ID
-		propMap[prop.ID] = &mismatchingProps[i]
 	}
 
-	// Get the RocketRewardsPool addresses
-	verifierAddresses := t.cfg.Smartnode.GetPreviousRocketDAOProtocolVerifierAddresses()
-
-	// Get and cache all root submissions for the proposals
-	rootSubmissionEvents, err := protocol.GetRootSubmittedEvents(t.rp, ids, t.intervalSize, startBlock, endBlock, verifierAddresses, opts)
+	rootSubmissionEvents, err := eventProvider.GetRootSubmittedEvents(ids, startBlock, endBlock)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error scanning for RootSubmitted events: %w", err)
 	}
@@ -264,19 +362,22 @@ func (t *verifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 		// Add them to the cache
 		propID := event.ProposalID.Uint64()
 		rootIndex := event.Index.Uint64()
-		eventsForProp, exists := t.rootSubmissionCache[propID]
+		eventsForProp, exists := rootSubmissionCache[propID]
 		if !exists {
 			eventsForProp = map[uint64]*protocol.RootSubmitted{}
 		}
 		eventsForProp[rootIndex] = &event
-		t.rootSubmissionCache[propID] = eventsForProp
+		rootSubmissionCache[propID] = eventsForProp
 	}
 
-	// For each proposal, crawl down the tree looking at mismatched indices to challenge until arriving at one that hasn't been challenged yet
+	// Derive the slot time from the network state's beacon config
+	slotTime := time.Unix(int64(ns.BeaconConfig.GenesisTime+ns.BeaconSlotNumber*ns.BeaconConfig.SecondsPerSlot), 0)
+
+	// For each proposal, crawl down the tree looking for unchallenged mismatches
 	challenges := []challenge{}
 	defeats := []defeat{}
 	for _, prop := range mismatchingProps {
-		challenge, defeat, err := t.getChallengeOrDefeatForProposal(prop, opts)
+		challenge, defeat, err := getChallengeOrDefeatForProposal(prop, log, slotTime, stateGetter, artifactChecker, rootSubmissionCache)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -292,22 +393,29 @@ func (t *verifyPdaoProps) getChallengesandDefeats(state *state.NetworkState, opt
 }
 
 // Get the challenge against a proposal if one can be found
-func (t *verifyPdaoProps) getChallengeOrDefeatForProposal(prop protocol.ProtocolDaoProposalDetails, opts *bind.CallOpts) (*challenge, *defeat, error) {
+func getChallengeOrDefeatForProposal(
+	prop protocol.ProtocolDaoProposalDetails,
+	log *log.ColorLogger,
+	slotTime time.Time,
+	stateGetter challengeStateGetter,
+	artifactChecker challengeArtifactChecker,
+	rootSubmissionCache map[uint64]map[uint64]*protocol.RootSubmitted,
+) (*challenge, *defeat, error) {
 	challengedIndex := uint64(1) // Root
 
 	for {
 		// Get the index of the node to challenge
-		rootSubmissionEvent, exists := t.rootSubmissionCache[prop.ID][challengedIndex]
+		rootSubmissionEvent, exists := rootSubmissionCache[prop.ID][challengedIndex]
 		if !exists {
 			return nil, nil, fmt.Errorf("challenge against prop %d, index %d has been responded to but the RootSubmitted event was missing", prop.ID, challengedIndex)
 		}
-		newChallengedIndex, challengedNode, proof, err := t.propMgr.CheckForChallengeableArtifacts(*rootSubmissionEvent)
+		newChallengedIndex, challengedNode, proof, err := artifactChecker.CheckForChallengeableArtifacts(*rootSubmissionEvent)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error checking for challengeable artifacts on prop %d, index %s: %w", prop.ID, rootSubmissionEvent.Index.String(), err)
 		}
 		if newChallengedIndex == 0 {
 			// Do nothing if the prop can't be challenged
-			t.log.Printlnf("Check against proposal %d, index %d showed no challengeable artifacts.", prop.ID, challengedIndex)
+			log.Printlnf("Check against proposal %d, index %d showed no challengeable artifacts.", prop.ID, challengedIndex)
 			return nil, nil, nil
 		}
 		if newChallengedIndex == challengedIndex {
@@ -316,7 +424,7 @@ func (t *verifyPdaoProps) getChallengeOrDefeatForProposal(prop protocol.Protocol
 		}
 
 		// Check if the index has been challenged yet
-		state, err := protocol.GetChallengeState(t.rp, prop.ID, newChallengedIndex, opts)
+		state, err := stateGetter.GetChallengeState(prop.ID, newChallengedIndex)
 		if err != nil {
 			return nil, nil, fmt.Errorf("error checking challenge state for proposal %d, index %d: %w", prop.ID, challengedIndex, err)
 		}
@@ -331,14 +439,14 @@ func (t *verifyPdaoProps) getChallengeOrDefeatForProposal(prop protocol.Protocol
 			}, nil, nil
 		case types.ChallengeState_Challenged:
 			// Check if the proposal can be defeated
-			if time.Since(prop.CreatedTime.Add(prop.ChallengeWindow)) > 0 {
+			if slotTime.After(prop.CreatedTime.Add(prop.ChallengeWindow)) {
 				return nil, &defeat{
 					proposalID:      prop.ID,
 					challengedIndex: newChallengedIndex,
 				}, nil
 			}
 			// Nothing to do but wait for the proposer to respond
-			t.log.Printlnf("Proposal %d, index %d has already been challenged; waiting for proposer to respond.", prop.ID, newChallengedIndex)
+			log.Printlnf("Proposal %d, index %d has already been challenged; waiting for proposer to respond.", prop.ID, newChallengedIndex)
 			return nil, nil, nil
 		case types.ChallengeState_Responded:
 			// Delve deeper into the tree looking for the next index to challenge
