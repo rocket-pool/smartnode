@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
 const minimalStatePath = "./testdata/minimal_state.json"
@@ -233,6 +234,55 @@ func TestStaticProviderMegapoolValidatorInfo(t *testing.T) {
 		if !found {
 			t.Errorf("MegapoolValidatorInfo[%x] does not point into MegapoolValidatorGlobalIndex", pk[:4])
 		}
+	}
+}
+
+func TestStaticProviderChallengeableProposal(t *testing.T) {
+	provider, err := NewStaticNetworkStateProviderFromFile(smallStatePath)
+	if err != nil {
+		t.Fatalf("NewStaticNetworkStateProviderFromFile: %v", err)
+	}
+
+	ns, err := provider.GetHeadState()
+	if err != nil {
+		t.Fatalf("GetHeadState: %v", err)
+	}
+
+	if len(ns.ProtocolDaoProposalDetails) == 0 {
+		t.Fatal("ProtocolDaoProposalDetails is empty")
+	}
+
+	// Find proposals in Pending state (challengeable)
+	pendingCount := 0
+	for _, prop := range ns.ProtocolDaoProposalDetails {
+		if prop.State == types.ProtocolDaoProposalState_Pending && prop.ID != 0 {
+			pendingCount++
+
+			// Compute slot time from beacon config
+			slotTime := ns.BeaconConfig.GenesisTime + ns.BeaconSlotNumber*ns.BeaconConfig.SecondsPerSlot
+			challengeDeadline := prop.CreatedTime.Add(prop.ChallengeWindow)
+
+			// The proposal must still be within its challenge window relative to slot time
+			if uint64(challengeDeadline.Unix()) <= slotTime {
+				t.Errorf("Pending proposal %d: challenge window expired before slot time (deadline %s, slot time %d)",
+					prop.ID, challengeDeadline, slotTime)
+			}
+
+			// Proposal bond and challenge bond must be positive
+			if prop.ProposalBond == nil || prop.ProposalBond.Sign() <= 0 {
+				t.Errorf("Pending proposal %d has non-positive ProposalBond", prop.ID)
+			}
+			if prop.ChallengeBond == nil || prop.ChallengeBond.Sign() <= 0 {
+				t.Errorf("Pending proposal %d has non-positive ChallengeBond", prop.ID)
+			}
+
+			t.Logf("Found challengeable proposal: id=%d, proposer=%s, message=%q, challengeDeadline=%s",
+				prop.ID, prop.ProposerAddress.Hex(), prop.Message, challengeDeadline)
+		}
+	}
+
+	if pendingCount == 0 {
+		t.Error("No Pending (challengeable) proposals found in fixture")
 	}
 }
 
