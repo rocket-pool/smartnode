@@ -93,7 +93,7 @@ type treeGenerator struct {
 	rp                  rprewards.RewardsExecutionClient
 	rpNative            *rocketpool.RocketPool
 	cfg                 *config.RocketPoolConfig
-	mgr                 *state.NetworkStateManager
+	mgr                 state.NetworkStateProvider
 	bn                  beacon.Client
 	beaconConfig        beacon.Eth2Config
 	targets             targets

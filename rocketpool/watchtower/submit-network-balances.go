@@ -43,6 +43,14 @@ type storageGetter interface {
 	GetBool(opts *bind.CallOpts, _key [32]byte) (bool, error)
 }
 
+type rewardSplitCalculator interface {
+	CalculateRewards(megapoolAddress common.Address, rewards *big.Int, elBlockNumber uint64) (megapool.RewardSplit, error)
+}
+
+type smoothingPoolShareCalculator interface {
+	GetSmoothingPoolShare(ns *state.NetworkState, elBlockHeader *types.Header, slotTime time.Time) (*big.Int, error)
+}
+
 // Submit network balances task
 type submitNetworkBalances struct {
 	c         *cli.Command
@@ -56,6 +64,56 @@ type submitNetworkBalances struct {
 	storage   storageGetter
 	lock      *sync.Mutex
 	isRunning bool
+}
+
+// liveRewardSplitCalculator calls the on-chain megapool contract.
+type liveRewardSplitCalculator struct {
+	rp *rocketpool.RocketPool
+}
+
+func (c *liveRewardSplitCalculator) CalculateRewards(megapoolAddress common.Address, rewards *big.Int, elBlockNumber uint64) (megapool.RewardSplit, error) {
+	megapoolContract, err := megapool.NewMegaPoolV1(c.rp, megapoolAddress, nil)
+	if err != nil {
+		return megapool.RewardSplit{}, fmt.Errorf("error loading megapool contract: %w", err)
+	}
+	opts := &bind.CallOpts{
+		BlockNumber: new(big.Int).SetUint64(elBlockNumber),
+	}
+	return megapoolContract.CalculateRewards(rewards, opts)
+}
+
+// liveSmoothingPoolCalculator uses the tree generator to approximate the
+// rETH share of the smoothing pool.
+type liveSmoothingPoolCalculator struct {
+	log    *log.ColorLogger
+	cfg    *config.RocketPoolConfig
+	bc     beacon.Client
+	client *rocketpool.RocketPool
+}
+
+func (c *liveSmoothingPoolCalculator) GetSmoothingPoolShare(ns *state.NetworkState, elBlockHeader *types.Header, slotTime time.Time) (*big.Int, error) {
+	currentIndex := ns.NetworkDetails.RewardIndex
+	startTime := ns.NetworkDetails.IntervalStart
+	intervalTime := ns.NetworkDetails.IntervalDuration
+
+	timeSinceStart := slotTime.Sub(startTime)
+	intervalsPassed := timeSinceStart / intervalTime
+	endTime := slotTime
+	snapshotEnd := &rprewards.SnapshotEnd{
+		Slot:           ns.BeaconSlotNumber,
+		ConsensusBlock: ns.BeaconSlotNumber,
+		ExecutionBlock: ns.ElBlockNumber,
+	}
+
+	treegen, err := rprewards.NewTreeGenerator(c.log, "[Balances]", rprewards.NewRewardsExecutionClient(c.client), c.cfg, c.bc, currentIndex, startTime, endTime, snapshotEnd, elBlockHeader, uint64(intervalsPassed), ns)
+	if err != nil {
+		return nil, fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
+	}
+	share, err := treegen.ApproximateStakerShareOfSmoothingPool()
+	if err != nil {
+		return nil, fmt.Errorf("error getting approximate share of smoothing pool: %w", err)
+	}
+	return share, nil
 }
 
 // Network balance info
@@ -381,10 +439,25 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 	mgr := state.NewNetworkStateManager(client, t.cfg.Smartnode.GetStateManagerContracts(), t.bc, t.log)
 
 	// Create a new state for the target block
-	state, err := mgr.GetStateForSlot(beaconBlock)
+	ns, err := mgr.GetStateForSlot(beaconBlock)
 	if err != nil {
 		return networkBalances{}, fmt.Errorf("couldn't get network state for EL block %s, Beacon slot %d: %w", elBlock, beaconBlock, err)
 	}
+
+	rewardCalc := &liveRewardSplitCalculator{rp: client}
+	spCalc := &liveSmoothingPoolCalculator{log: t.log, cfg: t.cfg, bc: t.bc, client: client}
+
+	return t.getNetworkBalancesFromState(ns, elBlockHeader, slotTime, rewardCalc, spCalc)
+}
+
+// getNetworkBalancesFromState computes the network balances from an already-loaded NetworkState.
+func (t *submitNetworkBalances) getNetworkBalancesFromState(
+	state *state.NetworkState,
+	elBlockHeader *types.Header,
+	slotTime time.Time,
+	rewardCalc rewardSplitCalculator,
+	spCalc smoothingPoolShareCalculator,
+) (networkBalances, error) {
 
 	// Data
 	var wg errgroup.Group
@@ -413,7 +486,8 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 		megapoolBalanceDetails = make([]megapoolBalanceDetail, len(state.MegapoolDetails))
 		i := 0
 		for megapoolAddress, megapoolDetails := range state.MegapoolDetails {
-			megapoolBalanceDetails[i], err = t.getMegapoolBalanceDetails(megapoolAddress, state, megapoolDetails)
+			var err error
+			megapoolBalanceDetails[i], err = t.getMegapoolBalanceDetails(megapoolAddress, state, megapoolDetails, rewardCalc)
 			if err != nil {
 				return fmt.Errorf("error getting megapool balance details: %w", err)
 			}
@@ -434,37 +508,9 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 	// Get the smoothing pool user share
 	wg.Go(func() error {
-
-		// Get the current interval
-		currentIndex := state.NetworkDetails.RewardIndex
-
-		// Get the start time for the current interval, and how long an interval is supposed to take
-		startTime := state.NetworkDetails.IntervalStart
-		intervalTime := state.NetworkDetails.IntervalDuration
-
-		timeSinceStart := slotTime.Sub(startTime)
-		intervalsPassed := timeSinceStart / intervalTime
-		endTime := slotTime
-		// Since we aren't generating an actual tree, just use beaconBlock as the snapshotEnd
-		snapshotEnd := &rprewards.SnapshotEnd{
-			Slot:           beaconBlock,
-			ConsensusBlock: beaconBlock,
-			ExecutionBlock: state.ElBlockNumber,
-		}
-
-		// Approximate the staker's share of the smoothing pool balance
-		// NOTE: this will use the "vanilla" variant of treegen, without rolling records, to retain parity with other Oracle DAO nodes that aren't using rolling records
-		treegen, err := rprewards.NewTreeGenerator(t.log, "[Balances]", rprewards.NewRewardsExecutionClient(client), t.cfg, t.bc, currentIndex, startTime, endTime, snapshotEnd, elBlockHeader, uint64(intervalsPassed), state)
-		if err != nil {
-			return fmt.Errorf("error creating merkle tree generator to approximate share of smoothing pool: %w", err)
-		}
-		smoothingPoolShare, err = treegen.ApproximateStakerShareOfSmoothingPool()
-		if err != nil {
-			return fmt.Errorf("error getting approximate share of smoothing pool: %w", err)
-		}
-
-		return nil
-
+		var err error
+		smoothingPoolShare, err = spCalc.GetSmoothingPoolShare(state, elBlockHeader, slotTime)
+		return err
 	})
 
 	// Wait for data
@@ -517,7 +563,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 
 }
 
-func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common.Address, state *state.NetworkState, megapoolDetails rpstate.NativeMegapoolDetails) (megapoolBalanceDetail, error) {
+func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common.Address, state *state.NetworkState, megapoolDetails rpstate.NativeMegapoolDetails, rewardCalc rewardSplitCalculator) (megapoolBalanceDetail, error) {
 	megapoolBalanceDetails := megapoolBalanceDetail{}
 	megapoolValidators := state.MegapoolToPubkeysMap[megapoolAddress]
 	// iterate the megapoolValidators array
@@ -598,24 +644,9 @@ func (t *submitNetworkBalances) getMegapoolBalanceDetails(megapoolAddress common
 	beaconBalanceIncrease = beaconBalanceIncrease.Sub(beaconBalanceIncrease, megapoolDetails.NodeBond)
 	rewards := big.NewInt(0).Add(beaconBalanceIncrease, pendingRewards)
 
-	// Load the megapool
-	megapoolContract, err := megapool.NewMegaPoolV1(t.rp, megapoolAddress, nil)
-	if err != nil {
-		return megapoolBalanceDetail{}, fmt.Errorf("error loading megapool contract: %w", err)
-	}
-	rewardsSplit := megapool.RewardSplit{
-		NodeRewards:        big.NewInt(0),
-		VoterRewards:       big.NewInt(0),
-		RethRewards:        big.NewInt(0),
-		ProtocolDAORewards: big.NewInt(0),
-	}
 	megapoolBalanceDetails.RethRewards = big.NewInt(0)
 	if rewards.Cmp(big.NewInt(0)) > 0 {
-		opts := &bind.CallOpts{
-			BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
-		}
-		rewardsSplit, err = megapoolContract.CalculateRewards(rewards, opts)
-
+		rewardsSplit, err := rewardCalc.CalculateRewards(megapoolAddress, rewards, state.ElBlockNumber)
 		if err != nil {
 			return megapoolBalanceDetail{}, fmt.Errorf("error calculating rewards split: %w", err)
 		}
