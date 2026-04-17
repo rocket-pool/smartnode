@@ -1358,7 +1358,7 @@ func (cfg *RocketPoolConfig) GetExternalIp() string {
 		return ""
 	}
 
-	if ip.To4() == nil {
+	if ip.To4() == nil && !cfg.IsIPv6Enabled() {
 		fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
 	}
 
