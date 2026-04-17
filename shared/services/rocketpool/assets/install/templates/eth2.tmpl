@@ -29,11 +29,12 @@ services:
     stop_grace_period: 3m
     {{- $p2p := (or .ConsensusCommon.P2pPort.String "9001")}}
     ports:
-      - "{{$p2p}}:{{$p2p}}/udp"
-      - "{{$p2p}}:{{$p2p}}/tcp"
       {{- if .IsIPv6Enabled}}
       - "[::]:{{$p2p}}:{{$p2p}}/udp"
       - "[::]:{{$p2p}}:{{$p2p}}/tcp"
+      {{- else}}
+      - "{{$p2p}}:{{$p2p}}/udp"
+      - "{{$p2p}}:{{$p2p}}/tcp"
       {{- end}}
       {{- if eq .ConsensusClient.String "lighthouse"}}
       - "{{.Lighthouse.P2pQuicPort}}:{{.Lighthouse.P2pQuicPort}}/udp"
