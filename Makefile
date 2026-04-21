@@ -25,9 +25,13 @@ define rocketpool-cli-template
 ${BIN_DIR}/rocketpool-cli-$1-$2: ${bin_deps}
 	@echo "Building rocketpool-cli-$1-$2"
 ifndef NO_DOCKER
-	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=0 \
-		-e GOARCH=$2 -e GOOS=$1 --workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
-		go build -o $$@ ./rocketpool-cli/
+	docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) \
+		-e CGO_ENABLED=0 -e XDG_CACHE_HOME=/go/.cache \
+		-e GOMODCACHE=/go/.cache/pkg/mod \
+		-e GOCACHE=/go/.cache/go-build \
+		-e GOARCH=$2 -e GOOS=$1 \
+		--workdir /src -v ~/.cache:/go/.cache \
+		rocketpool/smartnode-builder:${VERSION} go build -o $$@ ./rocketpool-cli/
 else
 	CGO_ENABLED=0 GOOS=$1 GOARCH=$2 go build -o $$@ ./rocketpool-cli/
 endif
@@ -66,18 +70,28 @@ ifndef NO_DOCKER
 	bin_deps += docker-builder
 endif
 
-docker_build_cmd_amd64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" \
-	-e GOARCH=amd64 -e GOOS=linux --workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
-	go build
+docker_build_cmd_amd64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) \
+	-e CGO_ENABLED=1 -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" \
+	-e GOARCH=amd64 -e GOOS=linux \
+	-e XDG_CACHE_HOME=/go/.cache \
+	-e GOMODCACHE=/go/.cache/pkg/mod \
+	-e GOCACHE=/go/.cache/go-build \
+	--workdir /src -v ~/.cache:/go/.cache \
+	rocketpool/smartnode-builder:${VERSION} go build
 local_build_cmd_amd64 = CGO_ENABLED=1 CGO_CFLAGS="-O -D__BLST_PORTABLE__" GOARCH=amd64 GOOS=linux go build
-docker_build_cmd_arm64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) -e CGO_ENABLED=1 -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" \
-	-e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp -e CGO_CFLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
-	--workdir /src -v ~/.cache:/.cache rocketpool/smartnode-builder:${VERSION} \
-	go build
+docker_build_cmd_arm64 = docker run --rm -v ./:/src --user $(shell id -u):$(shell id -g) \
+	-e CGO_ENABLED=1 -e CC=aarch64-linux-gnu-gcc -e CXX=aarch64-linux-gnu-cpp \
+	-e CGO_CFLAGS="-O -D__BLST_PORTABLE__" -e GOARCH=arm64 -e GOOS=linux \
+	-e XDG_CACHE_HOME=/go/.cache \
+	-e GOMODCACHE=/go/.cache/pkg/mod \
+	-e GOCACHE=/go/.cache/go-build \
+	--workdir /src -v ~/.cache:/go/.cache \
+	rocketpool/smartnode-builder:${VERSION} go build
 local_build_cmd_arm64 = CGO_ENABLED=1 CC=aarch64-linux-gnu-gcc CXX=aarch64-linux-gnu-cpp CGO_CFLAGS="-O -D__BLST_PORTABLE__" GOARCH=arm64 GOOS=linux go build
 # amd64 daemon build
 .PHONY: ${BIN_DIR}/rocketpool-daemon-linux-amd64
 ${BIN_DIR}/rocketpool-daemon-linux-amd64: ${bin_deps}
+	@echo "Building rocketpool-daemon-linux-amd64"
 ifndef NO_DOCKER
 	${docker_build_cmd_amd64} -o $@ rocketpool/rocketpool.go
 else
@@ -87,6 +101,7 @@ endif
 # arm64 daemon build
 .PHONY: ${BIN_DIR}/rocketpool-daemon-linux-arm64
 ${BIN_DIR}/rocketpool-daemon-linux-arm64: ${bin_deps}
+	@echo "Building rocketpool-daemon-linux-arm64"
 ifndef NO_DOCKER
 	${docker_build_cmd_arm64} -o $@ rocketpool/rocketpool.go
 else
@@ -105,6 +120,7 @@ $(foreach oos,$(CLI_TARGET_OOS),$(foreach arch,$(ARCHS),$(eval $(call rocketpool
 # amd64 treegen build
 .PHONY: ${BIN_DIR}/treegen-linux-amd64
 ${BIN_DIR}/treegen-linux-amd64: ${bin_deps}
+	@echo "Building treegen-linux-amd64"
 ifndef NO_DOCKER
 	${docker_build_cmd_amd64} -o $@ ./treegen/.
 else
@@ -114,6 +130,7 @@ endif
 # arm64 treegen build
 .PHONY: ${BIN_DIR}/treegen-linux-arm64
 ${BIN_DIR}/treegen-linux-arm64: ${bin_deps}
+	@echo "Building treegen-linux-arm64"
 ifndef NO_DOCKER
 	${docker_build_cmd_arm64} -o $@ ./treegen/.
 else
@@ -123,6 +140,7 @@ endif
 # amd64 state-cli build
 .PHONY: ${TOOLS_DIR}/state-cli-linux-amd64
 ${TOOLS_DIR}/state-cli-linux-amd64: ${bin_deps}
+	@echo "Building state-cli-linux-amd64"
 ifndef NO_DOCKER
 	${docker_build_cmd_amd64} -o $@ ./shared/services/state/cli/.
 else
@@ -132,6 +150,7 @@ endif
 # arm64 state-cli build
 .PHONY: ${TOOLS_DIR}/state-cli-linux-arm64
 ${TOOLS_DIR}/state-cli-linux-arm64: ${bin_deps}
+	@echo "Building state-cli-linux-arm64"
 ifndef NO_DOCKER
 	${docker_build_cmd_arm64} -o $@ ./shared/services/state/cli/.
 else
@@ -151,14 +170,14 @@ docker: ${BUILD_DIR}/docker-buildx-builder
 
 .PHONY: docker-push
 docker-push: ${BUILD_DIR}/docker-buildx-builder
-	echo -n "Building ${VERSION} and publishing containers. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
+	@echo -n "Building ${VERSION} and publishing containers. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	# override the output type to push to dockerhub
 	VERSION=${VERSION} ${SOURCE} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry"
-	echo "Done!"
+	@echo "Done!"
 
 .PHONY: docker-latest
 docker-latest: ${BUILD_DIR}/docker-buildx-builder
-	echo -n "Building ${VERSION}, tagging as latest, and publishing. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
+	@echo -n "Building ${VERSION}, tagging as latest, and publishing. Continue? [yN]: " && read ans && if [ $${ans:-'N'} != 'y' ]; then exit 1; fi
 	# override the output type to push to dockerhub, and the tags array to tag latest
 	VERSION=${VERSION} ${SOURCE} docker bake --builder smartnode-builder -f docker/daemon-bake.hcl smartnode --set "smartnode.output=type=registry" --set "smartnode.tags=rocketpool/smartnode:latest"
 
@@ -169,10 +188,10 @@ docker-prune:
 	docker buildx rm smartnode-builder
 	rm ${BUILD_DIR}/docker-buildx-builder
 
-golangci_lint_version = v2.4
+golangci_lint_version = v2.11
 docker_lint_cmd = docker run -e XDG_CACHE_HOME=/go/.cache -e GOMODCACHE=/go/.cache/pkg/mod -e GOCACHE=/go/.cache/go-build -e GOLANGCI_LINT_CACHE=/go/.cache/golangci-lint \
 	--user $(shell id -u):$(shell id -g) --rm -v ~/.cache:/go/.cache -v .:/smartnode --workdir /smartnode/ golangci/golangci-lint:${golangci_lint_version}-alpine golangci-lint
-local_lint_cmd = go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${golangci_lint_version}
+local_lint_cmd = GOTOOLCHAIN=go1.26.2 go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${golangci_lint_version}
 .PHONY: lint
 lint:
 ifdef NO_DOCKER

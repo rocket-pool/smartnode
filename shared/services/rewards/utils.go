@@ -190,19 +190,19 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 		for _, url := range urls {
 			resp, err := client.Get(url)
 			if err != nil {
-				errBuilder.WriteString(fmt.Sprintf("Downloading %s failed (%s)\n", url, err.Error()))
+				errBuilder.WriteString("Downloading " + url + " failed (" + err.Error() + ")\n")
 				continue
 			}
 			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
-				errBuilder.WriteString(fmt.Sprintf("Downloading %s failed with status %s\n", url, resp.Status))
+				errBuilder.WriteString("Downloading " + url + " failed with status " + resp.Status + "\n")
 				continue
 			}
 			// If we got here, we have a successful download
 			bytes, err := io.ReadAll(resp.Body)
 			if err != nil {
-				errBuilder.WriteString(fmt.Sprintf("Error reading response bytes from %s: %s\n", url, err.Error()))
+				errBuilder.WriteString("Error reading response bytes from " + url + ": " + err.Error() + "\n")
 				continue
 			}
 			writeBytes := bytes
@@ -210,7 +210,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 				// Decompress it
 				writeBytes, err = decompressFile(bytes)
 				if err != nil {
-					errBuilder.WriteString(fmt.Sprintf("Error decompressing %s: %s\n", url, err.Error()))
+					errBuilder.WriteString("Error decompressing " + url + ": " + err.Error() + "\n")
 					continue
 				}
 			}
@@ -253,7 +253,7 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 
 		}
 
-		errBuilder.WriteString(fmt.Sprintf("Downloading files with timeout %v failed.\n", timeout))
+		errBuilder.WriteString("Downloading files with timeout " + timeout.String() + " failed.\n")
 	}
 
 	return errors.New(errBuilder.String())
