@@ -26,6 +26,23 @@ type BeaconClientManager struct {
 	primaryReady    bool
 	fallbackReady   bool
 	ignoreSyncCheck bool
+
+	// static, when non-nil, satisfies every public method of this manager
+	// directly from the provided client instead of dialling a live beacon
+	// node. It is set by NewStaticBeaconClientManager and used when the
+	// daemon is running in --network-state mode.
+	static beacon.Client
+}
+
+// NewStaticBeaconClientManager returns a BeaconClientManager whose public
+// methods all delegate to the provided beacon.Client. No network
+// connections are established.
+func NewStaticBeaconClientManager(static beacon.Client) *BeaconClientManager {
+	return &BeaconClientManager{
+		static:        static,
+		primaryReady:  true,
+		fallbackReady: false,
+	}
 }
 
 // This is a signature for a wrapped Beacon client function that only returns an error
@@ -369,6 +386,19 @@ func (m *BeaconClientManager) GetValidatorBalances(indices []string, opts *beaco
 
 func (m *BeaconClientManager) CheckStatus() *api.ClientManagerStatus {
 
+	// In static mode we have no real beacon clients to probe; report the
+	// synthetic "primary is working and synced" status.
+	if m.static != nil {
+		return &api.ClientManagerStatus{
+			FallbackEnabled: false,
+			PrimaryClientStatus: api.ClientStatus{
+				IsWorking:    true,
+				IsSynced:     true,
+				SyncProgress: 1,
+			},
+		}
+	}
+
 	status := &api.ClientManagerStatus{
 		FallbackEnabled: m.fallbackBc != nil,
 	}
@@ -431,6 +461,13 @@ func checkBcStatus(client beacon.Client) api.ClientStatus {
 // Attempts to run a function progressively through each client until one succeeds or they all fail.
 func (m *BeaconClientManager) runFunction0(function bcFunction0) error {
 
+	// Delegate directly to the static backend when the manager is running in
+	// --network-state mode; there are no primary/fallback clients to route
+	// through.
+	if m.static != nil {
+		return function(m.static)
+	}
+
 	// Check if we can use the primary
 	if m.primaryReady {
 		// Try to run the function on the primary
@@ -473,6 +510,10 @@ func (m *BeaconClientManager) runFunction0(function bcFunction0) error {
 // Attempts to run a function progressively through each client until one succeeds or they all fail.
 func (m *BeaconClientManager) runFunction1(function bcFunction1) (interface{}, error) {
 
+	if m.static != nil {
+		return function(m.static)
+	}
+
 	// Check if we can use the primary
 	if m.primaryReady {
 		// Try to run the function on the primary
@@ -514,6 +555,10 @@ func (m *BeaconClientManager) runFunction1(function bcFunction1) (interface{}, e
 
 // Attempts to run a function progressively through each client until one succeeds or they all fail.
 func (m *BeaconClientManager) runFunction2(function bcFunction2) (interface{}, interface{}, error) {
+
+	if m.static != nil {
+		return function(m.static)
+	}
 
 	// Check if we can use the primary
 	if m.primaryReady {

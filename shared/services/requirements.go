@@ -46,6 +46,11 @@ func RequireNodeWallet(c *cli.Command) error {
 }
 
 func RequireEthClientSynced(c *cli.Command) error {
+	// In static mode there is no live EC to poll; the snapshot is, by
+	// definition, a settled point in time.
+	if IsStaticStateMode(c) {
+		return nil
+	}
 	ethClientSynced, err := waitEthClientSynced(c, false, EthClientSyncTimeout)
 	if err != nil {
 		return err
@@ -57,6 +62,9 @@ func RequireEthClientSynced(c *cli.Command) error {
 }
 
 func RequireBeaconClientSynced(c *cli.Command) error {
+	if IsStaticStateMode(c) {
+		return nil
+	}
 	beaconClientSynced, err := waitBeaconClientSynced(c, false, BeaconClientSyncTimeout)
 	if err != nil {
 		return err
@@ -68,6 +76,11 @@ func RequireBeaconClientSynced(c *cli.Command) error {
 }
 
 func RequireRocketStorage(c *cli.Command) error {
+	// In static mode the storage contract is implicitly present (the snapshot
+	// was produced against it); skip the live code-at probe.
+	if IsStaticStateMode(c) {
+		return nil
+	}
 	if err := RequireEthClientSynced(c); err != nil {
 		return err
 	}
@@ -172,16 +185,25 @@ func WaitNodeHdWallet(c *cli.Command, verbose bool) error {
 }
 
 func WaitEthClientSynced(c *cli.Command, verbose bool) error {
+	if IsStaticStateMode(c) {
+		return nil
+	}
 	_, err := waitEthClientSynced(c, verbose, 0)
 	return err
 }
 
 func WaitBeaconClientSynced(c *cli.Command, verbose bool) error {
+	if IsStaticStateMode(c) {
+		return nil
+	}
 	_, err := waitBeaconClientSynced(c, verbose, 0)
 	return err
 }
 
 func WaitRocketStorage(c *cli.Command, verbose bool) error {
+	if IsStaticStateMode(c) {
+		return nil
+	}
 	if err := WaitEthClientSynced(c, verbose); err != nil {
 		return err
 	}
@@ -279,11 +301,14 @@ func getNodeRegistered(c *cli.Command) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	rp, err := GetRocketPool(c)
+	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return false, err
 	}
-	nodeAccount, err := w.GetNodeAccount()
+	if IsStaticStateMode(c) {
+		return isNodeRegisteredInStaticState(c, nodeAccount.Address)
+	}
+	rp, err := GetRocketPool(c)
 	if err != nil {
 		return false, err
 	}
@@ -296,11 +321,14 @@ func getHdNodeRegistered(c *cli.Command) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	rp, err := GetRocketPool(c)
+	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return false, err
 	}
-	nodeAccount, err := w.GetNodeAccount()
+	if IsStaticStateMode(c) {
+		return isNodeRegisteredInStaticState(c, nodeAccount.Address)
+	}
+	rp, err := GetRocketPool(c)
 	if err != nil {
 		return false, err
 	}
@@ -313,11 +341,23 @@ func getNodeTrusted(c *cli.Command) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	rp, err := GetRocketPool(c)
+	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return false, err
 	}
-	nodeAccount, err := w.GetNodeAccount()
+	if IsStaticStateMode(c) {
+		ns, err := getStaticState(c)
+		if err != nil {
+			return false, err
+		}
+		for _, m := range ns.OracleDaoMemberDetails {
+			if m.Address == nodeAccount.Address {
+				return true, nil
+			}
+		}
+		return false, nil
+	}
+	rp, err := GetRocketPool(c)
 	if err != nil {
 		return false, err
 	}
@@ -330,15 +370,31 @@ func getNodeSecurityMember(c *cli.Command) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	rp, err := GetRocketPool(c)
-	if err != nil {
-		return false, err
-	}
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return false, err
 	}
+	if IsStaticStateMode(c) {
+		// Security council membership is not captured in the NetworkState
+		// snapshot, so we cannot answer this from the static data.
+		return false, fmt.Errorf("security council membership cannot be verified in static state mode")
+	}
+	rp, err := GetRocketPool(c)
+	if err != nil {
+		return false, err
+	}
 	return security.GetMemberExists(rp, nodeAccount.Address, nil)
+}
+
+// isNodeRegisteredInStaticState reports whether the given address appears in
+// the snapshot's NodeDetailsByAddress index.
+func isNodeRegisteredInStaticState(c *cli.Command, address common.Address) (bool, error) {
+	ns, err := getStaticState(c)
+	if err != nil {
+		return false, err
+	}
+	_, ok := ns.NodeDetailsByAddress[address]
+	return ok, nil
 }
 
 // Wait for the eth client to sync

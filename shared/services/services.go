@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	lhkeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	lokeystore "github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lodestar"
@@ -163,7 +164,9 @@ func GetRocketPool(c *cli.Command) (*rocketpool.RocketPool, error) {
 		return nil, err
 	}
 	var ec rocketpool.ExecutionClient
-	if c.Root().Bool("use-protected-api") {
+	if IsStaticStateMode(c) {
+		ec, err = getStaticExecutionClient(c, cfg)
+	} else if c.Root().Bool("use-protected-api") {
 		url := cfg.Smartnode.GetFlashbotsProtectUrl()
 		ec, err = dialProtectedEthClient(url)
 	} else {
@@ -324,6 +327,16 @@ func getWallet(c *cli.Command, cfg *config.RocketPoolConfig, pm *passwords.Passw
 func getEthClient(c *cli.Command, cfg *config.RocketPoolConfig) (*ExecutionClientManager, error) {
 	var err error
 	initECManager.Do(func() {
+		if IsStaticStateMode(c) {
+			var staticEc *state.StaticExecutionClient
+			staticEc, err = getStaticExecutionClient(c, cfg)
+			if err != nil {
+				return
+			}
+			ecManager = NewStaticExecutionClientManager(staticEc)
+			return
+		}
+
 		// Create a new client manager
 		ecManager, err = NewExecutionClientManager(cfg)
 		if err == nil {
@@ -337,6 +350,18 @@ func getEthClient(c *cli.Command, cfg *config.RocketPoolConfig) (*ExecutionClien
 		}
 	})
 	return ecManager, err
+}
+
+// getStaticExecutionClient returns a StaticExecutionClient backed by the
+// --network-state snapshot and configured with the chain ID from the current
+// SmartnodeConfig.
+func getStaticExecutionClient(c *cli.Command, cfg *config.RocketPoolConfig) (*state.StaticExecutionClient, error) {
+	ns, err := getStaticState(c)
+	if err != nil {
+		return nil, err
+	}
+	chainID := new(big.Int).SetUint64(uint64(cfg.Smartnode.GetChainID()))
+	return state.NewStaticExecutionClient(ns, chainID), nil
 }
 
 func getRocketPool(cfg *config.RocketPoolConfig, client rocketpool.ExecutionClient) (*rocketpool.RocketPool, error) {
@@ -361,6 +386,16 @@ func getRocketSignerRegistry(cfg *config.RocketPoolConfig, client rocketpool.Exe
 func getBeaconClient(c *cli.Command, cfg *config.RocketPoolConfig) (*BeaconClientManager, error) {
 	var err error
 	initBCManager.Do(func() {
+		if IsStaticStateMode(c) {
+			var ns *state.NetworkState
+			ns, err = getStaticState(c)
+			if err != nil {
+				return
+			}
+			bcManager = NewStaticBeaconClientManager(state.NewStaticBeaconClient(ns))
+			return
+		}
+
 		// Create a new client manager
 		bcManager, err = NewBeaconClientManager(cfg)
 		if err == nil {

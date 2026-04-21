@@ -145,8 +145,18 @@ func run(c *cli.Command) error {
 	errorLog := log.NewColorLogger(ErrorColor)
 	updateLog := log.NewColorLogger(UpdateColor)
 
-	// Create the state manager
-	m := state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bc, &updateLog)
+	// Create the state provider. In live mode this is a NetworkStateManager
+	// backed by the real EC/BC; in --network-state mode it is a
+	// StaticNetworkStateProvider that serves from the pre-loaded snapshot.
+	var m state.NetworkStateProvider
+	if services.IsStaticStateMode(c) {
+		m, err = services.GetNetworkStateProvider(c)
+		if err != nil {
+			return fmt.Errorf("error getting network state provider: %w", err)
+		}
+	} else {
+		m = state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bc, &updateLog)
+	}
 	stateLocker := collectors.NewStateLocker()
 
 	// Initialize tasks
@@ -497,7 +507,7 @@ func removeLegacyFeeRecipientFiles(c *cli.Command) error {
 }
 
 // Update the latest network state at each cycle
-func updateNetworkState(m *state.NetworkStateManager, log *log.ColorLogger, nodeAddress common.Address) (*state.NetworkState, error) {
+func updateNetworkState(m state.NetworkStateProvider, log *log.ColorLogger, nodeAddress common.Address) (*state.NetworkState, error) {
 	// Get the state of the network
 	state, err := m.GetHeadStateForNode(nodeAddress)
 	if err != nil {
