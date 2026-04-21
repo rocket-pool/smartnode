@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/rivo/tview"
@@ -69,7 +68,7 @@ func processConfigAfterQuit(md *mainDisplay) {
 		builder := strings.Builder{}
 		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
 		for _, err := range errors {
-			builder.WriteString(fmt.Sprintf("%s\n\n", err))
+			builder.WriteString(err + "\n\n")
 		}
 
 		modal := tview.NewModal().

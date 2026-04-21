@@ -42,7 +42,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	if len(errors) > 0 {
 		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
 		for _, err := range errors {
-			builder.WriteString(fmt.Sprintf("%s\n\n", err))
+			builder.WriteString(err + "\n\n")
 		}
 	} else {
 		// Get the map of changed settings by category
@@ -56,14 +56,14 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 			if newConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && newConfig.ExecutionClient.Value.(cfgtypes.ExecutionClient) != cfgtypes.ExecutionClient_Geth {
 				totalAffectedContainers[cfgtypes.ContainerID_Eth1] = true
 			}
-			builder.WriteString(fmt.Sprintf("Updated toSmart Node v%s (will affect several containers)\n\n", shared.RocketPoolVersion()))
+			builder.WriteString("Updated to Smart Node v" + shared.RocketPoolVersion() + " (will affect several containers)\n\n")
 		}
 
 		for categoryName, changedSettingsList := range changedSettings {
 			if len(changedSettingsList) > 0 {
-				builder.WriteString(fmt.Sprintf("%s\n", categoryName))
+				builder.WriteString(categoryName + "\n")
 				for _, pair := range changedSettingsList {
-					builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
+					builder.WriteString("\t" + pair.Name + ": " + pair.OldValue + " => " + pair.NewValue + "\n")
 				}
 				builder.WriteString("\n")
 			}
@@ -74,7 +74,7 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		} else {
 			builder.WriteString("The following containers must be restarted for these changes to take effect:")
 			for container := range totalAffectedContainers {
-				builder.WriteString(fmt.Sprintf("\n\t%v", container))
+				_, _ = fmt.Fprintf(&builder, "\n\t%v", container)
 				containersToRestart = append(containersToRestart, container)
 			}
 		}
