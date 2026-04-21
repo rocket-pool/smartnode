@@ -66,11 +66,11 @@ func TestFilesFromTree(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion != f.RewardsFileHeader.RulesetVersion {
+	if localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion != f.RulesetVersion {
 		t.Fatalf(
 			"expected parsed version %d to match serialized version %d\n",
 			localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion,
-			f.RewardsFileHeader.RulesetVersion,
+			f.RulesetVersion,
 		)
 	}
 

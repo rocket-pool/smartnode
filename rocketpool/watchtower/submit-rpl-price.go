@@ -725,7 +725,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -846,7 +846,7 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -965,7 +965,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -1111,7 +1111,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -1250,7 +1250,7 @@ func (t *submitRplPrice) submitBasePrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -1371,7 +1371,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}

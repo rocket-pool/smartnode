@@ -230,7 +230,7 @@ func (d *DropDown) SetListStyles(unselected, selected tcell.Style) *DropDown {
 func (d *DropDown) SetFormAttributes(labelWidth int, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) tview.FormItem {
 	d.labelWidth = labelWidth
 	d.labelColor = labelColor
-	d.Box.SetBackgroundColor(bgColor)
+	d.SetBackgroundColor(bgColor)
 	d.fieldTextColor = fieldTextColor
 	d.fieldBackgroundColor = fieldBgColor
 	return d
@@ -322,7 +322,7 @@ func (d *DropDown) SetFinishedFunc(handler func(key tcell.Key)) tview.FormItem {
 
 // Draw draws this primitive onto the screen.
 func (d *DropDown) Draw(screen tcell.Screen) {
-	d.Box.DrawForSubclass(screen, d)
+	d.DrawForSubclass(screen, d)
 
 	// Prepare.
 	x, y, width, height := d.GetInnerRect()

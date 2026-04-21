@@ -30,10 +30,7 @@ func createExternalDoppelgangerStep(wiz *wizard, currentStep int, totalSteps int
 	}
 
 	done := func(buttonIndex int, buttonLabel string) {
-		ddEnabled := false
-		if buttonIndex == 1 {
-			ddEnabled = true
-		}
+		ddEnabled := buttonIndex == 1
 		switch wiz.md.Config.ExternalConsensusClient.Value.(cfgtypes.ConsensusClient) {
 		case cfgtypes.ConsensusClient_Lighthouse:
 			wiz.md.Config.ExternalLighthouse.DoppelgangerDetection.Value = ddEnabled
