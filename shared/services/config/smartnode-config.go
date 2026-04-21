@@ -734,9 +734,9 @@ func (cfg *SmartnodeConfig) GetValidatorKeychainPathInCLI() string {
 	return filepath.Join(cfg.DataPath.Value.(string), "validators")
 }
 
-func (config *SmartnodeConfig) GetWatchtowerStatePath() string {
-	if config.parent.IsNativeMode {
-		return filepath.Join(config.DataPath.Value.(string), WatchtowerFolder, "state.yml")
+func (cfg *SmartnodeConfig) GetWatchtowerStatePath() string {
+	if cfg.parent.IsNativeMode {
+		return filepath.Join(cfg.DataPath.Value.(string), WatchtowerFolder, "state.yml")
 	}
 
 	return filepath.Join(DaemonDataPath, WatchtowerFolder, "state.yml")
@@ -786,7 +786,7 @@ func (cfg *SmartnodeConfig) GetVotingSnapshotID() [32]byte {
 	return buffer
 }
 
-func (config *SmartnodeConfig) GetSnapshotID() string {
+func (cfg *SmartnodeConfig) GetSnapshotID() string {
 	return SnapshotID
 }
 
