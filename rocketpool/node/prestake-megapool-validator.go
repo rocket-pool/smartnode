@@ -147,7 +147,7 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 	lastAssignment := time.Unix(int64(block.Time), 0)
 
-	remainingTime := lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour).Sub(time.Now())
+	remainingTime := time.Until(lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour))
 	if remainingTime < 0 {
 		t.log.Printlnf("%d hours have passed since the last assignment. Trying to assign", t.autoAssignmentDelay)
 
