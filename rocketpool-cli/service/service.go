@@ -124,9 +124,6 @@ func printPatchNotes() {
 	fmt.Println()
 	fmt.Println("Changes you should be aware of before starting:")
 	fmt.Println()
-	fmt.Println("This Smart Node version is compatible with the Saturn 1 upgrade. The upgrade took place on Feb 18, 2026 00:00:00 UTC.")
-	fmt.Println("For more information about the biggest Rocket Pool upgrade ever, please see the official documentation: https://docs.rocketpool.net/upgrades/saturn-1/whats-new")
-	fmt.Println()
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
