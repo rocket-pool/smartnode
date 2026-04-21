@@ -60,7 +60,7 @@ func PromptMnemonic() string {
 		}
 
 		i := 0
-		for mv.Filled() == false {
+		for !mv.Filled() {
 			prompt := fmt.Sprintf("Enter %s of your mnemonic:", color.BoldSprintf("word number %d", i+1))
 			word := promptcli.PromptPassword(prompt, "^[a-zA-Z]+$", "Please enter a single word only.")
 
