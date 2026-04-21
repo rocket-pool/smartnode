@@ -157,7 +157,6 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	var wg errgroup.Group
 	var status types.MinipoolStatus
 	var userDepositBalance *big.Int
-	var userDepositTime uint64
 	var nodeFee float64
 
 	// Load data
@@ -172,13 +171,6 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 		return err
 	})
 	wg.Go(func() error {
-		userDepositAssignedTime, err := mp.GetUserDepositAssignedTime(opts)
-		if err == nil {
-			userDepositTime = uint64(userDepositAssignedTime.Unix())
-		}
-		return err
-	})
-	wg.Go(func() error {
 		nodeFee, err = mp.GetNodeFee(opts)
 		return err
 	})
@@ -186,14 +178,6 @@ func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	// Wait for data
 	if err := wg.Wait(); err != nil {
 		return err
-	}
-
-	// Get start epoch for node balance calculation
-	startEpoch := eth2.EpochAt(eth2Config, userDepositTime)
-	if startEpoch < validator.ActivationEpoch {
-		startEpoch = validator.ActivationEpoch
-	} else if startEpoch > blockEpoch {
-		startEpoch = blockEpoch
 	}
 
 	// Get user balance at block

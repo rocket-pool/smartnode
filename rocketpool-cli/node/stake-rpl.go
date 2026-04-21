@@ -173,10 +173,8 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 	}
 	var amountWei *big.Int
 	var stakePercent float64
-	// Borrow amount for a new LEB8
-	ethBorrowed := eth.EthToWei(24)
 	// Borrow amount for a new megapool validator
-	ethBorrowed = new(big.Int).Sub(eth.EthToWei(32), status.ReducedBond)
+	ethBorrowed := new(big.Int).Sub(eth.EthToWei(32), status.ReducedBond)
 
 	// Amount flag custom percentage input
 	if strings.HasSuffix(amount, "%") {

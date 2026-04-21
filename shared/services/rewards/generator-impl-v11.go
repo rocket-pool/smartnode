@@ -756,12 +756,10 @@ func (r *treeGeneratorImpl_v11) calculateEthRewards(checkBeaconPerformance bool)
 
 		// Finally, take care of adding voter share to the performance file
 		if nodeInfo.VoterShareEth.Cmp(common.Big0) > 0 {
-			performance, exists := r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address]
-			if !exists {
-				performance = &MegapoolPerformance_v1{
+			if _, exists := r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address]; !exists {
+				r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address] = &MegapoolPerformance_v1{
 					VoterShare: QuotedBigIntFromBigInt(nodeInfo.VoterShareEth),
 				}
-				r.performanceFile.MegapoolPerformance[nodeInfo.Megapool.Address] = performance
 			}
 		}
 	}
