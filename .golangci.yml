@@ -19,10 +19,6 @@ linters:
         - -ST1021
         - -ST1022
 
-        # The following linters are disabled not because they SHOULD BE, but because
-        # we haven't fix the issues they raise yet.
-        # An enterprising contributor should feel free to delete these one by one and
-        # fix the issues they flag.
 formatters:
   enable:
     - goimports
