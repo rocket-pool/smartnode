@@ -239,7 +239,7 @@ func TestCidConsistency(t *testing.T) {
 	}
 
 	t.Logf("Computed CID: %s", fmt.Sprint(cid))
-	if "bafybeibqxb2xeoh2mlcn7543jr3tgvdu74mqqd43esrttyktmu3ubtx63i" != fmt.Sprint(cid) {
+	if fmt.Sprint(cid) != "bafybeibqxb2xeoh2mlcn7543jr3tgvdu74mqqd43esrttyktmu3ubtx63i" {
 		t.Fatal("CID did not match expectations. If changing CID computation logic, ensure historical CIDs can be recomputed. See comments in files_test.go for more info")
 	}
 }
