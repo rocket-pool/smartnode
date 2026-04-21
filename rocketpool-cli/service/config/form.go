@@ -364,7 +364,7 @@ func (f *Form) SetChangedFunc(callback func(index int)) *Form {
 
 // Draw draws this primitive onto the screen.
 func (f *Form) Draw(screen tcell.Screen) {
-	f.Box.DrawForSubclass(screen, f)
+	f.DrawForSubclass(screen, f)
 
 	// Determine the actual item that has focus.
 	if index := f.focusIndex(); index >= 0 {
