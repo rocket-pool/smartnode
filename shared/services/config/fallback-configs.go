@@ -116,11 +116,11 @@ func (cfg *FallbackPrysmConfig) GetParameters() []*config.Parameter {
 }
 
 // The title for the config
-func (config *FallbackNormalConfig) GetConfigTitle() string {
-	return config.Title
+func (cfg *FallbackNormalConfig) GetConfigTitle() string {
+	return cfg.Title
 }
 
 // The title for the config
-func (config *FallbackPrysmConfig) GetConfigTitle() string {
-	return config.Title
+func (cfg *FallbackPrysmConfig) GetConfigTitle() string {
+	return cfg.Title
 }

@@ -107,16 +107,16 @@ type MockBeaconClient struct {
 	withdrawals map[slot]map[validatorIndex]*big.Int
 }
 
-func (m *MockBeaconClient) SetState(state *state.NetworkState) {
-	m.state = state
-	if m.validatorPubkeys == nil {
-		m.validatorPubkeys = make(map[validatorIndex]types.ValidatorPubkey)
+func (bc *MockBeaconClient) SetState(state *state.NetworkState) {
+	bc.state = state
+	if bc.validatorPubkeys == nil {
+		bc.validatorPubkeys = make(map[validatorIndex]types.ValidatorPubkey)
 	}
 	for _, v := range state.MinipoolValidatorDetails {
-		if _, ok := m.validatorPubkeys[validatorIndex(v.Index)]; ok {
-			m.t.Fatalf("Validator %s already set", v.Index)
+		if _, ok := bc.validatorPubkeys[validatorIndex(v.Index)]; ok {
+			bc.t.Fatalf("Validator %s already set", v.Index)
 		}
-		m.validatorPubkeys[validatorIndex(v.Index)] = v.Pubkey
+		bc.validatorPubkeys[validatorIndex(v.Index)] = v.Pubkey
 	}
 	for _, v := range state.MegapoolValidatorGlobalIndex {
 		pubkey := types.BytesToValidatorPubkey(v.Pubkey)
@@ -125,10 +125,10 @@ func (m *MockBeaconClient) SetState(state *state.NetworkState) {
 			continue
 		}
 		vIndex := details.Index
-		if _, ok := m.validatorPubkeys[validatorIndex(vIndex)]; ok {
-			m.t.Fatalf("Validator %s already set", vIndex)
+		if _, ok := bc.validatorPubkeys[validatorIndex(vIndex)]; ok {
+			bc.t.Fatalf("Validator %s already set", vIndex)
 		}
-		m.validatorPubkeys[validatorIndex(vIndex)] = pubkey
+		bc.validatorPubkeys[validatorIndex(vIndex)] = pubkey
 	}
 }
 
