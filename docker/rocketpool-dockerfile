@@ -14,13 +14,11 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
 # Load the project's go mod dependencies into the image
 COPY go.mod /src/go.mod
 COPY go.sum /src/go.sum
-RUN mkdir -p /go/pkg/
 # Using a cache mount and custom GOMODCACHE lets us use docker build cache to keep the most recent dependencies
 # That way when we rebuild with changes to dependencies, only the delta is downloaded.
-RUN --mount=type=cache,target=/gopkgmodcache \
-	cd /src && \
-	GOMODCACHE=/gopkgmodcache go mod download -x && \
-	cp -r /gopkgmodcache /go/pkg/mod
+WORKDIR /src
+RUN --mount=type=cache,target=/go/.cache/pkg/mod,id=gomodcache \
+	GOMODCACHE=/go/.cache/pkg/mod go mod download -x
 
 FROM --platform=$BUILDPLATFORM smartnode_dependencies AS build
 ARG VERSION
