@@ -83,6 +83,9 @@ services:
       - ENABLE_METRICS={{.EnableMetrics}}
       - BN_METRICS_PORT={{.BnMetricsPort}}
       - EXTERNAL_IP={{.GetExternalIp}}
+      {{- if .IsIPv6Enabled}}
+      - EXTERNAL_IP6={{.GetExternalIpv6}}
+      {{- end}}
       - ENABLE_IPV6={{.IsIPv6Enabled}}
       - CHECKPOINT_SYNC_URL={{.ConsensusCommon.CheckpointSyncProvider}}
       - DOPPELGANGER_DETECTION={{.IsDoppelgangerEnabled}}
