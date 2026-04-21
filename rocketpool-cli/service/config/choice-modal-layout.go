@@ -150,8 +150,9 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 	buttonsWidth := 0
 	height := 0
 
+	switch layout.direction {
 	// Self-explanatory horizontal buttons without a description box
-	if layout.direction == DirectionalModalHorizontal {
+	case DirectionalModalHorizontal:
 
 		// Create the form for the buttons
 		form := NewForm().
@@ -201,7 +202,7 @@ func (layout *choiceModalLayout) createButtonGrid(buttonLabels []string, buttonD
 		height = 1
 
 		// Vertical buttons that may come with descriptions
-	} else if layout.direction == DirectionalModalVertical {
+	case DirectionalModalVertical:
 
 		formsFlex := tview.NewFlex().
 			SetDirection(tview.FlexRow)

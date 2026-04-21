@@ -35,7 +35,6 @@ func AssignMaxFeeAndLimit(gasInfo rocketpool.GasInfo, rp *rpsvc.Client, headless
 
 func (g *Gas) Assign(rp *rpsvc.Client) {
 	rp.AssignGasSettings(g.maxFeeGwei, g.maxPriorityFeeGwei, g.gasLimit)
-	return
 }
 
 // GetMaxGasCostEth returns the maximum possible gas cost in ETH for the given gas info,

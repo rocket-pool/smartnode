@@ -360,7 +360,7 @@ func (r *treeGeneratorImpl_v11) calculateRplRewards() error {
 					rewardsForNetwork = ssz_types.NewNetworkReward(rewardsForNode.Network)
 					r.networkRewards[rewardsForNode.Network] = rewardsForNetwork
 				}
-				rewardsForNetwork.CollateralRpl.Int.Add(rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
+				rewardsForNetwork.CollateralRpl.Add(rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 			}
 		}
 
@@ -374,7 +374,7 @@ func (r *treeGeneratorImpl_v11) calculateRplRewards() error {
 		if delta.Cmp(r.epsilon) == 1 {
 			return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
 		}
-		r.rewardsFile.TotalRewards.TotalCollateralRpl.Int.Set(totalCalculatedNodeRewards)
+		r.rewardsFile.TotalRewards.TotalCollateralRpl.Set(totalCalculatedNodeRewards)
 		r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 		pDaoRewards.Sub(pendingRewards, totalCalculatedNodeRewards)
 	} else {
@@ -463,7 +463,7 @@ func (r *treeGeneratorImpl_v11) calculateRplRewards() error {
 	if delta.Cmp(r.epsilon) == 1 {
 		return fmt.Errorf("error calculating ODao RPL: total was %s, but expected %s; error was too large", totalCalculatedOdaoRewards.String(), totalODaoRewards.String())
 	}
-	r.rewardsFile.TotalRewards.TotalOracleDaoRpl.Int.Set(totalCalculatedOdaoRewards)
+	r.rewardsFile.TotalRewards.TotalOracleDaoRpl.Set(totalCalculatedOdaoRewards)
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get actual protocol DAO rewards

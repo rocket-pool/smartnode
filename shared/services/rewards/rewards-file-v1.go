@@ -176,7 +176,7 @@ func (f *RewardsFile_v1) GetRewardsFileVersion() uint64 {
 
 // Get the rewards file index
 func (f *RewardsFile_v1) GetIndex() uint64 {
-	return f.RewardsFileHeader.Index
+	return f.Index
 }
 
 // Get the TotalNodeWeight (only added in v3)
@@ -186,22 +186,22 @@ func (f *RewardsFile_v1) GetTotalNodeWeight() *big.Int {
 
 // Get the merkle root
 func (f *RewardsFile_v1) GetMerkleRoot() string {
-	return f.RewardsFileHeader.MerkleRoot
+	return f.MerkleRoot
 }
 
 // Get network rewards for a specific network
 func (f *RewardsFile_v1) GetNetworkRewards(network uint64) *NetworkRewardsInfo {
-	return f.RewardsFileHeader.NetworkRewards[network]
+	return f.NetworkRewards[network]
 }
 
 // Get the number of intervals that have passed
 func (f *RewardsFile_v1) GetIntervalsPassed() uint64 {
-	return f.RewardsFileHeader.IntervalsPassed
+	return f.IntervalsPassed
 }
 
 // Get the total RPL sent to the pDAO
 func (f *RewardsFile_v1) GetTotalProtocolDaoRpl() *big.Int {
-	return &f.RewardsFileHeader.TotalRewards.ProtocolDaoRpl.Int
+	return &f.TotalRewards.ProtocolDaoRpl.Int
 }
 
 // Get the total Eth sent to the pDAO
@@ -211,57 +211,57 @@ func (f *RewardsFile_v1) GetTotalProtocolDaoEth() *big.Int {
 
 // Get the total RPL sent to the pDAO
 func (f *RewardsFile_v1) GetTotalOracleDaoRpl() *big.Int {
-	return &f.RewardsFileHeader.TotalRewards.TotalOracleDaoRpl.Int
+	return &f.TotalRewards.TotalOracleDaoRpl.Int
 }
 
 // Get the total Eth sent to pool stakers from the SP
 func (f *RewardsFile_v1) GetTotalPoolStakerSmoothingPoolEth() *big.Int {
-	return &f.RewardsFileHeader.TotalRewards.PoolStakerSmoothingPoolEth.Int
+	return &f.TotalRewards.PoolStakerSmoothingPoolEth.Int
 }
 
 // Get the total SP balance
 func (f *RewardsFile_v1) GetTotalSmoothingPoolBalance() *big.Int {
-	return &f.RewardsFileHeader.TotalRewards.TotalSmoothingPoolEth.Int
+	return &f.TotalRewards.TotalSmoothingPoolEth.Int
 }
 
 // Get the total rpl sent to stakers
 func (f *RewardsFile_v1) GetTotalCollateralRpl() *big.Int {
-	return &f.RewardsFileHeader.TotalRewards.TotalCollateralRpl.Int
+	return &f.TotalRewards.TotalCollateralRpl.Int
 }
 
 // Get the total smoothing pool eth sent to node operators
 func (f *RewardsFile_v1) GetTotalNodeOperatorSmoothingPoolEth() *big.Int {
-	return &f.RewardsFileHeader.TotalRewards.NodeOperatorSmoothingPoolEth.Int
+	return &f.TotalRewards.NodeOperatorSmoothingPoolEth.Int
 }
 
 // Get The execution start block
 func (f *RewardsFile_v1) GetExecutionStartBlock() uint64 {
-	return f.RewardsFileHeader.ExecutionStartBlock
+	return f.ExecutionStartBlock
 }
 
 // Get The consensus start block
 func (f *RewardsFile_v1) GetConsensusStartBlock() uint64 {
-	return f.RewardsFileHeader.ConsensusStartBlock
+	return f.ConsensusStartBlock
 }
 
 // Get The execution end block
 func (f *RewardsFile_v1) GetExecutionEndBlock() uint64 {
-	return f.RewardsFileHeader.ExecutionEndBlock
+	return f.ExecutionEndBlock
 }
 
 // Get The consensus end block
 func (f *RewardsFile_v1) GetConsensusEndBlock() uint64 {
-	return f.RewardsFileHeader.ConsensusEndBlock
+	return f.ConsensusEndBlock
 }
 
 // Get the start time
 func (f *RewardsFile_v1) GetStartTime() time.Time {
-	return f.RewardsFileHeader.StartTime
+	return f.StartTime
 }
 
 // Get the end time
 func (f *RewardsFile_v1) GetEndTime() time.Time {
-	return f.RewardsFileHeader.EndTime
+	return f.EndTime
 }
 
 // Get all of the node addresses with rewards in this file

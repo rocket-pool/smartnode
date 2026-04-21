@@ -265,22 +265,22 @@ func (mp *megapoolV1) GetValidatorInfoAndPubkey(validatorId uint32, opts *bind.C
 	// validatorInfo.ValidatorInfo.PubKey = make([]byte, len(src.PubKey))
 	// copy(validatorInfo.ValidatorInfo.PubKey[:], src.PubKey)
 	validator.Pubkey = iface[1].([]byte)
-	validator.ValidatorInfo.LastAssignmentTime = src.LastAssignmentTime
-	validator.ValidatorInfo.LastRequestedValue = src.LastRequestedValue
-	validator.ValidatorInfo.LastRequestedBond = src.LastRequestedBond
-	validator.ValidatorInfo.DepositValue = src.DepositValue
+	validator.LastAssignmentTime = src.LastAssignmentTime
+	validator.LastRequestedValue = src.LastRequestedValue
+	validator.LastRequestedBond = src.LastRequestedBond
+	validator.DepositValue = src.DepositValue
 
-	validator.ValidatorInfo.Staked = src.Staked
-	validator.ValidatorInfo.Exited = src.Exited
-	validator.ValidatorInfo.InQueue = src.InQueue
-	validator.ValidatorInfo.InPrestake = src.InPrestake
-	validator.ValidatorInfo.ExpressUsed = src.ExpressUsed
-	validator.ValidatorInfo.Dissolved = src.Dissolved
-	validator.ValidatorInfo.Exiting = src.Exiting
-	validator.ValidatorInfo.Locked = src.Locked
+	validator.Staked = src.Staked
+	validator.Exited = src.Exited
+	validator.InQueue = src.InQueue
+	validator.InPrestake = src.InPrestake
+	validator.ExpressUsed = src.ExpressUsed
+	validator.Dissolved = src.Dissolved
+	validator.Exiting = src.Exiting
+	validator.Locked = src.Locked
 
-	validator.ValidatorInfo.ExitBalance = src.ExitBalance
-	validator.ValidatorInfo.LockedTime = src.LockedTime
+	validator.ExitBalance = src.ExitBalance
+	validator.LockedTime = src.LockedTime
 	return *validator, nil
 }
 

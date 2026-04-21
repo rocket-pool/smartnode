@@ -55,8 +55,7 @@ func (f *SSZFile_v1) MarshalJSON() ([]byte, error) {
 		nr.MerkleProof = proof
 	}
 
-	var alias sszfile_v1_alias
-	alias = sszfile_v1_alias(*f)
+	alias := sszfile_v1_alias(*f)
 	return json.Marshal(&alias)
 }
 
@@ -99,8 +98,7 @@ func (f *SSZFile_v2) MarshalJSON() ([]byte, error) {
 		nr.MerkleProof = proof
 	}
 
-	var alias sszfile_v2_alias
-	alias = sszfile_v2_alias(*f)
+	alias := sszfile_v2_alias(*f)
 	return json.Marshal(&alias)
 }
 
