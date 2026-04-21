@@ -191,7 +191,7 @@ docker-prune:
 golangci_lint_version = v2.11
 docker_lint_cmd = docker run -e XDG_CACHE_HOME=/go/.cache -e GOMODCACHE=/go/.cache/pkg/mod -e GOCACHE=/go/.cache/go-build -e GOLANGCI_LINT_CACHE=/go/.cache/golangci-lint \
 	--user $(shell id -u):$(shell id -g) --rm -v ~/.cache:/go/.cache -v .:/smartnode --workdir /smartnode/ golangci/golangci-lint:${golangci_lint_version}-alpine golangci-lint
-local_lint_cmd = GOTOOLCHAIN=go1.26.0 go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${golangci_lint_version}
+local_lint_cmd = GOTOOLCHAIN=go1.26.2 go run github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${golangci_lint_version}
 .PHONY: lint
 lint:
 ifdef NO_DOCKER
