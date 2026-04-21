@@ -76,7 +76,7 @@ func notifyValidatorExit(validatorId uint64, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to notify about the validator id %d exit?", validatorId)) {
+	if prompt.Declined(yes, "Are you sure you want to notify about the validator id %d exit?", validatorId) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

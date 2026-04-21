@@ -113,7 +113,7 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 	response.MinipoolAddress = minipoolAddress
 
 	// Update response
-	response.CanDeposit = !(response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
+	response.CanDeposit = !response.InsufficientRplStake && !response.InvalidAmount && !response.DepositDisabled
 	if !response.CanDeposit {
 		return &response, nil
 	}

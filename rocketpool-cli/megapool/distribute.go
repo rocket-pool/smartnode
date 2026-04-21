@@ -86,7 +86,7 @@ func distribute(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to distribute your megapool rewards?")) {
+	if prompt.Declined(yes, "Are you sure you want to distribute your megapool rewards?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

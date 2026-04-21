@@ -101,7 +101,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
+		if prompt.Declined(yes, "Do you want to let the new RPL contract interact with your legacy RPL?") {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -145,7 +145,7 @@ func nodeSwapRpl(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
+	if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

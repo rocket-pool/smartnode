@@ -76,7 +76,7 @@ func canProposeInvite(c *cli.Command, memberAddress common.Address, memberId, me
 	}
 
 	// Update & return response
-	response.CanPropose = !(response.ProposalCooldownActive || response.MemberAlreadyExists)
+	response.CanPropose = !response.ProposalCooldownActive && !response.MemberAlreadyExists
 	return &response, nil
 
 }

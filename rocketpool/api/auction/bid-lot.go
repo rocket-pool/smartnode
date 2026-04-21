@@ -93,7 +93,7 @@ func canBidOnLot(c *cli.Command, lotIndex uint64, amountWei *big.Int) (*api.CanB
 	}
 
 	// Update & return response
-	response.CanBid = !(response.DoesNotExist || response.BiddingEnded || response.RPLExhausted || response.BidOnLotDisabled)
+	response.CanBid = !response.DoesNotExist && !response.BiddingEnded && !response.RPLExhausted && !response.BidOnLotDisabled
 	return &response, nil
 
 }

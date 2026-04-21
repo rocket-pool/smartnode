@@ -109,7 +109,7 @@ func refundMinipools(minipool string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to refund %d minipools?", len(selectedMinipools))) {
+	if prompt.Declined(yes, "Are you sure you want to refund %d minipools?", len(selectedMinipools)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

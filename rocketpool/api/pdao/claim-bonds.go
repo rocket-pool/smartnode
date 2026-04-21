@@ -77,7 +77,7 @@ func canClaimBonds(c *cli.Command, proposalId uint64, indices []uint64) (*api.PD
 	}
 
 	// Verify
-	response.CanClaim = !(response.DoesNotExist || response.InvalidState)
+	response.CanClaim = !response.DoesNotExist && !response.InvalidState
 	if !response.CanClaim {
 		return &response, nil
 	}

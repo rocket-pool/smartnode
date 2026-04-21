@@ -88,7 +88,7 @@ func canProposeLeave(c *cli.Command) (*api.CanProposeTNDAOLeaveResponse, error) 
 	}
 
 	// Update & return response
-	response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientMembers)
+	response.CanPropose = !response.ProposalCooldownActive && !response.InsufficientMembers
 	return &response, nil
 
 }

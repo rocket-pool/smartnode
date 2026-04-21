@@ -112,7 +112,7 @@ func canJoin(c *cli.Command) (*api.CanJoinTNDAOResponse, error) {
 	response.InsufficientRplBalance = (nodeRplBalance.Cmp(rplBondAmount) < 0)
 
 	// Update & return response
-	response.CanJoin = !(response.ProposalExpired || response.AlreadyMember || response.InsufficientRplBalance)
+	response.CanJoin = !response.ProposalExpired && !response.AlreadyMember && !response.InsufficientRplBalance
 	return &response, nil
 
 }
