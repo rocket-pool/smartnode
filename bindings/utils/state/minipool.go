@@ -244,7 +244,7 @@ func (details *NativeMinipoolDetails) GetMinipoolBondAndNodeFee(blockTime time.T
 	previousBond := details.LastBondReductionPrevValue
 	previousFee := details.LastBondReductionPrevNodeFee
 
-	var reductionTimeBig *big.Int = details.LastBondReductionTime
+	reductionTimeBig := details.LastBondReductionTime
 	if reductionTimeBig.Cmp(common.Big0) == 0 {
 		// Never reduced
 		return currentBond, currentFee

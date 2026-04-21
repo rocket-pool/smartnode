@@ -26,7 +26,6 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -215,7 +214,7 @@ func ConvertToFixedSize(proofBytes [][]byte) [][32]byte {
 	return proofWithFixedSize
 }
 
-func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey rptypes.ValidatorPubkey, withdrawalCredentials common.Hash, signature rptypes.ValidatorSignature) error {
+func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey types.ValidatorPubkey, withdrawalCredentials common.Hash, signature types.ValidatorSignature) error {
 
 	// Get the deposit domain based on the eth2 config
 	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
