@@ -184,7 +184,6 @@ func promptTimezone() string {
 	// Prompt for country
 	country := ""
 	for {
-		time.Now().Zone()
 		timezone = ""
 		country = prompt.Prompt("Please enter a country / continent from the list above:", "^.+$", "Please enter a country / continent from the list above:")
 
@@ -239,7 +238,6 @@ func promptTimezone() string {
 	// Prompt for region
 	region := ""
 	for {
-		time.Now().Zone()
 		timezone = ""
 		region = prompt.Prompt("Please enter a region from the list above:", "^.+$", "Please enter a region from the list above:")
 
