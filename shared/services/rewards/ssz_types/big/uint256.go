@@ -10,8 +10,8 @@ import (
 	"github.com/holiman/uint256"
 )
 
-var Overflow = errors.New("uint256 overflow")
-var Negative = errors.New("uint256 can't be negative before serializing")
+var ErrOverflow = errors.New("uint256 overflow")
+var ErrNegative = errors.New("uint256 can't be negative before serializing")
 
 // Wraps big.Int but will be checked for sign/overflow when serializing SSZ
 type Uint256 struct {
@@ -29,12 +29,12 @@ func (u *Uint256) SizeSSZ() (size int) {
 func (u *Uint256) ToUint256() (*uint256.Int, error) {
 	// Check sign
 	if u.Sign() < 0 {
-		return nil, Negative
+		return nil, ErrNegative
 	}
 
 	s, overflow := uint256.FromBig(u.Int)
 	if overflow {
-		return nil, Overflow
+		return nil, ErrOverflow
 	}
 	return s, nil
 }
