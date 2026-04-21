@@ -328,6 +328,12 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 			})
 		}
 
+		// Warn if IPv6 is enabled but no public IPv6 address is available
+		if md.Config.IsIPv6Enabled() && md.Config.GetExternalIpv6() == "" {
+			color.YellowPrintln("Warning: IPv6 is enabled but no public IPv6 address was detected. Your node will not be reachable by IPv6 peers.")
+			fmt.Println()
+		}
+
 		// Query for service start if this is old and there are containers to change
 		if len(md.ContainersToRestart) > 0 {
 			fmt.Println("The following containers must be restarted for the changes to take effect:")
@@ -518,6 +524,12 @@ func startService(params startServiceParams) error {
 
 	if isNew {
 		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smart Node before running it.")
+	}
+
+	// Warn if IPv6 is enabled but no public IPv6 address is available
+	if cfg.IsIPv6Enabled() && cfg.GetExternalIpv6() == "" {
+		color.YellowPrintln("Warning: IPv6 is enabled but no public IPv6 address was detected. Your node will not be reachable by IPv6 peers.")
+		fmt.Println()
 	}
 
 	// Check if this is a new install
