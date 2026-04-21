@@ -106,7 +106,7 @@ func nodeWithdrawRpl(amount string, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6))) {
+		if prompt.Declined(yes, "Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(status.UnstakingRPL), 6)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -209,7 +209,7 @@ func nodeWithdrawRpl(amount string, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Are you sure you want to unstake %.6f RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
+		if prompt.Declined(yes, "Are you sure you want to unstake %.6f RPL?", math.RoundDown(eth.WeiToEth(amountWei), 6)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -305,7 +305,7 @@ func nodeWithdrawRpl(amount string, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Are you sure you want to unstake %.6f legacy RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
+		if prompt.Declined(yes, "Are you sure you want to unstake %.6f legacy RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6)) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -416,7 +416,7 @@ func nodeWithdrawRpl(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
+	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f staked RPL? This may decrease your node's RPL rewards.", math.RoundDown(eth.WeiToEth(amountWei), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

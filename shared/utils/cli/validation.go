@@ -49,7 +49,7 @@ func ValidateBigInt(name, value string) (*big.Int, error) {
 // Validate a boolean value
 func ValidateBool(name, value string) (bool, error) {
 	val := strings.ToLower(value)
-	if !(val == "true" || val == "yes" || val == "false" || val == "no") {
+	if val != "true" && val != "yes" && val != "false" && val != "no" {
 		return false, fmt.Errorf("Invalid %s '%s' - valid values are 'true', 'yes', 'false' and 'no'", name, value)
 	}
 	if val == "true" || val == "yes" {
@@ -170,7 +170,7 @@ func ValidateTokenType(name, value string) (string, error) {
 
 	// Not a token address, check against the well-known names
 	val := strings.ToLower(value)
-	if !(val == "eth" || val == "rpl" || val == "fsrpl" || val == "reth") {
+	if val != "eth" && val != "rpl" && val != "fsrpl" && val != "reth" {
 		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'ETH', 'RPL', 'fsRPL', and 'rETH'", name, value)
 	}
 	return val, nil
@@ -179,7 +179,7 @@ func ValidateTokenType(name, value string) (string, error) {
 // Validate a proposal type
 func ValidateProposalType(name, value string) (string, error) {
 	val := strings.ToLower(value)
-	if !(val == "pending" || val == "active" || val == "succeeded" || val == "executed" || val == "cancelled" || val == "defeated" || val == "expired" || val == "all") {
+	if val != "pending" && val != "active" && val != "succeeded" && val != "executed" && val != "cancelled" && val != "defeated" && val != "expired" && val != "all" {
 		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', 'expired', and 'all'", name, value)
 	}
 	return val, nil
@@ -270,7 +270,7 @@ func ValidatePositiveEthAmount(name, value string) (float64, error) {
 // Validate a burnable token type
 func ValidateBurnableTokenType(name, value string) (string, error) {
 	val := strings.ToLower(value)
-	if !(val == "reth") {
+	if val != "reth" {
 		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'rETH'", name, value)
 	}
 	return val, nil
@@ -411,7 +411,7 @@ func ValidateFloat(rawEnabled bool, name string, value string, isFraction bool, 
 	fmt.Println()
 	fmt.Printf("\t[%s]\n", trueVal.String())
 	fmt.Println()
-	if !(yes || prompt.Confirm("Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?")) {
+	if prompt.Declined(yes, "Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?") {
 		value = prompt.Prompt("Please enter the wei amount:", "^[0-9]+$", "Invalid amount")
 		val, err := ValidatePositiveWeiAmount(name, value)
 		if err != nil {

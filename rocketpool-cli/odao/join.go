@@ -71,7 +71,7 @@ func join(yes bool, swap bool) error {
 				}
 
 				// Prompt for confirmation
-				if !(yes || prompt.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
+				if prompt.Declined(yes, "Do you want to let the new RPL contract interact with your legacy RPL?") {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -115,7 +115,7 @@ func join(yes bool, swap bool) error {
 			}
 
 			// Prompt for confirmation
-			if !(yes || prompt.Confirm("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))) {
+			if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -171,7 +171,7 @@ func join(yes bool, swap bool) error {
 	rp.PrintMultiTxWarning()
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.")) {
+	if prompt.Declined(yes, "Are you sure you want to join the oracle DAO? Your RPL bond will be locked until you leave.") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

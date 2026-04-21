@@ -144,7 +144,7 @@ func voteOnProposal(proposal string, supportFlag string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID)) {
+	if prompt.Declined(yes, "Are you sure you want to vote %s proposal %d? Your vote cannot be changed later.", supportLabel, selectedProposal.ID) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

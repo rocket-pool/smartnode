@@ -109,7 +109,7 @@ func setPrimaryWithdrawalAddress(withdrawalAddressOrENS string, yes, force bool)
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString)) {
+	if prompt.Declined(yes, "Are you sure you want to set your node's primary withdrawal address to %s?", withdrawalAddressString) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -169,7 +169,7 @@ func confirmPrimaryWithdrawalAddress(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to confirm your node's address as the new primary withdrawal address?")) {
+	if prompt.Declined(yes, "Are you sure you want to confirm your node's address as the new primary withdrawal address?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

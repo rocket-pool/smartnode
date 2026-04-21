@@ -41,7 +41,7 @@ func proposeSettingMembersQuorum(quorumPercent float64, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -93,7 +93,7 @@ func proposeSettingMembersRplBond(bondAmountEth float64, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -145,7 +145,7 @@ func proposeSettingMinipoolUnbondedMax(unbondedMinipoolMax uint64, yes bool) err
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -204,7 +204,7 @@ func proposeSettingProposalCooldown(proposalCooldownTimespan string, yes bool) e
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -263,7 +263,7 @@ func proposeSettingProposalVoteTimespan(proposalVoteTimespan string, yes bool) e
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -322,7 +322,7 @@ func proposeSettingProposalVoteDelayTimespan(proposalDelayTimespan string, yes b
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -381,7 +381,7 @@ func proposeSettingProposalExecuteTimespan(proposalExecuteTimespan string, yes b
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -440,7 +440,7 @@ func proposeSettingProposalActionTimespan(proposalActionTimespan string, yes boo
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -499,7 +499,7 @@ func proposeSettingScrubPeriod(scrubPeriod string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -558,7 +558,7 @@ func proposeSettingPromotionScrubPeriod(scrubPeriod string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -610,7 +610,7 @@ func proposeSettingScrubPenaltyEnabled(enabled bool, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -669,7 +669,7 @@ func proposeSettingBondReductionWindowStart(windowStart string, yes bool) error 
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -728,7 +728,7 @@ func proposeSettingBondReductionWindowLength(windowLength string, yes bool) erro
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

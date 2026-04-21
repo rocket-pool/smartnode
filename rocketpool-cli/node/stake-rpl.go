@@ -89,7 +89,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 				}
 
 				// Prompt for confirmation
-				if !(yes || prompt.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
+				if prompt.Declined(yes, "Do you want to let the new RPL contract interact with your legacy RPL?") {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -133,7 +133,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 			}
 
 			// Prompt for confirmation
-			if !(yes || prompt.Confirm("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))) {
+			if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -270,7 +270,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Do you want to let the staking contract interact with your RPL?")) {
+		if prompt.Declined(yes, "Do you want to let the staking contract interact with your RPL?") {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -315,9 +315,9 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to stake %.6f RPL? You may request to unstake your staked RPL at any time. The unstaked RPL will be withdrawable after an unstaking period of %s.",
+	if prompt.Declined(yes, "Are you sure you want to stake %.6f RPL? You may request to unstake your staked RPL at any time. The unstaked RPL will be withdrawable after an unstaking period of %s.",
 		math.RoundDown(eth.WeiToEth(amountWei), 6),
-		status.UnstakingPeriodDuration)) {
+		status.UnstakingPeriodDuration) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

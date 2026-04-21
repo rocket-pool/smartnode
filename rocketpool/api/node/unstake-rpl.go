@@ -98,7 +98,7 @@ func canNodeUnstakeRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUnstakeR
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 
 	// Update & return response
-	response.CanUnstake = !(response.InsufficientBalance || response.HasDifferentRPLWithdrawalAddress)
+	response.CanUnstake = !response.InsufficientBalance && !response.HasDifferentRPLWithdrawalAddress
 	return &response, nil
 
 }

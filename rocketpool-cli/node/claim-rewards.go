@@ -228,7 +228,7 @@ func nodeClaimRewards(restakeAmountFlag string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to claim your rewards?")) {
+	if prompt.Declined(yes, "Are you sure you want to claim your rewards?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

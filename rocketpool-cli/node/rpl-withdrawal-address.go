@@ -124,7 +124,7 @@ func setRPLWithdrawalAddress(withdrawalAddressOrENS string, yes, force bool) err
 	if canResponse.RPLStake.Cmp(common.Big0) == 1 {
 		color.YellowPrintf("NOTE: You currently have %.6f RPL staked. Withdrawing it will *no longer* send it to your primary withdrawal address. It will be sent to the new RPL withdrawal address instead. Please verify you have control over that address before confirming this!\n", eth.WeiToEth(canResponse.RPLStake))
 	}
-	if !(yes || prompt.Confirm("Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString)) {
+	if prompt.Declined(yes, "Are you sure you want to set your node's RPL withdrawal address to %s?", withdrawalAddressString) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -190,7 +190,7 @@ func confirmRPLWithdrawalAddress(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to confirm your node's address as the new RPL withdrawal address?")) {
+	if prompt.Declined(yes, "Are you sure you want to confirm your node's address as the new RPL withdrawal address?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

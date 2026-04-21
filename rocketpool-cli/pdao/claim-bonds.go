@@ -109,7 +109,7 @@ func claimBonds(proposal string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to claim bonds and rewards from %d proposals?", len(selectedClaims))) {
+	if prompt.Declined(yes, "Are you sure you want to claim bonds and rewards from %d proposals?", len(selectedClaims)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

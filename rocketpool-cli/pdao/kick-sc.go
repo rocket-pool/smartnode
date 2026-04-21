@@ -116,7 +116,7 @@ func proposeSecurityCouncilKick(addressesFlag string, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex())) {
+		if prompt.Declined(yes, "Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex()) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -163,7 +163,7 @@ func proposeSecurityCouncilKick(addressesFlag string, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Are you sure you want to propose kicking these members from the security council?\n%s", kickString)) {
+		if prompt.Declined(yes, "Are you sure you want to propose kicking these members from the security council?\n%s", kickString) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

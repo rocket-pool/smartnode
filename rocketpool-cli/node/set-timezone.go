@@ -36,7 +36,7 @@ func setTimezoneLocation(timezoneLocation string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to set your timezone?")) {
+	if prompt.Declined(yes, "Are you sure you want to set your timezone?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

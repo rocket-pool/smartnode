@@ -96,7 +96,7 @@ func cancelProposal(proposal string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to cancel proposal %d?", selectedProposal.ID)) {
+	if prompt.Declined(yes, "Are you sure you want to cancel proposal %d?", selectedProposal.ID) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

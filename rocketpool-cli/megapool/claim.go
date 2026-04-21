@@ -36,7 +36,7 @@ func claim(yes bool) error {
 		return nil
 	}
 
-	if !(yes || prompt.Confirm("You are about to claim your node refund. Would you like to continue?")) {
+	if prompt.Declined(yes, "You are about to claim your node refund. Would you like to continue?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -58,7 +58,7 @@ func claim(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to claim your megapool refund?")) {
+	if prompt.Declined(yes, "Are you sure you want to claim your megapool refund?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -98,7 +98,7 @@ func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNode
 	}
 
 	// Update & return response
-	response.CanBurn = !(response.InsufficientBalance || response.InsufficientCollateral)
+	response.CanBurn = !response.InsufficientBalance && !response.InsufficientCollateral
 	return &response, nil
 
 }

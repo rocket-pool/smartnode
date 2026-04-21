@@ -69,7 +69,7 @@ func stake(validatorId uint64, yes bool) error {
 	defer rp.Close()
 
 	// Warning reg the time necessary to build the proof
-	if !(yes || prompt.Confirm("The stake operation will construct a beacon state proof that the deposit for validator ID %d was correct. This will take several seconds to finish.\nDo you want to continue?", validatorId)) {
+	if prompt.Declined(yes, "The stake operation will construct a beacon state proof that the deposit for validator ID %d was correct. This will take several seconds to finish.\nDo you want to continue?", validatorId) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -96,7 +96,7 @@ func stake(validatorId uint64, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to stake validator id %d", validatorId)) {
+	if prompt.Declined(yes, "Are you sure you want to stake validator id %d", validatorId) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

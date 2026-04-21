@@ -37,7 +37,7 @@ func endMasquerade(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to end masquerade mode?")) {
+	if !yes && !prompt.Confirm("Are you sure you want to end masquerade mode?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

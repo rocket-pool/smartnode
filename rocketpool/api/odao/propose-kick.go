@@ -87,7 +87,7 @@ func canProposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei 
 	}
 
 	// Update & return response
-	response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientRplBond)
+	response.CanPropose = !response.ProposalCooldownActive && !response.InsufficientRplBond
 	return &response, nil
 
 }

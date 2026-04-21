@@ -107,7 +107,7 @@ func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUn
 	response.BelowMaxRPLStake = (remainingLegacyRplStake.Cmp(rplStakeThreshold) < 0)
 
 	// Update & return response
-	response.CanUnstake = !(response.InsufficientBalance || response.HasDifferentRPLWithdrawalAddress)
+	response.CanUnstake = !response.InsufficientBalance && !response.HasDifferentRPLWithdrawalAddress
 	return &response, nil
 
 }
