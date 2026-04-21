@@ -221,8 +221,7 @@ func (bc *MockBeaconClient) GetCommitteesForEpoch(_epoch *uint64) (beacon.Commit
 	out.epoch = epoch(*_epoch)
 
 	// First find validators that must be assigned to specific slots
-	var missedDutiesValidators map[slot][]validatorIndex
-	missedDutiesValidators = bc.missedDuties[out.epoch]
+	missedDutiesValidators := bc.missedDuties[out.epoch]
 
 	// Keep track of validators that have been assigned to a slot
 	assignedValidators := make(map[string]interface{})
@@ -311,9 +310,8 @@ func (bc *MockBeaconClient) GetAttestations(_slot string) ([]beacon.AttestationI
 	// and the set of validators whose mod 32 is the same as the slot, so we have to be careful
 	// to not double count them.
 	slotMod32 := s % 32
-	var bitlistLength uint
 	// Add the number of validators that missed duties for the slot
-	bitlistLength = bc.missedDuties.getCount(s)
+	bitlistLength := bc.missedDuties.getCount(s)
 
 	for index := range bc.validatorIndices {
 		// Don't count validators that are have misses anywhere in this epoch
