@@ -169,10 +169,13 @@ docker-prune:
 	docker buildx rm smartnode-builder
 	rm ${BUILD_DIR}/docker-buildx-builder
 
+docker_lint_cmd = docker run -e XDG_CACHE_HOME=/go/.cache -e GOMODCACHE=/go/.cache/pkg/mod -e GOCACHE=/go/.cache/go-build -e GOLANGCI_LINT_CACHE=/go/.cache/golangci-lint \
+	--user $(shell id -u):$(shell id -g) --rm -v ~/.cache:/go/.cache -v .:/smartnode --workdir /smartnode/ golangci/golangci-lint:v2.4-alpine golangci-lint
 .PHONY: lint
 lint:
 ifndef NO_DOCKER
-	docker run -e GOMODCACHE=/go/.cache/pkg/mod -e GOCACHE=/go/.cache/go-build -e GOLANGCI_LINT_CACHE=/go/.cache/golangci-lint --user $(shell id -u):$(shell id -g) --rm -v ~/.cache:/go/.cache -v .:/smartnode --workdir /smartnode/ golangci/golangci-lint:v2.4-alpine golangci-lint fmt --diff
+	$(docker_lint_cmd) run
+	$(docker_lint_cmd) fmt --diff
 endif
 
 .PHONY: test
