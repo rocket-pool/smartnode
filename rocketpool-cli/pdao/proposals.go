@@ -196,8 +196,8 @@ func getTimeDifference(t time.Time) string {
 	timeDiff := currentTime.Sub(t)
 
 	// Round timeDiff to the nearest whole second
-	roundedSeconds := time.Duration(int64(timeDiff.Seconds() + 0.5))
-	timeDiff = time.Duration(roundedSeconds) * time.Second
+	roundedDuration := time.Duration(int64(timeDiff.Seconds() + 0.5))
+	timeDiff = time.Duration(roundedDuration) * time.Second
 
 	// Absolute value
 	absTimeDiff := time.Duration(math.Abs(float64(timeDiff)))
