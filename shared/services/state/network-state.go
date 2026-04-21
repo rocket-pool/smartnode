@@ -109,58 +109,58 @@ type NetworkState struct {
 	ProtocolDaoProposalDetails []protocol.ProtocolDaoProposalDetails `json:"protocol_dao_proposal_details,omitempty"`
 }
 
-func (ns NetworkState) MarshalJSON() ([]byte, error) {
+func (s NetworkState) MarshalJSON() ([]byte, error) {
 	// No changes needed
 	type Alias NetworkState
-	a := (*Alias)(&ns)
+	a := (*Alias)(&s)
 	return json.Marshal(a)
 }
 
-func (ns *NetworkState) UnmarshalJSON(data []byte) error {
+func (s *NetworkState) UnmarshalJSON(data []byte) error {
 	type Alias NetworkState
 	var a Alias
 	err := json.Unmarshal(data, &a)
 	if err != nil {
 		return err
 	}
-	*ns = NetworkState(a)
+	*s = NetworkState(a)
 	// Rebuild the node details by address index
-	ns.NodeDetailsByAddress = make(map[common.Address]*rpstate.NativeNodeDetails)
-	for i, details := range ns.NodeDetails {
-		if _, ok := ns.NodeDetailsByAddress[details.NodeAddress]; ok {
+	s.NodeDetailsByAddress = make(map[common.Address]*rpstate.NativeNodeDetails)
+	for i, details := range s.NodeDetails {
+		if _, ok := s.NodeDetailsByAddress[details.NodeAddress]; ok {
 			return fmt.Errorf("duplicate node details for address %s", details.NodeAddress.Hex())
 		}
-		// N.B. &details is not the same as &ns.NodeDetails[i]
+		// N.B. &details is not the same as &s.NodeDetails[i]
 		// &details is the address of the current element in the loop
-		// &ns.NodeDetails[i] is the address of the struct in the slice
-		ns.NodeDetailsByAddress[details.NodeAddress] = &ns.NodeDetails[i]
+		// &s.NodeDetails[i] is the address of the struct in the slice
+		s.NodeDetailsByAddress[details.NodeAddress] = &s.NodeDetails[i]
 	}
 
 	// Rebuild the minipool details by address index
-	ns.MinipoolDetailsByAddress = make(map[common.Address]*rpstate.NativeMinipoolDetails)
-	for i, details := range ns.MinipoolDetails {
-		if _, ok := ns.MinipoolDetailsByAddress[details.MinipoolAddress]; ok {
+	s.MinipoolDetailsByAddress = make(map[common.Address]*rpstate.NativeMinipoolDetails)
+	for i, details := range s.MinipoolDetails {
+		if _, ok := s.MinipoolDetailsByAddress[details.MinipoolAddress]; ok {
 			return fmt.Errorf("duplicate minipool details for address %s", details.MinipoolAddress.Hex())
 		}
 
-		// N.B. &details is not the same as &ns.MinipoolDetails[i]
+		// N.B. &details is not the same as &s.MinipoolDetails[i]
 		// &details is the address of the current element in the loop
-		// &ns.MinipoolDetails[i] is the address of the struct in the slice
-		ns.MinipoolDetailsByAddress[details.MinipoolAddress] = &ns.MinipoolDetails[i]
+		// &s.MinipoolDetails[i] is the address of the struct in the slice
+		s.MinipoolDetailsByAddress[details.MinipoolAddress] = &s.MinipoolDetails[i]
 	}
 
 	// Rebuild the minipool details by node index
-	ns.MinipoolDetailsByNode = make(map[common.Address][]*rpstate.NativeMinipoolDetails)
-	for i, details := range ns.MinipoolDetails {
-		// See comments in above loops as to why we're using &ns.MinipoolDetails[i]
-		currentDetails := &ns.MinipoolDetails[i]
-		nodeList, exists := ns.MinipoolDetailsByNode[details.NodeAddress]
+	s.MinipoolDetailsByNode = make(map[common.Address][]*rpstate.NativeMinipoolDetails)
+	for i, details := range s.MinipoolDetails {
+		// See comments in above loops as to why we're using &s.MinipoolDetails[i]
+		currentDetails := &s.MinipoolDetails[i]
+		nodeList, exists := s.MinipoolDetailsByNode[details.NodeAddress]
 		if !exists {
-			ns.MinipoolDetailsByNode[details.NodeAddress] = []*rpstate.NativeMinipoolDetails{currentDetails}
+			s.MinipoolDetailsByNode[details.NodeAddress] = []*rpstate.NativeMinipoolDetails{currentDetails}
 			continue
 		}
 		// See comments in other loops
-		ns.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
+		s.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
 	}
 
 	return nil

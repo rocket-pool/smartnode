@@ -79,15 +79,15 @@ func timeMin(a, b time.Time) time.Time {
 }
 
 // Returns whether the node is eligible for bonuses, and the start and end times of its eligibility
-func (nnd *NativeNodeDetails) IsEligibleForBonuses(eligibleStart time.Time, eligibleEnd time.Time) (bool, time.Time, time.Time) {
+func (node *NativeNodeDetails) IsEligibleForBonuses(eligibleStart time.Time, eligibleEnd time.Time) (bool, time.Time, time.Time) {
 	// Nodes are not eligible for bonuses if they never opted into the smoothing pool
-	registeredTime := time.Unix(nnd.SmoothingPoolRegistrationChanged.Int64(), 0)
+	registeredTime := time.Unix(node.SmoothingPoolRegistrationChanged.Int64(), 0)
 	if registeredTime.Unix() == 0 {
 		return false, time.Time{}, time.Time{}
 	}
 
 	// Nodes are eligible for bonuses if they were in the Smoothing Pool for a portion of the interval
-	if nnd.SmoothingPoolRegistrationState {
+	if node.SmoothingPoolRegistrationState {
 		return registeredTime.Before(eligibleEnd), timeMax(registeredTime, eligibleStart), eligibleEnd
 	}
 
