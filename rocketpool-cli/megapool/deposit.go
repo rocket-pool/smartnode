@@ -132,10 +132,10 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 	fmt.Printf("The total bond requirement is %.2f ETH.\n", totalBondRequirementEth)
 	fmt.Println()
 
-	if !(yes || prompt.Confirm("%s%s",
+	if prompt.Declined(yes, "%s%s",
 		color.YellowSprintf("NOTE: You are about to create %d new megapool validator(s), requiring a total of: %.2f ETH).\n", count, totalBondRequirementEth),
 		"Would you like to continue?",
-	)) {
+	) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -232,7 +232,7 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 			fmt.Println()
 		}
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Would you like to continue?")) {
+		if prompt.Declined(yes, "Would you like to continue?") {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -268,11 +268,11 @@ func nodeMegapoolDeposit(count uint64, expressTickets int64, yes bool) error {
 
 	// Prompt for confirmation
 
-	if !(yes || prompt.Confirm("You are about to deposit %.6f ETH to create %d new megapool validator(s).\n%s",
+	if prompt.Declined(yes, "You are about to deposit %.6f ETH to create %d new megapool validator(s).\n%s",
 		math.RoundDown(eth.WeiToEth(totalBondRequirement), 6),
 		count,
 		color.Yellow("ARE YOU SURE YOU WANT TO DO THIS?"),
-	)) {
+	) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

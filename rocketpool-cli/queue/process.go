@@ -54,7 +54,7 @@ func processQueue(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Do you accept this gas fee?")) {
+	if prompt.Declined(yes, "Do you accept this gas fee?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

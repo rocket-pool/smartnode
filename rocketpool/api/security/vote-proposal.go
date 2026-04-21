@@ -105,7 +105,7 @@ func canVoteOnProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanVoteO
 	response.JoinedAfterCreated = (memberJoinedTime >= proposalCreatedTime)
 
 	// Update & return response
-	response.CanVote = !(response.DoesNotExist || response.InvalidState || response.JoinedAfterCreated || response.AlreadyVoted)
+	response.CanVote = !response.DoesNotExist && !response.InvalidState && !response.JoinedAfterCreated && !response.AlreadyVoted
 	return &response, nil
 
 }

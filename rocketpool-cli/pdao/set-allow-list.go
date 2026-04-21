@@ -62,7 +62,7 @@ func setAllowListedControllers(addressListStr string, yes bool) error {
 	}
 	fmt.Println()
 
-	if !(yes || prompt.Confirm("Are you sure you want to propose a new list of allowlisted controllers?")) {
+	if prompt.Declined(yes, "Are you sure you want to propose a new list of allowlisted controllers?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

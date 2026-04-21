@@ -114,7 +114,7 @@ func recoverRplFromLot(lot string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to recover %d lots?", len(selectedLots))) {
+	if prompt.Declined(yes, "Are you sure you want to recover %d lots?", len(selectedLots)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

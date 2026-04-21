@@ -69,7 +69,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common
 	response.IsRplLockingDisallowed = !isRplLockingAllowed
 
 	// return if proposing is not possible
-	response.CanPropose = !(response.MemberAlreadyExists || response.IsRplLockingDisallowed)
+	response.CanPropose = !response.MemberAlreadyExists && !response.IsRplLockingDisallowed
 	if !response.CanPropose {
 		return &response, nil
 	}

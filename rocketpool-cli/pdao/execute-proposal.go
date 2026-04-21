@@ -120,7 +120,7 @@ func executeProposal(proposal string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to execute %d proposals?", len(selectedProposals))) {
+	if prompt.Declined(yes, "Are you sure you want to execute %d proposals?", len(selectedProposals)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

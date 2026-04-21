@@ -80,7 +80,7 @@ func leave(refundAddress string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to leave the oracle DAO and refund your RPL bond to %s? This action cannot be undone!", bondRefundAddress.Hex())) {
+	if prompt.Declined(yes, "Are you sure you want to leave the oracle DAO and refund your RPL bond to %s? This action cannot be undone!", bondRefundAddress.Hex()) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -79,7 +79,7 @@ func canNodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdra
 	response.HasDifferentWithdrawalAddress = (nodeAccount.Address != nodeDetails.PrimaryWithdrawalAddress)
 
 	// Update & return response
-	response.CanWithdraw = !(response.InsufficientBalance || response.HasDifferentWithdrawalAddress)
+	response.CanWithdraw = !response.InsufficientBalance && !response.HasDifferentWithdrawalAddress
 	return &response, nil
 
 }

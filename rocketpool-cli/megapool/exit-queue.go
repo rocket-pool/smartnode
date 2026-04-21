@@ -167,7 +167,7 @@ func exitQueue(validatorId string, yes bool) error {
 	}
 
 	// Ask for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to exit %d validator(s) from the megapool queue?", len(canExitResponses))) {
+	if prompt.Declined(yes, "Are you sure you want to exit %d validator(s) from the megapool queue?", len(canExitResponses)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

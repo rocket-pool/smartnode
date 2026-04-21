@@ -72,7 +72,7 @@ func canCreateLot(c *cli.Command) (*api.CanCreateLotResponse, error) {
 	}
 
 	// Update & return response
-	response.CanCreate = !(response.InsufficientBalance || response.CreateLotDisabled)
+	response.CanCreate = !response.InsufficientBalance && !response.CreateLotDisabled
 	return &response, nil
 
 }

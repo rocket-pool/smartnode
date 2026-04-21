@@ -49,7 +49,7 @@ func canCancelProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanCance
 	wg.Go(func() error {
 		proposalState, err := dao.GetProposalState(rp, proposalId, nil)
 		if err == nil {
-			response.InvalidState = !(proposalState == rptypes.Pending || proposalState == rptypes.Active)
+			response.InvalidState = proposalState != rptypes.Pending && proposalState != rptypes.Active
 		}
 		return err
 	})
@@ -86,7 +86,7 @@ func canCancelProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanCance
 	}
 
 	// Update & return response
-	response.CanCancel = !(response.DoesNotExist || response.InvalidState || response.InvalidProposer)
+	response.CanCancel = !response.DoesNotExist && !response.InvalidState && !response.InvalidProposer
 	return &response, nil
 
 }

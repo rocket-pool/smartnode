@@ -76,7 +76,7 @@ func canExecuteUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.CanExecut
 	}
 
 	// Update & return response
-	response.CanExecute = !(response.DoesNotExist || response.InvalidState || response.InvalidTrustedNode)
+	response.CanExecute = !response.DoesNotExist && !response.InvalidState && !response.InvalidTrustedNode
 
 	if response.CanExecute {
 		opts, err := w.GetNodeAccountTransactor()

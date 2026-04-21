@@ -50,7 +50,7 @@ func pdaoSetVotingDelegate(nameOrAddress string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want %s to represent your node in Rocket Pool on-chain governance proposals?", addressString)) {
+	if prompt.Declined(yes, "Are you sure you want %s to represent your node in Rocket Pool on-chain governance proposals?", addressString) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

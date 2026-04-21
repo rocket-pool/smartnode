@@ -73,7 +73,7 @@ func reduceBond(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to reduce %.6f of the megapool bond?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
+	if prompt.Declined(yes, "Are you sure you want to reduce %.6f of the megapool bond?", math.RoundDown(eth.WeiToEth(amountWei), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -113,7 +113,7 @@ func stakeMinipools(minipool string, yes bool) error {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to stake %d minipools?", len(selectedMinipools))) {
+	if prompt.Declined(yes, "Are you sure you want to stake %d minipools?", len(selectedMinipools)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

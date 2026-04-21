@@ -88,7 +88,7 @@ func canDefeatProposal(c *cli.Command, proposalId uint64, index uint64) (*api.PD
 	// Validate
 	defeatStart := creationTime.Add(challengeWindow)
 	response.StillInChallengeWindow = (time.Until(defeatStart) > 0)
-	response.CanDefeat = !(response.DoesNotExist || response.AlreadyDefeated || response.InvalidChallengeState || response.StillInChallengeWindow)
+	response.CanDefeat = !response.DoesNotExist && !response.AlreadyDefeated && !response.InvalidChallengeState && !response.StillInChallengeWindow
 	if !response.CanDefeat {
 		return &response, nil
 	}

@@ -25,8 +25,8 @@ func initWallet(password string, confirmMnemonicFlag bool, derivationPath string
 	}
 
 	// Prompt for user confirmation before printing sensitive information
-	if !(secureSession ||
-		promptcli.ConfirmSecureSession("Creating a wallet will print sensitive information to your screen.")) {
+	if !secureSession &&
+		!promptcli.ConfirmSecureSession("Creating a wallet will print sensitive information to your screen.") {
 		return nil
 	}
 

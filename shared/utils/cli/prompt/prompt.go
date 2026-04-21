@@ -39,6 +39,12 @@ func Confirm(fmtStr string, args ...any) bool {
 	return (strings.ToLower(response[:1]) == "y")
 }
 
+// Declined returns true if the user did not pre-approve with the `yes` flag
+// and declined the interactive confirmation prompt.
+func Declined(yes bool, fmtStr string, args ...any) bool {
+	return !yes && !Confirm(fmtStr, args...)
+}
+
 func confirmColor(colorFunc func(string) string, fmtStr string, args ...any) bool {
 	initialPrompt := fmt.Sprintf(fmtStr, args...)
 	response := Prompt(fmt.Sprintf("%s [y/n]", colorFunc(initialPrompt)), "(?i)^(y|yes|n|no)$", "Please answer 'y' or 'n'")

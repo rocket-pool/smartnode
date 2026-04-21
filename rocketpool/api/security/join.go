@@ -74,7 +74,7 @@ func canJoin(c *cli.Command) (*api.SecurityCanJoinResponse, error) {
 	}
 
 	// Update & return response
-	response.CanJoin = !(response.ProposalExpired || response.AlreadyMember)
+	response.CanJoin = !response.ProposalExpired && !response.AlreadyMember
 	return &response, nil
 
 }

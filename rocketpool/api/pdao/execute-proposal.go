@@ -73,7 +73,7 @@ func canExecuteProposal(c *cli.Command, proposalId uint64) (*api.CanExecutePDAOP
 	}
 
 	// Update & return response
-	response.CanExecute = !(response.DoesNotExist || response.InvalidState)
+	response.CanExecute = !response.DoesNotExist && !response.InvalidState
 	return &response, nil
 
 }

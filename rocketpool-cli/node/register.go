@@ -46,7 +46,7 @@ func registerNode(timezoneLocation string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to register this node?")) {
+	if prompt.Declined(yes, "Are you sure you want to register this node?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
