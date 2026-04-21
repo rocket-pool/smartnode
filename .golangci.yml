@@ -1,6 +1,57 @@
 version: "2"
 linters:
   default: none 
+  enable:
+    - staticcheck
+  settings:
+    staticcheck:
+      checks:
+        - all
+        # A `-` preceding a linter name disables it.
+        # Disable ST1000 to allow packages without comments
+        - -ST1000
+        # Disable ST1005 to allow error strings to start with uppercase letters
+        - -ST1005
+        # Disable ST1003 to allow underscores in variable names
+        - -ST1003
+        # Disable these 3 to allow comments on exported things to have the improper form
+        - -ST1020
+        - -ST1021
+        - -ST1022
+
+        # The following linters are disabled not because they SHOULD BE, but because
+        # we haven't fix the issues they raise yet.
+        # An enterprising contributor should feel free to delete these one by one and
+        # fix the issues they flag.
+        - -ST1011
+        - -ST1012
+        - -ST1016
+        - -ST1017
+        - -ST1019
+        - -ST1023
+        - -SA1019
+        - -SA4006
+        - -SA4017
+        - -SA4031
+        - -SA6002
+        - -QF1001
+        - -QF1003
+        - -QF1006
+        - -QF1007
+        - -QF1008
+        - -QF1009
+        - -QF1011
+        - -S1002
+        - -S1004
+        - -S1005
+        - -S1007
+        - -S1008
+        - -S1017
+        - -S1021
+        - -S1023
+        - -S1024
+        - -S1025
+        - -S1039
 formatters:
   enable:
     - goimports
