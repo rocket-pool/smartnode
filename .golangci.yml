@@ -50,8 +50,6 @@ linters:
         - -S1021
         - -S1023
         - -S1024
-        - -S1025
-        - -S1039
 formatters:
   enable:
     - goimports
