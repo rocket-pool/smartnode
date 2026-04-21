@@ -72,9 +72,10 @@ func executeUpgrade(proposal string, yes bool) error {
 	executableProposals := []upgrades.UpgradeProposalDetails{}
 	pendingProposals := []upgrades.UpgradeProposalDetails{}
 	for _, proposal := range upgradeProposals.Proposals {
-		if proposal.State == types.UpgradeProposalState_Succeeded {
+		switch proposal.State {
+		case types.UpgradeProposalState_Succeeded:
 			executableProposals = append(executableProposals, proposal)
-		} else if proposal.State == types.UpgradeProposalState_Pending {
+		case types.UpgradeProposalState_Pending:
 			pendingProposals = append(pendingProposals, proposal)
 		}
 	}

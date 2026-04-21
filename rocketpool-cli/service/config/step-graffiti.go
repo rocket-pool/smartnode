@@ -40,9 +40,10 @@ func createGraffitiStep(wiz *wizard, currentStep int, totalSteps int) *textBoxWi
 		supportsCheckpointSync := true
 		supportsDoppelganger := true
 		for _, param := range unsupportedParams {
-			if param == config.CheckpointSyncUrlID {
+			switch param {
+			case config.CheckpointSyncUrlID:
 				supportsCheckpointSync = false
-			} else if param == config.DoppelgangerDetectionID {
+			case config.DoppelgangerDetectionID:
 				supportsDoppelganger = false
 			}
 		}

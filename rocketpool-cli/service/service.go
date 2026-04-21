@@ -640,11 +640,12 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 	}
 
 	// Compare the clients and warn if necessary
-	if currentValidatorName == pendingValidatorName {
+	switch currentValidatorName {
+	case pendingValidatorName:
 		fmt.Printf("Validator client [%s] was previously used - no slashing prevention delay necessary.\n", currentValidatorName)
-	} else if currentValidatorName == "" {
+	case "":
 		fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
-	} else {
+	default:
 
 		consensusClient, _ := cfg.GetSelectedConsensusClient()
 		// Warn about Lodestar
