@@ -177,7 +177,6 @@ func promptTimezone() string {
 	// Prompt for country
 	country := ""
 	for {
-		timezone = ""
 		country = prompt.Prompt("Please enter a country / continent from the list above:", "^.+$", "Please enter a country / continent from the list above:")
 
 		exists := slices.Contains(countryNames, country)
@@ -231,7 +230,6 @@ func promptTimezone() string {
 	// Prompt for region
 	region := ""
 	for {
-		timezone = ""
 		region = prompt.Prompt("Please enter a region from the list above:", "^.+$", "Please enter a region from the list above:")
 
 		exists := slices.Contains(regionNames, region)
