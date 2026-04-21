@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
-	"time"
 
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
@@ -115,7 +114,6 @@ func selectRandomEC(goodOptions []cfgtypes.ParameterOption, wiz *wizard, current
 	}
 
 	// Select a random client
-	rand.Seed(time.Now().UnixNano())
 	selectedClient := filteredClients[rand.Intn(len(filteredClients))]
 	wiz.md.Config.ExecutionClient.Value = selectedClient
 
