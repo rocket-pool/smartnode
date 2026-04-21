@@ -49,7 +49,6 @@ func (h *MockHistory) GetNodeAddress() common.Address {
 }
 
 var oneEth = big.NewInt(1000000000000000000)
-var thirtyTwoEth = big.NewInt(0).Mul(oneEth, big.NewInt(32))
 
 type MockMinipool struct {
 	Address            common.Address

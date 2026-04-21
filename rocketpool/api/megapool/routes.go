@@ -381,20 +381,6 @@ func parseUint32(r *http.Request, name string) (uint32, error) {
 	return uint32(v), err
 }
 
-func parseAddress(r *http.Request, name string) (common.Address, error) {
-	raw := r.URL.Query().Get(name)
-	if raw == "" {
-		raw = r.FormValue(name)
-	}
-	if raw == "" {
-		return common.Address{}, &apiutils.BadRequestError{Err: fmt.Errorf("missing required parameter '%s'", name)}
-	}
-	if !common.IsHexAddress(raw) {
-		return common.Address{}, &apiutils.BadRequestError{Err: fmt.Errorf("invalid %s: %s", name, raw)}
-	}
-	return common.HexToAddress(raw), nil
-}
-
 func parseBool(r *http.Request, name string) (bool, error) {
 	raw := r.URL.Query().Get(name)
 	if raw == "" {

@@ -13,13 +13,6 @@ import (
 // Constants
 const reviewNativePageID string = "review-native-settings"
 
-// The changed settings review page
-type ReviewNativePage struct {
-	md              *mainDisplay
-	changedSettings map[string][]cfgtypes.ChangedSetting
-	page            *page
-}
-
 // Create a page to review any changes
 func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 

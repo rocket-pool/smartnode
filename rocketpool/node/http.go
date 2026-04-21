@@ -13,11 +13,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
-type httpServer struct {
-	server *http.Server
-	mux    *http.ServeMux
-}
-
 // statusRecorder wraps http.ResponseWriter to capture the written status code.
 type statusRecorder struct {
 	http.ResponseWriter
