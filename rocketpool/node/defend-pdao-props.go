@@ -98,6 +98,9 @@ func newDefendPdaoProps(c *cli.Command, logger log.ColorLogger) (*defendPdaoProp
 
 	// Make a proposal manager
 	propMgr, err := proposals.NewProposalManager(&logger, cfg, rp, bc)
+	if err != nil {
+		return nil, fmt.Errorf("error creating proposal manager: %w", err)
+	}
 
 	// Return task
 	return &defendPdaoProps{

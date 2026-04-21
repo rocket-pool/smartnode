@@ -107,6 +107,9 @@ func newVerifyPdaoProps(c *cli.Command, logger log.ColorLogger) (*verifyPdaoProp
 
 	// Make a proposal manager
 	propMgr, err := proposals.NewProposalManager(&logger, cfg, rp, bc)
+	if err != nil {
+		return nil, fmt.Errorf("error creating proposal manager: %w", err)
+	}
 
 	// Return task
 	return &verifyPdaoProps{
