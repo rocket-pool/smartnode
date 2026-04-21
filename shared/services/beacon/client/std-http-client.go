@@ -821,22 +821,6 @@ func (c *StandardHttpClient) getFinalityCheckpoints(stateId string) (FinalityChe
 	return finalityCheckpoints, nil
 }
 
-// Get fork
-func (c *StandardHttpClient) getFork(stateId string) (ForkResponse, error) {
-	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestForkPath, stateId))
-	if err != nil {
-		return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
-	}
-	if status != http.StatusOK {
-		return ForkResponse{}, fmt.Errorf("Could not get fork data: HTTP status %d; response body: '%s'", status, string(responseBody))
-	}
-	var fork ForkResponse
-	if err := json.Unmarshal(responseBody, &fork); err != nil {
-		return ForkResponse{}, fmt.Errorf("Could not decode fork data: %w", err)
-	}
-	return fork, nil
-}
-
 // Get validator balances
 func (c *StandardHttpClient) getValidatorBalances(stateId string, indices []string) (ValidatorBalancesResponse, error) {
 	var query string

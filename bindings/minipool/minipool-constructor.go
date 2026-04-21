@@ -3,7 +3,6 @@ package minipool
 import (
 	"fmt"
 	"strings"
-	"sync"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -76,13 +75,4 @@ func createMinipoolContractFromAbi(rp *rocketpool.RocketPool, address common.Add
 		ABI:      abi,
 		Client:   rp.Client,
 	}, nil
-}
-
-// Get a minipool contract
-var rocketMinipoolLock sync.Mutex
-
-func getMinipoolContract(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts) (*rocketpool.Contract, error) {
-	rocketMinipoolLock.Lock()
-	defer rocketMinipoolLock.Unlock()
-	return rp.MakeContract("rocketMinipool", minipoolAddress, opts)
 }

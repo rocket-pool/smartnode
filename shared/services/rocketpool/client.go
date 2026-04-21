@@ -50,9 +50,6 @@ const (
 	defaultFeeRecipientFile       string = "fr-default.tmpl"
 	defaultNativeFeeRecipientFile string = "fr-default-env.tmpl"
 
-	templateSuffix    string = ".tmpl"
-	composeFileSuffix string = ".yml"
-
 	nethermindAdminUrl          string = "http://127.0.0.1:7434"
 	pruneStarterContainerSuffix string = "_nm_prune_starter"
 

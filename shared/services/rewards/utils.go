@@ -19,14 +19,10 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
-
-// Simple container for the zero value so it doesn't have to be recreated over and over
-var zero *big.Int
 
 // Gets the intervals the node can claim and the intervals that have already been claimed
 func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (unclaimed []uint64, claimed []uint64, err error) {
@@ -349,35 +345,4 @@ func decompressFile(compressedBytes []byte) ([]byte, error) {
 	}
 
 	return decompressedBytes, nil
-}
-
-// Get the bond and node fee of a minipool for the specified time
-func getMinipoolBondAndNodeFee(details *rpstate.NativeMinipoolDetails, blockTime time.Time) (*big.Int, *big.Int) {
-	currentBond := details.NodeDepositBalance
-	currentFee := details.NodeFee
-	previousBond := details.LastBondReductionPrevValue
-	previousFee := details.LastBondReductionPrevNodeFee
-
-	// Init the zero wrapper
-	if zero == nil {
-		zero = big.NewInt(0)
-	}
-
-	reductionTimeBig := details.LastBondReductionTime
-	if reductionTimeBig.Cmp(zero) == 0 {
-		// Never reduced
-		return currentBond, currentFee
-	} else {
-		reductionTime := time.Unix(reductionTimeBig.Int64(), 0)
-		if reductionTime.Sub(blockTime) > 0 {
-			// This block occurred before the reduction
-			if previousFee.Cmp(zero) == 0 {
-				// Catch for minipools that were created before this call existed
-				return previousBond, currentFee
-			}
-			return previousBond, previousFee
-		}
-	}
-
-	return currentBond, currentFee
 }

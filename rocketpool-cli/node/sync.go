@@ -3,16 +3,12 @@ package node
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
-
-// Settings
-var ethClientRecentBlockThreshold, _ = time.ParseDuration("5m")
 
 func printClientStatus(status *api.ClientStatus, name string) {
 

@@ -10,10 +10,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func initWallet(c *cli.Command) (*api.InitWalletResponse, error) {
-	return initWalletWithPath(c, c.String("derivation-path"))
-}
-
 func initWalletWithPath(c *cli.Command, derivationPath string) (*api.InitWalletResponse, error) {
 
 	// Get services
