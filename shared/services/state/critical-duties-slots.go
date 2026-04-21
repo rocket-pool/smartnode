@@ -20,10 +20,7 @@ func NewCriticalDutiesEpochs(epochs uint64, state *NetworkState) *CriticalDuties
 		CriticalDuties: make(map[uint64][]string),
 	}
 
-	endSlot := state.BeaconSlotNumber
-	endEpoch := state.BeaconConfig.SlotToEpoch(endSlot)
-	// Coerce endSlot to the last slot of the epoch
-	endSlot = state.BeaconConfig.LastSlotOfEpoch(endEpoch)
+	endEpoch := state.BeaconConfig.SlotToEpoch(state.BeaconSlotNumber)
 	// Get the start epoch. Since the end epoch is the last inclusive epoch, we need to subtract 1 from the start epoch
 	startEpoch := endEpoch - epochs - 1
 
