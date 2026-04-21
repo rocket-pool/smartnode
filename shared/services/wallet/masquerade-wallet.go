@@ -96,7 +96,6 @@ func (w *masqueradeWallet) GetChainID() *big.Int {
 
 // Add a keystore to the wallet
 func (w *masqueradeWallet) AddKeystore(name string, ks keystore.Keystore) {
-	return
 }
 
 // Always return true as we're masquerading
