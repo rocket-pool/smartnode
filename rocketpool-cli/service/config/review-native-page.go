@@ -37,7 +37,7 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, ne
 	if len(errors) > 0 {
 		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
 		for _, err := range errors {
-			builder.WriteString(fmt.Sprintf("%s\n\n", err))
+			builder.WriteString(err + "\n\n")
 		}
 	} else {
 		// Get the map of changed settings by category
@@ -45,9 +45,9 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, ne
 
 		for categoryName, changedSettingsList := range changedSettings {
 			if len(changedSettingsList) > 0 {
-				builder.WriteString(fmt.Sprintf("%s\n", categoryName))
+				builder.WriteString(categoryName + "\n")
 				for _, pair := range changedSettingsList {
-					builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
+					builder.WriteString("\t" + pair.Name + ": " + pair.OldValue + " => " + pair.NewValue + "\n")
 				}
 				builder.WriteString("\n")
 			}
