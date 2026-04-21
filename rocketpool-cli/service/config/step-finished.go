@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rivo/tview"
-	"github.com/rocket-pool/smartnode/shared/types/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -34,7 +33,7 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 	}
 
 	back := func() {
-		if wiz.md.Config.Smartnode.Network.Value == config.Network_Testnet || wiz.md.Config.Smartnode.Network.Value == config.Network_Devnet {
+		if wiz.md.Config.Smartnode.Network.Value == cfgtypes.Network_Testnet || wiz.md.Config.Smartnode.Network.Value == cfgtypes.Network_Devnet {
 			// Skip MEV for testnet/devnet
 			wiz.metricsModal.show()
 		} else {

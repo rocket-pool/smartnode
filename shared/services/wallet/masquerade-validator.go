@@ -2,7 +2,6 @@ package wallet
 
 import (
 	"github.com/rocket-pool/smartnode/bindings/types"
-	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
@@ -19,7 +18,7 @@ func (w *masqueradeWallet) GetValidatorKeyAt(index uint) (*eth2types.BLSPrivateK
 }
 
 // Get a validator key by public key
-func (w *masqueradeWallet) GetValidatorKeyByPubkey(pubkey rptypes.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
+func (w *masqueradeWallet) GetValidatorKeyByPubkey(pubkey types.ValidatorPubkey) (*eth2types.BLSPrivateKey, error) {
 	return nil, ErrIsMasquerading
 
 }
@@ -66,13 +65,13 @@ func (w *masqueradeWallet) SaveValidatorKey(key ValidatorKey) error {
 }
 
 // Recover a validator key by public key
-func (w *masqueradeWallet) RecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
+func (w *masqueradeWallet) RecoverValidatorKey(pubkey types.ValidatorPubkey, startIndex uint) (uint, error) {
 	return 0, ErrIsMasquerading
 
 }
 
 // Test recovery of a validator key by public key
-func (w *masqueradeWallet) TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error) {
+func (w *masqueradeWallet) TestRecoverValidatorKey(pubkey types.ValidatorPubkey, startIndex uint) (uint, error) {
 	return 0, ErrIsMasquerading
 
 }
