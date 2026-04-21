@@ -18,16 +18,17 @@ type Committee struct {
 // substantially.
 var validatorSlicePool sync.Pool = sync.Pool{
 	New: func() any {
-		return make([]string, 0, 1024)
+		s := make([]string, 0, 1024)
+		return &s
 	},
 }
 
 func (c *Committee) UnmarshalJSON(body []byte) error {
 	var committee map[string]*json.RawMessage
 
-	pooledSlice := validatorSlicePool.Get().([]string)
+	pooledSlice := validatorSlicePool.Get().(*[]string)
 
-	c.Validators = pooledSlice
+	c.Validators = *pooledSlice
 
 	// Partially parse the json
 	if err := json.Unmarshal(body, &committee); err != nil {
@@ -70,10 +71,14 @@ func (c *CommitteesResponse) ValidatorCount(idx int) int {
 }
 
 func (c *CommitteesResponse) Release() {
-	for _, committee := range c.Data {
-		// Reset the slice length to 0 (capacity stays the same)
-		committee.Validators = committee.Validators[:0]
-		// Return the slice for reuse
-		validatorSlicePool.Put(committee.Validators)
+	for i := range c.Data {
+		// Reset the slice length to 0 (capacity stays the same) and detach it
+		// from c.Data so callers cannot accidentally read from a buffer that
+		// has been returned to the pool.
+		validators := c.Data[i].Validators[:0]
+		c.Data[i].Validators = nil
+		// Return the slice for reuse via a pointer to avoid the sync.Pool
+		// allocation that would otherwise occur boxing the slice header.
+		validatorSlicePool.Put(&validators)
 	}
 }
