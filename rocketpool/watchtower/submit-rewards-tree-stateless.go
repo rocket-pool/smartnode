@@ -395,10 +395,8 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	}
 
 	var gasInfo rocketpool.GasInfo
-	var submission rewards.RewardSubmission
 
-	// Create the submission
-	submission = rewards.RewardSubmission{
+	submission := rewards.RewardSubmission{
 		RewardIndex:      index,
 		ExecutionBlock:   big.NewInt(0).SetUint64(executionBlock),
 		ConsensusBlock:   big.NewInt(0).SetUint64(consensusBlock),
