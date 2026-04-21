@@ -28,10 +28,7 @@ func (p *page) getHeader() string {
 
 	header := p.title
 	parent := p.parent
-	for {
-		if parent == nil {
-			break
-		}
+	for parent != nil {
 		header = parent.title + " > " + header
 		parent = parent.parent
 	}
