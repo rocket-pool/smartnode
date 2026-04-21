@@ -502,7 +502,7 @@ func (c *Client) PrintServiceStatus(composeFiles []string) error {
 func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNames ...string) error {
 	sanitizedStrings := make([]string, len(serviceNames))
 	for i, serviceName := range serviceNames {
-		sanitizedStrings[i] = fmt.Sprintf("%s", shellescape.Quote(serviceName))
+		sanitizedStrings[i] = shellescape.Quote(serviceName)
 	}
 	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
 	if err != nil {
