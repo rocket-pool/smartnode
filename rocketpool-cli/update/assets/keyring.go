@@ -5,7 +5,7 @@ import (
 	_ "embed"
 	"io"
 
-	"golang.org/x/crypto/openpgp"
+	"github.com/ProtonMail/go-crypto/openpgp"
 )
 
 //go:embed fornax-signing-key.asc
@@ -21,5 +21,5 @@ func init() {
 }
 
 func VerifySignedBinary(binary io.Reader, signature io.Reader) (signer *openpgp.Entity, err error) {
-	return openpgp.CheckDetachedSignature(entityList, binary, signature)
+	return openpgp.CheckDetachedSignature(entityList, binary, signature, nil)
 }
