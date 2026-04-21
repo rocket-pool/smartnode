@@ -1365,6 +1365,20 @@ func (cfg *RocketPoolConfig) GetExternalIp() string {
 	return ip.String()
 }
 
+// Used by text/template to format eth2.yml when IPv6 is enabled.
+// Lodestar requires --enr.ip6 and Teku requires --p2p-advertised-ips to advertise IPv6 in their ENR.
+// Returns the external IPv6 address, or empty string if unavailable.
+func (cfg *RocketPoolConfig) GetExternalIpv6() string {
+	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
+	ip6Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
+	ip6Consensus.UseIPProtocol(6)
+	ip, err := ip6Consensus.ExternalIP()
+	if err != nil || ip.To4() != nil {
+		return ""
+	}
+	return ip.String()
+}
+
 // Gets the tag of the cc container
 // Used by text/template to format eth2.yml
 func (cfg *RocketPoolConfig) GetBeaconContainerTag() (string, error) {
