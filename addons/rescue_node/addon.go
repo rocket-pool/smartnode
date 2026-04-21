@@ -27,7 +27,7 @@ type credentialDetails struct {
 
 func (c *credentialDetails) GetTimeLeft() time.Duration {
 
-	if c.solo == true {
+	if c.solo {
 		return time.Until(c.issued.Add(soloAuthValidity))
 	}
 
