@@ -455,9 +455,10 @@ func (f *Form) Draw(screen tcell.Screen) {
 
 	// Where do we place them?
 	if !f.horizontal && x+buttonsWidth < rightLimit {
-		if f.buttonsAlign == tview.AlignRight {
+		switch f.buttonsAlign {
+		case tview.AlignRight:
 			x = rightLimit - buttonsWidth
-		} else if f.buttonsAlign == tview.AlignCenter {
+		case tview.AlignCenter:
 			x = (x + rightLimit - buttonsWidth) / 2
 		}
 

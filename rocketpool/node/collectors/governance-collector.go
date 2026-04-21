@@ -83,13 +83,14 @@ func (collector *GovernanceCollector) Collect(channel chan<- prometheus.Metric) 
 			return fmt.Errorf("error fetching onchain proposals: %w", err)
 		}
 		for _, proposal := range onchainProposals {
-			if proposal.State == types.ProtocolDaoProposalState_Pending {
+			switch proposal.State {
+			case types.ProtocolDaoProposalState_Pending:
 				onchainPending += 1
-			} else if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 {
+			case types.ProtocolDaoProposalState_ActivePhase1:
 				onchainPhase1 += 1
-			} else if proposal.State == types.ProtocolDaoProposalState_ActivePhase2 {
+			case types.ProtocolDaoProposalState_ActivePhase2:
 				onchainPhase2 += 1
-			} else {
+			default:
 				onchainClosed += 1
 			}
 		}

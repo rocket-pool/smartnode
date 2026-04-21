@@ -197,11 +197,12 @@ func getStatus() error {
 		// Onchain voting status
 		color.GreenPrintln("=== Onchain Voting ===")
 
-		if status.OnchainVotingDelegate == blankAddress {
+		switch status.OnchainVotingDelegate {
+		case blankAddress:
 			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals after it initializes voting.")
-		} else if status.OnchainVotingDelegate == status.AccountAddress {
+		case status.AccountAddress:
 			fmt.Println("The node doesn't have a delegate, which means it can vote directly on onchain proposals. You can have another node represent you by running `rocketpool p svd <address>`.")
-		} else {
+		default:
 			fmt.Println("The node has a voting delegate of", color.LightBlue(status.OnchainVotingDelegateFormatted), "which can represent it when voting on Rocket Pool onchain governance proposals.")
 		}
 		if status.IsRPLLockingAllowed {
