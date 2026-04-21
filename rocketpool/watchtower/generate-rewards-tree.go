@@ -158,7 +158,7 @@ func (t *generateRewardsTree) generateRewardsTree(index uint64) {
 		return
 	}
 
-	var stateManager *state.NetworkStateManager
+	var stateManager state.NetworkStateProvider
 
 	// Try getting the rETH address as a canary to see if the block is available
 	client := t.rp
