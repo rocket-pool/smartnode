@@ -341,11 +341,7 @@ func (n NodeRewards_v2) Less(i, j int) bool {
 	ia := n[i].Address
 	ja := n[j].Address
 
-	if bytes.Compare(ia[:], ja[:]) < 0 {
-		return true
-	}
-
-	return false
+	return bytes.Compare(ia[:], ja[:]) < 0
 }
 
 func (n NodeRewards_v2) Swap(i, j int) {
