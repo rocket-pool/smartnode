@@ -23,7 +23,7 @@ func setAllowListedControllers(addressListStr string, yes bool) error {
 
 	if addressListStr == "" {
 		// Ask the user how many addresses should be included in the list
-		numStr := prompt.Prompt(fmt.Sprintf("How many addresses do you want to propose as allowlisted controllers? Enter 0 to propose clearing the list"), "^\\d+$", "Invalid number.")
+		numStr := prompt.Prompt("How many addresses do you want to propose as allowlisted controllers? Enter 0 to propose clearing the list", "^\\d+$", "Invalid number.")
 		numAddressesUint, err := strconv.ParseUint(numStr, 0, 64)
 		if err != nil {
 			return fmt.Errorf("'%s' is not a valid number: %w.\n", numStr, err)
