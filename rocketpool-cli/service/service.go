@@ -672,7 +672,7 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 		if err != nil {
 			return fmt.Errorf("Error getting container [%s] status: %w", validatorDutyContainerName, err)
 		}
-		if validatorFinishTime == zeroTime || status == "running" {
+		if validatorFinishTime.Equal(zeroTime) || status == "running" {
 			color.YellowPrintln("Validator is currently running, stopping it...")
 			response, err := rp.StopContainer(validatorDutyContainerName)
 			validatorFinishTime = time.Now()
