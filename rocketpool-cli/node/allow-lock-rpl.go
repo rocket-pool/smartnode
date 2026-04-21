@@ -36,7 +36,7 @@ func setRPLLockingAllowed(yes, allowedToLock bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("%s", allowString)) {
+	if prompt.Declined(yes, "%s", allowString) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -106,7 +106,7 @@ func delegateUpgradeMinipools(minipool string, includeFinalized, yes bool) error
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to upgrade %d minipools?", len(selectedMinipools))) {
+	if prompt.Declined(yes, "Are you sure you want to upgrade %d minipools?", len(selectedMinipools)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

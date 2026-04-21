@@ -86,7 +86,7 @@ func canClaimFromLot(c *cli.Command, lotIndex uint64) (*api.CanClaimFromLotRespo
 	}
 
 	// Update & return response
-	response.CanClaim = !(response.DoesNotExist || response.NoBidFromAddress || response.NotCleared)
+	response.CanClaim = !response.DoesNotExist && !response.NoBidFromAddress && !response.NotCleared
 	return &response, nil
 
 }

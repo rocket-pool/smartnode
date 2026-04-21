@@ -62,7 +62,7 @@ func proposeRecurringSpend(rawEnabled bool, contractName string, recipientString
 		}
 	}
 	startTime := time.Unix(int64(startTimeUnix), 0)
-	if !(yes || prompt.Confirm("The provided timestamp corresponds to %s - is this correct?", startTime.UTC().String())) {
+	if prompt.Declined(yes, "The provided timestamp corresponds to %s - is this correct?", startTime.UTC().String()) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -114,7 +114,7 @@ func proposeRecurringSpend(rawEnabled bool, contractName string, recipientString
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to propose this recurring spend of the Protocol DAO treasury?")) {
+	if prompt.Declined(yes, "Are you sure you want to propose this recurring spend of the Protocol DAO treasury?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

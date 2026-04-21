@@ -78,7 +78,7 @@ func canRegisterNode(c *cli.Command, timezoneLocation string) (*api.CanRegisterN
 	}
 
 	// Update & return response
-	response.CanRegister = !(response.AlreadyRegistered || response.RegistrationDisabled)
+	response.CanRegister = !response.AlreadyRegistered && !response.RegistrationDisabled
 	return &response, nil
 
 }

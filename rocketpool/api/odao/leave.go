@@ -73,7 +73,7 @@ func canLeave(c *cli.Command) (*api.CanLeaveTNDAOResponse, error) {
 	}
 
 	// Update & return response
-	response.CanLeave = !(response.ProposalExpired || response.InsufficientMembers)
+	response.CanLeave = !response.ProposalExpired && !response.InsufficientMembers
 	return &response, nil
 
 }

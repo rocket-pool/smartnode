@@ -28,7 +28,7 @@ func masquerade(addressFlag string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to masquerade as %s?", color.LightBlue(address.Hex()))) {
+	if !yes && !prompt.Confirm("Are you sure you want to masquerade as %s?", color.LightBlue(address.Hex())) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

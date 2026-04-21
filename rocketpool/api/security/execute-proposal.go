@@ -74,7 +74,7 @@ func canExecuteProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanExec
 	}
 
 	// Update & return response
-	response.CanExecute = !(response.DoesNotExist || response.InvalidState)
+	response.CanExecute = !response.DoesNotExist && !response.InvalidState
 	return &response, nil
 
 }

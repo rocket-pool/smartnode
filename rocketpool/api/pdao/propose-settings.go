@@ -102,7 +102,7 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 	response.InsufficientRpl = (freeRpl.Cmp(proposalBond) < 0)
 
 	// return if proposing is not possible
-	response.CanPropose = !(response.InsufficientRpl || response.IsRplLockingDisallowed)
+	response.CanPropose = !response.InsufficientRpl && !response.IsRplLockingDisallowed
 	if !response.CanPropose {
 		return &response, nil
 	}

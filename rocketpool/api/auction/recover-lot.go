@@ -91,7 +91,7 @@ func canRecoverRplFromLot(c *cli.Command, lotIndex uint64) (*api.CanRecoverRPLFr
 	}
 
 	// Update & return response
-	response.CanRecover = !(response.DoesNotExist || response.BiddingNotEnded || response.NoUnclaimedRPL || response.RPLAlreadyRecovered)
+	response.CanRecover = !response.DoesNotExist && !response.BiddingNotEnded && !response.NoUnclaimedRPL && !response.RPLAlreadyRecovered
 	return &response, nil
 
 }

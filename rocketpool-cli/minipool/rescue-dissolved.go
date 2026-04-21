@@ -213,7 +213,7 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex())) {
+	if prompt.Declined(yes, "Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

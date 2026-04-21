@@ -186,7 +186,7 @@ func canNodeDeposits(c *cli.Command, count uint64, amountWei *big.Int, minNodeFe
 	}
 
 	// Update response && Break before the gas estimator if depositing won't work
-	response.CanDeposit = !(response.InsufficientBalance || response.InsufficientBalanceWithoutCredit || response.InvalidAmount || response.DepositDisabled || response.NodeHasDebt)
+	response.CanDeposit = !response.InsufficientBalance && !response.InsufficientBalanceWithoutCredit && !response.InvalidAmount && !response.DepositDisabled && !response.NodeHasDebt
 	if !response.CanDeposit {
 		return &response, nil
 	}

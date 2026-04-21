@@ -84,7 +84,7 @@ func canOverrideVote(c *cli.Command, proposalId uint64, voteDirection types.Vote
 
 	// Check data
 	response.InsufficientPower = (response.VotingPower.Cmp(common.Big0) == 0)
-	response.CanVote = !(response.DoesNotExist || response.InvalidState || response.InsufficientPower || response.AlreadyVoted)
+	response.CanVote = !response.DoesNotExist && !response.InvalidState && !response.InsufficientPower && !response.AlreadyVoted
 	if !response.CanVote {
 		return &response, nil
 	}

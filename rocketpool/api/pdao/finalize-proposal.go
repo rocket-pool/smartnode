@@ -66,7 +66,7 @@ func canFinalizeProposal(c *cli.Command, proposalId uint64) (*api.PDAOCanFinaliz
 	}
 
 	// Validate
-	response.CanFinalize = !(response.DoesNotExist || response.InvalidState || response.AlreadyFinalized)
+	response.CanFinalize = !response.DoesNotExist && !response.InvalidState && !response.AlreadyFinalized
 	if !response.CanFinalize {
 		return &response, nil
 	}

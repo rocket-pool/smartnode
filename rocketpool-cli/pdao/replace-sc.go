@@ -93,7 +93,7 @@ func proposeSecurityCouncilReplace(existingAddressString string, newID string, n
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex())) {
+	if prompt.Declined(yes, "Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex()) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

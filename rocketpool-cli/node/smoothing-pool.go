@@ -60,7 +60,7 @@ func joinSmoothingPool(yes bool) error {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to join the Smoothing Pool?")) {
+	if prompt.Declined(yes, "Are you sure you want to join the Smoothing Pool?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -129,7 +129,7 @@ func leaveSmoothingPool(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to leave the Smoothing Pool?")) {
+	if prompt.Declined(yes, "Are you sure you want to leave the Smoothing Pool?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

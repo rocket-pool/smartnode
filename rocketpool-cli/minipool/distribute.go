@@ -222,7 +222,7 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to distribute the ETH balance of %d minipools?", len(selectedMinipools))) {
+	if prompt.Declined(yes, "Are you sure you want to distribute the ETH balance of %d minipools?", len(selectedMinipools)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -86,7 +86,7 @@ func canSetRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address
 	response.RPLStake = rplStake
 	response.PrimaryAddressDiffers = (nodeAccount.Address != primaryWithdrawalAddress || isRPLWithdrawalAddressSet)
 	response.RPLAddressDiffers = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
-	response.CanSet = !(response.PrimaryAddressDiffers || response.RPLAddressDiffers)
+	response.CanSet = !response.PrimaryAddressDiffers && !response.RPLAddressDiffers
 	if !response.CanSet {
 		return &response, nil
 	}

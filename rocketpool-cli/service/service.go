@@ -53,12 +53,12 @@ func installService(yes, verbose, noDeps bool, path string) error {
 	dataPath := ""
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm(
+	if prompt.Declined(yes,
 		"%s",
 		fmt.Sprintf("The Rocket Pool %s service will be installed.\n\n", shared.RocketPoolVersion())+
 			color.Green("If you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.\n")+
 			"Are you sure you want to continue?",
-	)) {
+	) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -130,9 +130,9 @@ func printPatchNotes() {
 func installUpdateTracker(yes, verbose bool) error {
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm(
+	if prompt.Declined(yes,
 		"This will add the ability to display any available Operating System updates or new Rocket Pool versions on the metrics dashboard. "+
-			"Are you sure you want to install the update tracker?")) {
+			"Are you sure you want to install the update tracker?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -822,7 +822,7 @@ func pruneExecutionClient(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to prune your main execution client?")) {
+	if prompt.Declined(yes, "Are you sure you want to prune your main execution client?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1032,7 +1032,7 @@ func pauseService(yes bool, composeFiles []string) (bool, error) {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!")) {
+	if prompt.Declined(yes, "Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!") {
 		fmt.Println("Cancelled.")
 		return false, nil
 	}
@@ -1047,7 +1047,7 @@ func pauseService(yes bool, composeFiles []string) (bool, error) {
 func terminateService(yes bool, composeFiles []string, configPath string) error {
 
 	// Prompt for confirmation
-	if !(yes || prompt.ConfirmRed("WARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.")) {
+	if !yes && !prompt.ConfirmRed("WARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1264,7 +1264,7 @@ func resyncEth1(yes bool, composeFiles []string) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.ConfirmRed("Are you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!")) {
+	if !yes && !prompt.ConfirmRed("Are you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1391,7 +1391,7 @@ func resyncEth2(yes bool, composeFiles []string) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.ConfirmRed("Are you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!")) {
+	if !yes && !prompt.ConfirmRed("Are you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

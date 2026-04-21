@@ -55,7 +55,7 @@ func (w *masqueradeWallet) IsNodeMasquerading() bool {
 func (w *masqueradeWallet) GetAddress() (common.Address, error) {
 
 	// Return if wallet is uninitialized
-	if !(w.ws != nil && w.seed != nil && w.mk != nil) {
+	if w.ws == nil || w.seed == nil || w.mk == nil {
 		return common.Address{}, nil
 	}
 

@@ -123,7 +123,7 @@ func canNodeWithdrawRpl(c *cli.Command) (*api.CanNodeWithdrawRplResponse, error)
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 
 	// Update & return response
-	response.CanWithdraw = !(response.InsufficientBalance || response.UnstakingPeriodActive || response.HasDifferentRPLWithdrawalAddress)
+	response.CanWithdraw = !response.InsufficientBalance && !response.UnstakingPeriodActive && !response.HasDifferentRPLWithdrawalAddress
 	return &response, nil
 
 }
@@ -289,7 +289,7 @@ func canNodeWithdrawRplv1_3_1(c *cli.Command, amountWei *big.Int) (*api.CanNodeW
 	response.HasDifferentRPLWithdrawalAddress = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
 
 	// Update & return response
-	response.CanWithdraw = !(response.InsufficientBalance || response.MinipoolsUndercollateralized || response.WithdrawalDelayActive || response.HasDifferentRPLWithdrawalAddress || response.BelowMaxRPLStake)
+	response.CanWithdraw = !response.InsufficientBalance && !response.MinipoolsUndercollateralized && !response.WithdrawalDelayActive && !response.HasDifferentRPLWithdrawalAddress && !response.BelowMaxRPLStake
 	return &response, nil
 }
 
