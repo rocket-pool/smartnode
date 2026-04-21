@@ -24,7 +24,6 @@ linters:
         # An enterprising contributor should feel free to delete these one by one and
         # fix the issues they flag.
         - -ST1011
-        - -ST1012
         - -ST1016
         - -ST1017
         - -ST1019
