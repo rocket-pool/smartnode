@@ -1569,10 +1569,7 @@ func (cfg *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[string
 	}
 
 	// Check if the network has changed
-	changeNetworks := false
-	if oldConfig.Smartnode.Network.Value != cfg.Smartnode.Network.Value {
-		changeNetworks = true
-	}
+	changeNetworks := oldConfig.Smartnode.Network.Value != cfg.Smartnode.Network.Value
 
 	// Return everything
 	return changedSettings, totalAffectedContainers, changeNetworks
