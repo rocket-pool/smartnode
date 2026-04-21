@@ -23,7 +23,6 @@ linters:
         # we haven't fix the issues they raise yet.
         # An enterprising contributor should feel free to delete these one by one and
         # fix the issues they flag.
-        - -SA6002
         - -QF1001
         - -QF1003
         - -QF1006
