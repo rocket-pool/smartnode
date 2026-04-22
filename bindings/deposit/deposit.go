@@ -73,21 +73,21 @@ func Deposit(rp *rocketpool.RocketPool, opts *bind.TransactOpts) (common.Hash, e
 }
 
 // Estimate the gas of AssignDeposits
-func EstimateAssignDepositsGas(rp *rocketpool.RocketPool, max *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+func EstimateAssignDepositsGas(rp *rocketpool.RocketPool, m *big.Int, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
 		return rocketpool.GasInfo{}, err
 	}
-	return rocketDepositPool.GetTransactionGasInfo(opts, "assignDeposits", max)
+	return rocketDepositPool.GetTransactionGasInfo(opts, "assignDeposits", m)
 }
 
 // Assign deposits
-func AssignDeposits(rp *rocketpool.RocketPool, max *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
+func AssignDeposits(rp *rocketpool.RocketPool, m *big.Int, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketDepositPool, err := getRocketDepositPool(rp, nil)
 	if err != nil {
 		return common.Hash{}, err
 	}
-	tx, err := rocketDepositPool.Transact(opts, "assignDeposits", max)
+	tx, err := rocketDepositPool.Transact(opts, "assignDeposits", m)
 	if err != nil {
 		return common.Hash{}, fmt.Errorf("error assigning deposits: %w", err)
 	}

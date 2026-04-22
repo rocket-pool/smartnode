@@ -126,7 +126,6 @@ func getRocketClaimNode(rp *rocketpool.RocketPool, address *common.Address, opts
 	defer rocketClaimNodeLock.Unlock()
 	if address == nil {
 		return rp.VersionManager.V1_0_0.GetContract("rocketClaimNode", opts)
-	} else {
-		return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketClaimNode", *address)
 	}
+	return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketClaimNode", *address)
 }

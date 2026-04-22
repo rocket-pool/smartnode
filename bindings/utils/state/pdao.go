@@ -104,7 +104,7 @@ func getProposalDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, 
 	count := len(propDetailsRaw)
 	for i := 0; i < count; i += pDaoPropDetailsBatchSize {
 		i := i
-		max := min(i+pDaoPropDetailsBatchSize, count)
+		m := min(i+pDaoPropDetailsBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -112,7 +112,7 @@ func getProposalDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, 
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				id := ids[j]
 				details := &propDetailsRaw[j]
 				details.ID = id

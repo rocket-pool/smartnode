@@ -1713,9 +1713,8 @@ func addAndCheckForDuplicate(portMap map[interface{}]bool, param config.Paramete
 	}
 	if portMap[port] {
 		return portMap, append(errors, fmt.Sprintf("Port %s for %s is already in use", port, param.Name))
-	} else {
-		portMap[port] = true
 	}
+	portMap[port] = true
 	return portMap, errors
 
 }

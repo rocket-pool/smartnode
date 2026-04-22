@@ -62,7 +62,7 @@ func createNativeFinishedStep(wiz *wizard, currentStep int, totalSteps int) *cho
 }
 
 // Processes a configuration after saving and exiting without looking at the review screen
-func processConfigAfterQuitNative(md *mainDisplay) {
+func processConfigAfterQuitNative(md *MainDisplay) {
 	errors := md.Config.Validate()
 	if len(errors) > 0 {
 		builder := strings.Builder{}

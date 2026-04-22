@@ -33,8 +33,8 @@ func (c *Client) QueueStatus() (api.QueueStatusResponse, error) {
 }
 
 // Check whether the queue can be processed
-func (c *Client) CanProcessQueue(max uint32) (api.CanProcessQueueResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/queue/can-process", url.Values{"max": {fmt.Sprintf("%d", max)}})
+func (c *Client) CanProcessQueue(m uint32) (api.CanProcessQueueResponse, error) {
+	responseBytes, err := c.callHTTPAPI("GET", "/api/queue/can-process", url.Values{"max": {fmt.Sprintf("%d", m)}})
 	if err != nil {
 		return api.CanProcessQueueResponse{}, fmt.Errorf("Could not get can process queue status: %w", err)
 	}
@@ -49,8 +49,8 @@ func (c *Client) CanProcessQueue(max uint32) (api.CanProcessQueueResponse, error
 }
 
 // Process the queue
-func (c *Client) ProcessQueue(max uint32) (api.ProcessQueueResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/queue/process", url.Values{"max": {fmt.Sprintf("%d", max)}})
+func (c *Client) ProcessQueue(m uint32) (api.ProcessQueueResponse, error) {
+	responseBytes, err := c.callHTTPAPI("POST", "/api/queue/process", url.Values{"max": {fmt.Sprintf("%d", m)}})
 	if err != nil {
 		return api.ProcessQueueResponse{}, fmt.Errorf("Could not process queue: %w", err)
 	}
@@ -65,8 +65,8 @@ func (c *Client) ProcessQueue(max uint32) (api.ProcessQueueResponse, error) {
 }
 
 // Check whether deposits can be assigned
-func (c *Client) CanAssignDeposits(max uint32) (api.CanAssignDepositsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("GET", "/api/queue/can-assign-deposits", url.Values{"max": {fmt.Sprintf("%d", max)}})
+func (c *Client) CanAssignDeposits(m uint32) (api.CanAssignDepositsResponse, error) {
+	responseBytes, err := c.callHTTPAPI("GET", "/api/queue/can-assign-deposits", url.Values{"max": {fmt.Sprintf("%d", m)}})
 	if err != nil {
 		return api.CanAssignDepositsResponse{}, fmt.Errorf("Could not get can assign deposits status: %w", err)
 	}
@@ -81,8 +81,8 @@ func (c *Client) CanAssignDeposits(max uint32) (api.CanAssignDepositsResponse, e
 }
 
 // Assign deposits to queued validators
-func (c *Client) AssignDeposits(max uint32) (api.AssignDepositsResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/queue/assign-deposits", url.Values{"max": {fmt.Sprintf("%d", max)}})
+func (c *Client) AssignDeposits(m uint32) (api.AssignDepositsResponse, error) {
+	responseBytes, err := c.callHTTPAPI("POST", "/api/queue/assign-deposits", url.Values{"max": {fmt.Sprintf("%d", m)}})
 	if err != nil {
 		return api.AssignDepositsResponse{}, fmt.Errorf("Could not assign deposits: %w", err)
 	}

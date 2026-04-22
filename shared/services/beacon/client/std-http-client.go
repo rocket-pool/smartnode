@@ -280,13 +280,13 @@ func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon
 	data := make(map[string]*big.Int, count)
 	for i := 0; i < count; i += MaxRequestValidatorsCount {
 		i := i
-		max := i + MaxRequestValidatorsCount
-		if max > count {
-			max = count
+		m := i + MaxRequestValidatorsCount
+		if m > count {
+			m = count
 		}
 
 		// Get & add validators
-		batch := indices[i:max]
+		batch := indices[i:m]
 		balances, err := c.getValidatorBalances(stateId, batch)
 		if err != nil {
 			return nil, fmt.Errorf("error getting validator balances: %w", err)
@@ -926,14 +926,14 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 	wg.SetLimit(threadLimit)
 	for i := 0; i < count; i += MaxRequestValidatorsCount {
 		i := i
-		max := i + MaxRequestValidatorsCount
-		if max > count {
-			max = count
+		m := i + MaxRequestValidatorsCount
+		if m > count {
+			m = count
 		}
 
 		wg.Go(func() error {
 			// Get & add validators
-			batch := pubkeysOrIndices[i:max]
+			batch := pubkeysOrIndices[i:m]
 			validators, err := c.getValidators(stateId, batch)
 			if err != nil {
 				return fmt.Errorf("error getting validator statuses: %w", err)
@@ -1105,7 +1105,7 @@ func (c *committeesDecoder) Read(p []byte) (int, error) {
 	return n, err
 }
 
-var committeesDecoderPool sync.Pool = sync.Pool{
+var committeesDecoderPool = sync.Pool{
 	New: func() any {
 		var out committeesDecoder
 

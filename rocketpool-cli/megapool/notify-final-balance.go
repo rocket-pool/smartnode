@@ -48,10 +48,9 @@ func getNotifiableValidator() (uint64, uint64, bool, error) {
 		// Get validators
 		return uint64(exitingValidators[selected].ValidatorId), uint64(exitingValidators[selected].ValidatorIndex), true, nil
 
-	} else {
-		fmt.Println("No validators at the state where the full withdrawal can be proved")
-		return 0, 0, false, nil
 	}
+	fmt.Println("No validators at the state where the full withdrawal can be proved")
+	return 0, 0, false, nil
 }
 
 func notifyFinalBalance(validatorId, validatorIndex, slot uint64, yes bool) error {

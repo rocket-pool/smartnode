@@ -90,8 +90,7 @@ func (w *masqueradeWallet) EndMasquerade() error {
 
 // Gets the wallet's chain ID
 func (w *masqueradeWallet) GetChainID() *big.Int {
-	copy := big.NewInt(0).Set(w.chainID)
-	return copy
+	return big.NewInt(0).Set(w.chainID)
 }
 
 // Add a keystore to the wallet

@@ -561,11 +561,10 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 			// NOTE: returning here causes the metric to not be emitted. the endpoint stays responsive, but also slightly more accurate (progress=nothing instead of 0)
 			fmt.Printf("error getting beacon chain sync status: %s", err.Error())
 			return nil
-		} else {
-			progress = syncStatus.Progress
-			if !syncStatus.Syncing {
-				progress = 1.0
-			}
+		}
+		progress = syncStatus.Progress
+		if !syncStatus.Syncing {
+			progress = 1.0
 		}
 		// note this metric is emitted asynchronously, while others in this file tend to be emitted at the end of the outer function (mostly due to dependencies between metrics). See https://github.com/rocket-pool/smartnode/issues/186
 		channel <- prometheus.MustNewConstMetric(

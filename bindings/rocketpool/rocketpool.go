@@ -90,9 +90,8 @@ func (rp *RocketPool) GetAddress(contractName string, opts *bind.CallOpts) (*com
 		if cached, ok := rp.getCachedAddress(contractName); ok {
 			if time.Now().Unix()-cached.time <= CacheTTL {
 				return cached.address, nil
-			} else {
-				rp.deleteCachedAddress(contractName)
 			}
+			rp.deleteCachedAddress(contractName)
 		}
 	}
 
@@ -150,9 +149,8 @@ func (rp *RocketPool) GetABI(contractName string, opts *bind.CallOpts) (*abi.ABI
 		if cached, ok := rp.getCachedABI(contractName); ok {
 			if time.Now().Unix()-cached.time <= CacheTTL {
 				return cached.abi, nil
-			} else {
-				rp.deleteCachedABI(contractName)
 			}
+			rp.deleteCachedABI(contractName)
 		}
 	}
 
@@ -215,9 +213,8 @@ func (rp *RocketPool) GetContract(contractName string, opts *bind.CallOpts) (*Co
 		if cached, ok := rp.getCachedContract(contractName); ok {
 			if time.Now().Unix()-cached.time <= CacheTTL {
 				return cached.contract, nil
-			} else {
-				rp.deleteCachedContract(contractName)
 			}
+			rp.deleteCachedContract(contractName)
 		}
 	}
 

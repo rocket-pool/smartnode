@@ -28,7 +28,7 @@ type defaultRewardsExecutionClient struct {
 	*rocketpool.RocketPool
 }
 
-func NewRewardsExecutionClient(rp *rocketpool.RocketPool) *defaultRewardsExecutionClient {
+func NewRewardsExecutionClient(rp *rocketpool.RocketPool) RewardsExecutionClient {
 	out := new(defaultRewardsExecutionClient)
 	out.RocketPool = rp
 	return out

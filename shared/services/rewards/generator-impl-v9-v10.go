@@ -1132,8 +1132,8 @@ func (r *treeGeneratorImpl_v9_v10) createMinipoolIndexMap() error {
 
 }
 
-var farFutureTimestamp int64 = 1000000000000000000 // Far into the future
-var farPastTimestamp int64 = 0
+var farFutureTimestamp = int64(1000000000000000000) // Far into the future
+var farPastTimestamp = int64(0)
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
 func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {
