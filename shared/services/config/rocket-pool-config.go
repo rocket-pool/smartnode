@@ -145,7 +145,6 @@ type RocketPoolConfig struct {
 // * Improve peer discovery and node performance
 // * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
 func getExternalIP() (net.IP, error) {
-	// Try IPv4 first
 	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
 	ip4Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
 	err := ip4Consensus.UseIPProtocol(4)
@@ -358,7 +357,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 		EnableIPv6: config.Parameter{
 			ID:                 "enableIPv6",
 			Name:               "Enable IPv6",
-			Description:        "Enable IPv6 support for the Docker network used by the Smart Node. Enable this if your machine only has an IPv6 address, or if you want your Ethereum clients to communicate over IPv6.",
+			Description:        "Enables dual-stack (IPv4 + IPv6) networking for the Smart Node. When enabled, your Ethereum clients will listen on both IPv4 and IPv6 and can peer with IPv6 nodes in addition to IPv4. Enable this if your machine has only an IPv6 address, or if you want your node to participate in IPv6 peering.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
 			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Alertmanager, config.ContainerID_Exporter, config.ContainerID_MevBoost, config.ContainerID_CommitBoost},
@@ -1359,7 +1358,7 @@ func (cfg *RocketPoolConfig) GetExternalIp() string {
 	}
 
 	if ip.To4() == nil && !cfg.IsIPv6Enabled() {
-		fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
+		fmt.Println("Warning: your external IP address is IPv6. If you haven't enabled IPv6 support in your configuration, your node may have trouble finding peers. Run 'rocketpool service config' and enable IPv6 under 'Smart Node and TX Fees'.")
 	}
 
 	return ip.String()
