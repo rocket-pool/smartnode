@@ -15,6 +15,9 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	ssz "github.com/ferranbt/fastssz"
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
@@ -30,8 +33,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/eth2"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 )
 
 const MAX_WITHDRAWAL_SLOT_DISTANCE = 144000 // 20 days.

@@ -2,6 +2,7 @@ package electra
 
 import (
 	"github.com/prysmaticlabs/go-bitfield"
+
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 

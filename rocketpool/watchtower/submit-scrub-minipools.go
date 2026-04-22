@@ -11,15 +11,18 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
 	prdeposit "github.com/prysmaticlabs/prysm/v5/contracts/deposit"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	rputils "github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
-	"github.com/urfave/cli/v3"
 
 	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -29,7 +32,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
 // Settings

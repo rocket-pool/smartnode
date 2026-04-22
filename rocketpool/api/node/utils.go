@@ -5,10 +5,11 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"golang.org/x/sync/errgroup"
 )
 
 // Settings

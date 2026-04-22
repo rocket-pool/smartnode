@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/goccy/go-json"
+
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 

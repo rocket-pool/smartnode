@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/urfave/cli/v3"
+	ens "github.com/wealdtech/go-ens/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
-	ens "github.com/wealdtech/go-ens/v3"
 )
 
 const (

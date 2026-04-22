@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/pbnjay/memory"
+
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 

@@ -14,6 +14,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/dustin/go-humanize"
+	"github.com/shirou/gopsutil/v3/disk"
+
 	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -22,7 +24,6 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/shirou/gopsutil/v3/disk"
 )
 
 // Settings

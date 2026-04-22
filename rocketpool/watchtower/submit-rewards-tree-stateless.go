@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
@@ -31,7 +33,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli/v3"
 )
 
 // Submit rewards Merkle Tree task

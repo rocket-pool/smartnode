@@ -8,6 +8,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -16,8 +19,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	"github.com/rocket-pool/smartnode/shared/utils/rp"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 )
 
 const MinipoolBalanceDetailsBatchSize = 20

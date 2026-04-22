@@ -5,8 +5,9 @@ import (
 	"math/big"
 	"strconv"
 
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"

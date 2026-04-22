@@ -5,6 +5,7 @@ import (
 	"net/url"
 
 	"github.com/goccy/go-json"
+
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 

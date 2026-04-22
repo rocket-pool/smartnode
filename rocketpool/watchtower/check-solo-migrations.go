@@ -9,6 +9,8 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -21,7 +23,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli/v3"
 )
 
 const (

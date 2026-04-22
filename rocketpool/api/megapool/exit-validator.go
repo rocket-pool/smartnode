@@ -1,13 +1,14 @@
 package megapool
 
 import (
+	"github.com/urfave/cli/v3"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
-	"github.com/urfave/cli/v3"
-	eth2types "github.com/wealdtech/go-eth2-types/v2"
 )
 
 func canExitValidator(c *cli.Command, validatorId uint32) (*api.CanExitValidatorResponse, error) {

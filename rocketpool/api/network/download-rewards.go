@@ -3,10 +3,11 @@ package network
 import (
 	"fmt"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
 )
 
 func downloadRewardsFile(c *cli.Command, interval uint64) (*api.DownloadRewardsFileResponse, error) {

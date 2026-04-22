@@ -8,8 +8,9 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
-	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli/v3"
+
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	apiutils "github.com/rocket-pool/smartnode/shared/utils/api"

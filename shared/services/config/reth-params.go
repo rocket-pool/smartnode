@@ -4,6 +4,7 @@ import (
 	"runtime"
 
 	"github.com/pbnjay/memory"
+
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 

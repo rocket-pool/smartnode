@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"golang.org/x/sync/errgroup"
 )
 
 // Represents the collector for onchain governance metrics

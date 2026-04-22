@@ -1,9 +1,10 @@
 package keystore
 
 import (
-	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/sethvargo/go-password/password"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
+
+	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
 // Generates a random password

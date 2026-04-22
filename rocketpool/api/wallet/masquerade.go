@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
 )
 
 func masquerade(c *cli.Command, address common.Address) (*api.MasqueradeResponse, error) {

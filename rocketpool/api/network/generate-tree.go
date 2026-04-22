@@ -5,10 +5,11 @@ import (
 	"os"
 
 	"github.com/fatih/color"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
 )
 
 const (

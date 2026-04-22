@@ -6,13 +6,15 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/state"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
 )
 
 type challengeInfo struct {
