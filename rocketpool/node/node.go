@@ -243,7 +243,10 @@ func run(c *cli.Command) error {
 			if !wasExecutionClientSynced {
 				updateLog.Println("Execution client is now synced.")
 				wasExecutionClientSynced = true
-				alerting.AlertExecutionClientSyncComplete(cfg)
+				err := alerting.AlertExecutionClientSyncComplete(cfg)
+				if err != nil {
+					errorLog.Printlnf("error alerting execution client sync complete: %v", err)
+				}
 			}
 
 			// Check the BC status
@@ -261,7 +264,10 @@ func run(c *cli.Command) error {
 			if !wasBeaconClientSynced {
 				updateLog.Println("Beacon client is now synced.")
 				wasBeaconClientSynced = true
-				alerting.AlertBeaconClientSyncComplete(cfg)
+				err := alerting.AlertBeaconClientSyncComplete(cfg)
+				if err != nil {
+					errorLog.Printlnf("error alerting beacon client sync complete: %v", err)
+				}
 			}
 
 			// Check if the protocol version has changed

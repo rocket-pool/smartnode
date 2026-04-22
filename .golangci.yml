@@ -6,6 +6,7 @@ linters:
     - ineffassign
     - unused
     - staticcheck
+    - errcheck
   settings:
     staticcheck:
       checks:
@@ -21,6 +22,10 @@ linters:
         - -ST1020
         - -ST1021
         - -ST1022
+    errcheck:
+      exclude-functions:
+        - (*os.File).Close
+
 
 formatters:
   enable:

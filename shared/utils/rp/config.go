@@ -66,7 +66,7 @@ func SaveConfig(cfg *config.RocketPoolConfig, directory, filename string) error 
 		}
 
 		for _, match := range oldFiles {
-			os.RemoveAll(match)
+			_ = os.RemoveAll(match)
 		}
 	}()
 

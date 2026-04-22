@@ -48,7 +48,7 @@ func runMetricsServer(c *cli.Command, logger log.ColorLogger, scrubCollector *co
 	metricsPath := "/metrics"
 	http.Handle(metricsPath, handler)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
+		_, err := w.Write([]byte(`<html>
             <head><title>Rocket Pool Watchtower Metrics Exporter</title></head>
             <body>
             <h1>Rocket Pool Watchtower Metrics Exporter</h1>
@@ -56,6 +56,9 @@ func runMetricsServer(c *cli.Command, logger log.ColorLogger, scrubCollector *co
             </body>
             </html>`,
 		))
+		if err != nil {
+			logger.Printlnf("Error writing metrics exporter HTML: %v", err)
+		}
 	})
 	err = http.ListenAndServe(fmt.Sprintf("%s:%d", metricsAddress, metricsPort), nil)
 	if err != nil {

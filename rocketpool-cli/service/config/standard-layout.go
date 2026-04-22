@@ -141,14 +141,20 @@ func (layout *standardLayout) createSettingFooter() {
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView1, navString1)
+	_, err := fmt.Fprint(navTextView1, navString1)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 1: %w", err))
+	}
 
 	navString2 := "Esc: Go Back to Categories"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView2, navString2)
+	_, err = fmt.Fprint(navTextView2, navString2)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 2: %w", err))
+	}
 
 	navBar := tview.NewFlex().
 		SetDirection(tview.FlexRow).

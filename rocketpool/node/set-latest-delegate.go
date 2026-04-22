@@ -138,7 +138,10 @@ func (t *setUseLatestDelegate) run(state *state.NetworkState) error {
 	// If the node has been running for less than 24 hours, alert the user. After that, set the flag for the minipools.
 	if time.Since(t.startTime) < 24*time.Hour {
 		t.log.Println("Alerting user they have minipools that can have the 'use latest delegate' flag set...")
-		alerting.AlertMinipoolUseLatestDelegateSet(t.cfg)
+		err := alerting.AlertMinipoolUseLatestDelegateSet(t.cfg)
+		if err != nil {
+			t.log.Printlnf("error alerting user they have minipools that can have the 'use latest delegate' flag set: %v", err)
+		}
 		return nil
 	}
 

@@ -349,7 +349,10 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 			for _, container := range md.ContainersToRestart {
 				fullName := fmt.Sprintf("%s_%s", prefix, container)
 				fmt.Printf("Stopping %s... ", fullName)
-				rp.StopContainer(fullName)
+				_, err = rp.StopContainer(fullName)
+				if err != nil {
+					return fmt.Errorf("error stopping container: %w", err)
+				}
 				fmt.Print("done!\n")
 			}
 
@@ -527,7 +530,10 @@ func startService(params startServiceParams) error {
 			if err != nil {
 				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
 			}
-			rp.SaveConfig(cfg)
+			err = rp.SaveConfig(cfg)
+			if err != nil {
+				return fmt.Errorf("error saving configuration: %w", err)
+			}
 			color.GreenPrintln("Updated settings successfully.")
 		} else {
 			fmt.Println("Cancelled.")

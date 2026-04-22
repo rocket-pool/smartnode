@@ -575,7 +575,7 @@ func (mp *minipool_v2) GetPrestakeEvent(intervalSize *big.Int, opts *bind.CallOp
 
 	// Decode the event
 	prestakeEvent := new(MinipoolPrestakeEvent)
-	mp.Contract.Contract.UnpackLog(prestakeEvent, "MinipoolPrestaked", log)
+	err = mp.Contract.Contract.UnpackLog(prestakeEvent, "MinipoolPrestaked", log)
 	if err != nil {
 		return PrestakeData{}, fmt.Errorf("Error unpacking prestake data: %w", err)
 	}
