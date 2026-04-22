@@ -18,7 +18,7 @@ import (
 	"github.com/wealdtech/go-merkletree/keccak256"
 )
 
-var Magicv2 [4]byte = [4]byte{0x52, 0x50, 0x52, 0x55}
+var Magicv2 = [4]byte{0x52, 0x50, 0x52, 0x55}
 
 type NodeRewards_v2 []*NodeReward_v2
 

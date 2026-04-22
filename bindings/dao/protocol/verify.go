@@ -233,9 +233,9 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 	rawStates := make([]uint8, count)
 	for i := uint64(0); i < count; i += challengeStateBatchSize {
 		i := i
-		max := i + challengeStateBatchSize
-		if max > count {
-			max = count
+		m := i + challengeStateBatchSize
+		if m > count {
+			m = count
 		}
 
 		// Load details
@@ -245,7 +245,7 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				propID := big.NewInt(int64(proposalIds[j]))
 				challengedIndex := big.NewInt(int64(challengedIndices[j]))
 				err = mc.AddCall(rocketDAOProtocolVerifier, &rawStates[j], "getChallengeState", propID, challengedIndex)

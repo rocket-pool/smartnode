@@ -944,9 +944,9 @@ func (h *MockHistory) GetPreviousRewardSnapshotEvent() rprewards.RewardsEvent {
 	}
 }
 
-type nodeSummary map[string][]*MockNode
+type NodeSummary map[string][]*MockNode
 
-func (h *MockHistory) GetNodeSummary() nodeSummary {
+func (h *MockHistory) GetNodeSummary() NodeSummary {
 	out := make(map[string][]*MockNode)
 	for _, node := range h.Nodes {
 		out[node.Class] = append(out[node.Class], node)
@@ -954,12 +954,12 @@ func (h *MockHistory) GetNodeSummary() nodeSummary {
 	return out
 }
 
-func (s nodeSummary) GetClass(class string) ([]*MockNode, bool) {
+func (s NodeSummary) GetClass(class string) ([]*MockNode, bool) {
 	nodes, ok := s[class]
 	return nodes, ok
 }
 
-func (s nodeSummary) MustGetClass(t *testing.T, class string) []*MockNode {
+func (s NodeSummary) MustGetClass(t *testing.T, class string) []*MockNode {
 	nodes, ok := s.GetClass(class)
 	if !ok {
 		t.Fatalf("Class %s not found", class)

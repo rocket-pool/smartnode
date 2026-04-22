@@ -20,7 +20,7 @@ import (
 const MinipoolBalanceDetailsBatchSize = 20
 
 // Beacon chain balance info for a minipool
-type minipoolBalanceDetails struct {
+type MinipoolBalanceDetails struct {
 	IsStaking    bool
 	NodeDeposit  *big.Int
 	NodeBalance  *big.Int
@@ -33,16 +33,16 @@ func EpochAt(config beacon.Eth2Config, time uint64) uint64 {
 }
 
 // Get the balances of the minipools on the beacon chain
-func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
+func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []common.Address, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]MinipoolBalanceDetails, error) {
 
 	// Get minipool validator statuses
 	validators, err := rputils.GetMinipoolValidators(rp, bc, addresses, opts, &beacon.ValidatorStatusOptions{Epoch: &beaconHead.Epoch})
 	if err != nil {
-		return []minipoolBalanceDetails{}, err
+		return []MinipoolBalanceDetails{}, err
 	}
 
 	// Load details in batches
-	details := make([]minipoolBalanceDetails, len(addresses))
+	details := make([]MinipoolBalanceDetails, len(addresses))
 	for bsi := 0; bsi < len(addresses); bsi += MinipoolBalanceDetailsBatchSize {
 
 		// Get batch start & end index
@@ -56,7 +56,7 @@ func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []
 			wg.Go(func() error {
 				address := addresses[mi]
 				validator := validators[address]
-				mpDetails, err := GetMinipoolBalanceDetails(rp, address, opts, validator, beaconHead.Epoch)
+				mpDetails, err := getMinipoolBalanceDetails(rp, address, opts, validator, beaconHead.Epoch)
 				if err == nil {
 					details[mi] = mpDetails
 				}
@@ -64,7 +64,7 @@ func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []
 			})
 		}
 		if err := wg.Wait(); err != nil {
-			return []minipoolBalanceDetails{}, err
+			return []MinipoolBalanceDetails{}, err
 		}
 
 	}
@@ -74,10 +74,10 @@ func GetBeaconBalances(rp *rocketpool.RocketPool, bc beacon.Client, addresses []
 }
 
 // Get the balances of the minipools on the beacon chain
-func GetBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*rpstate.NativeMinipoolDetails, state *state.NetworkState, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]minipoolBalanceDetails, error) {
+func GetBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*rpstate.NativeMinipoolDetails, state *state.NetworkState, beaconHead beacon.BeaconHead, opts *bind.CallOpts) ([]MinipoolBalanceDetails, error) {
 
 	// Load details in batches
-	details := make([]minipoolBalanceDetails, len(mpds))
+	details := make([]MinipoolBalanceDetails, len(mpds))
 	for bsi := 0; bsi < len(mpds); bsi += MinipoolBalanceDetailsBatchSize {
 
 		// Get batch start & end index
@@ -89,7 +89,7 @@ func GetBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*rpstate.Nativ
 		for mi := msi; mi < mei; mi++ {
 			mi := mi
 			wg.Go(func() error {
-				mpDetails, err := GetMinipoolBalanceDetailsFromState(rp, mpds[mi], state, opts, beaconHead.Epoch)
+				mpDetails, err := getMinipoolBalanceDetailsFromState(rp, mpds[mi], state, opts, beaconHead.Epoch)
 				if err == nil {
 					details[mi] = mpDetails
 				}
@@ -97,7 +97,7 @@ func GetBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*rpstate.Nativ
 			})
 		}
 		if err := wg.Wait(); err != nil {
-			return []minipoolBalanceDetails{}, err
+			return []MinipoolBalanceDetails{}, err
 		}
 
 	}
@@ -107,12 +107,12 @@ func GetBeaconBalancesFromState(rp *rocketpool.RocketPool, mpds []*rpstate.Nativ
 }
 
 // Get minipool balance details
-func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, blockEpoch uint64) (minipoolBalanceDetails, error) {
+func getMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common.Address, opts *bind.CallOpts, validator beacon.ValidatorStatus, blockEpoch uint64) (MinipoolBalanceDetails, error) {
 
 	// Create minipool
 	mp, err := minipool.NewMinipool(rp, minipoolAddress, opts)
 	if err != nil {
-		return minipoolBalanceDetails{}, err
+		return MinipoolBalanceDetails{}, err
 	}
 	blockBalance := eth.GweiToWei(float64(validator.Balance))
 
@@ -141,7 +141,7 @@ func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 
 	// Wait for data
 	if err := wg.Wait(); err != nil {
-		return minipoolBalanceDetails{}, err
+		return MinipoolBalanceDetails{}, err
 	}
 
 	// Deal with pools that haven't received deposits yet so their balance is still 0
@@ -151,7 +151,7 @@ func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 
 	// Ignore finalized minipools
 	if finalized {
-		return minipoolBalanceDetails{
+		return MinipoolBalanceDetails{
 			NodeDeposit:  big.NewInt(0),
 			NodeBalance:  big.NewInt(0),
 			TotalBalance: big.NewInt(0),
@@ -160,7 +160,7 @@ func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 
 	// Use node deposit balance if initialized or prelaunch
 	if status == types.Initialized || status == types.Prelaunch {
-		return minipoolBalanceDetails{
+		return MinipoolBalanceDetails{
 			NodeDeposit:  nodeDepositBalance,
 			NodeBalance:  nodeDepositBalance,
 			TotalBalance: blockBalance,
@@ -169,7 +169,7 @@ func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 
 	// Use node deposit balance if validator not yet active on beacon chain at block
 	if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
-		return minipoolBalanceDetails{
+		return MinipoolBalanceDetails{
 			NodeDeposit:  nodeDepositBalance,
 			NodeBalance:  nodeDepositBalance,
 			TotalBalance: blockBalance,
@@ -179,11 +179,11 @@ func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 	// Get node balance at block
 	nodeBalance, err := mp.CalculateNodeShare(blockBalance, opts)
 	if err != nil {
-		return minipoolBalanceDetails{}, err
+		return MinipoolBalanceDetails{}, err
 	}
 
 	// Return
-	return minipoolBalanceDetails{
+	return MinipoolBalanceDetails{
 		IsStaking:    (validator.ExitEpoch > blockEpoch),
 		NodeDeposit:  nodeDepositBalance,
 		NodeBalance:  nodeBalance,
@@ -193,12 +193,12 @@ func GetMinipoolBalanceDetails(rp *rocketpool.RocketPool, minipoolAddress common
 }
 
 // Get minipool balance details
-func GetMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, opts *bind.CallOpts, blockEpoch uint64) (minipoolBalanceDetails, error) {
+func getMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *rpstate.NativeMinipoolDetails, state *state.NetworkState, opts *bind.CallOpts, blockEpoch uint64) (MinipoolBalanceDetails, error) {
 
 	// Create minipool
 	mp, err := minipool.NewMinipoolFromVersion(rp, mpd.MinipoolAddress, mpd.Version, opts)
 	if err != nil {
-		return minipoolBalanceDetails{}, err
+		return MinipoolBalanceDetails{}, err
 	}
 	validator := state.MinipoolValidatorDetails[mpd.Pubkey]
 	blockBalance := eth.GweiToWei(float64(validator.Balance))
@@ -215,7 +215,7 @@ func GetMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *rpstate.
 
 	// Ignore finalized minipools
 	if finalized {
-		return minipoolBalanceDetails{
+		return MinipoolBalanceDetails{
 			NodeDeposit:  big.NewInt(0),
 			NodeBalance:  big.NewInt(0),
 			TotalBalance: big.NewInt(0),
@@ -224,7 +224,7 @@ func GetMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *rpstate.
 
 	// Use node deposit balance if initialized or prelaunch
 	if status == types.Initialized || status == types.Prelaunch {
-		return minipoolBalanceDetails{
+		return MinipoolBalanceDetails{
 			NodeDeposit:  nodeDepositBalance,
 			NodeBalance:  nodeDepositBalance,
 			TotalBalance: blockBalance,
@@ -233,7 +233,7 @@ func GetMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *rpstate.
 
 	// Use node deposit balance if validator not yet active on beacon chain at block
 	if !validator.Exists || validator.ActivationEpoch >= blockEpoch {
-		return minipoolBalanceDetails{
+		return MinipoolBalanceDetails{
 			NodeDeposit:  nodeDepositBalance,
 			NodeBalance:  nodeDepositBalance,
 			TotalBalance: blockBalance,
@@ -243,11 +243,11 @@ func GetMinipoolBalanceDetailsFromState(rp *rocketpool.RocketPool, mpd *rpstate.
 	// Get node balance at block
 	nodeBalance, err := mp.CalculateNodeShare(blockBalance, opts)
 	if err != nil {
-		return minipoolBalanceDetails{}, err
+		return MinipoolBalanceDetails{}, err
 	}
 
 	// Return
-	return minipoolBalanceDetails{
+	return MinipoolBalanceDetails{
 		IsStaking:    (validator.ExitEpoch > blockEpoch),
 		NodeDeposit:  nodeDepositBalance,
 		NodeBalance:  nodeBalance,

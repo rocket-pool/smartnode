@@ -589,9 +589,8 @@ func findInQueue(rp *rocketpool.RocketPool, megapoolAddress common.Address, vali
 	}
 	if slice.NextIndex.Cmp(big.NewInt(0)) == 0 {
 		return nil, nil
-	} else {
-		return findInQueue(rp, megapoolAddress, validatorId, queueKey, slice.NextIndex, positionOffset)
 	}
+	return findInQueue(rp, megapoolAddress, validatorId, queueKey, slice.NextIndex, positionOffset)
 
 }
 
@@ -864,9 +863,8 @@ func FindWithdrawalBlockAndArrayPosition(slot uint64, validatorIndex uint64, bc 
 				return 0, nil, 0, nil, nil, fmt.Errorf("2 epochs of missing slots detected. It is likely that the Beacon Client was checkpoint synced after the most recent withdrawal to slot %d, and does not have the history required to generate a withdrawal proof", slot)
 			}
 			continue
-		} else {
-			notFounds = 0
 		}
+		notFounds = 0
 
 		beaconBlock, err := eth2.NewSignedBeaconBlock(blockResponse.Data, blockResponse.Fork)
 		if err != nil {

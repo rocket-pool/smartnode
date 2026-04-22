@@ -176,7 +176,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 	// Run the getters in batches
 	for i := 0; i < count; i += legacyNodeBatchSize {
 		i := i
-		max := min(i+legacyNodeBatchSize, count)
+		m := min(i+legacyNodeBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -184,7 +184,7 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				address := addresses[j]
 				details := &nodeDetails[j]
 				details.NodeAddress = address
@@ -324,7 +324,7 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 	count := int(nodeCount)
 	for i := 0; i < count; i += nodeAddressBatchSize {
 		i := i
-		max := min(i+nodeAddressBatchSize, count)
+		m := min(i+nodeAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -332,7 +332,7 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				err = mc.AddCall(contracts.RocketNodeManager, &addresses[j], "getNodeAt", big.NewInt(int64(j)))
 				if err != nil {
 					return fmt.Errorf("error adding node address call for index %d: %w", j, err)

@@ -85,13 +85,13 @@ func (collector *GovernanceCollector) Collect(channel chan<- prometheus.Metric) 
 		for _, proposal := range onchainProposals {
 			switch proposal.State {
 			case types.ProtocolDaoProposalState_Pending:
-				onchainPending += 1
+				onchainPending++
 			case types.ProtocolDaoProposalState_ActivePhase1:
-				onchainPhase1 += 1
+				onchainPhase1++
 			case types.ProtocolDaoProposalState_ActivePhase2:
-				onchainPhase2 += 1
+				onchainPhase2++
 			default:
-				onchainClosed += 1
+				onchainClosed++
 			}
 		}
 		return err

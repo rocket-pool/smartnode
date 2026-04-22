@@ -151,9 +151,9 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 
 			for _, proposal := range proposals.Data.Proposals {
 				if proposal.State == "active" {
-					activeProposals += 1
+					activeProposals++
 				} else {
-					closedProposals += 1
+					closedProposals++
 				}
 			}
 			collector.cachedActiveProposals = activeProposals
@@ -287,9 +287,9 @@ func (collector *SnapshotCollector) collectVotes(votedProposals *api.SnapshotVot
 		_, exists := handledProposals[votedProposal.Proposal.Id]
 		if !exists {
 			if votedProposal.Proposal.State == "active" {
-				votesActiveProposals += 1
+				votesActiveProposals++
 			} else {
-				votesClosedProposals += 1
+				votesClosedProposals++
 			}
 			handledProposals[votedProposal.Proposal.Id] = true
 		}

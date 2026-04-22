@@ -291,12 +291,11 @@ func (layout *checkBoxModalLayout) generateCheckboxes(labels []string, descripti
 					layout.selected = nextSelection
 					layout.app.SetFocus(layout.buttonForm)
 					return nil
-				} else {
-					nextSelection = i + 1
-					layout.selected = nextSelection
-					layout.descriptionBox.SetText(descriptions[nextSelection])
-					return tcell.NewEventKey(tcell.KeyTab, 0, 0)
 				}
+				nextSelection = i + 1
+				layout.selected = nextSelection
+				layout.descriptionBox.SetText(descriptions[nextSelection])
+				return tcell.NewEventKey(tcell.KeyTab, 0, 0)
 			case tcell.KeyUp, tcell.KeyBacktab:
 				var nextSelection int
 				if layout.selected == 0 {
@@ -304,12 +303,11 @@ func (layout *checkBoxModalLayout) generateCheckboxes(labels []string, descripti
 					layout.selected = nextSelection
 					layout.app.SetFocus(layout.buttonForm)
 					return nil
-				} else {
-					nextSelection = i - 1
-					layout.selected = nextSelection
-					layout.descriptionBox.SetText(descriptions[nextSelection])
-					return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
 				}
+				nextSelection = i - 1
+				layout.selected = nextSelection
+				layout.descriptionBox.SetText(descriptions[nextSelection])
+				return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
 			default:
 				return event
 			}
