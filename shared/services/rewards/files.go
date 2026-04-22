@@ -7,6 +7,7 @@ import (
 
 	"github.com/ipfs/go-cid"
 	"github.com/klauspost/compress/zstd"
+
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 

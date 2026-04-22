@@ -3,8 +3,9 @@ package megapool
 import (
 	"fmt"
 
-	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/urfave/cli/v3"
+
+	"github.com/rocket-pool/smartnode/bindings/megapool"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"

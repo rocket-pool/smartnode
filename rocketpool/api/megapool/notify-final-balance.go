@@ -5,12 +5,13 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/urfave/cli/v3"
 )
 
 func canNotifyFinalBalance(c *cli.Command, validatorId uint32, withdrawalSlot uint64) (*api.CanNotifyFinalBalanceResponse, error) {

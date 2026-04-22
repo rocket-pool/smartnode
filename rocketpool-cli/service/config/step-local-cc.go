@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/pbnjay/memory"
+
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 

@@ -2,10 +2,11 @@ package auction
 
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/rocket-pool/smartnode/bindings/auction"
-	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/auction"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"

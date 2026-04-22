@@ -9,6 +9,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
+	"github.com/urfave/cli/v3"
+	eth2types "github.com/wealdtech/go-eth2-types/v2"
+	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+	"gopkg.in/yaml.v2"
+
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -19,10 +24,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	hexutils "github.com/rocket-pool/smartnode/shared/utils/hex"
-	"github.com/urfave/cli/v3"
-	eth2types "github.com/wealdtech/go-eth2-types/v2"
-	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
-	"gopkg.in/yaml.v2"
 )
 
 const (
