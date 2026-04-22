@@ -36,12 +36,6 @@ type Pseudomodal struct {
 
 	// The currently selected form (for vertical layouts)
 	selected int
-
-	// A fixed width for the description box (0 for auto)
-	descriptionWidth int
-
-	// The collection of descriptions for each button, to be displayed in the description box
-	buttonDescriptions []string
 }
 
 // NewPseudomodal returns a new modal message window.

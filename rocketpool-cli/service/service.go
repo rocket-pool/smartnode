@@ -349,7 +349,10 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 			for _, container := range md.ContainersToRestart {
 				fullName := fmt.Sprintf("%s_%s", prefix, container)
 				fmt.Printf("Stopping %s... ", fullName)
-				rp.StopContainer(fullName)
+				_, err = rp.StopContainer(fullName)
+				if err != nil {
+					return fmt.Errorf("error stopping container: %w", err)
+				}
 				fmt.Print("done!\n")
 			}
 
@@ -527,7 +530,10 @@ func startService(params startServiceParams) error {
 			if err != nil {
 				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
 			}
-			rp.SaveConfig(cfg)
+			err = rp.SaveConfig(cfg)
+			if err != nil {
+				return fmt.Errorf("error saving configuration: %w", err)
+			}
 			color.GreenPrintln("Updated settings successfully.")
 		} else {
 			fmt.Println("Cancelled.")
@@ -723,25 +729,6 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 	}
 
 	return prefix + ValidatorContainerSuffix, nil
-
-}
-
-// Get the time that the container responsible for validator duties exited
-func getValidatorFinishTime(CurrentValidatorClientName string, rp *rocketpool.Client) (time.Time, error) {
-
-	prefix, err := rp.GetContainerPrefix()
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	var validatorFinishTime time.Time
-	if CurrentValidatorClientName == "nimbus" {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + BeaconContainerSuffix)
-	} else {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + ValidatorContainerSuffix)
-	}
-
-	return validatorFinishTime, err
 
 }
 
@@ -1484,38 +1471,4 @@ func getConfigYaml() error {
 
 	fmt.Println(string(bytes))
 	return nil
-}
-
-// Get the amount of space used by a Docker volume
-func getVolumeSpaceUsed(rp *rocketpool.Client, volume string) (uint64, error) {
-	size, err := rp.GetVolumeSize(volume)
-	if err != nil {
-		return 0, fmt.Errorf("error getting execution client volume name: %w", err)
-	}
-	volumeBytes, err := humanize.ParseBytes(size)
-	if err != nil {
-		return 0, fmt.Errorf("couldn't parse size of EC volume (%s): %w", size, err)
-	}
-	return volumeBytes, nil
-}
-
-// Get the amount of free space available in the target dir
-func getPartitionFreeSpace(rp *rocketpool.Client, targetDir string) (uint64, error) {
-	partitions, err := disk.Partitions(true)
-	if err != nil {
-		return 0, fmt.Errorf("error getting partition list: %w", err)
-	}
-	longestPath := 0
-	bestPartition := disk.PartitionStat{}
-	for _, partition := range partitions {
-		if strings.HasPrefix(targetDir, partition.Mountpoint) && len(partition.Mountpoint) > longestPath {
-			bestPartition = partition
-			longestPath = len(partition.Mountpoint)
-		}
-	}
-	diskUsage, err := disk.Usage(bestPartition.Mountpoint)
-	if err != nil {
-		return 0, fmt.Errorf("error getting free disk space available: %w", err)
-	}
-	return diskUsage.Free, nil
 }

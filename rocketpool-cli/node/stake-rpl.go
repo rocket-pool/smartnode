@@ -178,7 +178,10 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 
 	// Amount flag custom percentage input
 	if strings.HasSuffix(amount, "%") {
-		fmt.Sscanf(amount, "%f%%", &stakePercent)
+		_, err := fmt.Sscanf(amount, "%f%%", &stakePercent)
+		if err != nil {
+			return fmt.Errorf("Invalid stake amount '%s': %w", amount, err)
+		}
 		amountWei = rplStakePerValidator(ethBorrowed, eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
 
 	} else if amount == "all" {
@@ -226,7 +229,10 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 		if amountWei == nil {
 			inputAmountOrPercent := prompt.Prompt("Please enter an amount of RPL or percentage of borrowed ETH to stake. (e.g '50' for 50 RPL or '5%' for 5% borrowed ETH as RPL):", "^(0|[1-9]\\d*)(\\.\\d+)?%?$", "Invalid amount")
 			if strings.HasSuffix(inputAmountOrPercent, "%") {
-				fmt.Sscanf(inputAmountOrPercent, "%f%%", &stakePercent)
+				_, err := fmt.Sscanf(inputAmountOrPercent, "%f%%", &stakePercent)
+				if err != nil {
+					return fmt.Errorf("Invalid stake amount '%s': %w", inputAmountOrPercent, err)
+				}
 				amountWei = rplStakePerValidator(ethBorrowed, eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
 			} else {
 				stakeAmount, err := strconv.ParseFloat(inputAmountOrPercent, 64)

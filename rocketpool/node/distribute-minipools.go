@@ -163,7 +163,10 @@ func (t *distributeMinipools) run(state *state.NetworkState) error {
 	successCount := 0
 	for _, mpd := range minipools {
 		success, err := t.distributeMinipool(mpd, opts)
-		alerting.AlertMinipoolBalanceDistributed(t.cfg, mpd.MinipoolAddress, err == nil)
+		err = alerting.AlertMinipoolBalanceDistributed(t.cfg, mpd.MinipoolAddress, err == nil)
+		if err != nil {
+			t.log.Printlnf("error alerting minipool balance distributed: %v", err)
+		}
 		if err != nil {
 			t.log.Println(fmt.Errorf("Could not distribute balance of minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
 			return err

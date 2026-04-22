@@ -1,8 +1,6 @@
 package collectors
 
 import (
-	"fmt"
-
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
@@ -82,9 +80,4 @@ func (collector *OdaoCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.pricesBlock, prometheus.GaugeValue, pricesBlockFloat)
 	channel <- prometheus.MustNewConstMetric(
 		collector.effectiveRplStakeBlock, prometheus.GaugeValue, effectiveRplStakeBlockFloat)
-}
-
-// Log error messages
-func (collector *OdaoCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

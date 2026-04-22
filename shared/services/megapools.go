@@ -15,9 +15,6 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	ssz "github.com/ferranbt/fastssz"
-	"github.com/prysmaticlabs/prysm/v5/beacon-chain/core/signing"
-	prdeposit "github.com/prysmaticlabs/prysm/v5/contracts/deposit"
-	ethpb "github.com/prysmaticlabs/prysm/v5/proto/prysm/v1alpha1"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
@@ -34,7 +31,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/fulu"
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	"github.com/urfave/cli/v3"
-	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -212,27 +208,6 @@ func ConvertToFixedSize(proofBytes [][]byte) [][32]byte {
 		proofWithFixedSize = append(proofWithFixedSize, arr)
 	}
 	return proofWithFixedSize
-}
-
-func validateDepositInfo(eth2Config beacon.Eth2Config, depositAmount uint64, pubkey types.ValidatorPubkey, withdrawalCredentials common.Hash, signature types.ValidatorSignature) error {
-
-	// Get the deposit domain based on the eth2 config
-	depositDomain, err := signing.ComputeDomain(eth2types.DomainDeposit, eth2Config.GenesisForkVersion, eth2types.ZeroGenesisValidatorsRoot)
-	if err != nil {
-		return err
-	}
-
-	// Create the deposit struct
-	depositData := new(ethpb.Deposit_Data)
-	depositData.Amount = depositAmount
-	depositData.PublicKey = pubkey.Bytes()
-	depositData.WithdrawalCredentials = withdrawalCredentials.Bytes()
-	depositData.Signature = signature.Bytes()
-
-	// Validate the signature
-	err = prdeposit.VerifyDepositSignature(depositData, depositDomain)
-	return err
-
 }
 
 func CalculateMegapoolWithdrawalCredentials(megapoolAddress common.Address) common.Hash {
@@ -682,14 +657,19 @@ func GetWithdrawalProofForSlotFromAPI(c *cli.Command, finalizedSlot uint64, with
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, err
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, err
 	}
 	// unmarshal the response into the WithdrawalProofResponse type
 	var withdrawalProofResponse WithdrawalProofResponse
-	json.Unmarshal([]byte(body), &withdrawalProofResponse)
+	err = json.Unmarshal([]byte(body), &withdrawalProofResponse)
+	if err != nil {
+		return megapool.FinalBalanceProof{}, 0, err
+	}
 
 	// Convert []common.Hash to [][32]byte
 	witnesses := make([][32]byte, len(withdrawalProofResponse.Witnesses))

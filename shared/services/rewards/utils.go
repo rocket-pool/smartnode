@@ -19,14 +19,10 @@ import (
 	"github.com/mitchellh/go-homedir"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
-	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
-
-// Simple container for the zero value so it doesn't have to be recreated over and over
-var zero *big.Int
 
 // Gets the intervals the node can claim and the intervals that have already been claimed
 func GetClaimStatus(rp *rocketpool.RocketPool, nodeAddress common.Address) (unclaimed []uint64, claimed []uint64, err error) {
@@ -193,7 +189,6 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 				errBuilder.WriteString("Downloading " + url + " failed (" + err.Error() + ")\n")
 				continue
 			}
-			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
 				errBuilder.WriteString("Downloading " + url + " failed with status " + resp.Status + "\n")
@@ -203,6 +198,11 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 			bytes, err := io.ReadAll(resp.Body)
 			if err != nil {
 				errBuilder.WriteString("Error reading response bytes from " + url + ": " + err.Error() + "\n")
+				continue
+			}
+			err = resp.Body.Close()
+			if err != nil {
+				errBuilder.WriteString("Error closing response body from " + url + ": " + err.Error() + "\n")
 				continue
 			}
 			writeBytes := bytes
@@ -224,7 +224,10 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 			downloadedRoot := deserializedRewardsFile.GetMerkleRoot()
 
 			// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
-			deserializedRewardsFile.GenerateMerkleTree()
+			err = deserializedRewardsFile.GenerateMerkleTree()
+			if err != nil {
+				return fmt.Errorf("error generating merkle tree: %w", err)
+			}
 
 			// Get the resulting merkle root
 			calculatedRoot := deserializedRewardsFile.GetMerkleRoot()
@@ -349,35 +352,4 @@ func decompressFile(compressedBytes []byte) ([]byte, error) {
 	}
 
 	return decompressedBytes, nil
-}
-
-// Get the bond and node fee of a minipool for the specified time
-func getMinipoolBondAndNodeFee(details *rpstate.NativeMinipoolDetails, blockTime time.Time) (*big.Int, *big.Int) {
-	currentBond := details.NodeDepositBalance
-	currentFee := details.NodeFee
-	previousBond := details.LastBondReductionPrevValue
-	previousFee := details.LastBondReductionPrevNodeFee
-
-	// Init the zero wrapper
-	if zero == nil {
-		zero = big.NewInt(0)
-	}
-
-	reductionTimeBig := details.LastBondReductionTime
-	if reductionTimeBig.Cmp(zero) == 0 {
-		// Never reduced
-		return currentBond, currentFee
-	} else {
-		reductionTime := time.Unix(reductionTimeBig.Int64(), 0)
-		if reductionTime.Sub(blockTime) > 0 {
-			// This block occurred before the reduction
-			if previousFee.Cmp(zero) == 0 {
-				// Catch for minipools that were created before this call existed
-				return previousBond, currentFee
-			}
-			return previousBond, previousFee
-		}
-	}
-
-	return currentBond, currentFee
 }

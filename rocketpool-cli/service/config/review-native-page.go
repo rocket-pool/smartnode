@@ -13,13 +13,6 @@ import (
 // Constants
 const reviewNativePageID string = "review-native-settings"
 
-// The changed settings review page
-type ReviewNativePage struct {
-	md              *mainDisplay
-	changedSettings map[string][]cfgtypes.ChangedSetting
-	page            *page
-}
-
 // Create a page to review any changes
 func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
@@ -154,14 +147,20 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, ne
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView1, navString1)
+	_, err := fmt.Fprint(navTextView1, navString1)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 1: %w", err))
+	}
 
 	navString2 := "Esc: Go Back     Ctrl+C: Quit without Saving"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView2, navString2)
+	_, err = fmt.Fprint(navTextView2, navString2)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 2: %w", err))
+	}
 
 	// Create the nav footer
 	navBar := tview.NewFlex().

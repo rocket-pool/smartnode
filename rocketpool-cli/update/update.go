@@ -112,14 +112,21 @@ func Update(yes bool, skipSignatureVerification bool, force bool) error {
 	if err != nil {
 		return fmt.Errorf("error creating temporary directory: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		// Ignore errors, tmpreaper will handle it
+		_ = os.RemoveAll(tempDir)
+	}()
 
 	// Create a file that is executable and has the correct permissions
 	tempFile, err := os.CreateTemp(tempDir, "rocketpool-cli-update-*.bin")
 	if err != nil {
 		return fmt.Errorf("error creating temporary file: %w", err)
 	}
-	tempFile.Chmod(0755)
+	err = tempFile.Chmod(0755)
+	if err != nil {
+		return fmt.Errorf("error setting temporary file permissions: %w", err)
+	}
+	defer tempFile.Close()
 
 	// Download the new binary
 	downloadUrl := fmt.Sprintf(downloadUrlFormatString, runtime.GOOS, runtime.GOARCH)
@@ -132,7 +139,9 @@ func Update(yes bool, skipSignatureVerification bool, force bool) error {
 	if response.StatusCode != 200 {
 		return fmt.Errorf("error downloading new binary: %s", response.Status)
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 	if !skipSignatureVerification {
 		// Download the signature file
 		fmt.Println("Verifying the binary signature")
@@ -142,7 +151,9 @@ func Update(yes bool, skipSignatureVerification bool, force bool) error {
 		if err != nil {
 			return fmt.Errorf("error downloading signature: %w", err)
 		}
-		defer signatureResponse.Body.Close()
+		defer func() {
+			_ = signatureResponse.Body.Close()
+		}()
 		if signatureResponse.StatusCode != 200 {
 			return fmt.Errorf("error downloading signature: %s", signatureResponse.Status)
 		}

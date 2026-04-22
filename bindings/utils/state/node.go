@@ -108,9 +108,12 @@ func GetNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts
 		DistributorBalanceNodeETH: big.NewInt(0),
 	}
 
-	addNodeDetailsCalls(contracts, contracts.Multicaller, &details, nodeAddress)
+	err := addNodeDetailsCalls(contracts, contracts.Multicaller, &details, nodeAddress)
+	if err != nil {
+		return NativeNodeDetails{}, fmt.Errorf("error adding node details calls: %w", err)
+	}
 
-	_, err := contracts.Multicaller.FlexibleCall(true, opts)
+	_, err = contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
 		return NativeNodeDetails{}, fmt.Errorf("error executing multicall: %w", err)
 	}
@@ -190,7 +193,10 @@ func GetAllNativeNodeDetails(rp *rocketpool.RocketPool, contracts *NetworkContra
 				details.DistributorBalanceNodeETH = big.NewInt(0)
 				details.CollateralisationRatio = big.NewInt(0)
 
-				addNodeDetailsCalls(contracts, mc, details, address)
+				err = addNodeDetailsCalls(contracts, mc, details, address)
+				if err != nil {
+					return fmt.Errorf("error adding node details calls: %w", err)
+				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -252,7 +258,7 @@ func (node *NativeNodeDetails) WasOptedInAt(t time.Time) bool {
 }
 
 // Calculate the average node fee and user/node shares of the distributor's balance
-func (node *NativeNodeDetails) CalculateAverageFeeAndDistributorShares(minipoolDetails []*NativeMinipoolDetails) error {
+func (node *NativeNodeDetails) CalculateAverageFeeAndDistributorShares(minipoolDetails []*NativeMinipoolDetails) {
 
 	// Calculate the total of all fees for staking minipools that aren't finalized
 	totalFee := big.NewInt(0)
@@ -299,7 +305,6 @@ func (node *NativeNodeDetails) CalculateAverageFeeAndDistributorShares(minipoolD
 		node.DistributorBalanceUserETH = big.NewInt(0)
 	}
 
-	return nil
 }
 
 // Get all node addresses using the multicaller
@@ -328,7 +333,10 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 				return err
 			}
 			for j := i; j < max; j++ {
-				mc.AddCall(contracts.RocketNodeManager, &addresses[j], "getNodeAt", big.NewInt(int64(j)))
+				err = mc.AddCall(contracts.RocketNodeManager, &addresses[j], "getNodeAt", big.NewInt(int64(j)))
+				if err != nil {
+					return fmt.Errorf("error adding node address call for index %d: %w", j, err)
+				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -346,48 +354,59 @@ func getNodeAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkContracts
 }
 
 // Add all of the calls for the node details to the multicaller
-func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeNodeDetails, address common.Address) {
-	mc.AddCall(contracts.RocketNodeManager, &details.Exists, "getNodeExists", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.RegistrationTime, "getNodeRegistrationTime", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.TimezoneLocation, "getNodeTimezoneLocation", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.FeeDistributorInitialised, "getFeeDistributorInitialised", address)
-	mc.AddCall(contracts.RocketNodeDistributorFactory, &details.FeeDistributorAddress, "getProxyAddress", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.RewardNetwork, "getRewardNetwork", address)
+func addNodeDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *NativeNodeDetails, address common.Address) error {
+	allErrors := make([]error, 0)
+	addCall := func(contract *rocketpool.Contract, out any, method string, args ...any) {
+		allErrors = append(allErrors, mc.AddCall(contract, out, method, args...))
+	}
+	addCall(contracts.RocketNodeManager, &details.Exists, "getNodeExists", address)
+	addCall(contracts.RocketNodeManager, &details.RegistrationTime, "getNodeRegistrationTime", address)
+	addCall(contracts.RocketNodeManager, &details.TimezoneLocation, "getNodeTimezoneLocation", address)
+	addCall(contracts.RocketNodeManager, &details.FeeDistributorInitialised, "getFeeDistributorInitialised", address)
+	addCall(contracts.RocketNodeDistributorFactory, &details.FeeDistributorAddress, "getProxyAddress", address)
+	addCall(contracts.RocketNodeManager, &details.RewardNetwork, "getRewardNetwork", address)
 
-	mc.AddCall(contracts.RocketMinipoolManager, &details.MinipoolCount, "getNodeMinipoolCount", address)
-	mc.AddCall(contracts.RocketTokenRETH, &details.BalanceRETH, "balanceOf", address)
-	mc.AddCall(contracts.RocketTokenRPL, &details.BalanceRPL, "balanceOf", address)
-	mc.AddCall(contracts.RocketTokenRPLFixedSupply, &details.BalanceOldRPL, "balanceOf", address)
-	mc.AddCall(contracts.RocketStorage, &details.WithdrawalAddress, "getNodeWithdrawalAddress", address)
-	mc.AddCall(contracts.RocketStorage, &details.PendingWithdrawalAddress, "getNodePendingWithdrawalAddress", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.SmoothingPoolRegistrationState, "getSmoothingPoolRegistrationState", address)
-	mc.AddCall(contracts.RocketNodeManager, &details.SmoothingPoolRegistrationChanged, "getSmoothingPoolRegistrationChanged", address)
+	addCall(contracts.RocketMinipoolManager, &details.MinipoolCount, "getNodeMinipoolCount", address)
+	addCall(contracts.RocketTokenRETH, &details.BalanceRETH, "balanceOf", address)
+	addCall(contracts.RocketTokenRPL, &details.BalanceRPL, "balanceOf", address)
+	addCall(contracts.RocketTokenRPLFixedSupply, &details.BalanceOldRPL, "balanceOf", address)
+	addCall(contracts.RocketStorage, &details.WithdrawalAddress, "getNodeWithdrawalAddress", address)
+	addCall(contracts.RocketStorage, &details.PendingWithdrawalAddress, "getNodePendingWithdrawalAddress", address)
+	addCall(contracts.RocketNodeManager, &details.SmoothingPoolRegistrationState, "getSmoothingPoolRegistrationState", address)
+	addCall(contracts.RocketNodeManager, &details.SmoothingPoolRegistrationChanged, "getSmoothingPoolRegistrationChanged", address)
 
 	// Atlas
-	mc.AddCall(contracts.RocketNodeDeposit, &details.DepositCreditBalance, "getNodeDepositCredit", address)
-	mc.AddCall(contracts.RocketNodeStaking, &details.CollateralisationRatio, "getNodeETHCollateralisationRatio", address)
+	addCall(contracts.RocketNodeDeposit, &details.DepositCreditBalance, "getNodeDepositCredit", address)
+	addCall(contracts.RocketNodeStaking, &details.CollateralisationRatio, "getNodeETHCollateralisationRatio", address)
 
 	// Saturn
 	// a node's total borrowed ETH amount (minipool + megapool)
-	mc.AddCall(contracts.RocketNodeStaking, &details.EthBorrowed, "getNodeETHBorrowed", address)
+	addCall(contracts.RocketNodeStaking, &details.EthBorrowed, "getNodeETHBorrowed", address)
 	// a node's borrowed megapool ETH amount
-	mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolETHBorrowed, "getNodeMegapoolETHBorrowed", address)
+	addCall(contracts.RocketNodeStaking, &details.MegapoolETHBorrowed, "getNodeMegapoolETHBorrowed", address)
 	// a node's borrowed minipool ETH amount
-	mc.AddCall(contracts.RocketNodeStaking, &details.MinipoolETHBorrowed, "getNodeMinipoolETHBorrowed", address)
+	addCall(contracts.RocketNodeStaking, &details.MinipoolETHBorrowed, "getNodeMinipoolETHBorrowed", address)
 	// a node's total amount of a node operator's bonded ETH (minipool + megapool)
-	mc.AddCall(contracts.RocketNodeStaking, &details.EthBonded, "getNodeETHBonded", address)
+	addCall(contracts.RocketNodeStaking, &details.EthBonded, "getNodeETHBonded", address)
 	// the amount of a node operator's megapool bonded ETH
-	mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolEthBonded, "getNodeMegapoolETHBonded", address)
+	addCall(contracts.RocketNodeStaking, &details.MegapoolEthBonded, "getNodeMegapoolETHBonded", address)
 	// the amount of a node operator's minipool bonded ETH
-	mc.AddCall(contracts.RocketNodeStaking, &details.MinipoolETHBonded, "getNodeMinipoolETHBonded", address)
+	addCall(contracts.RocketNodeStaking, &details.MinipoolETHBonded, "getNodeMinipoolETHBonded", address)
 	// the amount of megapool staked RPL for a node operator
-	mc.AddCall(contracts.RocketNodeStaking, &details.MegapoolStakedRPL, "getNodeMegapoolStakedRPL", address)
+	addCall(contracts.RocketNodeStaking, &details.MegapoolStakedRPL, "getNodeMegapoolStakedRPL", address)
 	// the amount of legacy staked RPL for a node operator
-	mc.AddCall(contracts.RocketNodeStaking, &details.LegacyStakedRPL, "getNodeLegacyStakedRPL", address)
+	addCall(contracts.RocketNodeStaking, &details.LegacyStakedRPL, "getNodeLegacyStakedRPL", address)
 	// the timestamp at which a node last unstaked megapool staked RPL
-	mc.AddCall(contracts.RocketNodeStaking, &details.UnstakingRPL, "getNodeUnstakingRPL", address)
+	addCall(contracts.RocketNodeStaking, &details.UnstakingRPL, "getNodeUnstakingRPL", address)
 	// the amount of RPL that is locked for a given node
-	mc.AddCall(contracts.RocketNodeStaking, &details.LockedRPL, "getNodeLockedRPL", address)
-	mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolAddress, "getExpectedAddress", address)
-	mc.AddCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getMegapoolDeployed", address)
+	addCall(contracts.RocketNodeStaking, &details.LockedRPL, "getNodeLockedRPL", address)
+	addCall(contracts.RocketMegapoolFactory, &details.MegapoolAddress, "getExpectedAddress", address)
+	addCall(contracts.RocketMegapoolFactory, &details.MegapoolDeployed, "getMegapoolDeployed", address)
+
+	for _, err := range allErrors {
+		if err != nil {
+			return fmt.Errorf("error adding node details call: %w", err)
+		}
+	}
+	return nil
 }
