@@ -417,7 +417,7 @@ func (t *submitNetworkBalances) getNetworkBalances(elBlockHeader *types.Header, 
 			if err != nil {
 				return fmt.Errorf("error getting megapool balance details: %w", err)
 			}
-			i += 1
+			i++
 		}
 		return nil
 	})
@@ -685,11 +685,10 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 			IsStaking:   (validator.ExitEpoch > blockEpoch),
 			UserBalance: big.NewInt(0).Sub(userBalance, eth.EthToWei(16)), // Remove 16 ETH from the user balance for full minipools in the refund queue
 		}
-	} else {
-		return validatorBalanceDetails{
-			IsStaking:   (validator.ExitEpoch > blockEpoch),
-			UserBalance: userBalance,
-		}
+	}
+	return validatorBalanceDetails{
+		IsStaking:   (validator.ExitEpoch > blockEpoch),
+		UserBalance: userBalance,
 	}
 
 }

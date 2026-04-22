@@ -49,10 +49,10 @@ func (b *BalanceBatcher) GetEthBalances(addresses []common.Address, opts *bind.C
 	// Run the getters in batches
 	for i := 0; i < count; i += balanceBatchSize {
 		i := i
-		max := min(i+balanceBatchSize, count)
+		m := min(i+balanceBatchSize, count)
 
 		wg.Go(func() error {
-			subAddresses := addresses[i:max]
+			subAddresses := addresses[i:m]
 			tokens := []common.Address{
 				{}, // Empty token for ETH balance
 			}

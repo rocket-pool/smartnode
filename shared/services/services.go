@@ -146,12 +146,12 @@ func GetEthClient(c *cli.Command) (*ExecutionClientManager, error) {
 	return ec, nil
 }
 
-func dialProtectedEthClient(url string) (*ethClient, error) {
+func dialProtectedEthClient(url string) (*EthClient, error) {
 	ec, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
 	}
-	return &ethClient{ec}, nil
+	return &EthClient{ec}, nil
 }
 
 func GetRocketPool(c *cli.Command) (*rocketpool.RocketPool, error) {

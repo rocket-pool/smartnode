@@ -896,13 +896,13 @@ func (c *Client) RunNethermindPruneStarter(executionContainerName string) error 
 		if errObject, ok := response["error"].(map[string]any); ok {
 			fmt.Printf("Error starting prune: code %d, message = %s, data = %s\n", errObject["code"], errObject["message"], errObject["data"])
 			continue
-		} else {
-			fmt.Printf("Success: Pruning is now \"%s\"\n", response["result"])
-			fmt.Println("Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
-			fmt.Println("NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!")
-			fmt.Println("You must let it run to completion!")
-			break
 		}
+
+		fmt.Printf("Success: Pruning is now \"%s\"\n", response["result"])
+		fmt.Println("Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
+		fmt.Println("NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!")
+		fmt.Println("You must let it run to completion!")
+		break
 
 	}
 	return nil
@@ -1013,16 +1013,13 @@ func (c *Client) checkIfCommandExists(command string) (bool, error) {
 		if isExitErr && exitErr.ExitCode() == 127 {
 			// Command not found
 			return false, nil
-		} else {
-			return false, fmt.Errorf("error checking if %s exists: %w", command, err)
 		}
-	} else {
-		if strings.Contains(string(output), fmt.Sprintf("%s is", command)) {
-			return true, nil
-		} else {
-			return false, fmt.Errorf("unexpected output when checking for %s: %s", command, string(output))
-		}
+		return false, fmt.Errorf("error checking if %s exists: %w", command, err)
 	}
+	if strings.Contains(string(output), fmt.Sprintf("%s is", command)) {
+		return true, nil
+	}
+	return false, fmt.Errorf("unexpected output when checking for %s: %s", command, string(output))
 }
 
 // Build a docker compose command

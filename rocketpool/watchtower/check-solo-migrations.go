@@ -169,20 +169,20 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 			continue
 		}
 
-		totalCount += 1
+		totalCount++
 
 		// Scrub minipools that aren't seen on Beacon yet
 		validator := state.MinipoolValidatorDetails[mpd.Pubkey]
 		if !validator.Exists {
 			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool %s (pubkey %s) did not exist on Beacon yet, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex()))
-			doesntExistCount += 1
+			doesntExistCount++
 			continue
 		}
 
 		// Scrub minipools that are in the wrong state
 		if validator.Status != beacon.ValidatorState_ActiveOngoing {
 			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool %s (pubkey %s) was in state %v, but is required to be active_ongoing for migration", mpd.MinipoolAddress.Hex(), mpd.Pubkey.Hex(), validator.Status))
-			invalidStateCount += 1
+			invalidStateCount++
 			continue
 		}
 
@@ -194,19 +194,19 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 			remainingTime := creationTime.Add(scrubThreshold).Sub(blockTime)
 			if remainingTime < 0 {
 				t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("minipool timed out (created %s, current time %s, scrubbed after %s)", creationTime, blockTime, scrubThreshold))
-				timedOutCount += 1
+				timedOutCount++
 				continue
 			}
 			continue
 		case elPrefix:
 			if withdrawalCreds != mpd.WithdrawalCredentials {
 				t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("withdrawal credentials do not match (expected %s, actual %s)", mpd.WithdrawalCredentials.Hex(), withdrawalCreds.Hex()))
-				invalidCredentialsCount += 1
+				invalidCredentialsCount++
 				continue
 			}
 		default:
 			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("unexpected prefix in withdrawal credentials: %s", withdrawalCreds.Hex()))
-			invalidCredentialsCount += 1
+			invalidCredentialsCount++
 			continue
 		}
 
@@ -220,12 +220,12 @@ func (t *checkSoloMigrations) checkSoloMigrations(state *state.NetworkState) err
 
 		if currentBalance < threshold {
 			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the threshold of %d", currentBalance, threshold))
-			balanceTooLowCount += 1
+			balanceTooLowCount++
 			continue
 		}
 		if currentBalance < (creationBalanceGwei - buffer) {
 			t.scrubVacantMinipool(mpd.MinipoolAddress, fmt.Sprintf("current balance of %d is lower than the creation balance of %d, and below the acceptable buffer threshold of %d", currentBalance, creationBalanceGwei, buffer))
-			balanceTooLowCount += 1
+			balanceTooLowCount++
 			continue
 		}
 

@@ -254,7 +254,7 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 	// Run the getters in batches
 	for i := 0; i < count; i += networkEffectiveStakeBatchSize {
 		i := i
-		max := min(i+networkEffectiveStakeBatchSize, count)
+		m := min(i+networkEffectiveStakeBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -262,7 +262,7 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				address := addresses[j]
 				err = mc.AddCall(contracts.RocketNodeStaking, &minimumStakes[j], "getNodeMinimumRPLStake", address)
 				if err != nil {

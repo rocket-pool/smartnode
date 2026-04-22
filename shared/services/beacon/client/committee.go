@@ -16,7 +16,7 @@ type Committee struct {
 // Custom deserialization logic for Committee allows us to pool the validator
 // slices for reuse. They're quite large, so this cuts down on allocations
 // substantially.
-var validatorSlicePool sync.Pool = sync.Pool{
+var validatorSlicePool = sync.Pool{
 	New: func() any {
 		s := make([]string, 0, 1024)
 		return &s

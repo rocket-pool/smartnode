@@ -26,11 +26,11 @@ type settingsHome struct {
 	categoryList     *tview.List
 	settingsSubpages []settingsPage
 	content          tview.Primitive
-	md               *mainDisplay
+	md               *MainDisplay
 }
 
 // Creates a new SettingsHome instance and adds (and its subpages) it to the main display.
-func newSettingsHome(md *mainDisplay) *settingsHome {
+func newSettingsHome(md *MainDisplay) *settingsHome {
 
 	homePage := newPage(nil, settingsHomeID, "Categories", "", nil)
 

@@ -34,7 +34,7 @@ func getNodeVotingPower(s *state.NetworkState, nodeIdx int) *big.Int {
 			continue
 		}
 
-		activeMinipoolCount += 1
+		activeMinipoolCount++
 	}
 
 	// Get provided ETH (32 * minipoolCount - matched)

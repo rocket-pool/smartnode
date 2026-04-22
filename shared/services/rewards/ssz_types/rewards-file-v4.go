@@ -25,7 +25,7 @@ const (
 	FormatSSZ
 )
 
-var Magic [4]byte = [4]byte{0x52, 0x50, 0x52, 0x54}
+var Magic = [4]byte{0x52, 0x50, 0x52, 0x54}
 
 type Address [20]byte
 type Hash [32]byte

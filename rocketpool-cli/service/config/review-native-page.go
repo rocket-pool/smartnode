@@ -14,7 +14,7 @@ import (
 const reviewNativePageID string = "review-native-settings"
 
 // Create a page to review any changes
-func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
+func NewReviewNativePage(md *MainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
 	var changedSettings map[string][]cfgtypes.ChangedSetting
 

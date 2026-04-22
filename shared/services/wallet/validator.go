@@ -128,10 +128,9 @@ func (w *hdWallet) LoadValidatorKey(pubkey types.ValidatorPubkey) (*eth2types.BL
 	if len(errors) > 0 {
 		// If there were errors, return them
 		return nil, fmt.Errorf("encountered the following errors while trying to load the key for validator %s:\n%s", pubkey.Hex(), strings.Join(errors, "\n"))
-	} else {
-		// If there were no errors, the key just didn't exist
-		return nil, fmt.Errorf("couldn't find the key for validator %s in any of the wallet's keystores", pubkey.Hex())
 	}
+	// If there were no errors, the key just didn't exist
+	return nil, fmt.Errorf("couldn't find the key for validator %s in any of the wallet's keystores", pubkey.Hex())
 
 }
 
