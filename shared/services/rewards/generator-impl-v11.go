@@ -1214,7 +1214,7 @@ func (r *treeGeneratorImpl_v11) processEpoch(duringInterval bool, epoch uint64) 
 
 }
 
-func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.AttestationInfo) error {
+func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.AttestationInfo) {
 
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
@@ -1327,8 +1327,6 @@ func (r *treeGeneratorImpl_v11) checkAttestations(attestations []beacon.Attestat
 			}
 		}
 	}
-
-	return nil
 
 }
 

@@ -178,7 +178,7 @@ func setSmoothingPoolStatus(c *cli.Command, status bool, opts *bind.TransactOpts
 			}
 
 			// Restart the VC but don't pay attention to the errors, since a restart error got us here in the first place
-			validator.RestartValidator(cfg, bc, nil, d)
+			_ = validator.RestartValidator(cfg, bc, nil, d)
 
 			return nil, fmt.Errorf("Error restarting validator after updating the fee recipient to the Smoothing Pool: [%w]\nYour fee recipient has been set back to your node's distributor contract.\nYou have not been opted into the Smoothing Pool.", err)
 		}

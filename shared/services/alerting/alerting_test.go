@@ -53,7 +53,10 @@ func TestFetchAlerts_LowETHBalance(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, lowETHAlertJSON())
+		_, err := fmt.Fprint(w, lowETHAlertJSON())
+		if err != nil {
+			t.Fatalf("Error writing lowETHAlertJSON: %v", err)
+		}
 	}))
 	defer srv.Close()
 
@@ -86,7 +89,10 @@ func TestFetchAlerts_AlertingDisabled(t *testing.T) {
 	called := false
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
-		fmt.Fprint(w, lowETHAlertJSON())
+		_, err := fmt.Fprint(w, lowETHAlertJSON())
+		if err != nil {
+			t.Fatalf("Error writing lowETHAlertJSON: %v", err)
+		}
 	}))
 	defer srv.Close()
 

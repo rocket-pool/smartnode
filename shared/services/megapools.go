@@ -657,14 +657,19 @@ func GetWithdrawalProofForSlotFromAPI(c *cli.Command, finalizedSlot uint64, with
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, err
 	}
-	defer response.Body.Close()
+	defer func() {
+		_ = response.Body.Close()
+	}()
 	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, err
 	}
 	// unmarshal the response into the WithdrawalProofResponse type
 	var withdrawalProofResponse WithdrawalProofResponse
-	json.Unmarshal([]byte(body), &withdrawalProofResponse)
+	err = json.Unmarshal([]byte(body), &withdrawalProofResponse)
+	if err != nil {
+		return megapool.FinalBalanceProof{}, 0, err
+	}
 
 	// Convert []common.Hash to [][32]byte
 	witnesses := make([][32]byte, len(withdrawalProofResponse.Witnesses))

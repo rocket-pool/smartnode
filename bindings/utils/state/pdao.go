@@ -59,9 +59,12 @@ func GetProtocolDaoProposalDetails(rp *rocketpool.RocketPool, contracts *Network
 	rawDetails := protocolDaoProposalDetailsRaw{}
 	details.ID = proposalID
 
-	addProposalCalls(contracts, contracts.Multicaller, &rawDetails)
+	err := addProposalCalls(contracts, contracts.Multicaller, &rawDetails)
+	if err != nil {
+		return details, fmt.Errorf("error adding proposal calls: %w", err)
+	}
 
-	_, err := contracts.Multicaller.FlexibleCall(true, opts)
+	_, err = contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
 		return details, fmt.Errorf("error executing multicall: %w", err)
 	}
@@ -114,7 +117,10 @@ func getProposalDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, 
 				details := &propDetailsRaw[j]
 				details.ID = id
 
-				addProposalCalls(contracts, mc, details)
+				err = addProposalCalls(contracts, mc, details)
+				if err != nil {
+					return fmt.Errorf("error adding proposal calls: %w", err)
+				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -143,36 +149,45 @@ func getProposalDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts, 
 // Get the details of a proposal
 func addProposalCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *protocolDaoProposalDetailsRaw) error {
 	id := big.NewInt(0).SetUint64(details.ID)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ProposerAddress, "getProposer", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.DAO, "getDAO", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.TargetBlock, "getProposalBlock", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Message, "getMessage", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingStartTime, "getStart", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Phase1EndTime, "getPhase1End", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Phase2EndTime, "getPhase2End", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.ExpiryTime, "getExpires", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.CreatedTime, "getCreated", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerRequired, "getVotingPowerRequired", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerFor, "getVotingPowerFor", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerAgainst, "getVotingPowerAgainst", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerAbstained, "getVotingPowerAbstained", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerToVeto, "getVotingPowerVeto", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.IsDestroyed, "getDestroyed", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.IsFinalized, "getFinalised", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.IsExecuted, "getExecuted", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.IsVetoed, "getVetoed", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.VetoQuorum, "getProposalVetoQuorum", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.Payload, "getPayload", id)
-	mc.AddCall(contracts.RocketDAOProtocolProposal, &details.State, "getState", id)
-	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.DefeatIndex, "getDefeatIndex", id)
-	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.ProposalBond, "getProposalBond", id)
-	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.ChallengeBond, "getChallengeBond", id)
-	mc.AddCall(contracts.RocketDAOProtocolVerifier, &details.ChallengeWindow, "getChallengePeriod", id)
+	allErrors := make([]error, 0)
+	addCall := func(contract *rocketpool.Contract, out any, method string, args ...any) {
+		allErrors = append(allErrors, mc.AddCall(contract, out, method, args...))
+	}
+	addCall(contracts.RocketDAOProtocolProposal, &details.ProposerAddress, "getProposer", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.DAO, "getDAO", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.TargetBlock, "getProposalBlock", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.Message, "getMessage", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.VotingStartTime, "getStart", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.Phase1EndTime, "getPhase1End", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.Phase2EndTime, "getPhase2End", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.ExpiryTime, "getExpires", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.CreatedTime, "getCreated", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerRequired, "getVotingPowerRequired", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerFor, "getVotingPowerFor", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerAgainst, "getVotingPowerAgainst", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerAbstained, "getVotingPowerAbstained", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.VotingPowerToVeto, "getVotingPowerVeto", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.IsDestroyed, "getDestroyed", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.IsFinalized, "getFinalised", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.IsExecuted, "getExecuted", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.IsVetoed, "getVetoed", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.VetoQuorum, "getProposalVetoQuorum", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.Payload, "getPayload", id)
+	addCall(contracts.RocketDAOProtocolProposal, &details.State, "getState", id)
+	addCall(contracts.RocketDAOProtocolVerifier, &details.DefeatIndex, "getDefeatIndex", id)
+	addCall(contracts.RocketDAOProtocolVerifier, &details.ProposalBond, "getProposalBond", id)
+	addCall(contracts.RocketDAOProtocolVerifier, &details.ChallengeBond, "getChallengeBond", id)
+	addCall(contracts.RocketDAOProtocolVerifier, &details.ChallengeWindow, "getChallengePeriod", id)
+	for _, err := range allErrors {
+		if err != nil {
+			return fmt.Errorf("error adding proposal calls: %w", err)
+		}
+	}
 	return nil
 }
 
 // Converts a raw proposal to a well-formatted one
-func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDaoProposalDetailsRaw, details *protocol.ProtocolDaoProposalDetails, opts *bind.CallOpts) error {
+func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDaoProposalDetailsRaw, details *protocol.ProtocolDaoProposalDetails, opts *bind.CallOpts) {
 	details.ID = rawDetails.ID
 	details.DAO = rawDetails.DAO
 	details.ProposerAddress = rawDetails.ProposerAddress
@@ -205,5 +220,4 @@ func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDao
 	if err != nil {
 		details.PayloadStr = fmt.Sprintf("<error decoding: %s>", err.Error())
 	}
-	return nil
 }

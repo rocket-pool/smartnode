@@ -157,7 +157,10 @@ func (t *defendChallengeExit) run(state *state.NetworkState) error {
 				t.log.Printlnf("The validator %d was incorrectly challenged and needs a not-exiting proof", validatorInfo[i].ValidatorId)
 			}
 
-			t.defendChallenge(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), exiting, opts)
+			err := t.defendChallenge(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), exiting, opts)
+			if err != nil {
+				t.log.Printlnf("error defending the challenge: %v", err)
+			}
 		}
 
 	}

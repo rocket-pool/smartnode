@@ -189,7 +189,6 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 				errBuilder.WriteString("Downloading " + url + " failed (" + err.Error() + ")\n")
 				continue
 			}
-			defer resp.Body.Close()
 
 			if resp.StatusCode != http.StatusOK {
 				errBuilder.WriteString("Downloading " + url + " failed with status " + resp.Status + "\n")
@@ -199,6 +198,11 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 			bytes, err := io.ReadAll(resp.Body)
 			if err != nil {
 				errBuilder.WriteString("Error reading response bytes from " + url + ": " + err.Error() + "\n")
+				continue
+			}
+			err = resp.Body.Close()
+			if err != nil {
+				errBuilder.WriteString("Error closing response body from " + url + ": " + err.Error() + "\n")
 				continue
 			}
 			writeBytes := bytes
@@ -220,7 +224,10 @@ func (i *IntervalInfo) DownloadRewardsFile(cfg *config.RocketPoolConfig, isDaemo
 			downloadedRoot := deserializedRewardsFile.GetMerkleRoot()
 
 			// Reconstruct the merkle tree from the file data, this should overwrite the stored Merkle Root with a new one
-			deserializedRewardsFile.GenerateMerkleTree()
+			err = deserializedRewardsFile.GenerateMerkleTree()
+			if err != nil {
+				return fmt.Errorf("error generating merkle tree: %w", err)
+			}
 
 			// Get the resulting merkle root
 			calculatedRoot := deserializedRewardsFile.GetMerkleRoot()

@@ -183,7 +183,7 @@ func isPortReachableNATReflection(host string, port uint16) bool {
 	if err != nil {
 		return false
 	}
-	conn.Close()
+	_ = conn.Close()
 	return true
 }
 
@@ -212,7 +212,9 @@ func isPortReachableExternalService(port uint16) (bool, string, error) {
 	if err != nil {
 		return false, "", err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	// Read response
 	body, err := io.ReadAll(resp.Body)

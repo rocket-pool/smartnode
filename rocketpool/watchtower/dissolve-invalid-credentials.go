@@ -2,7 +2,6 @@ package watchtower
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -144,36 +143,40 @@ func (t *dissolveInvalidCredentials) dissolveInvalidCredentialValidators(state *
 	return nil
 }
 
-func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapool.ValidatorInfoFromGlobalIndex) error {
+func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapool.ValidatorInfoFromGlobalIndex) {
 	// Log
 	t.log.Printlnf("Dissolving megapool validator ID: %d from megapool %s...", validator.ValidatorId, validator.MegapoolAddress)
 
 	// Get transactor
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
-		return err
+		t.log.Printlnf("error getting the node account transactor: %v", err)
+		return
 	}
 
 	eth2Config, err := t.bc.GetEth2Config()
 	if err != nil {
-		return err
+		t.log.Printlnf("error getting the eth2 config: %v", err)
+		return
 	}
 
 	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, eth2Config, validator.MegapoolAddress, types.ValidatorPubkey(validator.Pubkey), nil)
 	if err != nil {
-		return fmt.Errorf("error getting validator proof: %w", err)
+		t.log.Printlnf("error getting validator proof: %v", err)
+		return
 	}
 
 	// Get the gas limit
 	gasInfo, err := megapool.EstimateDissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
-		return fmt.Errorf("could not estimate the gas required to dissolve the validator: %w", err)
+		t.log.Printlnf("error estimating the gas required to dissolve the validator: %v", err)
+		return
 	}
 
 	// Print the gas info
 	maxFee := eth.GweiToWei(utils.GetWatchtowerMaxFee(t.cfg))
 	if !api.PrintAndCheckGasInfo(gasInfo, false, 0, &t.log, maxFee, 0) {
-		return nil
+		return
 	}
 
 	// Set the gas settings
@@ -184,18 +187,17 @@ func (t *dissolveInvalidCredentials) dissolveMegapoolValidator(validator megapoo
 	// Dissolve
 	tx, err := megapool.DissolveWithProof(t.rp, validator.MegapoolAddress, validator.ValidatorId, slotTimestamp, validatorProof, slotProof, opts)
 	if err != nil {
-		return err
+		t.log.Printlnf("error dissolving the validator: %v", err)
+		return
 	}
 
 	// Print TX info and wait for it to be included in a block
 	err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
 	if err != nil {
-		return err
+		t.log.Printlnf("error waiting for the transaction to be included in a block: %v", err)
+		return
 	}
 
 	// Log
 	t.log.Printlnf("Successfully dissolved megapool validator ID: %s from megapool %s. (Invalid credentials)", validator.ValidatorId, validator.MegapoolAddress)
-
-	// Return
-	return nil
 }

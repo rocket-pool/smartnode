@@ -473,7 +473,10 @@ func waitEthClientSynced(c *cli.Command, verbose bool, timeout int64) (bool, err
 				return false, err
 			}
 			if synced {
-				alerting.AlertExecutionClientSyncComplete(cfg)
+				err = alerting.AlertExecutionClientSyncComplete(cfg)
+				if err != nil {
+					log.Printf("error alerting execution client sync complete: %v\n", err)
+				}
 				return true, nil
 			}
 		}
@@ -505,7 +508,10 @@ func waitEthClientSynced(c *cli.Command, verbose bool, timeout int64) (bool, err
 			}
 			// Only return true if the last reportedly known block is within our defined threshold
 			if isUpToDate {
-				alerting.AlertExecutionClientSyncComplete(cfg)
+				err = alerting.AlertExecutionClientSyncComplete(cfg)
+				if err != nil {
+					log.Printf("error alerting execution client sync complete: %v\n", err)
+				}
 				return true, nil
 			}
 		}
@@ -569,7 +575,10 @@ func waitBeaconClientSynced(c *cli.Command, verbose bool, timeout int64) (bool, 
 				return false, err
 			}
 			if synced {
-				alerting.AlertBeaconClientSyncComplete(cfg)
+				err = alerting.AlertBeaconClientSyncComplete(cfg)
+				if err != nil {
+					log.Printf("error alerting beacon client sync complete: %v\n", err)
+				}
 				return true, nil
 			}
 		}
@@ -586,7 +595,10 @@ func waitBeaconClientSynced(c *cli.Command, verbose bool, timeout int64) (bool, 
 				log.Printf("Eth 2.0 node syncing: %.2f%%\n", syncStatus.Progress*100)
 			}
 		} else {
-			alerting.AlertBeaconClientSyncComplete(cfg)
+			err = alerting.AlertBeaconClientSyncComplete(cfg)
+			if err != nil {
+				log.Printf("error alerting beacon client sync complete: %v\n", err)
+			}
 			return true, nil
 		}
 

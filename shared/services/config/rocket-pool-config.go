@@ -144,14 +144,22 @@ func getExternalIP() (net.IP, error) {
 	// Try IPv4 first
 	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
 	ip4Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
-	ip4Consensus.UseIPProtocol(4)
+	err := ip4Consensus.UseIPProtocol(4)
+	if err != nil {
+		// Only panics if the IP protocol isn't one of 0, 4, or 6
+		panic(err)
+	}
 	if ip, err := ip4Consensus.ExternalIP(); err == nil {
 		return ip, nil
 	}
 
 	// Try IPv6 as fallback
 	ip6Consensus := externalip.DefaultConsensus(nil, nil)
-	ip6Consensus.UseIPProtocol(6)
+	err = ip6Consensus.UseIPProtocol(6)
+	if err != nil {
+		// Only panics if the IP protocol isn't one of 0, 4, or 6
+		panic(err)
+	}
 	return ip6Consensus.ExternalIP()
 }
 
@@ -502,7 +510,13 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	// Apply the default values for mainnet
 	cfg.Smartnode.Network.Value = cfg.Smartnode.Network.Options[0].Value
-	cfg.applyAllDefaults()
+	err := cfg.applyAllDefaults()
+	if err != nil {
+		// This function is called in a lot of pure contexts, and
+		// we shouldn't ever see a failure on applying the defaults anyway - at runtime.
+		// This panic should get caught during CI
+		panic(err)
+	}
 
 	return cfg
 }

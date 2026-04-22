@@ -154,7 +154,11 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 		// Check if the assignment is possible
 		if nextAssignment.AssignmentPossible {
 			// Call assign
-			t.assignDeposit(nil)
+			err := t.assignDeposit(nil)
+			if err != nil {
+				t.log.Printlnf("error assigning the deposit: %v", err)
+				return err
+			}
 		}
 	} else {
 		t.log.Printlnf("Time left until the automatic stake %s", remainingTime)

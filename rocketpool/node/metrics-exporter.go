@@ -109,7 +109,7 @@ func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogge
 	mux := http.NewServeMux()
 	mux.Handle(metricsPath, handler)
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(`<html>
+		_, err := w.Write([]byte(`<html>
             <head><title>Rocket Pool Metrics Exporter</title></head>
             <body>
             <h1>Rocket Pool Metrics Exporter</h1>
@@ -117,6 +117,9 @@ func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogge
             </body>
             </html>`,
 		))
+		if err != nil {
+			logger.Printlnf("Error writing metrics exporter HTML: %v", err)
+		}
 	})
 	srv := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", metricsAddress, metricsPort),
