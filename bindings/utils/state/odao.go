@@ -41,9 +41,12 @@ func GetOracleDaoMemberDetails(rp *rocketpool.RocketPool, contracts *NetworkCont
 	details := OracleDaoMemberDetails{}
 	details.Address = memberAddress
 
-	addOracleDaoMemberDetailsCalls(contracts, contracts.Multicaller, &details)
+	err := addOracleDaoMemberDetailsCalls(contracts, contracts.Multicaller, &details)
+	if err != nil {
+		return OracleDaoMemberDetails{}, fmt.Errorf("error adding Oracle DAO member details calls: %w", err)
+	}
 
-	_, err := contracts.Multicaller.FlexibleCall(true, opts)
+	_, err = contracts.Multicaller.FlexibleCall(true, opts)
 	if err != nil {
 		return OracleDaoMemberDetails{}, fmt.Errorf("error executing multicall: %w", err)
 	}
@@ -95,7 +98,10 @@ func getOdaoAddresses(rp *rocketpool.RocketPool, contracts *NetworkContracts, op
 				return err
 			}
 			for j := i; j < max; j++ {
-				mc.AddCall(contracts.RocketDAONodeTrusted, &addresses[j], "getMemberAt", big.NewInt(int64(j)))
+				err = mc.AddCall(contracts.RocketDAONodeTrusted, &addresses[j], "getMemberAt", big.NewInt(int64(j)))
+				if err != nil {
+					return fmt.Errorf("error adding Oracle DAO member address call for index %d: %w", j, err)
+				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -136,7 +142,10 @@ func getOracleDaoDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts,
 				details := &memberDetails[j]
 				details.Address = address
 
-				addOracleDaoMemberDetailsCalls(contracts, mc, details)
+				err = addOracleDaoMemberDetailsCalls(contracts, mc, details)
+				if err != nil {
+					return fmt.Errorf("error adding Oracle DAO member details calls: %w", err)
+				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -163,20 +172,28 @@ func getOracleDaoDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts,
 // Add the Oracle DAO details getters to the multicaller
 func addOracleDaoMemberDetailsCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, details *OracleDaoMemberDetails) error {
 	address := details.Address
-	mc.AddCall(contracts.RocketDAONodeTrusted, &details.Exists, "getMemberIsValid", address)
-	mc.AddCall(contracts.RocketDAONodeTrusted, &details.ID, "getMemberID", address)
-	mc.AddCall(contracts.RocketDAONodeTrusted, &details.Url, "getMemberUrl", address)
-	mc.AddCall(contracts.RocketDAONodeTrusted, &details.joinedTimeRaw, "getMemberJoinedTime", address)
-	mc.AddCall(contracts.RocketDAONodeTrusted, &details.lastProposalTimeRaw, "getMemberLastProposalTime", address)
-	mc.AddCall(contracts.RocketDAONodeTrusted, &details.RPLBondAmount, "getMemberRPLBondAmount", address)
-	mc.AddCall(contracts.RocketDAONodeTrusted, &details.ReplacementAddress, "getMemberReplacedAddress", address)
-	mc.AddCall(contracts.RocketDAONodeTrusted, &details.IsChallenged, "getMemberIsChallenged", address)
+	allErrors := make([]error, 0)
+	addCall := func(contract *rocketpool.Contract, out any, method string, args ...any) {
+		allErrors = append(allErrors, mc.AddCall(contract, out, method, args...))
+	}
+	addCall(contracts.RocketDAONodeTrusted, &details.Exists, "getMemberIsValid", address)
+	addCall(contracts.RocketDAONodeTrusted, &details.ID, "getMemberID", address)
+	addCall(contracts.RocketDAONodeTrusted, &details.Url, "getMemberUrl", address)
+	addCall(contracts.RocketDAONodeTrusted, &details.joinedTimeRaw, "getMemberJoinedTime", address)
+	addCall(contracts.RocketDAONodeTrusted, &details.lastProposalTimeRaw, "getMemberLastProposalTime", address)
+	addCall(contracts.RocketDAONodeTrusted, &details.RPLBondAmount, "getMemberRPLBondAmount", address)
+	addCall(contracts.RocketDAONodeTrusted, &details.ReplacementAddress, "getMemberReplacedAddress", address)
+	addCall(contracts.RocketDAONodeTrusted, &details.IsChallenged, "getMemberIsChallenged", address)
+	for _, err := range allErrors {
+		if err != nil {
+			return fmt.Errorf("error adding Oracle DAO member details calls: %w", err)
+		}
+	}
 	return nil
 }
 
 // Fixes a member details struct with supplemental logic
-func fixupOracleDaoMemberDetails(details *OracleDaoMemberDetails) error {
+func fixupOracleDaoMemberDetails(details *OracleDaoMemberDetails) {
 	details.JoinedTime = convertToTime(details.joinedTimeRaw)
 	details.LastProposalTime = convertToTime(details.lastProposalTimeRaw)
-	return nil
 }

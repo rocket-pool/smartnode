@@ -1,8 +1,5 @@
 version: "2"
 linters:
-  default: none 
-  enable:
-    - staticcheck
   settings:
     staticcheck:
       checks:
@@ -18,6 +15,10 @@ linters:
         - -ST1020
         - -ST1021
         - -ST1022
+    errcheck:
+      exclude-functions:
+        - (*os.File).Close
+
 
 formatters:
   enable:

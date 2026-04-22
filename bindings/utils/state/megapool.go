@@ -88,7 +88,10 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 			}
 			var dummy *big.Int
 			for j := i; j < max; j++ {
-				mc.AddCall(megapoolManagerContract, &dummy, "getValidatorInfo", big.NewInt(int64(j)))
+				err = mc.AddCall(megapoolManagerContract, &dummy, "getValidatorInfo", big.NewInt(int64(j)))
+				if err != nil {
+					return fmt.Errorf("error adding validator info call for global index %d: %w", j, err)
+				}
 			}
 			responses, err := mc.Execute(true, opts)
 			if err != nil {
@@ -228,7 +231,10 @@ func GetBulkMegapoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 				megapoolDetails[j].NodeDebt = big.NewInt(0)
 				megapoolDetails[j].BondRequirement = big.NewInt(0)
 				megapoolDetails[j].EthBalance = big.NewInt(0)
-				addMegapoolDetailsCalls(mc, megaContracts[j], &megapoolDetails[j], &lastDistributionTimes[j])
+				err = addMegapoolDetailsCalls(mc, megaContracts[j], &megapoolDetails[j], &lastDistributionTimes[j])
+				if err != nil {
+					return fmt.Errorf("error adding megapool details calls: %w", err)
+				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {
@@ -265,8 +271,14 @@ func GetBulkMegapoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 				if megapoolDetails[j].DelegateExpired {
 					continue
 				}
-				mc.AddCall(megapoolFactory, &delegateExpiries[j], "getDelegateExpiry", megapoolDetails[j].DelegateAddress)
-				mc.AddCall(nodeDeposit, &megapoolDetails[j].BondRequirement, "getBondRequirement", big.NewInt(int64(megapoolDetails[j].ActiveValidatorCount)))
+				err = mc.AddCall(megapoolFactory, &delegateExpiries[j], "getDelegateExpiry", megapoolDetails[j].DelegateAddress)
+				if err != nil {
+					return fmt.Errorf("error adding delegate expiry call for megapool %s: %w", megapoolDetails[j].Address.Hex(), err)
+				}
+				err = mc.AddCall(nodeDeposit, &megapoolDetails[j].BondRequirement, "getBondRequirement", big.NewInt(int64(megapoolDetails[j].ActiveValidatorCount)))
+				if err != nil {
+					return fmt.Errorf("error adding bond requirement call for megapool %s: %w", megapoolDetails[j].Address.Hex(), err)
+				}
 				callCount += 2
 			}
 			if callCount == 0 {
@@ -295,20 +307,31 @@ func GetBulkMegapoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 }
 
 // Add all independent multicall entries for a single megapool's details
-func addMegapoolDetailsCalls(mc *multicall.MultiCaller, megaContract *rocketpool.Contract, details *NativeMegapoolDetails, lastDistributionTime **big.Int) {
-	mc.AddCall(megaContract, &details.EffectiveDelegateAddress, "getEffectiveDelegate")
-	mc.AddCall(megaContract, &details.DelegateAddress, "getDelegate")
-	mc.AddCall(megaContract, &details.DelegateExpired, "getDelegateExpired")
-	mc.AddCall(megaContract, lastDistributionTime, "getLastDistributionTime")
-	mc.AddCall(megaContract, &details.NodeDebt, "getDebt")
-	mc.AddCall(megaContract, &details.PendingRewards, "getPendingRewards")
-	mc.AddCall(megaContract, &details.RefundValue, "getRefundValue")
-	mc.AddCall(megaContract, &details.ValidatorCount, "getValidatorCount")
-	mc.AddCall(megaContract, &details.ActiveValidatorCount, "getActiveValidatorCount")
-	mc.AddCall(megaContract, &details.LockedValidatorCount, "getLockedValidatorCount")
-	mc.AddCall(megaContract, &details.UseLatestDelegate, "getUseLatestDelegate")
-	mc.AddCall(megaContract, &details.AssignedValue, "getAssignedValue")
-	mc.AddCall(megaContract, &details.NodeBond, "getNodeBond")
-	mc.AddCall(megaContract, &details.UserCapital, "getUserCapital")
-	mc.AddCall(megaContract, &details.NodeQueuedBond, "getNodeQueuedBond")
+func addMegapoolDetailsCalls(mc *multicall.MultiCaller, megaContract *rocketpool.Contract, details *NativeMegapoolDetails, lastDistributionTime **big.Int) error {
+	allErrors := make([]error, 0)
+	addCall := func(contract *rocketpool.Contract, out any, method string, args ...any) {
+		allErrors = append(allErrors, mc.AddCall(contract, out, method, args...))
+	}
+
+	addCall(megaContract, &details.EffectiveDelegateAddress, "getEffectiveDelegate")
+	addCall(megaContract, &details.DelegateAddress, "getDelegate")
+	addCall(megaContract, &details.DelegateExpired, "getDelegateExpired")
+	addCall(megaContract, lastDistributionTime, "getLastDistributionTime")
+	addCall(megaContract, &details.NodeDebt, "getDebt")
+	addCall(megaContract, &details.PendingRewards, "getPendingRewards")
+	addCall(megaContract, &details.RefundValue, "getRefundValue")
+	addCall(megaContract, &details.ValidatorCount, "getValidatorCount")
+	addCall(megaContract, &details.ActiveValidatorCount, "getActiveValidatorCount")
+	addCall(megaContract, &details.LockedValidatorCount, "getLockedValidatorCount")
+	addCall(megaContract, &details.UseLatestDelegate, "getUseLatestDelegate")
+	addCall(megaContract, &details.AssignedValue, "getAssignedValue")
+	addCall(megaContract, &details.NodeBond, "getNodeBond")
+	addCall(megaContract, &details.UserCapital, "getUserCapital")
+	addCall(megaContract, &details.NodeQueuedBond, "getNodeQueuedBond")
+	for _, err := range allErrors {
+		if err != nil {
+			return fmt.Errorf("error adding megapool details calls: %w", err)
+		}
+	}
+	return nil
 }

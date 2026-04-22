@@ -29,7 +29,9 @@ func GetMainnet20RewardsJSON() []byte {
 	if err != nil {
 		panic(err)
 	}
-	defer gz.Close()
+	defer func() {
+		_ = gz.Close()
+	}()
 	mainnet20RewardsJSON, err = io.ReadAll(gz)
 	if err != nil {
 		panic(err)
@@ -50,7 +52,9 @@ func GetMainnet20MinipoolPerformanceJSON() []byte {
 	if err != nil {
 		panic(err)
 	}
-	defer gz.Close()
+	defer func() {
+		_ = gz.Close()
+	}()
 	Mainnet20MinipoolPerformanceJSON, err = io.ReadAll(gz)
 	if err != nil {
 		panic(err)
@@ -73,7 +77,9 @@ func GetMainnet20RewardsState() *state.NetworkState {
 	if err != nil {
 		panic(err)
 	}
-	defer gz.Close()
+	defer func() {
+		_ = gz.Close()
+	}()
 
 	// Create a JSON decoder
 	dec := json.NewDecoder(gz)
@@ -124,7 +130,9 @@ func GetMainnet20CriticalDutiesSlots() *state.CriticalDutiesSlots {
 	if err != nil {
 		panic(err)
 	}
-	defer jsonReader.Close()
+	defer func() {
+		_ = jsonReader.Close()
+	}()
 
 	// Create a JSON decoder
 	dec := json.NewDecoder(jsonReader)

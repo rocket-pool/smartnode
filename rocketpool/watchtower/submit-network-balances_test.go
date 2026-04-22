@@ -18,7 +18,6 @@ import (
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 )
 
@@ -56,11 +55,6 @@ func makeEth2Config(secondsPerSlot, slotsPerEpoch uint64) beacon.Eth2Config {
 		SecondsPerSlot: secondsPerSlot,
 		SlotsPerEpoch:  slotsPerEpoch,
 	}
-}
-
-// slotToTime converts a slot number to a wall-clock time given the config.
-func slotToTime(slot uint64, cfg beacon.Eth2Config) time.Time {
-	return testGenesisTime.Add(time.Duration(slot*cfg.SecondsPerSlot) * time.Second)
 }
 
 // makeParentBeaconRoot returns a deterministic hash used as ParentBeaconRoot
@@ -267,10 +261,6 @@ func newMpd(status rptypes.MinipoolStatus, depositType rptypes.MinipoolDeposit) 
 		UserShareOfBalanceIncludingBeacon: ethToWei(16),
 		Version:                           3,
 	}
-}
-
-func (t *submitNetworkBalances) testGetMinipoolBalanceDetails(mpd *rpstate.NativeMinipoolDetails, s *state.NetworkState) validatorBalanceDetails {
-	return t.getMinipoolBalanceDetails(mpd, s, &config.RocketPoolConfig{})
 }
 
 func TestGetMinipoolBalanceDetails_VacantMinipool(t *testing.T) {

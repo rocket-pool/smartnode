@@ -50,9 +50,6 @@ const (
 	defaultFeeRecipientFile       string = "fr-default.tmpl"
 	defaultNativeFeeRecipientFile string = "fr-default-env.tmpl"
 
-	templateSuffix    string = ".tmpl"
-	composeFileSuffix string = ".yml"
-
 	nethermindAdminUrl          string = "http://127.0.0.1:7434"
 	pruneStarterContainerSuffix string = "_nm_prune_starter"
 
@@ -287,7 +284,10 @@ func (c *Client) runScript(script assets.ScriptWithContext, verbose bool, flags 
 	if verbose {
 		fmt.Printf("Verbose mode enabled, tmpdir %s will not be removed\n", tmpdir)
 	} else {
-		defer os.RemoveAll(tmpdir)
+		defer func() {
+			// It's fine if this fails, tmpreaper will handle it
+			_ = os.RemoveAll(tmpdir)
+		}()
 	}
 
 	// Create a file in the tmpdir
@@ -1315,7 +1315,9 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 	if err != nil {
 		return nil, fmt.Errorf("error calling HTTP API %s %s: %w", method, path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	responseBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -1348,7 +1350,7 @@ func (c *Client) printOutput(cmdText string) error {
 	if err != nil {
 		return err
 	}
-	defer cmd.Close()
+	defer cmd.Close() //nolint:errcheck
 
 	cmd.SetStdout(os.Stdout)
 	cmd.SetStderr(os.Stderr)

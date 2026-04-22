@@ -47,7 +47,6 @@ var (
 	bcManager            *BeaconClientManager
 	rocketPool           *rocketpool.RocketPool
 	rocketSignerRegistry *contracts.RocketSignerRegistry
-	beaconClient         beacon.Client
 	docker               *client.Client
 
 	initCfg                  sync.Once
@@ -57,9 +56,7 @@ var (
 	initECManager            sync.Once
 	initBCManager            sync.Once
 	initRocketPool           sync.Once
-	initOneInchOracle        sync.Once
 	initRocketSignerRegistry sync.Once
-	initBeaconClient         sync.Once
 	initDocker               sync.Once
 )
 

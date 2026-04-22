@@ -91,7 +91,11 @@ func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidators(state *s
 			assignTime := time.Unix(int64(validator.ValidatorInfo.LastAssignmentTime), 0)
 			if time.Since(assignTime) >= time.Duration(timeBeforeDissolve)*time.Second {
 				// dissolve
-				t.dissolveMegapoolValidator(validator)
+				err := t.dissolveMegapoolValidator(validator)
+				if err != nil {
+					t.log.Printlnf("error dissolving the validator: %v", err)
+					continue
+				}
 			}
 
 		}

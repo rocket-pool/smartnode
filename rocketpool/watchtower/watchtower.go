@@ -7,7 +7,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -184,11 +183,7 @@ func run(c *cli.Command) error {
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
 
-	// Wait group to handle the various threads
-	wg := new(sync.WaitGroup)
-	wg.Add(2)
-
-	// Run task loop
+	// Run task loop forever
 	go func() {
 		for {
 			// Randomize the next interval
@@ -336,7 +331,6 @@ func run(c *cli.Command) error {
 
 			time.Sleep(interval)
 		}
-		wg.Done()
 	}()
 
 	// Run metrics loop
@@ -345,11 +339,8 @@ func run(c *cli.Command) error {
 		if err != nil {
 			errorLog.Println(err)
 		}
-		wg.Done()
 	}()
 
-	// Wait for both threads to stop
-	wg.Wait()
 	return nil
 }
 
