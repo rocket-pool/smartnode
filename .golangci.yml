@@ -1,12 +1,5 @@
 version: "2"
 linters:
-  default: none
-  enable:
-    - govet
-    - ineffassign
-    - unused
-    - staticcheck
-    - errcheck
   settings:
     staticcheck:
       checks:
