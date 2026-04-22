@@ -62,7 +62,7 @@ func createFinishedStep(wiz *wizard, currentStep int, totalSteps int) *choiceWiz
 }
 
 // Processes a configuration after saving and exiting without looking at the review screen
-func processConfigAfterQuit(md *mainDisplay) {
+func processConfigAfterQuit(md *MainDisplay) {
 	errors := md.Config.Validate()
 	if len(errors) > 0 {
 		builder := strings.Builder{}

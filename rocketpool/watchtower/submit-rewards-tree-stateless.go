@@ -115,12 +115,11 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	if !nodeTrusted {
 		if t.cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Generate {
 			return nil
-		} else {
-			// Create the state, since it's not done except for manual generators
-			state, err = t.m.GetStateForSlot(beaconSlot)
-			if err != nil {
-				return fmt.Errorf("error getting state for beacon slot %d: %w", beaconSlot, err)
-			}
+		}
+		// Create the state, since it's not done except for manual generators
+		state, err = t.m.GetStateForSlot(beaconSlot)
+		if err != nil {
+			return fmt.Errorf("error getting state for beacon slot %d: %w", beaconSlot, err)
 		}
 	}
 

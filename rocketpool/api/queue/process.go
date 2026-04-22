@@ -13,7 +13,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canProcessQueue(c *cli.Command, max int64) (*api.CanProcessQueueResponse, error) {
+func canProcessQueue(c *cli.Command, m int64) (*api.CanProcessQueueResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -52,7 +52,7 @@ func canProcessQueue(c *cli.Command, max int64) (*api.CanProcessQueueResponse, e
 		if err != nil {
 			return err
 		}
-		gasInfo, err := deposit.EstimateAssignDepositsGas(rp, big.NewInt(max), opts)
+		gasInfo, err := deposit.EstimateAssignDepositsGas(rp, big.NewInt(m), opts)
 		if err == nil {
 			response.GasInfo = gasInfo
 		}
@@ -70,7 +70,7 @@ func canProcessQueue(c *cli.Command, max int64) (*api.CanProcessQueueResponse, e
 
 }
 
-func processQueue(c *cli.Command, max int64, opts *bind.TransactOpts) (*api.ProcessQueueResponse, error) {
+func processQueue(c *cli.Command, m int64, opts *bind.TransactOpts) (*api.ProcessQueueResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -88,7 +88,7 @@ func processQueue(c *cli.Command, max int64, opts *bind.TransactOpts) (*api.Proc
 	response := api.ProcessQueueResponse{}
 
 	// Process queue
-	hash, err := deposit.AssignDeposits(rp, big.NewInt(max), opts)
+	hash, err := deposit.AssignDeposits(rp, big.NewInt(m), opts)
 
 	if err != nil {
 		return nil, err

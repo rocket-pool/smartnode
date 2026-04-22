@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -525,7 +524,6 @@ func GetPriorityFee(priorityFee *big.Int, maxFee *big.Int) *big.Int {
 	// Gets the min(priorityFee, 25% of the oracle based maxFee)
 	if priorityFee.Cmp(quarterMaxFee) < 0 {
 		return priorityFee
-	} else {
-		return quarterMaxFee
 	}
+	return quarterMaxFee
 }

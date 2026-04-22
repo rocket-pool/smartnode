@@ -180,7 +180,7 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 	count := len(minipoolDetails)
 	for i := 0; i < count; i += minipoolCompleteShareBatchSize {
 		i := i
-		max := min(i+minipoolCompleteShareBatchSize, count)
+		m := min(i+minipoolCompleteShareBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -188,7 +188,7 @@ func CalculateCompleteMinipoolShares(rp *rocketpool.RocketPool, contracts *Netwo
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 
 				// Make the minipool contract
 				details := minipoolDetails[j]
@@ -295,7 +295,7 @@ func getNodeMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkC
 	count := int(minipoolCount)
 	for i := 0; i < count; i += minipoolAddressBatchSize {
 		i := i
-		max := min(i+minipoolAddressBatchSize, count)
+		m := min(i+minipoolAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -303,7 +303,7 @@ func getNodeMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkC
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				err = mc.AddCall(contracts.RocketMinipoolManager, &addresses[j], "getNodeMinipoolAt", nodeAddress, big.NewInt(int64(j)))
 				if err != nil {
 					return fmt.Errorf("error adding node minipool at call for index %d: %w", j, err)
@@ -341,7 +341,7 @@ func getAllMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkCo
 	count := int(minipoolCount)
 	for i := 0; i < count; i += minipoolAddressBatchSize {
 		i := i
-		max := min(i+minipoolAddressBatchSize, count)
+		m := min(i+minipoolAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -349,7 +349,7 @@ func getAllMinipoolAddressesFast(rp *rocketpool.RocketPool, contracts *NetworkCo
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				err = mc.AddCall(contracts.RocketMinipoolManager, &addresses[j], "getMinipoolAt", big.NewInt(int64(j)))
 				if err != nil {
 					return fmt.Errorf("error adding minipool at call for index %d: %w", j, err)
@@ -381,7 +381,7 @@ func getMinipoolVersionsFast(rp *rocketpool.RocketPool, contracts *NetworkContra
 	versions := make([]uint8, count)
 	for i := 0; i < count; i += minipoolVersionBatchSize {
 		i := i
-		max := min(i+minipoolVersionBatchSize, count)
+		m := min(i+minipoolVersionBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -389,7 +389,7 @@ func getMinipoolVersionsFast(rp *rocketpool.RocketPool, contracts *NetworkContra
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				contract, err := rocketpool.GetRocketVersionContractForAddress(rp, addresses[j])
 				if err != nil {
 					return fmt.Errorf("error creating version contract for minipool %s: %w", addresses[j].Hex(), err)
@@ -438,7 +438,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	count := len(addresses)
 	for i := 0; i < count; i += minipoolBatchSize {
 		i := i
-		max := min(i+minipoolBatchSize, count)
+		m := min(i+minipoolBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -446,7 +446,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 
 				address := addresses[j]
 				details := &minipoolDetails[j]
@@ -476,7 +476,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	wg2.SetLimit(threadLimit)
 	for i := 0; i < count; i += minipoolBatchSize {
 		i := i
-		max := min(i+minipoolBatchSize, count)
+		m := min(i+minipoolBatchSize, count)
 
 		wg2.Go(func() error {
 			var err error
@@ -484,7 +484,7 @@ func getBulkMinipoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				details := &minipoolDetails[j]
 				details.Version = versions[j]
 				err = addMinipoolShareCalls(rp, mc, details, opts)

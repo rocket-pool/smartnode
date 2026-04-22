@@ -89,7 +89,7 @@ func getOdaoAddresses(rp *rocketpool.RocketPool, contracts *NetworkContracts, op
 	count := int(memberCount)
 	for i := 0; i < count; i += minipoolAddressBatchSize {
 		i := i
-		max := min(i+oDaoAddressBatchSize, count)
+		m := min(i+oDaoAddressBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -97,7 +97,7 @@ func getOdaoAddresses(rp *rocketpool.RocketPool, contracts *NetworkContracts, op
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				err = mc.AddCall(contracts.RocketDAONodeTrusted, &addresses[j], "getMemberAt", big.NewInt(int64(j)))
 				if err != nil {
 					return fmt.Errorf("error adding Oracle DAO member address call for index %d: %w", j, err)
@@ -128,7 +128,7 @@ func getOracleDaoDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts,
 	count := len(addresses)
 	for i := 0; i < count; i += minipoolBatchSize {
 		i := i
-		max := min(i+minipoolBatchSize, count)
+		m := min(i+minipoolBatchSize, count)
 
 		wg.Go(func() error {
 			var err error
@@ -136,7 +136,7 @@ func getOracleDaoDetails(rp *rocketpool.RocketPool, contracts *NetworkContracts,
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 
 				address := addresses[j]
 				details := &memberDetails[j]

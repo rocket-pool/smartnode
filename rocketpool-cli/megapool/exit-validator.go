@@ -53,10 +53,9 @@ func getExitableValidator() (uint64, bool, error) {
 		// Get validators
 		return uint64(activeValidators[selected].ValidatorId), true, nil
 
-	} else {
-		fmt.Println("No validators can be exited at the moment")
-		return 0, false, nil
 	}
+	fmt.Println("No validators can be exited at the moment")
+	return 0, false, nil
 }
 
 func exitValidator(validatorId uint64, yes bool) error {

@@ -81,20 +81,19 @@ func delegateUpgradeMinipools(minipool string, includeFinalized, yes bool) error
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
+	var totalGas uint64
+	var totalSafeGas uint64
 	var gasInfo rocketpoolapi.GasInfo
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanDelegateUpgradeMinipool(minipool)
 		if err != nil {
 			fmt.Printf("WARNING: Couldn't get gas price for upgrade transaction (%s)\n", err)
 			break
-		} else {
-			fmt.Printf("Minipool %s will upgrade to delegate contract %s.\n", minipool.Hex(), canResponse.LatestDelegateAddress.Hex())
-			gasInfo = canResponse.GasInfo
-			totalGas += canResponse.GasInfo.EstGasLimit
-			totalSafeGas += canResponse.GasInfo.SafeGasLimit
 		}
+		fmt.Printf("Minipool %s will upgrade to delegate contract %s.\n", minipool.Hex(), canResponse.LatestDelegateAddress.Hex())
+		gasInfo = canResponse.GasInfo
+		totalGas += canResponse.GasInfo.EstGasLimit
+		totalSafeGas += canResponse.GasInfo.SafeGasLimit
 	}
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas

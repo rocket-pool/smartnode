@@ -325,17 +325,17 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/odao/can-propose-members-minipool-unbonded-max", func(w http.ResponseWriter, r *http.Request) {
-		max, err := parseUint64(r, "max")
+		m, err := parseUint64(r, "max")
 		if err != nil {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canProposeSettingMinipoolUnbondedMax(c, max)
+		resp, err := canProposeSettingMinipoolUnbondedMax(c, m)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/odao/propose-members-minipool-unbonded-max", func(w http.ResponseWriter, r *http.Request) {
-		max, err := parseUint64(r, "max")
+		m, err := parseUint64(r, "max")
 		if err != nil {
 			apiutils.WriteErrorResponse(w, err)
 			return
@@ -345,7 +345,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := proposeSettingMinipoolUnbondedMax(c, max, opts)
+		resp, err := proposeSettingMinipoolUnbondedMax(c, m, opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 

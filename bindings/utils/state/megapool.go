@@ -79,7 +79,7 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 	wg.SetLimit(threadLimit)
 	for i := 0; i < count; i += megapoolValidatorsBatchSize {
 		i := i
-		max := min(i+megapoolValidatorsBatchSize, count)
+		m := min(i+megapoolValidatorsBatchSize, count)
 
 		wg.Go(func() error {
 			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
@@ -87,7 +87,7 @@ func GetAllMegapoolValidators(rp *rocketpool.RocketPool, contracts *NetworkContr
 				return err
 			}
 			var dummy *big.Int
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				err = mc.AddCall(megapoolManagerContract, &dummy, "getValidatorInfo", big.NewInt(int64(j)))
 				if err != nil {
 					return fmt.Errorf("error adding validator info call for global index %d: %w", j, err)
@@ -214,14 +214,14 @@ func GetBulkMegapoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	wg.SetLimit(threadLimit)
 	for i := 0; i < count; i += megapoolBatchSize {
 		i := i
-		max := min(i+megapoolBatchSize, count)
+		m := min(i+megapoolBatchSize, count)
 
 		wg.Go(func() error {
 			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				megapoolDetails[j].UserCapital = big.NewInt(0)
 				megapoolDetails[j].NodeQueuedBond = big.NewInt(0)
 				megapoolDetails[j].NodeBond = big.NewInt(0)
@@ -259,7 +259,7 @@ func GetBulkMegapoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 	wg2.SetLimit(threadLimit)
 	for i := 0; i < count; i += megapoolBatchSize {
 		i := i
-		max := min(i+megapoolBatchSize, count)
+		m := min(i+megapoolBatchSize, count)
 
 		wg2.Go(func() error {
 			mc, err := multicall.NewMultiCaller(rp.Client, multicallerAddress)
@@ -267,7 +267,7 @@ func GetBulkMegapoolDetails(rp *rocketpool.RocketPool, contracts *NetworkContrac
 				return err
 			}
 			callCount := 0
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				if megapoolDetails[j].DelegateExpired {
 					continue
 				}

@@ -16,13 +16,13 @@ const reviewPageID string = "review-settings"
 
 // The changed settings review page
 type ReviewPage struct {
-	md              *mainDisplay
+	md              *MainDisplay
 	changedSettings map[string][]cfgtypes.ChangedSetting
 	page            *page
 }
 
 // Create a page to review any changes
-func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
+func NewReviewPage(md *MainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
 	var changedSettings map[string][]cfgtypes.ChangedSetting
 	var totalAffectedContainers map[cfgtypes.ContainerID]bool

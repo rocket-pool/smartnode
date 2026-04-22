@@ -204,8 +204,8 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
+	var totalGas uint64
+	var totalSafeGas uint64
 	var gasInfo rocketpoolapi.GasInfo
 	for _, minipool := range selectedMinipools {
 		gasInfo = minipool.GasInfo

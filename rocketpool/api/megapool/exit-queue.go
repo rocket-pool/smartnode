@@ -65,10 +65,9 @@ func canExitQueue(c *cli.Command, validatorIndex uint32) (*api.CanExitQueueRespo
 	gasInfo, err := mp.EstimateDequeueGas(validatorIndex, opts)
 	if err != nil {
 		return nil, err
-	} else {
-		response.GasInfo = gasInfo
-		response.CanExit = true
 	}
+	response.GasInfo = gasInfo
+	response.CanExit = true
 
 	return &response, nil
 

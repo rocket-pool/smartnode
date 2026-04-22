@@ -1,7 +1,7 @@
 package node
 
 import (
-	_ "time/tzdata"
+	_ "time/tzdata" // Load the embedded tz data
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 

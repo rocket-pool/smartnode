@@ -149,35 +149,34 @@ func nodeClaimRewards(restakeAmountFlag string, yes bool) error {
 				indices = append(indices, intervalInfo.Index)
 			}
 			break
-		} else {
-			elements := strings.Split(indexSelection, ",")
-			allValid := true
-			seenIndices := map[uint64]bool{}
+		}
+		elements := strings.Split(indexSelection, ",")
+		allValid := true
+		seenIndices := map[uint64]bool{}
 
-			for _, element := range elements {
-				found := slices.Contains(validIndices, element)
-				if !found {
-					fmt.Printf("'%s' is an invalid index.\nValid indices are: %s\n", element, strings.Join(validIndices, ","))
-					allValid = false
-					break
-				}
-				index, err := strconv.ParseUint(element, 0, 64)
-				if err != nil {
-					fmt.Printf("'%s' is an invalid index.\nValid indices are: %s\n", element, strings.Join(validIndices, ","))
-					allValid = false
-					break
-				}
-
-				// Ignore duplicates
-				_, exists := seenIndices[index]
-				if !exists {
-					indices = append(indices, index)
-					seenIndices[index] = true
-				}
-			}
-			if allValid {
+		for _, element := range elements {
+			found := slices.Contains(validIndices, element)
+			if !found {
+				fmt.Printf("'%s' is an invalid index.\nValid indices are: %s\n", element, strings.Join(validIndices, ","))
+				allValid = false
 				break
 			}
+			index, err := strconv.ParseUint(element, 0, 64)
+			if err != nil {
+				fmt.Printf("'%s' is an invalid index.\nValid indices are: %s\n", element, strings.Join(validIndices, ","))
+				allValid = false
+				break
+			}
+
+			// Ignore duplicates
+			_, exists := seenIndices[index]
+			if !exists {
+				indices = append(indices, index)
+				seenIndices[index] = true
+			}
+		}
+		if allValid {
+			break
 		}
 	}
 
