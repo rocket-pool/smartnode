@@ -145,6 +145,7 @@ type RocketPoolConfig struct {
 // * Improve peer discovery and node performance
 // * Avoid unnecessary container restarts caused by switching between IPv4 and IPv6
 func getExternalIP() (net.IP, error) {
+	// Try IPv4 first
 	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
 	ip4Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
 	err := ip4Consensus.UseIPProtocol(4)
