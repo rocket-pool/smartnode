@@ -23,8 +23,6 @@ services:
       - net
 networks:
   net:
-    {{- if .IsIPv6Enabled}}
-    enable_ipv6: true
-    {{- end}}
+    enable_ipv6: {{ .IsIPv6Enabled }}
 volumes:
   grafana-storage:
