@@ -8,10 +8,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli/v3"
 )
 
 func runMetricsServer(c *cli.Command, logger log.ColorLogger, scrubCollector *collectors.ScrubCollector, bondReductionCollector *collectors.BondReductionCollector, soloMigrationCollector *collectors.SoloMigrationCollector) error {

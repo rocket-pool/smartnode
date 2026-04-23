@@ -17,6 +17,7 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/klauspost/compress/zstd"
 	"github.com/mitchellh/go-homedir"
+
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"

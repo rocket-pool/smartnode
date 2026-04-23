@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 
 	"github.com/alessio/shellescape"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"gopkg.in/yaml.v2"
+
+	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 const (

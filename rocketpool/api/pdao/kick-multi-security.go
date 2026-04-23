@@ -3,10 +3,11 @@ package pdao
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
 )
 
 func canProposeKickMultiFromSecurityCouncil(c *cli.Command, addresses []common.Address) (*api.PDAOCanProposeKickMultiFromSecurityCouncilResponse, error) {

@@ -6,6 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -13,7 +15,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
-	"github.com/urfave/cli/v3"
 )
 
 func getSmoothingPoolRegistrationStatus(c *cli.Command) (*api.GetSmoothingPoolRegistrationStatusResponse, error) {

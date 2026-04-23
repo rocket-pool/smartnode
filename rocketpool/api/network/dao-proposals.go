@@ -6,6 +6,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+	"github.com/wealdtech/go-ens/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/rocketpool/api/pdao"
@@ -13,9 +17,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/urfave/cli/v3"
-	"github.com/wealdtech/go-ens/v3"
-	"golang.org/x/sync/errgroup"
 )
 
 func getActiveDAOProposals(c *cli.Command) (*api.NetworkDAOProposalsResponse, error) {

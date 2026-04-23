@@ -13,9 +13,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types/big"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
+
+	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types/big"
 )
 
 var Magicv2 = [4]byte{0x52, 0x50, 0x52, 0x55}

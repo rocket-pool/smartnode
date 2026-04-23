@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/rivo/tview"
+
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 

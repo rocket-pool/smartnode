@@ -1,8 +1,9 @@
 package wallet
 
 import (
-	"github.com/rocket-pool/smartnode/bindings/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
+
+	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
 // Get the number of validator keys recorded in the wallet
