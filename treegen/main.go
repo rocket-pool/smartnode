@@ -8,8 +8,9 @@ import (
 	"runtime/pprof"
 
 	"github.com/felixge/fgprof"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/urfave/cli/v3"
+
+	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )
 
 const (

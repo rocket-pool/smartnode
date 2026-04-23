@@ -14,6 +14,8 @@ import (
 	"github.com/alessio/shellescape"
 	externalip "github.com/glendc/go-external-ip"
 	"github.com/pbnjay/memory"
+	"gopkg.in/yaml.v2"
+
 	"github.com/rocket-pool/smartnode/addons"
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared"
@@ -21,7 +23,6 @@ import (
 	addontypes "github.com/rocket-pool/smartnode/shared/types/addons"
 	"github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"gopkg.in/yaml.v2"
 )
 
 // Constants

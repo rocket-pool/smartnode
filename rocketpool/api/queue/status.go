@@ -1,10 +1,11 @@
 package queue
 
 import (
-	"github.com/rocket-pool/smartnode/bindings/deposit"
-	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/deposit"
+	"github.com/rocket-pool/smartnode/bindings/minipool"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"

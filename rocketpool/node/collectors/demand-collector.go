@@ -2,6 +2,7 @@ package collectors
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 )

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/goccy/go-json"
+
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 )

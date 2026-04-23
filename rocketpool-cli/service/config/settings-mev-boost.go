@@ -2,6 +2,7 @@ package config
 
 import (
 	"github.com/rivo/tview"
+
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )

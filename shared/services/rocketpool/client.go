@@ -27,6 +27,7 @@ import (
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
 	"github.com/mitchellh/go-homedir"
+
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/assets"

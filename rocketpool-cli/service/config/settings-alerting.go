@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rivo/tview"
+
 	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 

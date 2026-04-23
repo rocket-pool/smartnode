@@ -210,3 +210,7 @@ test:
 clean:
 	rm -rf ${BUILD_DIR}
 	docker buildx rm smartnode-builder
+
+.PHONY: fmt
+fmt:
+	go run golang.org/x/tools/cmd/goimports@v0.44.0 -local github.com/rocket-pool/smartnode -w .

@@ -12,9 +12,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
+	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
-	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
 var ErrIsMasquerading = errors.New("The node is currently masquerading. Use the command 'rocketpool wallet end-masquerade' to restore the node wallet, if one is loaded.")

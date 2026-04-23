@@ -8,9 +8,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/goccy/go-json"
-	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
+
+	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
 type MinipoolPerformanceFile_v2 struct {
