@@ -76,6 +76,9 @@ type RocketPoolConfig struct {
 	ConsensusClient         config.Parameter `yaml:"consensusClient,omitempty"`
 	ExternalConsensusClient config.Parameter `yaml:"externalConsensusClient,omitempty"`
 
+	// IPv6 networking
+	EnableIPv6 config.Parameter `yaml:"enableIPv6,omitempty"`
+
 	// Metrics settings
 	EnableMetrics           config.Parameter `yaml:"enableMetrics,omitempty"`
 	EnableODaoMetrics       config.Parameter `yaml:"enableODaoMetrics,omitempty"`
@@ -352,6 +355,17 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			}},
 		},
 
+		EnableIPv6: config.Parameter{
+			ID:                 "enableIPv6",
+			Name:               "Enable IPv6",
+			Description:        "Enables dual-stack (IPv4 + IPv6) networking for the Smart Node. When enabled, your Ethereum clients will listen on both IPv4 and IPv6 and can peer with IPv6 nodes in addition to IPv4. Enable this if your machine has only an IPv6 address, or if you want your node to participate in IPv6 peering.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Alertmanager, config.ContainerID_Exporter, config.ContainerID_MevBoost, config.ContainerID_CommitBoost},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
+		},
+
 		EnableMetrics: config.Parameter{
 			ID:                 "enableMetrics",
 			Name:               "Enable Metrics",
@@ -573,6 +587,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 		&cfg.ConsensusClientMode,
 		&cfg.ConsensusClient,
 		&cfg.ExternalConsensusClient,
+		&cfg.EnableIPv6,
 		&cfg.EnableMetrics,
 		&cfg.EnableODaoMetrics,
 		&cfg.EnableBitflyNodeMetrics,
@@ -1327,6 +1342,12 @@ func (cfg *RocketPoolConfig) GetECAdditionalFlags() (string, error) {
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
 }
 
+// IsIPv6Enabled returns true if IPv6 support is enabled for the Docker network.
+// Used by text/template to conditionally add enable_ipv6 to compose network definitions.
+func (cfg *RocketPoolConfig) IsIPv6Enabled() bool {
+	return cfg.EnableIPv6.Value.(bool)
+}
+
 // Used by text/template to format eth1.yml
 func (cfg *RocketPoolConfig) GetExternalIp() string {
 	// Get the external IP address
@@ -1337,10 +1358,28 @@ func (cfg *RocketPoolConfig) GetExternalIp() string {
 		return ""
 	}
 
-	if ip.To4() == nil {
-		fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
+	if ip.To4() == nil && !cfg.IsIPv6Enabled() {
+		fmt.Println("Warning: your external IP address is IPv6. If you haven't enabled IPv6 support in your configuration, your node may have trouble finding peers. Run 'rocketpool service config' and enable IPv6 under 'Smart Node and TX Fees'.")
 	}
 
+	return ip.String()
+}
+
+// Used by text/template to format eth2.yml when IPv6 is enabled.
+// Lodestar requires --enr.ip6 and Teku requires --p2p-advertised-ips to advertise IPv6 in their ENR.
+// Returns the external IPv6 address, or empty string if unavailable.
+func (cfg *RocketPoolConfig) GetExternalIpv6() string {
+	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
+	ip6Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
+	err := ip6Consensus.UseIPProtocol(6)
+	if err != nil {
+		return ""
+	}
+
+	ip, err := ip6Consensus.ExternalIP()
+	if err != nil || ip.To4() != nil {
+		return ""
+	}
 	return ip.String()
 }
 
