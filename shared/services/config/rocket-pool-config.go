@@ -1371,7 +1371,11 @@ func (cfg *RocketPoolConfig) GetExternalIp() string {
 func (cfg *RocketPoolConfig) GetExternalIpv6() string {
 	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
 	ip6Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
-	ip6Consensus.UseIPProtocol(6)
+	err := ip6Consensus.UseIPProtocol(6)
+	if err != nil {
+		return ""
+	}
+
 	ip, err := ip6Consensus.ExternalIP()
 	if err != nil || ip.To4() != nil {
 		return ""
