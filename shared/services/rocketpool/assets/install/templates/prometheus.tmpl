@@ -28,5 +28,6 @@ services:
       - "host.docker.internal:host-gateway"
 networks:
   net:
+    enable_ipv6: {{ .IsIPv6Enabled }}
 volumes:
   prometheus-data:
