@@ -16,7 +16,6 @@ type PBSubmissionRef int
 // ones to restart upon a settings change
 const (
 	ContainerID_Unknown      ContainerID = ""
-	ContainerID_Api          ContainerID = "api"
 	ContainerID_Node         ContainerID = "node"
 	ContainerID_Watchtower   ContainerID = "watchtower"
 	ContainerID_Eth1         ContainerID = "eth1"

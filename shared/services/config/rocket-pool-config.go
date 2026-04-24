@@ -29,7 +29,6 @@ import (
 const (
 	rootConfigName string = "root"
 
-	ApiContainerName          string = "api"
 	Eth1ContainerName         string = "eth1"
 	Eth1FallbackContainerName string = "eth1-fallback"
 	Eth2ContainerName         string = "eth2"
@@ -223,7 +222,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Choose which mode to use for your Execution client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options:            clientModes,
@@ -263,7 +262,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Enable this if you would like to specify a fallback Execution and Consensus Client, which will temporarily be used by the Smart Node and your Validator Client if your primary Execution / Consensus client pair ever go offline (e.g. if you switch, prune, or resync your clients).",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Node, config.ContainerID_Watchtower},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Node, config.ContainerID_Watchtower},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
@@ -274,7 +273,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "The delay to wait after your primary Execution or Consensus clients fail before trying to reconnect to them. An example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: "60s"},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
@@ -285,7 +284,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Choose which mode to use for your Consensus client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: config.Mode_Local},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Validator, config.ContainerID_Watchtower},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Validator, config.ContainerID_Watchtower},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options:            clientModes,
@@ -297,7 +296,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Select which Consensus client you would like to use.",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: config.ConsensusClient_Nimbus},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
@@ -329,7 +328,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Select which Consensus client your externally managed client is.",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: config.ConsensusClient_Lighthouse},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
@@ -361,7 +360,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Enables dual-stack (IPv4 + IPv6) networking for the Smart Node. When enabled, your Ethereum clients will listen on both IPv4 and IPv6 and can peer with IPv6 nodes in addition to IPv4. Enable this if your machine has only an IPv6 address, or if you want your node to participate in IPv6 peering.",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Alertmanager, config.ContainerID_Exporter, config.ContainerID_MevBoost, config.ContainerID_CommitBoost},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Alertmanager, config.ContainerID_Exporter, config.ContainerID_MevBoost, config.ContainerID_CommitBoost},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},

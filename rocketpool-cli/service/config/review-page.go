@@ -50,7 +50,6 @@ func NewReviewPage(md *MainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		changedSettings, totalAffectedContainers, changeNetworks = newConfig.GetChanges(oldConfig)
 
 		if md.isUpdate {
-			totalAffectedContainers[cfgtypes.ContainerID_Api] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Node] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Watchtower] = true
 
