@@ -64,7 +64,7 @@ func NewExecutionCommonConfig(cfg *RocketPoolConfig) *ExecutionCommonConfig {
 			Description:        "The port your Execution client should use for its HTTP API endpoint (also known as HTTP RPC API endpoint).",
 			Type:               config.ParameterType_Uint16,
 			Default:            map[config.Network]interface{}{config.Network_All: defaultEcHttpPort},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},

@@ -93,7 +93,6 @@ func processConfigAfterQuit(md *MainDisplay) {
 		_, totalAffectedContainers, changeNetworks := md.Config.GetChanges(md.PreviousConfig)
 
 		if md.isUpdate {
-			totalAffectedContainers[cfgtypes.ContainerID_Api] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Node] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Watchtower] = true
 		}
