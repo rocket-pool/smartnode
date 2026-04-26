@@ -3,6 +3,7 @@ package alerting
 import (
 	"fmt"
 	"log"
+	"maps"
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -313,9 +314,7 @@ func createAlert(uniqueName string, summary string, description string, severity
 		EndsAt: endsAt,
 	}
 
-	for k, v := range extraLabels {
-		alert.Labels[k] = v
-	}
+	maps.Copy(alert.Labels, extraLabels)
 	return alert
 }
 
