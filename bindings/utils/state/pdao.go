@@ -155,7 +155,6 @@ func addProposalCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, de
 		allErrors = append(allErrors, mc.AddCall(contract, out, method, args...))
 	}
 	addCall(contracts.RocketDAOProtocolProposal, &details.ProposerAddress, "getProposer", id)
-	addCall(contracts.RocketDAOProtocolProposal, &details.DAO, "getDAO", id)
 	addCall(contracts.RocketDAOProtocolProposal, &details.TargetBlock, "getProposalBlock", id)
 	addCall(contracts.RocketDAOProtocolProposal, &details.Message, "getMessage", id)
 	addCall(contracts.RocketDAOProtocolProposal, &details.VotingStartTime, "getStart", id)
@@ -190,7 +189,7 @@ func addProposalCalls(contracts *NetworkContracts, mc *multicall.MultiCaller, de
 // Converts a raw proposal to a well-formatted one
 func fixupPdaoProposalDetails(rp *rocketpool.RocketPool, rawDetails *protocolDaoProposalDetailsRaw, details *protocol.ProtocolDaoProposalDetails, opts *bind.CallOpts) {
 	details.ID = rawDetails.ID
-	details.DAO = rawDetails.DAO
+	details.DAO = "protocol"
 	details.ProposerAddress = rawDetails.ProposerAddress
 	details.TargetBlock = uint32(rawDetails.TargetBlock.Uint64())
 	details.Message = rawDetails.Message
