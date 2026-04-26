@@ -109,6 +109,35 @@ func run(c *cli.Command) error {
 	// the daemon waits for the wallet and services to become ready.
 	startHTTP(ctx, c, cfg)
 
+	for {
+		// Exit if the process received SIGINT/SIGTERM
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		// Check the EC status
+		err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
+		if err != nil {
+			if !sleepWithContext(ctx, taskCooldown) {
+				return err
+			}
+			continue
+		}
+
+		// Check the BC status
+		err = services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+		if err != nil {
+			if !sleepWithContext(ctx, taskCooldown) {
+				return err
+			}
+			continue
+		}
+
+		break
+	}
+
 	// Wait until the node wallet stored on disk is registered
 	if err := services.WaitNodeRegistered(c, true); err != nil {
 		return err
