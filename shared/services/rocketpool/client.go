@@ -610,6 +610,76 @@ func (c *Client) StopContainer(container string) (string, error) {
 
 }
 
+// Check whether a container exists (running or stopped)
+func (c *Client) ContainerExists(container string) (bool, error) {
+
+	cmd := fmt.Sprintf("docker ps -a --filter name=^/%s$ --format {{.Names}}", container)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(output)) == container, nil
+
+}
+
+// Check whether a docker network exists
+func (c *Client) NetworkExists(network string) (bool, error) {
+
+	cmd := fmt.Sprintf("docker network ls --filter name=^%s$ --format {{.Name}}", network)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(output)) == network, nil
+
+}
+
+// Get the names of all containers (running or stopped) that are attached to the given network
+func (c *Client) GetContainersOnNetwork(network string) ([]string, error) {
+
+	cmd := fmt.Sprintf("docker network inspect --format='{{range .Containers}}{{println .Name}}{{end}}' %s", network)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	names := make([]string, 0, len(lines))
+	for _, l := range lines {
+		name := strings.TrimSpace(l)
+		if name == "" {
+			continue
+		}
+		names = append(names, name)
+	}
+	return names, nil
+
+}
+
+// Check whether the given Docker network has IPv6 enabled
+func (c *Client) GetNetworkIPv6Enabled(network string) (bool, error) {
+
+	cmd := fmt.Sprintf("docker network inspect --format='{{.EnableIPv6}}' %s", network)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(output)) == "true", nil
+
+}
+
+// Remove a docker network
+func (c *Client) RemoveNetwork(network string) (string, error) {
+
+	cmd := fmt.Sprintf("docker network rm %s", network)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+
+}
+
 // Start a container
 func (c *Client) StartContainer(container string) (string, error) {
 
