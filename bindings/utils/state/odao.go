@@ -183,7 +183,6 @@ func addOracleDaoMemberDetailsCalls(contracts *NetworkContracts, mc *multicall.M
 	addCall(contracts.RocketDAONodeTrusted, &details.joinedTimeRaw, "getMemberJoinedTime", address)
 	addCall(contracts.RocketDAONodeTrusted, &details.lastProposalTimeRaw, "getMemberLastProposalTime", address)
 	addCall(contracts.RocketDAONodeTrusted, &details.RPLBondAmount, "getMemberRPLBondAmount", address)
-	addCall(contracts.RocketDAONodeTrusted, &details.ReplacementAddress, "getMemberReplacedAddress", address)
 	addCall(contracts.RocketDAONodeTrusted, &details.IsChallenged, "getMemberIsChallenged", address)
 	for _, err := range allErrors {
 		if err != nil {
