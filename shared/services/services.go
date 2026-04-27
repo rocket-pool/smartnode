@@ -273,50 +273,55 @@ func getAddressManager(cfg *config.RocketPoolConfig) *wallet.AddressManager {
 }
 
 func getWallet(c *cli.Command, cfg *config.RocketPoolConfig, pm *passwords.PasswordManager, am *wallet.AddressManager, ignoreMasquerade bool) (wallet.Wallet, error) {
-	var err error
-	initNodeWallet.Do(func() {
-		var maxFee *big.Int
-		maxFeeFloat := c.Root().Float64("maxFee")
-		if maxFeeFloat == 0 {
-			maxFeeFloat = cfg.Smartnode.ManualMaxFee.Value.(float64)
-		}
-		if maxFeeFloat != 0 {
-			maxFee = eth.GweiToWei(maxFeeFloat)
-		}
+	var maxFee *big.Int
+	maxFeeFloat := c.Root().Float64("maxFee")
+	if maxFeeFloat == 0 {
+		maxFeeFloat = cfg.Smartnode.ManualMaxFee.Value.(float64)
+	}
+	if maxFeeFloat != 0 {
+		maxFee = eth.GweiToWei(maxFeeFloat)
+	}
 
-		var maxPriorityFee *big.Int
-		maxPriorityFeeFloat := c.Root().Float64("maxPrioFee")
-		if maxPriorityFeeFloat == 0 {
-			maxPriorityFeeFloat = cfg.Smartnode.PriorityFee.Value.(float64)
-		}
-		if maxPriorityFeeFloat != 0 {
-			maxPriorityFee = eth.GweiToWei(maxPriorityFeeFloat)
-		}
+	var maxPriorityFee *big.Int
+	maxPriorityFeeFloat := c.Root().Float64("maxPrioFee")
+	if maxPriorityFeeFloat == 0 {
+		maxPriorityFeeFloat = cfg.Smartnode.PriorityFee.Value.(float64)
+	}
+	if maxPriorityFeeFloat != 0 {
+		maxPriorityFee = eth.GweiToWei(maxPriorityFeeFloat)
+	}
 
-		chainId := cfg.Smartnode.GetChainID()
+	chainId := cfg.Smartnode.GetChainID()
+	keychainPath := os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath())
 
-		if ignoreMasquerade {
+	if ignoreMasquerade {
+		// Node/watchtower path: cached once for the daemon lifetime, always real HD-derived address.
+		var err error
+		initNodeWallet.Do(func() {
 			nodeWallet, err = wallet.NewHdWallet(os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm, am)
-		} else {
-			nodeWallet, err = wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetNodeAddressPath()), os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm, am)
-		}
-		if err != nil {
-			return
-		}
+			if err != nil {
+				return
+			}
+			nodeWallet.AddKeystore("lighthouse", lhkeystore.NewKeystore(keychainPath, pm))
+			nodeWallet.AddKeystore("lodestar", lokeystore.NewKeystore(keychainPath, pm))
+			nodeWallet.AddKeystore("nimbus", nmkeystore.NewKeystore(keychainPath, pm))
+			nodeWallet.AddKeystore("prysm", prkeystore.NewKeystore(keychainPath, pm))
+			nodeWallet.AddKeystore("teku", tkkeystore.NewKeystore(keychainPath, pm))
+		})
+		return nodeWallet, err
+	}
 
-		// Keystores
-		lighthouseKeystore := lhkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		lodestarKeystore := lokeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		nimbusKeystore := nmkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		prysmKeystore := prkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		tekuKeystore := tkkeystore.NewKeystore(os.ExpandEnv(cfg.Smartnode.GetValidatorKeychainPath()), pm)
-		nodeWallet.AddKeystore("lighthouse", lighthouseKeystore)
-		nodeWallet.AddKeystore("lodestar", lodestarKeystore)
-		nodeWallet.AddKeystore("nimbus", nimbusKeystore)
-		nodeWallet.AddKeystore("prysm", prysmKeystore)
-		nodeWallet.AddKeystore("teku", tekuKeystore)
-	})
-	return nodeWallet, err
+	// CLI path: fresh call so masquerade state is always current.
+	w, err := wallet.NewWallet(os.ExpandEnv(cfg.Smartnode.GetNodeAddressPath()), os.ExpandEnv(cfg.Smartnode.GetWalletPath()), chainId, maxFee, maxPriorityFee, 0, pm, am)
+	if err != nil {
+		return nil, err
+	}
+	w.AddKeystore("lighthouse", lhkeystore.NewKeystore(keychainPath, pm))
+	w.AddKeystore("lodestar", lokeystore.NewKeystore(keychainPath, pm))
+	w.AddKeystore("nimbus", nmkeystore.NewKeystore(keychainPath, pm))
+	w.AddKeystore("prysm", prkeystore.NewKeystore(keychainPath, pm))
+	w.AddKeystore("teku", tkkeystore.NewKeystore(keychainPath, pm))
+	return w, nil
 }
 
 func getEthClient(c *cli.Command, cfg *config.RocketPoolConfig) (*ExecutionClientManager, error) {
