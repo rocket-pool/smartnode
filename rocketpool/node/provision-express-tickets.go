@@ -121,7 +121,18 @@ func (t *provisionExpress) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-	if !provisioned {
+
+	if provisioned {
+		return nil
+	}
+
+	// GetExpressTicketCount will provide the expected number of express tickets since the node is not provisioned
+	expressTicketCount, err := node.GetExpressTicketCount(t.rp, nodeAccount.Address, nil)
+	if err != nil {
+		return err
+	}
+
+	if expressTicketCount > 0 {
 		err = t.provisionExpress(nodeAccount.Address)
 		if err != nil {
 			return err
