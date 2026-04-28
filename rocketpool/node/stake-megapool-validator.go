@@ -170,21 +170,26 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 		return err
 	}
 
+	// Iterate over validators to stake.
 	stakedValidators := 0
-	// Iterate over validators to stake
+	validatorsProcessed := 0
+	const batchSize = 6
 	for validatorId, validatorPubkey := range validatorsToStake {
+		if validatorsProcessed >= batchSize {
+			break
+		}
 		// Log
 		t.log.Printlnf("The validator id %d needs to be staked", validatorId)
 
 		// Call Stake
 		err := t.stakeValidator(t.rp, beaconState, mp, validatorId, state, validatorPubkey, opts)
-		// dont return if there was an error, just log it so we can continue with the next validator
 		if err != nil {
 			t.log.Printlnf("Error staking validator %d: %w", validatorId, err)
-			continue
+			validatorsProcessed++
+			break
 		}
 		stakedValidators++
-
+		validatorsProcessed++
 	}
 
 	if stakedValidators > 0 {
