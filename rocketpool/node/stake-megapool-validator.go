@@ -185,7 +185,6 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 		err := t.stakeValidator(t.rp, beaconState, mp, validatorId, state, validatorPubkey, opts)
 		if err != nil {
 			t.log.Printlnf("Error staking validator %d: %w", validatorId, err)
-			validatorsProcessed++
 			break
 		}
 		stakedValidators++
