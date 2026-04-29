@@ -39,7 +39,7 @@ func (configPage *NativeSmartnodeConfigPage) createContent() {
 	masterConfig := configPage.home.md.Config
 	layout := newStandardLayout()
 	configPage.layout = layout
-	layout.createForm(&masterConfig.Smartnode.Network, "Smartnode and TX Fee Settings")
+	layout.createForm(&masterConfig.Smartnode.Network, "Smart Node and TX Fee Settings")
 	layout.setupEscapeReturnHomeHandler(configPage.home.md, configPage.home.homePage)
 
 	// Set up the form items
