@@ -46,7 +46,7 @@ func (configPage *SmartnodeConfigPage) createContent() {
 	masterConfig := configPage.home.md.Config
 	layout := newStandardLayout()
 	configPage.layout = layout
-	layout.createForm(&masterConfig.Smartnode.Network, "Smartnode and TX Fee Settings")
+	layout.createForm(&masterConfig.Smartnode.Network, "Smart Node and TX Fee Settings")
 
 	// Return to the home page after pressing Escape
 	layout.form.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
