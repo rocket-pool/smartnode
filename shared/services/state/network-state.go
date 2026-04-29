@@ -530,30 +530,25 @@ func (s *NetworkState) GetMinipoolEligibleBorrowedEth(node *rpstate.NativeNodeDe
 }
 
 func (s *NetworkState) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
-	eligibleBorrowedEth := big.NewInt(0)
-	requestedValueSum := big.NewInt(0)
-
-	if node.MegapoolDeployed {
-		megapool, exists := s.MegapoolDetails[node.MegapoolAddress]
-		if !exists {
-			return eligibleBorrowedEth
-		}
-		eligibleBorrowedEth.Add(eligibleBorrowedEth, megapool.UserCapital)
-		// Get the megapool validators
-		validators := s.MegapoolToPubkeysMap[node.MegapoolAddress]
-
-		// Iterate over the validators
-		for _, validator := range validators {
-
-			// Grab the validator details from pubkeys
-			megapoolValidatorInfo := s.MegapoolValidatorInfo[validator]
-			// Pre-stake
-			if megapoolValidatorInfo.ValidatorInfo.InPrestake {
-				requestedValueSum.Add(requestedValueSum, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
-				requestedValueSum.Sub(requestedValueSum, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)))
-			}
-		}
+	if !node.MegapoolDeployed {
+		return big.NewInt(0)
 	}
 
-	return eligibleBorrowedEth.Sub(eligibleBorrowedEth, requestedValueSum)
+	megapool := s.MegapoolDetails[node.MegapoolAddress]
+	eligibleBorrowedEth := big.NewInt(0).Set(megapool.UserCapital)
+
+	// Iterate over the validators
+	for _, validator := range s.MegapoolToPubkeysMap[node.MegapoolAddress] {
+		megapoolValidatorInfo := s.MegapoolValidatorInfo[validator]
+		if !megapoolValidatorInfo.ValidatorInfo.InPrestake {
+			continue
+		}
+
+		validatorTotalEth := big.NewInt(0).Set(eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
+		validatorBondedEth := big.NewInt(0).Set(eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)))
+		validatorUserEth := big.NewInt(0).Sub(validatorTotalEth, validatorBondedEth)
+		eligibleBorrowedEth.Sub(eligibleBorrowedEth, validatorUserEth)
+	}
+
+	return eligibleBorrowedEth
 }
