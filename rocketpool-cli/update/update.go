@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -18,6 +19,7 @@ import (
 
 const (
 	downloadUrlFormatString = "https://github.com/rocket-pool/smartnode/releases/latest/download/rocketpool-cli-%s-%s"
+	downloadDirName         = ".smartnode_downloads"
 )
 
 func validateOsArch() error {
@@ -107,18 +109,18 @@ func Update(yes bool, skipSignatureVerification bool, force bool) error {
 	}
 	fmt.Printf("Replacing the cli at %s with the latest version...\n", oldBinaryPath)
 
-	// Create a temporary directory to download the new binary to
-	tempDir, err := os.MkdirTemp("", "rocketpool-cli-update-")
+	downloadDir := filepath.Join(filepath.Dir(oldBinaryPath), downloadDirName)
+	err = os.MkdirAll(downloadDir, 0755)
 	if err != nil {
-		return fmt.Errorf("error creating temporary directory: %w", err)
+		return fmt.Errorf("error creating download directory: %w", err)
 	}
 	defer func() {
-		// Ignore errors, tmpreaper will handle it
-		_ = os.RemoveAll(tempDir)
+		// Ignore errors, future downloads will hopefully succeed at deleting the directory
+		_ = os.RemoveAll(downloadDir)
 	}()
 
 	// Create a file that is executable and has the correct permissions
-	tempFile, err := os.CreateTemp(tempDir, "rocketpool-cli-update-*.bin")
+	tempFile, err := os.CreateTemp(downloadDir, "rocketpool-cli-update-*.bin")
 	if err != nil {
 		return fmt.Errorf("error creating temporary file: %w", err)
 	}
