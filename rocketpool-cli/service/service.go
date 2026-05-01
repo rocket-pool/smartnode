@@ -126,12 +126,12 @@ func printPatchNotes() {
 	fmt.Println()
 }
 
-// Install the Rocket Pool update tracker for the metrics dashboard
+// Install the OS update tracker for the metrics dashboard
 func installUpdateTracker(yes, verbose bool) error {
 
 	// Prompt for confirmation
 	if prompt.Declined(yes,
-		"This will add the ability to display any available Operating System updates or new Rocket Pool versions on the metrics dashboard. "+
+		"This will add the ability to display any available Operating System updates on the metrics dashboard. "+
 			"Are you sure you want to install the update tracker?") {
 		fmt.Println("Cancelled.")
 		return nil

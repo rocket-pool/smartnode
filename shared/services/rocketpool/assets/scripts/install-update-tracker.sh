@@ -1,8 +1,7 @@
 #!/bin/sh
 
-# This script sets up the OS update and Rocket Pool update collector, along with
-# integration with Prometheus's node-exporter and auto-running during apt or dnf
-# executions.
+# This script sets up the OS update collector, along with integration with
+# Prometheus's node-exporter and auto-running during apt or dnf executions.
 
 
 # The path that the node exporter will be configured to look for textfiles in
@@ -116,11 +115,10 @@ case "$INSTALLER" in
         # Install the update tracker files
         progress 2 "Installing update tracker..."
         { sudo mkdir -p "$TEXTFILE_COLLECTOR_PATH" || fail "Could not create textfile collector path."; } >&2
+        { sudo rm -f "$TEXTFILE_COLLECTOR_PATH/rp.prom" || fail "Could not remove old Rocket Pool update metric."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/apt/apt-metrics.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move apt update collector."; } >&2
-        { sudo mv "$PACKAGE_FILES_PATH/rp-version-check.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move Rocket Pool update collector."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/apt/apt-prometheus-metrics" "/etc/apt/apt.conf.d/60prometheus-metrics" || fail "Could not move apt trigger."; } >&2
         { sudo chmod +x "$UPDATE_SCRIPT_PATH/apt-metrics.sh" || fail "Could not set permissions on apt update collector."; } >&2
-        { sudo chmod +x "$UPDATE_SCRIPT_PATH/rp-version-check.sh" || fail "Could not set permissions on Rocket Pool update collector."; } >&2
 
     ;;
 
@@ -142,13 +140,12 @@ case "$INSTALLER" in
         # Install the update tracker files
         progress 2 "Installing update tracker..."
         { sudo mkdir -p "$TEXTFILE_COLLECTOR_PATH" || fail "Could not create textfile collector path."; } >&2
+        { sudo rm -f "$TEXTFILE_COLLECTOR_PATH/rp.prom" || fail "Could not remove old Rocket Pool update metric."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/dnf/dnf-metrics.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move dnf update collector."; } >&2
-        { sudo mv "$PACKAGE_FILES_PATH/rp-version-check.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move Rocket Pool update collector."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/dnf/rp-dnf-check.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move update tracker script."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/dnf/rp-update-tracker.service" "/etc/systemd/system" || fail "Could not move update tracker service."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/dnf/rp-update-tracker.timer" "/etc/systemd/system" || fail "Could not move update tracker timer."; } >&2
         { sudo chmod +x "$UPDATE_SCRIPT_PATH/dnf-metrics.sh" || fail "Could not set permissions on dnf update collector."; } >&2
-        { sudo chmod +x "$UPDATE_SCRIPT_PATH/rp-version-check.sh" || fail "Could not set permissions on Rocket Pool update collector."; } >&2
         { sudo chmod +x "$UPDATE_SCRIPT_PATH/rp-dnf-check.sh" || fail "Could not set permissions on Rocket Pool update tracker script."; } >&2
 
         # Install the update checking service
@@ -157,7 +154,7 @@ case "$INSTALLER" in
             echo -e "${COLOR_YELLOW}Your system has SELinux enabled, so Rocket Pool can't automatically start the update tracker service."
             echo "Please run the following commands manually:"
             echo ""
-            echo -e '\tsudo restorecon /usr/share/rp-dnf-check.sh /usr/share/rp-version-check.sh /etc/systemd/system/rp-update-tracker.service /etc/systemd/system/rp-update-tracker.timer'
+            echo -e '\tsudo restorecon /usr/share/rp-dnf-check.sh /etc/systemd/system/rp-update-tracker.service /etc/systemd/system/rp-update-tracker.timer'
             echo -e '\tsudo systemctl enable rp-update-tracker'
             echo -e '\tsudo systemctl start rp-update-tracker'
             echo -e "${COLOR_RESET}"
@@ -187,13 +184,12 @@ case "$INSTALLER" in
         # Install the update tracker files
         progress 2 "Installing update tracker..."
         { sudo mkdir -p "$TEXTFILE_COLLECTOR_PATH" || fail "Could not create textfile collector path."; } >&2
+        { sudo rm -f "$TEXTFILE_COLLECTOR_PATH/rp.prom" || fail "Could not remove old Rocket Pool update metric."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/yum/yum-metrics.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move yum update collector."; } >&2
-        { sudo mv "$PACKAGE_FILES_PATH/rp-version-check.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move Rocket Pool update collector."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/yum/rp-yum-check.sh" "$UPDATE_SCRIPT_PATH" || fail "Could not move update tracker script."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/yum/rp-update-tracker.service" "/etc/systemd/system" || fail "Could not move update tracker service."; } >&2
         { sudo mv "$PACKAGE_FILES_PATH/yum/rp-update-tracker.timer" "/etc/systemd/system" || fail "Could not move update tracker timer."; } >&2
         { sudo chmod +x "$UPDATE_SCRIPT_PATH/yum-metrics.sh" || fail "Could not set permissions on dnf update collector."; } >&2
-        { sudo chmod +x "$UPDATE_SCRIPT_PATH/rp-version-check.sh" || fail "Could not set permissions on Rocket Pool update collector."; } >&2
         { sudo chmod +x "$UPDATE_SCRIPT_PATH/rp-yum-check.sh" || fail "Could not set permissions on Rocket Pool update tracker script."; } >&2
 
         # Install the update checking service
@@ -202,7 +198,7 @@ case "$INSTALLER" in
             echo -e "${COLOR_YELLOW}Your system has SELinux enabled, so Rocket Pool can't automatically start the update tracker service."
             echo "Please run the following commands manually:"
             echo ""
-            echo -e '\tsudo restorecon /usr/share/rp-yum-check.sh /usr/share/rp-version-check.sh /etc/systemd/system/rp-update-tracker.service /etc/systemd/system/rp-update-tracker.timer'
+            echo -e '\tsudo restorecon /usr/share/rp-yum-check.sh /etc/systemd/system/rp-update-tracker.service /etc/systemd/system/rp-update-tracker.timer'
             echo -e '\tsudo systemctl enable rp-update-tracker'
             echo -e '\tsudo systemctl start rp-update-tracker'
             echo -e "${COLOR_RESET}"
