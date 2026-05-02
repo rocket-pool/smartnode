@@ -134,7 +134,11 @@ func (collector *VersionUpdateCollector) getLatestVersion(ctx context.Context) (
 	if err != nil {
 		return "", fmt.Errorf("error fetching latest GitHub release: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			collector.logf("Error closing GitHub release response body: %v", err)
+		}
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("GitHub release request returned status %s", resp.Status)
