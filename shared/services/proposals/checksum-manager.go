@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -138,9 +139,7 @@ func LoadFromFile[ContextType any, DataType IDataType](m *ChecksumManager[Contex
 
 	// Iterate over each file, counting backwards from the bottom
 	dataFolder := filepath.Dir(m.checksumFilename)
-	for i := len(lines) - 1; i >= 0; i-- {
-		line := lines[i]
-
+	for _, line := range slices.Backward(lines) {
 		// Get the checksum from the line
 		checksumString, filename, found := strings.Cut(line, "  ")
 		if !found {
