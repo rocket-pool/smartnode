@@ -265,7 +265,7 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 			}
 			for j := i; j < m; j++ {
 				address := addresses[j]
-				err = mc.AddCall(contracts.RocketNodeStaking, &minimumStakes[j], "getNodeMinimumRPLStake", address)
+				err = mc.AddCall(contracts.RocketNodeStaking, &minimumStakes[j], "getNodeMinimumLegacyRPLStake", address)
 				if err != nil {
 					return fmt.Errorf("error adding node minimum RPL stake call for address %s: %w", address.Hex(), err)
 				}
