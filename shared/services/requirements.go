@@ -137,7 +137,7 @@ func RequireNodeSecurityMember(c *cli.Command) error {
 // Service synchronization
 //
 
-func WaitNodeHdPassword(c *cli.Command, verbose bool) error {
+func WaitNodeHdPassword(ctx context.Context, c *cli.Command, verbose bool) error {
 	for {
 		nodePasswordSet, err := getNodeHdPasswordSet(c)
 		if err != nil {
@@ -149,12 +149,14 @@ func WaitNodeHdPassword(c *cli.Command, verbose bool) error {
 		if verbose {
 			log.Printf("The node password has not been set, retrying in %s...\n", checkNodePasswordInterval.String())
 		}
-		time.Sleep(checkNodePasswordInterval)
+		if err := sleepCtx(ctx, checkNodePasswordInterval); err != nil {
+			return err
+		}
 	}
 }
 
-func WaitNodeHdWallet(c *cli.Command, verbose bool) error {
-	if err := WaitNodeHdPassword(c, verbose); err != nil {
+func WaitNodeHdWallet(ctx context.Context, c *cli.Command, verbose bool) error {
+	if err := WaitNodeHdPassword(ctx, c, verbose); err != nil {
 		return err
 	}
 	for {
@@ -168,7 +170,9 @@ func WaitNodeHdWallet(c *cli.Command, verbose bool) error {
 		if verbose {
 			log.Printf("The node wallet has not been initialized, retrying in %s...\n", checkNodeWalletInterval.String())
 		}
-		time.Sleep(checkNodeWalletInterval)
+		if err := sleepCtx(ctx, checkNodeWalletInterval); err != nil {
+			return err
+		}
 	}
 }
 
@@ -182,7 +186,7 @@ func WaitBeaconClientSynced(c *cli.Command, verbose bool) error {
 	return err
 }
 
-func WaitRocketStorage(c *cli.Command, verbose bool) error {
+func WaitRocketStorage(ctx context.Context, c *cli.Command, verbose bool) error {
 	if err := WaitEthClientSynced(c, verbose); err != nil {
 		return err
 	}
@@ -197,16 +201,18 @@ func WaitRocketStorage(c *cli.Command, verbose bool) error {
 		if verbose {
 			log.Printf("The Rocket Pool storage contract was not found, retrying in %s...\n", checkRocketStorageInterval.String())
 		}
-		time.Sleep(checkRocketStorageInterval)
+		if err := sleepCtx(ctx, checkRocketStorageInterval); err != nil {
+			return err
+		}
 	}
 }
 
 // This check makes calls to GetHdWallet instead of GetWallet as it's used in node and watchtower
-func WaitNodeRegistered(c *cli.Command, verbose bool) error {
-	if err := WaitNodeHdWallet(c, verbose); err != nil {
+func WaitNodeRegistered(ctx context.Context, c *cli.Command, verbose bool) error {
+	if err := WaitNodeHdWallet(ctx, c, verbose); err != nil {
 		return err
 	}
-	if err := WaitRocketStorage(c, verbose); err != nil {
+	if err := WaitRocketStorage(ctx, c, verbose); err != nil {
 		return err
 	}
 	for {
@@ -220,7 +226,21 @@ func WaitNodeRegistered(c *cli.Command, verbose bool) error {
 		if verbose {
 			log.Printf("The node is not registered with Rocket Pool, retrying in %s...\n", checkNodeRegisteredInterval.String())
 		}
-		time.Sleep(checkNodeRegisteredInterval)
+		if err := sleepCtx(ctx, checkNodeRegisteredInterval); err != nil {
+			return err
+		}
+	}
+}
+
+// sleepCtx sleeps for d, returning ctx.Err() if the context is cancelled first.
+func sleepCtx(ctx context.Context, d time.Duration) error {
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
 	}
 }
 
