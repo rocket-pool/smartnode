@@ -1,5 +1,5 @@
 [Unit]
-Description=Checks for system and Rocket Pool updates periodically
+Description=Checks for system updates periodically
 Wants=rp-update-tracker.timer
 
 [Service]
