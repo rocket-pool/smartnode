@@ -23,6 +23,7 @@ type BeaconState interface {
 	GetSlot() uint64
 	ValidatorProof(index uint64) ([][]byte, error)
 	SlotProof(slot uint64) ([][]byte, error)
+	ValidatorAndSlotProof(validatorIndex uint64) (validatorProof [][]byte, slotProof [][]byte, err error)
 	HistoricalSummaryProof(slot uint64, capellaOffset uint64) ([][]byte, error)
 	HistoricalSummaryBlockRootProof(slot int) ([][]byte, error)
 	BlockRootProof(slot uint64) ([][]byte, error)

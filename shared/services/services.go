@@ -232,6 +232,10 @@ func GetBeaconState(bc beacon.Client) (eth2.BeaconState, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Drop the raw SSZ buffer (hundreds of MB on mainnet) now that the state
+	// has been unmarshalled into its own owned data; the proof-tree allocations
+	// downstream can reuse the freed memory.
+	beaconStateResponse.Data = nil
 	return beaconState, nil
 }
 
