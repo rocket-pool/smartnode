@@ -178,3 +178,11 @@ type GetNodeMegapoolEthBondedResponse struct {
 	Error     string   `json:"error"`
 	EthBonded *big.Int `json:"ethBonded"`
 }
+
+type LatestBlockWithdrawalsResponse struct {
+	Status      string                  `json:"status"`
+	Error       string                  `json:"error"`
+	Slot        uint64                  `json:"slot"`
+	BlockNumber uint64                  `json:"blockNumber"`
+	Withdrawals []beacon.WithdrawalInfo `json:"withdrawals"`
+}
