@@ -362,6 +362,11 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		resp, err := getEffectiveDelegate(c)
 		apiutils.WriteResponse(w, resp, err)
 	})
+
+	mux.HandleFunc("/api/megapool/latest-block-withdrawals", func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getLatestBlockWithdrawals(c)
+		apiutils.WriteResponse(w, resp, err)
+	})
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {

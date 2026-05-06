@@ -3,6 +3,7 @@ package megapool
 import (
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -26,7 +27,26 @@ func getExitableValidator() (uint64, bool, error) {
 	defer rp.Close()
 
 	// Get the latest block and identify the withdrawals present in it
-		
+	withdrawalsResp, err := rp.GetLatestBlockWithdrawals()
+	if err != nil {
+		fmt.Printf("Warning: could not fetch latest beacon block withdrawals: %s\n\n", err.Error())
+	} else if len(withdrawalsResp.Withdrawals) == 0 {
+		fmt.Printf("Latest beacon block (slot %d, exec block %d) has no validator withdrawals.\n\n",
+			withdrawalsResp.Slot, withdrawalsResp.BlockNumber)
+	} else {
+		indexes := make([]string, 0, len(withdrawalsResp.Withdrawals))
+		seen := make(map[string]struct{}, len(withdrawalsResp.Withdrawals))
+		for _, wd := range withdrawalsResp.Withdrawals {
+			if _, ok := seen[wd.ValidatorIndex]; ok {
+				continue
+			}
+			seen[wd.ValidatorIndex] = struct{}{}
+			indexes = append(indexes, wd.ValidatorIndex)
+		}
+		fmt.Printf("Latest beacon block (slot %d, exec block %d) processed withdrawals for %d validator(s):\n",
+			withdrawalsResp.Slot, withdrawalsResp.BlockNumber, len(indexes))
+		fmt.Printf("  %s\n\n", strings.Join(indexes, ", "))
+	}
 
 	// Get Megapool status
 	status, err := rp.MegapoolStatus(false)
@@ -50,7 +70,9 @@ func getExitableValidator() (uint64, bool, error) {
 		}
 	}
 	if len(exitingValidators) > 0 {
-		sort.Sort(ByIndex(exitingValidators))
+		// Make sure that exitingValidators is sorted by validator index ascending from the last withdrawal index
+
+		//sort.Sort(ByIndex(exitingValidators))
 		fmt.Println("The following validators are still active and have already received their exit request on the Beacon Chain:")
 		for _, v := range exitingValidators {
 			fmt.Printf("ID %d: - Index %d Pubkey: 0x%s\n", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
