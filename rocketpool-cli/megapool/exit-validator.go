@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
@@ -24,6 +25,9 @@ func getExitableValidator() (uint64, bool, error) {
 	}
 	defer rp.Close()
 
+	// Get the latest block and identify the withdrawals present in it
+		
+
 	// Get Megapool status
 	status, err := rp.MegapoolStatus(false)
 	if err != nil {
@@ -31,15 +35,27 @@ func getExitableValidator() (uint64, bool, error) {
 	}
 
 	activeValidators := []api.MegapoolValidatorDetails{}
+	exitingValidators := []api.MegapoolValidatorDetails{}
 
 	for _, validator := range status.Megapool.Validators {
-		if validator.Activated && !validator.Exiting && !validator.Exited {
+		if validator.Activated && !validator.Exiting && !validator.Exited && validator.BeaconStatus.Status != beacon.ValidatorState_ActiveExiting {
 			// Check if validator is old enough to exit
 			earliestExitEpoch := validator.BeaconStatus.ActivationEpoch + 256
 			if status.BeaconHead.Epoch >= earliestExitEpoch {
 				activeValidators = append(activeValidators, validator)
 			}
 		}
+		if validator.BeaconStatus.Status == beacon.ValidatorState_ActiveExiting {
+			exitingValidators = append(exitingValidators, validator)
+		}
+	}
+	if len(exitingValidators) > 0 {
+		sort.Sort(ByIndex(exitingValidators))
+		fmt.Println("The following validators are still active and have already received their exit request on the Beacon Chain:")
+		for _, v := range exitingValidators {
+			fmt.Printf("ID %d: - Index %d Pubkey: 0x%s\n", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())
+		}
+		fmt.Println()
 	}
 	if len(activeValidators) > 0 {
 		sort.Sort(ByIndex(activeValidators))
