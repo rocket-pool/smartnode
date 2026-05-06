@@ -186,6 +186,62 @@ func (state *BeaconState) ValidatorProof(index uint64) ([][]byte, error) {
 	return append(proof, blockHeaderProof.Hashes...), nil
 }
 
+// ValidatorAndSlotProof produces both the validator proof and the slot proof
+// for the state's current slot
+func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte, [][]byte, error) {
+
+	if validatorIndex >= uint64(len(state.Validators)) {
+		return nil, nil, errors.New("validator index out of bounds")
+	}
+
+	stateTree, err := state.GetTree()
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	validatorGid := generic.GetGeneralizedIndexForValidator(validatorIndex, GetGeneralizedIndexForValidators())
+	validatorStateProof, err := stateTree.Prove(int(validatorGid))
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get proof for validator: %w", err)
+	}
+
+	// Sanity check that the proof leaf matches the expected validator
+	validatorHashTreeRoot, err := state.Validators[validatorIndex].HashTreeRoot()
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get hash tree root for validator: %w", err)
+	}
+	if !bytes.Equal(validatorStateProof.Leaf, validatorHashTreeRoot[:]) {
+		return nil, nil, fmt.Errorf("proof leaf does not match expected validator")
+	}
+
+	slotStateProof, err := stateTree.Prove(int(GetGeneralizedIndexForSlot()))
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get proof for slot: %w", err)
+	}
+
+	// Drop the state tree before doing more work so the GC can reclaim it.
+	stateTree = nil
+
+	bhTree, err := state.LatestBlockHeader.GetTree()
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get block header tree: %w", err)
+	}
+	blockHeaderProof, err := bhTree.Prove(int(generic.BeaconBlockHeaderStateRootGeneralizedIndex))
+	if err != nil {
+		return nil, nil, fmt.Errorf("could not get proof for block header: %w", err)
+	}
+
+	validatorProof := make([][]byte, 0, len(validatorStateProof.Hashes)+len(blockHeaderProof.Hashes))
+	validatorProof = append(validatorProof, validatorStateProof.Hashes...)
+	validatorProof = append(validatorProof, blockHeaderProof.Hashes...)
+
+	slotProof := make([][]byte, 0, len(slotStateProof.Hashes)+len(blockHeaderProof.Hashes))
+	slotProof = append(slotProof, slotStateProof.Hashes...)
+	slotProof = append(slotProof, blockHeaderProof.Hashes...)
+
+	return validatorProof, slotProof, nil
+}
+
 func (state *BeaconState) blockHeaderToStateProof(blockHeader *generic.BeaconBlockHeader) ([][]byte, error) {
 	generalizedIndex := generic.BeaconBlockHeaderStateRootGeneralizedIndex
 	root, err := blockHeader.GetTree()
