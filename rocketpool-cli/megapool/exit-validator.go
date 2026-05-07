@@ -3,7 +3,9 @@ package megapool
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -18,7 +20,54 @@ func (a ByIndex) Len() int           { return len(a) }
 func (a ByIndex) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a ByIndex) Less(i, j int) bool { return a[i].ValidatorIndex < a[j].ValidatorIndex }
 
-func getExitableValidator() (uint64, bool, error) {
+func formatGwei(gwei uint64) string {
+	eth := float64(gwei) / 1e9
+	if eth == float64(uint64(eth)) {
+		return fmt.Sprintf("%d", uint64(eth))
+	}
+	return fmt.Sprintf("%.2f", eth)
+}
+
+// formatDaysHours formats a duration as a "Xd Yh" string. Sub-hour values are
+// rendered in minutes; sub-minute values fall back to "<1m".
+func formatDaysHours(d time.Duration) string {
+	totalSeconds := int64(d.Seconds())
+	if totalSeconds < 60 {
+		return "<1m"
+	}
+	const secondsPerHour = 3600
+	const secondsPerDay = 24 * secondsPerHour
+	days := totalSeconds / secondsPerDay
+	hours := (totalSeconds % secondsPerDay) / secondsPerHour
+	if days > 0 {
+		return fmt.Sprintf("%dd %dh", days, hours)
+	}
+	if hours > 0 {
+		return fmt.Sprintf("%dh", hours)
+	}
+	minutes := totalSeconds / 60
+	return fmt.Sprintf("%dm", minutes)
+}
+
+// sortExitingValidatorsBySweep orders validators in withdrawal-sweep order relative to a given last validator index
+func sortExitingValidatorsBySweep(validators []api.MegapoolValidatorDetails, lastWithdrawnIndex uint64, hasLastWithdrawnIndex bool) {
+	if !hasLastWithdrawnIndex {
+		sort.Sort(ByIndex(validators))
+		return
+	}
+	sort.SliceStable(validators, func(i, j int) bool {
+		ai := validators[i].ValidatorIndex
+		aj := validators[j].ValidatorIndex
+		iAfter := ai > lastWithdrawnIndex
+		jAfter := aj > lastWithdrawnIndex
+		if iAfter != jAfter {
+			return iAfter
+		}
+		return ai < aj
+	})
+}
+
+func getExitableValidator(fetchExitQueueEstimate bool) (uint64, bool, error) {
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
@@ -27,6 +76,8 @@ func getExitableValidator() (uint64, bool, error) {
 	defer rp.Close()
 
 	// Get the latest block and identify the withdrawals present in it
+	var lastWithdrawnIndex uint64
+	var hasLastWithdrawnIndex bool
 	withdrawalsResp, err := rp.GetLatestBlockWithdrawals()
 	if err != nil {
 		fmt.Printf("Warning: could not fetch latest beacon block withdrawals: %s\n\n", err.Error())
@@ -37,6 +88,12 @@ func getExitableValidator() (uint64, bool, error) {
 		indexes := make([]string, 0, len(withdrawalsResp.Withdrawals))
 		seen := make(map[string]struct{}, len(withdrawalsResp.Withdrawals))
 		for _, wd := range withdrawalsResp.Withdrawals {
+			if idx, perr := strconv.ParseUint(wd.ValidatorIndex, 10, 64); perr == nil {
+				if !hasLastWithdrawnIndex || idx > lastWithdrawnIndex {
+					lastWithdrawnIndex = idx
+					hasLastWithdrawnIndex = true
+				}
+			}
 			if _, ok := seen[wd.ValidatorIndex]; ok {
 				continue
 			}
@@ -46,6 +103,27 @@ func getExitableValidator() (uint64, bool, error) {
 		fmt.Printf("Latest beacon block (slot %d, exec block %d) processed withdrawals for %d validator(s):\n",
 			withdrawalsResp.Slot, withdrawalsResp.BlockNumber, len(indexes))
 		fmt.Printf("  %s\n\n", strings.Join(indexes, ", "))
+	}
+	var estimate api.BeaconWithdrawalQueueEstimateResponse
+	if fetchExitQueueEstimate {
+		// Print an estimate of the beacon chain withdrawal queue time
+		fmt.Println("Fetching beacon chain exit queue estimate... This may take a while...")
+		if estimate, err = rp.GetBeaconWithdrawalQueueEstimate(); err != nil {
+			fmt.Printf("Warning: could not fetch beacon chain exit queue estimate: %s\n\n", err.Error())
+		} else if estimate.ExitQueueGwei == 0 {
+			fmt.Println("The beacon chain exit queue is currently empty.")
+			fmt.Printf("At the current churn limit of %s ETH/epoch, a new exit request would be processed in the next epoch (~%s).\n\n",
+				formatGwei(estimate.ChurnPerEpochGwei), (time.Duration(estimate.SecondsPerEpoch) * time.Second).Round(time.Second))
+		} else {
+			wait := formatDaysHours(time.Duration(estimate.EstimatedQueueSeconds) * time.Second)
+			fmt.Printf("Beacon chain exit queue: %s ETH waiting to exit.\n",
+				formatGwei(estimate.ExitQueueGwei))
+			fmt.Printf("Churn limit: %s ETH/epoch -> estimated %d epochs (~%s) to process the queue.\n\n",
+				formatGwei(estimate.ChurnPerEpochGwei), estimate.EstimatedQueueEpochs, wait)
+		}
+	} else {
+		fmt.Println("Skipping the beacon chain exit queue estimate. Use the --fetch-estimate flag to fetch it.")
+		fmt.Println()
 	}
 
 	// Get Megapool status
@@ -69,10 +147,10 @@ func getExitableValidator() (uint64, bool, error) {
 			exitingValidators = append(exitingValidators, validator)
 		}
 	}
-	if len(exitingValidators) > 0 {
-		// Make sure that exitingValidators is sorted by validator index ascending from the last withdrawal index
 
-		//sort.Sort(ByIndex(exitingValidators))
+	// Print exiting validators
+	if len(exitingValidators) > 0 {
+		sortExitingValidatorsBySweep(exitingValidators, lastWithdrawnIndex, hasLastWithdrawnIndex)
 		fmt.Println("The following validators are still active and have already received their exit request on the Beacon Chain:")
 		for _, v := range exitingValidators {
 			fmt.Printf("ID %d: - Index %d Pubkey: 0x%s\n", v.ValidatorId, v.ValidatorIndex, v.PubKey.String())

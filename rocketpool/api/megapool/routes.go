@@ -367,6 +367,11 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		resp, err := getLatestBlockWithdrawals(c)
 		apiutils.WriteResponse(w, resp, err)
 	})
+
+	mux.HandleFunc("/api/megapool/beacon-withdrawal-queue-estimate", func(w http.ResponseWriter, r *http.Request) {
+		resp, err := getBeaconWithdrawalQueueEstimate(c)
+		apiutils.WriteResponse(w, resp, err)
+	})
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {

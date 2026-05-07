@@ -186,3 +186,13 @@ type LatestBlockWithdrawalsResponse struct {
 	BlockNumber uint64                  `json:"blockNumber"`
 	Withdrawals []beacon.WithdrawalInfo `json:"withdrawals"`
 }
+
+type BeaconWithdrawalQueueEstimateResponse struct {
+	Status                string `json:"status"`
+	Error                 string `json:"error"`
+	ExitQueueGwei         uint64 `json:"exitQueueGwei"`
+	ChurnPerEpochGwei     uint64 `json:"churnPerEpochGwei"`
+	SecondsPerEpoch       uint64 `json:"secondsPerEpoch"`
+	EstimatedQueueEpochs  uint64 `json:"estimatedQueueEpochs"`
+	EstimatedQueueSeconds uint64 `json:"estimatedQueueSeconds"`
+}
