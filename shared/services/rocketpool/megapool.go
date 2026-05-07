@@ -573,6 +573,22 @@ func (c *Client) GetLatestBlockWithdrawals() (api.LatestBlockWithdrawalsResponse
 	return response, nil
 }
 
+// Get an estimate of the beacon chain withdrawal-sweep cycle time
+func (c *Client) GetBeaconWithdrawalQueueEstimate() (api.BeaconWithdrawalQueueEstimateResponse, error) {
+	responseBytes, err := c.callHTTPAPI("GET", "/api/megapool/beacon-withdrawal-queue-estimate", nil)
+	if err != nil {
+		return api.BeaconWithdrawalQueueEstimateResponse{}, fmt.Errorf("Could not get beacon withdrawal queue estimate: %w", err)
+	}
+	var response api.BeaconWithdrawalQueueEstimateResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.BeaconWithdrawalQueueEstimateResponse{}, fmt.Errorf("Could not decode beacon withdrawal queue estimate response: %w", err)
+	}
+	if response.Error != "" {
+		return api.BeaconWithdrawalQueueEstimateResponse{}, fmt.Errorf("Could not get beacon withdrawal queue estimate: %s", response.Error)
+	}
+	return response, nil
+}
+
 // Get the bond amount required for the megapool's next validator
 func (c *Client) GetNewValidatorBondRequirement() (api.GetNewValidatorBondRequirementResponse, error) {
 	responseBytes, err := c.callHTTPAPI("GET", "/api/megapool/get-new-validator-bond-requirement", nil)
