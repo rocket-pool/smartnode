@@ -2,6 +2,7 @@ package eth2
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/rocket-pool/smartnode/shared/types/eth2/fork/deneb"
@@ -37,20 +38,29 @@ type SignedBeaconBlock interface {
 	Withdrawals() []*generic.Withdrawal
 }
 
-func NewBeaconState(data []byte, fork string) (BeaconState, error) {
+func NewBeaconState(data io.ReadCloser, fork string) (BeaconState, error) {
 	fork = strings.ToLower(fork)
+
+	defer func() {
+		_ = data.Close()
+	}()
+
+	dataBytes, err := io.ReadAll(data)
+	if err != nil {
+		return nil, err
+	}
 
 	switch fork {
 	case "electra":
 		out := &electra.BeaconState{}
-		err := out.UnmarshalSSZ(data)
+		err := out.UnmarshalSSZ(dataBytes)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
 	case "fulu":
 		out := &fulu.BeaconState{}
-		err := out.UnmarshalSSZ(data)
+		err := out.UnmarshalSSZ(dataBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -60,27 +70,36 @@ func NewBeaconState(data []byte, fork string) (BeaconState, error) {
 	}
 }
 
-func NewSignedBeaconBlock(data []byte, fork string) (SignedBeaconBlock, error) {
+func NewSignedBeaconBlock(data io.ReadCloser, fork string) (SignedBeaconBlock, error) {
 	fork = strings.ToLower(fork)
+
+	defer func() {
+		_ = data.Close()
+	}()
+
+	dataBytes, err := io.ReadAll(data)
+	if err != nil {
+		return nil, err
+	}
 
 	switch fork {
 	case "deneb":
 		out := &deneb.SignedBeaconBlock{}
-		err := out.UnmarshalSSZ(data)
+		err := out.UnmarshalSSZ(dataBytes)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
 	case "electra":
 		out := &electra.SignedBeaconBlock{}
-		err := out.UnmarshalSSZ(data)
+		err := out.UnmarshalSSZ(dataBytes)
 		if err != nil {
 			return nil, err
 		}
 		return out, nil
 	case "fulu":
 		out := &fulu.SignedBeaconBlock{}
-		err := out.UnmarshalSSZ(data)
+		err := out.UnmarshalSSZ(dataBytes)
 		if err != nil {
 			return nil, err
 		}

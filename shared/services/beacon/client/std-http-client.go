@@ -1026,14 +1026,8 @@ func (c *StandardHttpClient) GetBeaconStateSSZ(slot uint64) (*beacon.BeaconState
 		return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d", response.StatusCode)
 	}
 
-	// Slurp the body
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, fmt.Errorf("Could not get beacon state data: %w", err)
-	}
-
 	return &beacon.BeaconStateSSZ{
-		Data: body,
+		Data: response.Body,
 		Fork: response.Header.Get(ResponseConsensusVersionHeader),
 	}, nil
 }
@@ -1054,13 +1048,8 @@ func (c *StandardHttpClient) GetBeaconBlockSSZ(slot uint64) (*beacon.BeaconBlock
 		return nil, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", response.StatusCode, string(responseBody))
 	}
 
-	// Slurp the body
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, false, fmt.Errorf("Could not get beacon block data: %w", err)
-	}
 	return &beacon.BeaconBlockSSZ{
-		Data: body,
+		Data: response.Body,
 		Fork: response.Header.Get(ResponseConsensusVersionHeader),
 	}, true, nil
 }

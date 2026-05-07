@@ -169,10 +169,6 @@ func GetWithdrawableEpochProof(c *cli.Command, wallet *wallet.Wallet, eth2Config
 	if err != nil {
 		return api.ValidatorWithdrawableEpochProof{}, err
 	}
-	// Drop the raw SSZ buffer (hundreds of MB on mainnet) now that the state
-	// has been unmarshalled into its own owned data, so the proof-tree allocation
-	// below can reuse the freed memory.
-	beaconStateResponse.Data = nil
 
 	withdrawableEpoch := beaconState.GetValidators()[validatorIndex64].WithdrawableEpoch
 	if withdrawableEpoch == math.MaxUint64 {
@@ -730,9 +726,6 @@ func GetWithdrawalProofForSlot(c *cli.Command, slot uint64, validatorIndex uint6
 	if err != nil {
 		return megapool.FinalBalanceProof{}, 0, nil, err
 	}
-	// Drop the raw SSZ buffer (hundreds of MB on mainnet) now that the state
-	// owns its own data; the proof-tree work below can reuse the freed memory.
-	stateResponse.Data = nil
 
 	fuluState, ok := beaconState.(*fulu.BeaconState)
 	if !ok {
@@ -779,9 +772,6 @@ func GetWithdrawalProofForSlot(c *cli.Command, slot uint64, validatorIndex uint6
 		if err != nil {
 			return megapool.FinalBalanceProof{}, 0, nil, err
 		}
-		// Drop the raw SSZ buffer for the block-roots state now that it has
-		// been unmarshalled, so it doesn't overlap with the proof tree below.
-		blockRootsStateResponse.Data = nil
 		summaryProof, err = blockRootsState.HistoricalSummaryBlockRootProof(int(response.WithdrawalSlot))
 		if err != nil {
 			return megapool.FinalBalanceProof{}, 0, nil, err
