@@ -175,7 +175,7 @@ func GetWithdrawableEpochProof(c *cli.Command, wallet *wallet.Wallet, eth2Config
 		return api.ValidatorWithdrawableEpochProof{}, fmt.Errorf("validator %d is not withdrawable", validatorIndex64)
 	}
 
-	proofBytes, err := beaconState.ValidatorProof(validatorIndex64)
+	proofBytes, _, err := beaconState.ValidatorAndSlotProof(validatorIndex64)
 	if err != nil {
 		return api.ValidatorWithdrawableEpochProof{}, err
 	}
