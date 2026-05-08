@@ -1,6 +1,7 @@
 package beacon
 
 import (
+	"io"
 	"math/big"
 	"sort"
 
@@ -158,12 +159,12 @@ const (
 // Fork is the consensus version, e.g, "deneb" or "electra"
 
 type BeaconStateSSZ struct {
-	Data []byte
+	Data io.ReadCloser
 	Fork string
 }
 
 type BeaconBlockSSZ struct {
-	Data []byte
+	Data io.ReadCloser
 	Fork string
 }
 

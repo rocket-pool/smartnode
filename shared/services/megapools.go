@@ -78,12 +78,8 @@ func GetValidatorProof(c *cli.Command, slot uint64, wallet wallet.Wallet, eth2Co
 		}
 	}
 
-	slotProofBytes, err := beaconState.SlotProof(beaconState.GetSlot())
-	if err != nil {
-		return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, err
-	}
-
-	proofBytes, err := beaconState.ValidatorProof(validatorIndex64)
+	// Build the validator and slot proofs from a single state proof tree
+	proofBytes, slotProofBytes, err := beaconState.ValidatorAndSlotProof(validatorIndex64)
 	if err != nil {
 		return megapool.ValidatorProof{}, 0, megapool.SlotProof{}, err
 	}
@@ -179,7 +175,7 @@ func GetWithdrawableEpochProof(c *cli.Command, wallet *wallet.Wallet, eth2Config
 		return api.ValidatorWithdrawableEpochProof{}, fmt.Errorf("validator %d is not withdrawable", validatorIndex64)
 	}
 
-	proofBytes, err := beaconState.ValidatorProof(validatorIndex64)
+	proofBytes, _, err := beaconState.ValidatorAndSlotProof(validatorIndex64)
 	if err != nil {
 		return api.ValidatorWithdrawableEpochProof{}, err
 	}
