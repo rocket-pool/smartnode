@@ -139,7 +139,7 @@ func run(c *cli.Command) error {
 	}
 
 	// Wait until the node wallet stored on disk is registered
-	if err := services.WaitNodeRegistered(c, true); err != nil {
+	if err := services.WaitNodeRegistered(ctx, c, true); err != nil {
 		return err
 	}
 

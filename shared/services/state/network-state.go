@@ -534,7 +534,10 @@ func (s *NetworkState) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeNodeDe
 		return big.NewInt(0)
 	}
 
-	megapool := s.MegapoolDetails[node.MegapoolAddress]
+	megapool, exists := s.MegapoolDetails[node.MegapoolAddress]
+	if !exists {
+		return big.NewInt(0)
+	}
 	eligibleBorrowedEth := big.NewInt(0).Set(megapool.UserCapital)
 
 	// Iterate over the validators

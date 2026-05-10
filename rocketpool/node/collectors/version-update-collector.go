@@ -17,14 +17,12 @@ import (
 
 const (
 	githubLatestReleaseURL = "https://api.github.com/repos/rocket-pool/smartnode/releases/latest"
-	versionCheckInterval   = time.Hour
 	versionCheckTimeout    = 15 * time.Second
 )
 
 // VersionUpdateCollector exposes whether a newer Smart Node release is available.
 type VersionUpdateCollector struct {
-	versionUpdate     *prometheus.Desc
-	versionUpdateInfo *prometheus.Desc
+	versionUpdate *prometheus.Desc
 	current           string
 	latestURL         string
 	client            *http.Client
@@ -44,10 +42,6 @@ type githubReleaseResponse struct {
 func NewVersionUpdateCollector(logf func(string, ...interface{})) *VersionUpdateCollector {
 	return &VersionUpdateCollector{
 		versionUpdate: prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "version_update"),
-			"New Rocket Pool version available",
-			nil, nil,
-		),
-		versionUpdateInfo: prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "version_update_info"),
 			"The latest available Rocket Pool version",
 			[]string{"version"}, nil,
 		),
@@ -63,7 +57,6 @@ func NewVersionUpdateCollector(logf func(string, ...interface{})) *VersionUpdate
 // Describe writes metric descriptions to the Prometheus channel.
 func (collector *VersionUpdateCollector) Describe(channel chan<- *prometheus.Desc) {
 	channel <- collector.versionUpdate
-	channel <- collector.versionUpdateInfo
 }
 
 // Collect emits the latest cached version update status.
@@ -71,26 +64,18 @@ func (collector *VersionUpdateCollector) Collect(channel chan<- prometheus.Metri
 	collector.checkIfDue(context.Background())
 
 	collector.mu.Lock()
-	updateAvailable := collector.updateAvailable
 	latestVersion := collector.latestVersion
 	collector.mu.Unlock()
 
-	channel <- prometheus.MustNewConstMetric(
-		collector.versionUpdate, prometheus.GaugeValue, updateAvailable)
 	if latestVersion != "" {
 		channel <- prometheus.MustNewConstMetric(
-			collector.versionUpdateInfo, prometheus.GaugeValue, 1, latestVersion)
+			collector.versionUpdate, prometheus.GaugeValue, collector.updateAvailable, latestVersion)
 	}
 }
 
 func (collector *VersionUpdateCollector) checkIfDue(ctx context.Context) {
 	collector.mu.Lock()
 	defer collector.mu.Unlock()
-
-	if time.Since(collector.lastChecked) < versionCheckInterval {
-		return
-	}
-	collector.lastChecked = time.Now()
 
 	updateAvailable, latestVersion, err := collector.checkForUpdate(ctx)
 	if err != nil {

@@ -335,7 +335,7 @@
           },
           {
             "exemplar": true,
-            "expr": "rocketpool_version_update_info{job=\"rocketpool\"}",
+            "expr": "rocketpool_version_update{job=\"rocketpool\"}",
             "format": "time_series",
             "hide": false,
             "interval": "",

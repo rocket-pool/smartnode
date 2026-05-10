@@ -119,7 +119,7 @@ groups:
 
       {{{- if .AlertEnabled_RPUpdatesAvailable.Value }}}
       - alert: RPUpdatesAvailable
-        expr: max(rocketpool_version_update{job="node"}) > 0
+        expr: max(rocketpool_version_update{job="rocketpool"}) > 0
         labels:
           severity: warning
           job: node
