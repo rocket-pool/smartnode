@@ -49,7 +49,7 @@ func NewStaticNetworkStateProviderFromFile(path string) (*StaticNetworkStateProv
 		if err != nil {
 			return nil, fmt.Errorf("creating gzip reader for %q: %w", path, err)
 		}
-		defer gz.Close()
+		defer func() { _ = gz.Close() }()
 		r = gz
 	}
 	return NewStaticNetworkStateProviderFromJSON(r)
