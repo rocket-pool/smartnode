@@ -330,7 +330,7 @@ func (cfg *CommitBoostConfig) GetCustomRelays() []string {
 		return nil
 	}
 	result := []string{}
-	for _, relay := range strings.Split(customRelays, ",") {
+	for relay := range strings.SplitSeq(customRelays, ",") {
 		trimmed := strings.TrimSpace(relay)
 		if trimmed != "" {
 			result = append(result, trimmed)
