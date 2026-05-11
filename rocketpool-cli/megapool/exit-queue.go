@@ -49,8 +49,8 @@ func exitQueue(validatorId string, yes bool) error {
 			selectedValidators = validatorsInQueue
 		} else {
 			// Parse comma-separated validator IDs
-			ids := strings.Split(validatorId, ",")
-			for _, idStr := range ids {
+			ids := strings.SplitSeq(validatorId, ",")
+			for idStr := range ids {
 				idStr = strings.TrimSpace(idStr)
 				validatorId, err := strconv.ParseUint(idStr, 10, 64)
 				if err != nil {
