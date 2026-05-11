@@ -5,9 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
-	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -168,10 +169,8 @@ func approveFsRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (
 	}
 
 	// Approve fixed-supply RPL allowance
-	if hash, err := tokens.ApproveFixedSupplyRPL(rp, *rocketTokenRPLAddress, amountWei, opts); err != nil {
+	if response.ApproveTxHash, err = tokens.ApproveFixedSupplyRPL(rp, *rocketTokenRPLAddress, amountWei, opts); err != nil {
 		return nil, err
-	} else {
-		response.ApproveTxHash = hash
 	}
 
 	// Return response
@@ -218,10 +217,8 @@ func swapRpl(c *cli.Command, amountWei *big.Int, opts *bind.TransactOpts) (*api.
 	response := api.NodeSwapRplSwapResponse{}
 
 	// Swap fixed-supply RPL for RPL
-	if hash, err := tokens.SwapFixedSupplyRPLForRPL(rp, amountWei, opts); err != nil {
+	if response.SwapTxHash, err = tokens.SwapFixedSupplyRPLForRPL(rp, amountWei, opts); err != nil {
 		return nil, err
-	} else {
-		response.SwapTxHash = hash
 	}
 
 	// Return response

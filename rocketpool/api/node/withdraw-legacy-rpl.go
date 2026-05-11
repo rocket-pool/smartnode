@@ -5,9 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/node"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -107,7 +108,7 @@ func canNodeUnstakeLegacyRpl(c *cli.Command, amountWei *big.Int) (*api.CanNodeUn
 	response.BelowMaxRPLStake = (remainingLegacyRplStake.Cmp(rplStakeThreshold) < 0)
 
 	// Update & return response
-	response.CanUnstake = !(response.InsufficientBalance || response.HasDifferentRPLWithdrawalAddress)
+	response.CanUnstake = !response.InsufficientBalance && !response.HasDifferentRPLWithdrawalAddress
 	return &response, nil
 
 }

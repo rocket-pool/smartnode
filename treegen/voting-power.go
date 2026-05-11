@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/shared/services/rewards"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -34,7 +35,7 @@ func getNodeVotingPower(s *state.NetworkState, nodeIdx int) *big.Int {
 			continue
 		}
 
-		activeMinipoolCount += 1
+		activeMinipoolCount++
 	}
 
 	// Get provided ETH (32 * minipoolCount - matched)

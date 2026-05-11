@@ -10,11 +10,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -233,9 +234,9 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 	rawStates := make([]uint8, count)
 	for i := uint64(0); i < count; i += challengeStateBatchSize {
 		i := i
-		max := i + challengeStateBatchSize
-		if max > count {
-			max = count
+		m := i + challengeStateBatchSize
+		if m > count {
+			m = count
 		}
 
 		// Load details
@@ -245,10 +246,13 @@ func GetMultiChallengeStatesFast(rp *rocketpool.RocketPool, multicallAddress com
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				propID := big.NewInt(int64(proposalIds[j]))
 				challengedIndex := big.NewInt(int64(challengedIndices[j]))
-				mc.AddCall(rocketDAOProtocolVerifier, &rawStates[j], "getChallengeState", propID, challengedIndex)
+				err = mc.AddCall(rocketDAOProtocolVerifier, &rawStates[j], "getChallengeState", propID, challengedIndex)
+				if err != nil {
+					return fmt.Errorf("error adding challenge state call for proposal %d / index %d: %w", proposalIds[j], challengedIndices[j], err)
+				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {

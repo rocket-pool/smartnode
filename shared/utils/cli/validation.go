@@ -49,7 +49,7 @@ func ValidateBigInt(name, value string) (*big.Int, error) {
 // Validate a boolean value
 func ValidateBool(name, value string) (bool, error) {
 	val := strings.ToLower(value)
-	if !(val == "true" || val == "yes" || val == "false" || val == "no") {
+	if val != "true" && val != "yes" && val != "false" && val != "no" {
 		return false, fmt.Errorf("Invalid %s '%s' - valid values are 'true', 'yes', 'false' and 'no'", name, value)
 	}
 	if val == "true" || val == "yes" {
@@ -170,7 +170,7 @@ func ValidateTokenType(name, value string) (string, error) {
 
 	// Not a token address, check against the well-known names
 	val := strings.ToLower(value)
-	if !(val == "eth" || val == "rpl" || val == "fsrpl" || val == "reth") {
+	if val != "eth" && val != "rpl" && val != "fsrpl" && val != "reth" {
 		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'ETH', 'RPL', 'fsRPL', and 'rETH'", name, value)
 	}
 	return val, nil
@@ -179,7 +179,7 @@ func ValidateTokenType(name, value string) (string, error) {
 // Validate a proposal type
 func ValidateProposalType(name, value string) (string, error) {
 	val := strings.ToLower(value)
-	if !(val == "pending" || val == "active" || val == "succeeded" || val == "executed" || val == "cancelled" || val == "defeated" || val == "expired" || val == "all") {
+	if val != "pending" && val != "active" && val != "succeeded" && val != "executed" && val != "cancelled" && val != "defeated" && val != "expired" && val != "all" {
 		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'pending', 'active', 'succeeded', 'executed', 'cancelled', 'defeated', 'expired', and 'all'", name, value)
 	}
 	return val, nil
@@ -270,7 +270,7 @@ func ValidatePositiveEthAmount(name, value string) (float64, error) {
 // Validate a burnable token type
 func ValidateBurnableTokenType(name, value string) (string, error) {
 	val := strings.ToLower(value)
-	if !(val == "reth") {
+	if val != "reth" {
 		return "", fmt.Errorf("Invalid %s '%s' - valid types are 'rETH'", name, value)
 	}
 	return val, nil
@@ -294,7 +294,7 @@ func ValidateWalletMnemonic(name, value string) (string, error) {
 
 // Validate a timezone location
 func ValidateTimezoneLocation(name, value string) (string, error) {
-	if !regexp.MustCompile("^([a-zA-Z_]{2,}\\/)+[a-zA-Z_]{2,}$").MatchString(value) {
+	if !regexp.MustCompile(`^([a-zA-Z_]{2,}\/)+[a-zA-Z_]{2,}$`).MatchString(value) {
 		return "", fmt.Errorf("Invalid %s '%s' - must be in the format 'Country/City'", name, value)
 	}
 	return value, nil
@@ -313,9 +313,7 @@ func ValidateDAOMemberID(name, value string) (string, error) {
 func ValidateTxHash(name, value string) (common.Hash, error) {
 
 	// Remove a 0x prefix if present
-	if strings.HasPrefix(value, "0x") {
-		value = value[2:]
-	}
+	value = strings.TrimPrefix(value, "0x")
 
 	// Hash should be 64 characters long
 	if len(value) != hex.EncodedLen(common.HashLength) {
@@ -345,9 +343,7 @@ func ValidatePubkey(name, value string) (types.ValidatorPubkey, error) {
 // Validate a hex-encoded byte array
 func ValidateByteArray(name, value string) ([]byte, error) {
 	// Remove a 0x prefix if present
-	if strings.HasPrefix(value, "0x") {
-		value = value[2:]
-	}
+	value = strings.TrimPrefix(value, "0x")
 
 	// Try to parse the string (removing the prefix)
 	bytes, err := hex.DecodeString(value)
@@ -411,7 +407,7 @@ func ValidateFloat(rawEnabled bool, name string, value string, isFraction bool, 
 	fmt.Println()
 	fmt.Printf("\t[%s]\n", trueVal.String())
 	fmt.Println()
-	if !(yes || prompt.Confirm("Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?")) {
+	if prompt.Declined(yes, "Please make sure this is what you want and does not have any floating-point errors.\n\nIs this result correct?") {
 		value = prompt.Prompt("Please enter the wei amount:", "^[0-9]+$", "Invalid amount")
 		val, err := ValidatePositiveWeiAmount(name, value)
 		if err != nil {

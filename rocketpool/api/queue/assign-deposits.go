@@ -4,16 +4,17 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
-	"github.com/rocket-pool/smartnode/bindings/deposit"
-	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/deposit"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func canAssignDeposits(c *cli.Command, max int64) (*api.CanAssignDepositsResponse, error) {
+func canAssignDeposits(c *cli.Command, m int64) (*api.CanAssignDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -52,7 +53,7 @@ func canAssignDeposits(c *cli.Command, max int64) (*api.CanAssignDepositsRespons
 		if err != nil {
 			return err
 		}
-		gasInfo, err := deposit.EstimateAssignDepositsGas(rp, big.NewInt(max), opts)
+		gasInfo, err := deposit.EstimateAssignDepositsGas(rp, big.NewInt(m), opts)
 		if err == nil {
 			response.GasInfo = gasInfo
 		}
@@ -69,7 +70,7 @@ func canAssignDeposits(c *cli.Command, max int64) (*api.CanAssignDepositsRespons
 
 }
 
-func assignDeposits(c *cli.Command, max int64, opts *bind.TransactOpts) (*api.AssignDepositsResponse, error) {
+func assignDeposits(c *cli.Command, m int64, opts *bind.TransactOpts) (*api.AssignDepositsResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeWallet(c); err != nil {
@@ -87,7 +88,7 @@ func assignDeposits(c *cli.Command, max int64, opts *bind.TransactOpts) (*api.As
 	response := api.AssignDepositsResponse{}
 
 	// Assign deposits
-	hash, err := deposit.AssignDeposits(rp, big.NewInt(max), opts)
+	hash, err := deposit.AssignDeposits(rp, big.NewInt(m), opts)
 	if err != nil {
 		return nil, err
 	}

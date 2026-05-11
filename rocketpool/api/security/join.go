@@ -3,9 +3,10 @@ package security
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
-	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/dao/security"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -74,7 +75,7 @@ func canJoin(c *cli.Command) (*api.SecurityCanJoinResponse, error) {
 	}
 
 	// Update & return response
-	response.CanJoin = !(response.ProposalExpired || response.AlreadyMember)
+	response.CanJoin = !response.ProposalExpired && !response.AlreadyMember
 	return &response, nil
 
 }

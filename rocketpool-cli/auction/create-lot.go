@@ -41,7 +41,7 @@ func createLot(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to create this lot?")) {
+	if prompt.Declined(yes, "Are you sure you want to create this lot?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

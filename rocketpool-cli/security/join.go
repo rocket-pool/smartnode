@@ -41,7 +41,7 @@ func join(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to join the security council?")) {
+	if prompt.Declined(yes, "Are you sure you want to join the security council?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

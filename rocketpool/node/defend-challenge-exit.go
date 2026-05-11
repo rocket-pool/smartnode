@@ -6,11 +6,12 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	coretypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -157,7 +158,10 @@ func (t *defendChallengeExit) run(state *state.NetworkState) error {
 				t.log.Printlnf("The validator %d was incorrectly challenged and needs a not-exiting proof", validatorInfo[i].ValidatorId)
 			}
 
-			t.defendChallenge(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), exiting, opts)
+			err := t.defendChallenge(t.rp, mp, validatorInfo[i].ValidatorId, state, types.ValidatorPubkey(validatorInfo[i].PubKey), exiting, opts)
+			if err != nil {
+				t.log.Printlnf("error defending the challenge: %v", err)
+			}
 		}
 
 	}

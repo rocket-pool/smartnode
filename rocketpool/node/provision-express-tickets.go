@@ -5,10 +5,11 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -120,7 +121,18 @@ func (t *provisionExpress) run(state *state.NetworkState) error {
 	if err != nil {
 		return err
 	}
-	if !provisioned {
+
+	if provisioned {
+		return nil
+	}
+
+	// GetExpressTicketCount will provide the expected number of express tickets since the node is not provisioned
+	expressTicketCount, err := node.GetExpressTicketCount(t.rp, nodeAccount.Address, nil)
+	if err != nil {
+		return err
+	}
+
+	if expressTicketCount > 0 {
 		err = t.provisionExpress(nodeAccount.Address)
 		if err != nil {
 			return err

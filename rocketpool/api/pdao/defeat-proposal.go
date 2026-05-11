@@ -5,10 +5,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
-	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
-	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
+	"github.com/rocket-pool/smartnode/bindings/types"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -88,7 +89,7 @@ func canDefeatProposal(c *cli.Command, proposalId uint64, index uint64) (*api.PD
 	// Validate
 	defeatStart := creationTime.Add(challengeWindow)
 	response.StillInChallengeWindow = (time.Until(defeatStart) > 0)
-	response.CanDefeat = !(response.DoesNotExist || response.AlreadyDefeated || response.InvalidChallengeState || response.StillInChallengeWindow)
+	response.CanDefeat = !response.DoesNotExist && !response.AlreadyDefeated && !response.InvalidChallengeState && !response.StillInChallengeWindow
 	if !response.CanDefeat {
 		return &response, nil
 	}

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -15,7 +17,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli/v3"
 )
 
 // Dissolve timed out megapool validators task
@@ -91,7 +92,11 @@ func (t *dissolveTimedOutMegapoolValidators) dissolveMegapoolValidators(state *s
 			assignTime := time.Unix(int64(validator.ValidatorInfo.LastAssignmentTime), 0)
 			if time.Since(assignTime) >= time.Duration(timeBeforeDissolve)*time.Second {
 				// dissolve
-				t.dissolveMegapoolValidator(validator)
+				err := t.dissolveMegapoolValidator(validator)
+				if err != nil {
+					t.log.Printlnf("error dissolving the validator: %v", err)
+					continue
+				}
 			}
 
 		}

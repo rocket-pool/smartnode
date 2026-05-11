@@ -8,12 +8,13 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
-	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -138,7 +139,10 @@ func (t *setUseLatestDelegate) run(state *state.NetworkState) error {
 	// If the node has been running for less than 24 hours, alert the user. After that, set the flag for the minipools.
 	if time.Since(t.startTime) < 24*time.Hour {
 		t.log.Println("Alerting user they have minipools that can have the 'use latest delegate' flag set...")
-		alerting.AlertMinipoolUseLatestDelegateSet(t.cfg)
+		err := alerting.AlertMinipoolUseLatestDelegateSet(t.cfg)
+		if err != nil {
+			t.log.Printlnf("error alerting user they have minipools that can have the 'use latest delegate' flag set: %v", err)
+		}
 		return nil
 	}
 

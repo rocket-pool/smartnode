@@ -50,7 +50,7 @@ func initializeFeeDistributor(yes bool) error {
 	fmt.Printf("Your node's fee distributor contract will be created at address %s.\n", gasResponse.Distributor.Hex())
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to initialize your fee distributor contract?")) {
+	if prompt.Declined(yes, "Are you sure you want to initialize your fee distributor contract?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -117,7 +117,7 @@ func distribute(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to distribute the ETH from your node's fee distributor?")) {
+	if prompt.Declined(yes, "Are you sure you want to distribute the ETH from your node's fee distributor?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

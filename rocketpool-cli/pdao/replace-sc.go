@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -93,7 +94,7 @@ func proposeSecurityCouncilReplace(existingAddressString string, newID string, n
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex())) {
+	if prompt.Declined(yes, "Are you sure you want to propose removing %s (%s) from the security council and inviting %s (%s)?", oldID, oldAddress.Hex(), newID, newAddress.Hex()) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

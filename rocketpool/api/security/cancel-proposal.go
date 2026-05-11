@@ -5,11 +5,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -49,7 +50,7 @@ func canCancelProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanCance
 	wg.Go(func() error {
 		proposalState, err := dao.GetProposalState(rp, proposalId, nil)
 		if err == nil {
-			response.InvalidState = !(proposalState == rptypes.Pending || proposalState == rptypes.Active)
+			response.InvalidState = proposalState != rptypes.Pending && proposalState != rptypes.Active
 		}
 		return err
 	})
@@ -86,7 +87,7 @@ func canCancelProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanCance
 	}
 
 	// Update & return response
-	response.CanCancel = !(response.DoesNotExist || response.InvalidState || response.InvalidProposer)
+	response.CanCancel = !response.DoesNotExist && !response.InvalidState && !response.InvalidProposer
 	return &response, nil
 
 }

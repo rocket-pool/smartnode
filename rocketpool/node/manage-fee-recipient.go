@@ -5,8 +5,9 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/urfave/cli/v3"
+
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
@@ -115,7 +116,10 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 		m.log.Printlnf("WARNING: Fee recipient files did not contain the correct fee recipient of %s, regenerating...", correctFeeRecipient.Hex())
 		// Regenerate the fee recipient files
 		err = rpsvc.UpdateGlobalFeeRecipientFile(correctFeeRecipient, m.cfg)
-		alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, err == nil)
+		err = alerting.AlertFeeRecipientChanged(m.cfg, correctFeeRecipient, err == nil)
+		if err != nil {
+			m.log.Printlnf("error alerting fee recipient changed: %v", err)
+		}
 		if err != nil {
 			m.log.Println("***ERROR***")
 			m.log.Printlnf("Error updating fee recipient files: %s", err.Error())

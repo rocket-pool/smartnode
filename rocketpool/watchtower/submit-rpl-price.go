@@ -16,11 +16,12 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services"
@@ -381,7 +382,7 @@ func (t *submitRplPrice) run(state *state.NetworkState) error {
 	var lastSubmissionSlotTimestamp uint64
 	// Check if the node has submitted prices for the latest block
 	if lastSubmissionBlock != 0 {
-		lastSubmissionEvent := network.PriceUpdatedEvent{}
+		var lastSubmissionEvent network.PriceUpdatedEvent
 		eventFound, lastSubmissionEvent, err = network.GetPriceUpdatedEvent(t.rp, lastSubmissionBlock, nil)
 		if err != nil {
 			t.log.Printlnf("Error getting price submission event for block %d", lastSubmissionBlock)
@@ -725,7 +726,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -846,7 +847,7 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -965,7 +966,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -1111,7 +1112,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -1250,7 +1251,7 @@ func (t *submitRplPrice) submitBasePrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}
@@ -1371,7 +1372,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 			return fmt.Errorf("Failed to get member at %d: %q", i, err)
 		}
 
-		if bytes.Compare(addr.Bytes(), opts.From.Bytes()) == 0 {
+		if bytes.Equal(addr.Bytes(), opts.From.Bytes()) {
 			index = i
 			break
 		}

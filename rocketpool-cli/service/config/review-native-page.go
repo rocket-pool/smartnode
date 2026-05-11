@@ -6,6 +6,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
@@ -13,15 +14,8 @@ import (
 // Constants
 const reviewNativePageID string = "review-native-settings"
 
-// The changed settings review page
-type ReviewNativePage struct {
-	md              *mainDisplay
-	changedSettings map[string][]cfgtypes.ChangedSetting
-	page            *page
-}
-
 // Create a page to review any changes
-func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
+func NewReviewNativePage(md *MainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
 	var changedSettings map[string][]cfgtypes.ChangedSetting
 
@@ -37,7 +31,7 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, ne
 	if len(errors) > 0 {
 		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
 		for _, err := range errors {
-			builder.WriteString(fmt.Sprintf("%s\n\n", err))
+			builder.WriteString(err + "\n\n")
 		}
 	} else {
 		// Get the map of changed settings by category
@@ -45,9 +39,9 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, ne
 
 		for categoryName, changedSettingsList := range changedSettings {
 			if len(changedSettingsList) > 0 {
-				builder.WriteString(fmt.Sprintf("%s\n", categoryName))
+				builder.WriteString(categoryName + "\n")
 				for _, pair := range changedSettingsList {
-					builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
+					builder.WriteString("\t" + pair.Name + ": " + pair.OldValue + " => " + pair.NewValue + "\n")
 				}
 				builder.WriteString("\n")
 			}
@@ -154,14 +148,20 @@ func NewReviewNativePage(md *mainDisplay, oldConfig *config.RocketPoolConfig, ne
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView1, navString1)
+	_, err := fmt.Fprint(navTextView1, navString1)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 1: %w", err))
+	}
 
 	navString2 := "Esc: Go Back     Ctrl+C: Quit without Saving"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView2, navString2)
+	_, err = fmt.Fprint(navTextView2, navString2)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 2: %w", err))
+	}
 
 	// Create the nav footer
 	navBar := tview.NewFlex().

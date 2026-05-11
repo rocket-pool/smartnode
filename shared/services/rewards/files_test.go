@@ -66,15 +66,15 @@ func TestFilesFromTree(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion != f.RewardsFileHeader.RulesetVersion {
+	if localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion != f.RulesetVersion {
 		t.Fatalf(
 			"expected parsed version %d to match serialized version %d\n",
 			localRewardsFile.Impl().(*RewardsFile_v3).RulesetVersion,
-			f.RewardsFileHeader.RulesetVersion,
+			f.RulesetVersion,
 		)
 	}
 
-	localMinipoolPerformanceFile, err = ReadLocalMinipoolPerformanceFile(path.Join(dir, "performance.json"))
+	_, err = ReadLocalMinipoolPerformanceFile(path.Join(dir, "performance.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -239,7 +239,7 @@ func TestCidConsistency(t *testing.T) {
 	}
 
 	t.Logf("Computed CID: %s", fmt.Sprint(cid))
-	if "bafybeibqxb2xeoh2mlcn7543jr3tgvdu74mqqd43esrttyktmu3ubtx63i" != fmt.Sprint(cid) {
+	if fmt.Sprint(cid) != "bafybeibqxb2xeoh2mlcn7543jr3tgvdu74mqqd43esrttyktmu3ubtx63i" {
 		t.Fatal("CID did not match expectations. If changing CID computation logic, ensure historical CIDs can be recomputed. See comments in files_test.go for more info")
 	}
 }

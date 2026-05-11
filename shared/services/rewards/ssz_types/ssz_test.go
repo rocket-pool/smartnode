@@ -206,7 +206,7 @@ func TestSSZFileNoMagic(t *testing.T) {
 	copy(f.Magic[:], []byte{0x00, 0x01, 0x02, 0x03})
 	data, err := f.MarshalSSZ()
 	fatalIf(t, err)
-	f, err = ParseSSZFile(data)
+	_, err = ParseSSZFile(data)
 	if err == nil {
 		t.Fatal("expected error due to missing magic header")
 	}
@@ -220,7 +220,7 @@ func TestSSZFileBadRoot(t *testing.T) {
 	copy(f.MerkleRoot[:], []byte{0x00, 0x01, 0x02, 0x03})
 	data, err := f.MarshalSSZ()
 	fatalIf(t, err)
-	f, err = ParseSSZFile(data)
+	_, err = ParseSSZFile(data)
 	if err == nil {
 		t.Fatal("expected error due to mangled MerkleRoot")
 	}
@@ -258,8 +258,9 @@ func TestSSZFileFinalizeFail(t *testing.T) {
 func TestSSZFileTruncatedError(t *testing.T) {
 	f := sampleFile()
 	data, err := f.FinalizeSSZ()
+	fatalIf(t, err)
 	data = data[:10]
-	f, err = ParseSSZFile(data)
+	_, err = ParseSSZFile(data)
 	if err == nil {
 		t.Fatal("expected error due to mangled file bytes")
 	}

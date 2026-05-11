@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
+
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -35,7 +36,7 @@ func GetWatchtowerPrioFee(cfg *config.RocketPoolConfig) float64 {
 func FindLastBlockWithExecutionPayload(bc beacon.Client, slotNumber uint64) (beacon.BeaconBlock, error) {
 	beaconBlock := beacon.BeaconBlock{}
 	var err error
-	for blockExists, searchSlot := false, slotNumber; !blockExists; searchSlot -= 1 {
+	for blockExists, searchSlot := false, slotNumber; !blockExists; searchSlot-- {
 		beaconBlock, blockExists, err = bc.GetBeaconBlock(strconv.FormatUint(searchSlot, 10))
 		if err != nil {
 			return beacon.BeaconBlock{}, err

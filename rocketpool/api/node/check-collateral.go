@@ -3,10 +3,11 @@ package node
 import (
 	"math/big"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	rputils "github.com/rocket-pool/smartnode/shared/utils/rp"
-	"github.com/urfave/cli/v3"
 )
 
 func checkCollateral(c *cli.Command) (*api.CheckCollateralResponse, error) {

@@ -5,8 +5,9 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/urfave/cli/v3"
+
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
@@ -17,10 +18,6 @@ import (
 const (
 	findIterations uint = 100000
 )
-
-func recoverWallet(c *cli.Command, mnemonic string) (*api.RecoverWalletResponse, error) {
-	return recoverWalletWithParams(c, mnemonic, c.Bool("skip-validator-key-recovery"), c.String("derivation-path"), c.Uint("wallet-index"))
-}
 
 func recoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (*api.RecoverWalletResponse, error) {
 
@@ -90,10 +87,6 @@ func recoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorKeyRe
 	// Return response
 	return &response, nil
 
-}
-
-func searchAndRecoverWallet(c *cli.Command, mnemonic string, address common.Address) (*api.SearchAndRecoverWalletResponse, error) {
-	return searchAndRecoverWalletWithParams(c, mnemonic, address, c.Bool("skip-validator-key-recovery"))
 }
 
 func searchAndRecoverWalletWithParams(c *cli.Command, mnemonic string, address common.Address, skipValidatorKeyRecovery bool) (*api.SearchAndRecoverWalletResponse, error) {

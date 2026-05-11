@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -37,7 +38,7 @@ func setSignallingAddress(signallingAddress common.Address, signature string, ye
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to set the signalling address?")) {
+	if prompt.Declined(yes, "Are you sure you want to set the signalling address?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -86,7 +87,7 @@ func clearSignallingAddress(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to clear the signalling address?")) {
+	if prompt.Declined(yes, "Are you sure you want to clear the signalling address?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

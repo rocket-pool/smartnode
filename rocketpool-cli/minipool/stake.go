@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 
 	"github.com/rocket-pool/smartnode/shared/services/gas"
@@ -83,19 +84,18 @@ func stakeMinipools(minipool string, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
+	var totalGas = uint64(0)
+	var totalSafeGas = uint64(0)
 	var gasInfo rocketpoolapi.GasInfo
 	for _, minipool := range selectedMinipools {
 		canResponse, err := rp.CanStakeMinipool(minipool.Address)
 		if err != nil {
 			fmt.Printf("WARNING: Couldn't get gas price for stake transaction (%s)", err)
 			break
-		} else {
-			gasInfo = canResponse.GasInfo
-			totalGas += canResponse.GasInfo.EstGasLimit
-			totalSafeGas += canResponse.GasInfo.SafeGasLimit
 		}
+		gasInfo = canResponse.GasInfo
+		totalGas += canResponse.GasInfo.EstGasLimit
+		totalSafeGas += canResponse.GasInfo.SafeGasLimit
 	}
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
@@ -113,7 +113,7 @@ func stakeMinipools(minipool string, yes bool) error {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to stake %d minipools?", len(selectedMinipools))) {
+	if prompt.Declined(yes, "Are you sure you want to stake %d minipools?", len(selectedMinipools)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

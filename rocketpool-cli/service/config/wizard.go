@@ -1,7 +1,7 @@
 package config
 
 type wizard struct {
-	md *mainDisplay
+	md *MainDisplay
 
 	// Docker mode
 	welcomeModal                    *choiceWizardStep
@@ -26,7 +26,6 @@ type wizard struct {
 	externalMevModal                *textBoxWizardStep
 	finishedModal                   *choiceWizardStep
 	consensusLocalRandomModal       *choiceWizardStep
-	consensusLocalRandomPrysmModal  *choiceWizardStep
 	consensusLocalPrysmWarning      *choiceWizardStep
 	consensusLocalTekuWarning       *choiceWizardStep
 	externalDoppelgangerModal       *choiceWizardStep
@@ -49,7 +48,7 @@ type wizard struct {
 	nativeFinishedModal    *choiceWizardStep
 }
 
-func newWizard(md *mainDisplay) *wizard {
+func newWizard(md *MainDisplay) *wizard {
 
 	wiz := &wizard{
 		md: md,

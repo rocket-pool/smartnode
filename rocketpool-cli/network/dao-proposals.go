@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -65,7 +66,10 @@ func getActiveDAOProposals() error {
 			fmt.Printf("End: %s (in %s) \n", cliutils.GetDateTimeString(uint64(proposal.End)), time.Until(time.Unix(proposal.End, 0)).Round(time.Second))
 			scoresBuilder := strings.Builder{}
 			for i, score := range proposal.Scores {
-				scoresBuilder.WriteString(fmt.Sprintf("[%s = %.2f] ", proposal.Choices[i], score))
+				_, err = fmt.Fprintf(&scoresBuilder, "[%s = %.2f] ", proposal.Choices[i], score)
+				if err != nil {
+					return fmt.Errorf("error writing scores: %w", err)
+				}
 			}
 			fmt.Printf("Scores: %s\n", scoresBuilder.String())
 			quorumResult := ""

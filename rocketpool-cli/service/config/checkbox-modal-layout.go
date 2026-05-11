@@ -106,14 +106,20 @@ func newCheckBoxModalLayout(app *tview.Application, title string, width int, tex
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView1, navString1)
+	_, err := fmt.Fprint(navTextView1, navString1)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 1: %w", err))
+	}
 
 	navString2 := "Esc: Go Back     Ctrl+C: Quit without Saving"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView2, navString2)
+	_, err = fmt.Fprint(navTextView2, navString2)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 2: %w", err))
+	}
 
 	// Create the nav footer
 	navBar := tview.NewFlex().
@@ -285,12 +291,11 @@ func (layout *checkBoxModalLayout) generateCheckboxes(labels []string, descripti
 					layout.selected = nextSelection
 					layout.app.SetFocus(layout.buttonForm)
 					return nil
-				} else {
-					nextSelection = i + 1
-					layout.selected = nextSelection
-					layout.descriptionBox.SetText(descriptions[nextSelection])
-					return tcell.NewEventKey(tcell.KeyTab, 0, 0)
 				}
+				nextSelection = i + 1
+				layout.selected = nextSelection
+				layout.descriptionBox.SetText(descriptions[nextSelection])
+				return tcell.NewEventKey(tcell.KeyTab, 0, 0)
 			case tcell.KeyUp, tcell.KeyBacktab:
 				var nextSelection int
 				if layout.selected == 0 {
@@ -298,12 +303,11 @@ func (layout *checkBoxModalLayout) generateCheckboxes(labels []string, descripti
 					layout.selected = nextSelection
 					layout.app.SetFocus(layout.buttonForm)
 					return nil
-				} else {
-					nextSelection = i - 1
-					layout.selected = nextSelection
-					layout.descriptionBox.SetText(descriptions[nextSelection])
-					return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
 				}
+				nextSelection = i - 1
+				layout.selected = nextSelection
+				layout.descriptionBox.SetText(descriptions[nextSelection])
+				return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
 			default:
 				return event
 			}

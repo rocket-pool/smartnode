@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/prysmaticlabs/go-bitfield"
+
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
@@ -107,16 +108,16 @@ type MockBeaconClient struct {
 	withdrawals map[slot]map[validatorIndex]*big.Int
 }
 
-func (m *MockBeaconClient) SetState(state *state.NetworkState) {
-	m.state = state
-	if m.validatorPubkeys == nil {
-		m.validatorPubkeys = make(map[validatorIndex]types.ValidatorPubkey)
+func (bc *MockBeaconClient) SetState(state *state.NetworkState) {
+	bc.state = state
+	if bc.validatorPubkeys == nil {
+		bc.validatorPubkeys = make(map[validatorIndex]types.ValidatorPubkey)
 	}
 	for _, v := range state.MinipoolValidatorDetails {
-		if _, ok := m.validatorPubkeys[validatorIndex(v.Index)]; ok {
-			m.t.Fatalf("Validator %s already set", v.Index)
+		if _, ok := bc.validatorPubkeys[validatorIndex(v.Index)]; ok {
+			bc.t.Fatalf("Validator %s already set", v.Index)
 		}
-		m.validatorPubkeys[validatorIndex(v.Index)] = v.Pubkey
+		bc.validatorPubkeys[validatorIndex(v.Index)] = v.Pubkey
 	}
 	for _, v := range state.MegapoolValidatorGlobalIndex {
 		pubkey := types.BytesToValidatorPubkey(v.Pubkey)
@@ -125,10 +126,10 @@ func (m *MockBeaconClient) SetState(state *state.NetworkState) {
 			continue
 		}
 		vIndex := details.Index
-		if _, ok := m.validatorPubkeys[validatorIndex(vIndex)]; ok {
-			m.t.Fatalf("Validator %s already set", vIndex)
+		if _, ok := bc.validatorPubkeys[validatorIndex(vIndex)]; ok {
+			bc.t.Fatalf("Validator %s already set", vIndex)
 		}
-		m.validatorPubkeys[validatorIndex(vIndex)] = pubkey
+		bc.validatorPubkeys[validatorIndex(vIndex)] = pubkey
 	}
 }
 
@@ -221,8 +222,7 @@ func (bc *MockBeaconClient) GetCommitteesForEpoch(_epoch *uint64) (beacon.Commit
 	out.epoch = epoch(*_epoch)
 
 	// First find validators that must be assigned to specific slots
-	var missedDutiesValidators map[slot][]validatorIndex
-	missedDutiesValidators = bc.missedDuties[out.epoch]
+	missedDutiesValidators := bc.missedDuties[out.epoch]
 
 	// Keep track of validators that have been assigned to a slot
 	assignedValidators := make(map[string]interface{})
@@ -242,7 +242,7 @@ func (bc *MockBeaconClient) GetCommitteesForEpoch(_epoch *uint64) (beacon.Commit
 	}
 
 	// Assign the remaining validators based on total order / critical duties
-	for validator, _ := range bc.validatorIndices {
+	for validator := range bc.validatorIndices {
 		if _, ok := assignedValidators[string(validator)]; ok {
 			continue
 		}
@@ -259,7 +259,7 @@ func (bc *MockBeaconClient) GetCommitteesForEpoch(_epoch *uint64) (beacon.Commit
 		// If the validator has critical duties for this slot, assign it
 		if _, ok := bc.criticalDutiesSlots[validator]; ok {
 			assigned := false
-			for s, _ := range bc.criticalDutiesSlots[validator] {
+			for s := range bc.criticalDutiesSlots[validator] {
 				if bc.state.BeaconConfig.SlotToEpoch(uint64(s)) == uint64(out.epoch) {
 					idx := s % 32
 					out.slots[idx].validators = append(out.slots[idx].validators, string(validator))
@@ -311,11 +311,10 @@ func (bc *MockBeaconClient) GetAttestations(_slot string) ([]beacon.AttestationI
 	// and the set of validators whose mod 32 is the same as the slot, so we have to be careful
 	// to not double count them.
 	slotMod32 := s % 32
-	var bitlistLength uint
 	// Add the number of validators that missed duties for the slot
-	bitlistLength = bc.missedDuties.getCount(s)
+	bitlistLength := bc.missedDuties.getCount(s)
 
-	for index, _ := range bc.validatorIndices {
+	for index := range bc.validatorIndices {
 		// Don't count validators that are have misses anywhere in this epoch
 		if bc.missedEpochs.validatorMissedEpoch(index, e) {
 			// This validator either missed this slot and was already counted,
@@ -340,7 +339,7 @@ func (bc *MockBeaconClient) GetAttestations(_slot string) ([]beacon.AttestationI
 			} else {
 				// Check if any duties are in the same epoch
 				foundDuty := false
-				for criticalDutySlot, _ := range duties {
+				for criticalDutySlot := range duties {
 					if bc.state.BeaconConfig.SlotToEpoch(uint64(criticalDutySlot)) == uint64(e) {
 						foundDuty = true
 						break

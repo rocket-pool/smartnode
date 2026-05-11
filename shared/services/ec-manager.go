@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient"
 	"github.com/fatih/color"
+
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -25,8 +26,8 @@ import (
 type ExecutionClientManager struct {
 	primaryEcUrl    string
 	fallbackEcUrl   string
-	primaryEc       *ethClient
-	fallbackEc      *ethClient
+	primaryEc       *EthClient
+	fallbackEc      *EthClient
 	logger          log.ColorLogger
 	primaryReady    bool
 	fallbackReady   bool
@@ -51,7 +52,7 @@ func NewStaticExecutionClientManager(static rocketpool.ExecutionClient) *Executi
 }
 
 // This is a signature for a wrapped ethclient.Client function
-type ecFunction func(*ethClient) (interface{}, error)
+type ecFunction func(*EthClient) (interface{}, error)
 
 // Creates a new ExecutionClientManager instance based on the Rocket Pool config
 func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientManager, error) {
@@ -99,13 +100,13 @@ func NewExecutionClientManager(cfg *config.RocketPoolConfig) (*ExecutionClientMa
 	out := &ExecutionClientManager{
 		primaryEcUrl:  primaryEcUrl,
 		fallbackEcUrl: fallbackEcUrl,
-		primaryEc:     &ethClient{primaryEc},
+		primaryEc:     &EthClient{primaryEc},
 		logger:        log.NewColorLogger(color.FgYellow),
 		primaryReady:  true,
 		fallbackReady: fallbackEc != nil,
 	}
 	if fallbackEc != nil {
-		out.fallbackEc = &ethClient{fallbackEc}
+		out.fallbackEc = &EthClient{fallbackEc}
 	}
 	return out, nil
 
@@ -121,7 +122,7 @@ func (p *ExecutionClientManager) CodeAt(ctx context.Context, contract common.Add
 	if p.static != nil {
 		return p.static.CodeAt(ctx, contract, blockNumber)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.CodeAt(ctx, contract, blockNumber)
 	})
 	if err != nil {
@@ -136,7 +137,7 @@ func (p *ExecutionClientManager) CallContract(ctx context.Context, call ethereum
 	if p.static != nil {
 		return p.static.CallContract(ctx, call, blockNumber)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.CallContract(ctx, call, blockNumber)
 	})
 	if err != nil {
@@ -154,7 +155,7 @@ func (p *ExecutionClientManager) HeaderByHash(ctx context.Context, hash common.H
 	if p.static != nil {
 		return p.static.HeaderByHash(ctx, hash)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.HeaderByHash(ctx, hash)
 	})
 	if err != nil {
@@ -169,7 +170,7 @@ func (p *ExecutionClientManager) HeaderByNumber(ctx context.Context, number *big
 	if p.static != nil {
 		return p.static.HeaderByNumber(ctx, number)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.HeaderByNumber(ctx, number)
 	})
 	if err != nil {
@@ -183,7 +184,7 @@ func (p *ExecutionClientManager) PendingCodeAt(ctx context.Context, account comm
 	if p.static != nil {
 		return p.static.PendingCodeAt(ctx, account)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.PendingCodeAt(ctx, account)
 	})
 	if err != nil {
@@ -197,7 +198,7 @@ func (p *ExecutionClientManager) PendingNonceAt(ctx context.Context, account com
 	if p.static != nil {
 		return p.static.PendingNonceAt(ctx, account)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.PendingNonceAt(ctx, account)
 	})
 	if err != nil {
@@ -212,7 +213,7 @@ func (p *ExecutionClientManager) SuggestGasPrice(ctx context.Context) (*big.Int,
 	if p.static != nil {
 		return p.static.SuggestGasPrice(ctx)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.SuggestGasPrice(ctx)
 	})
 	if err != nil {
@@ -227,7 +228,7 @@ func (p *ExecutionClientManager) SuggestGasTipCap(ctx context.Context) (*big.Int
 	if p.static != nil {
 		return p.static.SuggestGasTipCap(ctx)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.SuggestGasTipCap(ctx)
 	})
 	if err != nil {
@@ -245,7 +246,7 @@ func (p *ExecutionClientManager) EstimateGas(ctx context.Context, call ethereum.
 	if p.static != nil {
 		return p.static.EstimateGas(ctx, call)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.EstimateGas(ctx, call)
 	})
 	if err != nil {
@@ -259,7 +260,7 @@ func (p *ExecutionClientManager) SendTransaction(ctx context.Context, tx *types.
 	if p.static != nil {
 		return p.static.SendTransaction(ctx, tx)
 	}
-	_, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	_, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return nil, client.SendTransaction(ctx, tx)
 	})
 	return err
@@ -277,7 +278,7 @@ func (p *ExecutionClientManager) FilterLogs(ctx context.Context, query ethereum.
 	if p.static != nil {
 		return p.static.FilterLogs(ctx, query)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.FilterLogs(ctx, query)
 	})
 	if err != nil {
@@ -292,7 +293,7 @@ func (p *ExecutionClientManager) SubscribeFilterLogs(ctx context.Context, query 
 	if p.static != nil {
 		return p.static.SubscribeFilterLogs(ctx, query, ch)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.SubscribeFilterLogs(ctx, query, ch)
 	})
 	if err != nil {
@@ -311,7 +312,7 @@ func (p *ExecutionClientManager) TransactionReceipt(ctx context.Context, txHash 
 	if p.static != nil {
 		return p.static.TransactionReceipt(ctx, txHash)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.TransactionReceipt(ctx, txHash)
 	})
 	if err != nil {
@@ -329,7 +330,7 @@ func (p *ExecutionClientManager) BlockNumber(ctx context.Context) (uint64, error
 	if p.static != nil {
 		return p.static.BlockNumber(ctx)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.BlockNumber(ctx)
 	})
 	if err != nil {
@@ -344,7 +345,7 @@ func (p *ExecutionClientManager) BalanceAt(ctx context.Context, account common.A
 	if p.static != nil {
 		return p.static.BalanceAt(ctx, account, blockNumber)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.BalanceAt(ctx, account, blockNumber)
 	})
 	if err != nil {
@@ -358,7 +359,7 @@ func (p *ExecutionClientManager) TransactionByHash(ctx context.Context, hash com
 	if p.static != nil {
 		return p.static.TransactionByHash(ctx, hash)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		tx, isPending, err := client.TransactionByHash(ctx, hash)
 		result := []interface{}{tx, isPending}
 		return result, err
@@ -380,7 +381,7 @@ func (p *ExecutionClientManager) NonceAt(ctx context.Context, account common.Add
 	if p.static != nil {
 		return p.static.NonceAt(ctx, account, blockNumber)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.NonceAt(ctx, account, blockNumber)
 	})
 	if err != nil {
@@ -395,7 +396,7 @@ func (p *ExecutionClientManager) SyncProgress(ctx context.Context) (*ethereum.Sy
 	if p.static != nil {
 		return p.static.SyncProgress(ctx)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.SyncProgress(ctx)
 	})
 	if err != nil {
@@ -408,7 +409,7 @@ func (p *ExecutionClientManager) LatestBlockTime(ctx context.Context) (time.Time
 	if p.static != nil {
 		return p.static.LatestBlockTime(ctx)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.LatestBlockTime(ctx)
 	})
 	if err != nil {
@@ -422,7 +423,7 @@ func (p *ExecutionClientManager) ChainID(ctx context.Context) (*big.Int, error) 
 	if p.static != nil {
 		return p.static.ChainID(ctx)
 	}
-	result, err := p.runFunction(func(client *ethClient) (interface{}, error) {
+	result, err := p.runFunction(func(client *EthClient) (interface{}, error) {
 		return client.ChainID(ctx)
 	})
 	if err != nil {
@@ -507,7 +508,7 @@ func getNetworkNameFromId(networkId uint) string {
 const ecStatusTimeout = 10 * time.Second
 
 // Check the client status
-func checkEcStatus(client *ethClient) api.ClientStatus {
+func checkEcStatus(client *EthClient) api.ClientStatus {
 
 	status := api.ClientStatus{}
 

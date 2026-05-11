@@ -6,6 +6,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -17,7 +18,6 @@ type standardLayout struct {
 	footer         tview.Primitive
 	form           *Form
 	parameters     map[tview.FormItem]*parameterizedFormItem
-	cfg            cfgtypes.Config
 }
 
 // Creates a new StandardLayout instance, which includes the grid and description box preconstructed.
@@ -142,14 +142,20 @@ func (layout *standardLayout) createSettingFooter() {
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView1, navString1)
+	_, err := fmt.Fprint(navTextView1, navString1)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 1: %w", err))
+	}
 
 	navString2 := "Esc: Go Back to Categories"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView2, navString2)
+	_, err = fmt.Fprint(navTextView2, navString2)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 2: %w", err))
+	}
 
 	navBar := tview.NewFlex().
 		SetDirection(tview.FlexRow).
@@ -205,7 +211,7 @@ func (layout *standardLayout) mapParameterizedFormItems(params ...*parameterized
 }
 
 // Sets up a handler to return to the specified homePage when the user presses escape on the layout.
-func (layout *standardLayout) setupEscapeReturnHomeHandler(md *mainDisplay, homePage *page) {
+func (layout *standardLayout) setupEscapeReturnHomeHandler(md *MainDisplay, homePage *page) {
 	layout.grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
 		// Return to the home page
 		if event.Key() == tcell.KeyEsc {

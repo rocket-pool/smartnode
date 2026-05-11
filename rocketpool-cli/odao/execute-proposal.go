@@ -91,19 +91,18 @@ func executeProposal(proposal string, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
+	var totalGas uint64
+	var totalSafeGas uint64
 	var gasInfo rocketpoolapi.GasInfo
 	for _, proposal := range selectedProposals {
 		canResponse, err := rp.CanExecuteTNDAOProposal(proposal.ID)
 		if err != nil {
 			fmt.Printf("WARNING: Couldn't get gas price for execute transaction (%s)", err)
 			break
-		} else {
-			gasInfo = canResponse.GasInfo
-			totalGas += canResponse.GasInfo.EstGasLimit
-			totalSafeGas += canResponse.GasInfo.SafeGasLimit
 		}
+		gasInfo = canResponse.GasInfo
+		totalGas += canResponse.GasInfo.EstGasLimit
+		totalSafeGas += canResponse.GasInfo.SafeGasLimit
 	}
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
@@ -115,7 +114,7 @@ func executeProposal(proposal string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to execute %d proposals?", len(selectedProposals))) {
+	if prompt.Declined(yes, "Are you sure you want to execute %d proposals?", len(selectedProposals)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

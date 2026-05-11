@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -51,7 +52,7 @@ func sendMessage(toAddressOrENS string, message []byte, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to send a message to %s?", toAddressString)) {
+	if prompt.Declined(yes, "Are you sure you want to send a message to %s?", toAddressString) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

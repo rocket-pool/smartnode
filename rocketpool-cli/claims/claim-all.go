@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -774,12 +775,13 @@ func claimAll(restakeAmount string, statusOnly bool, yes bool) error {
 			"Invalid selection. Enter 'all', 'none', or comma-separated numbers (e.g. '1,3').",
 		)
 
-		if indexSelection == "none" {
+		switch indexSelection {
+		case "none":
 			fmt.Println("Cancelled.")
 			return nil
-		} else if indexSelection == "all" {
+		case "all":
 			selectedClaims = claims
-		} else {
+		default:
 			elements := strings.Split(indexSelection, ",")
 			seen := map[int]bool{}
 			for _, element := range elements {

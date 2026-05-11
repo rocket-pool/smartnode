@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"golang.org/x/sync/errgroup"
 )
 
 // Represents the collector for onchain governance metrics
@@ -83,14 +84,15 @@ func (collector *GovernanceCollector) Collect(channel chan<- prometheus.Metric) 
 			return fmt.Errorf("error fetching onchain proposals: %w", err)
 		}
 		for _, proposal := range onchainProposals {
-			if proposal.State == types.ProtocolDaoProposalState_Pending {
-				onchainPending += 1
-			} else if proposal.State == types.ProtocolDaoProposalState_ActivePhase1 {
-				onchainPhase1 += 1
-			} else if proposal.State == types.ProtocolDaoProposalState_ActivePhase2 {
-				onchainPhase2 += 1
-			} else {
-				onchainClosed += 1
+			switch proposal.State {
+			case types.ProtocolDaoProposalState_Pending:
+				onchainPending++
+			case types.ProtocolDaoProposalState_ActivePhase1:
+				onchainPhase1++
+			case types.ProtocolDaoProposalState_ActivePhase2:
+				onchainPhase2++
+			default:
+				onchainClosed++
 			}
 		}
 		return err

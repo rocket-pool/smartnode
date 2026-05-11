@@ -4,18 +4,15 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/urfave/cli/v3"
+
+	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	walletutils "github.com/rocket-pool/smartnode/shared/utils/wallet"
 )
-
-func testRecoverWallet(c *cli.Command, mnemonic string) (*api.RecoverWalletResponse, error) {
-	return testRecoverWalletWithParams(c, mnemonic, c.Bool("skip-validator-key-recovery"), c.String("derivation-path"), c.Uint("wallet-index"))
-}
 
 func testRecoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorKeyRecovery bool, derivationPath string, walletIndex uint) (*api.RecoverWalletResponse, error) {
 
@@ -83,10 +80,6 @@ func testRecoverWalletWithParams(c *cli.Command, mnemonic string, skipValidatorK
 	// Return response
 	return &response, nil
 
-}
-
-func testSearchAndRecoverWallet(c *cli.Command, mnemonic string, address common.Address) (*api.SearchAndRecoverWalletResponse, error) {
-	return testSearchAndRecoverWalletWithParams(c, mnemonic, address, c.Bool("skip-validator-key-recovery"))
 }
 
 func testSearchAndRecoverWalletWithParams(c *cli.Command, mnemonic string, address common.Address, skipValidatorKeyRecovery bool) (*api.SearchAndRecoverWalletResponse, error) {

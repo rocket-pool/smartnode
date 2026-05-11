@@ -9,6 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/hashicorp/go-version"
+
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
@@ -194,10 +195,16 @@ func NewNetworkContracts(rp *rocketpool.RocketPool, multicallerAddress common.Ad
 	// Add the address and ABI getters to multicall
 	for i, wrapper := range wrappers {
 		// Add the address getter
-		contracts.Multicaller.AddCall(contracts.RocketStorage, &wrappers[i].address, "getAddress", [32]byte(crypto.Keccak256Hash([]byte("contract.address"), []byte(wrapper.name))))
+		err := contracts.Multicaller.AddCall(contracts.RocketStorage, &wrappers[i].address, "getAddress", [32]byte(crypto.Keccak256Hash([]byte("contract.address"), []byte(wrapper.name))))
+		if err != nil {
+			return nil, fmt.Errorf("error adding address getter for %s: %w", wrapper.name, err)
+		}
 
 		// Add the ABI getter
-		contracts.Multicaller.AddCall(contracts.RocketStorage, &wrappers[i].abiEncoded, "getString", [32]byte(crypto.Keccak256Hash([]byte("contract.abi"), []byte(wrapper.name))))
+		err = contracts.Multicaller.AddCall(contracts.RocketStorage, &wrappers[i].abiEncoded, "getString", [32]byte(crypto.Keccak256Hash([]byte("contract.abi"), []byte(wrapper.name))))
+		if err != nil {
+			return nil, fmt.Errorf("error adding ABI getter for %s: %w", wrapper.name, err)
+		}
 	}
 
 	// Run the multi-getter

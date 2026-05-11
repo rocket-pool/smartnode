@@ -29,7 +29,7 @@ func (e *NotFoundError) Error() string { return fmt.Sprintf("not found: %s", e.P
 // On error it writes 400 for BadRequestError and 500 for everything else.
 func WriteResponse(w http.ResponseWriter, response interface{}, responseError error) {
 	r := reflect.ValueOf(response)
-	if !(r.Kind() == reflect.Ptr && r.Type().Elem().Kind() == reflect.Struct) {
+	if r.Kind() != reflect.Ptr || r.Type().Elem().Kind() != reflect.Struct {
 		WriteErrorResponse(w, errors.New("invalid API response"))
 		return
 	}
@@ -41,8 +41,8 @@ func WriteResponse(w http.ResponseWriter, response interface{}, responseError er
 
 	sf := r.Elem().FieldByName("Status")
 	ef := r.Elem().FieldByName("Error")
-	if !(sf.IsValid() && sf.CanSet() && sf.Kind() == reflect.String &&
-		ef.IsValid() && ef.CanSet() && ef.Kind() == reflect.String) {
+	if !sf.IsValid() || !sf.CanSet() || sf.Kind() != reflect.String ||
+		!ef.IsValid() || !ef.CanSet() || ef.Kind() != reflect.String {
 		WriteErrorResponse(w, errors.New("invalid API response"))
 		return
 	}

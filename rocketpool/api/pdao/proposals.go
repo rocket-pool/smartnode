@@ -2,13 +2,14 @@ package pdao
 
 import (
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 )
 
 // Settings
@@ -85,12 +86,16 @@ func getProposalsWithNodeVoteDirection(rp *rocketpool.RocketPool, nodeAddress co
 				prop := props[pi]
 				details[pi].ProtocolDaoProposalDetails = prop
 				voteDir, err := protocol.GetAddressVoteDirection(rp, prop.ID, nodeAddress, nil)
-				delegateVoteDir, err := protocol.GetAddressVoteDirection(rp, prop.ID, delegateAddress, nil)
-				if err == nil {
-					details[pi].NodeVoteDirection = voteDir
-					details[pi].DelegateVoteDirection = delegateVoteDir
+				if err != nil {
+					return err
 				}
-				return err
+				delegateVoteDir, err := protocol.GetAddressVoteDirection(rp, prop.ID, delegateAddress, nil)
+				if err != nil {
+					return err
+				}
+				details[pi].NodeVoteDirection = voteDir
+				details[pi].DelegateVoteDirection = delegateVoteDir
+				return nil
 			})
 		}
 		if err := wg.Wait(); err != nil {

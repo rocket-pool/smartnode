@@ -18,17 +18,17 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/queue/can-process", func(w http.ResponseWriter, r *http.Request) {
-		max, err := parseUint32Param(r, "max")
+		m, err := parseUint32Param(r, "max")
 		if err != nil {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canProcessQueue(c, int64(max))
+		resp, err := canProcessQueue(c, int64(m))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/queue/process", func(w http.ResponseWriter, r *http.Request) {
-		max, err := parseUint32Param(r, "max")
+		m, err := parseUint32Param(r, "max")
 		if err != nil {
 			apiutils.WriteErrorResponse(w, err)
 			return
@@ -38,7 +38,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := processQueue(c, int64(max), opts)
+		resp, err := processQueue(c, int64(m), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
@@ -48,17 +48,17 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/queue/can-assign-deposits", func(w http.ResponseWriter, r *http.Request) {
-		max, err := parseUint32Param(r, "max")
+		m, err := parseUint32Param(r, "max")
 		if err != nil {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := canAssignDeposits(c, int64(max))
+		resp, err := canAssignDeposits(c, int64(m))
 		apiutils.WriteResponse(w, resp, err)
 	})
 
 	mux.HandleFunc("/api/queue/assign-deposits", func(w http.ResponseWriter, r *http.Request) {
-		max, err := parseUint32Param(r, "max")
+		m, err := parseUint32Param(r, "max")
 		if err != nil {
 			apiutils.WriteErrorResponse(w, err)
 			return
@@ -68,7 +68,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := assignDeposits(c, int64(max), opts)
+		resp, err := assignDeposits(c, int64(m), opts)
 		apiutils.WriteResponse(w, resp, err)
 	})
 }

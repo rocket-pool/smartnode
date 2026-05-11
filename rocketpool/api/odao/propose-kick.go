@@ -6,10 +6,11 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
-	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -87,7 +88,7 @@ func canProposeKick(c *cli.Command, memberAddress common.Address, fineAmountWei 
 	}
 
 	// Update & return response
-	response.CanPropose = !(response.ProposalCooldownActive || response.InsufficientRplBond)
+	response.CanPropose = !response.ProposalCooldownActive && !response.InsufficientRplBond
 	return &response, nil
 
 }

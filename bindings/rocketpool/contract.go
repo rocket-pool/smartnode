@@ -155,25 +155,6 @@ func (c *Contract) estimateGasLimit(opts *bind.TransactOpts, input []byte) (uint
 
 }
 
-// Wait for a transaction to be mined and get a tx receipt
-func (c *Contract) getTransactionReceipt(tx *types.Transaction) (*types.Receipt, error) {
-
-	// Wait for transaction to be mined
-	txReceipt, err := bind.WaitMined(context.Background(), c.Client, tx)
-	if err != nil {
-		return nil, err
-	}
-
-	// Check transaction status
-	if txReceipt.Status == 0 {
-		return txReceipt, errors.New("Transaction failed with status 0")
-	}
-
-	// Return
-	return txReceipt, nil
-
-}
-
 // Get contract events from a transaction
 // eventPrototype must be an event struct type
 // Returns a slice of untyped values; assert returned events to event struct type

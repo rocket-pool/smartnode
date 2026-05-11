@@ -3,10 +3,11 @@ package node
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
-	"github.com/rocket-pool/smartnode/bindings/node"
-	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/node"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -78,7 +79,7 @@ func canRegisterNode(c *cli.Command, timezoneLocation string) (*api.CanRegisterN
 	}
 
 	// Update & return response
-	response.CanRegister = !(response.AlreadyRegistered || response.RegistrationDisabled)
+	response.CanRegister = !response.AlreadyRegistered && !response.RegistrationDisabled
 	return &response, nil
 
 }

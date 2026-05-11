@@ -3,7 +3,6 @@ package node
 import (
 	"encoding/hex"
 	"fmt"
-	_ "time/tzdata"
 
 	"github.com/urfave/cli/v3"
 

@@ -8,6 +8,8 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prometheus/client_golang/prometheus"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -17,7 +19,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/contracts"
 	"github.com/rocket-pool/smartnode/shared/services/proposals"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"golang.org/x/sync/errgroup"
 )
 
 // Time to wait to make new Snapshot API calls
@@ -151,9 +152,9 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 
 			for _, proposal := range proposals.Data.Proposals {
 				if proposal.State == "active" {
-					activeProposals += 1
+					activeProposals++
 				} else {
-					closedProposals += 1
+					closedProposals++
 				}
 			}
 			collector.cachedActiveProposals = activeProposals
@@ -287,9 +288,9 @@ func (collector *SnapshotCollector) collectVotes(votedProposals *api.SnapshotVot
 		_, exists := handledProposals[votedProposal.Proposal.Id]
 		if !exists {
 			if votedProposal.Proposal.State == "active" {
-				votesActiveProposals += 1
+				votesActiveProposals++
 			} else {
-				votesClosedProposals += 1
+				votesClosedProposals++
 			}
 			handledProposals[votedProposal.Proposal.Id] = true
 		}

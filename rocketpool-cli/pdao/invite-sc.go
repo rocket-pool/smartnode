@@ -58,7 +58,7 @@ func proposeSecurityCouncilInvite(id string, addressFlag string, yes bool) error
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to propose inviting %s (%s) to the security council?", id, address.Hex())) {
+	if prompt.Declined(yes, "Are you sure you want to propose inviting %s (%s) to the security council?", id, address.Hex()) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

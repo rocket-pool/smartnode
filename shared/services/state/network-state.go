@@ -8,13 +8,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -109,71 +110,71 @@ type NetworkState struct {
 	ProtocolDaoProposalDetails []protocol.ProtocolDaoProposalDetails `json:"protocol_dao_proposal_details,omitempty"`
 }
 
-func (ns NetworkState) MarshalJSON() ([]byte, error) {
+func (s NetworkState) MarshalJSON() ([]byte, error) {
 	// No changes needed
 	type Alias NetworkState
-	a := (*Alias)(&ns)
+	a := (*Alias)(&s)
 	return json.Marshal(a)
 }
 
-func (ns *NetworkState) UnmarshalJSON(data []byte) error {
+func (s *NetworkState) UnmarshalJSON(data []byte) error {
 	type Alias NetworkState
 	var a Alias
 	err := json.Unmarshal(data, &a)
 	if err != nil {
 		return err
 	}
-	*ns = NetworkState(a)
+	*s = NetworkState(a)
 	// Rebuild the node details by address index
-	ns.NodeDetailsByAddress = make(map[common.Address]*rpstate.NativeNodeDetails)
-	for i, details := range ns.NodeDetails {
-		if _, ok := ns.NodeDetailsByAddress[details.NodeAddress]; ok {
+	s.NodeDetailsByAddress = make(map[common.Address]*rpstate.NativeNodeDetails)
+	for i, details := range s.NodeDetails {
+		if _, ok := s.NodeDetailsByAddress[details.NodeAddress]; ok {
 			return fmt.Errorf("duplicate node details for address %s", details.NodeAddress.Hex())
 		}
-		// N.B. &details is not the same as &ns.NodeDetails[i]
+		// N.B. &details is not the same as &s.NodeDetails[i]
 		// &details is the address of the current element in the loop
-		// &ns.NodeDetails[i] is the address of the struct in the slice
-		ns.NodeDetailsByAddress[details.NodeAddress] = &ns.NodeDetails[i]
+		// &s.NodeDetails[i] is the address of the struct in the slice
+		s.NodeDetailsByAddress[details.NodeAddress] = &s.NodeDetails[i]
 	}
 
 	// Rebuild the minipool details by address index
-	ns.MinipoolDetailsByAddress = make(map[common.Address]*rpstate.NativeMinipoolDetails)
-	for i, details := range ns.MinipoolDetails {
-		if _, ok := ns.MinipoolDetailsByAddress[details.MinipoolAddress]; ok {
+	s.MinipoolDetailsByAddress = make(map[common.Address]*rpstate.NativeMinipoolDetails)
+	for i, details := range s.MinipoolDetails {
+		if _, ok := s.MinipoolDetailsByAddress[details.MinipoolAddress]; ok {
 			return fmt.Errorf("duplicate minipool details for address %s", details.MinipoolAddress.Hex())
 		}
 
-		// N.B. &details is not the same as &ns.MinipoolDetails[i]
+		// N.B. &details is not the same as &s.MinipoolDetails[i]
 		// &details is the address of the current element in the loop
-		// &ns.MinipoolDetails[i] is the address of the struct in the slice
-		ns.MinipoolDetailsByAddress[details.MinipoolAddress] = &ns.MinipoolDetails[i]
+		// &s.MinipoolDetails[i] is the address of the struct in the slice
+		s.MinipoolDetailsByAddress[details.MinipoolAddress] = &s.MinipoolDetails[i]
 	}
 
 	// Rebuild the minipool details by node index
-	ns.MinipoolDetailsByNode = make(map[common.Address][]*rpstate.NativeMinipoolDetails)
-	for i, details := range ns.MinipoolDetails {
-		// See comments in above loops as to why we're using &ns.MinipoolDetails[i]
-		currentDetails := &ns.MinipoolDetails[i]
-		nodeList, exists := ns.MinipoolDetailsByNode[details.NodeAddress]
+	s.MinipoolDetailsByNode = make(map[common.Address][]*rpstate.NativeMinipoolDetails)
+	for i, details := range s.MinipoolDetails {
+		// See comments in above loops as to why we're using &s.MinipoolDetails[i]
+		currentDetails := &s.MinipoolDetails[i]
+		nodeList, exists := s.MinipoolDetailsByNode[details.NodeAddress]
 		if !exists {
-			ns.MinipoolDetailsByNode[details.NodeAddress] = []*rpstate.NativeMinipoolDetails{currentDetails}
+			s.MinipoolDetailsByNode[details.NodeAddress] = []*rpstate.NativeMinipoolDetails{currentDetails}
 			continue
 		}
 		// See comments in other loops
-		ns.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
+		s.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
 	}
 
 	// Rebuild MegapoolToPubkeysMap and MegapoolValidatorInfo from MegapoolValidatorGlobalIndex
-	ns.MegapoolToPubkeysMap = make(map[common.Address][]types.ValidatorPubkey)
-	ns.MegapoolValidatorInfo = make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex)
-	for i := range ns.MegapoolValidatorGlobalIndex {
-		validator := &ns.MegapoolValidatorGlobalIndex[i]
+	s.MegapoolToPubkeysMap = make(map[common.Address][]types.ValidatorPubkey)
+	s.MegapoolValidatorInfo = make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex)
+	for i := range s.MegapoolValidatorGlobalIndex {
+		validator := &s.MegapoolValidatorGlobalIndex[i]
 		if len(validator.Pubkey) > 0 {
 			pubkey := types.ValidatorPubkey(validator.Pubkey)
-			ns.MegapoolToPubkeysMap[validator.MegapoolAddress] = append(
-				ns.MegapoolToPubkeysMap[validator.MegapoolAddress], pubkey,
+			s.MegapoolToPubkeysMap[validator.MegapoolAddress] = append(
+				s.MegapoolToPubkeysMap[validator.MegapoolAddress], pubkey,
 			)
-			ns.MegapoolValidatorInfo[pubkey] = validator
+			s.MegapoolValidatorInfo[pubkey] = validator
 		}
 	}
 
@@ -543,30 +544,28 @@ func (s *NetworkState) GetMinipoolEligibleBorrowedEth(node *rpstate.NativeNodeDe
 }
 
 func (s *NetworkState) GetMegapoolEligibleBorrowedEth(node *rpstate.NativeNodeDetails) *big.Int {
-	eligibleBorrowedEth := big.NewInt(0)
-	requestedValueSum := big.NewInt(0)
-
-	if node.MegapoolDeployed {
-		megapool, exists := s.MegapoolDetails[node.MegapoolAddress]
-		if !exists {
-			return eligibleBorrowedEth
-		}
-		eligibleBorrowedEth.Add(eligibleBorrowedEth, megapool.UserCapital)
-		// Get the megapool validators
-		validators := s.MegapoolToPubkeysMap[node.MegapoolAddress]
-
-		// Iterate over the validators
-		for _, validator := range validators {
-
-			// Grab the validator details from pubkeys
-			megapoolValidatorInfo := s.MegapoolValidatorInfo[validator]
-			// Pre-stake
-			if megapoolValidatorInfo.ValidatorInfo.InPrestake {
-				requestedValueSum.Add(requestedValueSum, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
-				requestedValueSum.Sub(requestedValueSum, eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)))
-			}
-		}
+	if !node.MegapoolDeployed {
+		return big.NewInt(0)
 	}
 
-	return eligibleBorrowedEth.Sub(eligibleBorrowedEth, requestedValueSum)
+	megapool, exists := s.MegapoolDetails[node.MegapoolAddress]
+	if !exists {
+		return big.NewInt(0)
+	}
+	eligibleBorrowedEth := big.NewInt(0).Set(megapool.UserCapital)
+
+	// Iterate over the validators
+	for _, validator := range s.MegapoolToPubkeysMap[node.MegapoolAddress] {
+		megapoolValidatorInfo := s.MegapoolValidatorInfo[validator]
+		if !megapoolValidatorInfo.ValidatorInfo.InPrestake {
+			continue
+		}
+
+		validatorTotalEth := big.NewInt(0).Set(eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedValue)))
+		validatorBondedEth := big.NewInt(0).Set(eth.MilliEthToWei(float64(megapoolValidatorInfo.ValidatorInfo.LastRequestedBond)))
+		validatorUserEth := big.NewInt(0).Sub(validatorTotalEth, validatorBondedEth)
+		eligibleBorrowedEth.Sub(eligibleBorrowedEth, validatorUserEth)
+	}
+
+	return eligibleBorrowedEth
 }

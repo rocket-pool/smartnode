@@ -89,7 +89,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 				}
 
 				// Prompt for confirmation
-				if !(yes || prompt.Confirm("Do you want to let the new RPL contract interact with your legacy RPL?")) {
+				if prompt.Declined(yes, "Do you want to let the new RPL contract interact with your legacy RPL?") {
 					fmt.Println("Cancelled.")
 					return nil
 				}
@@ -133,7 +133,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 			}
 
 			// Prompt for confirmation
-			if !(yes || prompt.Confirm("Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6))) {
+			if prompt.Declined(yes, "Are you sure you want to swap %.6f old RPL for new RPL?", math.RoundDown(eth.WeiToEth(status.AccountBalances.FixedSupplyRPL), 6)) {
 				fmt.Println("Cancelled.")
 				return nil
 			}
@@ -173,14 +173,15 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 	}
 	var amountWei *big.Int
 	var stakePercent float64
-	// Borrow amount for a new LEB8
-	ethBorrowed := eth.EthToWei(24)
 	// Borrow amount for a new megapool validator
-	ethBorrowed = new(big.Int).Sub(eth.EthToWei(32), status.ReducedBond)
+	ethBorrowed := new(big.Int).Sub(eth.EthToWei(32), status.ReducedBond)
 
 	// Amount flag custom percentage input
 	if strings.HasSuffix(amount, "%") {
-		fmt.Sscanf(amount, "%f%%", &stakePercent)
+		_, err := fmt.Sscanf(amount, "%f%%", &stakePercent)
+		if err != nil {
+			return fmt.Errorf("Invalid stake amount '%s': %w", amount, err)
+		}
 		amountWei = rplStakePerValidator(ethBorrowed, eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
 
 	} else if amount == "all" {
@@ -228,7 +229,10 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 		if amountWei == nil {
 			inputAmountOrPercent := prompt.Prompt("Please enter an amount of RPL or percentage of borrowed ETH to stake. (e.g '50' for 50 RPL or '5%' for 5% borrowed ETH as RPL):", "^(0|[1-9]\\d*)(\\.\\d+)?%?$", "Invalid amount")
 			if strings.HasSuffix(inputAmountOrPercent, "%") {
-				fmt.Sscanf(inputAmountOrPercent, "%f%%", &stakePercent)
+				_, err := fmt.Sscanf(inputAmountOrPercent, "%f%%", &stakePercent)
+				if err != nil {
+					return fmt.Errorf("Invalid stake amount '%s': %w", inputAmountOrPercent, err)
+				}
 				amountWei = rplStakePerValidator(ethBorrowed, eth.EthToWei(stakePercent/100), rplPrice.RplPrice)
 			} else {
 				stakeAmount, err := strconv.ParseFloat(inputAmountOrPercent, 64)
@@ -272,7 +276,7 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Do you want to let the staking contract interact with your RPL?")) {
+		if prompt.Declined(yes, "Do you want to let the staking contract interact with your RPL?") {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -317,9 +321,9 @@ func nodeStakeRpl(amount string, swap bool, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to stake %.6f RPL? You may request to unstake your staked RPL at any time. The unstaked RPL will be withdrawable after an unstaking period of %s.",
+	if prompt.Declined(yes, "Are you sure you want to stake %.6f RPL? You may request to unstake your staked RPL at any time. The unstaked RPL will be withdrawable after an unstaking period of %s.",
 		math.RoundDown(eth.WeiToEth(amountWei), 6),
-		status.UnstakingPeriodDuration)) {
+		status.UnstakingPeriodDuration) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

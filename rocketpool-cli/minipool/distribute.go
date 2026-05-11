@@ -7,6 +7,7 @@ import (
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -204,8 +205,8 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
+	var totalGas uint64
+	var totalSafeGas uint64
 	var gasInfo rocketpoolapi.GasInfo
 	for _, minipool := range selectedMinipools {
 		gasInfo = minipool.GasInfo
@@ -222,7 +223,7 @@ func distributeBalance(minipool string, threshold float64, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to distribute the ETH balance of %d minipools?", len(selectedMinipools))) {
+	if prompt.Declined(yes, "Are you sure you want to distribute the ETH balance of %d minipools?", len(selectedMinipools)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

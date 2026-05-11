@@ -43,7 +43,7 @@ func proposeInvite(memberAddress common.Address, memberId, memberUrl string, yes
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

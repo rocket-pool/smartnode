@@ -1,9 +1,8 @@
 package collectors
 
 import (
-	"fmt"
-
 	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -118,9 +117,4 @@ func (collector *RplCollector) Collect(channel chan<- prometheus.Metric) {
 		collector.totalNetworkMegapoolStakedRpl, prometheus.GaugeValue, totalNetworkMegapoolStakedRpl)
 	channel <- prometheus.MustNewConstMetric(
 		collector.checkpointTime, prometheus.GaugeValue, nextRewardsTime)
-}
-
-// Log error messages
-func (collector *RplCollector) logError(err error) {
-	fmt.Printf("[%s] %s\n", collector.logPrefix, err.Error())
 }

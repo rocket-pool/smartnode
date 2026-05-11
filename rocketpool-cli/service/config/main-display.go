@@ -5,13 +5,14 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // This represents the primary TUI for the configuration command
-type mainDisplay struct {
+type MainDisplay struct {
 	navHeader           *tview.TextView
 	pages               *tview.Pages
 	app                 *tview.Application
@@ -38,7 +39,7 @@ const (
 )
 
 // Creates a new MainDisplay instance.
-func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isUpdate bool, isNative bool) *mainDisplay {
+func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolConfig, config *config.RocketPoolConfig, isNew bool, isUpdate bool, isNative bool) *MainDisplay {
 
 	// Create a copy of the original config for comparison purposes
 	if previousConfig == nil {
@@ -98,7 +99,7 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 	resizeWarning.SetBorderPadding(0, 0, 1, 1)
 
 	// Create the main display object
-	md := &mainDisplay{
+	md := &MainDisplay{
 		navHeader:      navHeader,
 		pages:          pages,
 		app:            app,
@@ -154,7 +155,7 @@ func NewMainDisplay(app *tview.Application, previousConfig *config.RocketPoolCon
 }
 
 // Sets the current page that is on display.
-func (md *mainDisplay) setPage(page *page) {
+func (md *MainDisplay) setPage(page *page) {
 	md.navHeader.SetText(page.getHeader())
 	md.pages.SwitchToPage(page.id)
 }

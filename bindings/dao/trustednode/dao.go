@@ -327,19 +327,6 @@ func GetMemberProposalExecutedTime(rp *rocketpool.RocketPool, proposalType strin
 	return (*proposalExecutedTime).Uint64(), nil
 }
 
-// Get a member's replacement address if being replaced
-func GetMemberReplacementAddress(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (common.Address, error) {
-	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)
-	if err != nil {
-		return common.Address{}, err
-	}
-	replacementAddress := new(common.Address)
-	if err := rocketDAONodeTrusted.Call(opts, replacementAddress, "getMemberReplacedAddress", "new", memberAddress); err != nil {
-		return common.Address{}, fmt.Errorf("error getting trusted node DAO member %s replacement address: %w", memberAddress.Hex(), err)
-	}
-	return *replacementAddress, nil
-}
-
 // Get whether a member has an active challenge against them
 func GetMemberIsChallenged(rp *rocketpool.RocketPool, memberAddress common.Address, opts *bind.CallOpts) (bool, error) {
 	rocketDAONodeTrusted, err := getRocketDAONodeTrusted(rp, opts)

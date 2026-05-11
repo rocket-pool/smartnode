@@ -7,6 +7,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -20,7 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli/v3"
 )
 
 type challenge struct {
@@ -132,6 +133,9 @@ func newVerifyPdaoProps(c *cli.Command, logger log.ColorLogger) (*verifyPdaoProp
 
 	// Make a proposal manager
 	propMgr, err := proposals.NewProposalManager(&logger, cfg, rp, bc)
+	if err != nil {
+		return nil, fmt.Errorf("error creating proposal manager: %w", err)
+	}
 
 	// Return task
 	return &verifyPdaoProps{

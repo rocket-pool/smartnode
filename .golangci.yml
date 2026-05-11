@@ -1,12 +1,46 @@
 version: "2"
 linters:
-  default: none 
+  enable:
+    - revive
+  settings:
+    revive:
+      enable-default-rules: true
+      rules:
+        - name: exported
+          disabled: true
+        - name: var-naming
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: unused-parameter
+          disabled: true
+        - name: error-strings
+          disabled: true
+    staticcheck:
+      checks:
+        - all
+        # A `-` preceding a linter name disables it.
+        # Disable ST1000 to allow packages without comments
+        - -ST1000
+        # Disable ST1005 to allow error strings to start with uppercase letters
+        - -ST1005
+        # Disable ST1003 to allow underscores in variable names
+        - -ST1003
+        # Disable these 3 to allow comments on exported things to have the improper form
+        - -ST1020
+        - -ST1021
+        - -ST1022
+    errcheck:
+      exclude-functions:
+        - (*os.File).Close
+
+
 formatters:
   enable:
     - goimports
 run:
   relative-path-mode: cfg
-  go: '1.25.1'
+  go: '1.26.2'
 output:
   formats:
     text:

@@ -14,6 +14,8 @@ import (
 	"github.com/alessio/shellescape"
 	externalip "github.com/glendc/go-external-ip"
 	"github.com/pbnjay/memory"
+	"gopkg.in/yaml.v2"
+
 	"github.com/rocket-pool/smartnode/addons"
 	"github.com/rocket-pool/smartnode/addons/rescue_node"
 	"github.com/rocket-pool/smartnode/shared"
@@ -21,14 +23,12 @@ import (
 	addontypes "github.com/rocket-pool/smartnode/shared/types/addons"
 	"github.com/rocket-pool/smartnode/shared/types/config"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"gopkg.in/yaml.v2"
 )
 
 // Constants
 const (
 	rootConfigName string = "root"
 
-	ApiContainerName          string = "api"
 	Eth1ContainerName         string = "eth1"
 	Eth1FallbackContainerName string = "eth1-fallback"
 	Eth2ContainerName         string = "eth2"
@@ -74,6 +74,9 @@ type RocketPoolConfig struct {
 	ConsensusClientMode     config.Parameter `yaml:"consensusClientMode,omitempty"`
 	ConsensusClient         config.Parameter `yaml:"consensusClient,omitempty"`
 	ExternalConsensusClient config.Parameter `yaml:"externalConsensusClient,omitempty"`
+
+	// IPv6 networking
+	EnableIPv6 config.Parameter `yaml:"enableIPv6,omitempty"`
 
 	// Metrics settings
 	EnableMetrics           config.Parameter `yaml:"enableMetrics,omitempty"`
@@ -144,14 +147,22 @@ func getExternalIP() (net.IP, error) {
 	// Try IPv4 first
 	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
 	ip4Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
-	ip4Consensus.UseIPProtocol(4)
+	err := ip4Consensus.UseIPProtocol(4)
+	if err != nil {
+		// Only panics if the IP protocol isn't one of 0, 4, or 6
+		panic(err)
+	}
 	if ip, err := ip4Consensus.ExternalIP(); err == nil {
 		return ip, nil
 	}
 
 	// Try IPv6 as fallback
 	ip6Consensus := externalip.DefaultConsensus(nil, nil)
-	ip6Consensus.UseIPProtocol(6)
+	err = ip6Consensus.UseIPProtocol(6)
+	if err != nil {
+		// Only panics if the IP protocol isn't one of 0, 4, or 6
+		panic(err)
+	}
 	return ip6Consensus.ExternalIP()
 }
 
@@ -211,7 +222,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Choose which mode to use for your Execution client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Watchtower},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options:            clientModes,
@@ -251,7 +262,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Enable this if you would like to specify a fallback Execution and Consensus Client, which will temporarily be used by the Smart Node and your Validator Client if your primary Execution / Consensus client pair ever go offline (e.g. if you switch, prune, or resync your clients).",
 			Type:               config.ParameterType_Bool,
 			Default:            map[config.Network]interface{}{config.Network_All: false},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Validator, config.ContainerID_Node, config.ContainerID_Watchtower},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Validator, config.ContainerID_Node, config.ContainerID_Watchtower},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
@@ -262,7 +273,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "The delay to wait after your primary Execution or Consensus clients fail before trying to reconnect to them. An example format is \"10h20m30s\" - this would make it 10 hours, 20 minutes, and 30 seconds.",
 			Type:               config.ParameterType_String,
 			Default:            map[config.Network]interface{}{config.Network_All: "60s"},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 		},
@@ -273,7 +284,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Choose which mode to use for your Consensus client - locally managed (Docker Mode), or externally managed (Hybrid Mode).",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: config.Mode_Local},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Validator, config.ContainerID_Watchtower},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Eth2, config.ContainerID_Node, config.ContainerID_Prometheus, config.ContainerID_Validator, config.ContainerID_Watchtower},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options:            clientModes,
@@ -285,7 +296,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Select which Consensus client you would like to use.",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: config.ConsensusClient_Nimbus},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
@@ -317,7 +328,7 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 			Description:        "Select which Consensus client your externally managed client is.",
 			Type:               config.ParameterType_Choice,
 			Default:            map[config.Network]interface{}{config.Network_All: config.ConsensusClient_Lighthouse},
-			AffectsContainers:  []config.ContainerID{config.ContainerID_Api, config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth2, config.ContainerID_Validator},
 			CanBeBlank:         false,
 			OverwriteOnUpgrade: false,
 			Options: []config.ParameterOption{{
@@ -341,6 +352,17 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 				Description: "Select this if you will use Teku as your Consensus client.",
 				Value:       config.ConsensusClient_Teku,
 			}},
+		},
+
+		EnableIPv6: config.Parameter{
+			ID:                 "enableIPv6",
+			Name:               "Enable IPv6",
+			Description:        "Enables dual-stack (IPv4 + IPv6) networking for the Smart Node. When enabled, your Ethereum clients will listen on both IPv4 and IPv6 and can peer with IPv6 nodes in addition to IPv4. Enable this if your machine has only an IPv6 address, or if you want your node to participate in IPv6 peering.",
+			Type:               config.ParameterType_Bool,
+			Default:            map[config.Network]interface{}{config.Network_All: false},
+			AffectsContainers:  []config.ContainerID{config.ContainerID_Node, config.ContainerID_Watchtower, config.ContainerID_Eth1, config.ContainerID_Eth2, config.ContainerID_Validator, config.ContainerID_Grafana, config.ContainerID_Prometheus, config.ContainerID_Alertmanager, config.ContainerID_Exporter, config.ContainerID_MevBoost, config.ContainerID_CommitBoost},
+			CanBeBlank:         false,
+			OverwriteOnUpgrade: false,
 		},
 
 		EnableMetrics: config.Parameter{
@@ -502,7 +524,13 @@ func NewRocketPoolConfig(rpDir string, isNativeMode bool) *RocketPoolConfig {
 
 	// Apply the default values for mainnet
 	cfg.Smartnode.Network.Value = cfg.Smartnode.Network.Options[0].Value
-	cfg.applyAllDefaults()
+	err := cfg.applyAllDefaults()
+	if err != nil {
+		// This function is called in a lot of pure contexts, and
+		// we shouldn't ever see a failure on applying the defaults anyway - at runtime.
+		// This panic should get caught during CI
+		panic(err)
+	}
 
 	return cfg
 }
@@ -558,6 +586,7 @@ func (cfg *RocketPoolConfig) GetParameters() []*config.Parameter {
 		&cfg.ConsensusClientMode,
 		&cfg.ConsensusClient,
 		&cfg.ExternalConsensusClient,
+		&cfg.EnableIPv6,
 		&cfg.EnableMetrics,
 		&cfg.EnableODaoMetrics,
 		&cfg.EnableBitflyNodeMetrics,
@@ -1312,6 +1341,12 @@ func (cfg *RocketPoolConfig) GetECAdditionalFlags() (string, error) {
 	return "", fmt.Errorf("Unknown Execution Client %s", string(cfg.ExecutionClient.Value.(config.ExecutionClient)))
 }
 
+// IsIPv6Enabled returns true if IPv6 support is enabled for the Docker network.
+// Used by text/template to conditionally add enable_ipv6 to compose network definitions.
+func (cfg *RocketPoolConfig) IsIPv6Enabled() bool {
+	return cfg.EnableIPv6.Value.(bool)
+}
+
 // Used by text/template to format eth1.yml
 func (cfg *RocketPoolConfig) GetExternalIp() string {
 	// Get the external IP address
@@ -1322,10 +1357,28 @@ func (cfg *RocketPoolConfig) GetExternalIp() string {
 		return ""
 	}
 
-	if ip.To4() == nil {
-		fmt.Println("Warning: external IP address is v6; if you're using Nimbus or Besu, it may have trouble finding peers:")
+	if ip.To4() == nil && !cfg.IsIPv6Enabled() {
+		fmt.Println("Warning: your external IP address is IPv6. If you haven't enabled IPv6 support in your configuration, your node may have trouble finding peers. Run 'rocketpool service config' and enable IPv6 under 'Smart Node and TX Fees'.")
 	}
 
+	return ip.String()
+}
+
+// Used by text/template to format eth2.yml when IPv6 is enabled.
+// Lodestar requires --enr.ip6 and Teku requires --p2p-advertised-ips to advertise IPv6 in their ENR.
+// Returns the external IPv6 address, or empty string if unavailable.
+func (cfg *RocketPoolConfig) GetExternalIpv6() string {
+	consensusConfig := externalip.ConsensusConfig{Timeout: 3 * time.Second}
+	ip6Consensus := externalip.DefaultConsensus(&consensusConfig, nil)
+	err := ip6Consensus.UseIPProtocol(6)
+	if err != nil {
+		return ""
+	}
+
+	ip, err := ip6Consensus.ExternalIP()
+	if err != nil || ip.To4() != nil {
+		return ""
+	}
 	return ip.String()
 }
 
@@ -1569,10 +1622,7 @@ func (cfg *RocketPoolConfig) GetChanges(oldConfig *RocketPoolConfig) (map[string
 	}
 
 	// Check if the network has changed
-	changeNetworks := false
-	if oldConfig.Smartnode.Network.Value != cfg.Smartnode.Network.Value {
-		changeNetworks = true
-	}
+	changeNetworks := oldConfig.Smartnode.Network.Value != cfg.Smartnode.Network.Value
 
 	// Return everything
 	return changedSettings, totalAffectedContainers, changeNetworks
@@ -1702,9 +1752,8 @@ func addAndCheckForDuplicate(portMap map[interface{}]bool, param config.Paramete
 	}
 	if portMap[port] {
 		return portMap, append(errors, fmt.Sprintf("Port %s for %s is already in use", port, param.Name))
-	} else {
-		portMap[port] = true
 	}
+	portMap[port] = true
 	return portMap, errors
 
 }

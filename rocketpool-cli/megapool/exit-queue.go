@@ -49,8 +49,8 @@ func exitQueue(validatorId string, yes bool) error {
 			selectedValidators = validatorsInQueue
 		} else {
 			// Parse comma-separated validator IDs
-			ids := strings.Split(validatorId, ",")
-			for _, idStr := range ids {
+			ids := strings.SplitSeq(validatorId, ",")
+			for idStr := range ids {
 				idStr = strings.TrimSpace(idStr)
 				validatorId, err := strconv.ParseUint(idStr, 10, 64)
 				if err != nil {
@@ -167,7 +167,7 @@ func exitQueue(validatorId string, yes bool) error {
 	}
 
 	// Ask for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to exit %d validator(s) from the megapool queue?", len(canExitResponses))) {
+	if prompt.Declined(yes, "Are you sure you want to exit %d validator(s) from the megapool queue?", len(canExitResponses)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

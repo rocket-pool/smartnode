@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+
 	"github.com/rocket-pool/smartnode/bindings/legacy/v1.0.0/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
@@ -69,7 +70,6 @@ func getRocketMinipoolManager(rp *rocketpool.RocketPool, address *common.Address
 	defer rocketMinipoolManagerLock.Unlock()
 	if address == nil {
 		return rp.VersionManager.V1_0_0.GetContract("rocketMinipoolManager", opts)
-	} else {
-		return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketMinipoolManager", *address)
 	}
+	return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketMinipoolManager", *address)
 }

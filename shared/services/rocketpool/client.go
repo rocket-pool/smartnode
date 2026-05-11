@@ -27,6 +27,7 @@ import (
 	"github.com/alessio/shellescape"
 	"github.com/blang/semver/v4"
 	"github.com/mitchellh/go-homedir"
+
 	"github.com/rocket-pool/smartnode/addons/graffiti_wall_writer"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool/assets"
@@ -49,9 +50,6 @@ const (
 	runtimeDir                    string = "runtime"
 	defaultFeeRecipientFile       string = "fr-default.tmpl"
 	defaultNativeFeeRecipientFile string = "fr-default-env.tmpl"
-
-	templateSuffix    string = ".tmpl"
-	composeFileSuffix string = ".yml"
 
 	nethermindAdminUrl          string = "http://127.0.0.1:7434"
 	pruneStarterContainerSuffix string = "_nm_prune_starter"
@@ -287,7 +285,10 @@ func (c *Client) runScript(script assets.ScriptWithContext, verbose bool, flags 
 	if verbose {
 		fmt.Printf("Verbose mode enabled, tmpdir %s will not be removed\n", tmpdir)
 	} else {
-		defer os.RemoveAll(tmpdir)
+		defer func() {
+			// It's fine if this fails, tmpreaper will handle it
+			_ = os.RemoveAll(tmpdir)
+		}()
 	}
 
 	// Create a file in the tmpdir
@@ -502,7 +503,7 @@ func (c *Client) PrintServiceStatus(composeFiles []string) error {
 func (c *Client) PrintServiceLogs(composeFiles []string, tail string, serviceNames ...string) error {
 	sanitizedStrings := make([]string, len(serviceNames))
 	for i, serviceName := range serviceNames {
-		sanitizedStrings[i] = fmt.Sprintf("%s", shellescape.Quote(serviceName))
+		sanitizedStrings[i] = shellescape.Quote(serviceName)
 	}
 	cmd, err := c.compose(composeFiles, fmt.Sprintf("logs -f --tail %s %s", shellescape.Quote(tail), strings.Join(sanitizedStrings, " ")))
 	if err != nil {
@@ -601,6 +602,76 @@ func (c *Client) GetDockerContainerShutdownTime(container string) (time.Time, er
 func (c *Client) StopContainer(container string) (string, error) {
 
 	cmd := fmt.Sprintf("docker stop %s", container)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(string(output)), nil
+
+}
+
+// Check whether a container exists (running or stopped)
+func (c *Client) ContainerExists(container string) (bool, error) {
+
+	cmd := fmt.Sprintf("docker ps -a --filter name=^/%s$ --format {{.Names}}", container)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(output)) == container, nil
+
+}
+
+// Check whether a docker network exists
+func (c *Client) NetworkExists(network string) (bool, error) {
+
+	cmd := fmt.Sprintf("docker network ls --filter name=^%s$ --format {{.Name}}", network)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(output)) == network, nil
+
+}
+
+// Get the names of all containers (running or stopped) that are attached to the given network
+func (c *Client) GetContainersOnNetwork(network string) ([]string, error) {
+
+	cmd := fmt.Sprintf("docker network inspect --format='{{range .Containers}}{{println .Name}}{{end}}' %s", network)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return nil, err
+	}
+
+	lines := strings.Split(strings.TrimSpace(string(output)), "\n")
+	names := make([]string, 0, len(lines))
+	for _, l := range lines {
+		name := strings.TrimSpace(l)
+		if name == "" {
+			continue
+		}
+		names = append(names, name)
+	}
+	return names, nil
+
+}
+
+// Check whether the given Docker network has IPv6 enabled
+func (c *Client) GetNetworkIPv6Enabled(network string) (bool, error) {
+
+	cmd := fmt.Sprintf("docker network inspect --format='{{.EnableIPv6}}' %s", network)
+	output, err := c.readOutput(cmd)
+	if err != nil {
+		return false, err
+	}
+	return strings.TrimSpace(string(output)) == "true", nil
+
+}
+
+// Remove a docker network
+func (c *Client) RemoveNetwork(network string) (string, error) {
+
+	cmd := fmt.Sprintf("docker network rm %s", network)
 	output, err := c.readOutput(cmd)
 	if err != nil {
 		return "", err
@@ -896,13 +967,13 @@ func (c *Client) RunNethermindPruneStarter(executionContainerName string) error 
 		if errObject, ok := response["error"].(map[string]any); ok {
 			fmt.Printf("Error starting prune: code %d, message = %s, data = %s\n", errObject["code"], errObject["message"], errObject["data"])
 			continue
-		} else {
-			fmt.Printf("Success: Pruning is now \"%s\"\n", response["result"])
-			fmt.Println("Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
-			fmt.Println("NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!")
-			fmt.Println("You must let it run to completion!")
-			break
 		}
+
+		fmt.Printf("Success: Pruning is now \"%s\"\n", response["result"])
+		fmt.Println("Your main execution client is now pruning. You can follow its progress with `rocketpool service logs eth1`.")
+		fmt.Println("NOTE: While pruning, you **cannot** interrupt the client (e.g. by restarting) or you risk corrupting the database!")
+		fmt.Println("You must let it run to completion!")
+		break
 
 	}
 	return nil
@@ -1010,19 +1081,16 @@ func (c *Client) checkIfCommandExists(command string) (bool, error) {
 
 	if err != nil {
 		exitErr, isExitErr := err.(*exec.ExitError)
-		if isExitErr && exitErr.ProcessState.ExitCode() == 127 {
+		if isExitErr && exitErr.ExitCode() == 127 {
 			// Command not found
 			return false, nil
-		} else {
-			return false, fmt.Errorf("error checking if %s exists: %w", command, err)
 		}
-	} else {
-		if strings.Contains(string(output), fmt.Sprintf("%s is", command)) {
-			return true, nil
-		} else {
-			return false, fmt.Errorf("unexpected output when checking for %s: %s", command, string(output))
-		}
+		return false, fmt.Errorf("error checking if %s exists: %w", command, err)
 	}
+	if strings.Contains(string(output), fmt.Sprintf("%s is", command)) {
+		return true, nil
+	}
+	return false, fmt.Errorf("unexpected output when checking for %s: %s", command, string(output))
 }
 
 // Build a docker compose command
@@ -1315,7 +1383,9 @@ func (c *Client) callHTTPAPICtx(ctx context.Context, method, path string, params
 	if err != nil {
 		return nil, fmt.Errorf("error calling HTTP API %s %s: %w", method, path, err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	responseBytes, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -1348,7 +1418,7 @@ func (c *Client) printOutput(cmdText string) error {
 	if err != nil {
 		return err
 	}
-	defer cmd.Close()
+	defer cmd.Close() //nolint:errcheck
 
 	cmd.SetStdout(os.Stdout)
 	cmd.SetStderr(os.Stderr)

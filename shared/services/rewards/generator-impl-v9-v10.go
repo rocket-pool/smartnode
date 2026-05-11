@@ -12,6 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ipfs/go-cid"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -22,7 +24,6 @@ import (
 	sszbig "github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types/big"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"golang.org/x/sync/errgroup"
 )
 
 // Implementation for tree generator ruleset v9
@@ -325,7 +326,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 					rewardsForNetwork = ssz_types.NewNetworkReward(rewardsForNode.Network)
 					r.networkRewards[rewardsForNode.Network] = rewardsForNetwork
 				}
-				rewardsForNetwork.CollateralRpl.Int.Add(rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
+				rewardsForNetwork.CollateralRpl.Add(rewardsForNetwork.CollateralRpl.Int, nodeRplRewards)
 			}
 		}
 
@@ -339,7 +340,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 		if delta.Cmp(r.epsilon) == 1 {
 			return fmt.Errorf("error calculating collateral RPL: total was %s, but expected %s; error was too large", totalCalculatedNodeRewards.String(), totalNodeRewards.String())
 		}
-		r.rewardsFile.TotalRewards.TotalCollateralRpl.Int.Set(totalCalculatedNodeRewards)
+		r.rewardsFile.TotalRewards.TotalCollateralRpl.Set(totalCalculatedNodeRewards)
 		r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedNodeRewards.String(), delta.String())
 		pDaoRewards.Sub(pendingRewards, totalCalculatedNodeRewards)
 	} else {
@@ -428,7 +429,7 @@ func (r *treeGeneratorImpl_v9_v10) calculateRplRewards() error {
 	if delta.Cmp(r.epsilon) == 1 {
 		return fmt.Errorf("error calculating ODao RPL: total was %s, but expected %s; error was too large", totalCalculatedOdaoRewards.String(), totalODaoRewards.String())
 	}
-	r.rewardsFile.TotalRewards.TotalOracleDaoRpl.Int.Set(totalCalculatedOdaoRewards)
+	r.rewardsFile.TotalRewards.TotalOracleDaoRpl.Set(totalCalculatedOdaoRewards)
 	r.log.Printlnf("%s Calculated rewards:           %s (error = %s wei)", r.logPrefix, totalCalculatedOdaoRewards.String(), delta.String())
 
 	// Get actual protocol DAO rewards
@@ -935,7 +936,7 @@ func (r *treeGeneratorImpl_v9_v10) processEpoch(duringInterval bool, epoch uint6
 
 }
 
-func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.AttestationInfo, inclusionSlot uint64) error {
+func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.AttestationInfo, inclusionSlot uint64) {
 
 	// Go through the attestations for the block
 	for _, attestation := range attestations {
@@ -1005,8 +1006,6 @@ func (r *treeGeneratorImpl_v9_v10) checkAttestations(attestations []beacon.Attes
 			}
 		}
 	}
-
-	return nil
 
 }
 
@@ -1134,8 +1133,8 @@ func (r *treeGeneratorImpl_v9_v10) createMinipoolIndexMap() error {
 
 }
 
-var farFutureTimestamp int64 = 1000000000000000000 // Far into the future
-var farPastTimestamp int64 = 0
+var farFutureTimestamp = int64(1000000000000000000) // Far into the future
+var farPastTimestamp = int64(0)
 
 // Get the details for every node that was opted into the Smoothing Pool for at least some portion of this interval
 func (r *treeGeneratorImpl_v9_v10) getSmoothingPoolNodeDetails() error {

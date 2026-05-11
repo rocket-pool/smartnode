@@ -5,9 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
-	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/tokens"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -98,7 +99,7 @@ func canNodeBurn(c *cli.Command, amountWei *big.Int, token string) (*api.CanNode
 	}
 
 	// Update & return response
-	response.CanBurn = !(response.InsufficientBalance || response.InsufficientCollateral)
+	response.CanBurn = !response.InsufficientBalance && !response.InsufficientCollateral
 	return &response, nil
 
 }

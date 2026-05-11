@@ -361,22 +361,20 @@ func GetMinipoolCountPerStatus(rp *rocketpool.RocketPool, opts *bind.CallOpts, l
 		if err := rocketMinipoolManager.Call(opts, newMinipoolCounts, "getMinipoolCountPerStatus", offset, limit); err != nil {
 			return MinipoolCountsPerStatus{}, fmt.Errorf("error getting minipool counts: %w", err)
 		}
-		if newMinipoolCounts != nil {
-			if newMinipoolCounts.Initialized != nil {
-				minipoolCounts.Initialized.Add(minipoolCounts.Initialized, newMinipoolCounts.Initialized)
-			}
-			if newMinipoolCounts.Prelaunch != nil {
-				minipoolCounts.Prelaunch.Add(minipoolCounts.Prelaunch, newMinipoolCounts.Prelaunch)
-			}
-			if newMinipoolCounts.Staking != nil {
-				minipoolCounts.Staking.Add(minipoolCounts.Staking, newMinipoolCounts.Staking)
-			}
-			if newMinipoolCounts.Dissolved != nil {
-				minipoolCounts.Dissolved.Add(minipoolCounts.Dissolved, newMinipoolCounts.Dissolved)
-			}
-			if newMinipoolCounts.Withdrawable != nil {
-				minipoolCounts.Withdrawable.Add(minipoolCounts.Withdrawable, newMinipoolCounts.Withdrawable)
-			}
+		if newMinipoolCounts.Initialized != nil {
+			minipoolCounts.Initialized.Add(minipoolCounts.Initialized, newMinipoolCounts.Initialized)
+		}
+		if newMinipoolCounts.Prelaunch != nil {
+			minipoolCounts.Prelaunch.Add(minipoolCounts.Prelaunch, newMinipoolCounts.Prelaunch)
+		}
+		if newMinipoolCounts.Staking != nil {
+			minipoolCounts.Staking.Add(minipoolCounts.Staking, newMinipoolCounts.Staking)
+		}
+		if newMinipoolCounts.Dissolved != nil {
+			minipoolCounts.Dissolved.Add(minipoolCounts.Dissolved, newMinipoolCounts.Dissolved)
+		}
+		if newMinipoolCounts.Withdrawable != nil {
+			minipoolCounts.Withdrawable.Add(minipoolCounts.Withdrawable, newMinipoolCounts.Withdrawable)
 		}
 	}
 	return minipoolCounts, nil
@@ -546,7 +544,6 @@ func getRocketMinipoolManager(rp *rocketpool.RocketPool, address *common.Address
 	defer rocketMinipoolManagerLock.Unlock()
 	if address == nil {
 		return rp.VersionManager.V1_0_0.GetContract("rocketMinipoolManager", opts)
-	} else {
-		return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketMinipoolManager", *address)
 	}
+	return rp.VersionManager.V1_0_0.GetContractWithAddress("rocketMinipoolManager", *address)
 }

@@ -2,7 +2,6 @@ package node
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
 	"math/big"
 	"net/http"
@@ -110,8 +109,37 @@ func run(c *cli.Command) error {
 	// the daemon waits for the wallet and services to become ready.
 	startHTTP(ctx, c, cfg)
 
+	for {
+		// Exit if the process received SIGINT/SIGTERM
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		// Check the EC status
+		err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
+		if err != nil {
+			if !sleepWithContext(ctx, taskCooldown) {
+				return err
+			}
+			continue
+		}
+
+		// Check the BC status
+		err = services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+		if err != nil {
+			if !sleepWithContext(ctx, taskCooldown) {
+				return err
+			}
+			continue
+		}
+
+		break
+	}
+
 	// Wait until the node wallet stored on disk is registered
-	if err := services.WaitNodeRegistered(c, true); err != nil {
+	if err := services.WaitNodeRegistered(ctx, c, true); err != nil {
 		return err
 	}
 
@@ -253,7 +281,10 @@ func run(c *cli.Command) error {
 			if !wasExecutionClientSynced {
 				updateLog.Println("Execution client is now synced.")
 				wasExecutionClientSynced = true
-				alerting.AlertExecutionClientSyncComplete(cfg)
+				err := alerting.AlertExecutionClientSyncComplete(cfg)
+				if err != nil {
+					errorLog.Printlnf("error alerting execution client sync complete: %v", err)
+				}
 			}
 
 			// Check the BC status
@@ -271,7 +302,10 @@ func run(c *cli.Command) error {
 			if !wasBeaconClientSynced {
 				updateLog.Println("Beacon client is now synced.")
 				wasBeaconClientSynced = true
-				alerting.AlertBeaconClientSyncComplete(cfg)
+				err := alerting.AlertBeaconClientSyncComplete(cfg)
+				if err != nil {
+					errorLog.Printlnf("error alerting beacon client sync complete: %v", err)
+				}
 			}
 
 			// Check if the protocol version has changed
@@ -529,7 +563,6 @@ func GetPriorityFee(priorityFee *big.Int, maxFee *big.Int) *big.Int {
 	// Gets the min(priorityFee, 25% of the oracle based maxFee)
 	if priorityFee.Cmp(quarterMaxFee) < 0 {
 		return priorityFee
-	} else {
-		return quarterMaxFee
 	}
+	return quarterMaxFee
 }

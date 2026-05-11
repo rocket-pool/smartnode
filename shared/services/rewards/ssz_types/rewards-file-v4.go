@@ -13,9 +13,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/holiman/uint256"
-	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types/big"
 	"github.com/wealdtech/go-merkletree"
 	"github.com/wealdtech/go-merkletree/keccak256"
+
+	"github.com/rocket-pool/smartnode/shared/services/rewards/ssz_types/big"
 )
 
 type Format = uint
@@ -25,7 +26,7 @@ const (
 	FormatSSZ
 )
 
-var Magic [4]byte = [4]byte{0x52, 0x50, 0x52, 0x54}
+var Magic = [4]byte{0x52, 0x50, 0x52, 0x54}
 
 type Address [20]byte
 type Hash [32]byte
@@ -382,11 +383,7 @@ func (n NodeRewards) Less(i, j int) bool {
 	ia := n[i].Address
 	ja := n[j].Address
 
-	if bytes.Compare(ia[:], ja[:]) < 0 {
-		return true
-	}
-
-	return false
+	return bytes.Compare(ia[:], ja[:]) < 0
 }
 
 func (n NodeRewards) Swap(i, j int) {

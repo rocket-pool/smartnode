@@ -85,19 +85,18 @@ func claimBonds(proposal string, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
+	var totalGas = uint64(0)
+	var totalSafeGas = uint64(0)
 	var gasInfo rocketpoolapi.GasInfo
 	for _, bond := range selectedClaims {
 		indices := getClaimIndicesForBond(bond)
 		canResponse, err := rp.PDAOCanClaimBonds(bond.ProposalID, indices)
 		if err != nil {
 			return fmt.Errorf("error simulating claim-bond on proposal %d: %s", bond.ProposalID, err.Error())
-		} else {
-			gasInfo = canResponse.GasInfo
-			totalGas += canResponse.GasInfo.EstGasLimit
-			totalSafeGas += canResponse.GasInfo.SafeGasLimit
 		}
+		gasInfo = canResponse.GasInfo
+		totalGas += canResponse.GasInfo.EstGasLimit
+		totalSafeGas += canResponse.GasInfo.SafeGasLimit
 	}
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
@@ -109,7 +108,7 @@ func claimBonds(proposal string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to claim bonds and rewards from %d proposals?", len(selectedClaims))) {
+	if prompt.Declined(yes, "Are you sure you want to claim bonds and rewards from %d proposals?", len(selectedClaims)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -147,7 +146,7 @@ func getClaimIndicesForBond(bond api.BondClaimResult) []uint64 {
 	}
 
 	indices := make([]uint64, 0, len(indexMap))
-	for index, _ := range indexMap {
+	for index := range indexMap {
 		indices = append(indices, index)
 	}
 

@@ -7,11 +7,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -132,7 +133,8 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 				}
 
 				// Handle staking minipools
-				if minipoolDetails.Status == types.Staking {
+				switch minipoolDetails.Status {
+				case types.Staking:
 					// Ignore minipools with a balance lower than the refund
 					if minipoolDetails.Balance.Cmp(minipoolDetails.Refund) == -1 {
 						minipoolDetails.CanDistribute = false
@@ -152,10 +154,10 @@ func getDistributeBalanceDetails(c *cli.Command) (*api.GetDistributeBalanceDetai
 					if err != nil {
 						return fmt.Errorf("error calculating node share for minipool %s: %w", address.Hex(), err)
 					}
-				} else if minipoolDetails.Status == types.Dissolved {
+				case types.Dissolved:
 					// Dissolved but non-finalized / non-closed minipools can just have the whole balance sent back to the NO
 					minipoolDetails.NodeShareOfBalance = minipoolDetails.Balance
-				} else {
+				default:
 					// Can't distribute in any other state
 					minipoolDetails.CanDistribute = false
 					return nil

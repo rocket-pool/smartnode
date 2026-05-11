@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -48,7 +49,7 @@ func penaliseMegapool(megapoolAddress common.Address, block *big.Int, yes bool) 
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(eth.WeiToEth(amountWei), 6), megapoolAddress, block)) {
+	if prompt.Declined(yes, "Are you sure you want to penalise %.6f megapool %s at block %s?", math.RoundDown(eth.WeiToEth(amountWei), 6), megapoolAddress, block) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -7,7 +7,8 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"sync"
+	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
@@ -71,8 +72,42 @@ func run(c *cli.Command) error {
 	// Configure
 	configureHTTP()
 
+	// Create a context that is cancelled on SIGINT/SIGTERM so the HTTP server
+	// and other background goroutines can shut down gracefully.
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer cancel()
+
+	for {
+		// Exit if the process received SIGINT/SIGTERM
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		default:
+		}
+
+		// Check the EC status
+		err := services.WaitEthClientSynced(c, false) // Force refresh the primary / fallback EC status
+		if err != nil {
+			if !sleepWithContext(ctx, taskCooldown) {
+				return err
+			}
+			continue
+		}
+
+		// Check the BC status
+		err = services.WaitBeaconClientSynced(c, false) // Force refresh the primary / fallback BC status
+		if err != nil {
+			if !sleepWithContext(ctx, taskCooldown) {
+				return err
+			}
+			continue
+		}
+
+		break
+	}
+
 	// Wait until the node wallet stored on disk is registered
-	if err := services.WaitNodeRegistered(c, true); err != nil {
+	if err := services.WaitNodeRegistered(ctx, c, true); err != nil {
 		return err
 	}
 
@@ -184,11 +219,7 @@ func run(c *cli.Command) error {
 	intervalDelta := maxTasksInterval - minTasksInterval
 	secondsDelta := intervalDelta.Seconds()
 
-	// Wait group to handle the various threads
-	wg := new(sync.WaitGroup)
-	wg.Add(2)
-
-	// Run task loop
+	// Run task loop forever
 	go func() {
 		for {
 			// Randomize the next interval
@@ -336,7 +367,6 @@ func run(c *cli.Command) error {
 
 			time.Sleep(interval)
 		}
-		wg.Done()
 	}()
 
 	// Run metrics loop
@@ -345,11 +375,10 @@ func run(c *cli.Command) error {
 		if err != nil {
 			errorLog.Println(err)
 		}
-		wg.Done()
 	}()
 
-	// Wait for both threads to stop
-	wg.Wait()
+	// Block until SIGINT/SIGTERM is received.
+	<-ctx.Done()
 	return nil
 }
 
@@ -385,4 +414,14 @@ func isOnOracleDAO(rp *rocketpool.RocketPool, nodeAddress common.Address, block 
 		return false, fmt.Errorf("error checking if node is in the Oracle DAO for Beacon block %d, EL block %d: %w", block.Slot, block.ExecutionBlockNumber, err)
 	}
 	return nodeTrusted, nil
+}
+
+// sleepWithContext sleeps for d or until ctx is cancelled, returning false if cancelled.
+func sleepWithContext(ctx context.Context, d time.Duration) bool {
+	select {
+	case <-ctx.Done():
+		return false
+	case <-time.After(d):
+		return true
+	}
 }

@@ -101,7 +101,7 @@ func proposeRewardsPercentages(rawEnabled bool, nodeFlag string, odaoFlag string
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to propose new rewards allocations?")) {
+	if prompt.Declined(yes, "Are you sure you want to propose new rewards allocations?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

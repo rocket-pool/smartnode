@@ -6,6 +6,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
@@ -13,7 +15,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/validator"
-	"github.com/urfave/cli/v3"
 )
 
 func getSmoothingPoolRegistrationStatus(c *cli.Command) (*api.GetSmoothingPoolRegistrationStatusResponse, error) {
@@ -178,7 +179,7 @@ func setSmoothingPoolStatus(c *cli.Command, status bool, opts *bind.TransactOpts
 			}
 
 			// Restart the VC but don't pay attention to the errors, since a restart error got us here in the first place
-			validator.RestartValidator(cfg, bc, nil, d)
+			_ = validator.RestartValidator(cfg, bc, nil, d)
 
 			return nil, fmt.Errorf("Error restarting validator after updating the fee recipient to the Smoothing Pool: [%w]\nYour fee recipient has been set back to your node's distributor contract.\nYou have not been opted into the Smoothing Pool.", err)
 		}

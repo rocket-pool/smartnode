@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/shared/services/gas"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
@@ -116,7 +117,7 @@ func proposeSecurityCouncilKick(addressesFlag string, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex())) {
+		if prompt.Declined(yes, "Are you sure you want to propose kicking %s (%s) from the security council?", *id, address.Hex()) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -163,7 +164,7 @@ func proposeSecurityCouncilKick(addressesFlag string, yes bool) error {
 		}
 
 		// Prompt for confirmation
-		if !(yes || prompt.Confirm("Are you sure you want to propose kicking these members from the security council?\n%s", kickString)) {
+		if prompt.Declined(yes, "Are you sure you want to propose kicking these members from the security council?\n%s", kickString) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

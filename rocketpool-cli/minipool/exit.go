@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/bindings/types"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -96,7 +97,7 @@ func exitMinipools(minipool string, yes bool) error {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(yes || prompt.ConfirmWithIAgree("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools))) {
+	if !yes && !prompt.ConfirmWithIAgree("Are you sure you want to exit %d minipool(s)? This action cannot be undone!", len(selectedMinipools)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

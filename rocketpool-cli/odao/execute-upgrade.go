@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/upgrades"
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
@@ -72,9 +73,10 @@ func executeUpgrade(proposal string, yes bool) error {
 	executableProposals := []upgrades.UpgradeProposalDetails{}
 	pendingProposals := []upgrades.UpgradeProposalDetails{}
 	for _, proposal := range upgradeProposals.Proposals {
-		if proposal.State == types.UpgradeProposalState_Succeeded {
+		switch proposal.State {
+		case types.UpgradeProposalState_Succeeded:
 			executableProposals = append(executableProposals, proposal)
-		} else if proposal.State == types.UpgradeProposalState_Pending {
+		case types.UpgradeProposalState_Pending:
 			pendingProposals = append(pendingProposals, proposal)
 		}
 	}
@@ -146,19 +148,18 @@ func executeUpgrade(proposal string, yes bool) error {
 	}
 
 	// Get the total gas limit estimate
-	var totalGas uint64 = 0
-	var totalSafeGas uint64 = 0
+	var totalGas = uint64(0)
+	var totalSafeGas = uint64(0)
 	var gasInfo rocketpoolapi.GasInfo
 	for _, proposal := range selectedProposals {
 		canResponse, err := rp.CanExecuteUpgradeProposal(proposal.ID)
 		if err != nil {
 			fmt.Printf("WARNING: Couldn't get gas price for execute transaction (%s)", err)
 			break
-		} else {
-			gasInfo = canResponse.GasInfo
-			totalGas += canResponse.GasInfo.EstGasLimit
-			totalSafeGas += canResponse.GasInfo.SafeGasLimit
 		}
+		gasInfo = canResponse.GasInfo
+		totalGas += canResponse.GasInfo.EstGasLimit
+		totalSafeGas += canResponse.GasInfo.SafeGasLimit
 	}
 	gasInfo.EstGasLimit = totalGas
 	gasInfo.SafeGasLimit = totalSafeGas
@@ -170,7 +171,7 @@ func executeUpgrade(proposal string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to execute %d proposals?", len(selectedProposals))) {
+	if prompt.Declined(yes, "Are you sure you want to execute %d proposals?", len(selectedProposals)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

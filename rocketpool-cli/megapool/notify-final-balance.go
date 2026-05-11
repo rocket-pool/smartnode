@@ -48,10 +48,9 @@ func getNotifiableValidator() (uint64, uint64, bool, error) {
 		// Get validators
 		return uint64(exitingValidators[selected].ValidatorId), uint64(exitingValidators[selected].ValidatorIndex), true, nil
 
-	} else {
-		fmt.Println("No validators at the state where the full withdrawal can be proved")
-		return 0, 0, false, nil
 	}
+	fmt.Println("No validators at the state where the full withdrawal can be proved")
+	return 0, 0, false, nil
 }
 
 func notifyFinalBalance(validatorId, validatorIndex, slot uint64, yes bool) error {
@@ -107,7 +106,7 @@ func notifyFinalBalance(validatorId, validatorIndex, slot uint64, yes bool) erro
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to notify the final balance for validator id %d exit?", validatorId)) {
+	if prompt.Declined(yes, "Are you sure you want to notify the final balance for validator id %d exit?", validatorId) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

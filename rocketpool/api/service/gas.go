@@ -3,9 +3,10 @@ package service
 import (
 	"context"
 
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
 )
 
 func getGasPriceFromLatestBlock(c *cli.Command) (*api.GasPriceFromLatestBlockResponse, error) {

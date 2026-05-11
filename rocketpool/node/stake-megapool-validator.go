@@ -6,11 +6,12 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
@@ -169,21 +170,39 @@ func (t *stakeMegapoolValidator) run(state *state.NetworkState) error {
 		return err
 	}
 
+	// Iterate over validators to stake.
 	stakedValidators := 0
-	// Iterate over validators to stake
+	validatorsProcessed := 0
+	const batchSize = 6
 	for validatorId, validatorPubkey := range validatorsToStake {
+		if validatorsProcessed >= batchSize {
+			break
+		}
 		// Log
 		t.log.Printlnf("The validator id %d needs to be staked", validatorId)
 
-		// Call Stake
-		err := t.stakeValidator(t.rp, beaconState, mp, validatorId, state, validatorPubkey, opts)
-		// dont return if there was an error, just log it so we can continue with the next validator
+		// Check if the validator is included in the finalized beacon state before attempting proof generation
+		validatorIndexStr, err := t.bc.GetValidatorIndex(validatorPubkey)
 		if err != nil {
-			t.log.Printlnf("Error staking validator %d: %w", validatorId, err)
+			return err
+		}
+		validatorIndex, err := strconv.ParseUint(validatorIndexStr, 10, 64)
+		if err != nil {
+			return err
+		}
+		if validatorIndex >= uint64(len(beaconState.GetValidators())) {
+			t.log.Printlnf("Validator id %d (beacon index %d) is not yet included in the finalized beacon state. Will retry on next cycle.", validatorId, validatorIndex)
 			continue
 		}
-		stakedValidators++
 
+		// Call Stake
+		err = t.stakeValidator(t.rp, beaconState, mp, validatorId, state, validatorPubkey, opts)
+		if err != nil {
+			t.log.Printlnf("Error staking validator %d: %w", validatorId, err)
+			break
+		}
+		stakedValidators++
+		validatorsProcessed++
 	}
 
 	if stakedValidators > 0 {
@@ -201,20 +220,6 @@ func (t *stakeMegapoolValidator) stakeValidator(rp *rocketpool.RocketPool, beaco
 	opts, err := t.w.GetNodeAccountTransactor()
 	if err != nil {
 		return err
-	}
-
-	// Check if the validator is included in the finalized beacon state before attempting proof generation
-	validatorIndexStr, err := t.bc.GetValidatorIndex(validatorPubkey)
-	if err != nil {
-		return err
-	}
-	validatorIndex, err := strconv.ParseUint(validatorIndexStr, 10, 64)
-	if err != nil {
-		return err
-	}
-	if validatorIndex >= uint64(len(beaconState.GetValidators())) {
-		t.log.Printlnf("Validator id %d (beacon index %d) is not yet included in the finalized beacon state. Will retry on next cycle.", validatorId, validatorIndex)
-		return nil
 	}
 
 	t.log.Printlnf("Crafting a proof that the correct credentials were used on the first beacon chain deposit. This process can take several seconds and is CPU and memory intensive.")

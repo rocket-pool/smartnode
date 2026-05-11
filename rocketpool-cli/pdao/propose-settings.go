@@ -3,10 +3,8 @@ package pdao
 import (
 	"fmt"
 	"math/big"
-	"strings"
 	"time"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
@@ -318,15 +316,6 @@ func proposeSettingSecurityProposalActionTime(value time.Duration, yes bool) err
 	return proposeSetting(protocol.SecuritySettingsContractName, protocol.SecurityProposalActionTimeSettingPath, trueValue, yes)
 }
 
-func proposeSettingNetworkAllowListedControllers(value []common.Address, yes bool) error {
-	strs := make([]string, len(value))
-	for i, addr := range value {
-		strs[i] = addr.Hex()
-	}
-	trueValue := strings.Join(strs, "")
-	return proposeSetting(protocol.NetworkSettingsContractName, protocol.NetworkAllowListedControllersPath, trueValue, yes)
-}
-
 func proposeSettingMegapoolTimeBeforeDissolve(value time.Duration, yes bool) error {
 	trueValue := fmt.Sprint(uint64(value.Seconds()))
 	return proposeSetting(protocol.MegapoolSettingsContractName, protocol.MegapoolTimeBeforeDissolveSettingsPath, trueValue, yes)
@@ -436,7 +425,7 @@ func proposeSetting(contract string, setting string, value string, yes bool) err
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to submit this proposal?")) {
+	if prompt.Declined(yes, "Are you sure you want to submit this proposal?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

@@ -5,12 +5,13 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	tndao "github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	tnsettings "github.com/rocket-pool/smartnode/bindings/settings/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
 	"github.com/rocket-pool/smartnode/bindings/utils"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -112,7 +113,7 @@ func canJoin(c *cli.Command) (*api.CanJoinTNDAOResponse, error) {
 	response.InsufficientRplBalance = (nodeRplBalance.Cmp(rplBondAmount) < 0)
 
 	// Update & return response
-	response.CanJoin = !(response.ProposalExpired || response.AlreadyMember || response.InsufficientRplBalance)
+	response.CanJoin = !response.ProposalExpired && !response.AlreadyMember && !response.InsufficientRplBalance
 	return &response, nil
 
 }

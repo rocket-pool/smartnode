@@ -12,9 +12,10 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/goccy/go-json"
+	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
+
 	"github.com/rocket-pool/smartnode/shared/services/passwords"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore"
-	eth2ks "github.com/wealdtech/go-eth2-wallet-encryptor-keystorev4"
 )
 
 var ErrIsMasquerading = errors.New("The node is currently masquerading. Use the command 'rocketpool wallet end-masquerade' to restore the node wallet, if one is loaded.")
@@ -55,7 +56,7 @@ func (w *masqueradeWallet) IsNodeMasquerading() bool {
 func (w *masqueradeWallet) GetAddress() (common.Address, error) {
 
 	// Return if wallet is uninitialized
-	if !(w.ws != nil && w.seed != nil && w.mk != nil) {
+	if w.ws == nil || w.seed == nil || w.mk == nil {
 		return common.Address{}, nil
 	}
 
@@ -90,13 +91,11 @@ func (w *masqueradeWallet) EndMasquerade() error {
 
 // Gets the wallet's chain ID
 func (w *masqueradeWallet) GetChainID() *big.Int {
-	copy := big.NewInt(0).Set(w.chainID)
-	return copy
+	return big.NewInt(0).Set(w.chainID)
 }
 
 // Add a keystore to the wallet
 func (w *masqueradeWallet) AddKeystore(name string, ks keystore.Keystore) {
-	return
 }
 
 // Always return true as we're masquerading

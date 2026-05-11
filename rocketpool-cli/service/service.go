@@ -14,6 +14,8 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"github.com/dustin/go-humanize"
+	"github.com/shirou/gopsutil/v3/disk"
+
 	cliconfig "github.com/rocket-pool/smartnode/rocketpool-cli/service/config"
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -22,7 +24,6 @@ import (
 	cliutils "github.com/rocket-pool/smartnode/shared/utils/cli"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
-	"github.com/shirou/gopsutil/v3/disk"
 )
 
 // Settings
@@ -32,7 +33,6 @@ const (
 	BeaconContainerSuffix           string = "_eth2"
 	ExecutionContainerSuffix        string = "_eth1"
 	NodeContainerSuffix             string = "_node"
-	ApiContainerSuffix              string = "_api"
 	WatchtowerContainerSuffix       string = "_watchtower"
 	PruneProvisionerContainerSuffix string = "_prune_provisioner"
 	clientDataVolumeName            string = "/ethclient"
@@ -53,12 +53,12 @@ func installService(yes, verbose, noDeps bool, path string) error {
 	dataPath := ""
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm(
+	if prompt.Declined(yes,
 		"%s",
 		fmt.Sprintf("The Rocket Pool %s service will be installed.\n\n", shared.RocketPoolVersion())+
 			color.Green("If you're upgrading, your existing configuration will be backed up and preserved.\nAll of your previous settings will be migrated automatically.\n")+
 			"Are you sure you want to continue?",
-	)) {
+	) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -124,18 +124,15 @@ func printPatchNotes() {
 	fmt.Println()
 	fmt.Println("Changes you should be aware of before starting:")
 	fmt.Println()
-	fmt.Println("This Smart Node version is compatible with the Saturn 1 upgrade. The upgrade took place on Feb 18, 2026 00:00:00 UTC.")
-	fmt.Println("For more information about the biggest Rocket Pool upgrade ever, please see the official documentation: https://docs.rocketpool.net/upgrades/saturn-1/whats-new")
-	fmt.Println()
 }
 
 // Install the Rocket Pool update tracker for the metrics dashboard
 func installUpdateTracker(yes, verbose bool) error {
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm(
+	if prompt.Declined(yes,
 		"This will add the ability to display any available Operating System updates or new Rocket Pool versions on the metrics dashboard. "+
-			"Are you sure you want to install the update tracker?")) {
+			"Are you sure you want to install the update tracker?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -309,7 +306,7 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 				return nil
 			}
 
-			err = changeNetworks(rp, fmt.Sprintf("%s%s", prefix, ApiContainerSuffix), composeFiles)
+			err = changeNetworks(rp, fmt.Sprintf("%s%s", prefix, NodeContainerSuffix), composeFiles)
 			if err != nil {
 				color.RedPrintln(err.Error())
 				fmt.Println("The Smart Node could not automatically change networks for you, so you will have to run the steps manually. Please follow the steps laid out in the Node Operator's guide (https://docs.rocketpool.net/node-staking/mainnet.html).")
@@ -323,6 +320,35 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 				fmt.Println("Please run `rocketpool service start` when you are ready to launch.")
 				return nil
 			}
+			return startService(startServiceParams{
+				yes:                    yes,
+				ignoreConfigSuggestion: true,
+				composeFiles:           composeFiles,
+			})
+		}
+
+		// Warn if IPv6 is enabled but no public IPv6 address is available
+		if md.Config.IsIPv6Enabled() && md.Config.GetExternalIpv6() == "" {
+			color.YellowPrintln("Warning: IPv6 is enabled but no public IPv6 address was detected. Your node will not be reachable by IPv6 peers.")
+			fmt.Println()
+		}
+
+		// Handle IPv6 toggle: Docker does not allow changing `enable_ipv6` on an existing
+		// network, so we must tear down every container attached to the project network,
+		// remove the network itself, and let the service start recreate everything.
+		ipv6Changed := md.PreviousConfig != nil && md.PreviousConfig.IsIPv6Enabled() != md.Config.IsIPv6Enabled()
+		if ipv6Changed {
+			fmt.Println("The IPv6 setting has changed, which requires recreating the Docker network.")
+			fmt.Println("All Rocket Pool containers will be stopped, removed, and recreated. Chain data and wallet/validator keys will not be touched.")
+			if !yes && !prompt.Confirm("Would you like to proceed?") {
+				fmt.Println("Please run `rocketpool service start` when you are ready to apply the changes.")
+				return nil
+			}
+			if err := recreateDockerNetwork(rp, prefix); err != nil {
+				return fmt.Errorf("error recreating Docker network for IPv6 change: %w", err)
+			}
+			fmt.Println()
+			fmt.Println("Applying changes and starting containers...")
 			return startService(startServiceParams{
 				yes:                    yes,
 				ignoreConfigSuggestion: true,
@@ -352,7 +378,18 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 			for _, container := range md.ContainersToRestart {
 				fullName := fmt.Sprintf("%s_%s", prefix, container)
 				fmt.Printf("Stopping %s... ", fullName)
-				rp.StopContainer(fullName)
+				exists, err := rp.ContainerExists(fullName)
+				if err != nil {
+					return fmt.Errorf("error checking if container %s exists: %w", fullName, err)
+				}
+				if !exists {
+					fmt.Print("not found, skipping.\n")
+					continue
+				}
+				_, err = rp.StopContainer(fullName)
+				if err != nil {
+					return fmt.Errorf("error stopping container: %w", err)
+				}
 				fmt.Print("done!\n")
 			}
 
@@ -421,7 +458,7 @@ func updateConfigParamFromCliArg(c *cli.Command, sectionName string, param *cfgt
 }
 
 // Handle a network change by terminating the service, deleting everything, and starting over
-func changeNetworks(rp *rocketpool.Client, apiContainerName string, composeFiles []string) error {
+func changeNetworks(rp *rocketpool.Client, nodeContainerName string, composeFiles []string) error {
 
 	// Stop all of the containers
 	fmt.Println("Stopping containers... ")
@@ -431,20 +468,20 @@ func changeNetworks(rp *rocketpool.Client, apiContainerName string, composeFiles
 	}
 	fmt.Println("done")
 
-	// Restart the API container
-	fmt.Println("Starting API container... ")
-	output, err := rp.StartContainer(apiContainerName)
+	// Restart the Node container (it hosts the Smart Node HTTP API and mounts the data folder)
+	fmt.Println("Starting Node container... ")
+	output, err := rp.StartContainer(nodeContainerName)
 	if err != nil {
-		return fmt.Errorf("error starting API container: %w", err)
+		return fmt.Errorf("error starting Node container: %w", err)
 	}
-	if output != apiContainerName {
-		return fmt.Errorf("starting API container had unexpected output: %s", output)
+	if output != nodeContainerName {
+		return fmt.Errorf("starting Node container had unexpected output: %s", output)
 	}
 	fmt.Println("done")
 
 	// Get the path of the user's data folder
 	fmt.Println("Retrieving data folder path... ")
-	volumePath, err := rp.GetClientVolumeSource(apiContainerName, dataFolderVolumeName)
+	volumePath, err := rp.GetClientVolumeSource(nodeContainerName, dataFolderVolumeName)
 	if err != nil {
 		return fmt.Errorf("error getting data folder path: %w", err)
 	}
@@ -485,6 +522,73 @@ func changeNetworks(rp *rocketpool.Client, apiContainerName string, composeFiles
 
 }
 
+// Stop and remove every container that belongs to the compose project, then remove
+// the project's Docker network.
+func recreateDockerNetwork(rp *rocketpool.Client, prefix string) error {
+
+	networkName := fmt.Sprintf("%s_net", prefix)
+
+	// Gather the full set of containers to tear down:
+	//  - everything labelled as part of this compose project (catches containers that
+	//    were detached from the network by a previous partial recreate and would
+	//    otherwise survive with a stale network reference),
+	//  - plus anything still attached to the network
+	toRemove := map[string]struct{}{}
+
+	projectContainers, err := rp.GetContainersByPrefix(prefix)
+	if err != nil {
+		return fmt.Errorf("error listing project containers for prefix %s: %w", prefix, err)
+	}
+	for _, container := range projectContainers {
+		if container.Names != "" {
+			toRemove[container.Names] = struct{}{}
+		}
+	}
+
+	netExists, err := rp.NetworkExists(networkName)
+	if err != nil {
+		return fmt.Errorf("error checking if network %s exists: %w", networkName, err)
+	}
+	if netExists {
+		attached, err := rp.GetContainersOnNetwork(networkName)
+		if err != nil {
+			return fmt.Errorf("error listing containers on network %s: %w", networkName, err)
+		}
+		for _, name := range attached {
+			toRemove[name] = struct{}{}
+		}
+	}
+
+	for container := range toRemove {
+		fmt.Printf("Stopping %s... ", container)
+		if _, err := rp.StopContainer(container); err != nil {
+			// Already-stopped containers still need to be removed, so log and continue.
+			fmt.Println()
+			color.YellowPrintf("WARNING: stopping %s failed: %s\n", container, err.Error())
+		} else {
+			fmt.Println("done!")
+		}
+
+		fmt.Printf("Removing %s... ", container)
+		if _, err := rp.RemoveContainer(container); err != nil {
+			fmt.Println()
+			return fmt.Errorf("error removing container %s: %w", container, err)
+		}
+		fmt.Println("done!")
+	}
+
+	if netExists {
+		fmt.Printf("Removing network %s... ", networkName)
+		if _, err := rp.RemoveNetwork(networkName); err != nil {
+			fmt.Println()
+			return fmt.Errorf("error removing network %s: %w", networkName, err)
+		}
+		fmt.Println("done!")
+	}
+
+	return nil
+}
+
 type startServiceParams struct {
 	yes bool // Whether to automatically confirm prompts
 	// N.B.: This should ALYWAYS be false unless --ignore-slash-timer is set!
@@ -519,6 +623,12 @@ func startService(params startServiceParams) error {
 		return fmt.Errorf("No configuration detected. Please run `rocketpool service config` to set up your Smart Node before running it.")
 	}
 
+	// Warn if IPv6 is enabled but no public IPv6 address is available
+	if cfg.IsIPv6Enabled() && cfg.GetExternalIpv6() == "" {
+		color.YellowPrintln("Warning: IPv6 is enabled but no public IPv6 address was detected. Your node will not be reachable by IPv6 peers.")
+		fmt.Println()
+	}
+
 	// Check if this is a new install
 	isUpdate, err := rp.IsFirstRun()
 	if err != nil {
@@ -530,7 +640,10 @@ func startService(params startServiceParams) error {
 			if err != nil {
 				return fmt.Errorf("error upgrading configuration with the latest parameters: %w", err)
 			}
-			rp.SaveConfig(cfg)
+			err = rp.SaveConfig(cfg)
+			if err != nil {
+				return fmt.Errorf("error saving configuration: %w", err)
+			}
 			color.GreenPrintln("Updated settings successfully.")
 		} else {
 			fmt.Println("Cancelled.")
@@ -589,6 +702,33 @@ func startService(params startServiceParams) error {
 		color.YellowPrintln("Ignoring anti-slashing safety delay.")
 	}
 
+	// Detect drift between the saved IPv6 setting and the live Docker network.
+	prefix := cfg.Smartnode.ProjectName.Value.(string)
+	networkName := fmt.Sprintf("%s_net", prefix)
+	netExists, err := rp.NetworkExists(networkName)
+	if err != nil {
+		return fmt.Errorf("error checking if network %s exists: %w", networkName, err)
+	}
+	if netExists {
+		liveIPv6, err := rp.GetNetworkIPv6Enabled(networkName)
+		if err != nil {
+			return fmt.Errorf("error reading IPv6 setting from network %s: %w", networkName, err)
+		}
+		if liveIPv6 != cfg.IsIPv6Enabled() {
+			color.YellowPrintln("The IPv6 setting in your configuration does not match the live Docker network.")
+			fmt.Println("Recreating the Docker network to apply the change. All Rocket Pool containers will be stopped, removed, and recreated.")
+			fmt.Println("Chain data and wallet/validator keys live on named Docker volumes and will not be touched.")
+			if !params.yes && !prompt.Confirm("Proceed?") {
+				fmt.Println("Cancelled. The service cannot be started until the Docker network is recreated.")
+				return nil
+			}
+			if err := recreateDockerNetwork(rp, prefix); err != nil {
+				return fmt.Errorf("error recreating Docker network for IPv6 change: %w", err)
+			}
+			fmt.Println()
+		}
+	}
+
 	// Write a note on doppelganger protection
 	doppelgangerEnabled, err := cfg.IsDoppelgangerEnabled()
 	if err != nil {
@@ -643,11 +783,12 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 	}
 
 	// Compare the clients and warn if necessary
-	if currentValidatorName == pendingValidatorName {
+	switch currentValidatorName {
+	case pendingValidatorName:
 		fmt.Printf("Validator client [%s] was previously used - no slashing prevention delay necessary.\n", currentValidatorName)
-	} else if currentValidatorName == "" {
+	case "":
 		fmt.Println("This is the first time starting Rocket Pool - no slashing prevention delay necessary.")
-	} else {
+	default:
 
 		consensusClient, _ := cfg.GetSelectedConsensusClient()
 		// Warn about Lodestar
@@ -674,15 +815,23 @@ func checkForValidatorChange(rp *rocketpool.Client, cfg *config.RocketPoolConfig
 		if err != nil {
 			return fmt.Errorf("Error getting container [%s] status: %w", validatorDutyContainerName, err)
 		}
-		if validatorFinishTime == zeroTime || status == "running" {
+		if validatorFinishTime.Equal(zeroTime) || status == "running" {
 			color.YellowPrintln("Validator is currently running, stopping it...")
-			response, err := rp.StopContainer(validatorDutyContainerName)
-			validatorFinishTime = time.Now()
+			exists, err := rp.ContainerExists(validatorDutyContainerName)
 			if err != nil {
-				return fmt.Errorf("Error stopping container [%s]: %w", validatorDutyContainerName, err)
+				return fmt.Errorf("Error checking if container [%s] exists: %w", validatorDutyContainerName, err)
 			}
-			if response != validatorDutyContainerName {
-				return fmt.Errorf("Unexpected response when stopping container [%s]: %s", validatorDutyContainerName, response)
+			if !exists {
+				color.YellowPrintf("Container [%s] does not exist, skipping stop.\n", validatorDutyContainerName)
+			} else {
+				response, err := rp.StopContainer(validatorDutyContainerName)
+				validatorFinishTime = time.Now()
+				if err != nil {
+					return fmt.Errorf("Error stopping container [%s]: %w", validatorDutyContainerName, err)
+				}
+				if response != validatorDutyContainerName {
+					return fmt.Errorf("Unexpected response when stopping container [%s]: %s", validatorDutyContainerName, response)
+				}
 			}
 		}
 
@@ -725,25 +874,6 @@ func getContainerNameForValidatorDuties(CurrentValidatorClientName string, rp *r
 	}
 
 	return prefix + ValidatorContainerSuffix, nil
-
-}
-
-// Get the time that the container responsible for validator duties exited
-func getValidatorFinishTime(CurrentValidatorClientName string, rp *rocketpool.Client) (time.Time, error) {
-
-	prefix, err := rp.GetContainerPrefix()
-	if err != nil {
-		return time.Time{}, err
-	}
-
-	var validatorFinishTime time.Time
-	if CurrentValidatorClientName == "nimbus" {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + BeaconContainerSuffix)
-	} else {
-		validatorFinishTime, err = rp.GetDockerContainerShutdownTime(prefix + ValidatorContainerSuffix)
-	}
-
-	return validatorFinishTime, err
 
 }
 
@@ -825,7 +955,7 @@ func pruneExecutionClient(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to prune your main execution client?")) {
+	if prompt.Declined(yes, "Are you sure you want to prune your main execution client?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -876,6 +1006,13 @@ func pruneExecutionClient(yes bool) error {
 		return nil
 	}
 	fmt.Printf("Stopping %s...\n", executionContainerName)
+	exists, err := rp.ContainerExists(executionContainerName)
+	if err != nil {
+		return fmt.Errorf("Error checking if main execution container exists: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("Main execution container [%s] does not exist", executionContainerName)
+	}
 	result, err := rp.StopContainer(executionContainerName)
 	if err != nil {
 		return fmt.Errorf("Error stopping main execution container: %w", err)
@@ -1035,7 +1172,7 @@ func pauseService(yes bool, composeFiles []string) (bool, error) {
 	fmt.Println()
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!")) {
+	if prompt.Declined(yes, "Are you sure you want to pause the Rocket Pool service? Any staking minipools and megapool validators will be penalized!") {
 		fmt.Println("Cancelled.")
 		return false, nil
 	}
@@ -1050,7 +1187,7 @@ func pauseService(yes bool, composeFiles []string) (bool, error) {
 func terminateService(yes bool, composeFiles []string, configPath string) error {
 
 	// Prompt for confirmation
-	if !(yes || prompt.ConfirmRed("WARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.")) {
+	if !yes && !prompt.ConfirmRed("WARNING: Are you sure you want to terminate the Rocket Pool service? Any staking minipools will be penalized, your ETH1 and ETH2 chain databases will be deleted, you will lose ALL of your sync progress, and you will lose your Prometheus metrics database!\nAfter doing this, you will have to **reinstall** the Smart Node uses `rocketpool service install -d` in order to use it again.") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1267,7 +1404,7 @@ func resyncEth1(yes bool, composeFiles []string) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.ConfirmRed("Are you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!")) {
+	if !yes && !prompt.ConfirmRed("Are you SURE you want to delete and resync your main ETH1 client from scratch? This cannot be undone!") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1275,12 +1412,20 @@ func resyncEth1(yes bool, composeFiles []string) error {
 	// Stop ETH1
 	executionContainerName := prefix + ExecutionContainerSuffix
 	fmt.Printf("Stopping %s...\n", executionContainerName)
-	result, err := rp.StopContainer(executionContainerName)
+	exists, err := rp.ContainerExists(executionContainerName)
 	if err != nil {
-		color.YellowPrintf("WARNING: Stopping main ETH1 container failed: %s\n", err.Error())
+		color.YellowPrintf("WARNING: Checking if main ETH1 container exists failed: %s\n", err.Error())
 	}
-	if result != executionContainerName {
-		color.YellowPrintf("WARNING: Unexpected output while stopping main ETH1 container: %s\n", result)
+	if !exists {
+		color.YellowPrintf("WARNING: Main ETH1 container [%s] does not exist, skipping stop.\n", executionContainerName)
+	} else {
+		result, err := rp.StopContainer(executionContainerName)
+		if err != nil {
+			color.YellowPrintf("WARNING: Stopping main ETH1 container failed: %s\n", err.Error())
+		}
+		if result != executionContainerName {
+			color.YellowPrintf("WARNING: Unexpected output while stopping main ETH1 container: %s\n", result)
+		}
 	}
 
 	// Get ETH1 volume name
@@ -1291,7 +1436,7 @@ func resyncEth1(yes bool, composeFiles []string) error {
 
 	// Remove ETH1
 	fmt.Printf("Deleting %s...\n", executionContainerName)
-	result, err = rp.RemoveContainer(executionContainerName)
+	result, err := rp.RemoveContainer(executionContainerName)
 	if err != nil {
 		return fmt.Errorf("Error deleting main ETH1 container: %w", err)
 	}
@@ -1394,7 +1539,7 @@ func resyncEth2(yes bool, composeFiles []string) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.ConfirmRed("Are you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!")) {
+	if !yes && !prompt.ConfirmRed("Are you SURE you want to delete and resync your ETH2 client from scratch? This cannot be undone!") {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -1486,38 +1631,4 @@ func getConfigYaml() error {
 
 	fmt.Println(string(bytes))
 	return nil
-}
-
-// Get the amount of space used by a Docker volume
-func getVolumeSpaceUsed(rp *rocketpool.Client, volume string) (uint64, error) {
-	size, err := rp.GetVolumeSize(volume)
-	if err != nil {
-		return 0, fmt.Errorf("error getting execution client volume name: %w", err)
-	}
-	volumeBytes, err := humanize.ParseBytes(size)
-	if err != nil {
-		return 0, fmt.Errorf("couldn't parse size of EC volume (%s): %w", size, err)
-	}
-	return volumeBytes, nil
-}
-
-// Get the amount of free space available in the target dir
-func getPartitionFreeSpace(rp *rocketpool.Client, targetDir string) (uint64, error) {
-	partitions, err := disk.Partitions(true)
-	if err != nil {
-		return 0, fmt.Errorf("error getting partition list: %w", err)
-	}
-	longestPath := 0
-	bestPartition := disk.PartitionStat{}
-	for _, partition := range partitions {
-		if strings.HasPrefix(targetDir, partition.Mountpoint) && len(partition.Mountpoint) > longestPath {
-			bestPartition = partition
-			longestPath = len(partition.Mountpoint)
-		}
-	}
-	diskUsage, err := disk.Usage(bestPartition.Mountpoint)
-	if err != nil {
-		return 0, fmt.Errorf("error getting free disk space available: %w", err)
-	}
-	return diskUsage.Free, nil
 }

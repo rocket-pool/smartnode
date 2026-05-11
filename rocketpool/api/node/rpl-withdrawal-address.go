@@ -5,11 +5,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/storage"
 	"github.com/rocket-pool/smartnode/shared/services"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -86,7 +87,7 @@ func canSetRPLWithdrawalAddress(c *cli.Command, withdrawalAddress common.Address
 	response.RPLStake = rplStake
 	response.PrimaryAddressDiffers = (nodeAccount.Address != primaryWithdrawalAddress || isRPLWithdrawalAddressSet)
 	response.RPLAddressDiffers = (isRPLWithdrawalAddressSet && nodeAccount.Address != rplWithdrawalAddress)
-	response.CanSet = !(response.PrimaryAddressDiffers || response.RPLAddressDiffers)
+	response.CanSet = !response.PrimaryAddressDiffers && !response.RPLAddressDiffers
 	if !response.CanSet {
 		return &response, nil
 	}

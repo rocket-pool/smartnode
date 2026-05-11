@@ -5,6 +5,7 @@ package deneb
 
 import (
 	ssz "github.com/ferranbt/fastssz"
+
 	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 

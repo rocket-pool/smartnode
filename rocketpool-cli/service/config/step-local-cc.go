@@ -5,9 +5,9 @@ import (
 	"math/rand"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/pbnjay/memory"
+
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -132,7 +132,6 @@ func selectRandomCC(goodOptions []cfgtypes.ParameterOption, includeSupermajority
 	}
 
 	// Select a random client
-	rand.Seed(time.Now().UnixNano())
 	selectedClient := filteredClients[rand.Intn(len(filteredClients))]
 	wiz.md.Config.ConsensusClient.Value = selectedClient
 

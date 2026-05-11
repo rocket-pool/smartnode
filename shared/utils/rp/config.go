@@ -8,8 +8,9 @@ import (
 	"path/filepath"
 
 	"github.com/alessio/shellescape"
-	"github.com/rocket-pool/smartnode/shared/services/config"
 	"gopkg.in/yaml.v2"
+
+	"github.com/rocket-pool/smartnode/shared/services/config"
 )
 
 const (
@@ -66,7 +67,7 @@ func SaveConfig(cfg *config.RocketPoolConfig, directory, filename string) error 
 		}
 
 		for _, match := range oldFiles {
-			os.RemoveAll(match)
+			_ = os.RemoveAll(match)
 		}
 	}()
 
@@ -101,11 +102,7 @@ func IsFirstRun(configDir string) bool {
 
 	// Load the config normally if the upgrade flag file isn't there
 	_, err := os.Stat(upgradeFilePath)
-	if os.IsNotExist(err) {
-		return false
-	}
-
-	return true
+	return !os.IsNotExist(err)
 }
 
 // Remove the upgrade flag file

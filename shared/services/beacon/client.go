@@ -1,11 +1,13 @@
 package beacon
 
 import (
+	"io"
 	"math/big"
 	"sort"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/prysmaticlabs/go-bitfield"
+
 	"github.com/rocket-pool/smartnode/bindings/types"
 )
 
@@ -157,12 +159,12 @@ const (
 // Fork is the consensus version, e.g, "deneb" or "electra"
 
 type BeaconStateSSZ struct {
-	Data []byte
+	Data io.ReadCloser
 	Fork string
 }
 
 type BeaconBlockSSZ struct {
-	Data []byte
+	Data io.ReadCloser
 	Fork string
 }
 

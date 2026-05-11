@@ -2,10 +2,11 @@ package megapool
 
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
 )
 
 func canExitQueue(c *cli.Command, validatorIndex uint32) (*api.CanExitQueueResponse, error) {
@@ -65,10 +66,9 @@ func canExitQueue(c *cli.Command, validatorIndex uint32) (*api.CanExitQueueRespo
 	gasInfo, err := mp.EstimateDequeueGas(validatorIndex, opts)
 	if err != nil {
 		return nil, err
-	} else {
-		response.GasInfo = gasInfo
-		response.CanExit = true
 	}
+	response.GasInfo = gasInfo
+	response.CanExit = true
 
 	return &response, nil
 

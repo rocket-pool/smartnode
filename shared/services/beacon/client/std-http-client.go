@@ -18,9 +18,10 @@ import (
 	"github.com/goccy/go-json"
 	"github.com/prysmaticlabs/go-bitfield"
 	"github.com/prysmaticlabs/prysm/v5/crypto/bls"
-	"github.com/rocket-pool/smartnode/bindings/types"
 	eth2types "github.com/wealdtech/go-eth2-types/v2"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/types"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
@@ -280,13 +281,13 @@ func (c *StandardHttpClient) GetValidatorBalances(indices []string, opts *beacon
 	data := make(map[string]*big.Int, count)
 	for i := 0; i < count; i += MaxRequestValidatorsCount {
 		i := i
-		max := i + MaxRequestValidatorsCount
-		if max > count {
-			max = count
+		m := i + MaxRequestValidatorsCount
+		if m > count {
+			m = count
 		}
 
 		// Get & add validators
-		batch := indices[i:max]
+		batch := indices[i:m]
 		balances, err := c.getValidatorBalances(stateId, batch)
 		if err != nil {
 			return nil, fmt.Errorf("error getting validator balances: %w", err)
@@ -821,22 +822,6 @@ func (c *StandardHttpClient) getFinalityCheckpoints(stateId string) (FinalityChe
 	return finalityCheckpoints, nil
 }
 
-// Get fork
-func (c *StandardHttpClient) getFork(stateId string) (ForkResponse, error) {
-	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestForkPath, stateId))
-	if err != nil {
-		return ForkResponse{}, fmt.Errorf("Could not get fork data: %w", err)
-	}
-	if status != http.StatusOK {
-		return ForkResponse{}, fmt.Errorf("Could not get fork data: HTTP status %d; response body: '%s'", status, string(responseBody))
-	}
-	var fork ForkResponse
-	if err := json.Unmarshal(responseBody, &fork); err != nil {
-		return ForkResponse{}, fmt.Errorf("Could not decode fork data: %w", err)
-	}
-	return fork, nil
-}
-
 // Get validator balances
 func (c *StandardHttpClient) getValidatorBalances(stateId string, indices []string) (ValidatorBalancesResponse, error) {
 	var query string
@@ -942,14 +927,14 @@ func (c *StandardHttpClient) getValidatorsByOpts(pubkeysOrIndices []string, opts
 	wg.SetLimit(threadLimit)
 	for i := 0; i < count; i += MaxRequestValidatorsCount {
 		i := i
-		max := i + MaxRequestValidatorsCount
-		if max > count {
-			max = count
+		m := i + MaxRequestValidatorsCount
+		if m > count {
+			m = count
 		}
 
 		wg.Go(func() error {
 			// Get & add validators
-			batch := pubkeysOrIndices[i:max]
+			batch := pubkeysOrIndices[i:m]
 			validators, err := c.getValidators(stateId, batch)
 			if err != nil {
 				return fmt.Errorf("error getting validator statuses: %w", err)
@@ -1041,14 +1026,8 @@ func (c *StandardHttpClient) GetBeaconStateSSZ(slot uint64) (*beacon.BeaconState
 		return nil, fmt.Errorf("Could not get beacon state data: HTTP status %d", response.StatusCode)
 	}
 
-	// Slurp the body
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, fmt.Errorf("Could not get beacon state data: %w", err)
-	}
-
 	return &beacon.BeaconStateSSZ{
-		Data: body,
+		Data: response.Body,
 		Fork: response.Header.Get(ResponseConsensusVersionHeader),
 	}, nil
 }
@@ -1069,13 +1048,8 @@ func (c *StandardHttpClient) GetBeaconBlockSSZ(slot uint64) (*beacon.BeaconBlock
 		return nil, false, fmt.Errorf("Could not get beacon block data: HTTP status %d; response body: '%s'", response.StatusCode, string(responseBody))
 	}
 
-	// Slurp the body
-	body, err := io.ReadAll(response.Body)
-	if err != nil {
-		return nil, false, fmt.Errorf("Could not get beacon block data: %w", err)
-	}
 	return &beacon.BeaconBlockSSZ{
-		Data: body,
+		Data: response.Body,
 		Fork: response.Header.Get(ResponseConsensusVersionHeader),
 	}, true, nil
 }
@@ -1121,7 +1095,7 @@ func (c *committeesDecoder) Read(p []byte) (int, error) {
 	return n, err
 }
 
-var committeesDecoderPool sync.Pool = sync.Pool{
+var committeesDecoderPool = sync.Pool{
 	New: func() any {
 		var out committeesDecoder
 

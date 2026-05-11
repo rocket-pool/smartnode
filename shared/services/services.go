@@ -13,10 +13,11 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethclient"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpSettings "github.com/rocket-pool/smartnode/shared/services/rocketpool"
-	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -48,7 +49,6 @@ var (
 	bcManager            *BeaconClientManager
 	rocketPool           *rocketpool.RocketPool
 	rocketSignerRegistry *contracts.RocketSignerRegistry
-	beaconClient         beacon.Client
 	docker               *client.Client
 
 	initCfg                  sync.Once
@@ -58,9 +58,7 @@ var (
 	initECManager            sync.Once
 	initBCManager            sync.Once
 	initRocketPool           sync.Once
-	initOneInchOracle        sync.Once
 	initRocketSignerRegistry sync.Once
-	initBeaconClient         sync.Once
 	initDocker               sync.Once
 )
 
@@ -150,12 +148,12 @@ func GetEthClient(c *cli.Command) (*ExecutionClientManager, error) {
 	return ec, nil
 }
 
-func dialProtectedEthClient(url string) (*ethClient, error) {
+func dialProtectedEthClient(url string) (*EthClient, error) {
 	ec, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
 	}
-	return &ethClient{ec}, nil
+	return &EthClient{ec}, nil
 }
 
 func GetRocketPool(c *cli.Command) (*rocketpool.RocketPool, error) {

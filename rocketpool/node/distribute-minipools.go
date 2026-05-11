@@ -7,12 +7,13 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
-	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
@@ -163,7 +164,10 @@ func (t *distributeMinipools) run(state *state.NetworkState) error {
 	successCount := 0
 	for _, mpd := range minipools {
 		success, err := t.distributeMinipool(mpd, opts)
-		alerting.AlertMinipoolBalanceDistributed(t.cfg, mpd.MinipoolAddress, err == nil)
+		err = alerting.AlertMinipoolBalanceDistributed(t.cfg, mpd.MinipoolAddress, err == nil)
+		if err != nil {
+			t.log.Printlnf("error alerting minipool balance distributed: %v", err)
+		}
 		if err != nil {
 			t.log.Println(fmt.Errorf("Could not distribute balance of minipool %s: %w", mpd.MinipoolAddress.Hex(), err))
 			return err

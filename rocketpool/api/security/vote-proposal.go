@@ -3,11 +3,12 @@ package security
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/dao"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -105,7 +106,7 @@ func canVoteOnProposal(c *cli.Command, proposalId uint64) (*api.SecurityCanVoteO
 	response.JoinedAfterCreated = (memberJoinedTime >= proposalCreatedTime)
 
 	// Update & return response
-	response.CanVote = !(response.DoesNotExist || response.InvalidState || response.JoinedAfterCreated || response.AlreadyVoted)
+	response.CanVote = !response.DoesNotExist && !response.InvalidState && !response.JoinedAfterCreated && !response.AlreadyVoted
 	return &response, nil
 
 }

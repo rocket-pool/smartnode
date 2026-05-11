@@ -51,9 +51,8 @@ func getLegacyContract(rp *RocketPool, contractName string, m LegacyVersionWrapp
 	if cached, ok := rp.getCachedContract(legacyName); ok {
 		if time.Now().Unix()-cached.time <= CacheTTL {
 			return cached.contract, nil
-		} else {
-			rp.deleteCachedContract(legacyName)
 		}
+		rp.deleteCachedContract(legacyName)
 	}
 
 	// Try to get the legacy address from RocketStorage first

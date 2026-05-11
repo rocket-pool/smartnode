@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
@@ -213,7 +214,7 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex())) {
+	if prompt.Declined(yes, "Are you sure you want to deposit %.6f ETH to rescue minipool %s?", math.RoundDown(depositAmountFloat, 6), selectedMinipool.Address.Hex()) {
 		fmt.Println("Cancelled.")
 		return nil
 	}
@@ -230,12 +231,10 @@ func rescueDissolved(minipool string, amount string, noSend bool, yes bool) erro
 	cliutils.PrintTransactionHash(rp, response.TxHash)
 	if _, err = rp.WaitForTransaction(response.TxHash); err != nil {
 		return fmt.Errorf("Could not rescue minipool %s: %s.\n", selectedMinipool.Address.Hex(), err.Error())
-	} else {
-		fmt.Printf("Successfully deposited to minipool %s.\n", selectedMinipool.Address.Hex())
-		fmt.Println("Please watch its status on a chain explorer such as https://beaconcha.in; it may take up to 24 hours for this deposit to be seen by the chain.")
 	}
+	fmt.Printf("Successfully deposited to minipool %s.\n", selectedMinipool.Address.Hex())
+	fmt.Println("Please watch its status on a chain explorer such as https://beaconcha.in; it may take up to 24 hours for this deposit to be seen by the chain.")
 
-	// Return
 	return nil
 
 }

@@ -173,9 +173,9 @@ func GetNodeAddressesFast(rp *rocketpool.RocketPool, multicallAddress common.Add
 	count := int(nodeCount)
 	for i := 0; i < count; i += nodeAddressFastBatchSize {
 		i := i
-		max := i + nodeAddressFastBatchSize
-		if max > count {
-			max = count
+		m := i + nodeAddressFastBatchSize
+		if m > count {
+			m = count
 		}
 
 		wg.Go(func() error {
@@ -184,8 +184,11 @@ func GetNodeAddressesFast(rp *rocketpool.RocketPool, multicallAddress common.Add
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
-				mc.AddCall(rocketNodeManager, &addresses[j], "getNodeAt", big.NewInt(int64(j)))
+			for j := i; j < m; j++ {
+				err = mc.AddCall(rocketNodeManager, &addresses[j], "getNodeAt", big.NewInt(int64(j)))
+				if err != nil {
+					return fmt.Errorf("error adding node at call for index %d: %w", j, err)
+				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {

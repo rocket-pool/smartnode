@@ -4,13 +4,14 @@ import (
 	"runtime"
 
 	"github.com/pbnjay/memory"
+
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Constants
 const (
-	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v2.0.0"
-	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v2.0.0"
+	rethTagProd          string = "ghcr.io/paradigmxyz/reth:v2.1.0"
+	rethTagTest          string = "ghcr.io/paradigmxyz/reth:v2.1.0"
 	rethEventLogInterval int    = 1000
 	rethStopSignal       string = "SIGTERM"
 )
@@ -128,19 +129,23 @@ func calculateRethCache() uint64 {
 
 	if totalMemoryGB == 0 {
 		return 0
-	} else if totalMemoryGB < 9 {
-		return 256
-	} else if totalMemoryGB < 13 {
-		return 2048
-	} else if totalMemoryGB < 17 {
-		return 4096
-	} else if totalMemoryGB < 25 {
-		return 8192
-	} else if totalMemoryGB < 33 {
-		return 12288
-	} else {
-		return 16384
 	}
+	if totalMemoryGB < 9 {
+		return 256
+	}
+	if totalMemoryGB < 13 {
+		return 2048
+	}
+	if totalMemoryGB < 17 {
+		return 4096
+	}
+	if totalMemoryGB < 25 {
+		return 8192
+	}
+	if totalMemoryGB < 33 {
+		return 12288
+	}
+	return 16384
 }
 
 // Calculate the default number of Reth peers

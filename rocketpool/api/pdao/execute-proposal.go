@@ -3,10 +3,11 @@ package pdao
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
-	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
-	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
+	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -73,7 +74,7 @@ func canExecuteProposal(c *cli.Command, proposalId uint64) (*api.CanExecutePDAOP
 	}
 
 	// Update & return response
-	response.CanExecute = !(response.DoesNotExist || response.InvalidState)
+	response.CanExecute = !response.DoesNotExist && !response.InvalidState
 	return &response, nil
 
 }

@@ -3,11 +3,12 @@ package pdao
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -84,7 +85,7 @@ func canOverrideVote(c *cli.Command, proposalId uint64, voteDirection types.Vote
 
 	// Check data
 	response.InsufficientPower = (response.VotingPower.Cmp(common.Big0) == 0)
-	response.CanVote = !(response.DoesNotExist || response.InvalidState || response.InsufficientPower || response.AlreadyVoted)
+	response.CanVote = !response.DoesNotExist && !response.InvalidState && !response.InsufficientPower && !response.AlreadyVoted
 	if !response.CanVote {
 		return &response, nil
 	}

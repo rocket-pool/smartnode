@@ -8,6 +8,9 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/minipool"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
@@ -18,8 +21,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 )
 
 func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee float64, salt *big.Int, pubkey rptypes.ValidatorPubkey) (*api.CanCreateVacantMinipoolResponse, error) {
@@ -113,7 +114,7 @@ func canCreateVacantMinipool(c *cli.Command, amountWei *big.Int, minNodeFee floa
 	response.MinipoolAddress = minipoolAddress
 
 	// Update response
-	response.CanDeposit = !(response.InsufficientRplStake || response.InvalidAmount || response.DepositDisabled)
+	response.CanDeposit = !response.InsufficientRplStake && !response.InvalidAmount && !response.DepositDisabled
 	if !response.CanDeposit {
 		return &response, nil
 	}

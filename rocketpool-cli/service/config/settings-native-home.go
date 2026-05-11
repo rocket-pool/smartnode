@@ -22,11 +22,11 @@ type settingsNativeHome struct {
 	categoryList     *tview.List
 	settingsSubpages []*page
 	content          tview.Primitive
-	md               *mainDisplay
+	md               *MainDisplay
 }
 
 // Creates a new SettingsNativeHome instance and adds (and its subpages) it to the main display.
-func newSettingsNativeHome(md *mainDisplay) *settingsNativeHome {
+func newSettingsNativeHome(md *MainDisplay) *settingsNativeHome {
 
 	homePage := newPage(nil, settingsNativeHomeID, "Categories", "", nil)
 
@@ -119,7 +119,10 @@ func (home *settingsNativeHome) createFooter() (tview.Primitive, int) {
 		AddItem(nil, 0, 1, false).
 		AddItem(navTextView1, len(navString1), 1, false).
 		AddItem(nil, 0, 1, false)
-	fmt.Fprint(navTextView1, navString1)
+	_, err := fmt.Fprint(navTextView1, navString1)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 1: %w", err))
+	}
 
 	navString2 := "Tab: Go to the Buttons   Ctrl+C: Quit without Saving"
 	navTextView2 := tview.NewTextView().
@@ -130,7 +133,10 @@ func (home *settingsNativeHome) createFooter() (tview.Primitive, int) {
 		AddItem(nil, 0, 1, false).
 		AddItem(navTextView2, len(navString2), 1, false).
 		AddItem(nil, 0, 1, false)
-	fmt.Fprint(navTextView2, navString2)
+	_, err = fmt.Fprint(navTextView2, navString2)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 2: %w", err))
+	}
 
 	// Save and Quit buttons
 	saveButton := tview.NewButton("Review Changes and Save")

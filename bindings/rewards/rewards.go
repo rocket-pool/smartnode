@@ -345,9 +345,11 @@ func getMainnetIntervalRewardsEvent(rp *rocketpool.RocketPool, index uint64) (Re
 	nodeRPL := big.NewInt(0)
 	nodeETH := big.NewInt(0)
 	userETH := big.NewInt(0)
-	executionBlock := big.NewInt(0)
-	consensusBlock := big.NewInt(0)
-	intervalsPassed := big.NewInt(0)
+	var (
+		executionBlock  *big.Int
+		consensusBlock  *big.Int
+		intervalsPassed *big.Int
+	)
 
 	// Hardcoded RewardsEvent for old intervals on mainnet
 	switch index {

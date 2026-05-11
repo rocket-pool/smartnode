@@ -3,11 +3,12 @@ package upgrade
 import (
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/trustednode"
 	"github.com/rocket-pool/smartnode/bindings/dao/upgrades"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -76,7 +77,7 @@ func canExecuteUpgrade(c *cli.Command, upgradeProposalId uint64) (*api.CanExecut
 	}
 
 	// Update & return response
-	response.CanExecute = !(response.DoesNotExist || response.InvalidState || response.InvalidTrustedNode)
+	response.CanExecute = !response.DoesNotExist && !response.InvalidState && !response.InvalidTrustedNode
 
 	if response.CanExecute {
 		opts, err := w.GetNodeAccountTransactor()

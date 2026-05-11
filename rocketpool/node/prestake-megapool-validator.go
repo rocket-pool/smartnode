@@ -8,11 +8,12 @@ import (
 
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/deposit"
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
-	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/config"
@@ -147,14 +148,18 @@ func (t *prestakeMegapoolValidator) run(state *state.NetworkState) error {
 	}
 	lastAssignment := time.Unix(int64(block.Time), 0)
 
-	remainingTime := lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour).Sub(time.Now())
+	remainingTime := time.Until(lastAssignment.Add(time.Duration(t.autoAssignmentDelay) * time.Hour))
 	if remainingTime < 0 {
 		t.log.Printlnf("%d hours have passed since the last assignment. Trying to assign", t.autoAssignmentDelay)
 
 		// Check if the assignment is possible
 		if nextAssignment.AssignmentPossible {
 			// Call assign
-			t.assignDeposit(nil)
+			err := t.assignDeposit(nil)
+			if err != nil {
+				t.log.Printlnf("error assigning the deposit: %v", err)
+				return err
+			}
 		}
 	} else {
 		t.log.Printlnf("Time left until the automatic stake %s", remainingTime)

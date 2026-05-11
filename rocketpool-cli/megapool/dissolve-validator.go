@@ -78,7 +78,7 @@ func dissolveValidator(validatorId uint64, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to DISSOLVE megapool validator ID: %d?", validatorId)) {
+	if prompt.Declined(yes, "Are you sure you want to DISSOLVE megapool validator ID: %d?", validatorId) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

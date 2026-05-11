@@ -7,19 +7,19 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-type ethClient struct {
+type EthClient struct {
 	*ethclient.Client
 }
 
-func NewEthClient(url string) (*ethClient, error) {
+func NewEthClient(url string) (*EthClient, error) {
 	ec, err := ethclient.Dial(url)
 	if err != nil {
 		return nil, err
 	}
-	return &ethClient{ec}, nil
+	return &EthClient{ec}, nil
 }
 
-func (c *ethClient) LatestBlockTime(ctx context.Context) (time.Time, error) {
+func (c *EthClient) LatestBlockTime(ctx context.Context) (time.Time, error) {
 	header, err := c.HeaderByNumber(ctx, nil)
 	if err != nil {
 		return time.Time{}, err

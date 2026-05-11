@@ -46,7 +46,7 @@ func defeatProposal(proposalID uint64, challengedIndex uint64, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to defeat proposal %d?", proposalID)) {
+	if prompt.Declined(yes, "Are you sure you want to defeat proposal %d?", proposalID) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

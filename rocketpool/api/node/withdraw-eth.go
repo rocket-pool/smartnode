@@ -5,9 +5,10 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 
-	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/rocket-pool/smartnode/bindings/node"
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -79,7 +80,7 @@ func canNodeWithdrawEth(c *cli.Command, amountWei *big.Int) (*api.CanNodeWithdra
 	response.HasDifferentWithdrawalAddress = (nodeAccount.Address != nodeDetails.PrimaryWithdrawalAddress)
 
 	// Update & return response
-	response.CanWithdraw = !(response.InsufficientBalance || response.HasDifferentWithdrawalAddress)
+	response.CanWithdraw = !response.InsufficientBalance && !response.HasDifferentWithdrawalAddress
 	return &response, nil
 
 }

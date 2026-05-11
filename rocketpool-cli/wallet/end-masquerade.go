@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/color"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
@@ -37,7 +38,7 @@ func endMasquerade(yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to end masquerade mode?")) {
+	if !yes && !prompt.Confirm("Are you sure you want to end masquerade mode?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

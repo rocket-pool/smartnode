@@ -7,6 +7,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
 )
 
@@ -14,21 +15,6 @@ import (
 type parameterizedFormItem struct {
 	parameter *cfgtypes.Parameter
 	item      tview.FormItem
-}
-
-func registerEnableCheckbox(param *cfgtypes.Parameter, checkbox *tview.Checkbox, form *Form, items []*parameterizedFormItem) {
-	checkbox.SetChangedFunc(func(checked bool) {
-		param.Value = checked
-
-		if !checked {
-			form.Clear(true)
-			form.AddFormItem(checkbox)
-		} else {
-			for _, item := range items {
-				form.AddFormItem(item.item)
-			}
-		}
-	})
 }
 
 // Create a list of form items based on a set of parameters

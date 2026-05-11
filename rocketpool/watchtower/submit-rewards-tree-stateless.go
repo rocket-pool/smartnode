@@ -15,6 +15,8 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/urfave/cli/v3"
+
 	"github.com/rocket-pool/smartnode/bindings/rewards"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/tokens"
@@ -31,7 +33,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/eth1"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
-	"github.com/urfave/cli/v3"
 )
 
 // Submit rewards Merkle Tree task
@@ -115,12 +116,11 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	if !nodeTrusted {
 		if t.cfg.Smartnode.RewardsTreeMode.Value.(cfgtypes.RewardsMode) != cfgtypes.RewardsMode_Generate {
 			return nil
-		} else {
-			// Create the state, since it's not done except for manual generators
-			state, err = t.m.GetStateForSlot(beaconSlot)
-			if err != nil {
-				return fmt.Errorf("error getting state for beacon slot %d: %w", beaconSlot, err)
-			}
+		}
+		// Create the state, since it's not done except for manual generators
+		state, err = t.m.GetStateForSlot(beaconSlot)
+		if err != nil {
+			return fmt.Errorf("error getting state for beacon slot %d: %w", beaconSlot, err)
 		}
 	}
 
@@ -132,7 +132,7 @@ func (t *submitRewardsTree_Stateless) Run(nodeTrusted bool, state *state.Network
 	intervalTime := state.NetworkDetails.IntervalDuration
 
 	// Adjust for the first interval by making the start time the RPL inflation interval start time
-	if startTime == time.Unix(0, 0) {
+	if startTime.Equal(time.Unix(0, 0)) {
 		opts := &bind.CallOpts{
 			BlockNumber: big.NewInt(0).SetUint64(state.ElBlockNumber),
 		}
@@ -395,10 +395,8 @@ func (t *submitRewardsTree_Stateless) submitRewardsSnapshot(index *big.Int, cons
 	}
 
 	var gasInfo rocketpool.GasInfo
-	var submission rewards.RewardSubmission
 
-	// Create the submission
-	submission = rewards.RewardSubmission{
+	submission := rewards.RewardSubmission{
 		RewardIndex:      index,
 		ExecutionBlock:   big.NewInt(0).SetUint64(executionBlock),
 		ConsensusBlock:   big.NewInt(0).SetUint64(consensusBlock),

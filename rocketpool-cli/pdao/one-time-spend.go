@@ -81,7 +81,7 @@ func proposeOneTimeSpend(invoiceIDFlag string, recipientFlag string, amountFlag 
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to propose this one-time spend of the Protocol DAO treasury?")) {
+	if prompt.Declined(yes, "Are you sure you want to propose this one-time spend of the Protocol DAO treasury?") {
 		fmt.Println("Cancelled.")
 		return nil
 	}

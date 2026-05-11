@@ -73,13 +73,13 @@ func nodeSend(amountRaw float64, sendAll bool, token string, toAddressOrENS stri
 		color.YellowPrintln("WARNING: Please confirm that the above token is the one you intend to send before confirming below!")
 		fmt.Println()
 
-		if !(yes || prompt.Confirm("Are you sure you want to send %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString)) {
+		if prompt.Declined(yes, "Are you sure you want to send %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	} else {
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, token)
-		if !(yes || prompt.Confirm("Are you sure you want to send %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString)) {
+		if prompt.Declined(yes, "Are you sure you want to send %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -161,7 +161,7 @@ func nodeSendAll(rp *rocketpool.Client, token string, toAddress common.Address, 
 		fmt.Printf("Gas reserve:     %.8f ETH\n", gasCost)
 		fmt.Printf("Send amount:     %.8f ETH\n\n", amountRaw)
 
-		if !(yes || prompt.Confirm("Are you sure you want to send %.8f ETH to %s? This action cannot be undone!", amountRaw, toAddressString)) {
+		if prompt.Declined(yes, "Are you sure you want to send %.8f ETH to %s? This action cannot be undone!", amountRaw, toAddressString) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
@@ -192,13 +192,13 @@ func nodeSendAll(rp *rocketpool.Client, token string, toAddress common.Address, 
 		color.YellowPrintln("WARNING: Please confirm that the above token is the one you intend to send before confirming below!")
 		fmt.Println()
 
-		if !(yes || prompt.Confirm("Are you sure you want to send all %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString)) {
+		if prompt.Declined(yes, "Are you sure you want to send all %.8f of %s to %s? This action cannot be undone!", amountRaw, tokenString, toAddressString) {
 			fmt.Println("Cancelled.")
 			return nil
 		}
 	} else {
 		fmt.Printf("Node balance:    %.8f %s\n\n", canSend.Balance, token)
-		if !(yes || prompt.Confirm("Are you sure you want to send all %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString)) {
+		if prompt.Declined(yes, "Are you sure you want to send all %.8f %s to %s? This action cannot be undone!", amountRaw, token, toAddressString) {
 			fmt.Println("Cancelled.")
 			return nil
 		}

@@ -6,6 +6,7 @@ import (
 
 	"github.com/gdamore/tcell/v2"
 	"github.com/rivo/tview"
+
 	"github.com/rocket-pool/smartnode/shared"
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
@@ -16,13 +17,13 @@ const reviewPageID string = "review-settings"
 
 // The changed settings review page
 type ReviewPage struct {
-	md              *mainDisplay
+	md              *MainDisplay
 	changedSettings map[string][]cfgtypes.ChangedSetting
 	page            *page
 }
 
 // Create a page to review any changes
-func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
+func NewReviewPage(md *MainDisplay, oldConfig *config.RocketPoolConfig, newConfig *config.RocketPoolConfig) *ReviewPage {
 
 	var changedSettings map[string][]cfgtypes.ChangedSetting
 	var totalAffectedContainers map[cfgtypes.ContainerID]bool
@@ -42,28 +43,27 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 	if len(errors) > 0 {
 		builder.WriteString("[orange]WARNING: Your configuration encountered errors. You must correct the following in order to save it:\n\n")
 		for _, err := range errors {
-			builder.WriteString(fmt.Sprintf("%s\n\n", err))
+			builder.WriteString(err + "\n\n")
 		}
 	} else {
 		// Get the map of changed settings by category
 		changedSettings, totalAffectedContainers, changeNetworks = newConfig.GetChanges(oldConfig)
 
 		if md.isUpdate {
-			totalAffectedContainers[cfgtypes.ContainerID_Api] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Node] = true
 			totalAffectedContainers[cfgtypes.ContainerID_Watchtower] = true
 
 			if newConfig.ExecutionClientMode.Value.(cfgtypes.Mode) == cfgtypes.Mode_Local && newConfig.ExecutionClient.Value.(cfgtypes.ExecutionClient) != cfgtypes.ExecutionClient_Geth {
 				totalAffectedContainers[cfgtypes.ContainerID_Eth1] = true
 			}
-			builder.WriteString(fmt.Sprintf("Updated toSmart Node v%s (will affect several containers)\n\n", shared.RocketPoolVersion()))
+			builder.WriteString("Updated to Smart Node v" + shared.RocketPoolVersion() + " (will affect several containers)\n\n")
 		}
 
 		for categoryName, changedSettingsList := range changedSettings {
 			if len(changedSettingsList) > 0 {
-				builder.WriteString(fmt.Sprintf("%s\n", categoryName))
+				builder.WriteString(categoryName + "\n")
 				for _, pair := range changedSettingsList {
-					builder.WriteString(fmt.Sprintf("\t%s: %s => %s\n", pair.Name, pair.OldValue, pair.NewValue))
+					builder.WriteString("\t" + pair.Name + ": " + pair.OldValue + " => " + pair.NewValue + "\n")
 				}
 				builder.WriteString("\n")
 			}
@@ -73,8 +73,8 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 			builder.WriteString("<No changes>")
 		} else {
 			builder.WriteString("The following containers must be restarted for these changes to take effect:")
-			for container, _ := range totalAffectedContainers {
-				builder.WriteString(fmt.Sprintf("\n\t%v", container))
+			for container := range totalAffectedContainers {
+				_, _ = fmt.Fprintf(&builder, "\n\t%v", container)
 				containersToRestart = append(containersToRestart, container)
 			}
 		}
@@ -190,14 +190,20 @@ func NewReviewPage(md *mainDisplay, oldConfig *config.RocketPoolConfig, newConfi
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView1, navString1)
+	_, err := fmt.Fprint(navTextView1, navString1)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 1: %w", err))
+	}
 
 	navString2 := "Esc: Go Back     Ctrl+C: Quit without Saving"
 	navTextView2 := tview.NewTextView().
 		SetDynamicColors(false).
 		SetRegions(false).
 		SetWrap(false)
-	fmt.Fprint(navTextView2, navString2)
+	_, err = fmt.Fprint(navTextView2, navString2)
+	if err != nil {
+		panic(fmt.Errorf("error writing nav string 2: %w", err))
+	}
 
 	// Create the nav footer
 	navBar := tview.NewFlex().

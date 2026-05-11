@@ -90,7 +90,7 @@ func nodeWithdrawCredit(amount string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to withdraw %.6f of credit?", math.RoundDown(eth.WeiToEth(amountWei), 6))) {
+	if prompt.Declined(yes, "Are you sure you want to withdraw %.6f of credit?", math.RoundDown(eth.WeiToEth(amountWei), 6)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

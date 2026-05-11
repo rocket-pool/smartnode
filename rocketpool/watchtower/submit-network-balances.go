@@ -12,14 +12,15 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/megapool"
 	"github.com/rocket-pool/smartnode/bindings/network"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	rpstate "github.com/rocket-pool/smartnode/bindings/utils/state"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
@@ -491,7 +492,7 @@ func (t *submitNetworkBalances) getNetworkBalancesFromState(
 			if err != nil {
 				return fmt.Errorf("error getting megapool balance details: %w", err)
 			}
-			i += 1
+			i++
 		}
 		return nil
 	})
@@ -716,11 +717,10 @@ func (t *submitNetworkBalances) getMinipoolBalanceDetails(mpd *rpstate.NativeMin
 			IsStaking:   (validator.ExitEpoch > blockEpoch),
 			UserBalance: big.NewInt(0).Sub(userBalance, eth.EthToWei(16)), // Remove 16 ETH from the user balance for full minipools in the refund queue
 		}
-	} else {
-		return validatorBalanceDetails{
-			IsStaking:   (validator.ExitEpoch > blockEpoch),
-			UserBalance: userBalance,
-		}
+	}
+	return validatorBalanceDetails{
+		IsStaking:   (validator.ExitEpoch > blockEpoch),
+		UserBalance: userBalance,
 	}
 
 }

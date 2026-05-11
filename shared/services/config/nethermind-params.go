@@ -4,13 +4,14 @@ import (
 	"runtime"
 
 	"github.com/pbnjay/memory"
+
 	"github.com/rocket-pool/smartnode/shared/types/config"
 )
 
 // Constants
 const (
-	nethermindTagProd          string = "nethermind/nethermind:1.36.0"
-	nethermindTagTest          string = "nethermind/nethermind:1.36.0"
+	nethermindTagProd          string = "nethermind/nethermind:1.37.2"
+	nethermindTagTest          string = "nethermind/nethermind:1.37.2"
 	nethermindEventLogInterval int    = 1000
 	nethermindStopSignal       string = "SIGTERM"
 )
@@ -198,19 +199,23 @@ func calculateNethermindCache() uint64 {
 
 	if totalMemoryGB == 0 {
 		return 0
-	} else if totalMemoryGB < 9 {
-		return 512
-	} else if totalMemoryGB < 13 {
-		return 512
-	} else if totalMemoryGB < 17 {
-		return 1024
-	} else if totalMemoryGB < 25 {
-		return 1024
-	} else if totalMemoryGB < 33 {
-		return 1024
-	} else {
-		return 2048
 	}
+	if totalMemoryGB < 9 {
+		return 512
+	}
+	if totalMemoryGB < 13 {
+		return 512
+	}
+	if totalMemoryGB < 17 {
+		return 1024
+	}
+	if totalMemoryGB < 25 {
+		return 1024
+	}
+	if totalMemoryGB < 33 {
+		return 1024
+	}
+	return 2048
 }
 
 // Calculate the default number of Nethermind peers

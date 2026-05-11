@@ -12,9 +12,10 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/shared/services/config"
-	"golang.org/x/sync/errgroup"
 )
 
 // Config
@@ -113,11 +114,13 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 				return fmt.Errorf("error making GET request for pubkey %s: %w", pubkeyHex, err)
 			}
 			body, err := io.ReadAll(resp.Body)
-			resp.Body.Close()
 			if err != nil {
 				return fmt.Errorf("error reading GET response body for pubkey %s: %w", pubkeyHex, err)
 
 			}
+			defer func() {
+				_ = resp.Body.Close()
+			}()
 
 			type FeeRecipientResp struct {
 				Data struct {
@@ -153,7 +156,9 @@ func UpdateFeeRecipientPerKey(pubkeys []types.ValidatorPubkey, megapoolAddress c
 				if err != nil {
 					return fmt.Errorf("error making request for pubkey %s: %w", pubkeyHex, err)
 				}
-				defer resp.Body.Close()
+				defer func() {
+					_ = resp.Body.Close()
+				}()
 
 				if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 					bodyBytes, _ := io.ReadAll(resp.Body)

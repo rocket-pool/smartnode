@@ -7,11 +7,12 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/multicall"
-	"golang.org/x/sync/errgroup"
 )
 
 const (
@@ -54,9 +55,9 @@ func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, mult
 	votingInfos := make([]types.NodeVotingInfo, nodeCount)
 	for i := uint64(0); i < nodeCount; i += nodeVotingDetailsBatchSize {
 		i := i
-		max := i + nodeVotingDetailsBatchSize
-		if max > nodeCount {
-			max = nodeCount
+		m := i + nodeVotingDetailsBatchSize
+		if m > nodeCount {
+			m = nodeCount
 		}
 
 		// Load details
@@ -66,11 +67,17 @@ func GetNodeInfoSnapshotFast(rp *rocketpool.RocketPool, blockNumber uint32, mult
 			if err != nil {
 				return err
 			}
-			for j := i; j < max; j++ {
+			for j := i; j < m; j++ {
 				nodeAddress := nodeAddresses[j]
 				votingInfos[j].NodeAddress = nodeAddress
-				mc.AddCall(rocketNetworkVoting, &votingInfos[j].VotingPower, "getVotingPower", nodeAddress, blockNumber)
-				mc.AddCall(rocketNetworkVoting, &votingInfos[j].Delegate, "getDelegate", nodeAddress, blockNumber)
+				err = mc.AddCall(rocketNetworkVoting, &votingInfos[j].VotingPower, "getVotingPower", nodeAddress, blockNumber)
+				if err != nil {
+					return fmt.Errorf("error adding voting power call for node %s: %w", nodeAddress.Hex(), err)
+				}
+				err = mc.AddCall(rocketNetworkVoting, &votingInfos[j].Delegate, "getDelegate", nodeAddress, blockNumber)
+				if err != nil {
+					return fmt.Errorf("error adding delegate call for node %s: %w", nodeAddress.Hex(), err)
+				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
 			if err != nil {

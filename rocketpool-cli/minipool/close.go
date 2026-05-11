@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	rocketpoolapi "github.com/rocket-pool/smartnode/bindings/rocketpool"
 	"github.com/rocket-pool/smartnode/bindings/types"
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
@@ -263,7 +264,7 @@ func closeMinipools(minipool string, confirmSlashing, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !(yes || prompt.Confirm("Are you sure you want to close %d minipools?", len(selectedMinipools))) {
+	if prompt.Declined(yes, "Are you sure you want to close %d minipools?", len(selectedMinipools)) {
 		fmt.Println("Cancelled.")
 		return nil
 	}

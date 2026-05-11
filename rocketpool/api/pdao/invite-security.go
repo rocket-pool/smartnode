@@ -5,13 +5,14 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/urfave/cli/v3"
+	"golang.org/x/sync/errgroup"
+
 	"github.com/rocket-pool/smartnode/bindings/dao/protocol"
 	"github.com/rocket-pool/smartnode/bindings/dao/security"
 	"github.com/rocket-pool/smartnode/bindings/node"
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/types/api"
-	"github.com/urfave/cli/v3"
-	"golang.org/x/sync/errgroup"
 )
 
 func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common.Address) (*api.PDAOCanProposeInviteToSecurityCouncilResponse, error) {
@@ -69,7 +70,7 @@ func canProposeInviteToSecurityCouncil(c *cli.Command, id string, address common
 	response.IsRplLockingDisallowed = !isRplLockingAllowed
 
 	// return if proposing is not possible
-	response.CanPropose = !(response.MemberAlreadyExists || response.IsRplLockingDisallowed)
+	response.CanPropose = !response.MemberAlreadyExists && !response.IsRplLockingDisallowed
 	if !response.CanPropose {
 		return &response, nil
 	}
