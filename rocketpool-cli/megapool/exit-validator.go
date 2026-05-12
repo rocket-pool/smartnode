@@ -122,7 +122,7 @@ func getExitableValidator(fetchExitQueueEstimate bool) (uint64, bool, error) {
 				formatGwei(estimate.ChurnPerEpochGwei), estimate.EstimatedQueueEpochs, wait)
 		}
 	} else {
-		fmt.Println("Skipping the beacon chain exit queue estimate. Use the --fetch-estimate flag to fetch it.")
+		fmt.Println("Skipping the beacon chain exit queue estimate. Use the --estimate-exit flag to fetch it.")
 		fmt.Println()
 	}
 
