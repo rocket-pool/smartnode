@@ -23,15 +23,14 @@ const (
 // VersionUpdateCollector exposes whether a newer Smart Node release is available.
 type VersionUpdateCollector struct {
 	versionUpdate *prometheus.Desc
-	current           string
-	latestURL         string
-	client            *http.Client
-	logf              func(string, ...interface{})
+	current       string
+	latestURL     string
+	client        *http.Client
+	logf          func(string, ...interface{})
 
 	mu              sync.Mutex
 	updateAvailable float64
 	latestVersion   string
-	lastChecked     time.Time
 }
 
 type githubReleaseResponse struct {
