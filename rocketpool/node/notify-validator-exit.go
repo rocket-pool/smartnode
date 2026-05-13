@@ -136,14 +136,6 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 		return err
 	}
 
-	var currentEpoch uint64
-
-	head, err := t.bc.GetBeaconHead()
-	if err != nil {
-		return err
-	}
-	currentEpoch = head.Epoch
-
 	validatorDetailsToProve := make(map[uint32]beacon.ValidatorStatus)
 	pubkeys := state.MegapoolToPubkeysMap[megapoolAddress]
 	for _, pubkey := range pubkeys {
@@ -165,7 +157,7 @@ func (t *notifyValidatorExit) run(state *state.NetworkState) error {
 			continue
 		}
 
-		if currentEpoch > validatorDetails.ActivationEpoch && validatorDetails.WithdrawableEpoch < FarFutureEpoch && validatorInfo.ValidatorInfo.Staked && !validatorInfo.ValidatorInfo.Exited && !validatorInfo.ValidatorInfo.Exiting {
+		if validatorDetails.WithdrawableEpoch < FarFutureEpoch && !validatorInfo.ValidatorInfo.Exited && !validatorInfo.ValidatorInfo.Exiting {
 			validatorDetailsToProve[validatorInfo.ValidatorId] = validatorDetails
 		}
 	}
