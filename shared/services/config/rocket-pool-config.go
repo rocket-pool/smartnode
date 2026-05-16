@@ -837,8 +837,8 @@ func (cfg *RocketPoolConfig) Deserialize(masterMap map[string]map[string]string)
 	if exists {
 		networkString, exists := smartnodeConfig[cfg.Smartnode.Network.ID]
 		if exists {
-			valueType := reflect.TypeOf(networkString)
-			paramType := reflect.TypeOf(network)
+			valueType := reflect.TypeFor[string]()
+			paramType := reflect.TypeFor[config.Network]()
 			if !valueType.ConvertibleTo(paramType) {
 				return fmt.Errorf("can't get default network: value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
 			}

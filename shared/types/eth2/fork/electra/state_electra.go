@@ -63,7 +63,7 @@ func getStateChunkSize() uint64 {
 	// Use a static value to avoid multiple reflection calls
 	storedChunkSize := beaconStateChunkSize.Load()
 	if storedChunkSize == 0 {
-		s := reflect.TypeOf(BeaconState{}).NumField()
+		s := reflect.TypeFor[BeaconState]().NumField()
 		beaconStateChunkSize.Store(uint64(s))
 		storedChunkSize = uint64(s)
 	}
