@@ -203,8 +203,7 @@ func GetRewardSnapshotEvent(rp *rocketpool.RocketPool, index uint64, intervalSiz
 	}
 
 	// Get the decoded data
-	submissionPrototype := RewardSubmission{}
-	submissionType := reflect.TypeOf(submissionPrototype)
+	submissionType := reflect.TypeFor[RewardSubmission]()
 	submission := reflect.ValueOf(values["submission"]).Convert(submissionType).Interface().(RewardSubmission)
 	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
 	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)
@@ -266,8 +265,7 @@ func GetRewardSnapshotEventWithUpgrades(rp *rocketpool.RocketPool, index uint64,
 	}
 
 	// Get the decoded data
-	submissionPrototype := RewardSubmission{}
-	submissionType := reflect.TypeOf(submissionPrototype)
+	submissionType := reflect.TypeFor[RewardSubmission]()
 	submission := reflect.ValueOf(values["submission"]).Convert(submissionType).Interface().(RewardSubmission)
 	eventIntervalStartTime := values["intervalStartTime"].(*big.Int)
 	eventIntervalEndTime := values["intervalEndTime"].(*big.Int)

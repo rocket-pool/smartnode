@@ -111,7 +111,7 @@ func (param *Parameter) Deserialize(serializedParams map[string]string, network 
 		if len(param.Options) < 1 {
 			err = fmt.Errorf("this parameter is marked as a choice but does not have any options")
 		} else {
-			valueType := reflect.TypeOf(value)
+			valueType := reflect.TypeFor[string]()
 			paramType := reflect.TypeOf(param.Options[0].Value)
 			if !valueType.ConvertibleTo(paramType) {
 				err = fmt.Errorf("value type %s cannot be converted to parameter type %s", valueType.Name(), paramType.Name())
