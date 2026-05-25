@@ -24,6 +24,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/types"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	"github.com/rocket-pool/smartnode/shared/utils/eth2"
 	hexutil "github.com/rocket-pool/smartnode/shared/utils/hex"
 )
@@ -52,6 +53,7 @@ const (
 	RequestValidatorSyncDuties             = "/eth/v1/validator/duties/sync/%s"
 	RequestValidatorProposerDuties         = "/eth/v1/validator/duties/proposer/%s"
 	RequestWithdrawalCredentialsChangePath = "/eth/v1/beacon/pool/bls_to_execution_changes"
+	RequestPendingDepositsPath             = "/eth/v1/beacon/states/%s/pending_deposits"
 
 	MaxRequestValidatorsCount     = 600
 	threadLimit               int = 12
@@ -972,6 +974,45 @@ func (c *StandardHttpClient) postVoluntaryExit(request VoluntaryExitRequest) err
 		return fmt.Errorf("Could not broadcast exit for validator at index %s: HTTP status %d; response body: '%s'", request.Message.ValidatorIndex, status, string(responseBody))
 	}
 	return nil
+}
+
+// getPendingDeposits fetches the pending_deposits queue for the given beacon
+// state id. stateId accepts any value the Beacon API allows for {state_id},
+// e.g. "head", "finalized", "genesis", "justified", a state root, or a slot.
+func (c *StandardHttpClient) getPendingDeposits(stateId string) (PendingDepositsResponse, error) {
+	responseBody, status, err := c.getRequest(fmt.Sprintf(RequestPendingDepositsPath, stateId))
+	if err != nil {
+		return PendingDepositsResponse{}, fmt.Errorf("Could not get pending deposits: %w", err)
+	}
+	if status != http.StatusOK {
+		return PendingDepositsResponse{}, fmt.Errorf("Could not get pending deposits: HTTP status %d; response body: '%s'", status, string(responseBody))
+	}
+	var pendingDeposits PendingDepositsResponse
+	if err := json.Unmarshal(responseBody, &pendingDeposits); err != nil {
+		return PendingDepositsResponse{}, fmt.Errorf("Could not decode pending deposits: %w", err)
+	}
+	return pendingDeposits, nil
+}
+
+// GetPendingDeposits returns the pending_deposits queue from the latest
+// finalized beacon state, converted to the canonical generic.PendingDeposit
+// type used elsewhere in the codebase.
+func (c *StandardHttpClient) GetPendingDeposits() ([]*generic.PendingDeposit, error) {
+	response, err := c.getPendingDeposits("finalized")
+	if err != nil {
+		return nil, err
+	}
+	deposits := make([]*generic.PendingDeposit, 0, len(response.Data))
+	for _, d := range response.Data {
+		deposits = append(deposits, &generic.PendingDeposit{
+			Pubkey:                []byte(d.Pubkey),
+			WithdrawalCredentials: []byte(d.WithdrawalCredentials),
+			Amount:                uint64(d.Amount),
+			Signature:             []byte(d.Signature),
+			Slot:                  uint64(d.Slot),
+		})
+	}
+	return deposits, nil
 }
 
 // Get the target beacon block

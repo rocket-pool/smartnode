@@ -271,3 +271,89 @@ func (state *BeaconState) GetValidators() []*generic.Validator {
 func (state *BeaconState) GetSlot() uint64 {
 	return state.Slot
 }
+
+// GetPendingDeposits returns all entries in the state's pending_deposits queue
+// whose pubkey matches the supplied one.
+func (state *BeaconState) GetPendingDeposits(pubkey []byte) ([]*generic.PendingDeposit, error) {
+	var deposits []*generic.PendingDeposit
+	for _, deposit := range state.PendingDeposits {
+		if deposit == nil {
+			continue
+		}
+		if bytes.Equal(deposit.Pubkey, pubkey) {
+			deposits = append(deposits, deposit)
+		}
+	}
+	return deposits, nil
+}
+
+// PendingDepositProof builds a Merkle proof that the oldest pending deposit
+// for the supplied pubkey is in the state's pending_deposits queue. The
+// returned witnesses are concatenated [deposit -> state_root,
+// state_root -> block_header_root], matching ValidatorAndSlotProof.
+func (state *BeaconState) PendingDepositProof(pubkey []byte) (witnesses [][]byte, depositIndex uint64, deposit *generic.PendingDeposit, err error) {
+
+	// FIFO: pick the lowest-indexed match, which is the next entry the chain
+	// will process.
+	foundIndex := -1
+	for i, pd := range state.PendingDeposits {
+		if pd == nil {
+			continue
+		}
+		if bytes.Equal(pd.Pubkey, pubkey) {
+			foundIndex = i
+			deposit = pd
+			break
+		}
+	}
+	if foundIndex < 0 {
+		return nil, 0, nil, fmt.Errorf("no pending deposit found for pubkey 0x%x", pubkey)
+	}
+	depositIndex = uint64(foundIndex)
+
+	stateTree, err := state.GetTree()
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	// Generalized index for pending_deposits[depositIndex]:
+	//   state root                       (gid = 1)
+	//   -> pending_deposits field        (gid = 1 * 64 + 34)
+	//   -> list data root (mixin parent) (gid * 2)
+	//   -> deposit at depositIndex       (gid * maxLength + depositIndex)
+	gid := uint64(1)*beaconStateChunkCeil + generic.BeaconStatePendingDepositsFieldIndex
+	gid = gid*2*generic.BeaconStatePendingDepositsMaxLength + depositIndex
+
+	depositStateProof, err := stateTree.Prove(int(gid))
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("could not get proof for pending deposit at index %d: %w", depositIndex, err)
+	}
+
+	// Sanity check that the proof leaf matches the deposit's hash tree root.
+	depositRoot, err := deposit.HashTreeRoot()
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("could not compute hash tree root for pending deposit: %w", err)
+	}
+	if !bytes.Equal(depositStateProof.Leaf, depositRoot[:]) {
+		return nil, 0, nil, errors.New("proof leaf does not match expected pending deposit")
+	}
+
+	// Drop the state tree before building the block header proof so the GC
+	// can reclaim the (substantial) state tree memory.
+	stateTree = nil
+
+	blockHeaderTree, err := state.LatestBlockHeader.GetTree()
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("could not get block header tree: %w", err)
+	}
+	blockHeaderProof, err := blockHeaderTree.Prove(int(generic.BeaconBlockHeaderStateRootGeneralizedIndex))
+	if err != nil {
+		return nil, 0, nil, fmt.Errorf("could not get proof for block header: %w", err)
+	}
+
+	witnesses = make([][]byte, 0, len(depositStateProof.Hashes)+len(blockHeaderProof.Hashes))
+	witnesses = append(witnesses, depositStateProof.Hashes...)
+	witnesses = append(witnesses, blockHeaderProof.Hashes...)
+
+	return witnesses, depositIndex, deposit, nil
+}

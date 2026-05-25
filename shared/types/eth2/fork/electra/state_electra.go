@@ -257,3 +257,15 @@ func (state *BeaconState) GetSlot() uint64 {
 func (state *BeaconState) BlockHeaderProof() ([][]byte, error) {
 	return nil, nil
 }
+
+// GetPendingDeposits is not implemented for the Electra fork. The smartnode
+// only consumes the pending_deposits queue on Fulu and later states.
+func (state *BeaconState) GetPendingDeposits(pubkey []byte) ([]*generic.PendingDeposit, error) {
+	return nil, errors.New("GetPendingDeposits is not implemented for the Electra beacon state")
+}
+
+// PendingDepositProof is not implemented for the Electra fork. Pending-deposit
+// proofs are only meaningful on Fulu and later states.
+func (state *BeaconState) PendingDepositProof(pubkey []byte) ([][]byte, uint64, *generic.PendingDeposit, error) {
+	return nil, 0, nil, errors.New("PendingDepositProof is not implemented for the Electra beacon state")
+}	

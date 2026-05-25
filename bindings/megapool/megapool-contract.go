@@ -51,6 +51,23 @@ type FinalBalanceProof struct {
 	WithdrawalAddress common.Address
 }
 
+// PendingDepositProof is a Merkle proof that a deposit for a given validator
+// pubkey is currently sitting in the beacon state's pending_deposits queue.
+// It is used to dissolve a megapool validator before its first deposit has
+// been processed on the beacon chain (and therefore before a ProvedValidator
+// can be built for it).
+//
+// ValidatorIndex is the index of the entry within the state's pending_deposits
+// list (not a beacon-chain validator index).
+type PendingDepositProof struct {
+	Slot                  uint64
+	ValidatorIndex        uint64
+	Pubkey                rptypes.ValidatorPubkey
+	WithdrawalCredentials common.Hash
+	Amount                *big.Int
+	Witnesses             [][32]byte
+}
+
 type Withdrawal struct {
 	Index                 uint64   `json:"index"`
 	ValidatorIndex        uint64   `json:"validatorIndex"`

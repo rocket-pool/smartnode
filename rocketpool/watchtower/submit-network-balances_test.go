@@ -20,6 +20,7 @@ import (
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/utils"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 // ============================================================
@@ -537,6 +538,9 @@ func (s *stubBeaconClient) GetBeaconStateSSZ(slot uint64) (*beacon.BeaconStateSS
 }
 func (s *stubBeaconClient) GetBeaconBlockSSZ(slot uint64) (*beacon.BeaconBlockSSZ, bool, error) {
 	return nil, false, nil
+}
+func (s *stubBeaconClient) GetPendingDeposits() ([]*generic.PendingDeposit, error) {
+	return nil, nil
 }
 
 type stubExecutionClient struct {

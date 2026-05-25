@@ -14,6 +14,13 @@ const BeaconStateHistoricalSummariesMaxLength uint64 = 1 << 24
 const BeaconStateBlockRootsMaxLength uint64 = 1 << 13
 const BeaconStateBlockRootsFieldIndex uint64 = 5
 
+// PendingDeposits was introduced in Electra (EIP-7251). It is the 35th field
+// (zero-indexed 34) of the BeaconState container in both the Electra and Fulu
+// forks. Its merkleization limit comes from the `ssz-max:"134217728"` tag, i.e.
+// 1 << 27.
+const BeaconStatePendingDepositsFieldIndex uint64 = 34
+const BeaconStatePendingDepositsMaxLength uint64 = 1 << 27
+
 type PendingDeposit struct {
 	Pubkey                []byte `json:"pubkey" ssz-size:"48"`
 	WithdrawalCredentials []byte `json:"withdrawal_credentials" ssz-size:"32"`

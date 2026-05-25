@@ -54,6 +54,48 @@ type WithdrawalProofResponse struct {
 	Witnesses      []common.Hash `json:"witnesses"`
 }
 
+// GetPendingDepositProof builds a Merkle proof that a deposit for the given
+// validator pubkey is sitting in the beacon state's pending_deposits queue.
+// The returned proof verifies the deposit's hash tree root all the way up to
+// the latest BeaconBlockHeader root, matching the pattern used by
+// GetValidatorProof.
+//
+// If beaconState is nil the latest finalized state is fetched. Pending-deposit
+// proofs are only meaningful on Fulu (and later) states; calling this against
+// an older state will surface an error from the underlying BeaconState
+// implementation.
+//
+// If more than one pending deposit is queued for the same pubkey, the proof is
+// generated for the first (oldest) one, which is the next one the beacon chain
+// will process.
+func GetPendingDepositProof(c *cli.Command, validatorPubkey types.ValidatorPubkey, beaconState eth2.BeaconState) (megapool.PendingDepositProof, error) {
+
+	if beaconState == nil {
+		bc, err := GetBeaconClient(c)
+		if err != nil {
+			return megapool.PendingDepositProof{}, err
+		}
+		beaconState, err = GetBeaconState(bc)
+		if err != nil {
+			return megapool.PendingDepositProof{}, err
+		}
+	}
+
+	witnesses, depositIndex, deposit, err := beaconState.PendingDepositProof(validatorPubkey[:])
+	if err != nil {
+		return megapool.PendingDepositProof{}, fmt.Errorf("could not build pending deposit proof for pubkey 0x%s: %w", validatorPubkey.Hex(), err)
+	}
+
+	return megapool.PendingDepositProof{
+		Slot:                  beaconState.GetSlot(),
+		ValidatorIndex:        depositIndex,
+		Pubkey:                validatorPubkey,
+		WithdrawalCredentials: common.BytesToHash(deposit.WithdrawalCredentials),
+		Amount:                new(big.Int).SetUint64(deposit.Amount),
+		Witnesses:             ConvertToFixedSize(witnesses),
+	}, nil
+}
+
 func GetValidatorProof(c *cli.Command, slot uint64, wallet wallet.Wallet, eth2Config beacon.Eth2Config, megapoolAddress common.Address, validatorPubkey types.ValidatorPubkey, beaconState eth2.BeaconState) (megapool.ValidatorProof, uint64, megapool.SlotProof, error) {
 
 	bc, err := GetBeaconClient(c)

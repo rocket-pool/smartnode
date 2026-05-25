@@ -241,6 +241,31 @@ func DissolveWithProof(rp *rocketpool.RocketPool, megapoolAddress common.Address
 	return tx, nil
 }
 
+// Estimate the gas to call DissolveWithPendingDepositProof
+func EstimateDissolveWithPendingDepositProofGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, pendingDepositProof PendingDepositProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return megapoolManager.GetTransactionGasInfo(opts, "dissolveWithPendingDeposit", megapoolAddress, validatorId, slotTimestamp, pendingDepositProof)
+}
+
+// Dissolve a megapool validator whose first deposit is still sitting in the
+// beacon state's pending_deposits queue, using a Merkle proof of that pending
+// deposit. Use this overload when the validator does not yet have a beacon
+// index (and therefore cannot be proved via DissolveWithProof).
+func DissolveWithPendingDepositProof(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorId uint32, slotTimestamp uint64, pendingDepositProof PendingDepositProof, opts *bind.TransactOpts) (*types.Transaction, error) {
+	megapoolManager, err := getRocketMegapoolManager(rp, nil)
+	if err != nil {
+		return nil, err
+	}
+	tx, err := megapoolManager.Transact(opts, "dissolveWithPendingDeposit", megapoolAddress, validatorId, slotTimestamp, pendingDepositProof)
+	if err != nil {
+		return nil, fmt.Errorf("error calling dissolveWithPendingDeposit on megapool %s: %w", megapoolAddress, err)
+	}
+	return tx, nil
+}
+
 // Get contracts
 var rocketMegapoolManagerLock sync.Mutex
 

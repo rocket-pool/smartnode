@@ -9,6 +9,7 @@ import (
 	"github.com/prysmaticlabs/go-bitfield"
 
 	"github.com/rocket-pool/smartnode/bindings/types"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 )
 
 // API request options
@@ -196,4 +197,5 @@ type Client interface {
 
 	GetBeaconStateSSZ(slot uint64) (*BeaconStateSSZ, error)
 	GetBeaconBlockSSZ(slot uint64) (*BeaconBlockSSZ, bool, error)
+	GetPendingDeposits() ([]*generic.PendingDeposit, error)
 }

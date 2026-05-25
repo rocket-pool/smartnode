@@ -14,6 +14,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	cfgtypes "github.com/rocket-pool/smartnode/shared/types/config"
+	"github.com/rocket-pool/smartnode/shared/types/eth2/generic"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -139,6 +140,17 @@ func (m *BeaconClientManager) GetEth2DepositContract() (beacon.Eth2DepositContra
 		return beacon.Eth2DepositContract{}, err
 	}
 	return result.(beacon.Eth2DepositContract), nil
+}
+
+// Get the pending deposits for a slot
+func (m *BeaconClientManager) GetPendingDeposits() ([]*generic.PendingDeposit, error) {
+	result, err := m.runFunction1(func(client beacon.Client) (interface{}, error) {
+		return client.GetPendingDeposits()
+	})
+	if err != nil {
+		return nil, err
+	}
+	return result.([]*generic.PendingDeposit), nil
 }
 
 // Get the attestations in a Beacon chain block

@@ -28,6 +28,8 @@ type BeaconState interface {
 	BlockRootProof(slot uint64) ([][]byte, error)
 	BlockHeaderProof() ([][]byte, error)
 	GetValidators() []*generic.Validator
+	GetPendingDeposits(pubkey []byte) ([]*generic.PendingDeposit, error)
+	PendingDepositProof(pubkey []byte) (witnesses [][]byte, depositIndex uint64, deposit *generic.PendingDeposit, err error)
 }
 
 type SignedBeaconBlock interface {

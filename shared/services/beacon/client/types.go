@@ -80,6 +80,17 @@ type ForkResponse struct {
 		Epoch           uinteger  `json:"epoch"`
 	} `json:"data"`
 }
+
+type PendingDepositsResponse struct {
+	Data []PendingDeposit `json:"data"`
+}
+type PendingDeposit struct {
+	Pubkey                byteArray `json:"pubkey"`
+	WithdrawalCredentials byteArray `json:"withdrawal_credentials"`
+	Amount                uinteger  `json:"amount"`
+	Signature             byteArray `json:"signature"`
+	Slot                  uinteger  `json:"slot"`
+}
 type AttestationsResponse struct {
 	Data []Attestation `json:"data"`
 }
