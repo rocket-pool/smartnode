@@ -3,6 +3,7 @@ package watchtower
 import (
 	"bytes"
 	"context"
+	"encoding/binary"
 	"fmt"
 	"math/big"
 	"strings"
@@ -235,6 +236,46 @@ const (
 
 	twapNumberOfSeconds uint32 = 60 * 60 * 12 // 12 hours
 )
+
+// getIndexToSubmit deterministically selects the ODAO member index whose turn
+// it is to submit during the turn that contains the given block number.
+// The shuffle is derived from a keccak256-seeded permutation for the same
+func getIndexToSubmit(blockNumber, count uint64) uint64 {
+	if count <= 1 {
+		return 0
+	}
+
+	turn := blockNumber / BlocksPerTurn
+	epoch := turn / count
+	position := turn % count
+
+	// Seed the shuffle with keccak256(epoch || count) so that adding or
+	// removing an ODAO member rerolls the order rather than producing a
+	// permutation that happens to overlap with a previous one.
+	var seed [16]byte
+	binary.BigEndian.PutUint64(seed[0:8], epoch)
+	binary.BigEndian.PutUint64(seed[8:16], count)
+	digest := crypto.Keccak256(seed[:])
+
+	perm := make([]uint64, count)
+	for i := range perm {
+		perm[i] = uint64(i)
+	}
+
+	offset := 0
+	for i := count - 1; i > 0; i-- {
+		if offset+8 > len(digest) {
+			digest = crypto.Keccak256(digest)
+			offset = 0
+		}
+		r := binary.BigEndian.Uint64(digest[offset : offset+8])
+		offset += 8
+		j := r % (i + 1)
+		perm[i], perm[j] = perm[j], perm[i]
+	}
+
+	return perm[position]
+}
 
 type poolObserveResponse struct {
 	TickCumulatives                    []*big.Int `abi:"tickCumulatives"`
@@ -739,7 +780,7 @@ func (t *submitRplPrice) submitOptimismPrice() error {
 	}
 
 	// Calculate whose turn it is to submit
-	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+	indexToSubmit := getIndexToSubmit(blockNumber, count)
 
 	if index == indexToSubmit {
 
@@ -860,7 +901,7 @@ func (t *submitRplPrice) submitPolygonPrice() error {
 	}
 
 	// Calculate whose turn it is to submit
-	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+	indexToSubmit := getIndexToSubmit(blockNumber, count)
 
 	if index == indexToSubmit {
 
@@ -979,7 +1020,7 @@ func (t *submitRplPrice) submitArbitrumPrice(priceMessengerAddress string) error
 	}
 
 	// Calculate whose turn it is to submit
-	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+	indexToSubmit := getIndexToSubmit(blockNumber, count)
 
 	if index == indexToSubmit {
 
@@ -1125,7 +1166,7 @@ func (t *submitRplPrice) submitZkSyncEraPrice() error {
 	}
 
 	// Calculate whose turn it is to submit
-	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+	indexToSubmit := getIndexToSubmit(blockNumber, count)
 
 	if index == indexToSubmit {
 
@@ -1264,7 +1305,7 @@ func (t *submitRplPrice) submitBasePrice() error {
 	}
 
 	// Calculate whose turn it is to submit
-	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+	indexToSubmit := getIndexToSubmit(blockNumber, count)
 
 	if index == indexToSubmit {
 
@@ -1385,7 +1426,7 @@ func (t *submitRplPrice) submitScrollPrice() error {
 	}
 
 	// Calculate whose turn it is to submit
-	indexToSubmit := (blockNumber / BlocksPerTurn) % count
+	indexToSubmit := getIndexToSubmit(blockNumber, count)
 
 	if index == indexToSubmit {
 		l2GasEstimatorAddress := t.cfg.Smartnode.GetScrollFeeEstimatorAddress()
