@@ -131,7 +131,7 @@ func main() {
 			&cli.BoolFlag{
 				Name:    "skip-signature-verification",
 				Aliases: []string{"s"},
-				Usage:   "Don't verify the singature of the release",
+				Usage:   "Don't verify the signature of the release",
 			},
 		},
 		Action: func(ctx context.Context, c *cli.Command) error {
