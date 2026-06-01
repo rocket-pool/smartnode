@@ -70,7 +70,8 @@ func getSyncProgress() error {
 		color.YellowPrintln("To run this safety check, try again later when the execution client has made more sync progress.")
 		fmt.Println()
 		return nil
-	} else if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
+	}
+	if depositContractInfo.RPNetwork != depositContractInfo.BeaconNetwork ||
 		depositContractInfo.RPDepositContract != depositContractInfo.BeaconDepositContract {
 		cliutils.PrintDepositMismatchError(
 			depositContractInfo.RPNetwork,
@@ -78,10 +79,9 @@ func getSyncProgress() error {
 			depositContractInfo.RPDepositContract,
 			depositContractInfo.BeaconDepositContract)
 		return nil
-	} else {
-		fmt.Println("Your consensus client is on the correct network.")
-		fmt.Println()
 	}
+	fmt.Println("Your consensus client is on the correct network.")
+	fmt.Println()
 
 	// Get node status
 	status, err := rp.NodeSync()
