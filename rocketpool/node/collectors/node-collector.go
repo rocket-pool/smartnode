@@ -650,26 +650,37 @@ func (collector *NodeCollector) Collect(channel chan<- prometheus.Metric) {
 		megapoolPendingRewardsPDAO = eth.WeiToEth(mpPendingRewards.ProtocolDAORewards)
 		megapoolPendingRewardsReth = eth.WeiToEth(mpPendingRewards.RethRewards)
 
-		// Iterate over the megapool pubkeys
+		currentEpoch := state.BeaconConfig.SlotToEpoch(state.BeaconSlotNumber)
+		totalEffectiveBeaconBalance := big.NewInt(0)
 		for _, pubkey := range megapoolPubkeys {
+			info, infoExists := state.MegapoolValidatorInfo[pubkey]
+			if !infoExists {
+				continue
+			}
+			if !info.ValidatorInfo.Staked || info.ValidatorInfo.Exited || info.ValidatorInfo.Exiting {
+				continue
+			}
 			validator, exists := state.MegapoolValidatorDetails[pubkey]
 			if !exists {
 				continue
 			}
-			if validator.Balance > uint64(0) {
-				megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(validator.Balance)))
+			// Skip validators that haven't activated yet
+			if currentEpoch <= validator.ActivationEpoch {
+				continue
 			}
+			megapoolBeaconBalanceTotal.Add(megapoolBeaconBalanceTotal, eth.GweiToWei(float64(validator.Balance)))
+			totalEffectiveBeaconBalance.Add(totalEffectiveBeaconBalance, eth.GweiToWei(float64(validator.EffectiveBalance)))
 		}
 
 		megapoolBeaconBalance = eth.WeiToEth(megapoolBeaconBalanceTotal)
-		// rewards = beacon balance total - node bond - user capital
-		rewardsBeaconBalance := big.NewInt(0).Sub(megapoolBeaconBalanceTotal, megapoolDetails.NodeBond)
-		rewardsBeaconBalance = big.NewInt(0).Sub(rewardsBeaconBalance, megapoolDetails.UserCapital)
-		rewardsSplit, err := mp.CalculateRewards(rewardsBeaconBalance, nil)
-		if err != nil {
-			return fmt.Errorf("Error calculating megapool rewards: %w", err)
+		if megapoolBeaconBalanceTotal.Cmp(totalEffectiveBeaconBalance) > 0 {
+			toBeSkimmed := big.NewInt(0).Sub(megapoolBeaconBalanceTotal, totalEffectiveBeaconBalance)
+			rewardsSplit, err := mp.CalculateRewards(toBeSkimmed, nil)
+			if err != nil {
+				return fmt.Errorf("Error calculating megapool rewards: %w", err)
+			}
+			nodeShareofBeaconBalance = eth.WeiToEth(big.NewInt(0).Add(rewardsSplit.NodeRewards, megapoolDetails.NodeBond))
 		}
-		nodeShareofBeaconBalance = eth.WeiToEth(rewardsSplit.NodeRewards.Add(rewardsSplit.NodeRewards, megapoolDetails.NodeBond))
 
 		return nil
 	})
