@@ -19,7 +19,7 @@ type ProposalManager struct {
 	viSnapshotMgr  *VotingInfoSnapshotManager
 	networkTreeMgr *NetworkTreeManager
 	nodeTreeMgr    *NodeTreeManager
-	stateMgr       *state.NetworkStateManager
+	stateMgr       state.NetworkStateProvider
 
 	log       *log.ColorLogger
 	logPrefix string

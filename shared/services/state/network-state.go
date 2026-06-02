@@ -89,7 +89,7 @@ type NetworkState struct {
 	// Map megapool addresses to the pubkeys of its validators
 	MegapoolToPubkeysMap map[common.Address][]types.ValidatorPubkey `json:"-"`
 
-	MegapoolDetails map[common.Address]rpstate.NativeMegapoolDetails `json:"-"`
+	MegapoolDetails map[common.Address]rpstate.NativeMegapoolDetails `json:"megapool_details"`
 
 	// These next two fields are indexes over MinipoolDetails and are ignored when marshaling to JSON
 	// they are rebuilt when unmarshaling from JSON.
@@ -162,6 +162,20 @@ func (s *NetworkState) UnmarshalJSON(data []byte) error {
 		}
 		// See comments in other loops
 		s.MinipoolDetailsByNode[details.NodeAddress] = append(nodeList, currentDetails)
+	}
+
+	// Rebuild MegapoolToPubkeysMap and MegapoolValidatorInfo from MegapoolValidatorGlobalIndex
+	s.MegapoolToPubkeysMap = make(map[common.Address][]types.ValidatorPubkey)
+	s.MegapoolValidatorInfo = make(map[types.ValidatorPubkey]*megapool.ValidatorInfoFromGlobalIndex)
+	for i := range s.MegapoolValidatorGlobalIndex {
+		validator := &s.MegapoolValidatorGlobalIndex[i]
+		if len(validator.Pubkey) > 0 {
+			pubkey := types.ValidatorPubkey(validator.Pubkey)
+			s.MegapoolToPubkeysMap[validator.MegapoolAddress] = append(
+				s.MegapoolToPubkeysMap[validator.MegapoolAddress], pubkey,
+			)
+			s.MegapoolValidatorInfo[pubkey] = validator
+		}
 	}
 
 	return nil

@@ -74,6 +74,10 @@ func main() {
 			Name:  "use-protected-api",
 			Usage: "Set this to true to use the Flashbots Protect RPC instead of your local Execution Client. Useful to ensure your transactions aren't front-run.",
 		},
+		&cli.StringFlag{
+			Name:  "network-state",
+			Usage: "Absolute path to a saved NetworkState JSON (optionally gzipped) snapshot. When set, the daemon answers requests from the snapshot instead of dialling the execution / consensus clients. Intended for offline inspection and tests.",
+		},
 	}
 
 	// Register commands
