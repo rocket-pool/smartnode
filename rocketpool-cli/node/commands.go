@@ -365,8 +365,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					// Validate flags
 					amount := c.String("amount")
 					if amount != "" {
-						if strings.HasSuffix(amount, "%") {
-							trimmedAmount := strings.TrimSuffix(amount, "%")
+						if trimmedAmount, ok := strings.CutSuffix(amount, "%"); ok {
 							stakePercent, err := strconv.ParseFloat(trimmedAmount, 64)
 							if err != nil || stakePercent <= 0 {
 								return fmt.Errorf("invalid percentage value: %s", amount)
