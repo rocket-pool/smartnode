@@ -71,6 +71,7 @@ func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogge
 	beaconCollector := collectors.NewBeaconCollector(rp, bc, ec, nodeAccount.Address, stateLocker)
 	smoothingPoolCollector := collectors.NewSmoothingPoolCollector(rp, ec, stateLocker)
 	governanceCollector := collectors.NewGovernanceCollector(rp)
+	versionUpdateCollector := collectors.NewVersionUpdateCollector(logger.Printlnf)
 
 	// Set up Prometheus
 	registry := prometheus.NewRegistry()
@@ -84,6 +85,7 @@ func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogge
 	registry.MustRegister(beaconCollector)
 	registry.MustRegister(smoothingPoolCollector)
 	registry.MustRegister(governanceCollector)
+	registry.MustRegister(versionUpdateCollector)
 
 	// Set up snapshot checking if enabled
 	if cfg.Smartnode.GetRocketSignerRegistryAddress() != "" {
