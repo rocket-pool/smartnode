@@ -240,13 +240,16 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 	}
 	count := len(addresses)
 	minimumStakes := make([]*big.Int, count)
-	// Initialize the effective stakes to 0
 	for i := range minimumStakes {
 		minimumStakes[i] = big.NewInt(0)
 	}
-	effectiveStakes := make([]*big.Int, count)
-	for i := range effectiveStakes {
-		effectiveStakes[i] = big.NewInt(0)
+	legacyStakes := make([]*big.Int, count)
+	for i := range legacyStakes {
+		legacyStakes[i] = big.NewInt(0)
+	}
+	megapoolStakes := make([]*big.Int, count)
+	for i := range megapoolStakes {
+		megapoolStakes[i] = big.NewInt(0)
 	}
 	// Sync
 	var wg errgroup.Group
@@ -267,11 +270,15 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 				address := addresses[j]
 				err = mc.AddCall(contracts.RocketNodeStaking, &minimumStakes[j], "getNodeMinimumLegacyRPLStake", address)
 				if err != nil {
-					return fmt.Errorf("error adding node minimum RPL stake call for address %s: %w", address.Hex(), err)
+					return fmt.Errorf("error adding node minimum legacy RPL stake call for address %s: %w", address.Hex(), err)
 				}
-				err = mc.AddCall(contracts.RocketNodeStaking, &effectiveStakes[j], "getNodeEffectiveRPLStake", address)
+				err = mc.AddCall(contracts.RocketNodeStaking, &legacyStakes[j], "getNodeLegacyStakedRPL", address)
 				if err != nil {
-					return fmt.Errorf("error adding node effective RPL stake call for address %s: %w", address.Hex(), err)
+					return fmt.Errorf("error adding node legacy RPL stake call for address %s: %w", address.Hex(), err)
+				}
+				err = mc.AddCall(contracts.RocketNodeStaking, &megapoolStakes[j], "getNodeMegapoolStakedRPL", address)
+				if err != nil {
+					return fmt.Errorf("error adding node megapool RPL stake call for address %s: %w", address.Hex(), err)
 				}
 			}
 			_, err = mc.FlexibleCall(true, opts)
@@ -287,12 +294,12 @@ func GetTotalEffectiveRplStake(rp *rocketpool.RocketPool, contracts *NetworkCont
 	}
 
 	totalEffectiveStake := big.NewInt(0)
-	for i, effectiveStake := range effectiveStakes {
+	for i, legacyStake := range legacyStakes {
 		minimumStake := minimumStakes[i]
-		// Fix the effective stake
-		if effectiveStake.Cmp(minimumStake) >= 0 {
-			totalEffectiveStake.Add(totalEffectiveStake, effectiveStake)
+		if legacyStake.Cmp(minimumStake) >= 0 {
+			totalEffectiveStake.Add(totalEffectiveStake, legacyStake)
 		}
+		totalEffectiveStake.Add(totalEffectiveStake, megapoolStakes[i])
 	}
 
 	return totalEffectiveStake, nil
