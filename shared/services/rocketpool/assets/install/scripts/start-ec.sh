@@ -296,13 +296,16 @@ if [ "$CLIENT" = "besu" ]; then
             --host-allowlist=* \
             --rpc-http-max-active-connections=1024 \
             --nat-method=docker \
-            --p2p-host=$EXTERNAL_IP \
             --engine-rpc-enabled \
             --engine-rpc-port=${EC_ENGINE_PORT:-8551} \
             --engine-host-allowlist=* \
             --engine-jwt-secret=/secrets/jwtsecret \
             --Xbonsai-full-flat-db-enabled=true \
             $EC_ADDITIONAL_FLAGS"
+
+        if [ ! -z "$EXTERNAL_IP" ]; then
+            CMD="$CMD --p2p-host=$EXTERNAL_IP"
+        fi
 
         if [ ! -z "$EC_SUGGESTED_BLOCK_GAS_LIMIT" ]; then
             CMD="$CMD --target-gas-limit=$EC_SUGGESTED_BLOCK_GAS_LIMIT"
