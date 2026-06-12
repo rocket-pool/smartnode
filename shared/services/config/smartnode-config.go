@@ -220,6 +220,9 @@ type SmartnodeConfig struct {
 
 	// The FlashBots Protect RPC endpoint
 	flashbotsProtectUrl map[config.Network]string `yaml:"-"`
+
+	// The Flashbots relay URL for eth_sendBundle / bundle operations (distinct from Protect RPC)
+	flashbotsRelayUrl map[config.Network]string `yaml:"-"`
 }
 
 // Generates a newSmart Node configuration
@@ -635,6 +638,10 @@ func NewSmartnodeConfig(cfg *RocketPoolConfig) *SmartnodeConfig {
 			config.Network_Devnet:  "https://rpc-hoodi.flashbots.net/",
 			config.Network_Testnet: "https://rpc-hoodi.flashbots.net/",
 		},
+
+		flashbotsRelayUrl: map[config.Network]string{
+			config.Network_Mainnet: "https://relay.flashbots.net",
+		},
 	}
 
 }
@@ -991,6 +998,10 @@ func (cfg *SmartnodeConfig) GetStateManagerContracts() StateManagerContracts {
 
 func (cfg *SmartnodeConfig) GetFlashbotsProtectUrl() string {
 	return cfg.flashbotsProtectUrl[cfg.Network.Value.(config.Network)]
+}
+
+func (cfg *SmartnodeConfig) GetFlashbotsRelayUrl() string {
+	return cfg.flashbotsRelayUrl[cfg.Network.Value.(config.Network)]
 }
 
 func getNetworkOptions() []config.ParameterOption {

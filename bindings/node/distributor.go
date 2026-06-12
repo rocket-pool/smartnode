@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
@@ -60,6 +61,20 @@ func (d *Distributor) Distribute(opts *bind.TransactOpts) (common.Hash, error) {
 		return common.Hash{}, fmt.Errorf("error distributing fee distributor balance: %w", err)
 	}
 	return tx.Hash(), nil
+}
+
+// PrepareDistribute is like Distribute but forces NoSend and returns the signed transaction
+// (instead of sending it). Useful for assembling Flashbots bundles.
+func (d *Distributor) PrepareDistribute(opts *bind.TransactOpts) (*types.Transaction, error) {
+	if opts == nil {
+		opts = &bind.TransactOpts{}
+	}
+	opts.NoSend = true
+	tx, err := d.Contract.Transact(opts, "distribute")
+	if err != nil {
+		return nil, fmt.Errorf("error preparing distribute tx for distributor %s: %w", d.Address.Hex(), err)
+	}
+	return tx, nil
 }
 
 // Gets the node share of the distributor's current balance

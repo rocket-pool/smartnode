@@ -7,6 +7,7 @@ import (
 
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/urfave/cli/v3"
 	"golang.org/x/sync/errgroup"
 
@@ -18,8 +19,12 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/services"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/flashbots"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+// Gas can't be estimated against current chain state (the fee distributor's distribute() in the bundle hasn't executed yet)
+const distributeBalanceBundleGasLimit uint64 = 600000
 
 func getMinipoolCloseDetailsForNode(c *cli.Command) (*api.GetMinipoolCloseDetailsForNodeResponse, error) {
 
@@ -307,7 +312,7 @@ func getMinipoolCloseDetails(rp *rocketpool.RocketPool, minipoolAddress common.A
 
 }
 
-func closeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts) (*api.CloseMinipoolResponse, error) {
+func closeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.TransactOpts, bundle bool) (*api.CloseMinipoolResponse, error) {
 
 	// Get services
 	if err := services.RequireNodeRegistered(c); err != nil {
@@ -373,12 +378,91 @@ func closeMinipool(c *cli.Command, minipoolAddress common.Address, opts *bind.Tr
 		}
 		response.TxHash = hash
 	} else {
-		// Do a distribution, which will finalize it
-		hash, err := mpv3.DistributeBalance(false, opts)
+		cfg, err := services.GetConfig(c)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error getting config: %w", err)
 		}
-		response.TxHash = hash
+
+		ec, err := services.GetEthClient(c)
+		if err != nil {
+			return nil, fmt.Errorf("error getting eth client: %w", err)
+		}
+
+		relayUrl := cfg.Smartnode.GetFlashbotsRelayUrl()
+		useBundle := bundle
+		if useBundle && relayUrl == "" {
+			return nil, fmt.Errorf("a bundle was requested but Flashbots bundles are only supported on mainnet; there is no relay for this network")
+		}
+
+		var distributorAddress common.Address
+		if relayUrl != "" {
+			w, err := services.GetWallet(c)
+			if err != nil {
+				return nil, err
+			}
+			nodeAccount, err := w.GetNodeAccount()
+			if err != nil {
+				return nil, err
+			}
+			distributorAddress, err = node.GetDistributorAddress(rp, nodeAccount.Address, nil)
+			if err != nil {
+				return nil, fmt.Errorf("error getting fee distributor address: %w", err)
+			}
+
+			if !useBundle {
+				distributorBalance, err := ec.BalanceAt(context.Background(), distributorAddress, nil)
+				if err != nil {
+					return nil, fmt.Errorf("error getting fee distributor balance: %w", err)
+				}
+				useBundle = distributorBalance.Cmp(big.NewInt(1)) == 0
+			}
+		}
+
+		if !useBundle {
+			// Do a plain distribution, which will finalize it
+			hash, err := mpv3.DistributeBalance(false, opts)
+			if err != nil {
+				return nil, err
+			}
+			response.TxHash = hash
+			return &response, nil
+		}
+
+		// Empty the fee distributor and distribute the minipool balance (which also finalizes
+		// it) atomically in the same block via a Flashbots bundle.
+		distributor, err := node.NewDistributor(rp, distributorAddress, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error creating fee distributor binding: %w", err)
+		}
+
+		// First tx: fee distributor distribute()
+		distributorTx, err := distributor.PrepareDistribute(opts)
+		if err != nil {
+			return nil, fmt.Errorf("error preparing fee distributor distribute tx for bundle: %w", err)
+		}
+
+		// Second tx: minipool distributeBalance(), with bumped nonce and a fixed gas limit
+		opts.Nonce = new(big.Int).SetUint64(distributorTx.Nonce() + 1)
+		opts.GasLimit = distributeBalanceBundleGasLimit
+
+		distBalTx, err := mpv3.PrepareDistributeBalance(false, opts)
+		if err != nil {
+			return nil, fmt.Errorf("error preparing distribute balance tx for bundle on minipool %s: %w", minipoolAddress.Hex(), err)
+		}
+
+		// Send the 2-tx bundle (distribute then distributeBalance)
+		timeoutCtx, cancel := context.WithTimeout(context.Background(), flashbots.DefaultSubmissionTimeout)
+		success, err := flashbots.SubmitBundleAndWait(timeoutCtx, nil, ec, relayUrl, []*gethtypes.Transaction{distributorTx, distBalTx}, flashbots.DefaultBundleBlockCount)
+		cancel()
+		if err != nil {
+			return nil, fmt.Errorf("error sending bundle for distribute+distributeBalance: %w", err)
+		}
+		if !success {
+			return nil, fmt.Errorf("bundle for minipool %s distribute+distributeBalance was not included. Bundles usually require a higher priority fee to get included", minipoolAddress.Hex())
+		}
+
+		// Report the distributeBalance tx hash (the last tx in the bundle).
+		response.TxHash = distBalTx.Hash()
 	}
 
 	// Return response

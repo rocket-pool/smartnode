@@ -33,6 +33,7 @@ type MinipoolV3 interface {
 	GetUserDistributed(opts *bind.CallOpts) (bool, error)
 	EstimateDistributeBalanceGas(rewardsOnly bool, opts *bind.TransactOpts) (rocketpool.GasInfo, error)
 	DistributeBalance(rewardsOnly bool, opts *bind.TransactOpts) (common.Hash, error)
+	PrepareDistributeBalance(rewardsOnly bool, opts *bind.TransactOpts) (*types.Transaction, error)
 }
 
 // Minipool contract
@@ -386,6 +387,20 @@ func (mp *minipool_v3) DistributeBalance(rewardsOnly bool, opts *bind.TransactOp
 		return common.Hash{}, fmt.Errorf("error processing withdrawal for minipool %s: %w", mp.Address.Hex(), err)
 	}
 	return tx.Hash(), nil
+}
+
+// PrepareDistributeBalance is like DistributeBalance but forces NoSend and returns the signed transaction
+// (instead of sending it). Useful for assembling Flashbots bundles.
+func (mp *minipool_v3) PrepareDistributeBalance(rewardsOnly bool, opts *bind.TransactOpts) (*types.Transaction, error) {
+	if opts == nil {
+		opts = &bind.TransactOpts{}
+	}
+	opts.NoSend = true
+	tx, err := mp.Contract.Transact(opts, "distributeBalance", rewardsOnly)
+	if err != nil {
+		return nil, fmt.Errorf("error preparing distribute tx for minipool %s: %w", mp.Address.Hex(), err)
+	}
+	return tx, nil
 }
 
 // Estimate the gas of Stake

@@ -155,7 +155,8 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := closeMinipool(c, addr, opts)
+		bundle := r.FormValue("bundle") == "true"
+		resp, err := closeMinipool(c, addr, opts, bundle)
 		apiutils.WriteResponse(w, resp, err)
 	})
 

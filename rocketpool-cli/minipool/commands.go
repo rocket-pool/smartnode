@@ -265,6 +265,11 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Name:  "confirm-slashing",
 						Usage: "Reserved for acknowledging situations where you've been slashed by the Beacon Chain, and closing a minipool will result in the complete loss of the ETH bond and your RPL collateral. DO NOT use this flag unless you have been explicitly instructed to do so.",
 					},
+					&cli.BoolFlag{
+						Name:    "bundle",
+						Aliases: []string{"b"},
+						Usage:   "Force closing via a Flashbots bundle (distribute + finalise). Without this flag, a bundle is still used automatically if your fee distributor has a balance. Mainnet only.",
+					},
 				},
 				Action: func(ctx context.Context, c *cli.Command) error {
 
@@ -281,7 +286,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					return closeMinipools(c.String("minipool"), c.Bool("confirm-slashing"), c.Bool("yes"))
+					return closeMinipools(c.String("minipool"), c.Bool("confirm-slashing"), c.Bool("yes"), c.Bool("bundle"))
 
 				},
 			},
