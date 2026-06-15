@@ -203,8 +203,11 @@ func (c *Client) GetMinipoolCloseDetailsForNode() (api.GetMinipoolCloseDetailsFo
 }
 
 // Close a minipool
-func (c *Client) CloseMinipool(address common.Address) (api.CloseMinipoolResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/close", url.Values{"address": {address.Hex()}})
+func (c *Client) CloseMinipool(address common.Address, bundle bool) (api.CloseMinipoolResponse, error) {
+	responseBytes, err := c.callHTTPAPI("POST", "/api/minipool/close", url.Values{
+		"address": {address.Hex()},
+		"bundle":  {strconv.FormatBool(bundle)},
+	})
 	if err != nil {
 		return api.CloseMinipoolResponse{}, fmt.Errorf("Could not close minipool: %w", err)
 	}

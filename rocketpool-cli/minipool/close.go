@@ -21,7 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/math"
 )
 
-func closeMinipools(minipool string, confirmSlashing, yes bool) error {
+func closeMinipools(minipool string, confirmSlashing, yes, bundle bool) error {
 
 	// Get RP client
 	rp, err := rocketpool.NewClient().WithReady()
@@ -272,7 +272,7 @@ func closeMinipools(minipool string, confirmSlashing, yes bool) error {
 	// Close minipools
 	for _, minipool := range selectedMinipools {
 
-		response, err := rp.CloseMinipool(minipool.Address)
+		response, err := rp.CloseMinipool(minipool.Address, bundle)
 		if err != nil {
 			fmt.Printf("Could not close minipool %s: %s.\n", minipool.Address.Hex(), err.Error())
 			continue
