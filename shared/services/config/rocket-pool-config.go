@@ -1545,7 +1545,7 @@ func (cfg *RocketPoolConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
-func (cfg *RocketPoolConfig) ConfirmUpdateSuggestedSettings() {
+func (cfg *RocketPoolConfig) WarnUpdateSuggestedSettings() {
 	gasLimitSettings := map[string]*config.Parameter{
 		"consensus": &cfg.ConsensusCommon.SuggestedBlockGasLimit,
 		"execution": &cfg.ExecutionCommon.SuggestedBlockGasLimit,
@@ -1562,7 +1562,8 @@ func (cfg *RocketPoolConfig) ConfirmUpdateSuggestedSettings() {
 			continue
 		}
 		if blockGasLimit < coreDevsSuggestedGasLimit {
-			fmt.Printf(
+			fmt.Fprintf(
+				os.Stderr,
 				"Warning: Your %s block gas limit setting is currently '%d'. The maintainers suggest changing it to use the updated consensus client value '%d'\n",
 				name,
 				blockGasLimit,
