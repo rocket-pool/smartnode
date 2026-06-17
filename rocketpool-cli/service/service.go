@@ -182,11 +182,7 @@ func serviceStatus(composeFiles []string) error {
 
 }
 
-func configureServicePrecheck() (isNew bool, cfg, oldCfg *config.RocketPoolConfig, err error) {
-
-	// Get RP client
-	rp := rocketpool.NewClient()
-	defer rp.Close()
+func configureServicePrecheck(rp *rocketpool.Client) (isNew bool, cfg, oldCfg *config.RocketPoolConfig, err error) {
 
 	// Load the config, checking to see if it's new (hasn't been installed before)
 	cfg, isNew, err = rp.LoadConfig()
@@ -210,7 +206,7 @@ func configureServicePrecheck() (isNew bool, cfg, oldCfg *config.RocketPoolConfi
 		}
 	}
 
-	cfg.ConfirmUpdateSuggestedSettings()
+	cfg.WarnUpdateSuggestedSettings()
 
 	return isNew, cfg, oldCfg, nil
 }
@@ -223,7 +219,7 @@ func configureServiceHeadless(c *cli.Command) error {
 	rp := rocketpool.NewClient()
 	defer rp.Close()
 
-	_, cfg, _, err := configureServicePrecheck()
+	_, cfg, _, err := configureServicePrecheck(rp)
 	if err != nil {
 		return err
 	}
@@ -246,7 +242,7 @@ func configureServiceHeadless(c *cli.Command) error {
 		}
 	}
 
-	return nil
+	return rp.SaveConfig(cfg)
 }
 
 // Configure the service
@@ -255,7 +251,7 @@ func configureService(configPath string, isNative, yes bool, composeFiles []stri
 	rp := rocketpool.NewClient()
 	defer rp.Close()
 
-	isNew, cfg, oldCfg, err := configureServicePrecheck()
+	isNew, cfg, oldCfg, err := configureServicePrecheck(rp)
 	if err != nil {
 		return err
 	}
@@ -450,6 +446,8 @@ func updateConfigParamFromCliArg(c *cli.Command, sectionName string, param *cfgt
 			if !found {
 				return fmt.Errorf("error setting value for %s: [%s] is not one of the valid options", paramName, selection)
 			}
+		default:
+			return fmt.Errorf("error setting value for %s: unknown type %T", paramName, param.Type)
 		}
 	}
 

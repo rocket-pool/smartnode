@@ -22,7 +22,8 @@ func getComposeFiles(c *cli.Command) []string {
 }
 
 // Creates CLI argument flags from the parameters of the configuration struct
-func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Parameter, configFlags []cli.Flag, network cfgtypes.Network) []cli.Flag {
+func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Parameter, network cfgtypes.Network) []cli.Flag {
+	configFlags := make([]cli.Flag, 0)
 	for _, param := range params {
 		var paramName string
 		if sectionName == "" {
@@ -91,16 +92,15 @@ func createFlagsFromConfigParams(sectionName string, params []*cfgtypes.Paramete
 // Register commands
 func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
-	configFlags := []cli.Flag{}
 	cfgTemplate := config.NewRocketPoolConfig("", false)
 	network := cfgTemplate.Smartnode.Network.Value.(cfgtypes.Network)
 
 	// Root params
-	configFlags = createFlagsFromConfigParams("", cfgTemplate.GetParameters(), configFlags, network)
+	configFlags := createFlagsFromConfigParams("", cfgTemplate.GetParameters(), network)
 
 	// Subconfigs
 	for sectionName, subconfig := range cfgTemplate.GetSubconfigs() {
-		configFlags = createFlagsFromConfigParams(sectionName, subconfig.GetParameters(), configFlags, network)
+		configFlags = append(configFlags, createFlagsFromConfigParams(sectionName, subconfig.GetParameters(), network)...)
 	}
 
 	app.Commands = append(app.Commands, &cli.Command{

@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"math/big"
 	"os"
 
@@ -218,12 +219,32 @@ func main() {
 		return nil
 	}
 
-	// Run application
-	fmt.Println("")
-	if err := app.Run(context.Background(), os.Args); err != nil {
-		cliutils.PrettyPrintError(err)
+	// Disable urfav's built-in usage error handling since it
+	//  1) prints full usage which is extremely verbose
+	//  2) doesn't cause an exit with non-0 code which is annoying
+	//  3) since we have to check for an error anyway to exit non-0, we may as well also print it
+	var usageError bool
+	app.OnUsageError = func(_ context.Context, cmd *cli.Command, err error, _ bool) error {
+		usageError = true
+
+		return err
 	}
 
-	fmt.Println("")
+	// Also disable the ErrWriter, since it is really annoying to get duplicate error messages, and we will print them manually
+	app.ErrWriter = io.Discard
 
+	// Run application and exit if it succeeds
+	err := app.Run(context.Background(), os.Args)
+	if err == nil {
+
+		return
+	}
+
+	// Print the error to stderr
+	fmt.Fprintf(os.Stderr, "%s\n", cliutils.PrettyError(err))
+	// Gently remind the operator how to check usage
+	if usageError {
+		fmt.Printf("Use `%s [subcommand] --help` to check usage.\n", os.Args[0])
+	}
+	os.Exit(1)
 }

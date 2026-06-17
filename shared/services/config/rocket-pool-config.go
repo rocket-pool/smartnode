@@ -22,7 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/config/migration"
 	addontypes "github.com/rocket-pool/smartnode/shared/types/addons"
 	"github.com/rocket-pool/smartnode/shared/types/config"
-	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
 // Constants
@@ -1546,34 +1545,32 @@ func (cfg *RocketPoolConfig) GetConfigTitle() string {
 	return cfg.Title
 }
 
-func (cfg *RocketPoolConfig) ConfirmUpdateSuggestedSettings() {
-
-	// If using the old consensus block gas limit, ask the user if they want to update it
-	if cfg.ConsensusCommon.SuggestedBlockGasLimit.Value != "" {
-		blockGasLimit, err := strconv.Atoi(cfg.ConsensusCommon.SuggestedBlockGasLimit.Value.(string))
-		if err != nil {
-			cfg.ConsensusCommon.SuggestedBlockGasLimit.Value = ""
-		}
-		if blockGasLimit < coreDevsSuggestedGasLimit {
-			if prompt.Confirm("Your consensus block gas limit setting is currently '%d' . The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?", blockGasLimit) {
-				cfg.ConsensusCommon.SuggestedBlockGasLimit.Value = ""
-			}
-		}
+func (cfg *RocketPoolConfig) WarnUpdateSuggestedSettings() {
+	gasLimitSettings := map[string]*config.Parameter{
+		"consensus": &cfg.ConsensusCommon.SuggestedBlockGasLimit,
+		"execution": &cfg.ExecutionCommon.SuggestedBlockGasLimit,
 	}
 
-	// If using the old execution block gas limit, ask the user if they want to update it
-	if cfg.ExecutionCommon.SuggestedBlockGasLimit.Value != "" {
-		blockGasLimit, err := strconv.Atoi(cfg.ExecutionCommon.SuggestedBlockGasLimit.Value.(string))
+	for name, target := range gasLimitSettings {
+		if target.Value == "" {
+			continue
+		}
+
+		blockGasLimit, err := strconv.Atoi(target.Value.(string))
 		if err != nil {
-			cfg.ExecutionCommon.SuggestedBlockGasLimit.Value = ""
+			target.Value = ""
+			continue
 		}
 		if blockGasLimit < coreDevsSuggestedGasLimit {
-			if prompt.Confirm("Your execution block gas limit setting is currently '%d' . The maintainers suggest changing it to use the updated consensus client value. Would you like to update your setting?", blockGasLimit) {
-				cfg.ExecutionCommon.SuggestedBlockGasLimit.Value = ""
-			}
+			fmt.Fprintf(
+				os.Stderr,
+				"Warning: Your %s block gas limit setting is currently '%d'. The maintainers suggest changing it to use the updated consensus client value '%d'\n",
+				name,
+				blockGasLimit,
+				coreDevsSuggestedGasLimit,
+			)
 		}
 	}
-
 }
 
 // Update the default settings for all overwrite-on-upgrade parameters

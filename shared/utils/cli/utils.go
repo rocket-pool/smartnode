@@ -85,36 +85,24 @@ func GetDateTimeString(dateTime uint64) string {
 
 // Gets the hex string of an address, or "none" if it was the 0x0 address
 func GetPrettyAddress(address common.Address) string {
-	addressString := address.Hex()
-	if addressString == "0x0000000000000000000000000000000000000000" {
+	if address.Cmp(common.Address{}) == 0 {
 		return "<none>"
 	}
-	return addressString
-}
-
-// Temporary table for replacing revert messages with more useful versions until we can refactor
-var errorMap = map[string]string{
-	"Could not get can node deposit status: Minipool count after deposit exceeds limit based on node RPL stake": "Cannot create a new minipool: you do not have enough RPL staked to create another minipool.",
+	return address.Hex()
 }
 
 // Prints an error in a prettier format, removing the "stack trace" if it represents
 // a contract revert message
-func PrettyPrintError(err error) {
-	errorMessage := err.Error()
-	prettyErr := errorMessage
-	if strings.Contains(errorMessage, "execution reverted:") {
-		elements := strings.Split(errorMessage, ":")
+func PrettyError(err error) string {
+	prettyErr := err.Error()
+	if strings.Contains(prettyErr, "execution reverted:") {
+		elements := strings.Split(prettyErr, ":")
 		firstMessage := strings.TrimSpace(elements[0])
-		secondMessage := strings.TrimSpace(elements[len(elements)-1])
-		prettyErr = fmt.Sprintf("%s: %s", firstMessage, secondMessage)
-
-		// Look for the message in the above error table and replace if appropriate
-		replacementMessage, exists := errorMap[prettyErr]
-		if exists {
-			prettyErr = replacementMessage
-		}
+		// TODO: Determine if it's safer to join elements[1:]
+		lastMessage := strings.TrimSpace(elements[len(elements)-1])
+		prettyErr = fmt.Sprintf("%s: %s", firstMessage, lastMessage)
 	}
-	fmt.Println(prettyErr)
+	return prettyErr
 }
 
 // Prints an error message when the Beacon client is not using the deposit contract address that Rocket Pool expects
