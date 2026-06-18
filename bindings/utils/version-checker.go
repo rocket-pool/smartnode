@@ -18,6 +18,11 @@ func GetCurrentVersion(rp *rocketpool.RocketPool, opts *bind.CallOpts) (*version
 		return nil, fmt.Errorf("error checking deposit pool version: %w", err)
 	}
 
+	// Check for v1.5 (Saturn 2)
+	if depositPoolVersion > 4 {
+		return version.NewSemver("1.5.0")
+	}
+
 	// Check for v1.4 (Saturn 1)
 	if depositPoolVersion > 3 {
 		return version.NewSemver("1.4.0")
