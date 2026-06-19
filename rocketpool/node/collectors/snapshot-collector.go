@@ -214,13 +214,17 @@ func (collector *SnapshotCollector) Collect(channel chan<- prometheus.Metric) {
 		} else {
 			collector.cachedNodeVotingPower = nodeVotingPower
 		}
-		// Get voting power for the delegate
-		delegateVotingPower, err := getVotingPower(propMgr, uint32(blockNumber), onchainVotingDelegate)
-		if err != nil {
-			collector.logError(fmt.Errorf("error getting delegate voting power: %w", err))
-			collector.cachedDelegateVotingPower = 0
+		if onchainVotingDelegate != blankAddress {
+			// Get voting power for the delegate
+			delegateVotingPower, err := getVotingPower(propMgr, uint32(blockNumber), onchainVotingDelegate)
+			if err != nil {
+				collector.logError(fmt.Errorf("error getting delegate voting power: %w", err))
+				collector.cachedDelegateVotingPower = 0
+			} else {
+				collector.cachedDelegateVotingPower = delegateVotingPower
+			}
 		} else {
-			collector.cachedDelegateVotingPower = delegateVotingPower
+			collector.cachedDelegateVotingPower = 0
 		}
 	}
 
