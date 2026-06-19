@@ -210,22 +210,39 @@ func (layout *standardLayout) mapParameterizedFormItems(params ...*parameterized
 	}
 }
 
-// Sets up a handler to return to the specified homePage when the user presses escape on the layout.
-func (layout *standardLayout) setupEscapeReturnHomeHandler(md *MainDisplay, homePage *page) {
-	layout.grid.SetInputCapture(func(event *tcell.EventKey) *tcell.EventKey {
-		// Return to the home page
+func (layout *standardLayout) getInputCapture(md *MainDisplay, prev *page) func(event *tcell.EventKey) *tcell.EventKey {
+	return func(event *tcell.EventKey) *tcell.EventKey {
 		if event.Key() == tcell.KeyEsc {
 			// Close all dropdowns and break if one was open
+			// Save the current modifications to text parameters
 			for _, param := range layout.parameters {
-				dropDown, ok := param.item.(*DropDown)
-				if ok && dropDown.open {
+				formItem := param.item
+				if !formItem.HasFocus() {
+					continue
+				}
+
+				// Close the dropdown if this field is one and it is open
+				if dropDown, ok := param.item.(*DropDown); ok && dropDown.open {
 					dropDown.CloseList(md.app)
 					return nil
 				}
+
+				// Save the text if this field is one
+				if _, ok := param.item.(*tview.InputField); ok {
+					param.commit()
+					// Exit the loop to return to the home page
+					break
+				}
 			}
-			md.setPage(homePage)
+
+			md.setPage(prev)
 			return nil
 		}
 		return event
-	})
+	}
+}
+
+// Sets up a handler to return to the specified homePage when the user presses escape on the layout.
+func (layout *standardLayout) setupEscapeReturnHomeHandler(md *MainDisplay, homePage *page) {
+	layout.grid.SetInputCapture(layout.getInputCapture(md, homePage))
 }
