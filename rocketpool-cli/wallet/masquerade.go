@@ -9,7 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func masquerade(addressFlag string, yes bool) error {
+func masquerade(addressFlag string, yes bool, observe bool) error {
 	// Get RP client
 	rp := rocketpool.NewClient()
 	defer rp.Close()
@@ -34,12 +34,15 @@ func masquerade(addressFlag string, yes bool) error {
 	}
 
 	// Call API
-	_, err = rp.Masquerade(address)
+	_, err = rp.Masquerade(address, observe)
 	if err != nil {
 		return fmt.Errorf("error running masquerade: %w", err)
 	}
 
 	fmt.Printf("Your node is now masquerading as address %s.\n", color.LightBlue(address.Hex()))
+	if observe {
+		fmt.Println("Restart the daemon for the node and watchtower loops to pick up the masquerade address.")
+	}
 
 	return nil
 }

@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/alerting"
 	"github.com/rocket-pool/smartnode/shared/services/connectivity"
 	"github.com/rocket-pool/smartnode/shared/services/state"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/lighthouse"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/nimbus"
 	"github.com/rocket-pool/smartnode/shared/services/wallet/keystore/prysm"
@@ -148,7 +149,12 @@ func run(c *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	w, err := services.GetHdWallet(c)
+	var w wallet.Wallet
+	if wallet.CheckObserveMode(cfg.Smartnode.GetNodeAddressPath()) {
+		w, err = services.GetWallet(c)
+	} else {
+		w, err = services.GetHdWallet(c)
+	}
 	if err != nil {
 		return err
 	}

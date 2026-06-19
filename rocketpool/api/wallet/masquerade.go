@@ -10,7 +10,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
-func masquerade(c *cli.Command, address common.Address) (*api.MasqueradeResponse, error) {
+func masquerade(c *cli.Command, address common.Address, observe bool) (*api.MasqueradeResponse, error) {
 
 	// Get services
 	w, err := services.GetWallet(c)
@@ -18,9 +18,8 @@ func masquerade(c *cli.Command, address common.Address) (*api.MasqueradeResponse
 		return nil, err
 	}
 
-	err = w.MasqueradeAsAddress(address)
-	if err != nil {
-		return nil, fmt.Errorf("Error masquerading as address %s", address.Hex())
+	if err := w.MasqueradeAsAddress(address, observe); err != nil {
+		return nil, fmt.Errorf("error masquerading as address %s: %w", address.Hex(), err)
 	}
 
 	response := api.MasqueradeResponse{}

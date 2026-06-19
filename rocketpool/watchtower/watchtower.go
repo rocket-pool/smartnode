@@ -21,6 +21,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/utils"
 	"github.com/rocket-pool/smartnode/rocketpool/watchtower/collectors"
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
@@ -120,7 +121,12 @@ func run(c *cli.Command) error {
 	if err != nil {
 		return err
 	}
-	w, err := services.GetHdWallet(c)
+	var w wallet.Wallet
+	if wallet.CheckObserveMode(cfg.Smartnode.GetNodeAddressPath()) {
+		w, err = services.GetWallet(c)
+	} else {
+		w, err = services.GetHdWallet(c)
+	}
 	if err != nil {
 		return err
 	}

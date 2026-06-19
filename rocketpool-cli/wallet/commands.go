@@ -292,6 +292,11 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 						Aliases: []string{"a"},
 						Usage:   "Specify an address you'd like you masquerade as",
 					},
+					&cli.BoolFlag{
+						Name:    "observe",
+						Aliases: []string{"o"},
+						Usage:   "Apply masquerade to the node and watchtower loops (requires daemon restart)",
+					},
 				},
 
 				Action: func(ctx context.Context, c *cli.Command) error {
@@ -303,7 +308,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					}
 
 					// Run
-					return masquerade(c.String("address"), c.Bool("yes"))
+					return masquerade(c.String("address"), c.Bool("yes"), c.Bool("observe"))
 
 				},
 			},

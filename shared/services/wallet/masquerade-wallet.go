@@ -76,8 +76,8 @@ func (w *masqueradeWallet) GetAddress() (common.Address, error) {
 }
 
 // Change the node's effective address to a different one. Node and watchtower tasks will continue to run normally using the loaded wallet.
-func (w *masqueradeWallet) MasqueradeAsAddress(newAddress common.Address) error {
-	return w.am.SetAndSaveAddress(newAddress)
+func (w *masqueradeWallet) MasqueradeAsAddress(newAddress common.Address, observe bool) error {
+	return w.am.SetAndSaveAddress(newAddress, observe)
 }
 
 // End a masquerade, restoring your node's effective address back to your wallet address if one is loaded

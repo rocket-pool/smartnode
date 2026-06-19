@@ -79,7 +79,8 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 
 	mux.HandleFunc("/api/wallet/masquerade", func(w http.ResponseWriter, r *http.Request) {
 		address := common.HexToAddress(r.FormValue("address"))
-		resp, err := masquerade(c, address)
+		observe := r.FormValue("observe") == "true"
+		resp, err := masquerade(c, address, observe)
 		apiutils.WriteResponse(w, resp, err)
 	})
 
