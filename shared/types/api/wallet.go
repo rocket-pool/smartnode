@@ -29,6 +29,7 @@ type WalletStatusResponse struct {
 	// NodeAddress always represents the address drived from the wallet stored on disk
 	NodeAddress    common.Address `json:"nodeAddress"`
 	IsMasquerading bool           `json:"isMasquerading"`
+	IsObserve      bool           `json:"isObserve"`
 }
 
 type SetPasswordResponse struct {

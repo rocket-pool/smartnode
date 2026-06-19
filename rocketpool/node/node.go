@@ -149,8 +149,9 @@ func run(c *cli.Command) error {
 	if err != nil {
 		return err
 	}
+	isObserveMode := wallet.CheckObserveMode(cfg.Smartnode.GetNodeAddressPath())
 	var w wallet.Wallet
-	if wallet.CheckObserveMode(cfg.Smartnode.GetNodeAddressPath()) {
+	if isObserveMode {
 		w, err = services.GetWallet(c)
 	} else {
 		w, err = services.GetHdWallet(c)
@@ -173,6 +174,13 @@ func run(c *cli.Command) error {
 	nodeAccount, err := w.GetNodeAccount()
 	if err != nil {
 		return fmt.Errorf("error getting node account: %w", err)
+	}
+
+	if isObserveMode {
+		red := color.New(color.FgHiRed).SprintFunc()
+		fmt.Println(red("Node daemon is observing address " + nodeAccount.Address.Hex() + "."))
+		fmt.Println(red("Transactions will not be submitted. Fee recipient management targets your real node address."))
+		fmt.Println(red("Run `rocketpool wallet end-masquerade` and restart the node/watchtower daemons when you have finished observing."))
 	}
 
 	// Initialize loggers
