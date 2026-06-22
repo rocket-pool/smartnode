@@ -69,7 +69,8 @@ type ExecutePDAOProposalResponse struct {
 
 type GetPDAOSettingsResponse struct {
 	APIResponse
-	Auction struct {
+	Saturn2Deployed bool `json:"saturn2Deployed"`
+	Auction         struct {
 		IsCreateLotEnabled    bool          `json:"isCreateLotEnabled"`
 		IsBidOnLotEnabled     bool          `json:"isBidOnLotEnabled"`
 		LotMinimumEthValue    *big.Int      `json:"lotMinimumEthValue"`
@@ -179,6 +180,20 @@ type GetPDAOSettingsResponse struct {
 		UserDistributeDelayWithShortfall uint64        `json:"userDistributeDelayWithShortfall"`
 		PenaltyThreshold                 *big.Int      `json:"penaltyThreshold"`
 	} `json:"megapool"`
+
+	Performance struct {
+		ExitsEnabled    bool          `json:"exitsEnabled"`
+		Period          uint64        `json:"period"`
+		Threshold       *big.Int      `json:"threshold"`
+		ChallengePeriod time.Duration `json:"challengePeriod"`
+		ChallengeBond   *big.Int      `json:"challengeBond"`
+	} `json:"performance"`
+
+	Exit struct {
+		CooperativeExitPhase time.Duration `json:"cooperativeExitPhase"`
+		DidNotExitPenalty    *big.Int      `json:"didNotExitPenalty"`
+		DidNotExitCooldown   time.Duration `json:"didNotExitCooldown"`
+	} `json:"exit"`
 }
 
 type CanProposePDAOSettingResponse struct {
