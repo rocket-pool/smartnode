@@ -56,6 +56,7 @@ if [ "$CC_CLIENT" = "lighthouse" ]; then
         --http-port ${VC_KEYMANAGER_API_PORT:-5062} \
         --http-token-path  /validators/token-file.txt \
         --unencrypted-http-transport \
+        --graffiti-append false \
         --logfile-max-number 0 \
         --beacon-nodes $CC_URL_STRING \
         --suggested-fee-recipient $(cat /validators/$FEE_RECIPIENT_FILE) \
