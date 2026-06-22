@@ -25,7 +25,7 @@ func runMetricsServer(ctx context.Context, c *cli.Command, logger log.ColorLogge
 	if err != nil {
 		return err
 	}
-	w, err := services.GetHdWallet(c)
+	w, err := services.GetWallet(c)
 	if err != nil {
 		return err
 	}
