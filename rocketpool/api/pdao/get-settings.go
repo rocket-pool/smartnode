@@ -9,6 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -22,6 +23,11 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 	// Response
 	response := api.GetPDAOSettingsResponse{}
+
+	response.Saturn2Deployed, err = state.IsSaturn2Deployed(rp, nil)
+	if err != nil {
+		return nil, err
+	}
 
 	// Data
 	var wg errgroup.Group
@@ -168,6 +174,58 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 		response.Megapool.PenaltyThreshold, err = protocol.GetPenaltyThreshold(rp, nil)
 		return err
 	})
+
+	// === Performance ===
+
+	if response.Saturn2Deployed {
+		wg.Go(func() error {
+			var err error
+			response.Performance.ExitsEnabled, err = protocol.GetPerformanceExitsEnabled(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Performance.Period, err = protocol.GetPerformancePeriod(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Performance.Threshold, err = protocol.GetPerformanceThreshold(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Performance.ChallengePeriod, err = protocol.GetPerformanceChallengePeriod(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Performance.ChallengeBond, err = protocol.GetPerformanceChallengeBond(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Exit.CooperativeExitPhase, err = protocol.GetCooperativeExitPhase(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Exit.DidNotExitPenalty, err = protocol.GetDidNotExitPenalty(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
+			response.Exit.DidNotExitCooldown, err = protocol.GetDidNotExitCooldown(rp, nil)
+			return err
+		})
+	}
 
 	// === Auction ===
 
