@@ -2,6 +2,7 @@ package pdao
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
@@ -126,6 +127,24 @@ func getSettings() error {
 	fmt.Printf("\tProposal Execute Time: %s\n", response.Security.ProposalExecuteTime)
 	fmt.Printf("\tProposal Action Time:  %s\n", response.Security.ProposalActionTime)
 	fmt.Println()
+
+	if response.Saturn2Deployed {
+		// Performance
+		fmt.Println("== Performance Settings ==")
+		fmt.Printf("\tPerformance Exits Enabled:   %t\n", response.Performance.ExitsEnabled)
+		fmt.Printf("\tPerformance Period:          %d Epochs\n", response.Performance.Period)
+		fmt.Printf("\tPerformance Threshold:       %.2f%%\n", eth.WeiToEth(response.Performance.Threshold)*100)
+		fmt.Printf("\tChallenge Period:            %s\n", response.Performance.ChallengePeriod)
+		fmt.Printf("\tChallenge Bond:              %.6f RPL\n", eth.WeiToEth(response.Performance.ChallengeBond))
+		fmt.Println()
+
+		// Exit
+		fmt.Println("== Exit Settings (RPIP-80) ==")
+		fmt.Printf("\tCooperative Exit Phase:      %d Hours\n", uint64(response.Exit.CooperativeExitPhase/time.Hour))
+		fmt.Printf("\tDid Not Exit Penalty:        %.6f ETH\n", eth.WeiToEth(response.Exit.DidNotExitPenalty))
+		fmt.Printf("\tDid Not Exit Cooldown:       %d Days\n", uint64(response.Exit.DidNotExitCooldown/(24*time.Hour)))
+		fmt.Println()
+	}
 
 	// Megapool
 	fmt.Println("== Megapool Settings ==")

@@ -928,6 +928,100 @@ func canProposeSetting(c *cli.Command, contractName string, settingName string, 
 			}
 		}
 
+	case protocol.PerformanceSettingsContractName:
+		switch settingName {
+		// PerformanceExitsEnabled
+		case protocol.PerformanceExitsEnabledSettingPath:
+			newValue, err := cliutils.ValidateBool(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposePerformanceExitsEnabledGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing PerformanceExitsEnabled: %w", err)
+			}
+
+		// PerformancePeriod
+		case protocol.PerformancePeriodSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposePerformancePeriodGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing PerformancePeriod: %w", err)
+			}
+
+		// PerformanceThreshold
+		case protocol.PerformanceThresholdSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposePerformanceThresholdGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing PerformanceThreshold: %w", err)
+			}
+
+		// PerformanceChallengePeriod
+		case protocol.PerformanceChallengePeriodSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposePerformanceChallengePeriodGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing PerformanceChallengePeriod: %w", err)
+			}
+
+		// PerformanceChallengeBond
+		case protocol.PerformanceChallengeBondSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposePerformanceChallengeBondGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing PerformanceChallengeBond: %w", err)
+			}
+		}
+
+	case protocol.ExitSettingsContractName:
+		switch settingName {
+		// CooperativeExitPhase
+		case protocol.CooperativeExitPhaseSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeCooperativeExitPhaseGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing CooperativeExitPhase: %w", err)
+			}
+
+		// DidNotExitPenalty
+		case protocol.DidNotExitPenaltySettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeDidNotExitPenaltyGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing DidNotExitPenalty: %w", err)
+			}
+
+		// DidNotExitCooldown
+		case protocol.DidNotExitCooldownSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			response.GasInfo, err = protocol.EstimateProposeDidNotExitCooldownGas(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error estimating gas for proposing DidNotExitCooldown: %w", err)
+			}
+		}
+
 	}
 
 	// Make sure a setting was actually hit
@@ -1779,6 +1873,100 @@ func proposeSetting(c *cli.Command, contractName string, settingName string, val
 				return nil, fmt.Errorf("error proposing PenaltyThreshold: %w", err)
 			}
 
+		}
+
+	case protocol.PerformanceSettingsContractName:
+		switch settingName {
+		// PerformanceExitsEnabled
+		case protocol.PerformanceExitsEnabledSettingPath:
+			newValue, err := cliutils.ValidateBool(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposePerformanceExitsEnabled(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing PerformanceExitsEnabled: %w", err)
+			}
+
+		// PerformancePeriod
+		case protocol.PerformancePeriodSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposePerformancePeriod(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing PerformancePeriod: %w", err)
+			}
+
+		// PerformanceThreshold
+		case protocol.PerformanceThresholdSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposePerformanceThreshold(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing PerformanceThreshold: %w", err)
+			}
+
+		// PerformanceChallengePeriod
+		case protocol.PerformanceChallengePeriodSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposePerformanceChallengePeriod(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing PerformanceChallengePeriod: %w", err)
+			}
+
+		// PerformanceChallengeBond
+		case protocol.PerformanceChallengeBondSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposePerformanceChallengeBond(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing PerformanceChallengeBond: %w", err)
+			}
+		}
+
+	case protocol.ExitSettingsContractName:
+		switch settingName {
+		// CooperativeExitPhase
+		case protocol.CooperativeExitPhaseSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeCooperativeExitPhase(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing CooperativeExitPhase: %w", err)
+			}
+
+		// DidNotExitPenalty
+		case protocol.DidNotExitPenaltySettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeDidNotExitPenalty(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing DidNotExitPenalty: %w", err)
+			}
+
+		// DidNotExitCooldown
+		case protocol.DidNotExitCooldownSettingPath:
+			newValue, err := cliutils.ValidateBigInt(valueName, value)
+			if err != nil {
+				return nil, err
+			}
+			proposalID, hash, err = protocol.ProposeDidNotExitCooldown(rp, newValue, blockNumber, pollard, opts)
+			if err != nil {
+				return nil, fmt.Errorf("error proposing DidNotExitCooldown: %w", err)
+			}
 		}
 
 	}
