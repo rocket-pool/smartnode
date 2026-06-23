@@ -61,6 +61,9 @@ type Form struct {
 
 	// An optional function which is called when the form item changes.
 	changed func(index int)
+
+	// When set, navigation between form items is blocked while this returns true.
+	navigationBlocked func() bool
 }
 
 // NewForm returns a new form.
@@ -355,6 +358,13 @@ func (f *Form) SetCancelFunc(callback func()) *Form {
 	return f
 }
 
+// SetNavigationBlocked sets a callback that blocks Tab/Enter/Backtab navigation
+// between form items while it returns true.
+func (f *Form) SetNavigationBlocked(blocked func() bool) *Form {
+	f.navigationBlocked = blocked
+	return f
+}
+
 // SetChangedFunc sets a handler which is called when the user moves to
 // another field in the form.
 func (f *Form) SetChangedFunc(callback func(index int)) *Form {
@@ -574,6 +584,9 @@ func (f *Form) Focus(delegate func(p tview.Primitive)) {
 		f.focusedElement = 0
 	}
 	handler := func(key tcell.Key) {
+		if f.navigationBlocked != nil && f.navigationBlocked() {
+			return
+		}
 		switch key {
 		case tcell.KeyTab, tcell.KeyEnter:
 			f.focusedElement++

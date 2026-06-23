@@ -121,7 +121,7 @@ func (configPage *AlertingConfigPage) createContent() {
 	configPage.layout.setupEscapeReturnHomeHandler(configPage.mainDisplay, configPage.homePage)
 
 	// Set up the UI components
-	allItems := createParameterizedFormItems(configPage.masterConfig.Alertmanager.GetParameters(), configPage.layout.descriptionBox)
+	allItems := createParameterizedFormItems(configPage.masterConfig.Alertmanager.GetParameters(), configPage.layout)
 
 	// Map the config parameters to the UI form items:
 	configPage.layout.mapParameterizedFormItems(allItems...)

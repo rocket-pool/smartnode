@@ -73,8 +73,8 @@ func (configPage *CommitBoostConfigPage) createContent() {
 	}
 	externalParams := []*cfgtypes.Parameter{&configPage.masterConfig.CommitBoost.ExternalUrl}
 
-	configPage.localItems = createParameterizedFormItems(localParams, configPage.layout.descriptionBox)
-	configPage.externalItems = createParameterizedFormItems(externalParams, configPage.layout.descriptionBox)
+	configPage.localItems = createParameterizedFormItems(localParams, configPage.layout)
+	configPage.externalItems = createParameterizedFormItems(externalParams, configPage.layout)
 
 	// Relay checkboxes - using CommitBoost's own relay parameters
 	configPage.flashbotsBox = createParameterizedCheckbox(&configPage.masterConfig.CommitBoost.FlashbotsRelay)

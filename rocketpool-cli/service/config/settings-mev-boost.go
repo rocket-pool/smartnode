@@ -78,8 +78,8 @@ func (configPage *MevBoostConfigPage) createContent() {
 	}
 	externalParams := []*cfgtypes.Parameter{&configPage.masterConfig.MevBoost.ExternalUrl}
 
-	configPage.localItems = createParameterizedFormItems(localParams, configPage.layout.descriptionBox)
-	configPage.externalItems = createParameterizedFormItems(externalParams, configPage.layout.descriptionBox)
+	configPage.localItems = createParameterizedFormItems(localParams, configPage.layout)
+	configPage.externalItems = createParameterizedFormItems(externalParams, configPage.layout)
 
 	configPage.flashbotsBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.FlashbotsRelay)
 	configPage.bloxrouteMaxProfitBox = createParameterizedCheckbox(&configPage.masterConfig.MevBoost.BloxRouteMaxProfitRelay)

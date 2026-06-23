@@ -43,7 +43,7 @@ func (configPage *NativePage) createContent() {
 	configPage.layout.setupEscapeReturnHomeHandler(configPage.home.md, configPage.home.homePage)
 
 	// Set up the form items
-	configPage.nativeItems = createParameterizedFormItems(configPage.masterConfig.Native.GetParameters(), configPage.layout.descriptionBox)
+	configPage.nativeItems = createParameterizedFormItems(configPage.masterConfig.Native.GetParameters(), configPage.layout)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.nativeItems...)
