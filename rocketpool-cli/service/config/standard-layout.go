@@ -12,12 +12,14 @@ import (
 
 // A layout container with the standard elements and design
 type standardLayout struct {
-	grid           *tview.Grid
-	content        tview.Primitive
-	descriptionBox *tview.TextView
-	footer         tview.Primitive
-	form           *Form
-	parameters     map[tview.FormItem]*parameterizedFormItem
+	grid              *tview.Grid
+	content           tview.Primitive
+	descriptionBox    *tview.TextView
+	errorAlert        *tview.TextView
+	footer            tview.Primitive
+	form              *Form
+	parameters        map[tview.FormItem]*parameterizedFormItem
+	commitErrorActive bool
 }
 
 // Creates a new StandardLayout instance, which includes the grid and description box preconstructed.
@@ -100,6 +102,9 @@ func (layout *standardLayout) createForm(networkParam *cfgtypes.Parameter, title
 	})
 
 	layout.form = form
+	layout.form.SetNavigationBlocked(func() bool {
+		return layout.commitErrorActive
+	})
 	layout.setContent(form, form.Box, title)
 	layout.createSettingFooter()
 }
@@ -133,8 +138,72 @@ func (layout *standardLayout) refresh() {
 
 }
 
+// Shows an error alert at the bottom of the screen, or clears it when message is empty.
+func (layout *standardLayout) showCommitError(message string) {
+	layout.commitErrorActive = message != ""
+	if layout.errorAlert == nil {
+		return
+	}
+	if message == "" {
+		layout.errorAlert.SetText("")
+		return
+	}
+	layout.errorAlert.SetText("[red::b]" + message + "[-:-:-]")
+}
+
+func (layout *standardLayout) commitFocusedInputField() {
+	for _, param := range layout.parameters {
+		if _, ok := param.item.(*tview.InputField); ok && param.item.HasFocus() {
+			param.commit()
+			return
+		}
+	}
+}
+
+func (layout *standardLayout) navCapture(event *tcell.EventKey) *tcell.EventKey {
+	if layout.commitErrorActive {
+		switch event.Key() {
+		case tcell.KeyDown, tcell.KeyTab:
+			layout.commitFocusedInputField()
+			if layout.commitErrorActive {
+				return nil
+			}
+			return tcell.NewEventKey(tcell.KeyTab, 0, 0)
+		case tcell.KeyUp, tcell.KeyBacktab:
+			return nil
+		}
+		return event
+	}
+	switch event.Key() {
+	case tcell.KeyDown, tcell.KeyTab:
+		return tcell.NewEventKey(tcell.KeyTab, 0, 0)
+	case tcell.KeyUp, tcell.KeyBacktab:
+		return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
+	}
+	return event
+}
+
+func (layout *standardLayout) setItemNavCapture(item *parameterizedFormItem) {
+	capture := layout.navCapture
+	switch el := item.item.(type) {
+	case *tview.Checkbox:
+		el.SetInputCapture(capture)
+	case *tview.InputField:
+		el.SetInputCapture(capture)
+	case *DropDown:
+		el.SetInputCapture(capture)
+	}
+}
+
 // Create the footer, including the nav bar
 func (layout *standardLayout) createSettingFooter() {
+
+	layout.errorAlert = tview.NewTextView().
+		SetDynamicColors(true).
+		SetTextAlign(tview.AlignCenter).
+		SetWrap(false).
+		SetRegions(false)
+	layout.errorAlert.SetBackgroundColor(tview.Styles.ContrastBackgroundColor)
 
 	// Nav bar
 	navString1 := "Arrow keys: Navigate   Space/Enter: Change Setting"
@@ -170,7 +239,12 @@ func (layout *standardLayout) createSettingFooter() {
 			AddItem(tview.NewBox(), 0, 1, false),
 			1, 1, false)
 
-	layout.setFooter(navBar, 2)
+	footer := tview.NewFlex().
+		SetDirection(tview.FlexRow).
+		AddItem(layout.errorAlert, 1, 0, false).
+		AddItem(navBar, 2, 1, false)
+
+	layout.setFooter(footer, 3)
 
 }
 
@@ -206,6 +280,10 @@ func (layout *standardLayout) addFormItemsWithCommonParams(commonParams []*param
 
 func (layout *standardLayout) mapParameterizedFormItems(params ...*parameterizedFormItem) {
 	for _, param := range params {
+		if layout != nil {
+			param.onCommitError = layout.showCommitError
+			layout.setItemNavCapture(param)
+		}
 		layout.parameters[param.item] = param
 	}
 }
@@ -229,10 +307,13 @@ func (layout *standardLayout) getInputCapture(md *MainDisplay, prev *page) func(
 
 				// Save the text if this field is one
 				if _, ok := param.item.(*tview.InputField); ok {
-					param.commit()
-					// Exit the loop to return to the home page
+					layout.commitFocusedInputField()
 					break
 				}
+			}
+
+			if layout.commitErrorActive {
+				return nil
 			}
 
 			md.setPage(prev)

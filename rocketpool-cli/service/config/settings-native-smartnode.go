@@ -44,7 +44,7 @@ func (configPage *NativeSmartnodeConfigPage) createContent() {
 
 	// Set up the form items
 	params := append(masterConfig.Smartnode.GetParameters(), &masterConfig.EnableIPv6, &masterConfig.Alertmanager.ShowAlertsOnCLI)
-	formItems := createParameterizedFormItems(params, layout.descriptionBox)
+	formItems := createParameterizedFormItems(params, layout)
 	for _, formItem := range formItems {
 		if formItem.parameter.ID == config.ProjectNameID {
 			// Ignore the project name ID since it doesn't apply to native mode

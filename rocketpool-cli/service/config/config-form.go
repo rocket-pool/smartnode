@@ -13,14 +13,28 @@ import (
 
 // A form item linked to a Parameter
 type parameterizedFormItem struct {
-	parameter *cfgtypes.Parameter
-	item      tview.FormItem
+	parameter     *cfgtypes.Parameter
+	item          tview.FormItem
+	onCommitError func(message string)
+}
+
+func (pfi *parameterizedFormItem) reportCommitError(message string) {
+	if pfi.onCommitError != nil {
+		pfi.onCommitError(message)
+	}
+}
+
+func (pfi *parameterizedFormItem) clearCommitError() {
+	if pfi.onCommitError != nil {
+		pfi.onCommitError("")
+	}
 }
 
 func (pfi *parameterizedFormItem) commit() {
 	switch pfi.item.(type) {
 	case *tview.Checkbox:
 		pfi.parameter.Value = pfi.item.(*tview.Checkbox).IsChecked()
+		pfi.clearCommitError()
 	case *tview.InputField:
 		var err error
 		inputField := pfi.item.(*tview.InputField)
@@ -28,33 +42,34 @@ func (pfi *parameterizedFormItem) commit() {
 		case cfgtypes.ParameterType_Int:
 			pfi.parameter.Value, err = strconv.ParseInt(inputField.GetText(), 0, 0)
 			if err != nil {
-				// TODO: show error modal?
-				inputField.SetText("")
+				pfi.reportCommitError(fmt.Sprintf("INVALID INTEGER VALUE FOR %s", pfi.parameter.Name))
+				return
 			}
 		case cfgtypes.ParameterType_Uint:
 			pfi.parameter.Value, err = strconv.ParseUint(inputField.GetText(), 0, 0)
 			if err != nil {
-				// TODO: show error modal?
-				inputField.SetText("")
+				pfi.reportCommitError(fmt.Sprintf("INVALID UNSIGNED INTEGER VALUE FOR %s", pfi.parameter.Name))
+				return
 			}
 		case cfgtypes.ParameterType_Uint16:
 			pfi.parameter.Value, err = strconv.ParseUint(inputField.GetText(), 0, 16)
 			if err != nil {
-				// TODO: show error modal?
-				inputField.SetText("")
+				pfi.reportCommitError(fmt.Sprintf("INVALID VALUE FOR %s (MUST BE 0–65535)", pfi.parameter.Name))
+				return
 			}
 		case cfgtypes.ParameterType_String, cfgtypes.ParameterType_Float:
 			pfi.parameter.Value = strings.TrimSpace(inputField.GetText())
 		default:
 			panic(fmt.Sprintf("Unknown parameter type for text field %v", pfi.parameter.Type))
 		}
+		pfi.clearCommitError()
 	default:
 		panic(fmt.Sprintf("Unknown form item type %v", pfi.item))
 	}
 }
 
 // Create a list of form items based on a set of parameters
-func createParameterizedFormItems(params []*cfgtypes.Parameter, descriptionBox *tview.TextView) []*parameterizedFormItem {
+func createParameterizedFormItems(params []*cfgtypes.Parameter, layout *standardLayout) []*parameterizedFormItem {
 	formItems := []*parameterizedFormItem{}
 	for _, param := range params {
 		var item *parameterizedFormItem
@@ -66,9 +81,13 @@ func createParameterizedFormItems(params []*cfgtypes.Parameter, descriptionBox *
 		case cfgtypes.ParameterType_String, cfgtypes.ParameterType_Float:
 			item = createParameterizedStringField(param)
 		case cfgtypes.ParameterType_Choice:
-			item = createParameterizedDropDown(param, descriptionBox)
+			item = createParameterizedDropDown(param, layout.descriptionBox)
 		default:
 			panic(fmt.Sprintf("Unknown parameter type %v", param))
+		}
+		if layout != nil {
+			item.onCommitError = layout.showCommitError
+			layout.setItemNavCapture(item)
 		}
 		formItems = append(formItems, item)
 	}
@@ -85,22 +104,11 @@ func createParameterizedCheckbox(param *cfgtypes.Parameter) *parameterizedFormIt
 		parameter: param,
 		item:      item,
 	}
-	item.SetInputCapture(navCapture)
 	item.SetChangedFunc(func(checked bool) {
 		out.commit()
 	})
 
 	return out
-}
-
-func navCapture(event *tcell.EventKey) *tcell.EventKey {
-	switch event.Key() {
-	case tcell.KeyDown, tcell.KeyTab:
-		return tcell.NewEventKey(tcell.KeyTab, 0, 0)
-	case tcell.KeyUp, tcell.KeyBacktab:
-		return tcell.NewEventKey(tcell.KeyBacktab, 0, 0)
-	}
-	return event
 }
 
 // Create a standard int field
@@ -112,7 +120,6 @@ func createParameterizedIntField(param *cfgtypes.Parameter) *parameterizedFormIt
 		parameter: param,
 		item:      item,
 	}
-	item.SetInputCapture(navCapture)
 	item.SetDoneFunc(func(key tcell.Key) {
 		out.commit()
 	})
@@ -140,7 +147,6 @@ func createParameterizedStringField(param *cfgtypes.Parameter) *parameterizedFor
 		// TODO: regex support
 		return true
 	})
-	item.SetInputCapture(navCapture)
 
 	return out
 }
@@ -165,7 +171,6 @@ func createParameterizedDropDown(param *cfgtypes.Parameter, descriptionBox *tvie
 			descriptionBox.SetText(descriptions[index])
 		})
 	item.SetTextOptions(" ", " ", "", "", "")
-	item.SetInputCapture(navCapture)
 	list := item.GetList()
 	list.SetSelectedBackgroundColor(tcell.Color46)
 	list.SetSelectedTextColor(tcell.ColorBlack)

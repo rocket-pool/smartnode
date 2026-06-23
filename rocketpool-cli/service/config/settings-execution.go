@@ -58,12 +58,12 @@ func (configPage *ExecutionConfigPage) createContent() {
 	// Set up the form items
 	configPage.ecModeDropdown = createParameterizedDropDown(&configPage.masterConfig.ExecutionClientMode, configPage.layout.descriptionBox)
 	configPage.ecDropdown = createParameterizedDropDown(&configPage.masterConfig.ExecutionClient, configPage.layout.descriptionBox)
-	configPage.ecCommonItems = createParameterizedFormItems(configPage.masterConfig.ExecutionCommon.GetParameters(), configPage.layout.descriptionBox)
-	configPage.gethItems = createParameterizedFormItems(configPage.masterConfig.Geth.GetParameters(), configPage.layout.descriptionBox)
-	configPage.nethermindItems = createParameterizedFormItems(configPage.masterConfig.Nethermind.GetParameters(), configPage.layout.descriptionBox)
-	configPage.besuItems = createParameterizedFormItems(configPage.masterConfig.Besu.GetParameters(), configPage.layout.descriptionBox)
-	configPage.rethItems = createParameterizedFormItems(configPage.masterConfig.Reth.GetParameters(), configPage.layout.descriptionBox)
-	configPage.externalEcItems = createParameterizedFormItems(configPage.masterConfig.ExternalExecution.GetParameters(), configPage.layout.descriptionBox)
+	configPage.ecCommonItems = createParameterizedFormItems(configPage.masterConfig.ExecutionCommon.GetParameters(), configPage.layout)
+	configPage.gethItems = createParameterizedFormItems(configPage.masterConfig.Geth.GetParameters(), configPage.layout)
+	configPage.nethermindItems = createParameterizedFormItems(configPage.masterConfig.Nethermind.GetParameters(), configPage.layout)
+	configPage.besuItems = createParameterizedFormItems(configPage.masterConfig.Besu.GetParameters(), configPage.layout)
+	configPage.rethItems = createParameterizedFormItems(configPage.masterConfig.Reth.GetParameters(), configPage.layout)
+	configPage.externalEcItems = createParameterizedFormItems(configPage.masterConfig.ExternalExecution.GetParameters(), configPage.layout)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.ecModeDropdown, configPage.ecDropdown)

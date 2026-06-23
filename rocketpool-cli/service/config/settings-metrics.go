@@ -71,11 +71,11 @@ func (configPage *MetricsConfigPage) createContent() {
 	configPage.nodeMetricsPortBox = createParameterizedIntField(&configPage.masterConfig.NodeMetricsPort)
 	configPage.exporterMetricsPortBox = createParameterizedIntField(&configPage.masterConfig.ExporterMetricsPort)
 	configPage.watchtowerMetricsPortBox = createParameterizedIntField(&configPage.masterConfig.WatchtowerMetricsPort)
-	configPage.grafanaItems = createParameterizedFormItems(configPage.masterConfig.Grafana.GetParameters(), configPage.layout.descriptionBox)
-	configPage.prometheusItems = createParameterizedFormItems(configPage.masterConfig.Prometheus.GetParameters(), configPage.layout.descriptionBox)
-	configPage.exporterItems = createParameterizedFormItems(configPage.masterConfig.Exporter.GetParameters(), configPage.layout.descriptionBox)
+	configPage.grafanaItems = createParameterizedFormItems(configPage.masterConfig.Grafana.GetParameters(), configPage.layout)
+	configPage.prometheusItems = createParameterizedFormItems(configPage.masterConfig.Prometheus.GetParameters(), configPage.layout)
+	configPage.exporterItems = createParameterizedFormItems(configPage.masterConfig.Exporter.GetParameters(), configPage.layout)
 	configPage.enableBitflyNodeMetricsBox = createParameterizedCheckbox(&configPage.masterConfig.EnableBitflyNodeMetrics)
-	configPage.bitflyNodeMetricsItems = createParameterizedFormItems(configPage.masterConfig.BitflyNodeMetrics.GetParameters(), configPage.layout.descriptionBox)
+	configPage.bitflyNodeMetricsItems = createParameterizedFormItems(configPage.masterConfig.BitflyNodeMetrics.GetParameters(), configPage.layout)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.enableMetricsBox, configPage.enableOdaoMetricsBox, configPage.ecMetricsPortBox, configPage.bnMetricsPortBox, configPage.vcMetricsPortBox, configPage.nodeMetricsPortBox, configPage.exporterMetricsPortBox, configPage.watchtowerMetricsPortBox)

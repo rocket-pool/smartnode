@@ -56,8 +56,8 @@ func (configPage *FallbackConfigPage) createContent() {
 	// Set up the form items
 	configPage.useFallbackBox = createParameterizedCheckbox(&configPage.masterConfig.UseFallbackClients)
 	configPage.reconnectDelay = createParameterizedStringField(&configPage.masterConfig.ReconnectDelay)
-	configPage.fallbackNormalItems = createParameterizedFormItems(configPage.masterConfig.FallbackNormal.GetParameters(), configPage.layout.descriptionBox)
-	configPage.fallbackPrysmItems = createParameterizedFormItems(configPage.masterConfig.FallbackPrysm.GetParameters(), configPage.layout.descriptionBox)
+	configPage.fallbackNormalItems = createParameterizedFormItems(configPage.masterConfig.FallbackNormal.GetParameters(), configPage.layout)
+	configPage.fallbackPrysmItems = createParameterizedFormItems(configPage.masterConfig.FallbackPrysm.GetParameters(), configPage.layout)
 
 	// Map the parameters to the form items in the layout
 	configPage.layout.mapParameterizedFormItems(configPage.useFallbackBox, configPage.reconnectDelay)
