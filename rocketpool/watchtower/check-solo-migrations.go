@@ -55,7 +55,7 @@ func newCheckSoloMigrations(c *cli.Command, logger log.ColorLogger, errorLogger 
 	if err != nil {
 		return nil, err
 	}
-	w, err := services.GetHdWallet(c)
+	w, err := services.GetWallet(c)
 	if err != nil {
 		return nil, err
 	}

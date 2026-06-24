@@ -33,6 +33,9 @@ func GetFeeRecipientInfo(rp *rocketpool.RocketPool, bc beacon.Client, nodeAddres
 	}
 
 	mpd := state.NodeDetailsByAddress[nodeAddress]
+	if mpd == nil {
+		return nil, fmt.Errorf("node %s not found in network state", nodeAddress.Hex())
+	}
 
 	// Get info
 	info.SmoothingPoolAddress = state.NetworkDetails.SmoothingPoolAddress

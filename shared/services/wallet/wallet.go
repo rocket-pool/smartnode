@@ -63,7 +63,7 @@ type Wallet interface {
 	String() (string, error)
 	TestRecoverValidatorKey(pubkey rptypes.ValidatorPubkey, startIndex uint) (uint, error)
 	TestRecovery(derivationPath string, walletIndex uint, mnemonic string) error
-	MasqueradeAsAddress(address common.Address) error
+	MasqueradeAsAddress(address common.Address, observe bool) error
 	EndMasquerade() error
 	GetAddress() (common.Address, error)
 	IsNodeMasquerading() bool
@@ -202,8 +202,8 @@ func (w *hdWallet) GetAddress() (common.Address, error) {
 }
 
 // Change the node's effective address to a different one. Node and watchtower tasks will continue to run normally using the loaded wallet.
-func (w *hdWallet) MasqueradeAsAddress(newAddress common.Address) error {
-	return w.am.SetAndSaveAddress(newAddress)
+func (w *hdWallet) MasqueradeAsAddress(newAddress common.Address, observe bool) error {
+	return w.am.SetAndSaveAddress(newAddress, observe)
 }
 
 // End a masquerade, restoring your node's effective address back to your wallet address if one is loaded

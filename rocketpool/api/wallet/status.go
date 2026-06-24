@@ -4,12 +4,17 @@ import (
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/shared/services"
+	"github.com/rocket-pool/smartnode/shared/services/wallet"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
 func getStatus(c *cli.Command) (*api.WalletStatusResponse, error) {
 
 	// Get services
+	cfg, err := services.GetConfig(c)
+	if err != nil {
+		return nil, err
+	}
 	pm, err := services.GetPasswordManager(c)
 	if err != nil {
 		return nil, err
@@ -24,6 +29,7 @@ func getStatus(c *cli.Command) (*api.WalletStatusResponse, error) {
 
 	// Get wallet type
 	response.IsMasquerading = w.IsNodeMasquerading()
+	response.IsObserve = wallet.CheckObserveMode(cfg.Smartnode.GetNodeAddressPath())
 
 	// Get wallet status
 	if response.IsMasquerading {

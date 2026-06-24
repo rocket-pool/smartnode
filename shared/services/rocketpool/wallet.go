@@ -221,8 +221,12 @@ func (c *Client) ExportWallet() (api.ExportWalletResponse, error) {
 }
 
 // Set the node address to an arbitrary address
-func (c *Client) Masquerade(address common.Address) (api.MasqueradeResponse, error) {
-	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/masquerade", url.Values{"address": {address.Hex()}})
+func (c *Client) Masquerade(address common.Address, observe bool) (api.MasqueradeResponse, error) {
+	observeStr := "false"
+	if observe {
+		observeStr = "true"
+	}
+	responseBytes, err := c.callHTTPAPI("POST", "/api/wallet/masquerade", url.Values{"address": {address.Hex()}, "observe": {observeStr}})
 	if err != nil {
 		return api.MasqueradeResponse{}, fmt.Errorf("Could not masquerade wallet: %w", err)
 	}

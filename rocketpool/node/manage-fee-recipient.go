@@ -23,13 +23,14 @@ import (
 
 // Manage fee recipient task
 type manageFeeRecipient struct {
-	c   *cli.Command
-	log log.ColorLogger
-	cfg *config.RocketPoolConfig
-	w   wallet.Wallet
-	rp  *rocketpool.RocketPool
-	d   *client.Client
-	bc  beacon.Client
+	c            *cli.Command
+	log          log.ColorLogger
+	cfg          *config.RocketPoolConfig
+	w            wallet.Wallet
+	rp           *rocketpool.RocketPool
+	d            *client.Client
+	bc           beacon.Client
+	stateManager *state.NetworkStateManager
 }
 
 // Create manage fee recipient task
@@ -58,7 +59,7 @@ func newManageFeeRecipient(c *cli.Command, logger log.ColorLogger) (*manageFeeRe
 	}
 
 	// Return task
-	return &manageFeeRecipient{
+	task := &manageFeeRecipient{
 		c:   c,
 		log: logger,
 		cfg: cfg,
@@ -66,7 +67,9 @@ func newManageFeeRecipient(c *cli.Command, logger log.ColorLogger) (*manageFeeRe
 		rp:  rp,
 		d:   d,
 		bc:  bc,
-	}, nil
+	}
+	task.stateManager = state.NewNetworkStateManager(rp, cfg.Smartnode.GetStateManagerContracts(), bc, &task.log)
+	return task, nil
 
 }
 
@@ -85,6 +88,20 @@ func (m *manageFeeRecipient) run(state *state.NetworkState) error {
 	nodeAccount, err := m.w.GetNodeAccount()
 	if err != nil {
 		return err
+	}
+
+	// Fee recipient is always managed for the real node (HD wallet on disk), not the masquerade
+	// address. In observe mode, the global state is keyed for the masquerade address,
+	// so fetch a dedicated state for the real node.
+	am := wallet.NewAddressManager(m.cfg.Smartnode.GetNodeAddressPath())
+	masqAddress, masqErr := am.LoadAddress()
+	if masqErr == nil && am.IsObserve() {
+		m.log.Printlnf("Node is masquerading as %s; fee recipient management always targets the real node (%s) stored on disk.", masqAddress.Hex(), nodeAccount.Address.Hex())
+		var stateErr error
+		state, stateErr = m.stateManager.GetHeadStateForNode(nodeAccount.Address)
+		if stateErr != nil {
+			return fmt.Errorf("error getting network state for real node %s: %w", nodeAccount.Address.Hex(), stateErr)
+		}
 	}
 
 	// Get the fee recipient info for the node

@@ -9,7 +9,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
 )
 
-func masquerade(addressFlag string, yes bool) error {
+func masquerade(addressFlag string, yes bool, observe bool) error {
 	// Get RP client
 	rp := rocketpool.NewClient()
 	defer rp.Close()
@@ -28,18 +28,33 @@ func masquerade(addressFlag string, yes bool) error {
 	}
 
 	// Prompt for confirmation
-	if !yes && !prompt.Confirm("Are you sure you want to masquerade as %s?", color.LightBlue(address.Hex())) {
-		fmt.Println("Cancelled.")
-		return nil
+	if observe {
+		fmt.Println(color.Yellow("Observe mode is enabled. Please read the following carefully:"))
+		fmt.Println(" - The node and watchtower will use the masquerade address instead of your real node address.")
+		fmt.Println(" - Your fee recipient will remain set to your real node wallet address")
+		fmt.Println(" - Run `rocketpool wallet end-masquerade` and restart the node/watchtower daemons when you have finished observing.")
+		fmt.Println()
+		if !yes && !prompt.Confirm("I understand the above. Enable observe mode for %s?", color.LightBlue(address.Hex())) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
+	} else {
+		if !yes && !prompt.Confirm("Are you sure you want to masquerade as %s?", color.LightBlue(address.Hex())) {
+			fmt.Println("Cancelled.")
+			return nil
+		}
 	}
 
 	// Call API
-	_, err = rp.Masquerade(address)
+	_, err = rp.Masquerade(address, observe)
 	if err != nil {
 		return fmt.Errorf("error running masquerade: %w", err)
 	}
 
 	fmt.Printf("Your node is now masquerading as address %s.\n", color.LightBlue(address.Hex()))
+	if observe {
+		fmt.Println("Restart the node and watchtower daemons to observe as the masquerade address.")
+	}
 
 	return nil
 }
