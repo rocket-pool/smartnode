@@ -374,9 +374,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/megapool/verify-performance", func(w http.ResponseWriter, r *http.Request) {
-		validatorId, err := parseUint32(r, "validatorId")
-		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+		targets := r.FormValue("targets")
+		if targets == "" {
+			apiutils.WriteErrorResponse(w, fmt.Errorf("missing required parameter 'targets'"))
 			return
 		}
 		startEpoch, err := parseUint64(r, "startEpoch")
@@ -396,7 +396,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		} else if raw := r.FormValue("megapoolAddress"); raw != "" {
 			megapoolAddr = common.HexToAddress(raw)
 		}
-		resp, err := verifyPerformance(c, megapoolAddr, validatorId, startEpoch, endEpoch)
+		resp, err := verifyPerformance(c, megapoolAddr, targets, startEpoch, endEpoch)
 		apiutils.WriteResponse(w, resp, err)
 	})
 }

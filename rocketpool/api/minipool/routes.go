@@ -322,9 +322,9 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 	})
 
 	mux.HandleFunc("/api/minipool/verify-performance", func(w http.ResponseWriter, r *http.Request) {
-		addr, err := parseAddress(r, "address")
-		if err != nil {
-			apiutils.WriteErrorResponse(w, err)
+		targets := r.FormValue("targets")
+		if targets == "" {
+			apiutils.WriteErrorResponse(w, fmt.Errorf("missing required parameter 'targets'"))
 			return
 		}
 		startEpoch, err := parseUint64Param(r, "startEpoch")
@@ -337,7 +337,7 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 			apiutils.WriteErrorResponse(w, err)
 			return
 		}
-		resp, err := verifyPerformance(c, addr, startEpoch, endEpoch)
+		resp, err := verifyPerformance(c, targets, startEpoch, endEpoch)
 		apiutils.WriteResponse(w, resp, err)
 	})
 

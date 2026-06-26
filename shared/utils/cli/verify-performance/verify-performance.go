@@ -5,6 +5,7 @@ package verifyperformance
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
@@ -36,7 +37,6 @@ func ResolveEpochRange(rp *rocketpool.Client, startEpoch, epochs uint64) (uint64
 
 // ConfirmLargeRange prompts the user when the requested epoch range exceeds
 // LargeEpochRangeWarning and returns true if the user accepts the warning.
-// Small ranges return true immediately.
 func ConfirmLargeRange(total uint64) bool {
 	if total <= LargeEpochRangeWarning {
 		return true
@@ -54,6 +54,12 @@ func ConfirmLargeRange(total uint64) bool {
 func PrintCancelled() error {
 	fmt.Println("Cancelled.")
 	return nil
+}
+
+// PrintElapsed prints the wall-clock time the verification took, rounded to the
+// millisecond.
+func PrintElapsed(elapsed time.Duration) {
+	fmt.Printf("\nCompleted in %s\n", elapsed.Round(time.Millisecond))
 }
 
 // PrintResult writes a VerifyPerformanceResponse to stdout in a human-readable
@@ -79,6 +85,60 @@ func PrintResult(resp api.VerifyPerformanceResponse, label string) {
 	if len(resp.MissedEpochList) > 0 {
 		fmt.Printf("\nMissed target epochs (challengeable):\n")
 		printEpochList(resp.MissedEpochList)
+	}
+}
+
+// PrintBatchResults writes a batch of verify-performance results to stdout. For
+// each result it prints the per-validator detail (or the per-validator error),
+// then a closing summary. labelFor produces the human-facing label for a
+// result, e.g. "minipool 0x..." or "megapool validator 3".
+func PrintBatchResults(resp api.VerifyPerformanceBatchResponse, labelFor func(api.VerifyPerformanceResult) string) {
+	var passed int
+	var failedLabels []string
+	var erroredLabels []string
+	for i, result := range resp.Results {
+		if i > 0 {
+			fmt.Println()
+		}
+		label := labelFor(result)
+		if result.Error != "" {
+			fmt.Printf("RPIP-73 target-vote performance for %s\n", label)
+			fmt.Printf("  Error:            %s\n", result.Error)
+			erroredLabels = append(erroredLabels, label)
+			continue
+		}
+		if result.Performance == nil {
+			fmt.Printf("RPIP-73 target-vote performance for %s\n", label)
+			fmt.Printf("  Error:            no result returned\n")
+			erroredLabels = append(erroredLabels, label)
+			continue
+		}
+		PrintResult(*result.Performance, label)
+		if result.Performance.PassesThreshold {
+			passed++
+		} else {
+			failedLabels = append(failedLabels, label)
+		}
+	}
+
+	if len(resp.Results) > 1 {
+		fmt.Printf("\nSummary: %d validator(s) checked - %d pass, %d fail, %d errored\n",
+			len(resp.Results), passed, len(failedLabels), len(erroredLabels))
+	}
+
+	// List the validators that failed (and any that errored) at the very end so
+	// they are easy to spot without scrolling back through every result.
+	if len(failedLabels) > 0 {
+		fmt.Printf("\nFailed validators (exit-eligible under RPIP-73):\n")
+		for _, label := range failedLabels {
+			fmt.Printf("  - %s\n", label)
+		}
+	}
+	if len(erroredLabels) > 0 {
+		fmt.Printf("\nErrored validators (could not be verified):\n")
+		for _, label := range erroredLabels {
+			fmt.Printf("  - %s\n", label)
+		}
 	}
 }
 
