@@ -1,6 +1,7 @@
 package rocketpool
 
 import (
+	"context"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -11,6 +12,35 @@ import (
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
+
+// VerifyMegapoolValidatorPerformance computes RPIP-73 target-vote performance
+// for a megapool validator over [startEpoch, endEpoch]. If megapoolAddress is
+// the zero address the daemon resolves the node's own megapool. This call has
+// no client-side deadline because each epoch requires a full Beacon State SSZ
+// download, which can take several minutes per epoch on an archival beacon
+// node.
+func (c *Client) VerifyMegapoolValidatorPerformance(megapoolAddress common.Address, validatorId uint32, startEpoch, endEpoch uint64) (api.VerifyPerformanceResponse, error) {
+	values := url.Values{
+		"validatorId": {strconv.FormatUint(uint64(validatorId), 10)},
+		"startEpoch":  {strconv.FormatUint(startEpoch, 10)},
+		"endEpoch":    {strconv.FormatUint(endEpoch, 10)},
+	}
+	if (megapoolAddress != common.Address{}) {
+		values.Set("megapoolAddress", megapoolAddress.Hex())
+	}
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "GET", "/api/megapool/verify-performance", values)
+	if err != nil {
+		return api.VerifyPerformanceResponse{}, fmt.Errorf("Could not verify megapool validator performance: %w", err)
+	}
+	var response api.VerifyPerformanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.VerifyPerformanceResponse{}, fmt.Errorf("Could not decode verify-performance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.VerifyPerformanceResponse{}, fmt.Errorf("Could not verify megapool validator performance: %s", response.Error)
+	}
+	return response, nil
+}
 
 // Get megapool status
 func (c *Client) MegapoolStatus(finalizedState bool) (api.MegapoolStatusResponse, error) {

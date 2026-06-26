@@ -343,3 +343,23 @@ type GetBondReductionEnabledResponse struct {
 	Error                string `json:"error"`
 	BondReductionEnabled bool   `json:"bondReductionEnabled"`
 }
+
+// VerifyPerformanceResponse reports the result of an RPIP-73 target-vote
+// performance check for a single validator over a range of epochs.
+type VerifyPerformanceResponse struct {
+	Status                  string                `json:"status"`
+	Error                   string                `json:"error"`
+	ValidatorPubkey         types.ValidatorPubkey `json:"validatorPubkey"`
+	ValidatorIndex          uint64                `json:"validatorIndex"`
+	StartEpoch              uint64                `json:"startEpoch"`
+	EndEpoch                uint64                `json:"endEpoch"`
+	TotalEpochs             uint64                `json:"totalEpochs"`
+	TimelyEpochs            uint64                `json:"timelyEpochs"`
+	MissedEpochs            uint64                `json:"missedEpochs"`
+	InactiveEpochs          uint64                `json:"inactiveEpochs"`
+	PerformancePct          float64               `json:"performancePct"`
+	PerformanceThresholdPct float64               `json:"performanceThresholdPct"`
+	PassesThreshold         bool                  `json:"passesThreshold"`
+	MissedEpochList         []uint64              `json:"missedEpochList"`
+	TimelyEpochList         []uint64              `json:"timelyEpochList"`
+}

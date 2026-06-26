@@ -68,6 +68,9 @@ type BeaconBlock struct {
 type BeaconBlockHeader struct {
 	Slot          uint64
 	ProposerIndex string
+	// Root is the block root for this header. Used by RPIP-73 target-vote
+	// verification to resolve the canonical target root at an epoch boundary.
+	Root common.Hash
 }
 
 // Committees is an interface as an optimization- since committees responses
@@ -101,6 +104,13 @@ type AttestationInfo struct {
 	SlotIndex       uint64
 	// Committees represented by AggregationBits
 	Committees bitfield.Bitvector64
+	// TargetEpoch is the epoch this attestation voted as its target. Populated
+	// by parsers that need it (e.g. RPIP-73 target-vote verification); other
+	// callers may leave it zero-valued.
+	TargetEpoch uint64
+	// TargetRoot is the block root this attestation voted as its target.
+	// Populated alongside TargetEpoch.
+	TargetRoot common.Hash
 }
 
 func (a *AttestationInfo) CommitteeIndices() []int {

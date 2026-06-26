@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/big"
 	"net/http"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/urfave/cli/v3"
@@ -320,6 +321,26 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		apiutils.WriteResponse(w, resp, err)
 	})
 
+	mux.HandleFunc("/api/minipool/verify-performance", func(w http.ResponseWriter, r *http.Request) {
+		addr, err := parseAddress(r, "address")
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		startEpoch, err := parseUint64Param(r, "startEpoch")
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		endEpoch, err := parseUint64Param(r, "endEpoch")
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		resp, err := verifyPerformance(c, addr, startEpoch, endEpoch)
+		apiutils.WriteResponse(w, resp, err)
+	})
+
 	mux.HandleFunc("/api/minipool/rescue-dissolved", func(w http.ResponseWriter, r *http.Request) {
 		addr, err := parseAddress(r, "address")
 		if err != nil {
@@ -353,4 +374,19 @@ func parseAddress(r *http.Request, name string) (common.Address, error) {
 		return common.Address{}, fmt.Errorf("missing required parameter: %s", name)
 	}
 	return common.HexToAddress(raw), nil
+}
+
+func parseUint64Param(r *http.Request, name string) (uint64, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		raw = r.FormValue(name)
+	}
+	if raw == "" {
+		return 0, fmt.Errorf("missing required parameter: %s", name)
+	}
+	v, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s: %w", name, err)
+	}
+	return v, nil
 }

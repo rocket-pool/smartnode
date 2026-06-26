@@ -621,6 +621,8 @@ func (c *StandardHttpClient) GetAttestations(blockId string) ([]beacon.Attestati
 	for i, attestation := range attestations.Data {
 		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
 		attestationInfo[i].SlotIndex = uint64(attestation.Data.Slot)
+		attestationInfo[i].TargetEpoch = uint64(attestation.Data.Target.Epoch)
+		attestationInfo[i].TargetRoot = common.BytesToHash(attestation.Data.Target.Root)
 		attestationInfo[i].AggregationBits, err = hex.DecodeString(bitString)
 		if err != nil {
 			return nil, false, fmt.Errorf("Error decoding aggregation bits for attestation %d of block %s: %w", i, blockId, err)
@@ -667,7 +669,9 @@ func (c *StandardHttpClient) GetBeaconBlock(blockId string) (beacon.BeaconBlock,
 	for i, attestation := range block.Data.Message.Body.Attestations {
 		bitString := hexutil.RemovePrefix(attestation.AggregationBits)
 		info := beacon.AttestationInfo{
-			SlotIndex: uint64(attestation.Data.Slot),
+			SlotIndex:   uint64(attestation.Data.Slot),
+			TargetEpoch: uint64(attestation.Data.Target.Epoch),
+			TargetRoot:  common.BytesToHash(attestation.Data.Target.Root),
 		}
 		info.AggregationBits, err = hex.DecodeString(bitString)
 		if err != nil {
@@ -716,18 +720,49 @@ func (c *StandardHttpClient) GetBeaconBlockHeader(blockId string) (beacon.Beacon
 	beaconBlock := beacon.BeaconBlockHeader{
 		Slot:          uint64(block.Data.Header.Message.Slot),
 		ProposerIndex: block.Data.Header.Message.ProposerIndex,
+		Root:          common.HexToHash(block.Data.Root),
 	}
 	return beaconBlock, true, nil
 }
 
-// Get the attestation committees for the given epoch, or the current epoch if nil
+// Get the attestation committees for the given epoch, or the current epoch if nil.
+// For historical epochs the request uses the beacon state at the epoch's first
+// slot so archival nodes return the correct shuffling. If that state is
+// unavailable, head is tried as a fallback.
 func (c *StandardHttpClient) GetCommitteesForEpoch(epoch *uint64) (beacon.Committees, error) {
-	response, err := c.getCommittees("head", epoch)
+	if epoch == nil {
+		response, err := c.getCommittees("head", nil)
+		if err != nil {
+			return nil, err
+		}
+		return &response, nil
+	}
+
+	eth2Config, err := c.getEth2Config()
 	if err != nil {
 		return nil, err
 	}
 
-	return &response, nil
+	stateSlot := *epoch * uint64(eth2Config.Data.SlotsPerEpoch)
+	response, err := c.getCommittees(strconv.FormatUint(stateSlot, 10), epoch)
+	if err == nil && len(response.Data) > 0 {
+		return &response, nil
+	}
+
+	// Some clients can resolve historical shuffling from head; others only
+	// serve epoch E from a state at or after epoch E.
+	headResponse, headErr := c.getCommittees("head", epoch)
+	if headErr == nil && len(headResponse.Data) > 0 {
+		return &headResponse, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	if headErr != nil {
+		return nil, headErr
+	}
+	return nil, fmt.Errorf("Could not get committees for epoch %d: no committee data returned (archival beacon node may be required)", *epoch)
 }
 
 // Perform a withdrawal credentials change on a validator

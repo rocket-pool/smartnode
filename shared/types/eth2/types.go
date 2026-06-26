@@ -28,6 +28,7 @@ type BeaconState interface {
 	BlockRootProof(slot uint64) ([][]byte, error)
 	BlockHeaderProof() ([][]byte, error)
 	GetValidators() []*generic.Validator
+	GetPreviousEpochParticipation() []byte
 }
 
 type SignedBeaconBlock interface {

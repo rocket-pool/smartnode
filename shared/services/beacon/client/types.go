@@ -163,8 +163,12 @@ type CommitteesResponse struct {
 type Attestation struct {
 	AggregationBits string `json:"aggregation_bits"`
 	Data            struct {
-		Slot  uinteger `json:"slot"`
-		Index uinteger `json:"index"`
+		Slot   uinteger `json:"slot"`
+		Index  uinteger `json:"index"`
+		Target struct {
+			Epoch uinteger  `json:"epoch"`
+			Root  byteArray `json:"root"`
+		} `json:"target"`
 	} `json:"data"`
 	CommitteeBits string `json:"committee_bits"`
 }

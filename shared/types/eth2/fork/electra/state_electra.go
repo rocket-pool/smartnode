@@ -253,6 +253,10 @@ func (state *BeaconState) GetSlot() uint64 {
 	return state.Slot
 }
 
+func (state *BeaconState) GetPreviousEpochParticipation() []byte {
+	return state.PreviousEpochParticipation
+}
+
 // Added for compatibility
 func (state *BeaconState) BlockHeaderProof() ([][]byte, error) {
 	return nil, nil

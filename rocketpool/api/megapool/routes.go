@@ -372,6 +372,33 @@ func RegisterRoutes(mux *http.ServeMux, c *cli.Command) {
 		resp, err := getBeaconWithdrawalQueueEstimate(c)
 		apiutils.WriteResponse(w, resp, err)
 	})
+
+	mux.HandleFunc("/api/megapool/verify-performance", func(w http.ResponseWriter, r *http.Request) {
+		validatorId, err := parseUint32(r, "validatorId")
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		startEpoch, err := parseUint64(r, "startEpoch")
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		endEpoch, err := parseUint64(r, "endEpoch")
+		if err != nil {
+			apiutils.WriteErrorResponse(w, err)
+			return
+		}
+		// megapoolAddress is optional; zero address means "use the node's own megapool".
+		var megapoolAddr common.Address
+		if raw := r.URL.Query().Get("megapoolAddress"); raw != "" {
+			megapoolAddr = common.HexToAddress(raw)
+		} else if raw := r.FormValue("megapoolAddress"); raw != "" {
+			megapoolAddr = common.HexToAddress(raw)
+		}
+		resp, err := verifyPerformance(c, megapoolAddr, validatorId, startEpoch, endEpoch)
+		apiutils.WriteResponse(w, resp, err)
+	})
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {
