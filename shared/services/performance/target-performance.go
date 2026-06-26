@@ -16,6 +16,13 @@
 // root) + up to SLOTS_PER_EPOCH block fetches (inclusion window). This is
 // orders of magnitude cheaper than fetching beacon states, and works against
 // any standard Beacon API node (archival is still required for old slots).
+//
+// When several validators are verified over the same epoch range in a single
+// run, the per-epoch beacon data (target roots, committee assignments, and
+// inclusion-window blocks) is identical for every validator. The epochCache
+// type fetches each of those once and reuses them across all validators, so a
+// batch of N validators over E epochs costs roughly the same beacon I/O as a
+// single validator over E epochs instead of N times as much.
 package performance
 
 import (
@@ -91,19 +98,21 @@ type PerformanceBeaconClient interface {
 	GetValidatorStatusByIndex(index string, opts *beacon.ValidatorStatusOptions) (beacon.ValidatorStatus, error)
 }
 
-// pubkeyBeaconClient is the beacon client surface needed to resolve a
-// validator pubkey to a beacon-chain index in addition to the engine
-// requirements.
+// pubkeyBeaconClient is the beacon client surface needed to resolve validator
+// pubkeys to beacon-chain indices in addition to the engine requirements.
 type pubkeyBeaconClient interface {
 	PerformanceBeaconClient
 	GetValidatorIndex(pubkey rptypes.ValidatorPubkey) (string, error)
+	GetValidatorStatuses(pubkeys []rptypes.ValidatorPubkey, opts *beacon.ValidatorStatusOptions) (map[rptypes.ValidatorPubkey]beacon.ValidatorStatus, error)
 }
 
-// VerifyPerformance is the end-to-end RPIP-73 target-vote verification flow
-// shared by the minipool and megapool API endpoints. It resolves the
-// validator's beacon-chain index from the supplied pubkey, runs
-// CheckTargetPerformance, and packages the result alongside the pDAO
-// performance_threshold for pass/fail reporting.
+// VerifyPerformance is the end-to-end RPIP-73 target-vote verification flow for
+// a single validator. It resolves the validator's beacon-chain index from the
+// supplied pubkey, runs CheckTargetPerformance, and packages the result
+// alongside the pDAO performance_threshold for pass/fail reporting.
+//
+// To verify several validators in one run, prefer VerifyPerformanceBatch, which
+// shares per-epoch beacon data across all of them.
 func VerifyPerformance(
 	rp *rocketpool.RocketPool,
 	bc pubkeyBeaconClient,
@@ -134,32 +143,133 @@ func VerifyPerformance(
 		return nil, err
 	}
 
-	// The performance_threshold setting is scaled by 1e18 (1e18 = 100%).
-	// thresholdWei, err := protocol.GetPerformanceThreshold(rp, nil)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("error getting performance threshold: %w", err)
-	// }
-	// thresholdPct := eth.WeiToEth(thresholdWei) * 100
-	//
-	// TODO: The rocketDAOProtocolSettingsPerformance contract is not yet deployed.
-	// Use the RPIP-73 initial value until it is.
-	thresholdPct := defaultPerformanceThresholdPct
+	return summaryToResponse(pubkey, summary), nil
+}
 
-	return &api.VerifyPerformanceResponse{
-		ValidatorPubkey:         pubkey,
-		ValidatorIndex:          summary.ValidatorIndex,
-		StartEpoch:              summary.StartEpoch,
-		EndEpoch:                summary.EndEpoch,
-		TotalEpochs:             summary.TotalEpochs,
-		TimelyEpochs:            summary.TimelyEpochs,
-		MissedEpochs:            summary.MissedEpochs,
-		InactiveEpochs:          summary.InactiveEpochs,
-		PerformancePct:          summary.PerformancePct,
-		PerformanceThresholdPct: thresholdPct,
-		PassesThreshold:         summary.PerformancePct >= thresholdPct,
-		MissedEpochList:         summary.MissedEpochList,
-		TimelyEpochList:         summary.TimelyEpochList,
-	}, nil
+// BatchValidatorResult is one validator's outcome from VerifyPerformanceBatch.
+// Exactly one of Response or Err is set: Response when the check succeeded, Err
+// when that single validator could not be verified (the rest of the batch is
+// unaffected). The slice returned by VerifyPerformanceBatch is aligned
+// positionally with the input pubkeys, so callers can map results back to their
+// own identifiers (minipool address, megapool validator id, etc).
+type BatchValidatorResult struct {
+	Pubkey rptypes.ValidatorPubkey
+	// Active reports whether the validator is currently active on the beacon
+	// chain (activated and not yet exited) according to its live head status.
+	// Callers that target "all" validators use this to skip validators that are
+	// not actively attesting.
+	Active   bool
+	Response *api.VerifyPerformanceResponse
+	Err      error
+}
+
+// isActiveValidatorState reports whether a beacon validator state counts as
+// actively attesting (activated on the beacon chain and not yet exited).
+func isActiveValidatorState(state beacon.ValidatorState) bool {
+	switch state {
+	case beacon.ValidatorState_ActiveOngoing,
+		beacon.ValidatorState_ActiveExiting,
+		beacon.ValidatorState_ActiveSlashed:
+		return true
+	default:
+		return false
+	}
+}
+
+// VerifyPerformanceBatch verifies the RPIP-73 target-vote performance of many
+// validators over the same inclusive epoch range in a single pass. All
+// per-epoch beacon data (target roots, committee assignments, inclusion-window
+// blocks) is fetched once via a shared epochCache and reused for every
+// validator, and the validators' indices and statuses are resolved in a single
+// batched beacon call.
+//
+// The returned slice is positionally aligned with pubkeys. A fatal error
+// (returned as the second value) only occurs for failures that prevent the
+// whole batch from running, such as being unable to read the beacon config or
+// resolve any validator statuses; per-validator problems are reported in each
+// entry's Err field instead.
+func VerifyPerformanceBatch(
+	rp *rocketpool.RocketPool,
+	bc pubkeyBeaconClient,
+	pubkeys []rptypes.ValidatorPubkey,
+	startEpoch uint64,
+	endEpoch uint64,
+) ([]BatchValidatorResult, error) {
+	if endEpoch < startEpoch {
+		return nil, fmt.Errorf("end epoch %d is before start epoch %d", endEpoch, startEpoch)
+	}
+
+	cfg, err := bc.GetEth2Config()
+	if err != nil {
+		return nil, fmt.Errorf("error getting beacon config: %w", err)
+	}
+	if cfg.SlotsPerEpoch == 0 {
+		return nil, fmt.Errorf("invalid beacon config: SlotsPerEpoch is 0")
+	}
+
+	// Resolve every non-zero pubkey to its index and status in a single call.
+	uniquePubkeys := make([]rptypes.ValidatorPubkey, 0, len(pubkeys))
+	seen := map[rptypes.ValidatorPubkey]struct{}{}
+	for _, pk := range pubkeys {
+		if pk == (rptypes.ValidatorPubkey{}) {
+			continue
+		}
+		if _, ok := seen[pk]; ok {
+			continue
+		}
+		seen[pk] = struct{}{}
+		uniquePubkeys = append(uniquePubkeys, pk)
+	}
+
+	statusByPubkey := map[rptypes.ValidatorPubkey]beacon.ValidatorStatus{}
+	if len(uniquePubkeys) > 0 {
+		statusByPubkey, err = bc.GetValidatorStatuses(uniquePubkeys, nil)
+		if err != nil {
+			return nil, fmt.Errorf("error resolving validator statuses: %w", err)
+		}
+	}
+
+	// Build the set of indices to track and a pre-populated status map keyed by
+	// index string so the cache never has to re-query a status.
+	indexSet := map[string]struct{}{}
+	statusByIndex := map[string]beacon.ValidatorStatus{}
+	for _, status := range statusByPubkey {
+		if !status.Exists || status.Index == "" {
+			continue
+		}
+		indexSet[status.Index] = struct{}{}
+		statusByIndex[status.Index] = status
+	}
+
+	cache := newEpochCache(bc, cfg, indexSet, statusByIndex)
+
+	results := make([]BatchValidatorResult, len(pubkeys))
+	for i, pk := range pubkeys {
+		results[i].Pubkey = pk
+		if pk == (rptypes.ValidatorPubkey{}) {
+			results[i].Err = fmt.Errorf("validator has no pubkey on-chain yet (not deposited?)")
+			continue
+		}
+		status, ok := statusByPubkey[pk]
+		if !ok || !status.Exists || status.Index == "" {
+			results[i].Err = fmt.Errorf("validator %s not found on the beacon chain yet", pk.Hex())
+			continue
+		}
+		results[i].Active = isActiveValidatorState(status.Status)
+		indexU64, err := strconv.ParseUint(status.Index, 10, 64)
+		if err != nil {
+			results[i].Err = fmt.Errorf("error parsing validator index %q: %w", status.Index, err)
+			continue
+		}
+		summary, err := cache.computeSummary(status.Index, indexU64, startEpoch, endEpoch)
+		if err != nil {
+			results[i].Err = err
+			continue
+		}
+		results[i].Response = summaryToResponse(pk, summary)
+	}
+
+	return results, nil
 }
 
 // CheckTargetPerformance evaluates a single validator's target-vote
@@ -180,38 +290,9 @@ func CheckTargetPerformance(
 		return nil, fmt.Errorf("invalid beacon config: SlotsPerEpoch is 0")
 	}
 
-	summary := &PerformanceSummary{
-		ValidatorIndex:  validatorIndex,
-		StartEpoch:      startEpoch,
-		EndEpoch:        endEpoch,
-		TotalEpochs:     endEpoch - startEpoch + 1,
-		MissedEpochList: []uint64{},
-		TimelyEpochList: []uint64{},
-	}
-
-	for epoch := startEpoch; epoch <= endEpoch; epoch++ {
-		state, err := checkEpoch(bc, cfg, validatorIndex, epoch)
-		if err != nil {
-			return nil, fmt.Errorf("error checking epoch %d: %w", epoch, err)
-		}
-		switch state {
-		case epochResultTimely:
-			summary.TimelyEpochs++
-			summary.TimelyEpochList = append(summary.TimelyEpochList, epoch)
-		case epochResultMissed:
-			summary.MissedEpochs++
-			summary.MissedEpochList = append(summary.MissedEpochList, epoch)
-		case epochResultInactive:
-			summary.InactiveEpochs++
-		}
-	}
-
-	activeEpochs := summary.TimelyEpochs + summary.MissedEpochs
-	if activeEpochs > 0 {
-		summary.PerformancePct = float64(summary.TimelyEpochs) / float64(activeEpochs) * 100.0
-	}
-
-	return summary, nil
+	indexStr := strconv.FormatUint(validatorIndex, 10)
+	cache := newEpochCache(bc, cfg, map[string]struct{}{indexStr: {}}, nil)
+	return cache.computeSummary(indexStr, validatorIndex, startEpoch, endEpoch)
 }
 
 // CheckEpochTargetVote returns true if the validator made a timely target
@@ -229,7 +310,9 @@ func CheckEpochTargetVote(
 	validatorIndex uint64,
 	epoch uint64,
 ) (bool, error) {
-	state, err := checkEpoch(bc, cfg, validatorIndex, epoch)
+	indexStr := strconv.FormatUint(validatorIndex, 10)
+	cache := newEpochCache(bc, cfg, map[string]struct{}{indexStr: {}}, nil)
+	state, err := cache.evaluateEpoch(indexStr, validatorIndex, epoch)
 	if err != nil {
 		return false, err
 	}
@@ -254,52 +337,132 @@ type attestationDuty struct {
 	committeeSizesAtDay map[uint64]int // committee_index -> validator count, for all committees at duty.slot
 }
 
-// checkEpoch performs the per-epoch evaluation. It returns epochResultTimely
-// if a matching, timely target vote was found for the validator;
-// epochResultMissed if the validator had a duty but no matching attestation
-// landed; epochResultInactive if the validator had no committee assignment
-// for the epoch.
-func checkEpoch(
+// cachedBlock memoizes a single GetBeaconBlock lookup, including the "missing"
+// (skipped slot) case.
+type cachedBlock struct {
+	block  beacon.BeaconBlock
+	exists bool
+}
+
+// rootResult memoizes a target-root resolution, including its error.
+type rootResult struct {
+	root common.Hash
+	err  error
+}
+
+// epochCache fetches and memoizes the per-epoch beacon data needed for
+// target-vote verification so it can be shared across many validators in a
+// single run. It is not safe for concurrent use.
+type epochCache struct {
+	bc       PerformanceBeaconClient
+	cfg      beacon.Eth2Config
+	indexSet map[string]struct{}
+
+	targetRoots map[uint64]rootResult                 // epoch -> target root
+	epochDuties map[uint64]map[string]attestationDuty // epoch -> validator index string -> duty
+	blocks      map[uint64]cachedBlock                // slot -> block
+	statuses    map[string]beacon.ValidatorStatus     // validator index string -> status
+}
+
+// newEpochCache creates a cache that tracks the supplied validator index set.
+// statuses may be nil; when provided it pre-populates validator statuses (keyed
+// by index string) so the cache never has to query them again for inactive
+// detection.
+func newEpochCache(
 	bc PerformanceBeaconClient,
 	cfg beacon.Eth2Config,
-	validatorIndex uint64,
-	epoch uint64,
-) (epochResult, error) {
-	// Step 1: resolve the canonical target block root for the epoch. This is
-	// the canonical block root at slot epoch*SlotsPerEpoch, walking back if
-	// the boundary slot was skipped.
-	targetRoot, err := resolveTargetRoot(bc, cfg, epoch)
-	if err != nil {
-		return epochResultMissed, err
+	indexSet map[string]struct{},
+	statuses map[string]beacon.ValidatorStatus,
+) *epochCache {
+	if statuses == nil {
+		statuses = map[string]beacon.ValidatorStatus{}
+	}
+	return &epochCache{
+		bc:          bc,
+		cfg:         cfg,
+		indexSet:    indexSet,
+		targetRoots: map[uint64]rootResult{},
+		epochDuties: map[uint64]map[string]attestationDuty{},
+		blocks:      map[uint64]cachedBlock{},
+		statuses:    statuses,
+	}
+}
+
+// computeSummary evaluates one validator over the inclusive epoch range using
+// the shared cache.
+func (c *epochCache) computeSummary(indexStr string, indexU64 uint64, startEpoch, endEpoch uint64) (*PerformanceSummary, error) {
+	summary := &PerformanceSummary{
+		ValidatorIndex:  indexU64,
+		StartEpoch:      startEpoch,
+		EndEpoch:        endEpoch,
+		TotalEpochs:     endEpoch - startEpoch + 1,
+		MissedEpochList: []uint64{},
+		TimelyEpochList: []uint64{},
 	}
 
-	// Step 2: find the validator's attestation duty for the epoch by walking
-	// the committees response and matching against validatorIndex.
-	duty, found, err := findAttestationDuty(bc, epoch, validatorIndex)
+	for epoch := startEpoch; epoch <= endEpoch; epoch++ {
+		state, err := c.evaluateEpoch(indexStr, indexU64, epoch)
+		if err != nil {
+			return nil, fmt.Errorf("error checking epoch %d: %w", epoch, err)
+		}
+		switch state {
+		case epochResultTimely:
+			summary.TimelyEpochs++
+			summary.TimelyEpochList = append(summary.TimelyEpochList, epoch)
+		case epochResultMissed:
+			summary.MissedEpochs++
+			summary.MissedEpochList = append(summary.MissedEpochList, epoch)
+		case epochResultInactive:
+			summary.InactiveEpochs++
+		}
+	}
+
+	activeEpochs := summary.TimelyEpochs + summary.MissedEpochs
+	if activeEpochs > 0 {
+		summary.PerformancePct = float64(summary.TimelyEpochs) / float64(activeEpochs) * 100.0
+	}
+
+	return summary, nil
+}
+
+// evaluateEpoch performs the per-epoch evaluation for a single validator. It
+// returns epochResultTimely if a matching, timely target vote was found;
+// epochResultMissed if the validator had a duty but no matching attestation
+// landed; epochResultInactive if the validator had no committee assignment for
+// the epoch (and was not required to attest).
+func (c *epochCache) evaluateEpoch(indexStr string, indexU64 uint64, epoch uint64) (epochResult, error) {
+	// Find the validator's attestation duty for the epoch from the (cached)
+	// committees.
+	duty, found, err := c.dutyFor(epoch, indexStr)
 	if err != nil {
 		return epochResultMissed, err
 	}
 	if !found {
-		indexStr := strconv.FormatUint(validatorIndex, 10)
-		status, err := bc.GetValidatorStatusByIndex(indexStr, nil)
+		status, err := c.status(indexStr)
 		if err != nil {
-			return epochResultMissed, fmt.Errorf("error getting validator status for index %d: %w", validatorIndex, err)
+			return epochResultMissed, fmt.Errorf("error getting validator status for index %s: %w", indexStr, err)
 		}
 		if !validatorHadAttestationDuty(status, epoch) {
 			return epochResultInactive, nil
 		}
 		return epochResultMissed, fmt.Errorf(
-			"validator index %d was active in epoch %d but was not found in attestation committees; ensure your beacon node provides historical committee data (archival node required)",
-			validatorIndex, epoch,
+			"validator index %s was active in epoch %d but was not found in attestation committees; ensure your beacon node provides historical committee data (archival node required)",
+			indexStr, epoch,
 		)
 	}
 
-	// Step 3: scan the inclusion window for a matching attestation. The
-	// inclusion window for the target flag is up to SLOTS_PER_EPOCH slots
-	// after the duty slot. Return as soon as we find a match.
-	inclusionEndExclusive := duty.slot + 1 + cfg.SlotsPerEpoch
+	// Resolve the canonical target block root for the epoch (cached, shared).
+	targetRoot, err := c.targetRoot(epoch)
+	if err != nil {
+		return epochResultMissed, err
+	}
+
+	// Scan the inclusion window for a matching attestation. The inclusion
+	// window for the target flag is up to SLOTS_PER_EPOCH slots after the duty
+	// slot. Return as soon as we find a match.
+	inclusionEndExclusive := duty.slot + 1 + c.cfg.SlotsPerEpoch
 	for slot := duty.slot + 1; slot < inclusionEndExclusive; slot++ {
-		block, exists, err := bc.GetBeaconBlock(strconv.FormatUint(slot, 10))
+		block, exists, err := c.block(slot)
 		if err != nil {
 			return epochResultMissed, fmt.Errorf("error getting block at slot %d: %w", slot, err)
 		}
@@ -312,6 +475,113 @@ func checkEpoch(
 	}
 
 	return epochResultMissed, nil
+}
+
+// targetRoot returns the canonical block root for epoch E, memoized per epoch.
+func (c *epochCache) targetRoot(epoch uint64) (common.Hash, error) {
+	if r, ok := c.targetRoots[epoch]; ok {
+		return r.root, r.err
+	}
+	root, err := resolveTargetRoot(c.bc, c.cfg, epoch)
+	c.targetRoots[epoch] = rootResult{root: root, err: err}
+	return root, err
+}
+
+// block returns the beacon block at the given slot, memoized per slot. The
+// returned bool reports whether a block exists at that slot (false for a
+// skipped slot).
+func (c *epochCache) block(slot uint64) (beacon.BeaconBlock, bool, error) {
+	if b, ok := c.blocks[slot]; ok {
+		return b.block, b.exists, nil
+	}
+	block, exists, err := c.bc.GetBeaconBlock(strconv.FormatUint(slot, 10))
+	if err != nil {
+		return beacon.BeaconBlock{}, false, err
+	}
+	c.blocks[slot] = cachedBlock{block: block, exists: exists}
+	return block, exists, nil
+}
+
+// status returns the validator status for the given index string, memoized and
+// using any pre-populated statuses first.
+func (c *epochCache) status(indexStr string) (beacon.ValidatorStatus, error) {
+	if status, ok := c.statuses[indexStr]; ok {
+		return status, nil
+	}
+	status, err := c.bc.GetValidatorStatusByIndex(indexStr, nil)
+	if err != nil {
+		return beacon.ValidatorStatus{}, err
+	}
+	c.statuses[indexStr] = status
+	return status, nil
+}
+
+// dutyFor returns the requested validator's attestation duty for the epoch,
+// building (and caching) the duty map for all tracked indices on first access.
+func (c *epochCache) dutyFor(epoch uint64, indexStr string) (attestationDuty, bool, error) {
+	if err := c.ensureEpochDuties(epoch); err != nil {
+		return attestationDuty{}, false, err
+	}
+	duty, found := c.epochDuties[epoch][indexStr]
+	return duty, found, nil
+}
+
+// ensureEpochDuties fetches the committees for the epoch once and, in a single
+// pass, records the attestation duties of every tracked validator index along
+// with the committee sizes needed to compute aggregation-bits offsets.
+func (c *epochCache) ensureEpochDuties(epoch uint64) error {
+	if _, ok := c.epochDuties[epoch]; ok {
+		return nil
+	}
+
+	committees, err := c.bc.GetCommitteesForEpoch(&epoch)
+	if err != nil {
+		return fmt.Errorf("error getting committees for epoch %d: %w", epoch, err)
+	}
+	defer committees.Release()
+
+	duties := map[string]attestationDuty{}
+	// slot -> committee_index -> validator count, for every committee in the
+	// epoch. Needed because post-Electra aggregation_bits pack multiple
+	// committees per slot, so the offset of a validator depends on the sizes of
+	// the lower-indexed committees at its slot.
+	slotSizes := map[uint64]map[uint64]int{}
+
+	for i := 0; i < committees.Count(); i++ {
+		slot := committees.Slot(i)
+		committeeIndex := committees.Index(i)
+		validators := committees.Validators(i)
+
+		if slotSizes[slot] == nil {
+			slotSizes[slot] = map[uint64]int{}
+		}
+		slotSizes[slot][committeeIndex] = len(validators)
+
+		// Only bother matching when there are still tracked validators left to
+		// find that could be in this committee.
+		for pos, vIdx := range validators {
+			if _, tracked := c.indexSet[vIdx]; !tracked {
+				continue
+			}
+			if _, already := duties[vIdx]; already {
+				continue
+			}
+			duties[vIdx] = attestationDuty{
+				slot:           slot,
+				committeeIndex: committeeIndex,
+				position:       pos,
+			}
+		}
+	}
+
+	// Attach the committee-size map for each duty's slot.
+	for vIdx, duty := range duties {
+		duty.committeeSizesAtDay = slotSizes[duty.slot]
+		duties[vIdx] = duty
+	}
+
+	c.epochDuties[epoch] = duties
+	return nil
 }
 
 // resolveTargetRoot returns the canonical block root for epoch E, i.e.
@@ -333,56 +603,6 @@ func resolveTargetRoot(bc PerformanceBeaconClient, cfg beacon.Eth2Config, epoch 
 		}
 	}
 	return common.Hash{}, fmt.Errorf("could not find a non-skipped slot within %d slots of epoch %d boundary to resolve target root", maxTargetRootWalkback, epoch)
-}
-
-// findAttestationDuty walks the committees response for the epoch and
-// returns the (slot, committee_index, position) assignment of the requested
-// validator, plus the committee-size map for the duty slot (needed to compute
-// the aggregation-bits offset for post-Electra attestations).
-func findAttestationDuty(bc PerformanceBeaconClient, epoch uint64, validatorIndex uint64) (attestationDuty, bool, error) {
-	committees, err := bc.GetCommitteesForEpoch(&epoch)
-	if err != nil {
-		return attestationDuty{}, false, fmt.Errorf("error getting committees for epoch %d: %w", epoch, err)
-	}
-	defer committees.Release()
-
-	indexStr := strconv.FormatUint(validatorIndex, 10)
-
-	// First pass: locate the validator's duty.
-	var duty attestationDuty
-	found := false
-	for i := 0; i < committees.Count(); i++ {
-		validators := committees.Validators(i)
-		for pos, vIdx := range validators {
-			if vIdx == indexStr {
-				duty.slot = committees.Slot(i)
-				duty.committeeIndex = committees.Index(i)
-				duty.position = pos
-				found = true
-				break
-			}
-		}
-		if found {
-			break
-		}
-	}
-
-	if !found {
-		return attestationDuty{}, false, nil
-	}
-
-	// Second pass: collect committee sizes for all committees at duty.slot
-	// so that ValidatorAttested can compute the correct aggregation-bits
-	// offset under post-Electra attestation aggregation.
-	duty.committeeSizesAtDay = map[uint64]int{}
-	for i := 0; i < committees.Count(); i++ {
-		if committees.Slot(i) != duty.slot {
-			continue
-		}
-		duty.committeeSizesAtDay[committees.Index(i)] = committees.ValidatorCount(i)
-	}
-
-	return duty, true, nil
 }
 
 // matchesDuty returns true if any attestation in atts is a timely-target
@@ -434,4 +654,35 @@ func validatorHadAttestationDuty(status beacon.ValidatorStatus, epoch uint64) bo
 		return false
 	}
 	return true
+}
+
+// summaryToResponse packages a PerformanceSummary into the API response,
+// attaching the pDAO performance_threshold and pass/fail verdict.
+func summaryToResponse(pubkey rptypes.ValidatorPubkey, summary *PerformanceSummary) *api.VerifyPerformanceResponse {
+	// The performance_threshold setting is scaled by 1e18 (1e18 = 100%).
+	// thresholdWei, err := protocol.GetPerformanceThreshold(rp, nil)
+	// if err != nil {
+	// 	return nil, fmt.Errorf("error getting performance threshold: %w", err)
+	// }
+	// thresholdPct := eth.WeiToEth(thresholdWei) * 100
+	//
+	// TODO: The rocketDAOProtocolSettingsPerformance contract is not yet deployed.
+	// Use the RPIP-73 initial value until it is.
+	thresholdPct := defaultPerformanceThresholdPct
+
+	return &api.VerifyPerformanceResponse{
+		ValidatorPubkey:         pubkey,
+		ValidatorIndex:          summary.ValidatorIndex,
+		StartEpoch:              summary.StartEpoch,
+		EndEpoch:                summary.EndEpoch,
+		TotalEpochs:             summary.TotalEpochs,
+		TimelyEpochs:            summary.TimelyEpochs,
+		MissedEpochs:            summary.MissedEpochs,
+		InactiveEpochs:          summary.InactiveEpochs,
+		PerformancePct:          summary.PerformancePct,
+		PerformanceThresholdPct: thresholdPct,
+		PassesThreshold:         summary.PerformancePct >= thresholdPct,
+		MissedEpochList:         summary.MissedEpochList,
+		TimelyEpochList:         summary.TimelyEpochList,
+	}
 }
