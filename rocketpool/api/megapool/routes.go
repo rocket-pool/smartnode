@@ -48,6 +48,7 @@ func RegisterRoutes(router *snroute.Router) {
 	snroute.Read("/api/megapool/get-effective-delegate", getEffectiveDelegateHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/latest-block-withdrawals", latestBlockWithdrawalsHandler).RegisterTo(router)
 	snroute.Read("/api/megapool/beacon-withdrawal-queue-estimate", beaconWithdrawalQueueEstimateHandler).RegisterTo(router)
+	snroute.Read("/api/megapool/verify-performance", verifyPerformanceHandler).RegisterTo(router)
 }
 
 func parseUint64(r *http.Request, name string) (uint64, error) {

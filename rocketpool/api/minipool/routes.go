@@ -3,6 +3,7 @@ package minipool
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -39,8 +40,8 @@ func RegisterRoutes(router *snroute.Router) {
 	snroute.Read("/api/minipool/can-change-withdrawal-creds", canChangeWithdrawalCredsHandler).RegisterTo(router)
 	snroute.Write("/api/minipool/change-withdrawal-creds", changeWithdrawalCredsHandler).RegisterTo(router)
 	snroute.Read("/api/minipool/get-rescue-dissolved-details-for-node", getRescueDissolvedDetailsForNodeHandler).RegisterTo(router)
+	snroute.Read("/api/minipool/verify-performance", verifyPerformanceHandler).RegisterTo(router)
 	snroute.Write("/api/minipool/rescue-dissolved", rescueDissolvedHandler).RegisterTo(router)
-
 }
 
 func parseAddress(r *http.Request, name string) (common.Address, error) {
@@ -52,4 +53,19 @@ func parseAddress(r *http.Request, name string) (common.Address, error) {
 		return common.Address{}, fmt.Errorf("missing required parameter: %s", name)
 	}
 	return common.HexToAddress(raw), nil
+}
+
+func parseUint64Param(r *http.Request, name string) (uint64, error) {
+	raw := r.URL.Query().Get(name)
+	if raw == "" {
+		raw = r.FormValue(name)
+	}
+	if raw == "" {
+		return 0, fmt.Errorf("missing required parameter: %s", name)
+	}
+	v, err := strconv.ParseUint(raw, 10, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid %s: %w", name, err)
+	}
+	return v, nil
 }

@@ -1,11 +1,14 @@
 package rocketpool
 
 import (
+	"context"
+	"fmt"
 	"math/big"
 	"net/url"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
+	"github.com/goccy/go-json"
 
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
@@ -168,6 +171,29 @@ func (c *Client) ChangeWithdrawalCredentials(address common.Address, mnemonic st
 // Check all of the node's minipools for rescue eligibility, and return the details of the rescuable ones
 func (c *Client) GetMinipoolRescueDissolvedDetailsForNode() (api.GetMinipoolRescueDissolvedDetailsForNodeResponse, error) {
 	return c.callAPI[api.GetMinipoolRescueDissolvedDetailsForNodeResponse]("GET", "/api/minipool/get-rescue-dissolved-details-for-node", nil, "Could not get get-minipool-rescue-dissolved-details-for-node status")
+}
+
+// VerifyMinipoolPerformance computes RPIP-73 target-vote performance for a
+// minipool's validator over [startEpoch, endEpoch]. This call has no client-
+// side deadline because each epoch requires a full Beacon State SSZ download,
+// which can take several minutes per epoch on an archival beacon node.
+func (c *Client) VerifyMinipoolPerformance(address common.Address, startEpoch, endEpoch uint64) (api.VerifyPerformanceResponse, error) {
+	responseBytes, err := c.callHTTPAPICtx(context.Background(), "GET", "/api/minipool/verify-performance", url.Values{
+		"address":    {address.Hex()},
+		"startEpoch": {strconv.FormatUint(startEpoch, 10)},
+		"endEpoch":   {strconv.FormatUint(endEpoch, 10)},
+	})
+	if err != nil {
+		return api.VerifyPerformanceResponse{}, fmt.Errorf("Could not verify minipool performance: %w", err)
+	}
+	var response api.VerifyPerformanceResponse
+	if err := json.Unmarshal(responseBytes, &response); err != nil {
+		return api.VerifyPerformanceResponse{}, fmt.Errorf("Could not decode verify-performance response: %w", err)
+	}
+	if response.Error != "" {
+		return api.VerifyPerformanceResponse{}, fmt.Errorf("Could not verify minipool performance: %s", response.Error)
+	}
+	return response, nil
 }
 
 // Rescue a dissolved minipool by depositing ETH for it to the Beacon deposit contract
