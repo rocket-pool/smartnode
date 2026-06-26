@@ -415,10 +415,11 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 				},
 			},
 			{
-				Name:      "verify-performance",
-				Aliases:   []string{"vp"},
-				Usage:     "Verify a megapool validator's RPIP-73 target-vote attestation performance over a range of epochs.",
-				UsageText: "rocketpool megapool verify-performance validator-id [options]",
+				Name:        "verify-performance",
+				Aliases:     []string{"vp"},
+				Usage:       "Verify the RPIP-73 target-vote attestation performance of one or more megapool validators over a range of epochs.",
+				UsageText:   "rocketpool megapool verify-performance validator-ids [options]",
+				Description: "validator-ids is either a single validator id, a comma-separated list of validator ids, or 'all' to check every validator on the megapool.",
 				Flags: []cli.Flag{
 					&cli.Uint64Flag{
 						Name:    "start-epoch",
@@ -445,13 +446,14 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					validatorId, err := cliutils.ValidatePositiveUint32("validator-id", c.Args().Get(0))
-					if err != nil {
+					targets := c.Args().Get(0)
+					if err := validateMegapoolTargets(targets); err != nil {
 						return err
 					}
 
 					var megapoolAddr common.Address
 					if c.IsSet("megapool") {
+						var err error
 						megapoolAddr, err = cliutils.ValidateAddress("megapool", c.String("megapool"))
 						if err != nil {
 							return err
@@ -460,7 +462,7 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 
 					return verifyMegapoolPerformance(
 						megapoolAddr,
-						validatorId,
+						targets,
 						c.Uint64("start-epoch"),
 						c.Uint64("epochs"),
 						c.Bool("yes"),

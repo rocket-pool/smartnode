@@ -327,10 +327,11 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 			},
 
 			{
-				Name:      "verify-performance",
-				Aliases:   []string{"vp"},
-				Usage:     "Verify a minipool's RPIP-73 target-vote attestation performance over a range of epochs.",
-				UsageText: "rocketpool minipool verify-performance minipool-address [options]",
+				Name:        "verify-performance",
+				Aliases:     []string{"vp"},
+				Usage:       "Verify the RPIP-73 target-vote attestation performance of one or more minipools over a range of epochs.",
+				UsageText:   "rocketpool minipool verify-performance minipools [options]",
+				Description: "minipools is either a single minipool address, a comma-separated list of minipool addresses, or 'all' to check every minipool owned by the node.",
 				Flags: []cli.Flag{
 					&cli.Uint64Flag{
 						Name:    "start-epoch",
@@ -352,12 +353,12 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 					if err := cliutils.ValidateArgCount(c, 1); err != nil {
 						return err
 					}
-					address, err := cliutils.ValidateAddress("minipool-address", c.Args().Get(0))
-					if err != nil {
+					targets := c.Args().Get(0)
+					if err := validateMinipoolTargets(targets); err != nil {
 						return err
 					}
 					return verifyMinipoolPerformance(
-						address,
+						targets,
 						c.Uint64("start-epoch"),
 						c.Uint64("epochs"),
 						c.Bool("yes"),
