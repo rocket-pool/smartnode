@@ -363,3 +363,23 @@ type VerifyPerformanceResponse struct {
 	MissedEpochList         []uint64              `json:"missedEpochList"`
 	TimelyEpochList         []uint64              `json:"timelyEpochList"`
 }
+
+// VerifyPerformanceResult is one validator's entry in a batch verify-performance
+// response. Either MinipoolAddress (for minipools) or ValidatorId (for megapool
+// validators) identifies the target. Performance holds the result when the
+// check succeeded; Error is populated instead when that single target failed so
+// one bad target does not abort the rest of the batch.
+type VerifyPerformanceResult struct {
+	MinipoolAddress common.Address             `json:"minipoolAddress"`
+	ValidatorId     uint32                     `json:"validatorId"`
+	Performance     *VerifyPerformanceResponse `json:"performance"`
+	Error           string                     `json:"error"`
+}
+
+// VerifyPerformanceBatchResponse reports RPIP-73 target-vote performance for one
+// or more validators verified in a single run.
+type VerifyPerformanceBatchResponse struct {
+	Status  string                    `json:"status"`
+	Error   string                    `json:"error"`
+	Results []VerifyPerformanceResult `json:"results"`
+}
