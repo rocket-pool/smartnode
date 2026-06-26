@@ -16,10 +16,10 @@ import (
 
 // Config
 const (
-	ExitSettingsContractName          string = "rocketDAOProtocolSettingsExit"
-	CooperativeExitPhaseSettingPath   string = "cooperative.exit.phase"
-	DidNotExitPenaltySettingPath      string = "did.not.exit.penalty"
-	DidNotExitCooldownSettingPath     string = "did.not.exit.cooldown"
+	ExitSettingsContractName        string = "rocketDAOProtocolSettingsExit"
+	CooperativeExitPhaseSettingPath string = "cooperative.exit.phase"
+	DidNotExitPenaltySettingPath    string = "did.not.exit.penalty"
+	DidNotExitCooldownSettingPath   string = "did.not.exit.cooldown"
 )
 
 // Minimum time a validator must remain exit-requested before triggered exit or penalty (hours)

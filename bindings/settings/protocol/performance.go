@@ -16,12 +16,12 @@ import (
 
 // Config
 const (
-	PerformanceSettingsContractName        string = "rocketDAOProtocolSettingsPerformance"
-	PerformanceExitsEnabledSettingPath     string = "performance.exits.enabled"
-	PerformancePeriodSettingPath           string = "performance.period"
-	PerformanceThresholdSettingPath        string = "performance.threshold"
-	PerformanceChallengePeriodSettingPath  string = "performance.challenge.period"
-	PerformanceChallengeBondSettingPath    string = "performance.challenge.bond"
+	PerformanceSettingsContractName       string = "rocketDAOProtocolSettingsPerformance"
+	PerformanceExitsEnabledSettingPath    string = "performance.exits.enabled"
+	PerformancePeriodSettingPath          string = "performance.period"
+	PerformanceThresholdSettingPath       string = "performance.threshold"
+	PerformanceChallengePeriodSettingPath string = "performance.challenge.period"
+	PerformanceChallengeBondSettingPath   string = "performance.challenge.bond"
 )
 
 // Performance exits currently enabled
