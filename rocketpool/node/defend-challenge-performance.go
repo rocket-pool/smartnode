@@ -183,6 +183,8 @@ func (t *defendChallengePerformance) run(state *state.NetworkState) error {
 		return err
 	}
 
+	// TODO: Fetch megapool challenges
+
 	participationCallData := []*big.Int{new(big.Int).Sub(
 		new(big.Int).Lsh(big.NewInt(1), 200),
 		big.NewInt(1)),
