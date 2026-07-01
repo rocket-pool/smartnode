@@ -319,6 +319,53 @@ func CheckEpochTargetVote(
 	return state != epochResultMissed, nil
 }
 
+// FindFirstTimelyTargetVote scans the supplied validator indices over the
+// supplied epochs and returns the first validator index (and the epoch) that
+// made a valid target vote
+func FindFirstTimelyTargetVote(
+	bc PerformanceBeaconClient,
+	cfg beacon.Eth2Config,
+	validatorIndices []uint64,
+	epochs []uint64,
+) (validatorIndex uint64, epoch uint64, found bool, err error) {
+	if cfg.SlotsPerEpoch == 0 {
+		return 0, 0, false, fmt.Errorf("invalid beacon config: SlotsPerEpoch is 0")
+	}
+
+	// Build the tracked index set (keyed by index string, as the cache keys on
+	// those) while de-duplicating the input.
+	indexSet := make(map[string]struct{}, len(validatorIndices))
+	indexStrByIndex := make(map[uint64]string, len(validatorIndices))
+	uniqueIndices := make([]uint64, 0, len(validatorIndices))
+	for _, idx := range validatorIndices {
+		if _, seen := indexStrByIndex[idx]; seen {
+			continue
+		}
+		s := strconv.FormatUint(idx, 10)
+		indexSet[s] = struct{}{}
+		indexStrByIndex[idx] = s
+		uniqueIndices = append(uniqueIndices, idx)
+	}
+
+	cache := newEpochCache(bc, cfg, indexSet, nil)
+
+	// Inspect each validator over the challenged epochs, returning as soon as
+	// one of them is found to have made a timely target vote.
+	for _, idx := range uniqueIndices {
+		for _, ep := range epochs {
+			state, err := cache.evaluateEpoch(indexStrByIndex[idx], idx, ep)
+			if err != nil {
+				return 0, 0, false, fmt.Errorf("error checking validator index %d in epoch %d: %w", idx, ep, err)
+			}
+			if state == epochResultTimely {
+				return idx, ep, true, nil
+			}
+		}
+	}
+
+	return 0, 0, false, nil
+}
+
 // epochResult enumerates the per-epoch verdicts.
 type epochResult int
 

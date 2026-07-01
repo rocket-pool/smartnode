@@ -39,23 +39,24 @@ var (
 const (
 	MaxConcurrentEth1Requests = 200
 
-	DownloadRewardsTreesColor      = color.FgGreen
-	MetricsColor                   = color.FgHiYellow
-	ManageFeeRecipientColor        = color.FgHiCyan
-	DefendPdaoPropsColor           = color.FgYellow
-	VerifyPdaoPropsColor           = color.FgYellow
-	DistributeMinipoolsColor       = color.FgHiGreen
-	ErrorColor                     = color.FgRed
-	WarningColor                   = color.FgYellow
-	UpdateColor                    = color.FgHiWhite
-	PrestakeMegapoolValidatorColor = color.FgHiGreen
-	StakeMegapoolValidatorColor    = color.FgHiBlue
-	NotifyValidatorExitColor       = color.FgHiYellow
-	NotifyFinalBalanceColor        = color.FgHiMagenta
-	DefendChallengeExitColor       = color.FgHiGreen
-	ProvisionExpressTickets        = color.FgMagenta
-	SetUseLatestDelegateColor      = color.FgBlue
-	CheckPortConnectivityColor     = color.FgHiYellow
+	DownloadRewardsTreesColor       = color.FgGreen
+	MetricsColor                    = color.FgHiYellow
+	ManageFeeRecipientColor         = color.FgHiCyan
+	DefendPdaoPropsColor            = color.FgYellow
+	VerifyPdaoPropsColor            = color.FgYellow
+	DistributeMinipoolsColor        = color.FgHiGreen
+	ErrorColor                      = color.FgRed
+	WarningColor                    = color.FgYellow
+	UpdateColor                     = color.FgHiWhite
+	PrestakeMegapoolValidatorColor  = color.FgHiGreen
+	StakeMegapoolValidatorColor     = color.FgHiBlue
+	NotifyValidatorExitColor        = color.FgHiYellow
+	NotifyFinalBalanceColor         = color.FgHiMagenta
+	DefendChallengeExitColor        = color.FgHiGreen
+	DefendChallengePerformanceColor = color.FgHiBlue
+	ProvisionExpressTickets         = color.FgMagenta
+	SetUseLatestDelegateColor       = color.FgBlue
+	CheckPortConnectivityColor      = color.FgHiYellow
 )
 
 // Register node command
@@ -210,6 +211,12 @@ func run(c *cli.Command) error {
 	if err != nil {
 		return err
 	}
+
+	defendChallengePerformance, err := newDefendChallengePerformance(c, log.NewColorLogger(DefendChallengePerformanceColor))
+	if err != nil {
+		return err
+	}
+
 	distributeMinipools, err := newDistributeMinipools(c, log.NewColorLogger(DistributeMinipoolsColor))
 	if err != nil {
 		return err
@@ -358,6 +365,11 @@ func run(c *cli.Command) error {
 
 			// Run the defend challenge exit task
 			if err := defendChallengeExit.run(state); err != nil {
+				errorLog.Println(err)
+			}
+
+			// Run the defend challenge performance task
+			if err := defendChallengePerformance.run(state); err != nil {
 				errorLog.Println(err)
 			}
 
