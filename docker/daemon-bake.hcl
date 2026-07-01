@@ -21,7 +21,7 @@ target "builder" {
   ]
   target = "smartnode_dependencies"
   platforms = [ "linux/amd64" ]
-  output = [{ "type": "docker" }]
+  output = ["type=docker" ]
 }
 
 target "smartnode" {
@@ -40,5 +40,5 @@ target "smartnode" {
   ]
   target = "smartnode"
   platforms = ["linux/amd64", "linux/arm64"]
-  output = [{ "type": "docker" }]
+  output = ["type=docker" ]
 }
