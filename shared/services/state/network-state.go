@@ -108,6 +108,9 @@ type NetworkState struct {
 
 	// Protocol DAO proposals
 	ProtocolDaoProposalDetails []protocol.ProtocolDaoProposalDetails `json:"protocol_dao_proposal_details,omitempty"`
+
+	// Saturn 2 deployed
+	Saturn2Deployed bool `json:"saturn2_deployed"`
 }
 
 func (s NetworkState) MarshalJSON() ([]byte, error) {
@@ -395,6 +398,12 @@ func (m *NetworkStateManager) createNetworkState(slotNumber uint64, nodeAddresse
 	}
 	currentStep++
 	m.logLine("%d/%d - Retrieved Protocol DAO proposals (total time: %s)", currentStep, steps, time.Since(start))
+
+	// Check if Saturn 2 is deployed
+	state.Saturn2Deployed, err = IsSaturn2Deployed(m.rp, opts)
+	if err != nil {
+		return nil, fmt.Errorf("error checking if Saturn 2 is deployed: %w", err)
+	}
 
 	return state, nil
 }
