@@ -2981,6 +2981,35 @@ func RegisterCommands(app *cli.Command, name string, aliases []string) {
 									},
 
 									{
+										Name:      "proof-buffer",
+										Aliases:   []string{"pb"},
+										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.PerformanceProofBufferSettingPath, durationUsage),
+										UsageText: "rocketpool pdao propose setting performance proof-buffer value",
+										Flags: []cli.Flag{
+											&cli.BoolFlag{
+												Name:    "yes",
+												Aliases: []string{"y"},
+												Usage:   "Automatically confirm all interactive questions",
+											},
+										},
+										Action: func(ctx context.Context, c *cli.Command) error {
+
+											// Validate args
+											if err := cliutils.ValidateArgCount(c, 1); err != nil {
+												return err
+											}
+											value, err := cliutils.ValidateDuration("value", c.Args().Get(0))
+											if err != nil {
+												return err
+											}
+
+											// Run
+											return proposeSettingPerformanceProofBuffer(value, c.Bool("yes"))
+
+										},
+									},
+
+									{
 										Name:      "threshold",
 										Aliases:   []string{"t"},
 										Usage:     fmt.Sprintf("Propose updating the %s setting; %s", protocol.PerformanceThresholdSettingPath, percentUsage),

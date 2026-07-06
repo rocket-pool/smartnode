@@ -192,6 +192,12 @@ func getSettings(c *cli.Command) (*api.GetPDAOSettingsResponse, error) {
 
 		wg.Go(func() error {
 			var err error
+			response.Performance.ProofBuffer, err = protocol.GetPerformanceProofBuffer(rp, nil)
+			return err
+		})
+
+		wg.Go(func() error {
+			var err error
 			response.Performance.Threshold, err = protocol.GetPerformanceThreshold(rp, nil)
 			return err
 		})

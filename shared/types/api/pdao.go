@@ -190,6 +190,7 @@ type GetPDAOSettingsResponse struct {
 	Performance struct {
 		ExitsEnabled    bool          `json:"exitsEnabled"`
 		Period          uint64        `json:"period"`
+		ProofBuffer     time.Duration `json:"proofBuffer"`
 		Threshold       *big.Int      `json:"threshold"`
 		ChallengePeriod time.Duration `json:"challengePeriod"`
 		ChallengeBond   *big.Int      `json:"challengeBond"`

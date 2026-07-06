@@ -366,13 +366,18 @@ func proposeSettingPerformancePeriod(value uint64, yes bool) error {
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformancePeriodSettingPath, trueValue, yes)
 }
 
+func proposeSettingPerformanceProofBuffer(value time.Duration, yes bool) error {
+	trueValue := fmt.Sprint(uint64(value.Hours()))
+	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceProofBufferSettingPath, trueValue, yes)
+}
+
 func proposeSettingPerformanceThreshold(value *big.Int, yes bool) error {
 	trueValue := value.String()
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceThresholdSettingPath, trueValue, yes)
 }
 
 func proposeSettingPerformanceChallengePeriod(value time.Duration, yes bool) error {
-	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	trueValue := fmt.Sprint(uint64(value.Hours()))
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceChallengePeriodSettingPath, trueValue, yes)
 }
 
