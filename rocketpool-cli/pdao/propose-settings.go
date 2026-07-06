@@ -355,13 +355,18 @@ func proposeSettingPerformancePeriod(value uint64, yes bool, toJson string) erro
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformancePeriodSettingPath, trueValue, yes, toJson)
 }
 
+func proposeSettingPerformanceProofBuffer(value time.Duration, yes bool, toJson string) error {
+	trueValue := fmt.Sprint(uint64(value.Hours()))
+	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceProofBufferSettingPath, trueValue, yes, toJson)
+}
+
 func proposeSettingPerformanceThreshold(value *big.Int, yes bool, toJson string) error {
 	trueValue := value.String()
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceThresholdSettingPath, trueValue, yes, toJson)
 }
 
 func proposeSettingPerformanceChallengePeriod(value time.Duration, yes bool, toJson string) error {
-	trueValue := fmt.Sprint(uint64(value.Seconds()))
+	trueValue := fmt.Sprint(uint64(value.Hours()))
 	return proposeSetting(protocol.PerformanceSettingsContractName, protocol.PerformanceChallengePeriodSettingPath, trueValue, yes, toJson)
 }
 
