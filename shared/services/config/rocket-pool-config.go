@@ -1738,6 +1738,11 @@ func (cfg *RocketPoolConfig) Validate() []string {
 	if cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Lodestar {
 		_, errors = addAndCheckForDuplicate(portMap, cfg.Lodestar.P2pQuicPort, errors)
 	}
+	if cfg.ConsensusClient.Value.(config.ConsensusClient) == config.ConsensusClient_Teku {
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Teku.P2pIpv6Port, errors)
+		portMap, errors = addAndCheckForDuplicate(portMap, cfg.Teku.P2pQuicPort, errors)
+		_, errors = addAndCheckForDuplicate(portMap, cfg.Teku.P2pQuicIpv6Port, errors)
+	}
 
 	return errors
 }
