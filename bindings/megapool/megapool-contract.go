@@ -16,6 +16,13 @@ import (
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
 )
 
+type ParticipationProof struct {
+	ParticipationSlot  uint64
+	ValidatorIndex     uint64
+	ParticipationFlags uint8
+	Witnesses          [][32]byte
+}
+
 type SlotProof struct {
 	Slot      uint64
 	Witnesses [][32]byte
