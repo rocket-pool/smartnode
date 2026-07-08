@@ -4,6 +4,8 @@ import (
 	"math/big"
 	"reflect"
 	"testing"
+
+	"github.com/rocket-pool/smartnode/shared/services/performance"
 )
 
 func TestGetChallengedEpochs(t *testing.T) {
@@ -73,6 +75,56 @@ func TestGetChallengedEpochs(t *testing.T) {
 			got := challenge.getChallengedEpochs()
 			if !reflect.DeepEqual(got, tc.want) {
 				t.Errorf("getChallengedEpochs() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+// TestParticipationBitsetRoundTrip pins the encoder in the performance
+// package and the decoder here to the same bit-layout convention: encoding a
+// missed-epoch list and decoding it back must return the original list.
+func TestParticipationBitsetRoundTrip(t *testing.T) {
+	tests := []struct {
+		name         string
+		startEpoch   uint64
+		endEpoch     uint64
+		missedEpochs []uint64
+	}{
+		{
+			name:         "no missed epochs",
+			startEpoch:   105000,
+			endEpoch:     105500,
+			missedEpochs: []uint64{},
+		},
+		{
+			name:         "scattered epochs across word boundaries",
+			startEpoch:   105000,
+			endEpoch:     106000,
+			missedEpochs: []uint64{105000, 105255, 105256, 105511, 105767, 106000},
+		},
+		{
+			name:         "every epoch in a small range",
+			startEpoch:   200,
+			endEpoch:     209,
+			missedEpochs: allEpochsInRange(200, 10),
+		},
+		{
+			name:         "every epoch in a large range",
+			startEpoch:   1,
+			endEpoch:     44032,
+			missedEpochs: allEpochsInRange(1, 44032),
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			challenge := megapoolPerformanceChallenge{
+				startEpoch:            tc.startEpoch,
+				participationCallData: performance.EncodeParticipationBitset(tc.startEpoch, tc.endEpoch, tc.missedEpochs),
+			}
+			got := challenge.getChallengedEpochs()
+			if !reflect.DeepEqual(got, tc.missedEpochs) {
+				t.Errorf("round trip = %v, want %v", got, tc.missedEpochs)
 			}
 		})
 	}

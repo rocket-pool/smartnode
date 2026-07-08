@@ -13,6 +13,7 @@ package performance
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 
 	"github.com/ethereum/go-ethereum/common"
@@ -712,6 +713,35 @@ func validatorHadAttestationDuty(status beacon.ValidatorStatus, epoch uint64) bo
 	return true
 }
 
+// bitsPerParticipationWord matches the Solidity uint256 word width
+const bitsPerParticipationWord = 256
+
+// EncodeParticipationBitset encodes the missed epochs of the inclusive range
+// [startEpoch, endEpoch] as the uint256[] bitset expected by the
+// challengeMegapool participation calldata: the words form a single bit
+// stream starting at startEpoch, LSB-first within each word, with a 1 bit
+// marking a not-timely target attestation.
+func EncodeParticipationBitset(startEpoch, endEpoch uint64, missedEpochs []uint64) []*big.Int {
+	if endEpoch < startEpoch {
+		return []*big.Int{}
+	}
+	totalEpochs := endEpoch - startEpoch + 1
+	wordCount := (totalEpochs + bitsPerParticipationWord - 1) / bitsPerParticipationWord
+	words := make([]*big.Int, wordCount)
+	for i := range words {
+		words[i] = new(big.Int)
+	}
+	for _, epoch := range missedEpochs {
+		if epoch < startEpoch || epoch > endEpoch {
+			continue
+		}
+		offset := epoch - startEpoch
+		word := words[offset/bitsPerParticipationWord]
+		word.SetBit(word, int(offset%bitsPerParticipationWord), 1)
+	}
+	return words
+}
+
 // summaryToResponse packages a PerformanceSummary into the API response,
 // attaching the pDAO performance_threshold and pass/fail verdict.
 func summaryToResponse(pubkey rptypes.ValidatorPubkey, summary *PerformanceSummary, thresholdPct float64) *api.VerifyPerformanceResponse {
@@ -729,5 +759,6 @@ func summaryToResponse(pubkey rptypes.ValidatorPubkey, summary *PerformanceSumma
 		PassesThreshold:         summary.PerformancePct >= thresholdPct,
 		MissedEpochList:         summary.MissedEpochList,
 		TimelyEpochList:         summary.TimelyEpochList,
+		Participation:           EncodeParticipationBitset(summary.StartEpoch, summary.EndEpoch, summary.MissedEpochList),
 	}
 }
