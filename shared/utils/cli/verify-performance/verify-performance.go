@@ -5,6 +5,7 @@ package verifyperformance
 
 import (
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/rocket-pool/smartnode/shared/services/performance"
@@ -145,6 +146,43 @@ func PrintBatchResults(resp api.VerifyPerformanceBatchResponse, labelFor func(ap
 			fmt.Printf("  - %s\n", label)
 		}
 	}
+}
+
+// ChallengeGroup is a set of validators sharing an identical missed-epoch
+// set, challengeable together in a single challengeMegapool call.
+type ChallengeGroup struct {
+	ValidatorIds  []uint32
+	StartEpoch    uint64
+	Participation []*big.Int
+	MissedEpochs  []uint64
+}
+
+// GroupChallengeable groups the challengeable validators of a batch result by
+// identical missed-epoch sets, preserving the order in which they appear in
+// the results. Errored, passing, and non-challengeable validators are
+// excluded.
+func GroupChallengeable(results []api.VerifyPerformanceResult) []ChallengeGroup {
+	groups := []ChallengeGroup{}
+	groupIndexByKey := map[string]int{}
+	for _, result := range results {
+		perf := result.Performance
+		if result.Error != "" || perf == nil || !perf.Challengeable || len(perf.MissedEpochList) == 0 {
+			continue
+		}
+		key := fmt.Sprint(perf.StartEpoch, perf.MissedEpochList)
+		if i, ok := groupIndexByKey[key]; ok {
+			groups[i].ValidatorIds = append(groups[i].ValidatorIds, result.ValidatorId)
+			continue
+		}
+		groupIndexByKey[key] = len(groups)
+		groups = append(groups, ChallengeGroup{
+			ValidatorIds:  []uint32{result.ValidatorId},
+			StartEpoch:    perf.StartEpoch,
+			Participation: perf.Participation,
+			MissedEpochs:  perf.MissedEpochList,
+		})
+	}
+	return groups
 }
 
 func printEpochList(epochs []uint64) {
