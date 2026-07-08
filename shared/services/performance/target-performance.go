@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"math/big"
 	"strconv"
+	"time"
 
 	"github.com/ethereum/go-ethereum/common"
 
@@ -53,6 +54,113 @@ func GetPerformanceThresholdPct(rp *rocketpool.RocketPool) (float64, error) {
 		return 0, fmt.Errorf("error getting performance threshold: %w", err)
 	}
 	return eth.WeiToEth(thresholdWei) * 100.0, nil
+}
+
+// Defaults used before Saturn 2 deploys.
+const DefaultPerformancePeriodEpochs uint64 = 44032
+const defaultProofBuffer = 24 * time.Hour
+
+// ChallengeParams are the pDAO settings governing performance challenges.
+type ChallengeParams struct {
+	ExitsEnabled bool
+	PeriodEpochs uint64
+	ProofBuffer  time.Duration
+}
+
+// GetChallengeParams fetches the pDAO performance-challenge settings, using
+// the pre-Saturn-2 defaults when Saturn 2 is not deployed yet.
+func GetChallengeParams(rp *rocketpool.RocketPool) (ChallengeParams, error) {
+	saturn2Deployed, err := state.IsSaturn2Deployed(rp, nil)
+	if err != nil {
+		return ChallengeParams{}, fmt.Errorf("error checking if Saturn 2 is deployed: %w", err)
+	}
+	if !saturn2Deployed {
+		return ChallengeParams{
+			ExitsEnabled: true,
+			PeriodEpochs: DefaultPerformancePeriodEpochs,
+			ProofBuffer:  defaultProofBuffer,
+		}, nil
+	}
+	exitsEnabled, err := protocol.GetPerformanceExitsEnabled(rp, nil)
+	if err != nil {
+		return ChallengeParams{}, err
+	}
+	periodEpochs, err := protocol.GetPerformancePeriod(rp, nil)
+	if err != nil {
+		return ChallengeParams{}, err
+	}
+	proofBuffer, err := protocol.GetPerformanceProofBuffer(rp, nil)
+	if err != nil {
+		return ChallengeParams{}, err
+	}
+	return ChallengeParams{
+		ExitsEnabled: exitsEnabled,
+		PeriodEpochs: periodEpochs,
+		ProofBuffer:  proofBuffer,
+	}, nil
+}
+
+// challengeBeaconClient is the beacon client surface needed to evaluate the
+// challengeability of an epoch range.
+type challengeBeaconClient interface {
+	GetEth2Config() (beacon.Eth2Config, error)
+	GetBeaconHead() (beacon.BeaconHead, error)
+}
+
+// IsRangeChallengeable fetches the pDAO challenge settings and the beacon
+// head, then reports whether a performance check over the inclusive range
+// [startEpoch, endEpoch] could back an on-chain challenge. See
+// IsChallengeable for the rules.
+func IsRangeChallengeable(rp *rocketpool.RocketPool, bc challengeBeaconClient, startEpoch, endEpoch uint64) (bool, error) {
+	params, err := GetChallengeParams(rp)
+	if err != nil {
+		return false, err
+	}
+	cfg, err := bc.GetEth2Config()
+	if err != nil {
+		return false, fmt.Errorf("error getting beacon config: %w", err)
+	}
+	head, err := bc.GetBeaconHead()
+	if err != nil {
+		return false, fmt.Errorf("error getting beacon head: %w", err)
+	}
+	return IsChallengeable(params, cfg, head.Epoch, startEpoch, endEpoch), nil
+}
+
+// ExceedsChallengeThreshold reports whether the validator missed enough
+// target votes for a challenge to succeed: the missed share of the checked
+// period must be higher than the allowed slack (100% - performance_threshold).
+func ExceedsChallengeThreshold(resp *api.VerifyPerformanceResponse) bool {
+	if resp.TotalEpochs == 0 {
+		return false
+	}
+	missedPct := float64(resp.MissedEpochs) / float64(resp.TotalEpochs) * 100.0
+	return missedPct > 100.0-resp.PerformanceThresholdPct
+}
+
+// IsChallengeable reports whether a performance check over the inclusive
+// range [startEpoch, endEpoch] could back an on-chain challenge: performance
+// exits must be enabled, the range must cover exactly one performance period,
+// and it must be recent enough that the proof buffer has not elapsed
+// (startEpoch > currentEpoch - period - proofBuffer, with the buffer
+// converted to epochs).
+func IsChallengeable(params ChallengeParams, cfg beacon.Eth2Config, currentEpoch, startEpoch, endEpoch uint64) bool {
+	if !params.ExitsEnabled {
+		return false
+	}
+	if endEpoch != startEpoch+params.PeriodEpochs-1 {
+		return false
+	}
+	if cfg.SecondsPerEpoch == 0 {
+		return false
+	}
+	proofBufferEpochs := uint64(params.ProofBuffer.Seconds()) / cfg.SecondsPerEpoch
+	window := params.PeriodEpochs + proofBufferEpochs
+	if currentEpoch <= window {
+		// The whole chain history is still within the challenge window.
+		return true
+	}
+	return startEpoch > currentEpoch-window
 }
 
 // farFutureEpoch is the spec's FAR_FUTURE_EPOCH sentinel (2^64-1).

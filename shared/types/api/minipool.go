@@ -365,6 +365,11 @@ type VerifyPerformanceResponse struct {
 	// Participation is the challengeMegapool participation calldata (uint256[]):
 	// the epochs [StartEpoch, EndEpoch] as a bitset, 1 = not-timely target vote.
 	Participation []*big.Int `json:"participation"`
+	// Challengeable reports whether this check could back an on-chain challenge:
+	// performance exits are enabled, the range is exactly one performance period,
+	// it is recent enough to be within the proof buffer, and the validator's
+	// missed share of the period exceeds 100% - performance_threshold.
+	Challengeable bool `json:"challengeable"`
 }
 
 // VerifyPerformanceResult is one validator's entry in a batch verify-performance
