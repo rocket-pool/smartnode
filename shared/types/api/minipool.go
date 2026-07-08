@@ -362,6 +362,9 @@ type VerifyPerformanceResponse struct {
 	PassesThreshold         bool                  `json:"passesThreshold"`
 	MissedEpochList         []uint64              `json:"missedEpochList"`
 	TimelyEpochList         []uint64              `json:"timelyEpochList"`
+	// Participation is the challengeMegapool participation calldata (uint256[]):
+	// the epochs [StartEpoch, EndEpoch] as a bitset, 1 = not-timely target vote.
+	Participation []*big.Int `json:"participation"`
 }
 
 // VerifyPerformanceResult is one validator's entry in a batch verify-performance
