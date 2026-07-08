@@ -8,7 +8,6 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/ethereum/go-ethereum/accounts/abi/bind"
 	"github.com/ethereum/go-ethereum/common"
-	coretypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/urfave/cli/v3"
 
 	"github.com/rocket-pool/smartnode/bindings/megapool"
@@ -23,7 +22,6 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/performance"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
-	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -259,63 +257,7 @@ func (t *defendChallengePerformance) run(state *state.NetworkState) error {
 
 func (t *defendChallengePerformance) defendChallenge(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, challengeEpoch uint64, callopts *bind.CallOpts) error {
 
-	// Get transactor
-	opts, err := t.w.GetNodeAccountTransactor()
-	if err != nil {
-		return err
-	}
-
 	t.log.Printlnf("Creating a validator performance proof that validator id %d participated in the epoch %v.", validatorId, challengeEpoch)
-
-	validatorProof, slotTimestamp, slotProof, err := services.GetValidatorProof(t.c, 0, t.w, state.BeaconConfig, mp.GetAddress(), validatorPubkey, nil)
-	if err != nil {
-		t.log.Printlnf("[ERROR] There was an error during the proof creation process: %w", err)
-		return err
-	}
-
-	t.log.Printlnf("The validator performance proof has been successfully created.")
-	var gasInfo rocketpool.GasInfo
-
-	gasInfo, err = megapool.EstimateNotifyExitGas(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
-	if err != nil {
-		return err
-	}
-
-	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
-	// Get the max fee
-	maxFee := t.maxFee
-	if maxFee == nil || maxFee.Uint64() == 0 {
-		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
-		if err != nil {
-			return err
-		}
-	}
-
-	// Print the gas info
-	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
-		return nil
-	}
-
-	opts.GasFeeCap = maxFee
-	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
-	opts.GasLimit = gas.Uint64()
-
-	var tx *coretypes.Transaction
-
-	t.log.Printlnf("Notifying that validator %d is exiting.", validatorId)
-	tx, err = megapool.NotifyExit(rp, mp.GetAddress(), validatorId, slotTimestamp, validatorProof, slotProof, opts)
-	if err != nil {
-		return err
-	}
-
-	// Print TX info and wait for it to be included in a block
-	err = api.PrintAndWaitForTransaction(t.cfg, tx.Hash(), t.rp.Client, &t.log)
-	if err != nil {
-		return err
-	}
-
-	// Log
-	t.log.Printlnf("Successfully responded the performance challenge for validator %d.", validatorId)
 
 	// Return
 	return nil
