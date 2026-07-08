@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rocket-pool/smartnode/shared/services/performance"
 	"github.com/rocket-pool/smartnode/shared/services/rocketpool"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 	"github.com/rocket-pool/smartnode/shared/utils/cli/prompt"
@@ -16,7 +17,6 @@ import (
 // the user to confirm, because each epoch issues a committees fetch plus a
 // few-dozen block fetches against the beacon node.
 const LargeEpochRangeWarning uint64 = 256
-const defaultPerformancePeriodEpochs = 44032
 
 // ResolveEpochRange fills in defaults for the start/length range. If epochs
 // is 0, it defaults to the on-chain performance_period setting. Returns the
@@ -29,7 +29,7 @@ func ResolveEpochRange(rp *rocketpool.Client, startEpoch, epochs uint64) (uint64
 		}
 		epochs = settings.Performance.Period
 		if epochs == 0 {
-			epochs = defaultPerformancePeriodEpochs
+			epochs = performance.DefaultPerformancePeriodEpochs
 		}
 	}
 	endEpoch := startEpoch + epochs - 1
@@ -84,7 +84,11 @@ func PrintResult(resp api.VerifyPerformanceResponse, label string) {
 	}
 
 	if len(resp.MissedEpochList) > 0 {
-		fmt.Printf("\nMissed target epochs (challengeable):\n")
+		if resp.Challengeable {
+			fmt.Printf("\nMissed target epochs (challengeable):\n")
+		} else {
+			fmt.Printf("\nMissed target epochs (not challengeable):\n")
+		}
 		printEpochList(resp.MissedEpochList)
 	}
 }
