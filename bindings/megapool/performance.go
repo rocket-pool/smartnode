@@ -10,6 +10,15 @@ import (
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
 )
 
+// Estimate the gas to call ChallengeMegapool
+func EstimateChallengeMegapoolGas(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorIds []uint32, startEpoch uint64, participation []*big.Int, slotTimestamp uint64, slotProof SlotProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "challengeMegapool", megapoolAddress, validatorIds, startEpoch, participation, slotTimestamp, slotProof)
+}
+
 // Challenge the megapool
 func ChallengeMegapool(rp *rocketpool.RocketPool, megapoolAddress common.Address, validatorIds []uint32, startEpoch uint64, participation []*big.Int, slotTimestamp uint64, slotProof SlotProof, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
@@ -23,6 +32,15 @@ func ChallengeMegapool(rp *rocketpool.RocketPool, megapoolAddress common.Address
 	return tx.Hash(), nil
 }
 
+// Estimate the gas to call Respond
+func EstimateRespondGas(rp *rocketpool.RocketPool, challengeId uint64, offset uint64, challengeLeaf *big.Int, challengeWitness []common.Hash, slotTimestamp uint64, participationProof ParticipationProof, slotProof SlotProof, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "respond", challengeId, offset, challengeLeaf, challengeWitness, slotTimestamp, participationProof, slotProof)
+}
+
 func Respond(rp *rocketpool.RocketPool, challengeId uint64, offset uint64, challengeLeaf *big.Int, challengeWitness []common.Hash, slotTimestamp uint64, participationProof ParticipationProof, slotProof SlotProof, opts *bind.TransactOpts) (common.Hash, error) {
 	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
 	if err != nil {
@@ -33,6 +51,15 @@ func Respond(rp *rocketpool.RocketPool, challengeId uint64, offset uint64, chall
 		return common.Hash{}, fmt.Errorf("error responding to challenge: %w", err)
 	}
 	return tx.Hash(), nil
+}
+
+// Estimate the gas to call FinaliseChallenge
+func EstimateFinaliseChallengeGas(rp *rocketpool.RocketPool, challengeId uint64, opts *bind.TransactOpts) (rocketpool.GasInfo, error) {
+	rocketNetworkParticipation, err := getRocketNetworkParticipation(rp, nil)
+	if err != nil {
+		return rocketpool.GasInfo{}, err
+	}
+	return rocketNetworkParticipation.GetTransactionGasInfo(opts, "finaliseChallenge", challengeId)
 }
 
 func FinaliseChallenge(rp *rocketpool.RocketPool, challengeId uint64, opts *bind.TransactOpts) (common.Hash, error) {
