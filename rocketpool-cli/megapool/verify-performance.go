@@ -36,7 +36,7 @@ func validateMegapoolTargets(targets string) error {
 	return nil
 }
 
-func verifyMegapoolPerformance(megapoolAddress common.Address, targets string, startEpoch uint64, epochs uint64, yes bool) error {
+func verifyMegapoolPerformance(megapoolAddress common.Address, targetValidators string, startEpoch uint64, epochs uint64, yes bool) error {
 	rp, err := rocketpool.NewClient().WithReady()
 	if err != nil {
 		return err
@@ -52,7 +52,7 @@ func verifyMegapoolPerformance(megapoolAddress common.Address, targets string, s
 	}
 
 	start := time.Now()
-	resp, err := rp.VerifyMegapoolValidatorPerformance(megapoolAddress, targets, startEpoch, endEpoch)
+	resp, err := rp.VerifyMegapoolValidatorPerformance(megapoolAddress, targetValidators, startEpoch, endEpoch)
 	if err != nil {
 		return err
 	}
