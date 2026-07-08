@@ -92,6 +92,11 @@ func verifyPerformance(
 		return nil, err
 	}
 
+	challengeable, err := performance.IsRangeChallengeable(rp, bc, startEpoch, endEpoch)
+	if err != nil {
+		return nil, err
+	}
+
 	response := &api.VerifyPerformanceBatchResponse{
 		Results: make([]api.VerifyPerformanceResult, 0, len(validatorIds)),
 	}
@@ -107,6 +112,7 @@ func verifyPerformance(
 			result.Error = batch[i].Err.Error()
 		default:
 			result.Performance = batch[i].Response
+			result.Performance.Challengeable = challengeable && performance.ExceedsChallengeThreshold(result.Performance)
 		}
 		response.Results = append(response.Results, result)
 	}
