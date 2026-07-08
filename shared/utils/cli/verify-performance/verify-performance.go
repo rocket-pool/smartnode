@@ -16,6 +16,7 @@ import (
 // the user to confirm, because each epoch issues a committees fetch plus a
 // few-dozen block fetches against the beacon node.
 const LargeEpochRangeWarning uint64 = 256
+const defaultPerformancePeriodEpochs = 44032
 
 // ResolveEpochRange fills in defaults for the start/length range. If epochs
 // is 0, it defaults to the on-chain performance_period setting. Returns the
@@ -28,7 +29,7 @@ func ResolveEpochRange(rp *rocketpool.Client, startEpoch, epochs uint64) (uint64
 		}
 		epochs = settings.Performance.Period
 		if epochs == 0 {
-			return 0, 0, fmt.Errorf("on-chain performance_period is 0 and no --epochs was provided")
+			epochs = defaultPerformancePeriodEpochs
 		}
 	}
 	endEpoch := startEpoch + epochs - 1

@@ -9,20 +9,6 @@
 //  2. voting for the correct target root, i.e. data.target.root equals the
 //     canonical block root at the first slot of epoch E, AND
 //  3. included within SLOTS_PER_EPOCH slots of data.slot.
-//
-// This package recomputes the flag by inspecting block attestations rather
-// than downloading the full Beacon State SSZ. Per epoch under inspection the
-// cost is roughly: one committees fetch + one block-header fetch (target
-// root) + up to SLOTS_PER_EPOCH block fetches (inclusion window). This is
-// orders of magnitude cheaper than fetching beacon states, and works against
-// any standard Beacon API node (archival is still required for old slots).
-//
-// When several validators are verified over the same epoch range in a single
-// run, the per-epoch beacon data (target roots, committee assignments, and
-// inclusion-window blocks) is identical for every validator. The epochCache
-// type fetches each of those once and reuses them across all validators, so a
-// batch of N validators over E epochs costs roughly the same beacon I/O as a
-// single validator over E epochs instead of N times as much.
 package performance
 
 import (
@@ -32,12 +18,12 @@ import (
 	"github.com/ethereum/go-ethereum/common"
 
 	"github.com/rocket-pool/smartnode/bindings/rocketpool"
+	"github.com/rocket-pool/smartnode/bindings/settings/protocol"
 	rptypes "github.com/rocket-pool/smartnode/bindings/types"
-
-	// "github.com/rocket-pool/smartnode/bindings/settings/protocol"
-	// "github.com/rocket-pool/smartnode/bindings/utils/eth"
+	"github.com/rocket-pool/smartnode/bindings/utils/eth"
 
 	"github.com/rocket-pool/smartnode/shared/services/beacon"
+	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/types/api"
 )
 
@@ -50,11 +36,23 @@ const (
 	TimelyHeadFlagIndex   = 2
 )
 
-// defaultPerformanceThresholdPct is the RPIP-73 initial pDAO
-// performance_threshold value (94%). It is used while the on-chain
-// rocketDAOProtocolSettingsPerformance contract is not yet deployed; once
-// available, replace this with a live call to protocol.GetPerformanceThreshold.
+// defaultPerformanceThresholdPct is the RPIP-73 initial pDAO value
 const defaultPerformanceThresholdPct = 94.0
+
+func GetPerformanceThresholdPct(rp *rocketpool.RocketPool) (float64, error) {
+	saturn2Deployed, err := state.IsSaturn2Deployed(rp, nil)
+	if err != nil {
+		return 0, fmt.Errorf("error checking if Saturn 2 is deployed: %w", err)
+	}
+	if !saturn2Deployed {
+		return defaultPerformanceThresholdPct, nil
+	}
+	thresholdWei, err := protocol.GetPerformanceThreshold(rp, nil)
+	if err != nil {
+		return 0, fmt.Errorf("error getting performance threshold: %w", err)
+	}
+	return eth.WeiToEth(thresholdWei) * 100.0, nil
+}
 
 // farFutureEpoch is the spec's FAR_FUTURE_EPOCH sentinel (2^64-1).
 const farFutureEpoch = ^uint64(0)
@@ -138,12 +136,17 @@ func VerifyPerformance(
 		return nil, fmt.Errorf("error parsing validator index %q: %w", indexStr, err)
 	}
 
+	thresholdPct, err := GetPerformanceThresholdPct(rp)
+	if err != nil {
+		return nil, err
+	}
+
 	summary, err := CheckTargetPerformance(bc, cfg, validatorIndex, startEpoch, endEpoch)
 	if err != nil {
 		return nil, err
 	}
 
-	return summaryToResponse(pubkey, summary), nil
+	return summaryToResponse(pubkey, summary, thresholdPct), nil
 }
 
 // BatchValidatorResult is one validator's outcome from VerifyPerformanceBatch.
@@ -207,6 +210,12 @@ func VerifyPerformanceBatch(
 		return nil, fmt.Errorf("invalid beacon config: SlotsPerEpoch is 0")
 	}
 
+	// Fetch the pDAO performance threshold once for the whole batch.
+	thresholdPct, err := GetPerformanceThresholdPct(rp)
+	if err != nil {
+		return nil, err
+	}
+
 	// Resolve every non-zero pubkey to its index and status in a single call.
 	uniquePubkeys := make([]rptypes.ValidatorPubkey, 0, len(pubkeys))
 	seen := map[rptypes.ValidatorPubkey]struct{}{}
@@ -266,7 +275,7 @@ func VerifyPerformanceBatch(
 			results[i].Err = err
 			continue
 		}
-		results[i].Response = summaryToResponse(pk, summary)
+		results[i].Response = summaryToResponse(pk, summary, thresholdPct)
 	}
 
 	return results, nil
@@ -705,18 +714,7 @@ func validatorHadAttestationDuty(status beacon.ValidatorStatus, epoch uint64) bo
 
 // summaryToResponse packages a PerformanceSummary into the API response,
 // attaching the pDAO performance_threshold and pass/fail verdict.
-func summaryToResponse(pubkey rptypes.ValidatorPubkey, summary *PerformanceSummary) *api.VerifyPerformanceResponse {
-	// The performance_threshold setting is scaled by 1e18 (1e18 = 100%).
-	// thresholdWei, err := protocol.GetPerformanceThreshold(rp, nil)
-	// if err != nil {
-	// 	return nil, fmt.Errorf("error getting performance threshold: %w", err)
-	// }
-	// thresholdPct := eth.WeiToEth(thresholdWei) * 100
-	//
-	// TODO: The rocketDAOProtocolSettingsPerformance contract is not yet deployed.
-	// Use the RPIP-73 initial value until it is.
-	thresholdPct := defaultPerformanceThresholdPct
-
+func summaryToResponse(pubkey rptypes.ValidatorPubkey, summary *PerformanceSummary, thresholdPct float64) *api.VerifyPerformanceResponse {
 	return &api.VerifyPerformanceResponse{
 		ValidatorPubkey:         pubkey,
 		ValidatorIndex:          summary.ValidatorIndex,
