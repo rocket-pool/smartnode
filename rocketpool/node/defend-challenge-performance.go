@@ -22,6 +22,7 @@ import (
 	"github.com/rocket-pool/smartnode/shared/services/performance"
 	"github.com/rocket-pool/smartnode/shared/services/state"
 	"github.com/rocket-pool/smartnode/shared/services/wallet"
+	"github.com/rocket-pool/smartnode/shared/utils/api"
 	"github.com/rocket-pool/smartnode/shared/utils/log"
 )
 
@@ -41,6 +42,7 @@ type defendChallengePerformance struct {
 }
 
 type megapoolPerformanceChallenge struct {
+	challengeId           uint64
 	megapoolAddress       common.Address
 	validatorIds          []uint32
 	startEpoch            uint64
@@ -189,6 +191,7 @@ func (t *defendChallengePerformance) run(state *state.NetworkState) error {
 	}
 	// Use a megapool challenge stub for now
 	challenge := megapoolPerformanceChallenge{
+		challengeId:           0,
 		megapoolAddress:       megapoolAddress,
 		validatorIds:          []uint32{0, 1, 2},
 		participationCallData: participationCallData,
@@ -246,7 +249,7 @@ func (t *defendChallengePerformance) run(state *state.NetworkState) error {
 	// Defend the challenge using that validator id and epoch.
 	defender := validatorsByIndex[validatorIndex]
 	t.log.Printlnf("Megapool validator %d made a timely target vote in epoch %d; defending the performance challenge.", defender.validatorId, epoch)
-	if err := t.defendChallenge(t.rp, mp, defender.validatorId, state, defender.pubkey, epoch, opts); err != nil {
+	if err := t.defendChallenge(t.rp, challenge, defender, epoch); err != nil {
 		t.log.Printlnf("error defending performance challenge for megapool validator %d: %v", defender.validatorId, err)
 	}
 
@@ -255,9 +258,61 @@ func (t *defendChallengePerformance) run(state *state.NetworkState) error {
 
 }
 
-func (t *defendChallengePerformance) defendChallenge(rp *rocketpool.RocketPool, mp megapool.Megapool, validatorId uint32, state *state.NetworkState, validatorPubkey types.ValidatorPubkey, challengeEpoch uint64, callopts *bind.CallOpts) error {
+// defendChallenge responds to a performance challenge with a participation
+// proof of the defender's timely target vote in challengeEpoch.
+func (t *defendChallengePerformance) defendChallenge(rp *rocketpool.RocketPool, challenge megapoolPerformanceChallenge, defender challengedValidator, challengeEpoch uint64) error {
 
-	t.log.Printlnf("Creating a validator performance proof that validator id %d participated in the epoch %v.", validatorId, challengeEpoch)
+	// Get transactor
+	opts, err := t.w.GetNodeAccountTransactor()
+	if err != nil {
+		return err
+	}
+
+	t.log.Printlnf("Creating a participation proof that validator index %d made a timely target vote in epoch %d.", defender.index, challengeEpoch)
+
+	proofs, err := services.GetParticipationProof(t.c, defender.index, challengeEpoch)
+	if err != nil {
+		return fmt.Errorf("error creating the participation proof: %w", err)
+	}
+
+	gasInfo, err := megapool.EstimateRespondGas(rp, challenge.challengeId, proofs.Offset, proofs.ChallengeLeaf, proofs.ChallengeWitness, proofs.SlotTimestamp, proofs.Participation, proofs.Slot, opts)
+	if err != nil {
+		return err
+	}
+
+	gas := big.NewInt(int64(gasInfo.SafeGasLimit))
+	// Get the max fee
+	maxFee := t.maxFee
+	if maxFee == nil || maxFee.Uint64() == 0 {
+		maxFee, err = rpgas.GetHeadlessMaxFeeWeiWithLatestBlock(t.cfg, t.rp)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Print the gas info
+	if !api.PrintAndCheckGasInfo(gasInfo, true, t.gasThreshold, &t.log, maxFee, t.gasLimit) {
+		return nil
+	}
+
+	opts.GasFeeCap = maxFee
+	opts.GasTipCap = GetPriorityFee(t.maxPriorityFee, maxFee)
+	opts.GasLimit = gas.Uint64()
+
+	t.log.Printlnf("Responding to challenge %d with the timely target vote of validator %d in epoch %d.", challenge.challengeId, defender.validatorId, challengeEpoch)
+	txHash, err := megapool.Respond(rp, challenge.challengeId, proofs.Offset, proofs.ChallengeLeaf, proofs.ChallengeWitness, proofs.SlotTimestamp, proofs.Participation, proofs.Slot, opts)
+	if err != nil {
+		return err
+	}
+
+	// Print TX info and wait for it to be included in a block
+	err = api.PrintAndWaitForTransaction(t.cfg, txHash, t.rp.Client, &t.log)
+	if err != nil {
+		return err
+	}
+
+	// Log
+	t.log.Printlnf("Successfully responded to the performance challenge for validator %d.", defender.validatorId)
 
 	// Return
 	return nil
