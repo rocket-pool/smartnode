@@ -85,6 +85,67 @@ func GetGeneralizedIndexForSlot() uint64 {
 	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStateSlotIndex
 }
 
+func GetGeneralizedIndexForPreviousEpochParticipation() uint64 {
+	return math.GetPowerOfTwoCeil(getStateChunkSize()) + generic.BeaconStatePreviousEpochParticipationFieldIndex
+}
+
+// PreviousEpochParticipationAndSlotProof proves the previous_epoch_participation
+// chunk containing validatorIndex's participation flags, plus the state slot,
+// both anchored at the block-header root. chunk is the 32-byte merkle leaf
+// holding the flags of validators [chunkIndex*32, chunkIndex*32+31];
+// chunkOffset is validatorIndex % 32 (the Respond offset into that leaf).
+func (state *BeaconState) PreviousEpochParticipationAndSlotProof(validatorIndex uint64) ([32]byte, uint64, [][]byte, [][]byte, error) {
+	if validatorIndex >= uint64(len(state.PreviousEpochParticipation)) {
+		return [32]byte{}, 0, nil, nil, errors.New("validator index out of bounds of the previous epoch participation list")
+	}
+
+	// Pack the expected leaf chunk locally: 32 participation flag bytes,
+	// zero-padded at the tail of the list.
+	chunkIndex := validatorIndex / 32
+	chunkOffset := validatorIndex % 32
+	var chunk [32]byte
+	copy(chunk[:], state.PreviousEpochParticipation[chunkIndex*32:])
+
+	stateTree, err := state.GetTree()
+	if err != nil {
+		return [32]byte{}, 0, nil, nil, fmt.Errorf("could not get state tree: %w", err)
+	}
+
+	chunkGid := generic.GetGeneralizedIndexForParticipationChunk(chunkIndex, GetGeneralizedIndexForPreviousEpochParticipation())
+	participationStateProof, err := stateTree.Prove(int(chunkGid))
+	if err != nil {
+		return [32]byte{}, 0, nil, nil, fmt.Errorf("could not get proof for participation chunk: %w", err)
+	}
+
+	// Sanity check that the proof leaf matches the locally packed chunk
+	if !bytes.Equal(participationStateProof.Leaf, chunk[:]) {
+		return [32]byte{}, 0, nil, nil, fmt.Errorf("proof leaf does not match expected participation chunk")
+	}
+
+	slotStateProof, err := stateTree.Prove(int(GetGeneralizedIndexForSlot()))
+	if err != nil {
+		return [32]byte{}, 0, nil, nil, fmt.Errorf("could not get proof for slot: %w", err)
+	}
+
+	// Drop the state tree before doing more work so the GC can reclaim it.
+	stateTree = nil
+
+	blockHeaderProof, err := state.blockHeaderToStateProof(state.LatestBlockHeader)
+	if err != nil {
+		return [32]byte{}, 0, nil, nil, fmt.Errorf("could not get block header proof: %w", err)
+	}
+
+	participationBranch := make([][]byte, 0, len(participationStateProof.Hashes)+len(blockHeaderProof))
+	participationBranch = append(participationBranch, participationStateProof.Hashes...)
+	participationBranch = append(participationBranch, blockHeaderProof...)
+
+	slotProof := make([][]byte, 0, len(slotStateProof.Hashes)+len(blockHeaderProof))
+	slotProof = append(slotProof, slotStateProof.Hashes...)
+	slotProof = append(slotProof, blockHeaderProof...)
+
+	return chunk, chunkOffset, participationBranch, slotProof, nil
+}
+
 // ValidatorAndSlotProof produces both the validator proof and the slot proof
 // for the state's current slot
 func (state *BeaconState) ValidatorAndSlotProof(validatorIndex uint64) ([][]byte, [][]byte, error) {

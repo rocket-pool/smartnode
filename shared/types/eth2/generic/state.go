@@ -14,6 +14,23 @@ const BeaconStateHistoricalSummariesMaxLength uint64 = 1 << 24
 const BeaconStateBlockRootsMaxLength uint64 = 1 << 13
 const BeaconStateBlockRootsFieldIndex uint64 = 5
 
+// BeaconStatePreviousEpochParticipationFieldIndex is the field offset of the
+// PreviousEpochParticipation field in the BeaconState struct
+const BeaconStatePreviousEpochParticipationFieldIndex uint64 = 15
+
+// BeaconStateParticipationMaxChunks is the chunk count of the epoch
+// participation byte lists: VALIDATOR_REGISTRY_LIMIT (2^40) one-byte flags
+// packed 32 per chunk.
+const BeaconStateParticipationMaxChunks uint64 = 1 << 35
+
+// GetGeneralizedIndexForParticipationChunk returns the generalized index of
+// the 32-byte chunk of a participation byte list, starting from the
+// generalized index of the list field itself.
+func GetGeneralizedIndexForParticipationChunk(chunkIndex uint64, participationFieldGid uint64) uint64 {
+	// Lists have a base index of 2 (the length mixin occupies the sibling).
+	return participationFieldGid*2*BeaconStateParticipationMaxChunks + chunkIndex
+}
+
 type PendingDeposit struct {
 	Pubkey                []byte `json:"pubkey" ssz-size:"48"`
 	WithdrawalCredentials []byte `json:"withdrawal_credentials" ssz-size:"32"`

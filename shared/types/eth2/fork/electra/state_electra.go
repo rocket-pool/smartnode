@@ -261,3 +261,7 @@ func (state *BeaconState) GetPreviousEpochParticipation() []byte {
 func (state *BeaconState) BlockHeaderProof() ([][]byte, error) {
 	return nil, nil
 }
+
+func (state *BeaconState) PreviousEpochParticipationAndSlotProof(validatorIndex uint64) ([32]byte, uint64, [][]byte, [][]byte, error) {
+	return [32]byte{}, 0, nil, nil, fmt.Errorf("participation proofs are not supported for electra states")
+}

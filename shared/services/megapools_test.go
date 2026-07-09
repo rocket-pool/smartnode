@@ -215,3 +215,52 @@ func TestHighExpressQueueRate(t *testing.T) {
 		t.Errorf("want 5, got %d", got)
 	}
 }
+
+// ---------------------------------------------------------------------------
+// Participation proof slot selection
+// ---------------------------------------------------------------------------
+
+// TestParticipationProofSlotRange — the proof state for challenged epoch E
+// must come from epoch E+1, where E's flags live in
+// previous_epoch_participation.
+func TestParticipationProofSlotRange(t *testing.T) {
+	tests := []struct {
+		name            string
+		challengedEpoch uint64
+		slotsPerEpoch   uint64
+		wantFirst       uint64
+		wantLast        uint64
+	}{
+		{
+			name:            "epoch zero",
+			challengedEpoch: 0,
+			slotsPerEpoch:   32,
+			wantFirst:       32,
+			wantLast:        63,
+		},
+		{
+			name:            "mainnet-like epoch",
+			challengedEpoch: 105000,
+			slotsPerEpoch:   32,
+			wantFirst:       105001 * 32,
+			wantLast:        105002*32 - 1,
+		},
+		{
+			name:            "single-slot epochs",
+			challengedEpoch: 10,
+			slotsPerEpoch:   1,
+			wantFirst:       11,
+			wantLast:        11,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			first, last := participationProofSlotRange(tc.challengedEpoch, tc.slotsPerEpoch)
+			if first != tc.wantFirst || last != tc.wantLast {
+				t.Errorf("participationProofSlotRange(%d, %d) = (%d, %d), want (%d, %d)",
+					tc.challengedEpoch, tc.slotsPerEpoch, first, last, tc.wantFirst, tc.wantLast)
+			}
+		})
+	}
+}

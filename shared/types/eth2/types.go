@@ -29,6 +29,11 @@ type BeaconState interface {
 	BlockHeaderProof() ([][]byte, error)
 	GetValidators() []*generic.Validator
 	GetPreviousEpochParticipation() []byte
+	// PreviousEpochParticipationAndSlotProof proves the previous_epoch_participation
+	// chunk containing validatorIndex's flags, plus the state slot, both anchored
+	// at the block-header root. chunk is the 32-byte merkle leaf; chunkOffset is
+	// the validator's byte index within that chunk (validatorIndex % 32)
+	PreviousEpochParticipationAndSlotProof(validatorIndex uint64) (chunk [32]byte, chunkOffset uint64, participationProofBytes [][]byte, slotProof [][]byte, err error)
 }
 
 type SignedBeaconBlock interface {
