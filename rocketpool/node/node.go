@@ -53,6 +53,7 @@ const (
 	StakeMegapoolValidatorColor     = color.FgHiBlue
 	NotifyValidatorExitColor        = color.FgHiYellow
 	NotifyFinalBalanceColor         = color.FgHiMagenta
+	CheckMinipoolExitRequestsColor  = color.FgHiCyan
 	DefendChallengeExitColor        = color.FgHiGreen
 	DefendChallengePerformanceColor = color.FgHiBlue
 	ProvisionExpressTickets         = color.FgMagenta
@@ -229,6 +230,10 @@ func run(c *cli.Command) error {
 		return err
 	}
 	notifyFinalBalance, err := newNotifyFinalBalance(c, log.NewColorLogger(NotifyFinalBalanceColor))
+	if err != nil {
+		return err
+	}
+	checkMinipoolExitRequests, err := newCheckMinipoolExitRequests(c, log.NewColorLogger(CheckMinipoolExitRequestsColor))
 	if err != nil {
 		return err
 	}
@@ -432,6 +437,14 @@ func run(c *cli.Command) error {
 
 			// Run the megapool notify final balance check
 			if err := notifyFinalBalance.run(state); err != nil {
+				errorLog.Println(err)
+			}
+			if !sleepWithContext(ctx, taskCooldown) {
+				return
+			}
+
+			// Run the minipool exit request check
+			if err := checkMinipoolExitRequests.run(state); err != nil {
 				errorLog.Println(err)
 			}
 			if !sleepWithContext(ctx, taskCooldown) {
